@@ -524,6 +524,32 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_system_only_text_parts_reach_generation(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="First instruction."),
+                            TextPromptMessageContent(data="Second instruction."),
+                        ]
+                    )
+                ],
+                model_parameters={},
+            )
+
+        contents = mock_client.models.generate_content_stream.call_args.kwargs[
+            "contents"
+        ]
+        assert [part.text for part in contents[0].parts] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""
         messages = [

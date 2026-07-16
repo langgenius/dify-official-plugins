@@ -1057,10 +1057,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if not contents:
             if config.system_instruction:
                 # When only system instruction is provided, add it as a user message
+                instruction_parts = (
+                    config.system_instruction.parts
+                    if isinstance(config.system_instruction, types.Content)
+                    else [types.Part.from_text(text=config.system_instruction)]
+                )
                 contents = [
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_text(text=config.system_instruction)],
+                        parts=instruction_parts,
                     )
                 ]
             else:
