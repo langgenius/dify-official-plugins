@@ -524,6 +524,35 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_image_model_keeps_text_system_parts_as_user_content(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model="gemini-2.5-flash-image",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="Keep the subject centered.")
+                        ]
+                    ),
+                    UserPromptMessage(content="Draw a red fox."),
+                ],
+                model_parameters={},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert request["config"].system_instruction is None
+        assert [part.text for part in request["contents"][0].parts] == [
+            "Keep the subject centered.",
+            "Draw a red fox.",
+        ]
+
     def test_multiple_text_system_messages_keep_last_scalar(self):
         messages = [
             SystemPromptMessage(content="First instruction."),

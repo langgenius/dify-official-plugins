@@ -1071,6 +1071,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        if model == "gemini-2.5-flash-image":
+            model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
 
         # == InitConfig == #
 
