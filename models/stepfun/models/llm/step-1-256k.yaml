@@ -1,4 +1,5 @@
 model: step-1-256k
+deprecated: true
 label:
   zh_Hans: step-1-256k
   en_US: step-1-256k

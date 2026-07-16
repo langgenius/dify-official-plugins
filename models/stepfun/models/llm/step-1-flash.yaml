@@ -1,4 +1,5 @@
 model: step-1-flash
+deprecated: true
 label:
   zh_Hans: step-1-flash
   en_US: step-1-flash

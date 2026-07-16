@@ -16,7 +16,7 @@ class StepfunProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="step-1-8k", credentials=credentials)
+            model_instance.validate_credentials(model="step-3.7-flash", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

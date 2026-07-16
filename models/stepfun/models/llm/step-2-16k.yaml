@@ -1,4 +1,5 @@
 model: step-2-16k
+deprecated: true
 label:
   zh_Hans: step-2-16k
   en_US: step-2-16k
