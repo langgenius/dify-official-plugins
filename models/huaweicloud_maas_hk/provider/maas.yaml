@@ -23,8 +23,8 @@ label:
 model_credential_schema:
   credential_form_schemas:
     - label:
-        en_US: Custom API endpoint URL
-        zh_Hans: 自定义 API endpoint 地址
+        en_US: API Base URL
+        zh_Hans: API Base URL
       placeholder:
         en_US: Base URL, e.g. https://api-ap-southeast-1.modelarts-maas.com/v1 or https://infer-modelarts-ap-southeast-1.modelarts-infer.com/v1/infers/{service-id}/v1
         zh_Hans: Base URL, e.g. https://api-ap-southeast-1.modelarts-maas.com/v1 or https://infer-modelarts-ap-southeast-1.modelarts-infer.com/v1/infers/{service-id}/v1

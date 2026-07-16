@@ -70,7 +70,7 @@ parameter_rules:
       zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
 pricing:
-  input: '1'
-  output: '6'
-  unit: '0.000001'
+  input: "1"
+  output: "6"
+  unit: "0.000001"
   currency: RMB

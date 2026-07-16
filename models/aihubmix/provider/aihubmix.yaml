@@ -35,6 +35,41 @@ provider_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: api_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: select
+      required: false
+      default: https://api.inferera.com
+      options:
+        - value: https://api.inferera.com
+          label:
+            en_US: "https://api.inferera.com (default)"
+            zh_Hans: "https://api.inferera.com（默认）"
+        - value: https://aihubmix.com
+          label:
+            en_US: "https://aihubmix.com"
+            zh_Hans: "https://aihubmix.com"
+        - value: __custom__
+          label:
+            en_US: "Custom…"
+            zh_Hans: "自定义…"
+    - variable: api_url_custom
+      show_on:
+        - variable: api_url
+          value: __custom__
+      label:
+        en_US: Custom API Base URL
+        zh_Hans: Custom API Base URL
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: "Base URL，例如 https://your-gateway.example.com"
+        en_US: "Base URL, e.g. https://your-gateway.example.com"
+      help:
+        zh_Hans: "选择自定义时在此填写。填裸 host，不要带 /v1 等后缀，插件会自动追加（/v1、/gemini 等）。"
+        en_US: "Fill this when Custom is selected. Bare host, no /v1 suffix; the plugin appends it automatically."
 model_credential_schema:
   model:
     label:
@@ -52,6 +87,41 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: api_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: select
+      required: false
+      default: https://api.inferera.com
+      options:
+        - value: https://api.inferera.com
+          label:
+            en_US: "https://api.inferera.com (default)"
+            zh_Hans: "https://api.inferera.com（默认）"
+        - value: https://aihubmix.com
+          label:
+            en_US: "https://aihubmix.com"
+            zh_Hans: "https://aihubmix.com"
+        - value: __custom__
+          label:
+            en_US: "Custom…"
+            zh_Hans: "自定义…"
+    - variable: api_url_custom
+      show_on:
+        - variable: api_url
+          value: __custom__
+      label:
+        en_US: Custom API Base URL
+        zh_Hans: Custom API Base URL
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: "Base URL，例如 https://your-gateway.example.com"
+        en_US: "Base URL, e.g. https://your-gateway.example.com"
+      help:
+        zh_Hans: "选择自定义时在此填写。填裸 host，不要带 /v1 等后缀，插件会自动追加（/v1、/gemini 等）。"
+        en_US: "Fill this when Custom is selected. Bare host, no /v1 suffix; the plugin appends it automatically."
     - variable: mode
       show_on:
         - variable: __model_type

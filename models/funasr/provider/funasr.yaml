@@ -1,0 +1,79 @@
+configurate_methods:
+  - customizable-model
+  - predefined-model
+description:
+  en_US: Fast open-source speech recognition. 170x faster than Whisper.
+  zh_Hans: 开源语音识别，比 Whisper 快 170 倍。
+extra:
+  python:
+    model_sources:
+      - models/speech2text/speech2text.py
+    provider_source: provider/funasr.py
+help:
+  title:
+    en_US: Deploy FunASR server
+    zh_Hans: 部署 FunASR 服务
+  url:
+    en_US: https://github.com/modelscope/FunASR
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: FunASR
+  zh_Hans: FunASR
+model_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: Server URL
+        zh_Hans: 服务器地址
+      placeholder:
+        en_US: e.g. http://localhost:8000
+        zh_Hans: 例如 http://localhost:8000
+      required: true
+      type: text-input
+      variable: endpoint_url
+    - label:
+        en_US: API Key (optional)
+        zh_Hans: API Key（可选）
+      placeholder:
+        en_US: Leave empty if not required
+        zh_Hans: 如果不需要可留空
+      required: false
+      type: secret-input
+      variable: api_key
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter model name
+      zh_Hans: 输入模型名称
+models:
+  speech2text:
+    position: models/speech2text/_position.yaml
+    predefined:
+      - models/speech2text/*.yaml
+provider: funasr
+provider_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: Server URL
+        zh_Hans: 服务器地址
+      placeholder:
+        en_US: e.g. http://localhost:8000
+        zh_Hans: 例如 http://localhost:8000
+      required: true
+      type: text-input
+      variable: endpoint_url
+    - label:
+        en_US: API Key (optional)
+        zh_Hans: API Key（可选）
+      placeholder:
+        en_US: Leave empty if not required
+        zh_Hans: 如果不需要可留空
+      required: false
+      type: secret-input
+      variable: api_key
+supported_model_types:
+  - speech2text

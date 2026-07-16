@@ -54,11 +54,11 @@ model_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: API Base
-      zh_Hans: API Base
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
-      en_US: Enter your API Base, e.g. https://api.cohere.ai/v1
-      zh_Hans: 在此输入您的 API Base，如 https://api.cohere.ai/v1
+      en_US: Enter your API Base URL, e.g. https://api.cohere.ai/v1
+      zh_Hans: 在此输入您的 API Base URL，如 https://api.cohere.ai/v1
     required: false
     type: text-input
     variable: base_url
@@ -96,11 +96,11 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: API Base
-      zh_Hans: API Base
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
-      en_US: Enter your API Base, e.g. https://api.cohere.ai/v1
-      zh_Hans: 在此输入您的 API Base，如 https://api.cohere.ai/v1
+      en_US: Enter your API Base URL, e.g. https://api.cohere.ai/v1
+      zh_Hans: 在此输入您的 API Base URL，如 https://api.cohere.ai/v1
     required: false
     type: text-input
     variable: base_url

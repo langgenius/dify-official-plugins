@@ -1,6 +1,6 @@
 import json
 from typing import Mapping
-from llama_cloud.client import LlamaCloud
+from llama_cloud import LlamaCloud
 from werkzeug import Request, Response
 from dify_plugin import Endpoint
 
@@ -35,14 +35,13 @@ class LlamacloudEndpoint(Endpoint):
         score_threshold = retrieval_settings.get("score_threshold")
 
         # Set up the LlamaCloud client using the API key from settings
-        client_kwargs = {"token": settings.get("llama_cloud_api_key")}
+        client_kwargs = {"api_key": settings.get("llama_cloud_api_key")}
         if settings.get("region") == "eu":
             client_kwargs["base_url"] = "https://api.cloud.eu.llamaindex.ai"
         client = LlamaCloud(**client_kwargs)
 
-        # Execute the run_search pipeline
-        # (Ensure that `pipeline_id` exists in your `settings` object)
-        response = client.pipelines.run_search(
+        # Execute the pipeline retrieval API.
+        response = client.pipelines.retrieve(
             pipeline_id=pipeline_id,
             query=query
         )

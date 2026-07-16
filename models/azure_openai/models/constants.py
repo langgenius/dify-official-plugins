@@ -18,13 +18,30 @@ from pydantic import BaseModel
 AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
 
 AZURE_DEFAULT_PARAM_SEED_HELP = I18nObject(
-    zh_Hans="如果指定，模型将尽最大努力进行确定性采样，使得重复的具有相同种子和参数的请求应该返回相同的结果。不能保证确定性，"
+    zh_hans="如果指定，模型将尽最大努力进行确定性采样，使得重复的具有相同种子和参数的请求应该返回相同的结果。不能保证确定性，"
     "您应该参考 system_fingerprint 响应参数来监视变化。",
-    en_US="If specified, model will make a best effort to sample deterministically,"
+    en_us="If specified, model will make a best effort to sample deterministically,"
     " such that repeated requests with the same seed and parameters should return the same result."
     " Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter"
     " to monitor changes in the backend.",
 )
+
+
+def uses_responses_api(base_model_name: str) -> bool:
+    """
+    Determine if the model should use the Responses API.
+
+    1. Models with "codex" in the base name
+    2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+    """
+    return (
+        "codex" in base_model_name
+        or (
+            base_model_name.startswith("gpt-5")
+            and "chat" not in base_model_name
+            and "codex" not in base_model_name
+        )
+    )
 
 
 def _get_max_tokens(default: int, min_val: int, max_val: int) -> ParameterRule:
@@ -60,14 +77,64 @@ class AzureBaseModel(BaseModel):
     extra_invoke_params: dict[str, Any] = {}
 
 
+def _web_search_parameter_rules() -> list[ParameterRule]:
+    return [
+        ParameterRule(
+            name="enable_web_search",
+            label=I18nObject(zh_hans="启用 Web 搜索", en_us="Enable Web Search"),
+            type="boolean",
+            help=I18nObject(
+                zh_hans="启用 Azure OpenAI Responses API 原生 web_search 工具。",
+                en_us="Enable the native web_search tool in Azure OpenAI Responses API.",
+            ),
+            required=False,
+            default=False,
+        ),
+        ParameterRule(
+            name="web_search_user_country",
+            label=I18nObject(zh_hans="搜索国家/地区", en_us="Web Search Country"),
+            type="string",
+            help=I18nObject(
+                zh_hans="可选，两位 ISO 国家/地区代码（例如 US、JP）。",
+                en_us="Optional two-letter ISO country code (for example, US or JP).",
+            ),
+            required=False,
+        ),
+        ParameterRule(
+            name="web_search_allowed_domains",
+            label=I18nObject(zh_hans="允许域名", en_us="Allowed Domains"),
+            type="text",
+            help=I18nObject(
+                zh_hans="可选，允许搜索的域名列表。支持逗号或换行分隔。",
+                en_us="Optional allowlist of domains for web search. Use commas or new lines as separators.",
+            ),
+            required=False,
+        ),
+        ParameterRule(
+            name="web_search_include_sources",
+            label=I18nObject(zh_hans="包含来源元数据", en_us="Include Source Metadata"),
+            type="boolean",
+            help=I18nObject(
+                zh_hans="启用后会请求返回 web_search_call.action.sources，以便在响应中包含搜索来源信息（如 URL 和标题）。",
+                en_us=(
+                    'When enabled, the request includes include=["web_search_call.action.sources"], '
+                    "which asks Azure to return web search source metadata (for example URL/title)."
+                ),
+            ),
+            required=False,
+            default=False,
+        ),
+    ]
+
+
 LLM_BASE_MODELS = [
     AzureBaseModel(
         base_model_name="gpt-4o-audio-preview",
         entity=AIModelEntity(
             model="gpt-4o-audio-preview",
             label=I18nObject(
-                zh_Hans="gpt-4o-audio-preview",
-                en_US="gpt-4o-audio-preview",
+                zh_hans="gpt-4o-audio-preview",
+                en_us="gpt-4o-audio-preview",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -108,13 +175,13 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(
-                        zh_Hans="回复格式",
-                        en_US="Response Format",
+                        zh_hans="回复格式",
+                        en_us="Response Format",
                     ),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -133,7 +200,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -166,11 +233,11 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -189,7 +256,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -234,7 +301,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -267,11 +334,11 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -290,7 +357,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -323,7 +390,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=8192),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -333,11 +400,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -356,7 +423,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -389,7 +456,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -399,11 +466,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -422,7 +489,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -455,7 +522,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -465,11 +532,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -488,7 +555,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -521,7 +588,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -531,11 +598,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -554,7 +621,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -588,7 +655,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -598,22 +665,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -631,7 +698,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -666,7 +733,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -676,22 +743,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -709,7 +776,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -743,7 +810,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -753,22 +820,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -786,7 +853,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -820,7 +887,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -830,11 +897,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -853,7 +920,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -888,7 +955,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -898,22 +965,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -931,7 +998,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -966,7 +1033,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -976,22 +1043,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -1009,7 +1076,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1044,7 +1111,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1054,22 +1121,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -1087,7 +1154,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1122,7 +1189,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1132,22 +1199,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -1165,7 +1232,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1200,7 +1267,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1210,22 +1277,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -1243,7 +1310,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1278,7 +1345,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1288,22 +1355,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -1321,7 +1388,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1355,7 +1422,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1365,11 +1432,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -1388,7 +1455,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1422,7 +1489,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1432,11 +1499,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -1455,7 +1522,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[ModelFeature.VISION],
@@ -1484,7 +1551,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=512, min_val=1, max_val=4096),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -1494,11 +1561,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object"],
@@ -1517,7 +1584,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1557,7 +1624,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1597,7 +1664,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1624,7 +1691,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1651,7 +1718,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1669,32 +1736,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -1714,7 +1781,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1731,32 +1798,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -1776,7 +1843,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1794,32 +1861,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -1839,7 +1906,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1857,32 +1924,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -1902,7 +1969,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1920,44 +1987,44 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -1981,7 +2048,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -1999,44 +2066,44 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -2060,7 +2127,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2078,44 +2145,44 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -2139,7 +2206,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2153,22 +2220,22 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -2195,8 +2262,8 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                zh_Hans="gpt-5-codex",
-                en_US="gpt-5-codex",
+                zh_hans="gpt-5-codex",
+                en_us="gpt-5-codex",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2226,7 +2293,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=4096, min_val=1, max_val=128000),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -2236,54 +2303,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],  # ["auto", "concise", "detailed"]
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["medium"],  # ["low", "medium", "high"]
@@ -2302,7 +2369,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2337,7 +2404,7 @@ LLM_BASE_MODELS = [
                 _get_max_tokens(default=4096, min_val=1, max_val=128000),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -2347,54 +2414,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2414,7 +2481,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2443,7 +2510,7 @@ LLM_BASE_MODELS = [
                 _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -2453,22 +2520,22 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
@@ -2486,7 +2553,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2515,7 +2582,7 @@ LLM_BASE_MODELS = [
                 _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -2525,32 +2592,32 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["medium", "high"],
@@ -2570,7 +2637,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2588,32 +2655,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -2621,11 +2688,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -2633,12 +2700,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -2662,7 +2729,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2680,32 +2747,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "minimal", "low", "medium", "high"],
@@ -2713,12 +2780,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -2742,7 +2809,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2760,32 +2827,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -2793,11 +2860,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],
@@ -2805,11 +2872,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["medium"],
@@ -2830,7 +2897,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2848,7 +2915,7 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="seed",
-                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    label=I18nObject(zh_hans="种子", en_us="Seed"),
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
@@ -2858,32 +2925,32 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -2891,11 +2958,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],
@@ -2903,11 +2970,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["medium"],
@@ -2928,7 +2995,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -2946,32 +3013,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high", "xhigh"],
@@ -2979,11 +3046,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],
@@ -2991,11 +3058,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["medium"],
@@ -3017,7 +3084,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3035,32 +3102,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3068,11 +3135,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3080,12 +3147,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3109,7 +3176,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3127,32 +3194,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "minimal", "low", "medium", "high"],
@@ -3160,12 +3227,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3189,7 +3256,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3207,32 +3274,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3240,11 +3307,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "detailed"],
@@ -3252,11 +3319,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制模型响应的详细程度。",
-                        en_US="Constrains the verbosity of the model's response. ",
+                        zh_hans="限制模型响应的详细程度。",
+                        en_us="Constrains the verbosity of the model's response. ",
                     ),
                     required=False,
                     options=["medium"],
@@ -3278,7 +3345,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3296,32 +3363,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "minimal", "low", "medium", "high"],
@@ -3329,12 +3396,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3358,7 +3425,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3376,32 +3443,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3409,11 +3476,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3421,12 +3488,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3451,7 +3518,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3469,32 +3536,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3502,11 +3569,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3514,12 +3581,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3543,7 +3610,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3561,32 +3628,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3594,11 +3661,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3606,12 +3673,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3635,7 +3702,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3653,32 +3720,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3686,11 +3753,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3698,12 +3765,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3727,7 +3794,7 @@ LLM_BASE_MODELS = [
         entity=AIModelEntity(
             model="fake-deployment-name",
             label=I18nObject(
-                en_US="fake-deployment-name-label",
+                en_us="fake-deployment-name-label",
             ),
             model_type=ModelType.LLM,
             features=[
@@ -3745,32 +3812,32 @@ LLM_BASE_MODELS = [
             parameter_rules=[
                 ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(en_us="JSON Schema"),
                     type="text",
                     help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_hans="限制推理模型的推理工作",
+                        en_us="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
                     options=["none", "low", "medium", "high"],
@@ -3778,11 +3845,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_summary",
-                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="模型执行推理的摘要。",
-                        en_US="A summary of the reasoning performed by the model. ",
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
@@ -3790,12 +3857,12 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="verbosity",
-                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
                         "支持的值包括low、medium和high",
-                        en_US="Constrains the verbosity of the model's response. "
+                        en_us="Constrains the verbosity of the model's response. "
                         "Lower values will result in more concise responses, "
                         "while higher values will result in more verbose responses. "
                         "Currently supported values are low, medium, and high",
@@ -3814,13 +3881,314 @@ LLM_BASE_MODELS = [
             ),
         ),
     ),
+    # GPT-5.6 Series
+    # https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#gpt-56
+    # https://developers.openai.com/api/docs/models/gpt-5.6-sol
+    AzureBaseModel(
+        base_model_name="gpt-5.6-sol",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=5,
+                output=30,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5.6-terra",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=2.5,
+                output=15,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5.6-luna",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1,
+                output=6,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
 ]
+
+
+def _apply_web_search_rules_to_responses_models() -> None:
+    for base_model in LLM_BASE_MODELS:
+        if not uses_responses_api(base_model.base_model_name):
+            continue
+
+        if base_model.entity.parameter_rules is None:
+            base_model.entity.parameter_rules = []
+        parameter_rules = base_model.entity.parameter_rules
+        existing_rule_names = {rule.name for rule in parameter_rules}
+        for rule in _web_search_parameter_rules():
+            if rule.name not in existing_rule_names:
+                parameter_rules.append(rule)
+
+
+_apply_web_search_rules_to_responses_models()
+
+
 EMBEDDING_BASE_MODELS = [
     AzureBaseModel(
         base_model_name="text-embedding-ada-002",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TEXT_EMBEDDING,
             model_properties={
@@ -3838,7 +4206,7 @@ EMBEDDING_BASE_MODELS = [
         base_model_name="text-embedding-3-small",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TEXT_EMBEDDING,
             model_properties={
@@ -3856,7 +4224,7 @@ EMBEDDING_BASE_MODELS = [
         base_model_name="text-embedding-3-large",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TEXT_EMBEDDING,
             model_properties={
@@ -3876,7 +4244,7 @@ SPEECH2TEXT_BASE_MODELS = [
         base_model_name="whisper-1",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={
@@ -3889,7 +4257,7 @@ SPEECH2TEXT_BASE_MODELS = [
         base_model_name="gpt-4o-transcribe",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={
@@ -3902,7 +4270,7 @@ SPEECH2TEXT_BASE_MODELS = [
         base_model_name="gpt-4o-mini-transcribe",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={
@@ -3915,7 +4283,7 @@ SPEECH2TEXT_BASE_MODELS = [
         base_model_name="gpt-4o-transcribe-diarize",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={
@@ -3931,7 +4299,7 @@ TTS_BASE_MODELS = [
         base_model_name="tts-1",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TTS,
             model_properties={
@@ -4043,7 +4411,7 @@ TTS_BASE_MODELS = [
         base_model_name="tts-1-hd",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TTS,
             model_properties={
@@ -4155,7 +4523,7 @@ TTS_BASE_MODELS = [
         base_model_name="gpt-4o-mini-tts",
         entity=AIModelEntity(
             model="fake-deployment-name",
-            label=I18nObject(en_US="fake-deployment-name-label"),
+            label=I18nObject(en_us="fake-deployment-name-label"),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TTS,
             model_properties={

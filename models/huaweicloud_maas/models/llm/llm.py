@@ -7,30 +7,9 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 
 class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
-    _BASE_URL_V1 = "https://api.modelarts-maas.com/v1"
     _BASE_URL_V2 = "https://api.modelarts-maas.com/v2"
     _THINKING_PATH_XDS = "thinking.type.enabled"
     _THINKING_PATH_VLLM = "chat_template_kwargs.enable_thinking.true"
-
-    endpoint_mapping = {
-        "deepseek-v3.2": _BASE_URL_V2,
-        "deepseek-v3.2-exp": _BASE_URL_V2,
-        "deepseek-v3.1-terminus": _BASE_URL_V2,
-        "DeepSeek-V3": _BASE_URL_V2,
-        "deepseek-r1-250528": _BASE_URL_V2,
-        "DeepSeek-R1": _BASE_URL_V2,
-        "Kimi-K2": _BASE_URL_V2,
-        "longcat-flash-chat": _BASE_URL_V2,
-        "glm-5": _BASE_URL_V2,
-        "glm-5.1": _BASE_URL_V2,
-        "kimi-k2.6": _BASE_URL_V2,
-        "deepseek-v4-flash": _BASE_URL_V2,
-        "qwen3-235b-a22b": _BASE_URL_V2,
-        "qwen3-30b-a3b": _BASE_URL_V2,
-        "qwen3-32b": _BASE_URL_V2,
-        "qwen3-coder-480b-a35b-instruct": _BASE_URL_V2,
-        "qwen2.5-vl-72b": _BASE_URL_V2,
-    }
 
     thinking_mapping = {
         "deepseek-v3.2": _THINKING_PATH_XDS,
@@ -39,9 +18,13 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         "qwen3-235b-a22b": _THINKING_PATH_VLLM,
         "qwen3-32b": _THINKING_PATH_VLLM,
         "qwen3-30b-a3b": _THINKING_PATH_VLLM,
-        "glm-5": _THINKING_PATH_VLLM,
-        "glm-5.1": _THINKING_PATH_VLLM,
+        "glm-5": _THINKING_PATH_XDS,
+        "glm-5.1": _THINKING_PATH_XDS,
+        "glm-5.2": _THINKING_PATH_XDS,
+        "kimi-k2.6": _THINKING_PATH_XDS,
         "deepseek-v4-flash": _THINKING_PATH_XDS,
+        "deepseek-v4-pro": _THINKING_PATH_XDS,
+        "openpangu-2.0-flash": _THINKING_PATH_XDS,
     }
 
     def _invoke(
@@ -81,10 +64,7 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, model: str, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        endpoint_url = HuaweiCloudMaasLargeLanguageModel.endpoint_mapping.get(
-            model, HuaweiCloudMaasLargeLanguageModel._BASE_URL_V1
-        )
-        credentials["endpoint_url"] = str(credentials.get("endpoint_url", endpoint_url))
+        credentials["endpoint_url"] = str(credentials.get("endpoint_url", self._BASE_URL_V2))
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)

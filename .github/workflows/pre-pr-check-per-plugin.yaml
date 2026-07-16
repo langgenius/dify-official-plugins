@@ -1,10 +1,8 @@
 name: Pre PR Check Per Plugin
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, ready_for_review, review_requested]
-    branches:
-      - main
+  pull_request_review:
+    types: [submitted]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,6 +10,7 @@ concurrency:
 
 jobs:
   detect-changes:
+    if: github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'main' && !github.event.pull_request.draft
     runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
@@ -123,16 +122,23 @@ jobs:
           fi
 
       - name: Check If Version Exists
+        env:
+          MARKETPLACE_BASE_URL: ${{ secrets.MARKETPLACE_BASE_URL }}
         run: |
+          if [ -z "$MARKETPLACE_BASE_URL" ]; then
+            echo "MARKETPLACE_BASE_URL is not available; skipping marketplace version lookup."
+            exit 0
+          fi
+
           VERSION=$(yq '.version' "${{ matrix.plugin_path }}/manifest.yaml")
           AUTHOR=$(yq '.author' "${{ matrix.plugin_path }}/manifest.yaml")
           NAME=$(yq '.name' "${{ matrix.plugin_path }}/manifest.yaml")
           echo "Checking plugin version: $VERSION"
 
-          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$MARKETPLACE_BASE_URL/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
 
           if [ "$RESPONSE_CODE" = "200" ]; then
-            RESPONSE=$(curl -s "${{ secrets.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+            RESPONSE=$(curl -s "$MARKETPLACE_BASE_URL/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
             if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
               echo "!!! Plugin version $VERSION already exists, please update the version number in manifest.yaml"
               exit 1
@@ -155,8 +161,16 @@ jobs:
           fi
 
       - name: Check Packaging
+        env:
+          MARKETPLACE_BASE_URL: ${{ secrets.MARKETPLACE_BASE_URL }}
+          MARKETPLACE_TOKEN: ${{ secrets.MARKETPLACE_TOKEN }}
         run: |
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
+          if [ -z "$MARKETPLACE_BASE_URL" ] || [ -z "$MARKETPLACE_TOKEN" ]; then
+            echo "Marketplace credentials are not available; skipping marketplace packaging test."
+            exit 0
+          fi
+
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "$MARKETPLACE_TOKEN" --plugin-daemon-path .scripts/dify -u "$MARKETPLACE_BASE_URL" -f --test
 
       - name: Package plugin
         run: |
@@ -261,6 +275,11 @@ jobs:
       - name: Verify check results
         run: |
           if [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            if [ "${{ needs.detect-changes.result }}" = "skipped" ]; then
+              echo "Workflow skipped because this review does not require plugin checks."
+              exit 0
+            fi
+
             echo "detect-changes failed."
             exit 1
           fi

@@ -442,8 +442,10 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
         return AIModelEntity(
             model=model,
             label=I18nObject(
-                en_US=credentials.get("model_label_en_US", model),
-                zh_Hans=credentials.get("model_label_zh_Hanns", model),
+                en_us=credentials.get("model_label_en_US", model),
+                # Keep the misspelled key as a read-only fallback for saved credentials.
+                zh_hans=credentials.get("model_label_zh_Hans")
+                or credentials.get("model_label_zh_Hanns", model),
             ),
             model_type=ModelType.LLM,
             features=[ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL]
@@ -458,7 +460,7 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -467,19 +469,19 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 4096)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_k",
                     use_template="top_k",
-                    label=I18nObject(en_US="Top K", zh_Hans="Top K"),
+                    label=I18nObject(en_us="Top K", zh_hans="Top K"),
                     type=ParameterType.FLOAT,
                 ),
             ],
