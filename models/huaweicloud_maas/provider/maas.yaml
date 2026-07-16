@@ -28,8 +28,8 @@ model_credential_schema:
         en_US: API Base URL
         zh_Hans: API Base URL
       placeholder:
-        en_US: Base URL, e.g. https://api.modelarts-maas.com/v1 or https://{region}.modelarts-maas.com/v1/infers/{service-id}/v1
-        zh_Hans: Base URL, e.g. https://api.modelarts-maas.com/v1 or https://{region}.modelarts-maas.com/v1/infers/{service-id}/v1
+        en_US: Base URL, e.g. https://api.modelarts-maas.com/v2 or https://{region}.modelarts-maas.com/v1/infers/{service-id}/v1
+        zh_Hans: Base URL, e.g. https://api.modelarts-maas.com/v2 or https://{region}.modelarts-maas.com/v1/infers/{service-id}/v1
       required: true
       type: text-input
       variable: endpoint_url

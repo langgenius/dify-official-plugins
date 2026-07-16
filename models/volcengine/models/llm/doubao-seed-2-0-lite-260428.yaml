@@ -1,0 +1,36 @@
+model: doubao-seed-2-0-lite-260428
+label:
+  en_US: doubao-seed-2-0-lite-260428
+  zh_Hans: doubao-seed-2-0-lite-260428
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - video
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - minimal
+      - low
+      - medium
+      - high
+    help:
+      zh_Hans: 控制思维链长度，平衡效果、时延与成本。minimal 关闭思考直接回答；low 轻量思考侧重快速响应；medium 均衡模式；high 深度分析处理复杂问题。
+      en_US: Controls chain-of-thought length to balance quality, latency, and cost. minimal answers directly without thinking; low favors fast response; medium is balanced; high enables deep analysis for complex problems.
+pricing:
+  input: "0.6"
+  output: "3.6"
+  unit: "0.000001"
+  currency: RMB
