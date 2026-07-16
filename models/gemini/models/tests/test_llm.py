@@ -17,6 +17,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
+from dify_plugin.errors.model import InvokeBadRequestError
 from google.genai import types
 from models.llm.file_parts import (
     FILE_DOWNLOAD_TIMEOUT_SECONDS,
@@ -297,7 +298,6 @@ class TestContentConversion:
             self.llm._format_message_to_gemini_content(
                 message=invalid_message,
                 genai_client=self.mock_client,
-                config=self.mock_config,
             )
 
     def test_file_upload_with_caching(self):
@@ -493,13 +493,61 @@ class TestBuildGeminiContents:
         )
 
         # System message should set config.system_instruction, not appear in contents
-        assert self.mock_config.system_instruction == "You are a helpful assistant"
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant"
+        ]
         assert len(contents) == 1
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_system_message_with_text_parts_as_instruction(self):
+        messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="You are a helpful assistant."),
+                    TextPromptMessageContent(data="Keep answers concise."),
+                ]
+            ),
+            UserPromptMessage(content="Hello"),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant.",
+            "Keep answers concise.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].parts[0].text == "Hello"
+
+    def test_multiple_system_messages_are_combined(self):
+        messages = [
+            SystemPromptMessage(content="First instruction."),
+            UserPromptMessage(content="Hello"),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Second instruction.")]
+            ),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].parts[0].text == "Hello"
+
     def test_system_message_with_multimodal_content(self):
-        """Test that system messages with list content are converted to user messages"""
+        """Test that multimodal system messages fail instead of becoming user messages"""
         messages = [
             SystemPromptMessage(
                 content=[
@@ -525,17 +573,17 @@ class TestBuildGeminiContents:
         mock_client.files.get.return_value = mock_file
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-            contents = self.llm._build_gemini_contents(
-                prompt_messages=messages,
-                genai_client=mock_client,
-                config=self.mock_config,
-            )
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="Gemini system instructions support text only",
+            ):
+                self.llm._build_gemini_contents(
+                    prompt_messages=messages,
+                    genai_client=mock_client,
+                    config=self.mock_config,
+                )
 
-        assert len(contents) == 1
-        assert contents[0].role == "user"
-        assert len(contents[0].parts) == 2
-        assert contents[0].parts[0].text == "System context with image:"
-        assert contents[0].parts[1].file_data.file_uri == "gs://test-file-uri"
+        mock_client.files.upload.assert_not_called()
 
     def test_tool_message(self):
         """Test conversion of tool prompt messages"""
@@ -661,7 +709,9 @@ class TestBuildGeminiContents:
         )
 
         # System message sets instruction, not in contents
-        assert self.mock_config.system_instruction == "You are a helpful assistant"
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant"
+        ]
 
         # Should have 5 contents after processing
         assert len(contents) == 5

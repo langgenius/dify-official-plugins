@@ -505,6 +505,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: list of Gemini Content objects ready for use
         """
         contents = []
+        system_parts = []
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -513,10 +514,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         for msg in prompt_messages:
+            if isinstance(msg, SystemPromptMessage):
+                if isinstance(msg.content, str):
+                    if msg.content:
+                        system_parts.append(types.Part.from_text(text=msg.content))
+                    continue
+
+                for part in msg.content:
+                    if not isinstance(part, TextPromptMessageContent):
+                        raise InvokeBadRequestError(
+                            "Gemini system instructions support text only. "
+                            "Move files to a user message."
+                        )
+                    if part.data:
+                        system_parts.append(types.Part.from_text(text=part.data))
+                continue
+
             content = self._format_message_to_gemini_content(
                 msg,
                 genai_client,
-                config,
                 file_server_url_prefix,
                 model_parameters,
                 file_part_factory,
@@ -529,13 +545,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
+
+        if system_parts:
+            config.system_instruction = types.Content(parts=system_parts)
         return contents
 
     def _format_message_to_gemini_content(
         self,
         message: PromptMessage,
         genai_client: genai.Client,
-        config: types.GenerateContentConfig,
         file_server_url_prefix: str | None = None,
         model_parameters: Mapping[str, Any] | None = None,
         file_part_factory: GeminiFilePartFactory | None = None,
@@ -545,7 +563,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         :param message: one PromptMessage
         :param genai_client: Google GenAI client
-        :param config: GenerateContentConfig object
         :param file_server_url_prefix: optional file server URL prefix
         :param model_parameters: model parameters dictionary
         :return: Gemini Content representation of message
@@ -626,16 +643,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 return None
 
             return types.Content(role="model", parts=parts)
-
-        elif isinstance(message, SystemPromptMessage):
-            # String content -> system instruction
-            if isinstance(message.content, str):
-                config.system_instruction = message.content
-                return None
-
-            # List content -> convert to user message (Files[] compatibility)
-            if isinstance(message.content, list):
-                return types.Content(role="user", parts=build_parts(message.content))
 
         elif isinstance(message, ToolPromptMessage):
             return types.Content(
