@@ -507,7 +507,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         message_contents = []
         system_parts = []
         system_strings = []
-        has_multimodal_system = False
+        has_structured_system_fallback = False
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -523,23 +523,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         system_parts.append(types.Part.from_text(text=msg.content))
                     continue
 
-                if isinstance(msg.content, list) and all(
-                    isinstance(part, TextPromptMessageContent) for part in msg.content
+                if (
+                    isinstance(msg.content, list)
+                    and msg.content
+                    and all(
+                        isinstance(part, TextPromptMessageContent) and part.data
+                        for part in msg.content
+                    )
                 ):
                     parts = [
-                        types.Part.from_text(text=part.data)
-                        for part in msg.content
-                        if part.data
+                        types.Part.from_text(text=part.data) for part in msg.content
                     ]
                     system_parts.extend(parts)
-                    if parts:
-                        message_contents.append(
-                            (types.Content(role="user", parts=parts), True)
-                        )
+                    message_contents.append(
+                        (types.Content(role="user", parts=parts), True)
+                    )
                     continue
 
                 if isinstance(msg.content, list):
-                    has_multimodal_system = True
+                    has_structured_system_fallback = True
 
             content = self._format_message_to_gemini_content(
                 msg,
@@ -559,7 +561,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if not is_structured_system
         ]
         promote_structured_system = (
-            not has_multimodal_system
+            not has_structured_system_fallback
             and ordinary_contents
             and ordinary_contents[0].role == "user"
         )

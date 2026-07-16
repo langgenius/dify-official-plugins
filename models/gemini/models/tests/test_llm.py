@@ -564,6 +564,27 @@ class TestBuildGeminiContents:
         assert self.mock_config.system_instruction is None
         assert [part.text for part in contents[0].parts] == ["Hello"]
 
+    def test_partially_empty_text_system_keeps_user_fallback(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[
+                        TextPromptMessageContent(data=""),
+                        TextPromptMessageContent(data="Instruction"),
+                    ]
+                ),
+                UserPromptMessage(content="Question"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == [
+            "Instruction",
+            "Question",
+        ]
+
     def test_system_only_text_parts_reach_generation(self):
         mock_client = Mock()
 
