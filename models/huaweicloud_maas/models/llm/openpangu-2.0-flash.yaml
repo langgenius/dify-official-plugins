@@ -1,6 +1,6 @@
-model: deepseek-v3.2-exp
+model: openpangu-2.0-flash
 label:
-  en_US: DeepSeek-V3.2-Exp
+  en_US: openPangu-2.0-flash
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 64000
+  context_size: 512000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +20,7 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     min: 1
-    max: 16384
+    max: 128000
     default: 16384
   - name: frequency_penalty
     use_template: frequency_penalty
@@ -43,8 +43,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: "4"
-  output: "12"
-  unit: "0.000001"
+  input: '0.8'
+  output: '1.6'
+  unit: '0.000001'
   currency: RMB
-deprecated: true
