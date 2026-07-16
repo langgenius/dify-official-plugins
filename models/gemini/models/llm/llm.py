@@ -1060,12 +1060,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == InvokeModel == #
 
-        # Handle empty contents scenario (e.g., only system instruction provided)
-        # Gemini API requires at least one content in the conversation
-        if not contents:
+        # Gemini requires the conversation to start with user content.
+        if not contents or contents[0].role != "user":
             raise InvokeBadRequestError(
                 "No valid content to send to Gemini API. "
-                "Please provide at least one user message with content."
+                "Please start with a non-empty user message."
             )
 
         if stream:

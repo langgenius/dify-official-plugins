@@ -542,15 +542,20 @@ class TestBuildGeminiContents:
         [
             [],
             [UserPromptMessage(content="")],
+            [AssistantPromptMessage(content="Answer")],
+            [
+                AssistantPromptMessage(content="Answer"),
+                UserPromptMessage(content="Question"),
+            ],
         ],
     )
-    def test_system_without_user_content_is_rejected(self, extra_messages):
+    def test_system_without_leading_user_content_is_rejected(self, extra_messages):
         mock_client = Mock()
 
         with patch("models.llm.llm.genai.Client", return_value=mock_client):
             with pytest.raises(
                 InvokeBadRequestError,
-                match="at least one user message with content",
+                match="start with a non-empty user message",
             ):
                 self.llm._generate(
                     model="gemini-2.0-flash",
