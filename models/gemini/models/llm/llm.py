@@ -504,10 +504,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param model_parameters: model parameters dictionary
         :return: list of Gemini Content objects ready for use
         """
-        contents = []
+        message_contents = []
         system_parts = []
-        structured_system_parts = []
         system_strings = []
+        has_multimodal_system = False
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -532,8 +532,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         if part.data
                     ]
                     system_parts.extend(parts)
-                    structured_system_parts.extend(parts)
+                    if parts:
+                        message_contents.append(
+                            (types.Content(role="user", parts=parts), True)
+                        )
                     continue
+
+                if isinstance(msg.content, list):
+                    has_multimodal_system = True
 
             content = self._format_message_to_gemini_content(
                 msg,
@@ -545,25 +551,37 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
             if not content or not content.parts:
                 continue
+            message_contents.append((content, False))
 
+        ordinary_contents = [
+            content
+            for content, is_structured_system in message_contents
+            if not is_structured_system
+        ]
+        promote_structured_system = (
+            not has_multimodal_system
+            and ordinary_contents
+            and ordinary_contents[0].role == "user"
+        )
+
+        if promote_structured_system:
+            selected_contents = ordinary_contents
+            if len(system_parts) == 1 and len(system_strings) == 1:
+                config.system_instruction = system_strings[0]
+            elif system_parts:
+                config.system_instruction = types.Content(parts=system_parts)
+        else:
+            selected_contents = [content for content, _ in message_contents]
+            if system_strings:
+                config.system_instruction = system_strings[-1]
+
+        contents = []
+        for content in selected_contents:
             # Merge consecutive messages with same role for proper alternation
             if contents and contents[-1].role == content.role:
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
-
-        if contents:
-            if len(system_parts) == 1 and len(system_strings) == 1:
-                config.system_instruction = system_strings[0]
-            elif system_parts:
-                config.system_instruction = types.Content(parts=system_parts)
-        elif structured_system_parts:
-            # Preserve the legacy list-as-user fallback without emitting empty turns.
-            if system_strings:
-                config.system_instruction = system_strings[-1]
-            contents.append(types.Content(role="user", parts=structured_system_parts))
-        elif system_strings:
-            config.system_instruction = system_strings[-1]
 
         return contents
 

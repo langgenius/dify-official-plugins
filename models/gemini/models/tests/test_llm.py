@@ -628,6 +628,22 @@ class TestBuildGeminiContents:
         assert request["config"].system_instruction == "Policy"
         assert [part.text for part in request["contents"][0].parts] == ["Task"]
 
+    def test_text_system_fallback_keeps_user_before_assistant(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Instruction")]
+                ),
+                AssistantPromptMessage(content="Answer"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [content.role for content in contents] == ["user", "model"]
+        assert [part.text for part in contents[0].parts] == ["Instruction"]
+
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""
         messages = [
@@ -640,7 +656,9 @@ class TestBuildGeminiContents:
                         mime_type="image/png",
                     ),
                 ]
-            )
+            ),
+            SystemPromptMessage(content=[TextPromptMessageContent(data="After image")]),
+            UserPromptMessage(content="Question"),
         ]
 
         # Mock the file upload since we have multimodal content
@@ -663,9 +681,12 @@ class TestBuildGeminiContents:
 
         assert len(contents) == 1
         assert contents[0].role == "user"
-        assert len(contents[0].parts) == 2
+        assert self.mock_config.system_instruction is None
+        assert len(contents[0].parts) == 4
         assert contents[0].parts[0].text == "System context with image:"
         assert contents[0].parts[1].file_data.file_uri == "gs://test-file-uri"
+        assert contents[0].parts[2].text == "After image"
+        assert contents[0].parts[3].text == "Question"
 
     def test_tool_message(self):
         """Test conversion of tool prompt messages"""
