@@ -17,6 +17,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
+from dify_plugin.errors.model import InvokeBadRequestError
 from google.genai import types
 from models.llm.file_parts import (
     FILE_DOWNLOAD_TIMEOUT_SECONDS,
@@ -297,7 +298,6 @@ class TestContentConversion:
             self.llm._format_message_to_gemini_content(
                 message=invalid_message,
                 genai_client=self.mock_client,
-                config=self.mock_config,
             )
 
     def test_file_upload_with_caching(self):
@@ -493,14 +493,337 @@ class TestBuildGeminiContents:
         )
 
         # System message should set config.system_instruction, not appear in contents
-        assert self.mock_config.system_instruction == "You are a helpful assistant"
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant"
+        ]
         assert len(contents) == 1
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
-    def test_system_message_with_multimodal_content(self):
-        """Test that system messages with list content are converted to user messages"""
+    def test_system_message_with_text_parts_as_instruction(self):
         messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="You are a helpful assistant."),
+                    TextPromptMessageContent(data="Keep answers concise."),
+                ]
+            ),
+            UserPromptMessage(content="Hello"),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant.",
+            "Keep answers concise.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].parts[0].text == "Hello"
+
+    def test_empty_system_message_is_ignored(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(),
+                UserPromptMessage(content="Hello"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
+    def test_image_model_rejects_system_instruction_before_client_creation(self):
+        with patch("models.llm.llm.genai.Client") as client_factory:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="gemini-2.5-flash-image does not support system instructions",
+            ):
+                self.llm._generate(
+                    model="gemini-2.5-flash-image",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(
+                            content=[
+                                TextPromptMessageContent(
+                                    data="Keep the subject centered."
+                                )
+                            ]
+                        ),
+                        UserPromptMessage(content="Draw a red fox."),
+                    ],
+                    model_parameters={},
+                )
+
+        client_factory.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "extra_messages",
+        [
+            [],
+            [UserPromptMessage(content="")],
+            [AssistantPromptMessage(content="Answer")],
+            [
+                ToolPromptMessage(
+                    name="lookup",
+                    content="Result",
+                    tool_call_id="call-1",
+                )
+            ],
+            [
+                AssistantPromptMessage(content="Answer"),
+                UserPromptMessage(content="Question"),
+            ],
+        ],
+    )
+    def test_system_without_leading_user_content_is_rejected(self, extra_messages):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="start with a non-empty user message",
+            ):
+                self.llm._generate(
+                    model="gemini-2.0-flash",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(
+                            content=[
+                                TextPromptMessageContent(data="First instruction."),
+                                TextPromptMessageContent(data="Second instruction."),
+                            ]
+                        ),
+                        *extra_messages,
+                    ],
+                    model_parameters={},
+                )
+
+        mock_client.models.generate_content_stream.assert_not_called()
+
+    def test_model_first_is_rejected_before_later_file_upload(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="start with a non-empty user message",
+            ):
+                self.llm._generate(
+                    model="gemini-2.0-flash",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        AssistantPromptMessage(content="Answer"),
+                        UserPromptMessage(
+                            content=[
+                                ImagePromptMessageContent(
+                                    format="png",
+                                    base64_data="aGVsbG8=",
+                                    mime_type="image/png",
+                                )
+                            ]
+                        ),
+                    ],
+                    model_parameters={},
+                )
+
+        mock_client.files.upload.assert_not_called()
+
+    def test_model_first_tool_call_is_rejected_before_arguments_are_parsed(self):
+        with pytest.raises(
+            InvokeBadRequestError,
+            match="start with a non-empty user message",
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    AssistantPromptMessage(
+                        content="",
+                        tool_calls=[
+                            AssistantPromptMessage.ToolCall(
+                                id="call-1",
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name="lookup",
+                                    arguments="{",
+                                ),
+                            )
+                        ],
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={},
+            )
+
+    def test_filtered_user_does_not_hide_model_first_tool_call(self):
+        with pytest.raises(
+            InvokeBadRequestError,
+            match="start with a non-empty user message",
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    UserPromptMessage(
+                        content=[
+                            DocumentPromptMessageContent(
+                                format="docx",
+                                base64_data="dGVzdA==",
+                                mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            )
+                        ]
+                    ),
+                    AssistantPromptMessage(
+                        content="",
+                        tool_calls=[
+                            AssistantPromptMessage.ToolCall(
+                                id="call-1",
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name="lookup",
+                                    arguments="{",
+                                ),
+                            )
+                        ],
+                    ),
+                ],
+                model_parameters={},
+            )
+
+    def test_public_invoke_preserves_bad_request_error_type(self):
+        with patch.object(
+            self.llm,
+            "_validate_and_filter_model_parameters",
+            return_value={},
+        ):
+            with pytest.raises(InvokeBadRequestError):
+                next(
+                    self.llm.invoke(
+                        model="gemini-pro",
+                        credentials={"google_api_key": "test-key"},
+                        prompt_messages=[
+                            SystemPromptMessage(content="Instruction"),
+                        ],
+                    )
+                )
+
+    def test_code_block_wrapper_rejects_multimodal_system_before_conversion(self):
+        messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="Instruction"),
+                    ImagePromptMessageContent(
+                        format="png",
+                        base64_data="aGVsbG8=",
+                        mime_type="image/png",
+                    ),
+                ]
+            ),
+            UserPromptMessage(content="Question"),
+        ]
+
+        with patch.object(self.llm, "_invoke") as mock_invoke:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="system instructions support text only",
+            ):
+                self.llm._code_block_mode_wrapper(
+                    model="gemini-pro",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=messages,
+                    model_parameters={"response_format": "JSON"},
+                )
+
+        mock_invoke.assert_not_called()
+
+    def test_code_block_wrapper_rejects_system_only_prompt(self):
+        with patch.object(self.llm, "_invoke") as mock_invoke:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="start with a non-empty user message",
+            ):
+                self.llm._code_block_mode_wrapper(
+                    model="gemini-pro",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(content="Instruction"),
+                    ],
+                    model_parameters={"response_format": "JSON"},
+                )
+
+        mock_invoke.assert_not_called()
+
+    def test_code_block_wrapper_preserves_text_system_parts(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._code_block_mode_wrapper(
+                model="gemini-pro",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="First instruction."),
+                            TextPromptMessageContent(data="Second instruction."),
+                        ]
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={"response_format": "JSON"},
+                stream=False,
+            )
+
+        instruction = mock_client.models.generate_content.call_args.kwargs[
+            "config"
+        ].system_instruction
+        assert [part.text for part in instruction.parts[1:]] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+        assert "TextPromptMessageContent" not in instruction.parts[0].text
+
+    def test_multiple_system_messages_are_combined(self):
+        messages = [
+            SystemPromptMessage(content="First instruction."),
+            UserPromptMessage(content="Hello"),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Second instruction.")]
+            ),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].parts[0].text == "Hello"
+
+    def test_system_message_with_multimodal_content(self):
+        """Test that multimodal system messages fail instead of becoming user messages"""
+        messages = [
+            UserPromptMessage(
+                content=[
+                    ImagePromptMessageContent(
+                        format="png",
+                        base64_data="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        mime_type="image/png",
+                    )
+                ]
+            ),
             SystemPromptMessage(
                 content=[
                     TextPromptMessageContent(data="System context with image:"),
@@ -510,7 +833,7 @@ class TestBuildGeminiContents:
                         mime_type="image/png",
                     ),
                 ]
-            )
+            ),
         ]
 
         # Mock the file upload since we have multimodal content
@@ -524,18 +847,22 @@ class TestBuildGeminiContents:
         mock_client.files.upload.return_value = mock_file
         mock_client.files.get.return_value = mock_file
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-            contents = self.llm._build_gemini_contents(
-                prompt_messages=messages,
-                genai_client=mock_client,
-                config=self.mock_config,
-            )
+        with (
+            patch("models.llm.llm.file_cache", MemoryFileCache()),
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+        ):
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="Gemini system instructions support text only",
+            ):
+                self.llm._build_gemini_contents(
+                    prompt_messages=messages,
+                    genai_client=mock_client,
+                    config=self.mock_config,
+                )
 
-        assert len(contents) == 1
-        assert contents[0].role == "user"
-        assert len(contents[0].parts) == 2
-        assert contents[0].parts[0].text == "System context with image:"
-        assert contents[0].parts[1].file_data.file_uri == "gs://test-file-uri"
+        mock_client.files.upload.assert_not_called()
 
     def test_tool_message(self):
         """Test conversion of tool prompt messages"""
@@ -661,7 +988,9 @@ class TestBuildGeminiContents:
         )
 
         # System message sets instruction, not in contents
-        assert self.mock_config.system_instruction == "You are a helpful assistant"
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant"
+        ]
 
         # Should have 5 contents after processing
         assert len(contents) == 5

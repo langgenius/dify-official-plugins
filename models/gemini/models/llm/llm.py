@@ -162,6 +162,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             InvokeConnectionError: [errors.APIError, errors.ClientError],
             InvokeServerUnavailableError: [errors.ServerError],
             InvokeBadRequestError: [
+                InvokeBadRequestError,
                 errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
                 errors.UnsupportedFunctionError,
@@ -486,6 +487,83 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if tools:
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
+    @staticmethod
+    def _validate_prompt_messages(
+        model: str, prompt_messages: list[PromptMessage]
+    ) -> None:
+        has_system_instruction = False
+        for message in prompt_messages:
+            if not isinstance(message, SystemPromptMessage) or not message.content:
+                continue
+            if isinstance(message.content, str):
+                has_system_instruction = True
+                continue
+            for part in message.content:
+                if not isinstance(part, TextPromptMessageContent):
+                    raise InvokeBadRequestError(
+                        "Gemini system instructions support text only. "
+                        "Move files to a user message."
+                    )
+                if part.data:
+                    has_system_instruction = True
+
+        if model == "gemini-2.5-flash-image" and has_system_instruction:
+            raise InvokeBadRequestError(
+                "gemini-2.5-flash-image does not support system instructions. "
+                "Move the instruction to a user message."
+            )
+
+        def has_content(message: PromptMessage) -> bool:
+            if isinstance(message, ToolPromptMessage):
+                return True
+            if isinstance(message, AssistantPromptMessage) and message.tool_calls:
+                return True
+
+            content = message.content
+            if isinstance(content, str):
+                if isinstance(message, AssistantPromptMessage):
+                    content = re.sub(
+                        r"^<think>.*?</think>\s*",
+                        "",
+                        content,
+                        count=1,
+                        flags=re.DOTALL,
+                    )
+                return bool(content)
+
+            if not content:
+                return False
+
+            for part in content:
+                if not isinstance(part, TextPromptMessageContent):
+                    if GeminiFilePartFactory.is_supported(part):
+                        return True
+                    continue
+                text = part.data
+                if isinstance(message, AssistantPromptMessage):
+                    text = re.sub(
+                        r"^<think>.*?</think>\s*",
+                        "",
+                        text,
+                        count=1,
+                        flags=re.DOTALL,
+                    )
+                if text:
+                    return True
+            return False
+
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage) or not has_content(message):
+                continue
+            if isinstance(message, UserPromptMessage):
+                return
+            break
+
+        raise InvokeBadRequestError(
+            "No valid content to send to Gemini API. "
+            "Please start with a non-empty user message."
+        )
+
     def _build_gemini_contents(
         self,
         prompt_messages: list[PromptMessage],
@@ -505,6 +583,31 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: list of Gemini Content objects ready for use
         """
         contents = []
+        system_parts = []
+
+        for msg in prompt_messages:
+            if not isinstance(msg, SystemPromptMessage):
+                continue
+
+            if not msg.content:
+                continue
+
+            if isinstance(msg.content, str):
+                system_parts.append(types.Part.from_text(text=msg.content))
+                continue
+
+            for part in msg.content:
+                if not isinstance(part, TextPromptMessageContent):
+                    raise InvokeBadRequestError(
+                        "Gemini system instructions support text only. "
+                        "Move files to a user message."
+                    )
+                if part.data:
+                    system_parts.append(types.Part.from_text(text=part.data))
+
+        if system_parts:
+            config.system_instruction = types.Content(parts=system_parts)
+
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -513,15 +616,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         for msg in prompt_messages:
+            if isinstance(msg, SystemPromptMessage):
+                continue
+
             content = self._format_message_to_gemini_content(
                 msg,
                 genai_client,
-                config,
                 file_server_url_prefix,
                 model_parameters,
                 file_part_factory,
             )
-            if not content:
+            if not content or not content.parts:
                 continue
 
             # Merge consecutive messages with same role for proper alternation
@@ -529,13 +634,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
+
         return contents
 
     def _format_message_to_gemini_content(
         self,
         message: PromptMessage,
         genai_client: genai.Client,
-        config: types.GenerateContentConfig,
         file_server_url_prefix: str | None = None,
         model_parameters: Mapping[str, Any] | None = None,
         file_part_factory: GeminiFilePartFactory | None = None,
@@ -545,7 +650,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         :param message: one PromptMessage
         :param genai_client: Google GenAI client
-        :param config: GenerateContentConfig object
         :param file_server_url_prefix: optional file server URL prefix
         :param model_parameters: model parameters dictionary
         :return: Gemini Content representation of message
@@ -626,16 +730,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 return None
 
             return types.Content(role="model", parts=parts)
-
-        elif isinstance(message, SystemPromptMessage):
-            # String content -> system instruction
-            if isinstance(message.content, str):
-                config.system_instruction = message.content
-                return None
-
-            # List content -> convert to user message (Files[] compatibility)
-            if isinstance(message.content, list):
-                return types.Content(role="user", parts=build_parts(message.content))
 
         elif isinstance(message, ToolPromptMessage):
             return types.Content(
@@ -928,6 +1022,45 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
         return message
 
+    def _code_block_mode_wrapper(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        self._validate_prompt_messages(model, prompt_messages)
+        if (
+            model_parameters.get("response_format")
+            and prompt_messages
+            and isinstance(prompt_messages[0], SystemPromptMessage)
+            and isinstance(prompt_messages[0].content, list)
+        ):
+            # Give the SDK a scalar to wrap without replacing structured parts.
+            prompt_messages.insert(
+                0,
+                SystemPromptMessage(
+                    content=(
+                        "Please output a valid "
+                        f"{model_parameters['response_format']} object."
+                    )
+                ),
+            )
+        return super()._code_block_mode_wrapper(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
+
     def _invoke(
         self,
         model: str,
@@ -975,6 +1108,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        self._validate_prompt_messages(model, prompt_messages)
+
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
 
@@ -1044,22 +1179,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == InvokeModel == #
 
-        # Handle empty contents scenario (e.g., only system instruction provided)
-        # Gemini API requires at least one content in the conversation
-        if not contents:
-            if config.system_instruction:
-                # When only system instruction is provided, add it as a user message
-                contents = [
-                    types.Content(
-                        role="user",
-                        parts=[types.Part.from_text(text=config.system_instruction)],
-                    )
-                ]
-            else:
-                raise InvokeBadRequestError(
-                    "No valid content to send to Gemini API. "
-                    "Please provide at least one user message with content."
-                )
+        # Gemini requires the conversation to start with user content.
+        if not contents or contents[0].role != "user":
+            raise InvokeBadRequestError(
+                "No valid content to send to Gemini API. "
+                "Please start with a non-empty user message."
+            )
 
         if stream:
             response = genai_client.models.generate_content_stream(
