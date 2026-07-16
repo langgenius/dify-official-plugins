@@ -1,12 +1,19 @@
 # SharePoint Datasource Plugin
 
 **Author**: langgenius
-**Version**: 0.0.1
+**Version**: 1.0.0
 **Type**: datasource
 
 ## Introduction
 
 This plugin integrates with Microsoft SharePoint, supporting operations such as retrieving files and documents from your SharePoint sites. It enables automated access to your SharePoint content in platforms like Dify.
+
+## Upgrade Notes for 1.0.0
+
+- The default Microsoft OAuth tenant changed from `common` to `organizations`.
+- Existing connections created before 1.0.0 may not have `tenant_id` saved.
+- Re-authorize existing SharePoint connections after upgrading if refresh fails.
+- Set `tenant_id` to `common` only when your Microsoft app intentionally allows personal Microsoft accounts.
 
 ## Datasources
 
@@ -23,12 +30,14 @@ This plugin integrates with Microsoft SharePoint, supporting operations such as 
 
 2. Create a new application as follows:
     - **Name**: Dify SharePoint Plugin
-    - **Supported account types**: select `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)`
+    - **Supported account types**: choose the account type that matches your tenant policy.
+        - For company-only access, choose single tenant and enter that tenant ID or domain in Dify.
+        - For organization-account multi-tenant access, choose organization accounts only and enter `organizations` in Dify.
+        - Use the personal Microsoft accounts option only when personal accounts are required, then enter `common` in Dify.
     - **Redirect URI**: Choose `Web` and set the URI to:
         - For SaaS (cloud.dify.ai) users: please use `https://cloud.dify.ai/console/api/oauth/plugin/langgenius/sharepoint_datasource/sharepoint/datasource/callback`
         - For self-hosted users: please use `http://<YOUR LOCALHOST CONSOLE_API_URL>/console/api/oauth/plugin/langgenius/sharepoint_datasource/sharepoint/datasource/callback`
         ***Due to the restrictions of the Microsoft OAuth2 flow, redirect URIs must start with `https://` or `http://localhost`.***
-        - Enable "Access tokens" and "ID tokens" under "Implicit grant and hybrid flows"
 
 3. Copy your **Application (client) ID**
 
@@ -49,6 +58,8 @@ This plugin integrates with Microsoft SharePoint, supporting operations such as 
 6. Configure the plugin in Dify:
     - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Azure Portal.
     - Enter your **SharePoint Subdomain** (e.g., "mycompany" for mycompany.sharepoint.com)
+    - Enter your **Tenant ID**.
+    - Use your tenant ID or domain for single-tenant apps, `organizations` for work or school accounts only, or `common` only when personal Microsoft accounts are required.
     - Make sure you have the same redirect URI as specified in the Azure Portal. If not, you will need to update it in the Azure Portal.
     - Click `Save and authorize` to initiate the OAuth flow.
 

@@ -141,6 +141,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Outlook trigger subscriptions."""
 
     _AUTHORITY_URL = "https://login.microsoftonline.com"
+    _DEFAULT_TENANT_ID = "organizations"
     _DEFAULT_SCOPE = "offline_access https://graph.microsoft.com/Mail.Read"
     _API_ME_URL = "https://graph.microsoft.com/v1.0/me"
     _WEBHOOK_TTL = 3 * 24 * 60 * 60
@@ -217,16 +218,21 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         refresh_token = response_json.get("refresh_token")
         if not refresh_token:
             raise TriggerProviderOAuthError("No refresh token in response")
+        expires_in = response_json.get("expires_in")
+        expires_at = max(int(expires_in if expires_in is not None else 3599) - 60, 0) + int(time.time())
 
         return TriggerOAuthCredentials(
             credentials={
                 "access_tokens": access_tokens,
                 "refresh_token": refresh_token,
+                "tenant_id": self._tenant_id(system_credentials),
             },
-            expires_at=max(int(response_json.get("expires_in") or 3599) - 60, 0) + int(time.time()),
+            expires_at=expires_at,
         )
 
-    def _oauth_refresh_credentials(self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]) -> TriggerOAuthCredentials:
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> TriggerOAuthCredentials:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded",
@@ -234,14 +240,19 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         refresh_token = credentials.get("refresh_token")
         if not refresh_token:
             raise TriggerProviderOAuthError("Outlook refresh token is missing; please re-authorize.")
+        client_id = system_credentials.get("client_id")
+        client_secret = system_credentials.get("client_secret")
+        if not client_id or not client_secret:
+            raise TriggerProviderOAuthError("Client ID or Client Secret is required")
         data = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
-            "client_id": system_credentials.get("client_id"),
-            "client_secret": system_credentials.get("client_secret"),
+            "client_id": client_id,
+            "client_secret": client_secret,
         }
+        tenant_credentials = {"tenant_id": credentials.get("tenant_id") or system_credentials.get("tenant_id")}
         try:
-            response = requests.post(self._token_url(system_credentials), headers=headers, data=data, timeout=10)
+            response = requests.post(self._token_url(tenant_credentials), headers=headers, data=data, timeout=10)
         except requests.RequestException as exc:
             raise TriggerProviderOAuthError(f"Network error during Outlook OAuth refresh: {exc}") from exc
         payload = _safe_json(response)
@@ -249,12 +260,15 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
             access_tokens = payload.get("access_token")
             if not access_tokens:
                 raise TriggerProviderOAuthError("Outlook OAuth refresh response missing access_token")
+            expires_in = payload.get("expires_in")
+            expires_at = max(int(expires_in if expires_in is not None else 3599) - 60, 0) + int(time.time())
             return TriggerOAuthCredentials(
                 credentials={
                     "access_tokens": access_tokens,
                     "refresh_token": payload.get("refresh_token") or refresh_token,
+                    "tenant_id": self._tenant_id(tenant_credentials),
                 },
-                expires_at=max(int(payload.get("expires_in") or 3599) - 60, 0) + int(time.time()),
+                expires_at=expires_at,
             )
         else:
             raise TriggerProviderOAuthError(f"Failed to refresh Outlook access token: {_extract_error(response)}")
@@ -283,7 +297,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         data = {
             "changeType": "created,updated",
             "notificationUrl": endpoint,
-            "resource": "me/mailfolders('Inbox')/messages",
+            "resource": self._subscription_resource(parameters),
             "expirationDateTime": expiration_date_str,
             "clientState": client_state,
         }
@@ -407,20 +421,38 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
             )
 
     def _tenant_id(self, system_credentials: Mapping[str, Any]) -> str:
-        tenant_id = str(system_credentials.get("tenant_id") or "common").strip()
-        return urllib.parse.quote(tenant_id or "common", safe="")
+        tenant_id = str(system_credentials.get("tenant_id") or self._DEFAULT_TENANT_ID).strip()
+        return tenant_id or self._DEFAULT_TENANT_ID
+
+    def _tenant_path(self, system_credentials: Mapping[str, Any]) -> str:
+        return urllib.parse.quote(self._tenant_id(system_credentials), safe="")
 
     def _auth_url(self, system_credentials: Mapping[str, Any]) -> str:
-        return f"{self._AUTHORITY_URL}/{self._tenant_id(system_credentials)}/oauth2/v2.0/authorize"
+        return f"{self._AUTHORITY_URL}/{self._tenant_path(system_credentials)}/oauth2/v2.0/authorize"
 
     def _token_url(self, system_credentials: Mapping[str, Any]) -> str:
-        return f"{self._AUTHORITY_URL}/{self._tenant_id(system_credentials)}/oauth2/v2.0/token"
+        return f"{self._AUTHORITY_URL}/{self._tenant_path(system_credentials)}/oauth2/v2.0/token"
 
     def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
         import hashlib
 
         digest = hashlib.sha256(f"outlook:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
         return f"outlook:oauth_state:{digest}"
+
+    def _subscription_resource(self, parameters: Mapping[str, Any]) -> str:
+        """Return the Microsoft Graph subscription resource path.
+
+        When ``mailbox_address`` is provided, monitor the given shared mailbox
+        via ``users/{mailbox}/mailfolders('Inbox')/messages``. Otherwise fall back
+        to the signed-in user's Inbox (``me/...``) to preserve the previous
+        personal-mailbox behavior.
+        """
+        mailbox = (parameters or {}).get("mailbox_address") or ""
+        mailbox = str(mailbox).strip()
+        if not mailbox:
+            return "me/mailfolders('Inbox')/messages"
+        encoded = urllib.parse.quote(mailbox, safe="")
+        return f"users/{encoded}/mailfolders('Inbox')/messages"
 
     def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
         try:

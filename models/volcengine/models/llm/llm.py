@@ -14,7 +14,18 @@ from volcenginesdkarkruntime import Ark
 from volcenginesdkarkruntime._streaming import Stream
 from volcenginesdkarkruntime.types.chat import ChatCompletion, ChatCompletionChunk
 
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelFeature,
+    ModelPropertyKey,
+    ModelType,
+    ParameterRule,
+    ParameterType,
+)
 from dify_plugin.entities.model.llm import (
+    LLMMode,
     LLMPollingResult,
     LLMPollingStatus,
     LLMResult,
@@ -65,6 +76,7 @@ DEFAULT_POLLING_MAX_ATTEMPTS = 60
 DEFAULT_SEEDANCE_INPUT_MODE = "first_frame"
 SEEDANCE_INPUT_MODES = {"first_frame", "first_last_frame", "reference_image"}
 SEEDANCE_IMAGE_ROLES = {"first_frame", "last_frame", "reference_image"}
+VIDEO_GENERATION_ENDPOINT_TYPE = "video_generation"
 
 SEEDANCE_MODEL_PARAMETER_NAMES = {
     "ratio",
@@ -125,6 +137,7 @@ class ArkObjectResponse(ProviderModel):
 class ArkCredentials(RequestModel):
     ark_api_key: str = Field(min_length=1)
     api_endpoint_host: str = Field(min_length=1)
+    endpoint_type: str | None = None
 
 
 class ArkURL(RequestModel):
@@ -216,7 +229,9 @@ class ChatCompletionRequest(RequestModel):
     stop: list[str] | None = None
     user: str | None = None
     thinking: ChatThinking | None = None
-    reasoning_effort: Literal["minimal"] | None = None
+    reasoning_effort: (
+        Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None
+    ) = None
     tools: list[ChatTool] | None = None
     tool_choice: ChatToolChoice | None = None
     parallel_tool_calls: bool | None = None
@@ -557,12 +572,39 @@ def platform_spec_for_model(model: str) -> PlatformSpec | None:
     return None
 
 
-def platform_name_for_model(model: str) -> str:
+def is_custom_video_generation_model(
+    credentials: Mapping[str, Any] | ArkCredentials | None,
+) -> bool:
+    if credentials is None:
+        return False
+    if isinstance(credentials, ArkCredentials):
+        return credentials.endpoint_type == VIDEO_GENERATION_ENDPOINT_TYPE
+    return credentials.get("endpoint_type") == VIDEO_GENERATION_ENDPOINT_TYPE
+
+
+def is_video_generation_model(
+    model: str,
+    credentials: Mapping[str, Any] | ArkCredentials | None = None,
+) -> bool:
+    return is_seedance_model(model) or is_custom_video_generation_model(credentials)
+
+
+def platform_name_for_model(
+    model: str,
+    credentials: Mapping[str, Any] | ArkCredentials | None = None,
+) -> str:
     platform = platform_spec_for_model(model)
+    if platform is None and is_custom_video_generation_model(credentials):
+        platform = PLATFORM_SPECS[0]
     return platform.name if platform else "unknown"
 
 
-def is_seedance_2_model(model: str) -> bool:
+def is_seedance_2_model(
+    model: str,
+    credentials: Mapping[str, Any] | ArkCredentials | None = None,
+) -> bool:
+    if is_custom_video_generation_model(credentials):
+        return True
     platform = platform_spec_for_model(model)
     return bool(platform and model.startswith(f"{platform.seedance_prefix}2-"))
 
@@ -674,7 +716,7 @@ def build_chat_completion_request(
     stream_options: ChatStreamOptions | None = None,
 ) -> ChatCompletionRequest:
     thinking: ChatThinking | None = None
-    reasoning_effort: Literal["minimal"] | None = None
+    reasoning_effort = None
     thinking_type = model_parameters.get("thinking")
     if thinking_type:
         thinking = build_model(
@@ -684,6 +726,10 @@ def build_chat_completion_request(
         )
         if thinking_type == "disabled":
             reasoning_effort = "minimal"
+
+    effort = model_parameters.get("reasoning_effort")
+    if effort:
+        reasoning_effort = effort
 
     return build_model(
         ChatCompletionRequest,
@@ -719,7 +765,9 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             credentials,
             "Invalid Ark credentials",
         )
-        if is_seedance_model(model) or is_seedream_model(model):
+        if is_video_generation_model(model, ark_credentials) or is_seedream_model(
+            model
+        ):
             self.validate_polling_credentials(model, ark_credentials)
             return
 
@@ -742,7 +790,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
     ) -> None:
         path = (
             "contents/generations/tasks?page_num=1&page_size=1"
-            if is_seedance_model(model)
+            if is_video_generation_model(model, credentials)
             else "images/generations"
         )
         try:
@@ -771,6 +819,125 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         # This is acceptable for plugin implementations that do not support token counting.
         text = extract_prompt_text(prompt_messages)
         return max(1, len(text) // 4)
+
+    def get_customizable_model_schema(
+        self, model: str, credentials: Mapping[Any, Any]
+    ) -> AIModelEntity | None:
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.POLLING,
+                ModelFeature.VISION,
+                ModelFeature.VIDEO,
+                ModelFeature.AUDIO,
+            ],
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 4000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="input_mode",
+                    label=I18nObject(
+                        zh_hans="输入图片模式", en_us="Image Input Mode"
+                    ),
+                    type=ParameterType.STRING,
+                    required=False,
+                    default="first_frame",
+                    options=["first_frame", "first_last_frame", "reference_image"],
+                ),
+                ParameterRule(
+                    name="resolution",
+                    label=I18nObject(zh_hans="视频分辨率", en_us="Video Resolution"),
+                    type=ParameterType.STRING,
+                    required=False,
+                    default="720p",
+                    options=["480p", "720p", "1080p"],
+                ),
+                ParameterRule(
+                    name="ratio",
+                    label=I18nObject(zh_hans="视频比例", en_us="Video Ratio"),
+                    type=ParameterType.STRING,
+                    required=False,
+                    default="adaptive",
+                    options=["adaptive", "16:9", "4:3", "1:1", "3:4", "9:16", "21:9"],
+                ),
+                ParameterRule(
+                    name="duration",
+                    label=I18nObject(zh_hans="视频时长", en_us="Video Duration"),
+                    type=ParameterType.INT,
+                    required=False,
+                    default=5,
+                    min=-1,
+                    max=15,
+                ),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_hans="随机种子", en_us="Random Seed"),
+                    type=ParameterType.INT,
+                    required=False,
+                    default=-1,
+                    min=-1,
+                    max=4294967295,
+                ),
+                ParameterRule(
+                    name="generate_audio",
+                    label=I18nObject(zh_hans="生成音频", en_us="Generate Audio"),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
+                ),
+                ParameterRule(
+                    name="watermark",
+                    label=I18nObject(zh_hans="水印", en_us="Watermark"),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
+                ),
+                ParameterRule(
+                    name="return_last_frame",
+                    label=I18nObject(zh_hans="返回尾帧", en_us="Return Last Frame"),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
+                ),
+                ParameterRule(
+                    name="callback_url",
+                    label=I18nObject(zh_hans="回调地址", en_us="Callback URL"),
+                    type=ParameterType.STRING,
+                    required=False,
+                ),
+                ParameterRule(
+                    name="service_tier",
+                    label=I18nObject(zh_hans="服务档位", en_us="Service Tier"),
+                    type=ParameterType.STRING,
+                    required=False,
+                    default="default",
+                    options=["default", "flex"],
+                ),
+                ParameterRule(
+                    name="execution_expires_after",
+                    label=I18nObject(
+                        zh_hans="任务超时时间", en_us="Execution Expires After"
+                    ),
+                    type=ParameterType.INT,
+                    required=False,
+                    default=172800,
+                    min=3600,
+                    max=259200,
+                ),
+                ParameterRule(
+                    name="web_search",
+                    label=I18nObject(zh_hans="联网搜索", en_us="Web Search"),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
+                ),
+            ],
+        )
 
     def request_model(
         self,
@@ -815,6 +982,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         *,
         model: str,
+        credentials: ArkCredentials | None = None,
         input_mode: object = None,
     ) -> list[SeedanceContentPart]:
         content: list[SeedanceContentPart] = []
@@ -839,7 +1007,9 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             elif isinstance(message_content, AudioPromptMessageContent):
                 audio_contents.append(message_content)
 
-        if (video_contents or audio_contents) and not is_seedance_2_model(model):
+        if (video_contents or audio_contents) and not is_seedance_2_model(
+            model, credentials
+        ):
             raise InvokeError(
                 "Seedance video and audio input is only supported by Seedance 2.0 models."
             )
@@ -854,6 +1024,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
 
         image_roles = self.build_seedance_image_roles(
             model=model,
+            credentials=credentials,
             image_contents=image_contents,
             input_mode=input_mode,
             reference_mode=bool(video_contents or audio_contents),
@@ -908,6 +1079,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         self,
         *,
         model: str,
+        credentials: ArkCredentials | None = None,
         image_contents: list[ImagePromptMessageContent],
         input_mode: object,
         reference_mode: bool,
@@ -928,7 +1100,9 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                 raise InvokeError(
                     "Seedance video and audio input cannot be mixed with frame image roles."
                 )
-            self.validate_seedance_image_roles(model=model, roles=roles)
+            self.validate_seedance_image_roles(
+                model=model, credentials=credentials, roles=roles
+            )
             return roles
 
         if reference_mode:
@@ -952,7 +1126,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                 )
             return ["first_frame", "last_frame"]
 
-        if not is_seedance_2_model(model):
+        if not is_seedance_2_model(model, credentials):
             raise InvokeError(
                 "Seedance reference_image input_mode is only supported by Seedance 2.0 models."
             )
@@ -962,7 +1136,13 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             )
         return ["reference_image" for _ in image_contents]
 
-    def validate_seedance_image_roles(self, *, model: str, roles: list[str]) -> None:
+    def validate_seedance_image_roles(
+        self,
+        *,
+        model: str,
+        credentials: ArkCredentials | None = None,
+        roles: list[str],
+    ) -> None:
         unsupported_roles = [role for role in roles if role not in SEEDANCE_IMAGE_ROLES]
         if unsupported_roles:
             raise InvokeError(
@@ -973,7 +1153,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                 raise InvokeError(
                     "Seedance reference_image cannot be mixed with frame roles."
                 )
-            if not is_seedance_2_model(model):
+            if not is_seedance_2_model(model, credentials):
                 raise InvokeError(
                     "Seedance reference_image role is only supported by Seedance 2.0 models."
                 )
@@ -1038,7 +1218,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         plugin_state = SeedancePollingState(
             task_id=task_id,
             model=model,
-            platform=platform_name_for_model(model),
+            platform=platform_name_for_model(model, credentials),
         ).to_payload()
         if status in SEEDANCE_RUNNING_STATUSES:
             return LLMPollingResult(
@@ -1133,7 +1313,9 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             "Invalid Ark credentials",
         )
         platform = platform_spec_for_model(model)
-        if is_seedance_model(model):
+        if platform is None and is_custom_video_generation_model(ark_credentials):
+            platform = PLATFORM_SPECS[0]
+        if is_video_generation_model(model, ark_credentials):
             seedance_parameters = filter_model_parameters(
                 model_parameters,
                 SEEDANCE_MODEL_PARAMETER_NAMES,
@@ -1153,6 +1335,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                 content=self.build_seedance_content(
                     prompt_messages,
                     model=model,
+                    credentials=ark_credentials,
                     input_mode=model_parameters.get("input_mode"),
                 ),
                 **seedance_parameters,
@@ -1252,7 +1435,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             credentials,
             "Invalid Ark credentials",
         )
-        if is_seedance_model(model):
+        if is_video_generation_model(model, ark_credentials):
             try:
                 state = parse_model(
                     SeedancePollingState,

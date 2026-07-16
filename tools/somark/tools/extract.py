@@ -377,6 +377,12 @@ class ExtractTool(Tool):
 
         # Get credential parameters
         base_url = (self.runtime.credentials.get("base_url") or "").strip().rstrip("/")
+        if base_url == "custom":
+            base_url = (self.runtime.credentials.get("custom_base_url") or "").strip().rstrip("/")
+        if not base_url:
+            raise ValueError("Base URL is required")
+        if not base_url.startswith(("http://", "https://")):
+            raise ValueError("Base URL must start with http:// or https://")
         api_key = (self.runtime.credentials.get("api_key") or "").strip()
 
         # Build the request body
