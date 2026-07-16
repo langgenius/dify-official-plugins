@@ -48,6 +48,7 @@ IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview
 
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
+_DISABLE_SYSTEM_PROMOTION = "_disable_system_promotion"
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -569,10 +570,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         promote_structured_system = (
             has_text_system_parts
             and not has_structured_system_fallback
+            and not (model_parameters or {}).get(_DISABLE_SYSTEM_PROMOTION)
             and last_system_string != ""
             and ordinary_contents
             and ordinary_contents[0][1]
-            and ordinary_contents[0][0].parts
+            and all(content.parts for content, _ in ordinary_contents)
         )
 
         if promote_structured_system:
@@ -995,6 +997,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             tool_calls=function_calls,  # type: ignore
         )
         return message
+
+    def _code_block_mode_wrapper(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        if model_parameters.get("response_format"):
+            model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
+        return super()._code_block_mode_wrapper(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
 
     def _invoke(
         self,

@@ -668,6 +668,67 @@ class TestBuildGeminiContents:
         assert request["config"].system_instruction == "Policy"
         assert [part.text for part in request["contents"][0].parts] == ["Task"]
 
+    @pytest.mark.parametrize(
+        "empty_message",
+        [
+            UserPromptMessage(content=""),
+            UserPromptMessage(
+                content=[
+                    DocumentPromptMessageContent(
+                        format="docx",
+                        base64_data="dGVzdA==",
+                        mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                ]
+            ),
+        ],
+    )
+    def test_later_empty_turn_disables_text_system_promotion(self, empty_message):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                UserPromptMessage(content="Question"),
+                AssistantPromptMessage(content="Answer"),
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Later policy")]
+                ),
+                empty_message,
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [content.role for content in contents] == ["user", "model", "user"]
+        assert [part.text for part in contents[-1].parts] == ["Later policy"]
+
+    def test_structured_output_keeps_legacy_system_fallback(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._code_block_mode_wrapper(
+                model="gemini-pro",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(content=[TextPromptMessageContent(data="")]),
+                    SystemPromptMessage(
+                        content=[TextPromptMessageContent(data="Task")]
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={"response_format": "JSON"},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert isinstance(request["config"].system_instruction, str)
+        assert [part.text for part in request["contents"][0].parts] == [
+            "Task",
+            "Question\n```JSON\n",
+        ]
+
     def test_text_system_fallback_keeps_user_before_assistant(self):
         contents = self.llm._build_gemini_contents(
             prompt_messages=[
