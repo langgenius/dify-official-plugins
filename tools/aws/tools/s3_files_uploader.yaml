@@ -122,6 +122,44 @@ parameters:
       pt_BR: Tempo de expiração em segundos para cada URL pré-assinada opcional.
     default: 3600
     form: form
+  - name: sse_type
+    type: string
+    required: false
+    label:
+      en_US: Server-side encryption
+      zh_Hans: 服务端加密类型
+      pt_BR: Criptografia do lado do servidor
+    human_description:
+      en_US: Optional server-side encryption header to send with each PutObject. Use 'aws:kms' when the target bucket policy requires SSE-KMS (e.g. bucket policy condition StringNotEquals s3:x-amz-server-side-encryption=aws:kms). Leave empty to omit the header (default).
+      zh_Hans: PutObject 请求附带的服务端加密头。当目标 bucket policy 要求 SSE-KMS 时（例如 condition StringNotEquals s3:x-amz-server-side-encryption=aws:kms）选 'aws:kms'。留空则不发送加密头（默认）。
+      pt_BR: Cabeçalho opcional de criptografia do lado do servidor enviado em cada PutObject. Use 'aws:kms' quando a política do bucket exigir SSE-KMS. Deixe em branco para omitir.
+    default: ""
+    form: form
+  - name: kms_key_id
+    type: string
+    required: false
+    label:
+      en_US: KMS key id / ARN / alias
+      zh_Hans: KMS 密钥 ID / ARN / 别名
+      pt_BR: ID / ARN / alias da chave KMS
+    human_description:
+      en_US: Only used when sse_type is 'aws:kms'. KMS key identifier (key id, full ARN, or 'alias/...'). Leave empty to use the bucket's default KMS key.
+      zh_Hans: 仅当 sse_type='aws:kms' 时使用。KMS key id、ARN 或 alias/... 形式的别名。留空则使用 bucket 默认 KMS key。
+      pt_BR: Usado apenas quando sse_type='aws:kms'. Identificador da chave KMS (id, ARN ou alias). Deixe em branco para usar a chave KMS padrão do bucket.
+    form: form
+  - name: bucket_key_enabled
+    type: boolean
+    required: false
+    label:
+      en_US: Enable S3 Bucket Key (cost saver)
+      zh_Hans: 启用 S3 Bucket Key（成本优化）
+      pt_BR: Ativar S3 Bucket Key (redução de custos)
+    human_description:
+      en_US: Only effective when sse_type='aws:kms'. Reduces KMS GenerateDataKey calls by reusing a bucket-scoped data key, lowering KMS cost ~99%. Default off to preserve old behavior.
+      zh_Hans: 仅在 sse_type='aws:kms' 时生效。复用 bucket 级 data key，KMS GenerateDataKey 调用次数降低约 99%，明显省 KMS 费用。默认关闭以保持旧行为。
+      pt_BR: Efetivo apenas quando sse_type='aws:kms'. Reduz chamadas GenerateDataKey reutilizando chave por bucket. Padrão desativado.
+    default: false
+    form: form
 extra:
   python:
     source: tools/s3_files_uploader.py
