@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.15
 type: plugin
 author: "langgenius"
 name: "lemonade"
@@ -17,6 +17,11 @@ resource:
     model:
       enabled: true
       llm: true
+      text_embedding: true
+      rerank: true
+      speech2text: true
+      tts: true
+      moderation: false
 plugins:
   models:
     - "provider/lemonade.yaml"

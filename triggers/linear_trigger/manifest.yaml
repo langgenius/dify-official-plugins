@@ -26,12 +26,10 @@ plugins:
 resource:
   memory: 1048576
   permission:
-    model:
+    storage:
       enabled: true
-      llm: true
-    tool:
-      enabled: true
+      size: 1048576
 tags:
 - productivity
 type: plugin
-version: 0.5.3
+version: 0.6.0

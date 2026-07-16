@@ -25,11 +25,6 @@ plugins:
     - provider/telegram.yaml
 resource:
   memory: 1048576
-  permission:
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
+  permission: {}
 type: plugin
-version: 0.0.2
+version: 0.1.0

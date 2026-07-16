@@ -219,6 +219,15 @@ parameter_rules:
       zh_Hans: 如果您希望翻译的风格更符合某个领域的特性，如法律、政务领域翻译用语应当严肃正式，社交领域用语应当口语化，可以用一段自然语言文本描述您的领域，将其提供给大模型作为提示。
     type: text
     required: false
+  - name: extra_headers
+    required: false
+    type: string
+    label:
+      zh_Hans: 额外请求头，Json字符串格式
+      en_US: Extra Headers
+    help:
+      zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
+      en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
 pricing:
   input: '0.0007'
   output: '0.00195'

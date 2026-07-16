@@ -18,6 +18,11 @@ from dify_plugin.entities.model.message import (
     VideoPromptMessageContent,
 )
 from google.genai import types
+from models.llm.file_parts import (
+    FILE_DOWNLOAD_TIMEOUT_SECONDS,
+    GeminiFileMode,
+    GeminiFilePartFactory,
+)
 from models.llm.llm import GoogleLargeLanguageModel
 
 
@@ -25,6 +30,21 @@ from models.llm.llm import GoogleLargeLanguageModel
 class ContentCase:
     message: PromptMessageContent
     expected: types.Part
+
+
+class MemoryFileCache:
+    def __init__(self):
+        self._values = {}
+
+    def exists(self, key):
+        return key in self._values
+
+    def get(self, key):
+        return self._values.get(key)
+
+    def setex(self, key, expires_in_seconds, value):
+        del expires_in_seconds
+        self._values[key] = value
 
 
 class TestContentConversion:
@@ -241,6 +261,32 @@ class TestContentConversion:
         assert contents[0].parts[1].file_data.file_uri == "gs://test-bucket/test-file"
         assert contents[0].parts[2].text == "What do you see?"
 
+    def test_inline_file_mode_embeds_file_without_uploading(self):
+        binary_data = b"inline image"
+        base64_data = base64.b64encode(binary_data).decode()
+        user_message = UserPromptMessage(
+            content=[
+                TextPromptMessageContent(data="Look at this image:"),
+                ImagePromptMessageContent(
+                    format="png", base64_data=base64_data, mime_type="image/png"
+                ),
+            ]
+        )
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[user_message],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+            model_parameters={"use_inline_file": True},
+        )
+
+        assert len(contents) == 1
+        assert len(contents[0].parts) == 2
+        assert contents[0].parts[1].inline_data.mime_type == "image/png"
+        assert contents[0].parts[1].inline_data.data == binary_data
+        assert not contents[0].parts[1].file_data
+        self.mock_client.files.upload.assert_not_called()
+
     def test_invalid_message_type(self):
         """Test that invalid message types raise appropriate errors"""
         # Create a mock invalid message type
@@ -263,20 +309,20 @@ class TestContentConversion:
             format="jpeg", base64_data=base64_data, mime_type="image/jpeg"
         )
 
+        file_factory = GeminiFilePartFactory(
+            genai_client=self.mock_client,
+            file_server_url_prefix=None,
+            cache=MemoryFileCache(),
+            mode=GeminiFileMode.FILES_API,
+        )
+
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-            # First upload
-            uri1, mime1 = self.llm._upload_file_content_to_google(
-                message_content, self.mock_client
-            )
+            payload = file_factory.read_payload(message_content)
+            uploaded1 = file_factory.upload_payload(payload)
+            uploaded2 = file_factory.upload_payload(payload)
 
-            # Second upload (should use cache)
-            uri2, mime2 = self.llm._upload_file_content_to_google(
-                message_content, self.mock_client
-            )
-
-            assert uri1 == uri2 == "gs://test-bucket/test-file"
-            assert mime1 == mime2 == "image/jpeg"
-            # File upload should only be called once due to caching
+            assert uploaded1.uri == uploaded2.uri == "gs://test-bucket/test-file"
+            assert uploaded1.mime_type == uploaded2.mime_type == "image/jpeg"
             assert self.mock_client.files.upload.call_count == 1
 
     def test_file_url_with_prefix(self):
@@ -286,6 +332,12 @@ class TestContentConversion:
         )
 
         self.mock_file.mime_type = "application/pdf"
+        file_factory = GeminiFilePartFactory(
+            genai_client=self.mock_client,
+            file_server_url_prefix="https://api.example.com",
+            cache=MemoryFileCache(),
+            mode=GeminiFileMode.FILES_API,
+        )
 
         with (
             patch("tempfile.NamedTemporaryFile"),
@@ -297,28 +349,65 @@ class TestContentConversion:
             mock_response.raise_for_status = Mock()
             mock_get.return_value = mock_response
 
-            uri, mime = self.llm._upload_file_content_to_google(
-                message_content,
-                self.mock_client,
-                file_server_url_prefix="https://api.example.com",
-            )
+            payload = file_factory.read_payload(message_content)
+            uploaded = file_factory.upload_payload(payload)
 
             # Check that the URL was constructed correctly
-            mock_get.assert_called_once_with("https://api.example.com/files/doc.pdf")
-            assert uri == "gs://test-bucket/test-file"
-            assert mime == "application/pdf"
+            mock_get.assert_called_once_with(
+                "https://api.example.com/files/doc.pdf",
+                timeout=FILE_DOWNLOAD_TIMEOUT_SECONDS,
+            )
+            assert uploaded.uri == "gs://test-bucket/test-file"
+            assert uploaded.mime_type == "application/pdf"
+
+    def test_absolute_file_url_ignores_prefix(self):
+        message_content = DocumentPromptMessageContent(
+            format="pdf",
+            url="https://files.example.com/files/doc.pdf",
+            mime_type="application/pdf",
+        )
+        self.mock_file.mime_type = "application/pdf"
+        file_factory = GeminiFilePartFactory(
+            genai_client=self.mock_client,
+            file_server_url_prefix="https://api.example.com",
+            cache=MemoryFileCache(),
+            mode=GeminiFileMode.FILES_API,
+        )
+
+        with (
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+            patch("requests.get") as mock_get,
+        ):
+            mock_response = Mock()
+            mock_response.content = b"PDF content"
+            mock_response.raise_for_status = Mock()
+            mock_get.return_value = mock_response
+
+            payload = file_factory.read_payload(message_content)
+            uploaded = file_factory.upload_payload(payload)
+
+        mock_get.assert_called_once_with(
+            "https://files.example.com/files/doc.pdf",
+            timeout=FILE_DOWNLOAD_TIMEOUT_SECONDS,
+        )
+        assert uploaded.uri == "gs://test-bucket/test-file"
+        assert uploaded.mime_type == "application/pdf"
 
     def test_invalid_url_without_prefix(self):
         """Test that invalid URLs without proper prefix raise errors"""
         message_content = ImagePromptMessageContent(
             format="jpeg", url="/relative/path/image.jpg", mime_type="image/jpeg"
         )
+        file_factory = GeminiFilePartFactory(
+            genai_client=self.mock_client,
+            file_server_url_prefix=None,
+            cache=MemoryFileCache(),
+            mode=GeminiFileMode.FILES_API,
+        )
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-            with pytest.raises(ValueError, match="Set FILES_URL env first!"):
-                self.llm._upload_file_content_to_google(
-                    message_content, self.mock_client
-                )
+        with pytest.raises(ValueError, match="Set FILES_URL env first!"):
+            file_factory.read_payload(message_content)
 
 
 def test_file_url():

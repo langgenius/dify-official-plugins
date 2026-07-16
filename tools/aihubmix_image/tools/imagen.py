@@ -16,7 +16,9 @@ try:
     from google.genai import types
     from PIL import Image
 except ImportError:
-    raise InvokeError("Required packages not found. Please install: pip install google-genai Pillow")
+    raise InvokeError(
+        "Required packages are declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class ImagenTool(Tool):
@@ -29,8 +31,11 @@ class ImagenTool(Tool):
     """
     
     # API configuration
-    BASE_URL = "https://aihubmix.com/v1"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
     def create_image_info(self, base64_data: str, aspect_ratio: str) -> dict:
         mime_type = "image/png"
         return {
@@ -77,7 +82,7 @@ class ImagenTool(Tool):
                 yield self.create_text_message("Trying Google GenAI SDK...")
                 client = genai.Client(
                     api_key=api_key,
-                    http_options={"base_url": "https://aihubmix.com/gemini"},
+                    http_options={"base_url": f"{self.get_base_url()}/gemini"},
                 )
                 
                 config = types.GenerateImagesConfig(
@@ -135,7 +140,7 @@ class ImagenTool(Tool):
             # Method 2: Try predictions endpoint
             try:
                 yield self.create_text_message("Trying predictions endpoint...")
-                endpoint = f"{self.BASE_URL}/models/google/{model}/predictions"
+                endpoint = f"{self.get_base_url()}/v1/models/google/{model}/predictions"
                 
                 headers = {
                     "Authorization": f"Bearer {api_key}",
@@ -222,7 +227,7 @@ class ImagenTool(Tool):
             # Method 3: Try Gemini style endpoint
             try:
                 yield self.create_text_message("Trying Gemini style endpoint...")
-                endpoint = f"{self.BASE_URL}/imagen/generate"
+                endpoint = f"{self.get_base_url()}/v1/imagen/generate"
                 
                 headers = {
                     "Authorization": f"Bearer {api_key}",

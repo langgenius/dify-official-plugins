@@ -539,15 +539,15 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     min=1,
                     max=model_config.properties.max_tokens,
                     default=512,
-                    label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                    label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
                 ),
                 ParameterRule(
                     name="skip_moderation",
                     type=ParameterType.BOOLEAN,
                     default=False,
-                    label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
-                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能",
-                                    en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
+                    label=I18nObject(zh_hans="跳过内容审核", en_us="Skip Moderation"),
+                    help=I18nObject(zh_hans="跳过内容审核，需要先联系火山引擎开通此功能",
+                                    en_us="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
         else:
@@ -556,26 +556,26 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="temperature",
                     type=ParameterType.FLOAT,
                     use_template="temperature",
-                    label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                    label=I18nObject(zh_hans="温度", en_us="Temperature"),
                 ),
                 ParameterRule(
                     name="top_p",
                     type=ParameterType.FLOAT,
                     use_template="top_p",
-                    label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                    label=I18nObject(zh_hans="Top P", en_us="Top P"),
                 ),
                 ParameterRule(
                     name="top_k",
                     type=ParameterType.INT,
                     min=1,
                     default=1,
-                    label=I18nObject(zh_Hans="Top K", en_US="Top K"),
+                    label=I18nObject(zh_hans="Top K", en_us="Top K"),
                 ),
                 ParameterRule(
                     name="presence_penalty",
                     type=ParameterType.FLOAT,
                     use_template="presence_penalty",
-                    label=I18nObject(en_US="Presence Penalty", zh_Hans="存在惩罚"),
+                    label=I18nObject(en_us="Presence Penalty", zh_hans="存在惩罚"),
                     min=-2.0,
                     max=2.0,
                 ),
@@ -583,7 +583,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="frequency_penalty",
                     type=ParameterType.FLOAT,
                     use_template="frequency_penalty",
-                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="频率惩罚"),
+                    label=I18nObject(en_us="Frequency Penalty", zh_hans="频率惩罚"),
                     min=-2.0,
                     max=2.0,
                 ),
@@ -594,15 +594,15 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     min=1,
                     max=model_config.properties.max_tokens,
                     default=512,
-                    label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                    label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
                 ),
                 ParameterRule(
                     name="skip_moderation",
                     type=ParameterType.BOOLEAN,
                     default=False,
-                    label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
-                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能",
-                                    en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
+                    label=I18nObject(zh_hans="跳过内容审核", en_us="Skip Moderation"),
+                    help=I18nObject(zh_hans="跳过内容审核，需要先联系火山引擎开通此功能",
+                                    en_us="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
         base_model = credentials.get("base_model_name", "")
@@ -612,7 +612,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="thinking",
                     type=ParameterType.STRING,
                     default="enabled",
-                    label=I18nObject(zh_Hans="深度思考模式", en_US="thinking"),
+                    label=I18nObject(zh_hans="深度思考模式", en_us="thinking"),
                     options=["enabled", "disabled", "auto"],
                 )
             )
@@ -635,7 +635,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="thinking",
                     type=ParameterType.STRING,
                     default="enabled",
-                    label=I18nObject(zh_Hans="深度思考模式", en_US="thinking"),
+                    label=I18nObject(zh_hans="深度思考模式", en_us="thinking"),
                     options=["enabled", "disabled"],
                 )
             )
@@ -653,7 +653,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="reasoning_effort",
                     type=ParameterType.STRING,
                     default="medium",
-                    label=I18nObject(zh_Hans="思考长度", en_US="reasoning_effort"),
+                    label=I18nObject(zh_hans="思考长度", en_us="reasoning_effort"),
                     options=["minimal", "low", "medium", "high"],
                 )
             )
@@ -664,16 +664,16 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     name="response_format",
                     type=ParameterType.STRING,
                     default="text",
-                    label=I18nObject(zh_Hans="响应格式", en_US="Response Format"),
-                    help=I18nObject(zh_Hans="指定模型响应的格式", en_US="Specify the format of model response"),
+                    label=I18nObject(zh_hans="响应格式", en_us="Response Format"),
+                    help=I18nObject(zh_hans="指定模型响应的格式", en_us="Specify the format of model response"),
                     options=["text", "json_object", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
                     type=ParameterType.STRING,
-                    label=I18nObject(zh_Hans="JSON Schema", en_US="JSON Schema"),
-                    help=I18nObject(zh_Hans="当response_format为json_schema时必需，定义JSON响应的结构",
-                                    en_US="Required when response_format is json_schema, defines the structure of JSON response"),
+                    label=I18nObject(zh_hans="JSON Schema", en_us="JSON Schema"),
+                    help=I18nObject(zh_hans="当response_format为json_schema时必需，定义JSON响应的结构",
+                                    en_us="Required when response_format is json_schema, defines the structure of JSON response"),
                 ),
             ])
 
@@ -684,7 +684,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         model_properties[ModelPropertyKey.MODE] = model_config.properties.mode.value
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
             model_properties=model_properties,

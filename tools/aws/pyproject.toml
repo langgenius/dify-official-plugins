@@ -5,18 +5,21 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "boto3~=1.40.45",
-    "opensearch-py~=2.8.0",
-    "jieba~=0.42.1",
-    "nltk~=3.9.1",
-    "sacrebleu~=2.5.1",
-    "Pillow~=11.3.0",
-    "playwright>=1.49.0",
-    "bedrock-agentcore~=0.1.4",
-    "nest-asyncio~=1.6.0",
+    "bedrock-agentcore>=1.10.0",
+    "boto3>=1.43.13",
+    "botocore>=1.43.13",
+    "dify_plugin>=0.9.0",
+    "jieba>=0.42.1",
+    "nest-asyncio>=1.6.0",
+    "nltk>=3.9.4",
+    "opensearch-py>=3.2.0",
+    "Pillow>=12.2.0",
+    "playwright>=1.60.0",
+    "pydantic>=2.13.4",
+    "requests>=2.34.2",
+    "sacrebleu>=2.6.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

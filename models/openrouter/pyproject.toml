@@ -5,17 +5,20 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the plugin lockfile with: uv lock
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "sniffio==1.3.1",
+    "dify_plugin>=0.9.0",
+    "pydantic>=2.13.4",
+    "requests>=2.34.2",
+    "sniffio>=1.3.1",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
-    "pyrefly>=0.50.0",
-    "pytest>=9.0.2",
-    "black>=25.11.0",
-    "ruff>=0.14.6",
+    "pyrefly>=1.0.0",
+    "pytest>=9.0.3",
+    "pyyaml>=6.0.3",
+    "black>=26.5.1",
+    "ruff>=0.15.14",
 ]

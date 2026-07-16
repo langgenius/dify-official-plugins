@@ -49,7 +49,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         # Store current model for use in _convert_prompt_message_to_dict
         credentials["_current_model"] = model
 
-        # Handle thinking parameter for Kimi K2.5
+        # 处理 Kimi K2.5 / K2.6 等思考模型的 thinking 参数
         if "thinking" in model_parameters:
             thinking = model_parameters.pop("thinking")
             if thinking:
@@ -101,7 +101,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
             features=[ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL]
             if credentials.get("function_calling_type") == "tool_call"
@@ -115,7 +115,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -124,13 +124,13 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 4096)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
             ],
@@ -151,13 +151,13 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
     def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: Optional[dict] = None) -> dict:
         """
         Convert PromptMessage to dict for OpenAI API format.
-        For Kimi K2.5 thinking mode, extract <think> content to reasoning_content field.
+        For Kimi K2.5 / K2.6 thinking mode, extract <think> content to reasoning_content field.
         """
         credentials = credentials or {}
         model_name = credentials.get("_current_model", "").lower()
 
-        # Check if this is a thinking-enabled model
-        is_thinking_model = any(x in model_name for x in ["k2.5", "k2-thinking"])
+        # 判断是否为支持深度思考模式的模型（K2.5、K2.6 以及 K2-thinking 系列）
+        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2-thinking"])
 
         # Use base implementation for standard conversion
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)

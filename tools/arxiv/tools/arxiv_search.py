@@ -73,9 +73,10 @@ class ArxivAPIWrapper(BaseModel):
             query: a plaintext search query
         """
         try:
-            results = self.arxiv_search(  # type: ignore
+            search = self.arxiv_search(  # type: ignore
                 query[: self.ARXIV_MAX_QUERY_LENGTH], max_results=self.top_k_results
-            ).results()
+            )
+            results = arxiv.Client().results(search)
         except self.arxiv_http_error as ex:
             return f"Arxiv exception: {ex}"
         docs = [

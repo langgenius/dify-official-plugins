@@ -1,0 +1,96 @@
+background: '#F9FAFB'
+configurate_methods:
+- customizable-model
+- predefined-model
+description:
+  en_US: BytePlus ModelArk pre-provided model invocation.
+  zh_Hans: BytePlus ModelArk 预置模型调用。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/byteplus.py
+help:
+  title:
+    en_US: Get your Ark API Key from BytePlus Console
+    zh_Hans: 从 BytePlus 控制台获取 Ark API Key
+  url:
+    en_US: https://console.byteplus.com/ark/
+    zh_Hans: https://console.byteplus.com/ark/
+icon_large:
+  en_US: icon_l_en.svg
+  zh_Hans: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: BytePlus ModelArk
+  zh_Hans: BytePlus ModelArk
+model_credential_schema:
+  model:
+    label:
+      en_US: Video Model ID / Endpoint ID
+      zh_Hans: 视频模型 ID / Endpoint ID
+    placeholder:
+      en_US: Enter a video model ID or Endpoint ID, e.g. seedance-2-0-260128 or ep-xxx
+      zh_Hans: 输入视频模型 ID 或 Endpoint ID，例如 seedance-2-0-260128 或 ep-xxx
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+      zh_Hans: API Key
+    placeholder:
+      en_US: Enter your Ark API Key
+      zh_Hans: 输入 Ark API Key
+    required: true
+    type: secret-input
+    variable: ark_api_key
+  - default: https://ark.ap-southeast.bytepluses.com/api/v3
+    label:
+      en_US: API Base URL
+      zh_Hans: API Base URL
+    placeholder:
+      en_US: https://ark.ap-southeast.bytepluses.com/api/v3
+      zh_Hans: https://ark.ap-southeast.bytepluses.com/api/v3
+    required: true
+    type: text-input
+    variable: api_endpoint_host
+  - default: video_generation
+    label:
+      en_US: Endpoint Type
+      zh_Hans: Endpoint Type
+    options:
+    - label:
+        en_US: Video Generation
+        zh_Hans: 视频生成
+      value: video_generation
+    required: true
+    type: select
+    variable: endpoint_type
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: byteplus
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+      zh_Hans: API Key
+    placeholder:
+      en_US: Enter your Ark API Key
+      zh_Hans: 输入 Ark API Key
+    required: true
+    type: secret-input
+    variable: ark_api_key
+  - default: https://ark.ap-southeast.bytepluses.com/api/v3
+    label:
+      en_US: API Base URL
+      zh_Hans: API Base URL
+    placeholder:
+      en_US: https://ark.ap-southeast.bytepluses.com/api/v3
+      zh_Hans: https://ark.ap-southeast.bytepluses.com/api/v3
+    required: true
+    type: text-input
+    variable: api_endpoint_host
+supported_model_types:
+- llm

@@ -18,6 +18,7 @@ import websocket
 import ssl
 import wave
 from io import BytesIO
+from pathlib import Path
 
 
 class SpeechProtocol(IntEnum):
@@ -60,7 +61,7 @@ class VolcengineOpenAISpeech2TextModel(OAICompatSpeech2TextModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={
@@ -94,8 +95,8 @@ class VolcengineOpenAISpeech2TextModel(OAICompatSpeech2TextModel):
         :return:
         """
         try:
-            #TODO: add this demo file to sdk or use as base64
-            audio_file_path = "models/volcengine_maas/models/speech2text/demo.wav"
+            # Resolve demo audio from this file's directory to avoid cwd-dependent failures.
+            audio_file_path = Path(__file__).resolve().with_name("demo.wav")
             with open(audio_file_path, "rb") as audio_file:
                 self._speech2text_invoke(model, credentials, audio_file)
         except Exception as ex:

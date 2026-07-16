@@ -21,7 +21,9 @@ try:
     from google import genai
     from google.genai import types
 except ImportError:
-    raise ImportError("Required packages not found. Please install: pip install google-genai Pillow")
+    raise ImportError(
+        "Required packages are declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class Gemini3ProImagePreviewTool(Tool):
@@ -32,8 +34,12 @@ class Gemini3ProImagePreviewTool(Tool):
     Supports text-to-image, image-to-image transformation, and multi-image reference.
     """
     
-    BASE_URL = "https://aihubmix.com/gemini"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_gemini_base_url(self) -> str:
+        root = (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+        return f"{root}/gemini"
+
     # Generation modes
     MODE_TEXT_TO_IMAGE = "text_to_image"
     MODE_IMAGE_TO_IMAGE = "image_to_image"
@@ -162,7 +168,7 @@ class Gemini3ProImagePreviewTool(Tool):
             # Initialize Google GenAI client
             client = genai.Client(
                 api_key=api_key,
-                http_options={"base_url": self.BASE_URL}
+                http_options={"base_url": self.get_gemini_base_url()}
             )
             
             # Prepare contents list
@@ -236,32 +242,52 @@ class Gemini3ProImagePreviewTool(Tool):
             
             if not response:
                 raise InvokeError("No valid response received from Gemini")
-            
-            # Process response
+
             images = []
             text_content = ""
-            
-            for part in response.parts:
-                if part.text is not None:
+            decode_errors: list[str] = []
+
+            parts = getattr(response, "parts", None) or []
+            for part in parts:
+                if getattr(part, "text", None) is not None:
                     text_content += part.text
-                elif part.inline_data is not None:
-                    try:
-                        image = part.as_image()
-                        if image:
-                            # Convert to base64
-                            img_byte_arr = io.BytesIO()
-                            img_format = image.format if image.format else "PNG"
-                            image.save(img_byte_arr, format=img_format)
-                            img_byte_arr = img_byte_arr.getvalue()
-                            base64_data = base64.b64encode(img_byte_arr).decode()
-                            
-                            image_info = self.create_image_info(base64_data, aspect_ratio, resolution, image_format)
-                            images.append(image_info)
-                    except Exception as e:
+                    continue
+
+                inline_data = getattr(part, "inline_data", None)
+                if inline_data is None:
+                    continue
+
+                try:
+                    img_bytes = getattr(inline_data, "data", None)
+                    if img_bytes is None:
+                        image_obj = part.as_image()
+                        img_bytes = getattr(image_obj, "image_bytes", None)
+                        if img_bytes is None and hasattr(image_obj, "save"):
+                            buf = io.BytesIO()
+                            image_obj.save(buf, format=getattr(image_obj, "format", None) or "PNG")
+                            img_bytes = buf.getvalue()
+                    if not img_bytes:
+                        decode_errors.append("inline_data has no image bytes")
                         continue
-            
+                    base64_data = base64.b64encode(img_bytes).decode()
+                    image_info = self.create_image_info(base64_data, aspect_ratio, resolution, image_format)
+                    images.append(image_info)
+                except Exception as decode_err:
+                    decode_errors.append(str(decode_err))
+
             if not images:
-                raise InvokeError("No images were generated in the response")
+                detail_parts = []
+                if text_content.strip():
+                    detail_parts.append(f"model returned text instead of image: {text_content.strip()[:500]}")
+                if decode_errors:
+                    detail_parts.append(f"image decode errors: {'; '.join(decode_errors[:3])}")
+                if not detail_parts:
+                    finish_reason = getattr(getattr(response, "candidates", [None])[0], "finish_reason", None)
+                    prompt_feedback = getattr(response, "prompt_feedback", None)
+                    detail_parts.append(
+                        f"empty response (parts={len(parts)}, finish_reason={finish_reason}, prompt_feedback={prompt_feedback})"
+                    )
+                raise InvokeError("No images were generated. " + " | ".join(detail_parts))
             
             # Return image files as blobs
             for idx, image_info in enumerate(images):

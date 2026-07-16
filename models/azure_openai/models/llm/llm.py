@@ -4,8 +4,10 @@ import io
 import json
 import logging
 import math
+import re
 from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union, cast
+from urllib.parse import urlparse
 
 import tiktoken
 from PIL import Image
@@ -19,9 +21,11 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
+    PromptMessageContentUnionTypes,
     PromptMessageFunction,
     PromptMessageTool,
     SystemPromptMessage,
@@ -42,7 +46,7 @@ from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaTool
 from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
-from ..constants import LLM_BASE_MODELS
+from ..constants import LLM_BASE_MODELS, uses_responses_api
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +152,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
 
         try:
-            client = self._create_client(credentials)
+            client = self._create_client(credentials, use_cache=False)
             if self._uses_responses_api(base_model_name):
                 client.responses.create(
                     input="ping",
@@ -357,7 +361,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop"] = stop
         if user:
-            extra_model_kwargs["user"] = user
+            extra_model_kwargs["safety_identifier"] = user
         if stream:
             extra_model_kwargs["stream_options"] = {"include_usage": True}
         prompt_messages = self._clear_illegal_prompt_messages(
@@ -417,7 +421,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         Reference: https://platform.openai.com/docs/guides/migrate-to-responses
         """
+        base_model_name = self._get_base_model_name(credentials)
         client = self._create_client(credentials)
+
+        # Whether this model is a pure reasoning model (gpt-5, gpt-5-mini, etc.)
+        # that does NOT support temperature, top_p, or stop sequences.
+        # gpt-5-chat and gpt-5-codex use different APIs and are excluded here.
+        is_reasoning_model = self._uses_responses_api(base_model_name) and (
+            base_model_name.startswith("gpt-5")
+            and "chat" not in base_model_name
+            and "codex" not in base_model_name
+        )
 
         # Convert prompt messages to the Responses API format
         input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
@@ -428,19 +442,25 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             "input": input_messages,
         }
 
-        # Map model parameters to the Responses API
-        if "temperature" in model_parameters:
-            responses_params["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters:
-            responses_params["top_p"] = model_parameters["top_p"]
+        # Map model parameters to the Responses API.
+        # temperature and top_p are not supported by gpt-5 reasoning models.
+        if not is_reasoning_model:
+            if "temperature" in model_parameters:
+                responses_params["temperature"] = model_parameters["temperature"]
+            if "top_p" in model_parameters:
+                responses_params["top_p"] = model_parameters["top_p"]
         if "max_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_tokens"]
         elif "max_completion_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_completion_tokens"]
 
-        # Handle tools in the Responses API format
+        web_search_tool, include_web_search_sources = self._extract_web_search_configuration(
+            model_parameters
+        )
+        response_tools = []
+
+        # Handle function tools in the Responses API format.
         if tools:
-            responses_params["tools"] = []
             for tool in tools:
                 # Ensure parameters are valid JSON objects
                 parameters = tool.parameters
@@ -458,15 +478,30 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     "description": tool.description or "",
                     "parameters": parameters
                 }
-                responses_params["tools"].append(tool_dict)
+                response_tools.append(tool_dict)
+
+        if web_search_tool:
+            response_tools.append(web_search_tool)
+
+        if response_tools:
+            responses_params["tools"] = response_tools
             responses_params["tool_choice"] = "auto"
+
+        if include_web_search_sources and web_search_tool:
+            include_fields = responses_params.get("include")
+            if not isinstance(include_fields, list):
+                include_fields = []
+            include_item = "web_search_call.action.sources"
+            if include_item not in include_fields:
+                include_fields.append(include_item)
+            responses_params["include"] = include_fields
 
         # Handle the user identifier
         if user:
-            responses_params["user"] = user
+            responses_params["safety_identifier"] = user
 
-        # Handle stop sequences
-        if stop:
+        # stop sequences are not supported by gpt-5 reasoning models
+        if stop and not is_reasoning_model:
             responses_params["stop"] = stop
 
         # Handle the response format
@@ -495,8 +530,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     "format": {"type": response_format}
                 }
 
+        # Handle verbosity
+        if "verbosity" in model_parameters:
+            if "text" not in responses_params:
+                responses_params["text"] = {}
+            responses_params["text"]["verbosity"] = model_parameters["verbosity"]
+
+        # Handle reasoning parameters
+        reasoning = {}
         if "reasoning_effort" in model_parameters:
-            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
+            reasoning["effort"] = model_parameters["reasoning_effort"]
+        if "reasoning_summary" in model_parameters:
+            reasoning["summary"] = model_parameters["reasoning_summary"]
+        if reasoning:
+            responses_params["reasoning"] = reasoning
 
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
@@ -518,6 +565,80 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 model, credentials, response, prompt_messages, tools
             )
 
+    @staticmethod
+    def _extract_web_search_configuration(
+        model_parameters: dict,
+    ) -> tuple[Optional[dict[str, Any]], bool]:
+        enable_web_search = model_parameters.pop("enable_web_search", False)
+        include_sources = model_parameters.pop("web_search_include_sources", False)
+        country = model_parameters.pop("web_search_user_country", None)
+        allowed_domains = model_parameters.pop("web_search_allowed_domains", None)
+
+        if not enable_web_search:
+            return None, False
+
+        web_search_tool: dict[str, Any] = {"type": "web_search"}
+
+        if country is not None:
+            normalized_country = str(country).strip().upper()
+            if normalized_country:
+                if not re.fullmatch(r"[A-Z]{2}", normalized_country):
+                    raise ValueError(
+                        "web_search_user_country must be a 2-letter ISO country code."
+                    )
+                web_search_tool["user_location"] = {
+                    "type": "approximate",
+                    "country": normalized_country,
+                }
+
+        normalized_domains = AzureOpenAILargeLanguageModel._normalize_allowed_domains(
+            allowed_domains
+        )
+        if normalized_domains:
+            web_search_tool["filters"] = {"allowed_domains": normalized_domains}
+
+        return web_search_tool, include_sources
+
+    @staticmethod
+    def _normalize_allowed_domains(raw_domains: Any) -> list[str]:
+        if raw_domains is None:
+            return []
+
+        if isinstance(raw_domains, str):
+            candidates = re.split(r"[\s,\n\r]+", raw_domains)
+        elif isinstance(raw_domains, Sequence):
+            candidates = [str(item) for item in raw_domains]
+        else:
+            candidates = [str(raw_domains)]
+
+        normalized_domains: list[str] = []
+        seen_domains: set[str] = set()
+
+        for candidate in candidates:
+            token = candidate.strip()
+            if not token:
+                continue
+
+            parsed = urlparse(token if "://" in token else f"https://{token}")
+            host = parsed.netloc
+            host = host.strip().lower().rstrip(".")
+            if ":" in host:
+                host = host.split(":", 1)[0]
+
+            if not host:
+                continue
+            if not re.fullmatch(r"[a-z0-9.-]+", host):
+                raise ValueError(f"Invalid domain in web_search_allowed_domains: {token}")
+
+            if host not in seen_domains:
+                seen_domains.add(host)
+                normalized_domains.append(host)
+
+        if len(normalized_domains) > 100:
+            raise ValueError("web_search_allowed_domains can contain at most 100 domains.")
+
+        return normalized_domains
+
     def _convert_prompt_messages_to_responses_input(
         self, prompt_messages: list[PromptMessage]
     ) -> list[dict]:
@@ -526,10 +647,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         for message in prompt_messages:
             if isinstance(message, SystemPromptMessage):
-                input_messages.append({
-                    "role": "developer",
-                    "content": message.content
-                })
+                if isinstance(message.content, str):
+                    input_messages.append({
+                        "role": "developer",
+                        "content": message.content
+                    })
+                else:
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
+                        message.content
+                    )
+                    if content_parts:
+                        input_messages.append({
+                            "role": "developer",
+                            "content": content_parts
+                        })
             elif isinstance(message, UserPromptMessage):
                 if isinstance(message.content, str):
                     input_messages.append({
@@ -538,31 +669,23 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     })
                 else:
                     # Handle multimodal content
-                    content_parts = []
-                    for content_item in message.content or []:
-                        if content_item.type == PromptMessageContentType.TEXT:
-                            text_content = cast(TextPromptMessageContent, content_item)
-                            content_parts.append({
-                                "type": "input_text",
-                                "text": text_content.data
-                            })
-                        elif content_item.type == PromptMessageContentType.IMAGE:
-                            image_content = cast(ImagePromptMessageContent, content_item)
-                            image_part = {
-                                "type": "input_image",
-                            }
-                            if image_content.url:
-                                image_part["image_url"] = image_content.url
-                            else:
-                                image_part["image_url"] = image_content.data
-                            if image_content.detail:
-                                image_part["detail"] = image_content.detail.value
-                            content_parts.append(image_part)
-
-                    input_messages.append({
-                        "role": "user",
-                        "content": content_parts
-                    })
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
+                        message.content
+                    )
+                    if content_parts:
+                        input_messages.append({
+                            "role": "user",
+                            "content": content_parts
+                        })
+                    else:
+                        # All content items were unsupported types (e.g. VIDEO).
+                        # Do NOT append {"role": "user", "content": []} —
+                        # the Azure Responses API rejects empty content arrays
+                        # with "Unsupported data type".
+                        logger.debug(
+                            "Skipping UserPromptMessage: no content items could be "
+                            "converted to a Responses API format."
+                        )
             elif isinstance(message, AssistantPromptMessage):
                 # If the assistant message contains tool_calls, emit each as a
                 # Responses API function_call item (type="function_call").
@@ -593,6 +716,44 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         return input_messages
 
+    @staticmethod
+    def _convert_multimodal_content_to_responses_parts(
+        content_items: Optional[list[PromptMessageContentUnionTypes]],
+    ) -> list[dict[str, Any]]:
+        content_parts: list[dict[str, Any]] = []
+        for content_item in content_items or []:
+            if content_item.type == PromptMessageContentType.TEXT:
+                text_content = cast(TextPromptMessageContent, content_item)
+                content_parts.append({
+                    "type": "input_text",
+                    "text": text_content.data
+                })
+            elif content_item.type == PromptMessageContentType.IMAGE:
+                image_content = cast(ImagePromptMessageContent, content_item)
+                image_part = {
+                    "type": "input_image",
+                }
+                if image_content.url:
+                    image_part["image_url"] = image_content.url
+                else:
+                    image_part["image_url"] = image_content.data
+                if image_content.detail:
+                    image_part["detail"] = image_content.detail.value
+                content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.DOCUMENT:
+                doc_content = cast(DocumentPromptMessageContent, content_item)
+                file_part: dict[str, Any] = {"type": "input_file"}
+                if doc_content.url:
+                    file_part["file_url"] = doc_content.url
+                elif doc_content.base64_data:
+                    file_part["filename"] = doc_content.filename or "document"
+                    file_part["file_data"] = (
+                        f"data:{doc_content.mime_type};base64,{doc_content.base64_data}"
+                    )
+                if len(file_part) > 1:
+                    content_parts.append(file_part)
+        return content_parts
+
     def _handle_responses_response(
         self,
         model: str,
@@ -610,7 +771,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             # Standard Responses API format
             for item in response.output:
                 item_type = getattr(item, 'type', '')
-                if item_type == "message":
+                if item_type == "reasoning":
+                    # Reasoning summary: wrap with <think> tags
+                    summary_list = getattr(item, 'summary', [])
+                    summary_text = "\n".join(
+                        s.text for s in summary_list if hasattr(s, 'text') and s.text
+                    )
+                    if summary_text:
+                        content += "<think>\n" + summary_text + "\n</think>"
+                elif item_type == "message":
                     # message.content can be a string or a list of segments
                     item_content = getattr(item, 'content', None)
                     if isinstance(item_content, str):
@@ -672,44 +841,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         # Calculate token usage
         prompt_tokens = 0
         completion_tokens = 0
-        prompt_tokens_details: Optional[dict] = None
-        completion_tokens_details: Optional[dict] = None
 
         if hasattr(response, 'usage') and response.usage:
             usage_obj = response.usage
             # Support Responses API usage fields
             prompt_tokens = getattr(usage_obj, 'input_tokens', None) or getattr(usage_obj, 'prompt_tokens', 0)
             completion_tokens = getattr(usage_obj, 'output_tokens', None) or getattr(usage_obj, 'completion_tokens', 0)
-            # Support implementations that expose detailed fields (convert SDK types to dict)
-            # Prefer the unified prompt_tokens_details/completion_tokens_details fields
-            if hasattr(usage_obj, 'prompt_tokens_details') and usage_obj.prompt_tokens_details:
-                _ptd = usage_obj.prompt_tokens_details
-                if hasattr(_ptd, 'to_dict'):
-                    prompt_tokens_details = _ptd.to_dict()
-                elif isinstance(_ptd, dict):
-                    prompt_tokens_details = _ptd
-                else:
-                    prompt_tokens_details = {
-                        'cached_tokens': getattr(_ptd, 'cached_tokens', None)
-                    }
-            elif hasattr(usage_obj, 'input_tokens_details') and usage_obj.input_tokens_details:
-                it = usage_obj.input_tokens_details
-                if hasattr(it, 'to_dict'):
-                    prompt_tokens_details = it.to_dict()
-                else:
-                    prompt_tokens_details = {
-                        'cached_tokens': getattr(it, 'cached_tokens', None)
-                    }
-            if hasattr(usage_obj, 'completion_tokens_details') and usage_obj.completion_tokens_details:
-                completion_tokens_details = usage_obj.completion_tokens_details
-            elif hasattr(usage_obj, 'output_tokens_details') and usage_obj.output_tokens_details:
-                ot = usage_obj.output_tokens_details
-                if hasattr(ot, 'to_dict'):
-                    completion_tokens_details = ot.to_dict()
-                else:
-                    completion_tokens_details = {
-                        'reasoning_tokens': getattr(ot, 'reasoning_tokens', None)
-                    }
         else:
             # Estimate usage when it is not provided
             prompt_tokens = self._num_tokens_from_messages(
@@ -721,8 +858,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens,
-            prompt_tokens_details=prompt_tokens_details,
-            completion_tokens_details=completion_tokens_details
         )
 
         return LLMResult(
@@ -746,6 +881,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         tool_calls = []
         index = 0
         is_first = True
+        is_reasoning = False
 
         # Track tool call state
         pending_tool_calls = {}  # call_id -> tool_call_dict
@@ -758,10 +894,39 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             # Handle the Responses API streaming event format
             chunk_type = getattr(chunk, 'type', '')
 
-            if chunk_type == 'response.output_text.delta':
+            if chunk_type == 'response.reasoning_summary_text.delta':
+                # Reasoning summary delta - wrap with <think> tags
+                delta_text = getattr(chunk, 'delta', '')
+                if delta_text:
+                    if not is_reasoning:
+                        delta_text = "<think>\n" + delta_text
+                        is_reasoning = True
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+            elif chunk_type == 'response.output_text.delta':
                 # ResponseTextDeltaEvent format - text delta
                 delta_text = getattr(chunk, 'delta', '')
                 if delta_text:
+                    if is_reasoning:
+                        # Close the <think> block before regular text
+                        delta_text = "\n</think>" + delta_text
+                        is_reasoning = False
                     full_text += delta_text
 
                     assistant_prompt_message = AssistantPromptMessage(
@@ -1382,8 +1547,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             if ai_model_entity.base_model_name == base_model_name:
                 ai_model_entity_copy = copy.deepcopy(ai_model_entity)
                 ai_model_entity_copy.entity.model = model
-                ai_model_entity_copy.entity.label.en_US = model
-                ai_model_entity_copy.entity.label.zh_Hans = model
+                ai_model_entity_copy.entity.label.en_us = model
+                ai_model_entity_copy.entity.label.zh_hans = model
                 return ai_model_entity_copy
 
     def _get_image_patches(self, n: int) -> float:
@@ -1468,20 +1633,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
     @staticmethod
     def _uses_responses_api(base_model_name: str) -> bool:
-        """
-        Determine if the model should use the Responses API.
-
-        1. Models with "codex" in the base name
-        2. gpt-5.x models (excluding chat and codex variants which use different APIs)
-        """
-        return (
-            "codex" in base_model_name
-            or (
-                base_model_name.startswith("gpt-5")
-                and "chat" not in base_model_name
-                and "codex" not in base_model_name
-            )
-        )
+        return uses_responses_api(base_model_name)
 
     @staticmethod
     def _adapt_schema_for_structured_outputs(schema: dict) -> dict:

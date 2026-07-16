@@ -1,4 +1,4 @@
-# https://platform.openai.com/docs/models/gpt-5-nano
+# https://developers.openai.com/api/docs/models/gpt-5-nano
 model: gpt-5-nano
 label:
   zh_Hans: gpt-5-nano
@@ -9,6 +9,7 @@ features:
   - agent-thought
   - stream-tool-call
   - vision
+  - structured-output
 model_properties:
   mode: chat
   context_size: 400000
@@ -61,6 +62,30 @@ parameter_rules:
       - low
       - medium
       - high
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: 是否启用流式响应。
+      en_US: Whether to enable streaming responses.
+    required: true
+    default: true
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: Auto 跟随项目设置；Default 使用标准处理；Flex 使用成本更低但可能更慢的处理。
+      en_US: Auto follows the project setting; Default selects standard processing; Flex selects lower-cost processing that may be slower.
+    required: false
+    default: auto
+    options:
+      - auto
+      - default
+      - flex
 pricing:
   input: '0.05'
   output: '0.40'

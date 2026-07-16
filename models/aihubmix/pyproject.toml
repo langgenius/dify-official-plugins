@@ -5,15 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "httpx>=0.28.1,<0.29.dev0",
-    "openai~=2.3.0",
-    "google-genai>=1.56.0",
-    "anthropic~=0.57.1",
-    "pillow~=12.1.1",
-    "urllib3>=2.6.3",
+    "anthropic>=0.104.0",
+    "dify_plugin>=0.9.0",
+    "google-genai>=2.6.0",
+    "httpx>=0.28.1",
+    "openai>=2.38.0",
+    "pillow>=12.2.0",
+    "requests>=2.34.2",
+    "urllib3>=2.7.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

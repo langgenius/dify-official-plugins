@@ -5,16 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "anthropic~=0.57.1",
-    "pillow~=12.1.1",
+    "anthropic>=0.108.0",
+    "dify_plugin>=0.9.0",
+    "httpx>=0.28.1",
+    "pillow>=12.2.0",
+    "requests>=2.34.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
-    "pyrefly>=0.50.0",
-    "pytest>=8.0.0",
+    "pyrefly>=1.0.0",
+    "pytest>=9.0.3",
 ]

@@ -1,8 +1,7 @@
 .venv/
 __pycache__/
-*.pyc
-*.pyo
-*.egg-info/
+*.py[cod]
 .pytest_cache/
+.ruff_cache/
 .env
 *.difypkg

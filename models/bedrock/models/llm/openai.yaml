@@ -9,7 +9,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 272000
 parameter_rules:
   - name: model_name
     label:
@@ -22,6 +22,8 @@ parameter_rules:
     required: true
     default: GPT OSS 20B
     options:
+      - GPT-5.5
+      - GPT-5.4
       - GPT OSS 120B
       - GPT OSS 20B
   - name: cross-region
@@ -47,7 +49,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 128000
+    max: 272000
     help:
       zh_Hans: 停止前生成的最大令牌数。
       en_US: The maximum number of tokens to generate before stopping.

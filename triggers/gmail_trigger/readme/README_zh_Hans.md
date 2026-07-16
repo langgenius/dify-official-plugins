@@ -21,7 +21,7 @@ Gmail Trigger（Push + History）
 
 - 选项：
   - 如果打包为 `.difypkg`，在 Dify 的 Plugin Center 中导入（Plugins → Import）。
-  - 对于开发期间的本地运行，确保运行时安装 `requirements.txt` 中的依赖项。
+  - 对于开发期间的本地运行，请先基于 `pyproject.toml` / `uv.lock` 准备环境（例如执行 `uv sync --project .`），以确保运行时使用锁定后的依赖。
 
 2. 配置 GCP 资源（管理员，一次性设置）
 

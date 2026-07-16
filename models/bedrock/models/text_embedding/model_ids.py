@@ -14,6 +14,7 @@ BEDROCK_TEXT_EMBEDDING_MODEL_IDS = {
     'cohere': {
         'Embed English v3': 'cohere.embed-english-v3',
         'Embed Multilingual v3': 'cohere.embed-multilingual-v3',
+        'Embed v4': 'cohere.embed-v4:0',
     }
 }
 

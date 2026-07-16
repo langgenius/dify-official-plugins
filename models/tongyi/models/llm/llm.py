@@ -222,18 +222,28 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-plus-latest", "qwen-plus-2025-04-28",
             "qwen-turbo-latest", "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
-            # Qwen3 Max series (default: thinking disabled)
+            # Qwen3 Max, VL Plus/Flash, and Omni Flash series (default: thinking disabled, but explicit False ensures consistency)
             "qwen3-max-2026-01-23", "qwen3-max-preview",
-            # Qwen3.5 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
+            "qwen3-omni-flash-2025-12-01",
+            # Qwen3.5/3.6/3.7 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3.7-max",
+            "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
+            "qwen3.6-flash", "qwen3.6-flash-2026-04-16",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
             # GLM series (default: thinking ENABLED - must explicitly disable)
-            "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
-            # DeepSeek series (default: thinking disabled)
+            "glm-5.1", "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
+            # DeepSeek V3 series (default: thinking disabled)
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
             model_parameters["enable_thinking"] = False
+
+        extra_headers_str = ''
+        if model_parameters.get('extra_headers',''):
+            extra_headers_str = model_parameters.pop('extra_headers')
 
         params = {
             "model": model,
@@ -252,6 +262,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
             "qwen3-max-2026-01-23", "qwen3-max-preview",
+            "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
+            "qwen3-omni-flash-2025-12-01",
+            "qwen3.7-max",
+            "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
         ) and model_parameters.get("enable_thinking", False)
@@ -265,26 +280,30 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             model == "kimi-k2.5" and model_parameters.get("enable_thinking", False)
         ) or model == "kimi-k2-thinking"
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and 3.5 variants), QwQ, QVQ, Kimi, and GLM thinking models only supports streaming output.
-        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
-        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
+        thinking_deepseek_v4 = (
+            model in ("deepseek-v4-pro", "deepseek-v4-flash")
+            and model_parameters.get("enable_thinking", True)
+        )
+
+        # Thinking-mode models that need streamed responses so reasoning_content is preserved.
+        # Note: qwen3-coder-xx, qwen3-max-xx, qwen3-vl-plus/flash, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
-            ("qwen3-coder", "qwen3-max", "qwen3.5-")
+            ("qwen3-coder", "qwen3-max", "qwen3-vl-plus", "qwen3-vl-flash", "qwen3.5-")
         )
         common_force_condition = (
-            thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi or thinking_glm
+            thinking_business_qwen3
+            or qwen3_requires_stream
+            or thinking_kimi
+            or thinking_glm
+            or thinking_deepseek_v4
         )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and VL Plus/Flash variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
         base_address = get_http_base_address(credentials)
-
-        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
-        if model.startswith("qwen3-omni-") and not stream:
-            params["enable_omni_output_audio_url"] = True
 
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
@@ -293,7 +312,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(
                 **params,
                 stream=stream,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 incremental_output=incremental_output,
                 base_address=base_address,
             )
@@ -303,7 +322,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
             response = Generation.call(
                 **params,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
@@ -814,30 +833,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             content = content[0].get("text") if isinstance(content[0], dict) else ""
         else:
             content = str(content)
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or ""
         try:
-            if reasoning_content:
-                try:
-                    if isinstance(reasoning_content, list):
-                        reasoning_content = "\n".join(map(str, reasoning_content))
-                    elif not isinstance(reasoning_content, str):
-                        reasoning_content = str(reasoning_content)
+            if isinstance(reasoning_content, list):
+                reasoning_content = "\n".join(map(str, reasoning_content))
+            elif not isinstance(reasoning_content, str):
+                reasoning_content = str(reasoning_content)
 
-                    if not is_reasoning:
-                        content = "<think>\n" + reasoning_content
-                        is_reasoning = True
-                    else:
-                        content = reasoning_content
-                except Exception as ex:
-                    raise ValueError(
-                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
-                    ) from ex
-            elif is_reasoning and content:
-                content = "\n</think>" + content
-                is_reasoning = False
+            output = ""
+            if reasoning_content:
+                if not is_reasoning:
+                    # Open a think block on first reasoning token
+                    output += f"<think>\n{reasoning_content}"
+                    is_reasoning = True
+                else:
+                    # Continue streaming inside the think block
+                    output += reasoning_content
+
+            if is_reasoning:
+                if not reasoning_content and not content:
+                    # No reasoning or content token, close the think block
+                    is_reasoning = False
+                    output += "\n</think>"
+                # Handle edge case: both reasoning_content and content are non-empty
+                # in the same chunk (DashScope/Bailian API occasionally does this at
+                # the transition boundary between reasoning and content phases)
+                if content:
+                    is_reasoning = False
+                    output += f"\n</think>{content}"
+            elif content:
+                # No reasoning token and not in a reasoning block
+                output += content
         except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
-        return content, is_reasoning
+            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
+        return output, is_reasoning
 
     def _handle_error_response(
         self, status_code: int, message: str, model: str = None, request_id: str = None
@@ -913,7 +942,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
             features=(
                 [
@@ -935,7 +964,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -944,31 +973,31 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 1024)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_k",
                     use_template="top_k",
-                    label=I18nObject(en_US="Top K", zh_Hans="Top K"),
+                    label=I18nObject(en_us="Top K", zh_hans="Top K"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="frequency_penalty",
                     use_template="frequency_penalty",
-                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="重复惩罚"),
+                    label=I18nObject(en_us="Frequency Penalty", zh_hans="重复惩罚"),
                     type=ParameterType.FLOAT,
                 ),
             ],
         )
 
-    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+    def _get_market_bury_point_header(self, messages: list[dict], extra_headers_str: str) -> dict:
         """
         Extract market bury point header information from messages
 
@@ -982,6 +1011,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
                   If no valid information can be extracted, returns the default BURY_POINT_HEADER
         """
+        res_bury_point_header = {}
         system_entries = [entry for entry in messages if entry["role"] == "system"]
         if system_entries:
             system_entry = system_entries[0].get("content", "")
@@ -1000,8 +1030,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             bury_point_header["accountId"] = buyer_uid.strip()
 
                         system_entries[0]["content"] = "".join(system_entry_split[1:])
-                        return {"x-dashscope-euid": json.dumps(bury_point_header)}
+                        res_bury_point_header = {"x-dashscope-euid": json.dumps(bury_point_header)}
                 except Exception:
-                    return BURY_POINT_HEADER
+                    res_bury_point_header = {}
 
-        return BURY_POINT_HEADER
+        if extra_headers_str and res_bury_point_header == {}:
+            try:
+                # Replace non-breaking spaces and other special whitespace characters with regular spaces
+                cleaned_str = extra_headers_str.replace('\xa0', ' ').replace('\u3000', ' ')
+                res_bury_point_header = json.loads(cleaned_str)
+            except Exception:
+                res_bury_point_header = {}
+
+        return res_bury_point_header

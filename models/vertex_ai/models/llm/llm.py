@@ -3,8 +3,8 @@ import io
 import json
 import logging
 import time
-from collections.abc import Generator, Sequence
-from typing import Optional, Union, cast
+from collections.abc import Generator, Mapping, Sequence
+from typing import Any, Optional, Union, cast
 
 import google.auth.transport.requests
 import requests
@@ -57,7 +57,12 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-flash-lite-preview",
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
+    "gemini-3.5-flash",
 ]
+IMAGE_GENERATION_MODELS = {
+    "gemini-3.1-flash-image-preview",
+}
+
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
@@ -200,7 +205,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             location = vertex_location
         elif any(m in model for m in
                  ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4", "claude-haiku-4-5",
-                  "claude-sonnet-4-5", "claude-opus-4-5", "claude-sonnet-4-6", "claude-opus-4-6"]):
+                  "claude-sonnet-4-5", "claude-opus-4-5", "claude-sonnet-4-6", "claude-opus-4-6",
+                  "claude-opus-4-7", "claude-sonnet-5"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -431,6 +437,81 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
+    @staticmethod
+    def _convert_json_schema_type_to_genai_type(raw_type: Any) -> tuple[types.Type, bool]:
+        nullable = False
+        if isinstance(raw_type, list):
+            type_candidates = [item for item in raw_type if item != "null"]
+            nullable = len(type_candidates) != len(raw_type)
+            raw_type = type_candidates[0] if type_candidates else "string"
+
+        type_name = str(raw_type or "string").upper()
+        if type_name == "SELECT":
+            type_name = "STRING"
+
+        type_map = {
+            "ARRAY": types.Type.ARRAY,
+            "BOOLEAN": types.Type.BOOLEAN,
+            "INTEGER": types.Type.INTEGER,
+            "NUMBER": types.Type.NUMBER,
+            "OBJECT": types.Type.OBJECT,
+            "STRING": types.Type.STRING,
+        }
+        return type_map.get(type_name, types.Type.STRING), nullable
+
+    @classmethod
+    def _convert_tool_parameter_schema(cls, schema: Mapping[str, Any]) -> types.Schema:
+        raw_type = schema.get("type")
+        if not raw_type:
+            if "properties" in schema:
+                raw_type = "object"
+            elif "items" in schema:
+                raw_type = "array"
+            else:
+                raw_type = "string"
+
+        schema_type, nullable = cls._convert_json_schema_type_to_genai_type(
+            raw_type
+        )
+        schema_kwargs: dict[str, Any] = {"type": schema_type}
+
+        description = schema.get("description")
+        if isinstance(description, str) and description:
+            schema_kwargs["description"] = description
+
+        enum_values = schema.get("enum")
+        if enum_values and isinstance(enum_values, list):
+            schema_kwargs["enum"] = [str(value) for value in enum_values]
+
+        if nullable or schema.get("nullable") is True:
+            schema_kwargs["nullable"] = True
+
+        if schema_type == types.Type.OBJECT:
+            raw_properties = schema.get("properties", {})
+            if isinstance(raw_properties, Mapping):
+                properties = {
+                    key: cls._convert_tool_parameter_schema(value)
+                    for key, value in raw_properties.items()
+                    if isinstance(key, str) and isinstance(value, Mapping)
+                }
+                if properties:
+                    schema_kwargs["properties"] = properties
+
+            required_params = schema.get("required")
+            if (
+                required_params
+                and isinstance(required_params, list)
+                and all(isinstance(item, str) for item in required_params)
+            ):
+                schema_kwargs["required"] = required_params
+
+        if schema_type == types.Type.ARRAY:
+            raw_items = schema.get("items")
+            if isinstance(raw_items, Mapping):
+                schema_kwargs["items"] = cls._convert_tool_parameter_schema(raw_items)
+
+        return types.Schema(**schema_kwargs)
+
     def _convert_tools_to_genai_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
         """
         Convert tool messages to genai tools
@@ -440,52 +521,28 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         tool_declarations = []
         for tool_config in tools:
-            properties_for_schema = {}
-
-            # tool_config.parameters is guaranteed to be a dict by the Pydantic model
             parameters_input_dict = tool_config.parameters
             raw_properties = parameters_input_dict.get("properties", {})
+            properties = (
+                {
+                    key: value
+                    for key, value in raw_properties.items()
+                    if isinstance(key, str) and isinstance(value, Mapping)
+                }
+                if isinstance(raw_properties, Mapping)
+                else {}
+            )
+            parameters = (
+                self._convert_tool_parameter_schema(parameters_input_dict)
+                if properties
+                else None
+            )
 
-            if isinstance(raw_properties, dict):
-                for key, value_schema in raw_properties.items():
-                    if not isinstance(value_schema, dict):
-                        # Property schema must be a dictionary
-                        continue
-
-                    raw_type_str = str(value_schema.get("type", "string")).upper()
-                    # Map "SELECT" to "STRING" for GenAI SDK compatibility
-                    final_type_for_prop = "STRING" if raw_type_str == "SELECT" else raw_type_str
-
-                    prop_details = {
-                        "type": final_type_for_prop,
-                        "description": value_schema.get("description", ""),
-                    }
-
-                    enum_values = value_schema.get("enum")
-                    # Add enum only if it's a non-empty list (OpenAPI recommendation)
-                    if enum_values and isinstance(enum_values, list):
-                        prop_details["enum"] = enum_values
-
-                    properties_for_schema[key] = prop_details
-
-            # Schema for the 'parameters' object of the function declaration
-            parameters_schema_for_declaration = {
-                "type": "OBJECT",
-                "properties": properties_for_schema,
-            }
-
-            required_params = parameters_input_dict.get("required")
-            # Add required only if it's a non-empty list of strings (OpenAPI recommendation)
-            if required_params and isinstance(required_params, list) and all(
-                isinstance(item, str) for item in required_params):
-                parameters_schema_for_declaration["required"] = required_params
-
-            # Create function declaration dict for GenAI SDK
-            function_declaration = {
-                "name": tool_config.name,
-                "description": tool_config.description or "",
-                "parameters": parameters_schema_for_declaration
-            }
+            function_declaration = types.FunctionDeclaration(
+                name=tool_config.name,
+                description=tool_config.description or "",
+                parameters=parameters,
+            )
             tool_declarations.append(function_declaration)
 
         return types.Tool(function_declarations=tool_declarations) if tool_declarations else None
@@ -511,6 +568,60 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             return [m.strip() for m in credentials["vertex_global_models"].split(",") if m.strip()]
         # Fallback to default if unsupported type
         return GLOBAL_ONLY_MODELS_DEFAULT
+
+    @staticmethod
+    def _set_image_config(
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        model: str,
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in [
+                "1:1",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "16:9",
+                "21:9",
+                "4:1",
+                "8:1",
+            ]
+        ):
+            aspect_ratio = None
+
+        resolution = model_parameters.get("resolution")
+        if (
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
+        ):
+            resolution = None
+
+        config.image_config = types.ImageConfig(
+            image_size=resolution, aspect_ratio=aspect_ratio
+        )
+
+    @staticmethod
+    def _set_response_modalities(
+        *, config: types.GenerateContentConfig, model_name: str
+    ) -> None:
+        if model_name in IMAGE_GENERATION_MODELS:
+            config.response_modalities = [
+                types.Modality.TEXT.value,
+                types.Modality.IMAGE.value,
+            ]
 
     def _generate(
         self,
@@ -560,6 +671,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 config_kwargs["response_mime_type"] = "application/json"
             elif field == "response_mime_type":
                 config_kwargs["response_mime_type"] = config_kwargs.pop("response_mime_type")
+            elif field in ["aspect_ratio", "resolution"]:
+                config_kwargs.pop(field)
             elif field == "media_resolution":
                 media_res = config_kwargs.pop("media_resolution")
                 if media_res == "Default":
@@ -574,6 +687,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             tools_config.append(self._convert_tools_to_genai_tool(tools))
 
         # Build config
+        # Image generation models do not support thinking config
+        if model in IMAGE_GENERATION_MODELS:
+            thinking_config = {}
         if thinking_config:
             # Handle thinking_level conversion for Gemini 3
             thinking_level_str = thinking_config.get("thinking_level")
@@ -675,6 +791,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 contents.append(content)
 
         config = types.GenerateContentConfig(**config_kwargs)
+        self._set_image_config(config=config, model_parameters=model_parameters, model=model)
+        self._set_response_modalities(config=config, model_name=model)
 
         # Generate content
         if stream:
@@ -692,6 +810,42 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 config=config
             )
             return self._handle_generate_response(model, credentials, response, prompt_messages)
+
+    @staticmethod
+    def _calculate_tokens_from_usage_metadata(
+        usage_metadata: types.GenerateContentResponseUsageMetadata | None,
+    ) -> tuple[int, int]:
+        """
+        Extract prompt and completion token counts from Google's response
+        ``usage_metadata`` so we report what Google actually billed instead of
+        a local GPT-2 estimate.
+
+        Uses ``prompt_token_count`` directly: on a cache hit this includes
+        cached tokens while a per-modality sum over ``prompt_tokens_details``
+        would silently miss them. ``prompt_token_count`` is also already
+        forward-compatible with new modalities Google may add.
+
+        ``completion_tokens`` is ``candidates_token_count + thoughts_token_count``
+        because Vertex bills these as two separate SKUs (e.g.
+        ``Gemini 2.5 Flash Lite Text Output`` vs
+        ``Gemini 2.5 Flash Lite Thinking Text Output``); dropping
+        ``thoughts_token_count`` would under-report by ~50% on thinking-enabled
+        requests. ``tool_use_prompt_token_count`` is intentionally not summed
+        here, matching the sibling ``langgenius/gemini`` helper.
+
+        Returns ``(0, 0)`` if the metadata is missing; callers should branch on
+        ``usage_metadata is None`` (not on a zero return) before deciding
+        whether to fall back to ``get_num_tokens``.
+        """
+        if not usage_metadata:
+            return 0, 0
+
+        prompt_tokens = getattr(usage_metadata, "prompt_token_count", 0) or 0
+        candidates_token_count = getattr(usage_metadata, "candidates_token_count", 0) or 0
+        thoughts_token_count = getattr(usage_metadata, "thoughts_token_count", 0) or 0
+        completion_tokens = candidates_token_count + thoughts_token_count
+
+        return prompt_tokens, completion_tokens
 
     def _handle_generate_response(
         self, model: str, credentials: dict, response: types.GenerateContentResponse,
@@ -731,18 +885,67 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                         assistant_prompt_message.tool_calls.append(tool_call)
+                    # Check for inline_data (image)
+                    elif hasattr(part, 'inline_data') and part.inline_data:
+                        inline_data = part.inline_data
+                        mime_type = inline_data.mime_type
+                        data = inline_data.data
+                        if mime_type and data and mime_type.startswith("image/"):
+                            mime_subtype = mime_type.split("/", maxsplit=1)[-1]
+                            # Switch to list content for image responses
+                            if isinstance(assistant_prompt_message.content, str):
+                                text_so_far = assistant_prompt_message.content
+                                content_list = []
+                                if text_so_far:
+                                    content_list.append(TextPromptMessageContent(data=text_so_far))
+                                assistant_prompt_message.content = content_list
+                            assistant_prompt_message.content.append(
+                                ImagePromptMessageContent(
+                                    format=mime_subtype,
+                                    base64_data=base64.b64encode(data).decode(),
+                                    mime_type=mime_type,
+                                    detail=ImagePromptMessageContent.DETAIL.HIGH,
+                                )
+                            )
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
-                        if part.thought is True and not is_thinking:
-                            assistant_prompt_message.content += "<think>\n\n"
-                            is_thinking = True
-                        elif part.thought is None and is_thinking:
-                            assistant_prompt_message.content += "\n\n</think>"
-                            is_thinking = False
-                        assistant_prompt_message.content += part.text
+                        if isinstance(assistant_prompt_message.content, list):
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="<think>\n\n"))
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+                                is_thinking = False
+                            assistant_prompt_message.content.append(TextPromptMessageContent(data=part.text))
+                        else:
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content += "<think>\n\n"
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content += "\n\n</think>"
+                                is_thinking = False
+                            assistant_prompt_message.content += part.text
 
-        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        # Prefer Google's reported usage so we don't recompute prompt_tokens
+        # locally on a base64-inlined PDF/audio/video and over-report by orders
+        # of magnitude. Branch on usage_metadata presence (not on token=0) so a
+        # legitimate zero-token reply doesn't silently fall back to the broken
+        # local path.
+        response_usage_metadata = getattr(response, "usage_metadata", None)
+        if response_usage_metadata is not None:
+            prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                response_usage_metadata
+            )
+        else:
+            # Defensive only — the GenAI SDK always populates usage_metadata on
+            # successful responses, so in practice this branch only fires on
+            # SDK regressions or hand-rolled test fixtures. The local
+            # get_num_tokens path here is itself a known source of inflated
+            # counts on multimodal inputs (see commit message); we preserve it
+            # only because deleting it would be a behaviour regression for
+            # unknown-shape responses.
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
         return result
@@ -800,6 +1003,24 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     )
+                # Check for inline_data (image)
+                elif hasattr(part, 'inline_data') and part.inline_data:
+                    inline_data = part.inline_data
+                    mime_type = inline_data.mime_type
+                    data = inline_data.data
+                    if mime_type and data and mime_type.startswith("image/"):
+                        mime_subtype = mime_type.split("/", maxsplit=1)[-1]
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=[
+                                ImagePromptMessageContent(
+                                    format=mime_subtype,
+                                    base64_data=base64.b64encode(data).decode(),
+                                    mime_type=mime_type,
+                                    detail=ImagePromptMessageContent.DETAIL.HIGH,
+                                )
+                            ],
+                            tool_calls=[],
+                        )
                 # Check for text
                 elif hasattr(part, 'text') and part.text:
                     if part.thought is True and not is_thinking:
@@ -822,9 +1043,35 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                     )
                 else:
-                    prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-                    completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+                    # Prefer Google's reported usage (see non-stream handler above
+                    # for rationale). The GenAI SDK only populates
+                    # usage_metadata on the terminal chunk, so we only consult
+                    # it inside this finish-reason branch — no risk of reading
+                    # partial usage from intermediate chunks.
+                    chunk_usage_metadata = getattr(chunk, "usage_metadata", None)
+                    if chunk_usage_metadata is not None:
+                        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                            chunk_usage_metadata
+                        )
+                    else:
+                        # Defensive only; same caveat as the non-stream handler.
+                        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+                        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+                    # For image responses (list content), skip grounding/reference processing
+                    if isinstance(assistant_prompt_message.content, list):
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=assistant_prompt_message,
+                                finish_reason=str(candidate.finish_reason) if candidate.finish_reason else None,
+                                usage=usage,
+                            ),
+                        )
+                        continue
 
                     # Extract grounding metadata if present
                     reference_lines = []

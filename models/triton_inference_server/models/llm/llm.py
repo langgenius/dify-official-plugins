@@ -116,13 +116,13 @@ class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
                 name="temperature",
                 type=ParameterType.FLOAT,
                 use_template="temperature",
-                label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                label=I18nObject(zh_hans="温度", en_us="Temperature"),
             ),
             ParameterRule(
                 name="top_p",
                 type=ParameterType.FLOAT,
                 use_template="top_p",
-                label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                label=I18nObject(zh_hans="Top P", en_us="Top P"),
             ),
             ParameterRule(
                 name="max_tokens",
@@ -131,7 +131,7 @@ class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
                 min=1,
                 max=int(credentials.get("context_length", 2048)),
                 default=min(512, int(credentials.get("context_length", 2048))),
-                label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
             ),
         ]
         completion_type = None
@@ -144,7 +144,7 @@ class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
                 raise ValueError(f"completion_type {credentials['completion_type']} is not supported")
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             parameter_rules=rules,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
