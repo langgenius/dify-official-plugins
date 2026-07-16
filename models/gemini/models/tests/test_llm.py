@@ -544,6 +544,13 @@ class TestBuildGeminiContents:
             [UserPromptMessage(content="")],
             [AssistantPromptMessage(content="Answer")],
             [
+                ToolPromptMessage(
+                    name="lookup",
+                    content="Result",
+                    tool_call_id="call-1",
+                )
+            ],
+            [
                 AssistantPromptMessage(content="Answer"),
                 UserPromptMessage(content="Question"),
             ],
@@ -573,6 +580,149 @@ class TestBuildGeminiContents:
                 )
 
         mock_client.models.generate_content_stream.assert_not_called()
+
+    def test_model_first_is_rejected_before_later_file_upload(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="start with a non-empty user message",
+            ):
+                self.llm._generate(
+                    model="gemini-2.0-flash",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        AssistantPromptMessage(content="Answer"),
+                        UserPromptMessage(
+                            content=[
+                                ImagePromptMessageContent(
+                                    format="png",
+                                    base64_data="aGVsbG8=",
+                                    mime_type="image/png",
+                                )
+                            ]
+                        ),
+                    ],
+                    model_parameters={},
+                )
+
+        mock_client.files.upload.assert_not_called()
+
+    def test_model_first_tool_call_is_rejected_before_arguments_are_parsed(self):
+        with pytest.raises(
+            InvokeBadRequestError,
+            match="start with a non-empty user message",
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    AssistantPromptMessage(
+                        content="",
+                        tool_calls=[
+                            AssistantPromptMessage.ToolCall(
+                                id="call-1",
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name="lookup",
+                                    arguments="{",
+                                ),
+                            )
+                        ],
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={},
+            )
+
+    def test_filtered_user_does_not_hide_model_first_tool_call(self):
+        with pytest.raises(
+            InvokeBadRequestError,
+            match="start with a non-empty user message",
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    UserPromptMessage(
+                        content=[
+                            DocumentPromptMessageContent(
+                                format="docx",
+                                base64_data="dGVzdA==",
+                                mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            )
+                        ]
+                    ),
+                    AssistantPromptMessage(
+                        content="",
+                        tool_calls=[
+                            AssistantPromptMessage.ToolCall(
+                                id="call-1",
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name="lookup",
+                                    arguments="{",
+                                ),
+                            )
+                        ],
+                    ),
+                ],
+                model_parameters={},
+            )
+
+    def test_bad_request_mapping_preserves_error_type(self):
+        error = self.llm._transform_invoke_error(
+            InvokeBadRequestError("Invalid prompt")
+        )
+
+        assert isinstance(error, InvokeBadRequestError)
+
+    def test_code_block_wrapper_rejects_multimodal_system_before_conversion(self):
+        messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="Instruction"),
+                    ImagePromptMessageContent(
+                        format="png",
+                        base64_data="aGVsbG8=",
+                        mime_type="image/png",
+                    ),
+                ]
+            ),
+            UserPromptMessage(content="Question"),
+        ]
+
+        with patch.object(self.llm, "_invoke") as mock_invoke:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="system instructions support text only",
+            ):
+                self.llm._code_block_mode_wrapper(
+                    model="gemini-pro",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=messages,
+                    model_parameters={"response_format": "JSON"},
+                )
+
+        mock_invoke.assert_not_called()
+
+    def test_code_block_wrapper_rejects_system_only_prompt(self):
+        with patch.object(self.llm, "_invoke") as mock_invoke:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="start with a non-empty user message",
+            ):
+                self.llm._code_block_mode_wrapper(
+                    model="gemini-pro",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(content="Instruction"),
+                    ],
+                    model_parameters={"response_format": "JSON"},
+                )
+
+        mock_invoke.assert_not_called()
 
     def test_multiple_system_messages_are_combined(self):
         messages = [

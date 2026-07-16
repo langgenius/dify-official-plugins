@@ -162,6 +162,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             InvokeConnectionError: [errors.APIError, errors.ClientError],
             InvokeServerUnavailableError: [errors.ServerError],
             InvokeBadRequestError: [
+                InvokeBadRequestError,
                 errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
                 errors.UnsupportedFunctionError,
@@ -485,6 +486,73 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         if tools:
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
+
+    @staticmethod
+    def _validate_prompt_messages(prompt_messages: list[PromptMessage]) -> None:
+        for message in prompt_messages:
+            if (
+                isinstance(message, SystemPromptMessage)
+                and isinstance(message.content, list)
+                and any(
+                    not isinstance(part, TextPromptMessageContent)
+                    for part in message.content
+                )
+            ):
+                raise InvokeBadRequestError(
+                    "Gemini system instructions support text only. "
+                    "Move files to a user message."
+                )
+
+        def has_content(message: PromptMessage) -> bool:
+            if isinstance(message, ToolPromptMessage):
+                return True
+            if isinstance(message, AssistantPromptMessage) and message.tool_calls:
+                return True
+
+            content = message.content
+            if isinstance(content, str):
+                if isinstance(message, AssistantPromptMessage):
+                    content = re.sub(
+                        r"^<think>.*?</think>\s*",
+                        "",
+                        content,
+                        count=1,
+                        flags=re.DOTALL,
+                    )
+                return bool(content)
+
+            if not content:
+                return False
+
+            for part in content:
+                if not isinstance(part, TextPromptMessageContent):
+                    if GeminiFilePartFactory.is_supported(part):
+                        return True
+                    continue
+                text = part.data
+                if isinstance(message, AssistantPromptMessage):
+                    text = re.sub(
+                        r"^<think>.*?</think>\s*",
+                        "",
+                        text,
+                        count=1,
+                        flags=re.DOTALL,
+                    )
+                if text:
+                    return True
+            return False
+
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage) or not has_content(message):
+                continue
+            if isinstance(message, UserPromptMessage):
+                return
+            break
+
+        raise InvokeBadRequestError(
+            "No valid content to send to Gemini API. "
+            "Please start with a non-empty user message."
+        )
 
     def _build_gemini_contents(
         self,
@@ -944,6 +1012,29 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
         return message
 
+    def _code_block_mode_wrapper(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        self._validate_prompt_messages(prompt_messages)
+        return super()._code_block_mode_wrapper(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
+
     def _invoke(
         self,
         model: str,
@@ -991,6 +1082,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        self._validate_prompt_messages(prompt_messages)
+
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
 
