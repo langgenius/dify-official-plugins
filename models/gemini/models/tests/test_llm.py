@@ -524,7 +524,7 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
-    def test_multiple_text_system_messages_preserve_all_parts(self):
+    def test_multiple_text_system_messages_keep_last_scalar(self):
         messages = [
             SystemPromptMessage(content="First instruction."),
             SystemPromptMessage(content="Second instruction."),
@@ -544,12 +544,31 @@ class TestBuildGeminiContents:
         )
 
         assert [part.text for part in self.mock_config.system_instruction.parts] == [
-            "First instruction.",
             "Second instruction.",
             "Third instruction.",
             "Fourth instruction.",
         ]
         assert [part.text for part in contents[0].parts] == ["Hello"]
+
+    def test_empty_scalar_system_clears_previous_instruction_on_fallback(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content="Policy"),
+                SystemPromptMessage(content=""),
+                SystemPromptMessage(
+                    content=[
+                        TextPromptMessageContent(data=""),
+                        TextPromptMessageContent(data="Task"),
+                    ]
+                ),
+                UserPromptMessage(content="Question"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction == ""
+        assert [part.text for part in contents[0].parts] == ["Task", "Question"]
 
     def test_empty_text_system_part_keeps_config_empty(self):
         contents = self.llm._build_gemini_contents(
@@ -664,6 +683,41 @@ class TestBuildGeminiContents:
         assert self.mock_config.system_instruction is None
         assert [content.role for content in contents] == ["user", "model"]
         assert [part.text for part in contents[0].parts] == ["Instruction"]
+
+    def test_text_system_fallback_keeps_tool_response_with_user_content(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Instruction")]
+                ),
+                ToolPromptMessage(
+                    name="lookup",
+                    content="Result",
+                    tool_call_id="call-1",
+                ),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts[:1]] == ["Instruction"]
+        assert contents[0].parts[1].function_response.name == "lookup"
+
+    def test_empty_user_keeps_scalar_system_request_shape(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content="Policy"),
+                UserPromptMessage(content=""),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction == "Policy"
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts == []
 
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""

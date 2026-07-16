@@ -506,7 +506,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         message_contents = []
         system_parts = []
-        system_strings = []
+        scalar_system_part_indexes = []
+        last_system_string = None
+        has_text_system_parts = False
         has_structured_system_fallback = False
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
@@ -518,8 +520,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for msg in prompt_messages:
             if isinstance(msg, SystemPromptMessage):
                 if isinstance(msg.content, str):
+                    last_system_string = msg.content
                     if msg.content:
-                        system_strings.append(msg.content)
+                        scalar_system_part_indexes.append(len(system_parts))
                         system_parts.append(types.Part.from_text(text=msg.content))
                     continue
 
@@ -531,12 +534,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         for part in msg.content
                     )
                 ):
+                    has_text_system_parts = True
                     parts = [
                         types.Part.from_text(text=part.data) for part in msg.content
                     ]
                     system_parts.extend(parts)
                     message_contents.append(
-                        (types.Content(role="user", parts=parts), True)
+                        (types.Content(role="user", parts=parts), True, False)
                     )
                     continue
 
@@ -551,31 +555,44 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model_parameters,
                 file_part_factory,
             )
-            if not content or not content.parts:
+            if not content:
                 continue
-            message_contents.append((content, False))
+            message_contents.append(
+                (content, False, isinstance(msg, UserPromptMessage))
+            )
 
         ordinary_contents = [
-            content
-            for content, is_structured_system in message_contents
+            (content, is_user_message)
+            for content, is_structured_system, is_user_message in message_contents
             if not is_structured_system
         ]
         promote_structured_system = (
-            not has_structured_system_fallback
+            has_text_system_parts
+            and not has_structured_system_fallback
+            and last_system_string != ""
             and ordinary_contents
-            and ordinary_contents[0].role == "user"
+            and ordinary_contents[0][1]
+            and ordinary_contents[0][0].parts
         )
 
         if promote_structured_system:
-            selected_contents = ordinary_contents
-            if len(system_parts) == 1 and len(system_strings) == 1:
-                config.system_instruction = system_strings[0]
-            elif system_parts:
-                config.system_instruction = types.Content(parts=system_parts)
+            selected_contents = [
+                content
+                for content, is_structured_system, _ in message_contents
+                if not is_structured_system
+            ]
+            superseded_scalar_parts = set(scalar_system_part_indexes[:-1])
+            config.system_instruction = types.Content(
+                parts=[
+                    part
+                    for index, part in enumerate(system_parts)
+                    if index not in superseded_scalar_parts
+                ]
+            )
         else:
-            selected_contents = [content for content, _ in message_contents]
-            if system_strings:
-                config.system_instruction = system_strings[-1]
+            selected_contents = [content for content, _, _ in message_contents]
+            if last_system_string is not None:
+                config.system_instruction = last_system_string
 
         contents = []
         for content in selected_contents:
