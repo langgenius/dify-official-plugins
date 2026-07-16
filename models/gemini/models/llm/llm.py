@@ -505,6 +505,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: list of Gemini Content objects ready for use
         """
         contents = []
+        system_parts = []
+        structured_system_parts = []
+        system_strings = []
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -513,6 +516,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         for msg in prompt_messages:
+            if isinstance(msg, SystemPromptMessage):
+                if isinstance(msg.content, str):
+                    if msg.content:
+                        system_strings.append(msg.content)
+                        system_parts.append(types.Part.from_text(text=msg.content))
+                    continue
+
+                if isinstance(msg.content, list) and all(
+                    isinstance(part, TextPromptMessageContent) for part in msg.content
+                ):
+                    parts = [
+                        types.Part.from_text(text=part.data)
+                        for part in msg.content
+                        if part.data
+                    ]
+                    system_parts.extend(parts)
+                    structured_system_parts.extend(parts)
+                    continue
+
             content = self._format_message_to_gemini_content(
                 msg,
                 genai_client,
@@ -521,7 +543,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model_parameters,
                 file_part_factory,
             )
-            if not content:
+            if not content or not content.parts:
                 continue
 
             # Merge consecutive messages with same role for proper alternation
@@ -529,6 +551,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
+
+        if contents:
+            if len(system_parts) == 1 and len(system_strings) == 1:
+                config.system_instruction = system_strings[0]
+            elif system_parts:
+                config.system_instruction = types.Content(parts=system_parts)
+        elif structured_system_parts:
+            # Preserve the legacy list-as-user fallback without emitting empty turns.
+            if system_strings:
+                config.system_instruction = system_strings[-1]
+            contents.append(types.Content(role="user", parts=structured_system_parts))
+        elif system_strings:
+            config.system_instruction = system_strings[-1]
+
         return contents
 
     def _format_message_to_gemini_content(
@@ -628,41 +664,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             return types.Content(role="model", parts=parts)
 
         elif isinstance(message, SystemPromptMessage):
-            # String content -> system instruction
-            if isinstance(message.content, str):
-                if isinstance(config.system_instruction, types.Content):
-                    if message.content:
-                        config.system_instruction.parts.append(
-                            types.Part.from_text(text=message.content)
-                        )
-                else:
-                    config.system_instruction = message.content
-                return None
-
-            # List content -> convert to user message (Files[] compatibility)
             if isinstance(message.content, list):
-                if message.content and all(
-                    isinstance(part, TextPromptMessageContent)
-                    for part in message.content
-                ):
-                    parts = build_parts(message.content)
-                    if parts:
-                        if isinstance(config.system_instruction, types.Content):
-                            config.system_instruction.parts.extend(parts)
-                        elif config.system_instruction:
-                            config.system_instruction = types.Content(
-                                parts=[
-                                    types.Part.from_text(
-                                        text=config.system_instruction
-                                    ),
-                                    *parts,
-                                ]
-                            )
-                        else:
-                            config.system_instruction = types.Content(parts=parts)
-                        return None
-                    return types.Content(role="user", parts=parts)
                 return types.Content(role="user", parts=build_parts(message.content))
+            return None
 
         elif isinstance(message, ToolPromptMessage):
             return types.Content(

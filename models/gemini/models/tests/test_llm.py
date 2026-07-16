@@ -527,12 +527,13 @@ class TestBuildGeminiContents:
     def test_multiple_text_system_messages_preserve_all_parts(self):
         messages = [
             SystemPromptMessage(content="First instruction."),
+            SystemPromptMessage(content="Second instruction."),
             SystemPromptMessage(
-                content=[TextPromptMessageContent(data="Second instruction.")]
+                content=[TextPromptMessageContent(data="Third instruction.")]
             ),
             UserPromptMessage(content="Hello"),
             SystemPromptMessage(
-                content=[TextPromptMessageContent(data="Third instruction.")]
+                content=[TextPromptMessageContent(data="Fourth instruction.")]
             ),
         ]
 
@@ -546,6 +547,7 @@ class TestBuildGeminiContents:
             "First instruction.",
             "Second instruction.",
             "Third instruction.",
+            "Fourth instruction.",
         ]
         assert [part.text for part in contents[0].parts] == ["Hello"]
 
@@ -593,6 +595,38 @@ class TestBuildGeminiContents:
             ].system_instruction
             is None
         )
+
+    @pytest.mark.parametrize(
+        "empty_message",
+        [
+            UserPromptMessage(content=""),
+            SystemPromptMessage(content=[]),
+        ],
+    )
+    def test_empty_turn_keeps_legacy_system_only_roles(self, empty_message):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(content="Policy"),
+                    SystemPromptMessage(
+                        content=[TextPromptMessageContent(data="Task")]
+                    ),
+                    empty_message,
+                ],
+                model_parameters={},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert request["config"].system_instruction == "Policy"
+        assert [part.text for part in request["contents"][0].parts] == ["Task"]
 
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""
