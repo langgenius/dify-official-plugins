@@ -537,37 +537,37 @@ class TestBuildGeminiContents:
         assert self.mock_config.system_instruction is None
         assert [part.text for part in contents[0].parts] == ["Hello"]
 
-    def test_system_only_text_parts_reach_generation(self):
+    @pytest.mark.parametrize(
+        "extra_messages",
+        [
+            [],
+            [UserPromptMessage(content="")],
+        ],
+    )
+    def test_system_without_user_content_is_rejected(self, extra_messages):
         mock_client = Mock()
 
         with patch("models.llm.llm.genai.Client", return_value=mock_client):
-            self.llm._generate(
-                model="gemini-2.0-flash",
-                credentials={"google_api_key": "test-key"},
-                prompt_messages=[
-                    SystemPromptMessage(
-                        content=[
-                            TextPromptMessageContent(data="First instruction."),
-                            TextPromptMessageContent(data="Second instruction."),
-                        ]
-                    )
-                ],
-                model_parameters={},
-            )
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="at least one user message with content",
+            ):
+                self.llm._generate(
+                    model="gemini-2.0-flash",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(
+                            content=[
+                                TextPromptMessageContent(data="First instruction."),
+                                TextPromptMessageContent(data="Second instruction."),
+                            ]
+                        ),
+                        *extra_messages,
+                    ],
+                    model_parameters={},
+                )
 
-        contents = mock_client.models.generate_content_stream.call_args.kwargs[
-            "contents"
-        ]
-        assert [part.text for part in contents[0].parts] == [
-            "First instruction.",
-            "Second instruction.",
-        ]
-        assert (
-            mock_client.models.generate_content_stream.call_args.kwargs[
-                "config"
-            ].system_instruction
-            is None
-        )
+        mock_client.models.generate_content_stream.assert_not_called()
 
     def test_multiple_system_messages_are_combined(self):
         messages = [

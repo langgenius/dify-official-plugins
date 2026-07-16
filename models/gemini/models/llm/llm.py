@@ -548,7 +548,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model_parameters,
                 file_part_factory,
             )
-            if not content:
+            if not content or not content.parts:
                 continue
 
             # Merge consecutive messages with same role for proper alternation
@@ -1063,26 +1063,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Handle empty contents scenario (e.g., only system instruction provided)
         # Gemini API requires at least one content in the conversation
         if not contents:
-            if config.system_instruction:
-                # When only system instruction is provided, add it as a user message
-                instruction_parts = (
-                    config.system_instruction.parts
-                    if isinstance(config.system_instruction, types.Content)
-                    else [types.Part.from_text(text=config.system_instruction)]
-                )
-                if isinstance(config.system_instruction, types.Content):
-                    config.system_instruction = None
-                contents = [
-                    types.Content(
-                        role="user",
-                        parts=instruction_parts,
-                    )
-                ]
-            else:
-                raise InvokeBadRequestError(
-                    "No valid content to send to Gemini API. "
-                    "Please provide at least one user message with content."
-                )
+            raise InvokeBadRequestError(
+                "No valid content to send to Gemini API. "
+                "Please provide at least one user message with content."
+            )
 
         if stream:
             response = genai_client.models.generate_content_stream(

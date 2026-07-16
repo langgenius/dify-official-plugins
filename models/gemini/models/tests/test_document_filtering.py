@@ -370,8 +370,7 @@ class TestDocumentFilteringUnit:
                 )
 
             # Should be filtered out
-            assert len(contents) == 1
-            assert len(contents[0].parts) == 0, f"Failed for {format_ext}"
+            assert not contents, f"Failed for {format_ext}"
 
     def test_unsupported_extensions_filtered(self):
         """Test that documents with unsupported extensions are filtered out."""
@@ -396,8 +395,7 @@ class TestDocumentFilteringUnit:
                 )
 
             # Should be filtered out
-            assert len(contents) == 1
-            assert len(contents[0].parts) == 0, f"Failed for extension {ext}"
+            assert not contents, f"Failed for extension {ext}"
 
     def test_case_insensitive_extension_filtering(self):
         """Test that extension filtering is case-insensitive."""
@@ -422,8 +420,7 @@ class TestDocumentFilteringUnit:
                 )
 
             # Should be filtered regardless of case
-            assert len(contents) == 1
-            assert len(contents[0].parts) == 0, f"Failed for case variant {ext}"
+            assert not contents, f"Failed for case variant {ext}"
 
     def test_mixed_supported_unsupported_documents(self):
         """Test filtering with mixed supported and unsupported documents."""
@@ -517,8 +514,7 @@ class TestDocumentFilteringUnit:
             )
 
         # All content filtered out
-        assert len(contents) == 1
-        assert len(contents[0].parts) == 0
+        assert not contents
 
     def test_none_mime_type_handling(self):
         """Test handling of documents with None mime_type."""
