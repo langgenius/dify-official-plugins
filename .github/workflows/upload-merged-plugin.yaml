@@ -35,13 +35,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CURRENT_SHA: ${{ github.sha }}
+          CURRENT_RUN_NUMBER: ${{ github.run_number }}
           FALLBACK_SHA: ${{ github.event.before }}
         run: |
           API_RESPONSE=$(gh api \
             "repos/${{ github.repository }}/actions/workflows/upload-merged-plugin.yaml/runs?status=success&branch=${{ github.ref_name }}&per_page=10")
 
-          LAST_SUCCESS_SHA=$(echo "$API_RESPONSE" | jq -r --arg current "$CURRENT_SHA" \
-            '[.workflow_runs[] | select(.head_sha != $current)] | first | .head_sha // empty')
+          LAST_SUCCESS_SHA=$(echo "$API_RESPONSE" | jq -r \
+            --arg current "$CURRENT_SHA" \
+            --argjson run_number "$CURRENT_RUN_NUMBER" \
+            '[.workflow_runs[] | select(.head_sha != $current and .run_number < $run_number)] | max_by(.run_number) | .head_sha // empty')
 
           if [ -n "$LAST_SUCCESS_SHA" ]; then
             echo "base_sha=$LAST_SUCCESS_SHA" >> "$GITHUB_OUTPUT"
