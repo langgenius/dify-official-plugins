@@ -488,20 +488,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
     @staticmethod
-    def _validate_prompt_messages(prompt_messages: list[PromptMessage]) -> None:
+    def _validate_prompt_messages(
+        model: str, prompt_messages: list[PromptMessage]
+    ) -> None:
+        has_system_instruction = False
         for message in prompt_messages:
-            if (
-                isinstance(message, SystemPromptMessage)
-                and isinstance(message.content, list)
-                and any(
-                    not isinstance(part, TextPromptMessageContent)
-                    for part in message.content
-                )
-            ):
-                raise InvokeBadRequestError(
-                    "Gemini system instructions support text only. "
-                    "Move files to a user message."
-                )
+            if not isinstance(message, SystemPromptMessage) or not message.content:
+                continue
+            if isinstance(message.content, str):
+                has_system_instruction = True
+                continue
+            for part in message.content:
+                if not isinstance(part, TextPromptMessageContent):
+                    raise InvokeBadRequestError(
+                        "Gemini system instructions support text only. "
+                        "Move files to a user message."
+                    )
+                if part.data:
+                    has_system_instruction = True
+
+        if model == "gemini-2.5-flash-image" and has_system_instruction:
+            raise InvokeBadRequestError(
+                "gemini-2.5-flash-image does not support system instructions. "
+                "Move the instruction to a user message."
+            )
 
         def has_content(message: PromptMessage) -> bool:
             if isinstance(message, ToolPromptMessage):
@@ -1023,7 +1033,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
-        self._validate_prompt_messages(prompt_messages)
+        self._validate_prompt_messages(model, prompt_messages)
         if (
             model_parameters.get("response_format")
             and prompt_messages
@@ -1098,7 +1108,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
-        self._validate_prompt_messages(prompt_messages)
+        self._validate_prompt_messages(model, prompt_messages)
 
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)

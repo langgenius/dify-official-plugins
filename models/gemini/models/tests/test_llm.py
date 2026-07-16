@@ -537,6 +537,30 @@ class TestBuildGeminiContents:
         assert self.mock_config.system_instruction is None
         assert [part.text for part in contents[0].parts] == ["Hello"]
 
+    def test_image_model_rejects_system_instruction_before_client_creation(self):
+        with patch("models.llm.llm.genai.Client") as client_factory:
+            with pytest.raises(
+                InvokeBadRequestError,
+                match="gemini-2.5-flash-image does not support system instructions",
+            ):
+                self.llm._generate(
+                    model="gemini-2.5-flash-image",
+                    credentials={"google_api_key": "test-key"},
+                    prompt_messages=[
+                        SystemPromptMessage(
+                            content=[
+                                TextPromptMessageContent(
+                                    data="Keep the subject centered."
+                                )
+                            ]
+                        ),
+                        UserPromptMessage(content="Draw a red fox."),
+                    ],
+                    model_parameters={},
+                )
+
+        client_factory.assert_not_called()
+
     @pytest.mark.parametrize(
         "extra_messages",
         [
