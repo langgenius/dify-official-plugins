@@ -27,10 +27,31 @@ jobs:
         with:
           fetch-depth: 0
 
+      - id: base-sha
+        name: Resolve base SHA from last successful run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_SHA: ${{ github.sha }}
+          FALLBACK_SHA: ${{ github.event.before }}
+        run: |
+          LAST_SUCCESS_SHA=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/upload-merged-plugin.yaml/runs?status=success&branch=main&per_page=10" \
+            | jq -r --arg current "$CURRENT_SHA" \
+              '[.workflow_runs[] | select(.head_sha != $current)] | first | .head_sha // empty' \
+            2>/dev/null || true)
+
+          if [ -n "$LAST_SUCCESS_SHA" ]; then
+            echo "base_sha=$LAST_SUCCESS_SHA" >> "$GITHUB_OUTPUT"
+            echo "Using last successful run SHA: $LAST_SUCCESS_SHA"
+          else
+            echo "base_sha=$FALLBACK_SHA" >> "$GITHUB_OUTPUT"
+            echo "No prior successful run found; falling back to github.event.before: $FALLBACK_SHA"
+          fi
+
       - id: filter
         name: Detect changed plugins
         env:
-          BASE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ steps.base-sha.outputs.base_sha }}
           HEAD_SHA: ${{ github.sha }}
         run: .github/scripts/detect-changed-plugins.sh
 
