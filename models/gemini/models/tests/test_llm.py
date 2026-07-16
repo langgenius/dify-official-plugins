@@ -671,12 +671,22 @@ class TestBuildGeminiContents:
                 model_parameters={},
             )
 
-    def test_bad_request_mapping_preserves_error_type(self):
-        error = self.llm._transform_invoke_error(
-            InvokeBadRequestError("Invalid prompt")
-        )
-
-        assert isinstance(error, InvokeBadRequestError)
+    def test_public_invoke_preserves_bad_request_error_type(self):
+        with patch.object(
+            self.llm,
+            "_validate_and_filter_model_parameters",
+            return_value={},
+        ):
+            with pytest.raises(InvokeBadRequestError):
+                next(
+                    self.llm.invoke(
+                        model="gemini-pro",
+                        credentials={"google_api_key": "test-key"},
+                        prompt_messages=[
+                            SystemPromptMessage(content="Instruction"),
+                        ],
+                    )
+                )
 
     def test_code_block_wrapper_rejects_multimodal_system_before_conversion(self):
         messages = [
