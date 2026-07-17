@@ -60,12 +60,14 @@ class GoogleImageSearchTool(Tool):
             yield self.create_text_message(
                 f"Invalid 'hl' parameter: {hl}. Please refer to https://serpapi.com/google-languages for a list of valid language codes."
             )
+            return
 
         # Validate 'gl' (country) code
         if gl not in VALID_COUNTRIES:
             yield self.create_text_message(
                 f"Invalid 'gl' parameter: {gl}. Please refer to https://serpapi.com/google-countries for a list of valid country codes."
             )
+            return
 
         params = {
             "api_key": self.runtime.credentials["serpapi_api_key"],
