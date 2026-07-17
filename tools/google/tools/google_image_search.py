@@ -78,7 +78,7 @@ class GoogleImageSearchTool(Tool):
             "location": location,
         }
         try:
-            response = requests.get(url=SERP_API_URL, params=params)
+            response = requests.get(url=SERP_API_URL, params=params, timeout=10)
             response.raise_for_status()
 
             valuable_res = self._parse_response(response.json(), max_results)

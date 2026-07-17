@@ -82,7 +82,7 @@ class GoogleSearchTool(Tool):
         self._set_params_language_code(params, tool_parameters)
 
         try:
-            response = requests.get(url=self.SERP_API_URL, params=params)
+            response = requests.get(url=self.SERP_API_URL, params=params, timeout=10)
             response.raise_for_status()
 
             tool_invoke_results = response.json()
