@@ -25,11 +25,15 @@ def _api_key() -> str:
 
 
 API_KEY = _api_key()
+LIVE_ENABLED = os.getenv("RUN_MOONSHOT_LIVE") == "1"
 pytestmark = [
     pytest.mark.live,
     pytest.mark.skipif(
-        not API_KEY,
-        reason="MOONSHOT_API_KEY is missing from the environment and .env",
+        not (API_KEY and LIVE_ENABLED),
+        reason=(
+            "set RUN_MOONSHOT_LIVE=1 and provide MOONSHOT_API_KEY "
+            "in the environment or .env"
+        ),
     ),
 ]
 
