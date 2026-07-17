@@ -156,8 +156,8 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials = credentials or {}
         model_name = credentials.get("_current_model", "").lower()
 
-        # 判断是否为支持深度思考模式的模型（K2.5、K2.6 以及 K2-thinking 系列）
-        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2-thinking"])
+        # 判断是否为支持深度思考模式的模型（K2.5、K2.6、K2.7、K3 以及 K2-thinking 系列）
+        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2.7", "k3", "k2-thinking"])
 
         # Use base implementation for standard conversion
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
