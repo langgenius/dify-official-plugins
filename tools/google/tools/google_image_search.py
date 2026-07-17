@@ -55,6 +55,11 @@ class GoogleImageSearchTool(Tool):
         location = tool_parameters.get("location", "")
         max_results = tool_parameters.get("max_results", 3)
 
+        serpapi_api_key = self.runtime.credentials.get("serpapi_api_key")
+        if not serpapi_api_key:
+            yield self.create_text_message("SerpAPI API key is required.")
+            return
+
         # Validate 'hl' (language) code
         if hl not in VALID_LANGUAGES:
             yield self.create_text_message(
@@ -70,7 +75,7 @@ class GoogleImageSearchTool(Tool):
             return
 
         params = {
-            "api_key": self.runtime.credentials["serpapi_api_key"],
+            "api_key": serpapi_api_key,
             "q": tool_parameters["query"],
             "engine": "google_images",
             "gl": gl,
