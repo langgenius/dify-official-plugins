@@ -13,3 +13,8 @@ dependencies = [
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = []
+
+[tool.pytest.ini_options]
+markers = [
+    "live: sends billable requests to the real Moonshot API",
+]

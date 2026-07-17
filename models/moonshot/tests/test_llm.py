@@ -1,9 +1,15 @@
+import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
+import pytest
 import yaml
-from dify_plugin.entities.model import AIModelEntity
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    ModelFeature,
+    ModelPropertyKey,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     TextPromptMessageContent,
@@ -201,19 +207,113 @@ def test_stream_reasoning_ignores_empty_chunks():
     ) == ("answer", False)
 
 
-def test_legacy_max_tokens_maps_to_max_completion_tokens():
-    for model in (
-        "kimi-k3",
-        "kimi-k2.7-code",
-        "kimi-k2.7-code-highspeed",
-    ):
-        raw = yaml.safe_load(
-            (ROOT / "models" / "llm" / f"{model}.yaml").read_text(),
-        )
-        llm = _llm([AIModelEntity.model_validate(raw)])
+@pytest.mark.parametrize(
+    ("model", "context_size", "default_tokens", "max_tokens"),
+    [
+        ("kimi-k3", 1_048_576, 131_072, 1_048_576),
+        ("kimi-k2.7-code", 262_144, 32_768, 262_144),
+        ("kimi-k2.7-code-highspeed", 262_144, 32_768, 262_144),
+    ],
+)
+def test_new_model_schema_and_token_limits(
+    model: str,
+    context_size: int,
+    default_tokens: int,
+    max_tokens: int,
+):
+    raw = yaml.safe_load(
+        (ROOT / "models" / "llm" / f"{model}.yaml").read_text(),
+    )
+    schema = AIModelEntity.model_validate(raw)
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+    token_rule = rules["max_completion_tokens"]
 
-        assert llm._validate_and_filter_model_parameters(
+    assert schema.model_properties[ModelPropertyKey.CONTEXT_SIZE] == context_size
+    assert {
+        ModelFeature.VIDEO,
+        ModelFeature.STRUCTURED_OUTPUT,
+    }.issubset(schema.features or [])
+    assert token_rule.use_template == "max_tokens"
+    assert token_rule.default == default_tokens
+    assert token_rule.max == max_tokens
+    assert "json_schema" in rules["response_format"].options
+    assert rules["json_schema"].use_template == "json_schema"
+
+    llm = _llm([schema])
+    assert llm._validate_and_filter_model_parameters(
+        model,
+        {"max_tokens": max_tokens},
+        {},
+    ) == {"max_completion_tokens": max_tokens}
+    with pytest.raises(ValueError, match="less than or equal"):
+        llm._validate_and_filter_model_parameters(
             model,
-            {"max_tokens": 123},
+            {"max_completion_tokens": max_tokens + 1},
             {},
-        ) == {"max_completion_tokens": 123}
+        )
+
+
+def test_json_schema_is_sent_to_api():
+    model = "kimi-k2.7-code"
+    raw = yaml.safe_load(
+        (ROOT / "models" / "llm" / f"{model}.yaml").read_text(),
+    )
+    llm = _llm([AIModelEntity.model_validate(raw)])
+    output_schema = {
+        "name": "moonshot_test",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"],
+            "additionalProperties": False,
+        },
+    }
+    response = Mock()
+    response.status_code = 200
+    response.encoding = "utf-8"
+    response.json.return_value = {
+        "id": "chatcmpl-1",
+        "model": model,
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": '{"answer":"ok"}',
+                },
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 2,
+            "total_tokens": 3,
+        },
+    }
+
+    with patch(
+        "dify_plugin.interfaces.model.openai_compatible.llm.requests.post",
+        return_value=response,
+    ) as post:
+        chunks = list(
+            llm.invoke(
+                model=model,
+                credentials={"api_key": "test"},
+                prompt_messages=[UserPromptMessage(content="Reply with JSON.")],
+                model_parameters={
+                    "max_tokens": 128,
+                    "response_format": "json_schema",
+                    "json_schema": json.dumps(output_schema),
+                },
+                stream=False,
+            ),
+        )
+
+    request = post.call_args.kwargs["json"]
+    assert request["max_completion_tokens"] == 128
+    assert request["response_format"] == {
+        "type": "json_schema",
+        "json_schema": output_schema,
+    }
+    assert "json_schema" not in request
+    assert chunks[0].delta.message.content == '{"answer":"ok"}'
