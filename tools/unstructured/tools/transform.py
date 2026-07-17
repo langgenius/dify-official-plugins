@@ -5,7 +5,7 @@ from collections.abc import Generator
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 from dify_plugin import Tool
@@ -16,44 +16,117 @@ from mcp.client.streamable_http import streamable_http_client
 
 _TERMINAL_STATUSES = {"COMPLETED", "FAILED", "STOPPED"}
 _DEFAULT_MCP_URL = "https://mcp.transform.unstructured.io"
+_REQUIRED_TRANSFORM_TOOLS = {
+    "request_file_upload_url",
+    "transform_files",
+    "check_transform_status",
+    "get_transform_results",
+}
+_JOB_TIMEOUT_SECONDS = 10 * 60
+_RESULTS_RETRY_SECONDS = 2
+
+
+class _TransformToolError(RuntimeError):
+    def __init__(self, error: dict[str, Any]) -> None:
+        self.code = str(error.get("code") or "")
+        super().__init__(error.get("message") or json.dumps(error))
 
 
 def _split_csv(value: str | None) -> list[str]:
     return [item.strip() for item in (value or "").split(",") if item.strip()]
 
 
-def _tool_payload(result: Any) -> dict[str, Any]:
-    if getattr(result, "isError", False):
-        text = next(
-            (
-                item.text
-                for item in result.content
-                if getattr(item, "type", None) == "text"
-            ),
-            "Transform MCP tool call failed",
-        )
-        raise RuntimeError(text)
+def _raise_tool_error(error: Any) -> None:
+    if isinstance(error, dict):
+        raise _TransformToolError(error)
+    raise RuntimeError(str(error))
 
+
+def _tool_payload(result: Any) -> dict[str, Any]:
     structured = getattr(result, "structuredContent", None)
     if isinstance(structured, dict):
         payload = structured.get("result", structured)
         if isinstance(payload, dict):
             if payload.get("error"):
-                error = payload["error"]
-                raise RuntimeError(error.get("message", json.dumps(error)))
-            return payload
+                _raise_tool_error(payload["error"])
+            if not getattr(result, "isError", False):
+                return payload
 
     text = next(
-        (item.text for item in result.content if getattr(item, "type", None) == "text"),
+        (
+            item.text
+            for item in getattr(result, "content", [])
+            if getattr(item, "type", None) == "text"
+        ),
         None,
     )
     if text is None:
+        if getattr(result, "isError", False):
+            raise RuntimeError("Transform MCP tool call failed")
         raise RuntimeError("Transform MCP returned no structured or text content")
-    payload = json.loads(text)
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        if getattr(result, "isError", False):
+            raise RuntimeError(text) from None
+        raise
     if payload.get("error"):
-        error = payload["error"]
-        raise RuntimeError(error.get("message", json.dumps(error)))
+        _raise_tool_error(payload["error"])
     return payload
+
+
+def _require_https_transform_url(api_url: str) -> None:
+    parsed = urlparse(api_url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ToolProviderCredentialValidationError(
+            "Enter a valid HTTPS Transform MCP URL"
+        )
+
+
+def _validate_transform_tools(names: set[str]) -> None:
+    missing = sorted(_REQUIRED_TRANSFORM_TOOLS - names)
+    if missing:
+        raise RuntimeError(f"endpoint is missing required tools: {', '.join(missing)}")
+
+
+def _redacted_url(url: Any) -> str:
+    parsed = urlparse(str(url))
+    return urlunparse(parsed._replace(query="", fragment=""))
+
+
+def _ensure_transfer_success(response: httpx.Response, operation: str) -> None:
+    if response.is_success:
+        return
+    raise RuntimeError(
+        f"{operation} failed with HTTP {response.status_code} at "
+        f"{_redacted_url(response.request.url)}"
+    )
+
+
+async def _get_transform_results(
+    session: ClientSession,
+    *,
+    job_id: str,
+    output_format: str,
+    deadline: float,
+) -> dict[str, Any]:
+    while True:
+        try:
+            return _tool_payload(
+                await session.call_tool(
+                    "get_transform_results",
+                    {"job_id": job_id, "output_format": output_format},
+                )
+            )
+        except _TransformToolError as exc:
+            if exc.code != "job_not_complete":
+                raise
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Transform job {job_id} results were not ready within 10 minutes"
+                ) from exc
+            await asyncio.sleep(min(_RESULTS_RETRY_SECONDS, remaining))
 
 
 def _stages(parameters: dict[str, Any]) -> dict[str, Any]:
@@ -89,11 +162,7 @@ class TransformTool(Tool):
             raise ToolProviderCredentialValidationError(
                 "Enter an Unstructured Transform API key"
             )
-        parsed = urlparse(api_url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ToolProviderCredentialValidationError(
-                "Enter a valid Transform MCP URL"
-            )
+        _require_https_transform_url(api_url)
         try:
             asyncio.run(TransformTool._validate_connection(api_url, api_key))
         except Exception as exc:
@@ -116,8 +185,7 @@ class TransformTool(Tool):
                     await session.initialize()
                     tools = await session.list_tools()
                     names = {tool.name for tool in tools.tools}
-                    if "transform_files" not in names:
-                        raise RuntimeError("endpoint does not expose transform_files")
+                    _validate_transform_tools(names)
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         credentials = self.runtime.credentials
@@ -131,6 +199,7 @@ class TransformTool(Tool):
             raise ToolProviderCredentialValidationError(
                 "Enter an Unstructured Transform API key"
             )
+        _require_https_transform_url(api_url)
 
         result = asyncio.run(
             self._transform(
@@ -218,7 +287,7 @@ class TransformTool(Tool):
                             headers=upload.get("headers") or {},
                             content=file.blob,
                         )
-                        upload_response.raise_for_status()
+                        _ensure_transfer_success(upload_response, "File upload")
                         file_ref = upload["file_ref"]
                         source_name = file.filename
                     else:
@@ -233,7 +302,8 @@ class TransformTool(Tool):
                     )
                     job_id = job["job_id"]
 
-                    for _ in range(20):
+                    deadline = asyncio.get_running_loop().time() + _JOB_TIMEOUT_SECONDS
+                    while True:
                         status = _tool_payload(
                             await session.call_tool(
                                 "check_transform_status", {"job_id": job_id}
@@ -242,27 +312,29 @@ class TransformTool(Tool):
                         state = status["status"]
                         if state in _TERMINAL_STATUSES:
                             break
-                        await asyncio.sleep(int(status.get("poll_after") or 30))
-                    else:
-                        raise TimeoutError(
-                            f"Transform job {job_id} did not finish within 10 minutes"
-                        )
+                        remaining = deadline - asyncio.get_running_loop().time()
+                        if remaining <= 0:
+                            raise TimeoutError(
+                                f"Transform job {job_id} did not finish within 10 minutes"
+                            )
+                        poll_after = max(float(status.get("poll_after") or 30), 1)
+                        await asyncio.sleep(min(poll_after, remaining))
 
                     if state != "COMPLETED":
                         raise RuntimeError(f"Transform job {job_id} ended with {state}")
 
-                    results = _tool_payload(
-                        await session.call_tool(
-                            "get_transform_results",
-                            {"job_id": job_id, "output_format": output_format},
-                        )
+                    results = await _get_transform_results(
+                        session,
+                        job_id=job_id,
+                        output_format=output_format,
+                        deadline=deadline,
                     )
                     first = results["files"][0]
                     if "content" in first:
                         content = first["content"].encode("utf-8")
                     else:
                         download = await transfer_http.get(first["download_url"])
-                        download.raise_for_status()
+                        _ensure_transfer_success(download, "Result download")
                         content = download.content
 
         suffix = {"md": ".md", "json": ".json", "html": ".html", "txt": ".txt"}[
