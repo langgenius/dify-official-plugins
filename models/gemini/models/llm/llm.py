@@ -48,6 +48,7 @@ IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview
 
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
+_DISABLE_SYSTEM_PROMOTION = "_disable_system_promotion"
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -504,7 +505,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param model_parameters: model parameters dictionary
         :return: list of Gemini Content objects ready for use
         """
-        contents = []
+        message_contents = []
+        system_parts = []
+        scalar_system_part_indexes = []
+        last_system_string = None
+        has_text_system_parts = False
+        has_structured_system_fallback = False
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -513,6 +519,35 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         for msg in prompt_messages:
+            if isinstance(msg, SystemPromptMessage):
+                if isinstance(msg.content, str):
+                    last_system_string = msg.content
+                    if msg.content:
+                        scalar_system_part_indexes.append(len(system_parts))
+                        system_parts.append(types.Part.from_text(text=msg.content))
+                    continue
+
+                if (
+                    isinstance(msg.content, list)
+                    and msg.content
+                    and all(
+                        isinstance(part, TextPromptMessageContent) and part.data
+                        for part in msg.content
+                    )
+                ):
+                    has_text_system_parts = True
+                    parts = [
+                        types.Part.from_text(text=part.data) for part in msg.content
+                    ]
+                    system_parts.extend(parts)
+                    message_contents.append(
+                        (types.Content(role="user", parts=parts), True, False)
+                    )
+                    continue
+
+                if isinstance(msg.content, list):
+                    has_structured_system_fallback = True
+
             content = self._format_message_to_gemini_content(
                 msg,
                 genai_client,
@@ -523,12 +558,52 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
             if not content:
                 continue
+            message_contents.append(
+                (content, False, isinstance(msg, UserPromptMessage))
+            )
 
+        ordinary_contents = [
+            (content, is_user_message)
+            for content, is_structured_system, is_user_message in message_contents
+            if not is_structured_system
+        ]
+        promote_structured_system = (
+            has_text_system_parts
+            and not has_structured_system_fallback
+            and not (model_parameters or {}).get(_DISABLE_SYSTEM_PROMOTION)
+            and last_system_string != ""
+            and ordinary_contents
+            and ordinary_contents[0][1]
+            and all(content.parts for content, _ in ordinary_contents)
+        )
+
+        if promote_structured_system:
+            selected_contents = [
+                content
+                for content, is_structured_system, _ in message_contents
+                if not is_structured_system
+            ]
+            superseded_scalar_parts = set(scalar_system_part_indexes[:-1])
+            config.system_instruction = types.Content(
+                parts=[
+                    part
+                    for index, part in enumerate(system_parts)
+                    if index not in superseded_scalar_parts
+                ]
+            )
+        else:
+            selected_contents = [content for content, _, _ in message_contents]
+            if last_system_string is not None:
+                config.system_instruction = last_system_string
+
+        contents = []
+        for content in selected_contents:
             # Merge consecutive messages with same role for proper alternation
             if contents and contents[-1].role == content.role:
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
+
         return contents
 
     def _format_message_to_gemini_content(
@@ -628,14 +703,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             return types.Content(role="model", parts=parts)
 
         elif isinstance(message, SystemPromptMessage):
-            # String content -> system instruction
-            if isinstance(message.content, str):
-                config.system_instruction = message.content
-                return None
-
-            # List content -> convert to user message (Files[] compatibility)
             if isinstance(message.content, list):
                 return types.Content(role="user", parts=build_parts(message.content))
+            return None
 
         elif isinstance(message, ToolPromptMessage):
             return types.Content(
@@ -928,6 +998,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
         return message
 
+    def _code_block_mode_wrapper(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        if model_parameters.get("response_format"):
+            model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
+        return super()._code_block_mode_wrapper(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
+
     def _invoke(
         self,
         model: str,
@@ -977,6 +1071,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        if model == "gemini-2.5-flash-image":
+            model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
 
         # == InitConfig == #
 
@@ -1049,10 +1145,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if not contents:
             if config.system_instruction:
                 # When only system instruction is provided, add it as a user message
+                instruction_parts = (
+                    config.system_instruction.parts
+                    if isinstance(config.system_instruction, types.Content)
+                    else [types.Part.from_text(text=config.system_instruction)]
+                )
+                if isinstance(config.system_instruction, types.Content):
+                    config.system_instruction = None
                 contents = [
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_text(text=config.system_instruction)],
+                        parts=instruction_parts,
                     )
                 ]
             else:
