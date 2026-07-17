@@ -1,4 +1,4 @@
-version: 0.1.1
+version: 0.1.2
 type: plugin
 author: langgenius
 name: shengsuanyun
@@ -26,7 +26,7 @@ plugins:
   models:
     - provider/shengsuanyun.yaml
 meta:
-  version: 0.1.1
+  version: 0.1.2
   arch:
     - amd64
     - arm64

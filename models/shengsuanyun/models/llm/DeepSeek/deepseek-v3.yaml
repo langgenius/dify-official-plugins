@@ -6,18 +6,18 @@ features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 65536
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 16000
+    default: 8192
     min: 1
-    max: 16000
+    max: 8192
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.002911'
-  output: '0.011645'
+  input: '0.002857'
+  output: '0.011428'
   currency: CNY
   unit: '0.000001'

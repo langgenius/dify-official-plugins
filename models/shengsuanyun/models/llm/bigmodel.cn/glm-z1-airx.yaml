@@ -1,6 +1,6 @@
 model: bigmodel/glm-z1-airx
 label:
-  en_US: GLM-Z1-AirX
+  en_US: ​​GLM-Z1-AirX
 model_type: llm
 features:
   - agent-thought
@@ -17,7 +17,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.007278'
-  output: '0.007278'
+  input: '0.007142'
+  output: '0.007142'
   currency: CNY
   unit: '0.000001'

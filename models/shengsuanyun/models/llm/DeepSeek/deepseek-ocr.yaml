@@ -18,7 +18,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.000436'
-  output: '0.001746'
+  input: '0.000428'
+  output: '0.001714'
   currency: CNY
   unit: '0.000001'
