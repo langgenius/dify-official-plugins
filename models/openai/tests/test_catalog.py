@@ -38,8 +38,6 @@ REMOVED_MODELS = {
     "gpt-4-turbo",
     "gpt-4-turbo-2024-04-09",
     "gpt-4-turbo-preview",
-    "gpt-4.1-nano",
-    "gpt-4.1-nano-2025-04-14",
     "gpt-4o",
     "gpt-4o-2024-05-13",
     "gpt-4o-audio-preview",
@@ -159,8 +157,8 @@ def test_version_one_is_consistent_and_documented() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert manifest["version"] == "1.0.0"
-    assert project["project"]["version"] == "1.0.0"
+    assert manifest["version"] == "1.0.1"
+    assert project["project"]["version"] == "1.0.1"
     assert "Version 1.0 is a major rewrite" in readme
     permissions = manifest["resource"]["permission"]["model"]
     assert permissions["enabled"] is True
