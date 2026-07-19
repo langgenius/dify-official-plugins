@@ -498,6 +498,317 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_system_message_with_text_parts_as_instruction(self):
+        """Test that text-only system message parts stay system instructions"""
+        messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="You are a helpful assistant."),
+                    TextPromptMessageContent(data="Keep answers concise."),
+                ]
+            ),
+            UserPromptMessage(content="Hello"),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant.",
+            "Keep answers concise.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts[0].text == "Hello"
+
+    def test_image_model_keeps_text_system_parts_as_user_content(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model="gemini-2.5-flash-image",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="Keep the subject centered.")
+                        ]
+                    ),
+                    UserPromptMessage(content="Draw a red fox."),
+                ],
+                model_parameters={},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert request["config"].system_instruction is None
+        assert [part.text for part in request["contents"][0].parts] == [
+            "Keep the subject centered.",
+            "Draw a red fox.",
+        ]
+
+    def test_multiple_text_system_messages_keep_last_scalar(self):
+        messages = [
+            SystemPromptMessage(content="First instruction."),
+            SystemPromptMessage(content="Second instruction."),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Third instruction.")]
+            ),
+            UserPromptMessage(content="Hello"),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Fourth instruction.")]
+            ),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "Second instruction.",
+            "Third instruction.",
+            "Fourth instruction.",
+        ]
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
+    def test_empty_scalar_system_clears_previous_instruction_on_fallback(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content="Policy"),
+                SystemPromptMessage(content=""),
+                SystemPromptMessage(
+                    content=[
+                        TextPromptMessageContent(data=""),
+                        TextPromptMessageContent(data="Task"),
+                    ]
+                ),
+                UserPromptMessage(content="Question"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction == ""
+        assert [part.text for part in contents[0].parts] == ["Task", "Question"]
+
+    def test_empty_text_system_part_keeps_config_empty(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content=[TextPromptMessageContent(data="")]),
+                UserPromptMessage(content="Hello"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
+    def test_partially_empty_text_system_keeps_user_fallback(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[
+                        TextPromptMessageContent(data=""),
+                        TextPromptMessageContent(data="Instruction"),
+                    ]
+                ),
+                UserPromptMessage(content="Question"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == [
+            "Instruction",
+            "Question",
+        ]
+
+    def test_system_only_text_parts_reach_generation(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="First instruction."),
+                            TextPromptMessageContent(data="Second instruction."),
+                        ]
+                    )
+                ],
+                model_parameters={},
+            )
+
+        contents = mock_client.models.generate_content_stream.call_args.kwargs[
+            "contents"
+        ]
+        assert [part.text for part in contents[0].parts] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+        assert (
+            mock_client.models.generate_content_stream.call_args.kwargs[
+                "config"
+            ].system_instruction
+            is None
+        )
+
+    @pytest.mark.parametrize(
+        "empty_message",
+        [
+            UserPromptMessage(content=""),
+            SystemPromptMessage(content=[]),
+        ],
+    )
+    def test_empty_turn_keeps_legacy_system_only_roles(self, empty_message):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(content="Policy"),
+                    SystemPromptMessage(
+                        content=[TextPromptMessageContent(data="Task")]
+                    ),
+                    empty_message,
+                ],
+                model_parameters={},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert request["config"].system_instruction == "Policy"
+        assert [part.text for part in request["contents"][0].parts] == ["Task"]
+
+    @pytest.mark.parametrize(
+        "empty_message",
+        [
+            UserPromptMessage(content=""),
+            UserPromptMessage(
+                content=[
+                    DocumentPromptMessageContent(
+                        format="docx",
+                        base64_data="dGVzdA==",
+                        mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                ]
+            ),
+        ],
+    )
+    def test_later_empty_turn_disables_text_system_promotion(self, empty_message):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                UserPromptMessage(content="Question"),
+                AssistantPromptMessage(content="Answer"),
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Later policy")]
+                ),
+                empty_message,
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [content.role for content in contents] == ["user", "model", "user"]
+        assert [part.text for part in contents[-1].parts] == ["Later policy"]
+
+    def test_structured_output_keeps_legacy_system_fallback(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._code_block_mode_wrapper(
+                model="gemini-pro",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(content=[TextPromptMessageContent(data="")]),
+                    SystemPromptMessage(
+                        content=[TextPromptMessageContent(data="Task")]
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={"response_format": "JSON"},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert isinstance(request["config"].system_instruction, str)
+        assert [part.text for part in request["contents"][0].parts] == [
+            "Task",
+            "Question\n```JSON\n",
+        ]
+
+    def test_text_system_fallback_keeps_user_before_assistant(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Instruction")]
+                ),
+                AssistantPromptMessage(content="Answer"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [content.role for content in contents] == ["user", "model"]
+        assert [part.text for part in contents[0].parts] == ["Instruction"]
+
+    def test_text_system_fallback_keeps_tool_response_with_user_content(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(
+                    content=[TextPromptMessageContent(data="Instruction")]
+                ),
+                ToolPromptMessage(
+                    name="lookup",
+                    content="Result",
+                    tool_call_id="call-1",
+                ),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts[:1]] == ["Instruction"]
+        assert contents[0].parts[1].function_response.name == "lookup"
+
+    def test_empty_user_keeps_scalar_system_request_shape(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content="Policy"),
+                UserPromptMessage(content=""),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction == "Policy"
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts == []
+
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""
         messages = [
@@ -510,7 +821,9 @@ class TestBuildGeminiContents:
                         mime_type="image/png",
                     ),
                 ]
-            )
+            ),
+            SystemPromptMessage(content=[TextPromptMessageContent(data="After image")]),
+            UserPromptMessage(content="Question"),
         ]
 
         # Mock the file upload since we have multimodal content
@@ -533,9 +846,12 @@ class TestBuildGeminiContents:
 
         assert len(contents) == 1
         assert contents[0].role == "user"
-        assert len(contents[0].parts) == 2
+        assert self.mock_config.system_instruction is None
+        assert len(contents[0].parts) == 4
         assert contents[0].parts[0].text == "System context with image:"
         assert contents[0].parts[1].file_data.file_uri == "gs://test-file-uri"
+        assert contents[0].parts[2].text == "After image"
+        assert contents[0].parts[3].text == "Question"
 
     def test_tool_message(self):
         """Test conversion of tool prompt messages"""
