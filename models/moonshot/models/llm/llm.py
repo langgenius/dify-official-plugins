@@ -23,6 +23,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
+from dify_plugin.errors.model import CredentialsValidateFailedError
 from requests import Response
 
 
@@ -37,6 +38,8 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         "kimi-k2.7-code-highspeed",
         "kimi-k3",
     }
+    _INTERNATIONAL_ENDPOINT = "https://api.moonshot.ai/v1"
+    _MAINLAND_ENDPOINT = "https://api.moonshot.cn/v1"
 
     def _invoke(
         self,
@@ -122,8 +125,36 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         return cleaned
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        # An explicitly set endpoint_url (including a proxy/gateway URL) is used
+        # as-is with no fallback, so existing configurations stay untouched.
+        if credentials.get("endpoint_url"):
+            self._add_custom_parameters(credentials)
+            super().validate_credentials(model, credentials)
+            return
+
+        # endpoint_url left blank: Moonshot runs two platforms whose API keys are
+        # not interchangeable. Try the international endpoint first (the platform
+        # the plugin's docs point to), then mainland China, and persist whichever
+        # authenticates so later invokes use it directly without re-probing.
+        last_error: CredentialsValidateFailedError | None = None
+        for endpoint_url in (self._INTERNATIONAL_ENDPOINT, self._MAINLAND_ENDPOINT):
+            trial = dict(credentials)
+            trial["endpoint_url"] = endpoint_url
+            self._add_custom_parameters(trial)
+            try:
+                super().validate_credentials(model, trial)
+            except CredentialsValidateFailedError as error:
+                last_error = error
+                continue
+            credentials["endpoint_url"] = endpoint_url
+            self._add_custom_parameters(credentials)
+            return
+
+        # Both endpoints rejected the key: it is genuinely invalid, so surface the
+        # original authentication error (from the mainland attempt, matching the
+        # pre-change default) rather than a synthesized one.
+        if last_error is not None:
+            raise last_error
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
@@ -173,8 +204,8 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        if "endpoint_url" not in credentials or credentials["endpoint_url"] == "":
-            credentials["endpoint_url"] = "https://api.moonshot.cn/v1"
+        if not credentials.get("endpoint_url"):
+            credentials["endpoint_url"] = self._MAINLAND_ENDPOINT
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)

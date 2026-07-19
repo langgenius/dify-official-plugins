@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import yaml
+from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import (
     AIModelEntity,
     ModelFeature,
@@ -16,6 +17,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
+from dify_plugin.errors.model import CredentialsValidateFailedError
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -317,3 +319,84 @@ def test_json_schema_is_sent_to_api():
     }
     assert "json_schema" not in request
     assert chunks[0].delta.message.content == '{"answer":"ok"}'
+
+
+INTERNATIONAL = "https://api.moonshot.ai/v1"
+MAINLAND = "https://api.moonshot.cn/v1"
+
+
+def _base_validate_accepting(valid_endpoint, attempts):
+    """A fake OAICompat base validate_credentials that authenticates only for
+    valid_endpoint and records every endpoint it was called with."""
+
+    def _validate(self, model, credentials):
+        attempts.append(credentials.get("endpoint_url"))
+        if credentials.get("endpoint_url") != valid_endpoint:
+            raise CredentialsValidateFailedError(
+                f"401 invalid_authentication_error for {credentials.get('endpoint_url')}"
+            )
+
+    return _validate
+
+
+def test_blank_endpoint_resolves_to_international_and_persists():
+    llm = _llm()
+    credentials = {"api_key": "intl-key"}
+    attempts = []
+    with patch.object(
+        OAICompatLargeLanguageModel,
+        "validate_credentials",
+        _base_validate_accepting(INTERNATIONAL, attempts),
+    ):
+        llm.validate_credentials("moonshot-v1-8k", credentials)
+
+    assert credentials["endpoint_url"] == INTERNATIONAL
+    assert attempts[0] == INTERNATIONAL  # international tried first
+
+
+def test_blank_endpoint_resolves_to_mainland_and_persists():
+    llm = _llm()
+    credentials = {"api_key": "cn-key"}
+    attempts = []
+    with patch.object(
+        OAICompatLargeLanguageModel,
+        "validate_credentials",
+        _base_validate_accepting(MAINLAND, attempts),
+    ):
+        llm.validate_credentials("moonshot-v1-8k", credentials)
+
+    assert credentials["endpoint_url"] == MAINLAND
+    assert attempts == [INTERNATIONAL, MAINLAND]  # international first, then mainland
+
+
+def test_blank_endpoint_invalid_key_surfaces_original_error_and_persists_nothing():
+    llm = _llm()
+    credentials = {"api_key": "bad-key"}
+    attempts = []
+    with patch.object(
+        OAICompatLargeLanguageModel,
+        "validate_credentials",
+        _base_validate_accepting("neither", attempts),
+    ):
+        with pytest.raises(CredentialsValidateFailedError) as excinfo:
+            llm.validate_credentials("moonshot-v1-8k", credentials)
+
+    assert attempts == [INTERNATIONAL, MAINLAND]  # both tried
+    assert MAINLAND in str(excinfo.value)  # original mainland 401 surfaced, not synthesized
+    assert not credentials.get("endpoint_url")  # nothing persisted on failure
+
+
+def test_explicit_endpoint_is_used_as_is_with_no_fallback():
+    llm = _llm()
+    proxy = "https://proxy.internal.example/v1"
+    credentials = {"api_key": "k", "endpoint_url": proxy}
+    attempts = []
+    with patch.object(
+        OAICompatLargeLanguageModel,
+        "validate_credentials",
+        _base_validate_accepting(proxy, attempts),
+    ):
+        llm.validate_credentials("moonshot-v1-8k", credentials)
+
+    assert credentials["endpoint_url"] == proxy  # untouched
+    assert attempts == [proxy]  # exactly one attempt, no fallback probing
