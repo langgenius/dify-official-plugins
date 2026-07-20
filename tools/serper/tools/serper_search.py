@@ -22,9 +22,22 @@ class SerperSearchTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
+        serperapi_api_key = self.runtime.credentials.get("serperapi_api_key")
+        if not serperapi_api_key:
+            yield self.create_text_message("Serper.dev API key is required.")
+            return
+
         params = {"q": tool_parameters["query"], "gl": "us", "hl": "en"}
-        headers = {"X-API-KEY": self.runtime.credentials["serperapi_api_key"], "Content-Type": "application/json"}
-        response = requests.get(url=SERPER_API_URL, params=params, headers=headers)
-        response.raise_for_status()
-        valuable_res = self._parse_response(response.json())
+        headers = {"X-API-KEY": serperapi_api_key, "Content-Type": "application/json"}
+        try:
+            response = requests.get(
+                url=SERPER_API_URL, params=params, headers=headers, timeout=10
+            )
+            response.raise_for_status()
+            valuable_res = self._parse_response(response.json())
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         yield self.create_json_message(valuable_res)
