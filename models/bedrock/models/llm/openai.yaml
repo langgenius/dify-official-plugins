@@ -22,6 +22,9 @@ parameter_rules:
     required: true
     default: GPT OSS 20B
     options:
+      - GPT-5.6 Sol
+      - GPT-5.6 Terra
+      - GPT-5.6 Luna
       - GPT-5.5
       - GPT-5.4
       - GPT OSS 120B
@@ -79,6 +82,23 @@ parameter_rules:
     help:
       zh_Hans: 在核采样中的概率阈值。
       en_US: The probability threshold in nucleus sampling.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - none
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 仅对 GPT-5.6 / GPT-5.5 / GPT-5.4（bedrock-mantle Responses API）生效，控制推理投入程度，默认 medium。GPT OSS 等模型会忽略此参数。
+      en_US: Applies only to GPT-5.6 / GPT-5.5 / GPT-5.4 (bedrock-mantle Responses API) to control reasoning effort, defaulting to medium. Ignored by other models such as GPT OSS.
   - name: response_format
     use_template: response_format
 pricing:
