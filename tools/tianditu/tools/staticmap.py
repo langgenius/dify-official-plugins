@@ -18,28 +18,41 @@ class PoiSearchTool(Tool):
         if not keyword:
             yield self.create_text_message("Invalid parameter keyword")
             return
-        tk = self.runtime.credentials["tianditu_api_key"]
-        keyword_coords = requests.get(
-            geocoder_base_url
-            + "?ds="
-            + json.dumps({"keyWord": keyword}, ensure_ascii=False)
-            + "&tk="
-            + tk
-        ).json()
-        coords = (
-            str(keyword_coords["location"]["lon"])
-            + ","
-            + str(keyword_coords["location"]["lat"])
-        )
-        result = requests.get(
-            base_url
-            + "?center="
-            + coords
-            + "&markers="
-            + coords
-            + "&width=400&height=300&zoom=14&tk="
-            + tk
-        ).content
+
+        tk = self.runtime.credentials.get("tianditu_api_key")
+        if not tk:
+            yield self.create_text_message("Tianditu API key is required.")
+            return
+
+        try:
+            keyword_coords = requests.get(
+                geocoder_base_url
+                + "?ds="
+                + json.dumps({"keyWord": keyword}, ensure_ascii=False)
+                + "&tk="
+                + tk,
+                timeout=10,
+            ).json()
+            coords = (
+                str(keyword_coords["location"]["lon"])
+                + ","
+                + str(keyword_coords["location"]["lat"])
+            )
+            result = requests.get(
+                base_url
+                + "?center="
+                + coords
+                + "&markers="
+                + coords
+                + "&width=400&height=300&zoom=14&tk="
+                + tk,
+                timeout=10,
+            ).content
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         yield self.create_blob_message(
             blob=result,
             meta={"mime_type": "image/png"},
