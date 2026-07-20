@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Generator
 import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -23,7 +25,10 @@ class SearchAPI:
         """Run video_id through SearchAPI and return the raw result."""
         params = self.get_params(video_id, language, **kwargs)
         response = requests.get(
-            url=SEARCH_API_URL, params=params, headers={"Authorization": f"Bearer {self.searchapi_api_key}"}
+            url=SEARCH_API_URL,
+            params=params,
+            headers={"Authorization": f"Bearer {self.searchapi_api_key}"},
+            timeout=10,
         )
         response.raise_for_status()
         return response.json()
@@ -58,8 +63,18 @@ class YoutubeTranscriptsTool(Tool):
         """
         Invoke the SearchApi tool.
         """
+        api_key = self.runtime.credentials.get("searchapi_api_key")
+        if not api_key:
+            yield self.create_text_message("SearchAPI API key is required.")
+            return
+
         video_id = tool_parameters["video_id"]
         language = tool_parameters.get("language", "en")
-        api_key = self.runtime.credentials["searchapi_api_key"]
-        result = SearchAPI(api_key).run(video_id, language=language)
+        try:
+            result = SearchAPI(api_key).run(video_id, language=language)
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         yield self.create_text_message(text=result)
