@@ -1,4 +1,3 @@
-import json
 import re
 from contextlib import suppress
 from typing import Mapping, Optional, Union, Generator, List
@@ -62,7 +61,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # delta without reasoning/content should just close the block
             if len(reasoning_piece) == 0 and len(content_piece) == 0:
                 is_reasoning = False
-                output += f"\n</think>"
+                output += "\n</think>"
             # sometimes reasoning_piece is not empty and content_piece is not empty. but if content_piece is not empty, then we should not close the think block
             if len(content_piece) > 0:
                 is_reasoning = False
@@ -71,6 +70,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             output += content_piece
 
         return output, is_reasoning
+
+    @staticmethod
+    def _wrap_non_stream_reasoning_content(message: dict, content: str) -> str:
+        reasoning_piece = message.get("reasoning") or message.get("reasoning_content")
+        if not reasoning_piece:
+            return content
+        if content.startswith("<think>"):
+            return content
+        return f"<think>\n{reasoning_piece}\n</think>{content or ''}"
 
     # Timeout for validation requests: (connect_timeout, read_timeout) in seconds
     _VALIDATE_TIMEOUT = (10, 300)
@@ -609,11 +617,14 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
-        Handle non-streaming chat responses that omit `message.content` when returning tool calls.
+        Handle non-streaming chat responses that need OpenAI-compatible normalization.
 
         Some OpenAI-compatible gateways, including LiteLLM-backed Azure deployments, may
         legitimately return tool calls without a `content` field. The SDK base class indexes
         `message["content"]` directly, which raises `KeyError('content')` in that case.
+        vLLM/SGLang-compatible reasoning models can also return thinking traces in
+        `message.reasoning` or `message.reasoning_content`, while the final answer remains in
+        `message.content`.
         """
         response_json: dict = response.json()
         completion_type = LLMMode.value_of(credentials["mode"])
@@ -637,6 +648,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 response_content = ""
             else:
                 response_content = str(raw_content)
+
+            response_content = self._wrap_non_stream_reasoning_content(message, response_content)
 
             if function_calling_type == "tool_call":
                 tool_calls = message.get("tool_calls")
