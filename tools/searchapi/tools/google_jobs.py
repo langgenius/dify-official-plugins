@@ -1,9 +1,18 @@
+from __future__ import annotations
+
 from typing import Any, Generator
+import re
 import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
 SEARCH_API_URL = "https://www.searchapi.io/api/v1/search"
+
+# ISO 639-1 language code (two ASCII letters, e.g. "en", "zh"). SearchAPI rejects
+# anything else with a 422; we guard early to avoid the round trip.
+_HL_RE = re.compile(r"^[A-Za-z]{2}$")
+# ISO 3166-1 alpha-2 country code (two ASCII letters, e.g. "us", "de").
+_GL_RE = re.compile(r"^[A-Za-z]{2}$")
 
 
 class SearchAPI:
@@ -24,7 +33,10 @@ class SearchAPI:
         """Run query through SearchAPI and return the raw result."""
         params = self.get_params(query, **kwargs)
         response = requests.get(
-            url=SEARCH_API_URL, params=params, headers={"Authorization": f"Bearer {self.searchapi_api_key}"}
+            url=SEARCH_API_URL,
+            params=params,
+            headers={"Authorization": f"Bearer {self.searchapi_api_key}"},
+            timeout=10,
         )
         response.raise_for_status()
         return response.json()
@@ -74,18 +86,45 @@ class GoogleJobsTool(Tool):
         """
         Invoke the SearchApi tool.
         """
+        api_key = self.runtime.credentials.get("searchapi_api_key")
+        if not api_key:
+            yield self.create_text_message("SearchAPI API key is required.")
+            return
+
+        gl = tool_parameters.get("gl", "us")
+        hl = tool_parameters.get("hl", "en")
+        if not _GL_RE.match(gl or ""):
+            yield self.create_text_message(
+                f"Invalid 'gl' parameter: {gl!r}. Expected a two-letter ISO 3166-1 country code."
+            )
+            return
+        if not _HL_RE.match(hl or ""):
+            yield self.create_text_message(
+                f"Invalid 'hl' parameter: {hl!r}. Expected a two-letter ISO 639-1 language code."
+            )
+            return
+
         query = tool_parameters["query"]
         result_type = tool_parameters["result_type"]
         is_remote = tool_parameters.get("is_remote")
         google_domain = tool_parameters.get("google_domain", "google.com")
-        gl = tool_parameters.get("gl", "us")
-        hl = tool_parameters.get("hl", "en")
         location = tool_parameters.get("location")
         ltype = 1 if is_remote else None
-        api_key = self.runtime.credentials["searchapi_api_key"]
-        result = SearchAPI(api_key).run(
-            query, result_type=result_type, google_domain=google_domain, gl=gl, hl=hl, location=location, ltype=ltype
-        )
+        try:
+            result = SearchAPI(api_key).run(
+                query,
+                result_type=result_type,
+                google_domain=google_domain,
+                gl=gl,
+                hl=hl,
+                location=location,
+                ltype=ltype,
+            )
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         if result_type == "text":
             yield self.create_text_message(text=result)
         yield self.create_link_message(link=result)
