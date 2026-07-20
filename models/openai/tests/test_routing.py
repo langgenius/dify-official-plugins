@@ -2,12 +2,37 @@ from __future__ import annotations
 
 import hashlib
 
+import httpx
+import openai
 import pytest
 
 from dify_plugin.entities.model.message import PromptMessageTool
 from dify_plugin.errors.model import InvokeBadRequestError
 from models.llm import chat, responses, stream as response_stream
 from models.llm.llm import _base_model, _uses_responses
+
+
+_CHAT_TOOLS_REASONING_ERROR = (
+    "Function tools with reasoning_effort are not supported for gpt-5.6-sol in "
+    "/v1/chat/completions. To use function tools, use /v1/responses or set "
+    "reasoning_effort to 'none'."
+)
+_CHAT_TOOLS_REASONING_GUIDANCE = (
+    "GPT-5.6 cannot use tools with reasoning enabled through the Chat Completions API.\n"
+    "To fix this, open the model's API Key Authorization Configuration, change API Protocol "
+    "from Chat Completions to Responses, save the configuration, and try again."
+)
+
+
+def _bad_request_error(body: object) -> openai.BadRequestError:
+    return openai.BadRequestError(
+        "Error code: 400",
+        response=httpx.Response(
+            400,
+            request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+        ),
+        body=body,
+    )
 
 
 def test_reasoning_parameters_are_merged_without_mutating_the_caller() -> None:
@@ -310,3 +335,43 @@ def test_stream_errors_are_transformed(llm, mocker) -> None:
 
     assert caught.value is transformed
     transform.assert_called_once_with(source)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {
+            "message": _CHAT_TOOLS_REASONING_ERROR,
+            "type": "invalid_request_error",
+            "param": "reasoning_effort",
+        },
+        {
+            "error": {
+                "message": _CHAT_TOOLS_REASONING_ERROR,
+                "type": "invalid_request_error",
+                "param": "reasoning_effort",
+            }
+        },
+    ],
+)
+def test_chat_tools_reasoning_error_has_actionable_protocol_guidance(llm, body) -> None:
+    transformed = llm._transform_invoke_error(_bad_request_error(body))
+
+    assert isinstance(transformed, InvokeBadRequestError)
+    assert str(transformed) == _CHAT_TOOLS_REASONING_GUIDANCE
+
+
+def test_unrelated_bad_request_keeps_standard_error_mapping(llm) -> None:
+    transformed = llm._transform_invoke_error(
+        _bad_request_error(
+            {
+                "message": "Unsupported parameter: temperature",
+                "type": "invalid_request_error",
+                "param": "temperature",
+            }
+        )
+    )
+
+    assert isinstance(transformed, InvokeBadRequestError)
+    assert "Bad Request Error" in str(transformed)
+    assert "API Key Authorization Configuration" not in str(transformed)
