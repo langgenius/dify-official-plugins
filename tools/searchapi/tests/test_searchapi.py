@@ -231,7 +231,7 @@ def test_google_invalid_hl_returns_message_and_no_http_call():
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(google.requests, "get", fake_get):
         messages = _flatten(
-            tool._invoke({"query": "hello", "result_type": "text", "hl": "zzzz", "gl": "us"})
+            tool._invoke({"query": "hello", "result_type": "text", "hl": "12", "gl": "us"})
         )
     assert messages[0][0] == "text"
     assert "Invalid 'hl' parameter" in messages[0][1]
@@ -269,6 +269,25 @@ def test_google_jobs_invalid_gl_returns_message_and_no_http_call():
         )
     assert "Invalid 'gl' parameter" in messages[0][1]
     assert fake_get.call_count == 0
+
+
+def test_google_valid_bcp47_hl_gl_proceeds_to_http_call():
+    tool = _make_tool(google.GoogleTool, credentials={"searchapi_api_key": "secret"})
+    fake_response = _FakeResponse()
+    fake_get = mock.Mock(return_value=fake_response)
+    with mock.patch.object(google.requests, "get", fake_get):
+        messages = _flatten(
+            tool._invoke(
+                {"query": "hello", "result_type": "text", "hl": "zh-cn", "gl": "us"}
+            )
+        )
+    assert fake_get.call_count == 1
+    assert not any(
+        m[0] == "text" and "Invalid 'hl' parameter" in m[1] for m in messages
+    )
+    assert not any(
+        m[0] == "text" and "Invalid 'gl' parameter" in m[1] for m in messages
+    )
 
 
 # =============================================================================

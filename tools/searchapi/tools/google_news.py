@@ -8,11 +8,11 @@ from dify_plugin import Tool
 
 SEARCH_API_URL = "https://www.searchapi.io/api/v1/search"
 
-# ISO 639-1 language code (two ASCII letters, e.g. "en", "zh"). SearchAPI rejects
-# anything else with a 422; we guard early to avoid the round trip.
-_HL_RE = re.compile(r"^[A-Za-z]{2}$")
-# ISO 3166-1 alpha-2 country code (two ASCII letters, e.g. "us", "de").
-_GL_RE = re.compile(r"^[A-Za-z]{2}$")
+# BCP-47-ish language code (e.g. "en", "zh-cn", "bem"). SearchAPI rejects
+# malformed values with a 422; we guard early to avoid the round trip.
+_HL_RE = re.compile(r"^[A-Za-z][A-Za-z-]{1,15}$")
+# Country / region code (e.g. "us", "de"). Same shape guard as hl.
+_GL_RE = re.compile(r"^[A-Za-z][A-Za-z-]{1,15}$")
 
 
 class SearchAPI:
@@ -92,12 +92,12 @@ class GoogleNewsTool(Tool):
         hl = tool_parameters.get("hl", "en")
         if not _GL_RE.match(gl or ""):
             yield self.create_text_message(
-                f"Invalid 'gl' parameter: {gl!r}. Expected a two-letter ISO 3166-1 country code."
+                f"Invalid 'gl' parameter: {gl!r}. Expected a language or country code (e.g. 'us')."
             )
             return
         if not _HL_RE.match(hl or ""):
             yield self.create_text_message(
-                f"Invalid 'hl' parameter: {hl!r}. Expected a two-letter ISO 639-1 language code."
+                f"Invalid 'hl' parameter: {hl!r}. Expected a language code (e.g. 'en', 'zh-cn')."
             )
             return
 
