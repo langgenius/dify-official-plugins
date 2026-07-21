@@ -297,7 +297,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         data = {
             "changeType": "created,updated",
             "notificationUrl": endpoint,
-            "resource": "me/mailfolders('Inbox')/messages",
+            "resource": self._subscription_resource(parameters),
             "expirationDateTime": expiration_date_str,
             "clientState": client_state,
         }
@@ -438,6 +438,21 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         digest = hashlib.sha256(f"outlook:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
         return f"outlook:oauth_state:{digest}"
+
+    def _subscription_resource(self, parameters: Mapping[str, Any]) -> str:
+        """Return the Microsoft Graph subscription resource path.
+
+        When ``mailbox_address`` is provided, monitor the given shared mailbox
+        via ``users/{mailbox}/mailfolders('Inbox')/messages``. Otherwise fall back
+        to the signed-in user's Inbox (``me/...``) to preserve the previous
+        personal-mailbox behavior.
+        """
+        mailbox = (parameters or {}).get("mailbox_address") or ""
+        mailbox = str(mailbox).strip()
+        if not mailbox:
+            return "me/mailfolders('Inbox')/messages"
+        encoded = urllib.parse.quote(mailbox, safe="")
+        return f"users/{encoded}/mailfolders('Inbox')/messages"
 
     def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
         try:

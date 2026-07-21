@@ -57,3 +57,11 @@ This plugin will redirect you to the Microsoft login page.
 Log in with your Microsoft account and grant the requested delegated permissions.
 
 Then you can use this plugin in a workflow to trigger it when you receive an email.
+
+## Monitoring a shared mailbox
+
+The `Mailbox Address (shared mailbox)` parameter on the subscription accepts a Microsoft Graph mailbox identifier — UPN (`support@company.com`), alias, or GUID — so the trigger can watch a shared or departmental mailbox in addition to the signed-in user's personal Inbox. Leave the parameter empty to monitor the personal Inbox (the historical default), or fill in any mailbox your OAuth app has access to.
+
+The existing `Mail.Read` scope is sufficient for shared-mailbox access; no new permissions are required. Graph returns 403 if your app lacks access to the shared mailbox, and the trigger surfaces that as a normal subscription error.
+
+Microsoft Graph treats `resource` as immutable on an existing subscription. To switch a live subscription from personal to shared, unsubscribe and resubscribe.

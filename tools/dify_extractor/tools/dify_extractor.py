@@ -1,6 +1,8 @@
+import logging
 import os
 from collections.abc import Generator
 from typing import Any
+from zipfile import BadZipFile
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -16,6 +18,14 @@ from tools.word_extractor import WordExtractor
 from tools.pptx_extractor import PPTXExtractor
 from tools.yaml_extractor import YAMLExtractor
 
+logger = logging.getLogger(__name__)
+
+_BAD_ZIP_FORMAT_EXAMPLES = {
+    ".docx": " (e.g., old binary .doc instead of .docx)",
+    ".xlsx": " (e.g., old binary .xls instead of .xlsx)",
+    ".pptx": " (e.g., old binary .ppt instead of .pptx)",
+}
+
 
 class DifyExtractorTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -24,7 +34,14 @@ class DifyExtractorTool(Tool):
             raise ValueError("file is required")
         file_name = file.filename
         file_extension = os.path.splitext(file_name)[-1].lower()
-        file_bytes = file.blob
+
+        try:
+            file_bytes = file.blob
+        except Exception as e:
+            logger.exception("Failed to read file '%s'", file_name)
+            yield self.create_text_message(f"Failed to read file '{file_name}': {e}")
+            return
+
         if file_extension in {".xlsx", ".xls"}:
             extractor = ExcelExtractor(file_bytes, file_name)
         elif file_extension == ".pdf":
@@ -46,7 +63,21 @@ class DifyExtractorTool(Tool):
         else:
             # txt
             extractor = TextExtractor(file_bytes, file_name, autodetect_encoding=True)
-        extractor_result = extractor.extract()
+
+        try:
+            extractor_result = extractor.extract()
+        except BadZipFile:
+            example = _BAD_ZIP_FORMAT_EXAMPLES.get(file_extension, "")
+            yield self.create_text_message(
+                f"File '{file_name}' is not a valid {file_extension} file. "
+                f"It may be corrupted or in an incompatible format{example}."
+            )
+            return
+        except Exception as e:
+            logger.exception("Failed to extract '%s'", file_name)
+            yield self.create_text_message(f"Failed to extract '{file_name}': {e}")
+            return
+
         if extractor_result.img_list:
             yield self.create_variable_message("images", extractor_result.img_list)
         yield self.create_text_message(extractor_result.md_content)

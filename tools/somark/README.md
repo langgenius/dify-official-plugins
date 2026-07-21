@@ -62,14 +62,14 @@ SoMark delivers strong general-purpose recognition capability. A single API call
 
     *   **Base URL** (required): The address of the SoMark service.
 
-        - For SoMark API, fill in `https://somark.tech/api/v1`.
+        - For SoMark API, fill in `https://somark.cn/api/v1` (Mainland China) or `https://somark.ai/api/v1` (Taiwan, China; Hong Kong, China; Macau, China; and other overseas regions).
         - For self-hosted deployment, fill in your SoMark service Base URL (e.g. `https://somark.your-domain.com/api/v1`). The URL must start with `http://` or `https://`.
 
     *   **API Key**:
 
         - **Required** when using **SoMark API**. The plugin will validate your key against the SoMark service when you save.
         - **Not required** for self-hosted deployment (leave it blank if your self-hosted instance does not require authentication).
-        - *No API Key?* [Get 1000 free pages here](https://somark.tech/workbench/purchase)
+        - *No API Key?* Get 1000 free pages: [Mainland China](https://somark.cn/workbench/purchase) | [Taiwan, China; Hong Kong, China; Macau, China; and other overseas regions](https://somark.ai/studio/purchase)
 
 4.  Save your configuration.
 

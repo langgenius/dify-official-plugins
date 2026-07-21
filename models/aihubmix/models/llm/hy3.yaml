@@ -1,0 +1,45 @@
+model: hy3
+label:
+  en_US: Hunyuan 3
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理深度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: none
+    options:
+      - none
+      - low
+      - medium
+      - high
+    help:
+      zh_Hans: 控制推理深度。none 关闭思考；low 轻量推理（速度快，适合简单任务）、medium 平衡（适合日常适中复杂任务）、high 深度推理（延迟与成本最高，适合高难度数学/编程/复杂逻辑）。
+      en_US: Controls reasoning depth. none disables thinking; low = lightweight (fast, simple tasks), medium = balanced (everyday tasks), high = deep reasoning (highest latency/cost, for hard math/coding/logic).
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: "0.1562"
+  output: "0.6248"
+  unit: "0.000001"
+  currency: USD

@@ -226,6 +226,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     _TOKEN_URL = "https://oauth2.googleapis.com/token"
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
+    _DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
     _SUBSCRIPTION_PREFIX = "dify-gmail-"
 
@@ -297,15 +298,16 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token:
             raise TriggerProviderOAuthError(f"Error in Google OAuth: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
         refresh_token: str | None = payload.get("refresh_token")
-        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0)
 
         # 2. Parse and store GCP configuration from system_credentials
         import json as _json
 
         credentials: dict[str, str] = {"access_token": access_token}
         if refresh_token:
+            # Dify core decrypts trigger refresh credentials with the OAuth client schema.
             credentials["refresh_token"] = refresh_token
 
         # Extract GCP info and store in credentials for later use (required)
@@ -380,8 +382,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token:
             raise TriggerProviderOAuthError(f"OAuth refresh failed: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0)
         refreshed: dict[str, str] = {"access_token": access_token}
         if refresh_token:
             refreshed["refresh_token"] = refresh_token
@@ -512,17 +514,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
     def _ensure_topic(self, project_id: str, sa_info: Mapping[str, Any], topic_id: str) -> str:
         """Ensure the shared Pub/Sub topic exists and Gmail can publish to it."""
-        from google.api_core.exceptions import AlreadyExists, Forbidden, PermissionDenied
+        from google.api_core.exceptions import Conflict, Forbidden, PermissionDenied
         from google.cloud import pubsub_v1
         from google.iam.v1 import policy_pb2
         from google.oauth2 import service_account as _sa
 
         creds = _sa.Credentials.from_service_account_info(sa_info)
-        publisher = pubsub_v1.PublisherClient(credentials=creds)
+        publisher = pubsub_v1.PublisherClient(credentials=creds, transport="rest")
         topic_path = publisher.topic_path(project_id, topic_id)
         try:
             publisher.create_topic(name=topic_path)
-        except AlreadyExists:
+        except Conflict:
             pass
         except (Forbidden, PermissionDenied) as exc:  # pragma: no cover - permission errors
             raise TriggerProviderOAuthError(
@@ -564,7 +566,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> dict[str, str]:
         import json as _json
 
-        from google.api_core.exceptions import AlreadyExists, NotFound
+        from google.api_core.exceptions import Conflict, NotFound
         from google.cloud import pubsub_v1
         from google.oauth2 import service_account as _sa
 
@@ -574,7 +576,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         creds = _sa.Credentials.from_service_account_info(info)
         sa_email = info.get("client_email")
 
-        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds, transport="rest")
 
         # Ensure a dedicated push subscription per Dify subscription (endpoint + subscription key)
         sub_id = push_subscription_name
@@ -585,7 +587,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             push.oidc_token.audience = audience
         try:
             subscriber.create_subscription(name=sub_path, topic=topic_path, push_config=push)
-        except AlreadyExists:
+        except Conflict:
             # Verify existing subscription config; if mismatched, recreate
             sub = subscriber.get_subscription(subscription=sub_path)
             need_recreate = False
@@ -659,7 +661,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         creds = _sa.Credentials.from_service_account_info(info)
 
         # Delete Push Subscription
-        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds, transport="rest")
         sub_path = subscriber.subscription_path(project_id, subscription_name)
         try:
             subscriber.delete_subscription(subscription=sub_path)
@@ -690,7 +692,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
 
-        publisher = pubsub_v1.PublisherClient(credentials=creds)
+        publisher = pubsub_v1.PublisherClient(credentials=creds, transport="rest")
         topic_path = publisher.topic_path(project_id, topic_id)
 
         # List all subscriptions on the topic

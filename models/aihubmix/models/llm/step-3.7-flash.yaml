@@ -1,0 +1,46 @@
+model: step-3.7-flash
+label:
+  en_US: Step 3.7 Flash
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - video
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+    help:
+      zh_Hans: "根据任务复杂度选择合适档位。low 适合简单问答、摘要、改写、信息抽取；medium 默认推荐，适合一般推理和多步骤任务；high 适合复杂推理、数学、规划、代码分析。"
+      en_US: "Select effort by task complexity. low: simple Q&A, summary, rewrite, extraction; medium: default for general reasoning and multi-step tasks; high: complex reasoning, math, planning, code analysis."
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '1.35'
+  output: '8.1'
+  unit: '0.000001'
+  currency: RMB
