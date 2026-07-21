@@ -74,6 +74,9 @@ BEDROCK_MODEL_IDS = {
         'Qwen3 Coder 30B': 'qwen.qwen3-coder-30b-a3b-v1:0'
     },
     'openai': {
+        'GPT-5.6 Sol': 'openai.gpt-5.6-sol',
+        'GPT-5.6 Terra': 'openai.gpt-5.6-terra',
+        'GPT-5.6 Luna': 'openai.gpt-5.6-luna',
         'GPT-5.5': 'openai.gpt-5.5',
         'GPT-5.4': 'openai.gpt-5.4',
         'GPT OSS 120B': 'openai.gpt-oss-120b-1:0',
@@ -92,6 +95,9 @@ def is_support_cross_region(model_id):
         "openai.gpt-oss-20b-1:0",
         "openai.gpt-5.5",
         "openai.gpt-5.4",
+        "openai.gpt-5.6-sol",
+        "openai.gpt-5.6-terra",
+        "openai.gpt-5.6-luna",
     ]
     return model_id not in unsupport_model_list
 
