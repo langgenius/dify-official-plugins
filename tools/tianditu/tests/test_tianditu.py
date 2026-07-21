@@ -107,7 +107,7 @@ poisearch = _load_module("poisearch.py")
 # ---- Helpers ---------------------------------------------------------------
 
 class _FakeResponse:
-    def __init__(self, payload=None, *, raw_bytes=b"\x89PNG\r\n"):
+    def __init__(self, payload=None, *, raw_bytes=b"\x89PNG\r\n", status_code=200):
         if payload is not None:
             self._payload = payload
         else:
@@ -117,7 +117,14 @@ class _FakeResponse:
                 "location": {"lon": 116.404, "lat": 39.915},
             }
         self._raw_bytes = raw_bytes
-        self.calls = 0  # some files make multiple requests.get calls
+        self.status_code = status_code
+        self.calls = 0
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise geocoder.requests.exceptions.RequestException(
+                f"HTTP {self.status_code}"
+            )
 
     def json(self):
         self.calls += 1
@@ -278,5 +285,32 @@ def test_geocoder_request_exception_yields_friendly_message():
     with mock.patch.object(geocoder.requests, "get", fake_get):
         messages = _flatten(tool._invoke({"keyword": "Beijing"}))
     assert any(
+        m[0] == "text" and "network or upstream failure" in m[1] for m in messages
+    ), f"expected generic friendly error, got {messages!r}"
+    assert not any(
         m[0] == "text" and "boom" in m[1] for m in messages
-    ), f"expected friendly error message containing 'boom', got {messages!r}"
+    ), "exception text must not be forwarded to the user"
+
+
+def test_geocoder_request_does_not_leak_tk_in_message():
+    tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret-key"})
+    fake_get = mock.Mock(
+        side_effect=geocoder.requests.exceptions.RequestException(
+            "GET http://api.tianditu.gov.cn/geocoder?ds=%7B%22keyWord%22%3A%22Beijing%22%7D&tk=secret-key"
+        )
+    )
+    with mock.patch.object(geocoder.requests, "get", fake_get):
+        messages = _flatten(tool._invoke({"keyword": "Beijing"}))
+    for m in messages:
+        if m[0] == "text":
+            assert "secret-key" not in m[1], f"API key leaked in message: {m[1]!r}"
+
+
+def test_geocoder_http_4xx_returns_message_and_no_json_dump():
+    tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret"})
+    fake_response = _FakeResponse(status_code=500)
+    fake_get = mock.Mock(return_value=fake_response)
+    with mock.patch.object(geocoder.requests, "get", fake_get):
+        messages = _flatten(tool._invoke({"keyword": "Beijing"}))
+    assert any(m[0] == "text" and "network or upstream failure" in m[1] for m in messages)
+    assert not any(m[0] == "json" for m in messages)

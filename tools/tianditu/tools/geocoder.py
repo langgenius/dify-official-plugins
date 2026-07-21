@@ -4,6 +4,11 @@ import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
+_NETWORK_ERROR = (
+    "An error occurred while invoking the tool (network or upstream failure). "
+    "Please retry shortly."
+)
+
 
 class GeocoderTool(Tool):
     def _invoke(
@@ -25,13 +30,13 @@ class GeocoderTool(Tool):
 
         params = {"keyWord": keyword}
         try:
-            result = requests.get(
+            response = requests.get(
                 base_url + "?ds=" + json.dumps(params, ensure_ascii=False) + "&tk=" + tk,
                 timeout=10,
-            ).json()
-        except requests.exceptions.RequestException as exc:
-            yield self.create_text_message(
-                f"An error occurred while invoking the tool: {exc}."
             )
+            response.raise_for_status()
+            result = response.json()
+        except requests.exceptions.RequestException:
+            yield self.create_text_message(_NETWORK_ERROR)
             return
         yield self.create_json_message(result)
