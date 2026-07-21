@@ -4,6 +4,11 @@ import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
+_NETWORK_ERROR = (
+    "An error occurred while invoking the tool (network or upstream failure). "
+    "Please retry shortly."
+)
+
 
 class PoiSearchTool(Tool):
     def _invoke(
@@ -25,20 +30,22 @@ class PoiSearchTool(Tool):
             return
 
         try:
-            keyword_coords = requests.get(
+            geo_response = requests.get(
                 geocoder_base_url
                 + "?ds="
                 + json.dumps({"keyWord": keyword}, ensure_ascii=False)
                 + "&tk="
                 + tk,
                 timeout=10,
-            ).json()
+            )
+            geo_response.raise_for_status()
+            keyword_coords = geo_response.json()
             coords = (
                 str(keyword_coords["location"]["lon"])
                 + ","
                 + str(keyword_coords["location"]["lat"])
             )
-            result = requests.get(
+            img_response = requests.get(
                 base_url
                 + "?center="
                 + coords
@@ -47,11 +54,11 @@ class PoiSearchTool(Tool):
                 + "&width=400&height=300&zoom=14&tk="
                 + tk,
                 timeout=10,
-            ).content
-        except requests.exceptions.RequestException as exc:
-            yield self.create_text_message(
-                f"An error occurred while invoking the tool: {exc}."
             )
+            img_response.raise_for_status()
+            result = img_response.content
+        except requests.exceptions.RequestException:
+            yield self.create_text_message(_NETWORK_ERROR)
             return
         yield self.create_blob_message(
             blob=result,
