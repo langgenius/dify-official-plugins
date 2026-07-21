@@ -131,7 +131,13 @@ class BraveSearchTool(Tool):
             search_kwargs={"count": count},
             ensure_ascii=ensure_ascii,
         )
-        results = tool._run(query)
+        try:
+            results = tool._run(query)
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         if not results:
             yield self.create_text_message(f"No results found for '{query}' in Brave")
         else:
