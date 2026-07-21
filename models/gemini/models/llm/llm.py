@@ -395,15 +395,42 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.response_modalities = [types.Modality.AUDIO.value]
 
     @staticmethod
+    def _is_gemini3_plus(model: str) -> bool:
+        """Return True for Gemini 3+ model names.
+
+        Matches the canonical naming: ``gemini-3-*``, ``gemini-3.*`` (the
+        dot-separated variant used by versions such as ``gemini-3.5-flash``),
+        the path-style ``gemini-3/``, and the dateless ``gemini-3`` fallback.
+        Leaves Gemini 2.5 and earlier models untouched so the legacy
+        ``generate_content`` semantics are preserved.
+        """
+        if not model:
+            return False
+        name = str(model).strip().lower()
+        if not name.startswith("gemini-3"):
+            return False
+        if name == "gemini-3":
+            return True
+        # require a separator right after "gemini-3" so we don't accidentally
+        # match "gemini-30", "gemini-3abc", etc.
+        return name[8] in {"-", ".", "/"}
+
+    @staticmethod
     def _validate_feature_compatibility(
         model_parameters: Mapping[str, Any],
         tools: Optional[list[PromptMessageTool]] = None,
+        model: Optional[str] = None,
     ) -> dict[str, Any]:
         """
         Validate that the requested features are compatible with each other.
 
         Feature compatibility rules:
-        1. Structured output (json_schema) is exclusive - cannot be used with any other feature
+        1. Structured output (json_schema) is exclusive on Gemini <= 2.5
+           (the legacy ``generate_content`` endpoint rejects the combination
+           with HTTP 400). Gemini 3+ supports structured output together with
+           built-in tools (grounding, url_context) via the Interactions API;
+           Rule 1 is relaxed for those models and the validator returns the
+           parameters unchanged so the caller can dispatch to the right path.
         2. url_context and grounding can be used together
         3. url_context and code_execution cannot be used together
         4. grounding and code_execution can be used together
@@ -412,6 +439,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         :param model_parameters: Model parameters containing feature flags
         :param tools: Custom tools defined by the user
+        :param model: Target model name; used to detect Gemini 3+ for Rule 1
         :return: Adjusted model parameters dictionary
         :raises InvokeError: If incompatible features are enabled
         """
@@ -447,8 +475,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if not enabled_features:
             return adjusted_params
 
-        # Rule 1: json_schema is mutually exclusive with all other features
+        # Rule 1: json_schema is mutually exclusive with all other features.
+        # Relaxed for Gemini 3+: the combination is supported via the
+        # Interactions API; the caller is responsible for routing the request
+        # to the right endpoint. The flag is still surfaced so the caller can
+        # detect the situation.
         if features["json_schema"] and len(enabled_features) > 1:
+            if GoogleLargeLanguageModel._is_gemini3_plus(model or ""):
+                logging.debug(
+                    "Gemini 3+ detected; allowing json_schema + tool features; "
+                    "Interactions API handles the combination natively"
+                )
+                # Return parameters unchanged and let the caller route
+                # to the Interactions API (or fall back to generate_content).
+                return adjusted_params
             other_features = [f for f in enabled_features if f != "json_schema"]
             raise InvokeError(
                 f"Structured output (json_schema) cannot be used with: {', '.join(other_features)}"
@@ -1070,7 +1110,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         # Validate and adjust feature compatibility
-        model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        model_parameters = self._validate_feature_compatibility(model_parameters, tools, model=model)
         if model == "gemini-2.5-flash-image":
             model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
 
