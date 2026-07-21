@@ -47,7 +47,7 @@ class BraveSearchWrapper(BaseModel):
         req.prepare_url(self.base_url, params)
         if req.url is None:
             raise ValueError("prepared url is None, this should not happen")
-        response = requests.get(req.url, headers=headers)
+        response = requests.get(req.url, headers=headers, timeout=10)
         if not response.ok:
             raise Exception(f"HTTP error {response.status_code}")
         return response.json().get("web", {}).get("results", [])
@@ -112,7 +112,10 @@ class BraveSearchTool(Tool):
         """
         query = tool_parameters.get("query", "")
         count = tool_parameters.get("count", 3)
-        api_key = self.runtime.credentials["brave_search_api_key"]
+        api_key = self.runtime.credentials.get("brave_search_api_key")
+        if not api_key:
+            yield self.create_text_message("Brave Search API key is required.")
+            return
         base_url = self.runtime.credentials.get("base_url")
         if not base_url:
             base_url = BRAVE_BASE_URL
