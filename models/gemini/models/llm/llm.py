@@ -45,6 +45,7 @@ from .utils import FileCache
 file_cache = FileCache()
 
 IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
+NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash", "gemini-3.5-flash-lite"}
 
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
@@ -689,12 +690,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
-                call = message.tool_calls[0]
-                _unsafe_part = types.Part.from_function_call(
-                    name=call.function.name, args=json.loads(call.function.arguments)
-                )
-                _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
-                parts.append(_unsafe_part)
+                for call in message.tool_calls:
+                    parts.append(
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                id=call.id,
+                                name=call.function.name,
+                                args=json.loads(call.function.arguments),
+                            ),
+                            thought_signature=DEFAULT_THOUGHT_SIGNATURE,
+                        )
+                    )
 
             # Filter out assistant messages with empty parts to avoid invalid requests
             if not parts:
@@ -713,8 +719,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 # https://googleapis.github.io/python-genai/genai.html#genai.types.Content.role
                 role="user",
                 parts=[
-                    types.Part.from_function_response(
-                        name=message.name, response={"response": message.content}
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            id=message.tool_call_id,
+                            name=message.name,
+                            response={"response": message.content},
+                        )
                     )
                 ],
             )
@@ -944,11 +954,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             # representing the [FunctionDeclaration.name] with the parameters and their values.
             if part.function_call:
                 function_call_part: types.FunctionCall = part.function_call
-                # Generate a unique ID since Gemini API doesn't provide one
-                function_call_id = (
-                    f"gemini_call_{function_call_part.name}_{time.time_ns()}"
-                )
-                logging.info(f"Generated function call ID: {function_call_id}")
+                function_call_id = function_call_part.id
+                if not function_call_id:
+                    function_call_id = (
+                        f"gemini_call_{function_call_part.name}_{time.time_ns()}"
+                    )
+                    logging.info(f"Generated function call ID: {function_call_id}")
                 function_call_name = function_call_part.name
                 function_call_args = function_call_part.args
                 if not isinstance(function_call_name, str):
@@ -1071,6 +1082,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        if model in NO_SAMPLING_OR_PREFILL_MODELS:
+            for parameter in ("temperature", "top_p", "top_k"):
+                model_parameters.pop(parameter, None)
         if model == "gemini-2.5-flash-image":
             model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
 
@@ -1164,6 +1178,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     "Please provide at least one user message with content."
                 )
 
+        if model in NO_SAMPLING_OR_PREFILL_MODELS:
+            last_nonempty_content = next(
+                (content for content in reversed(contents) if content.parts), None
+            )
+            if not last_nonempty_content or last_nonempty_content.role == "model":
+                raise InvokeBadRequestError(
+                    f"{model} requires a non-empty final user turn"
+                )
+
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model, contents=contents, config=config
@@ -1221,7 +1244,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             genai_client.models.generate_content(
                 model=model,
                 contents="ping",
-                config=types.GenerateContentConfig(temperature=0, max_output_tokens=20),
+                config=types.GenerateContentConfig(max_output_tokens=20),
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
