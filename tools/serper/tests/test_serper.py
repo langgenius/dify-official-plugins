@@ -1,4 +1,4 @@
-"""In-process tests for tools/serper (no pytest required).
+"""In-process tests for tools/serper (pytest-shaped).
 
 These tests cover two reliability fixes shipped in this PR:
 
@@ -9,9 +9,10 @@ These tests cover two reliability fixes shipped in this PR:
 to "us" / "en"), so the third bug from PR #3456 (invoke fall-through on invalid
 hl / gl) does not apply.
 
-They use only Python stdlib (`unittest.mock`) and tiny in-test stubs for
-`requests`, `dify_plugin`, and `pydantic` so they can run in environments
-where the plugin dependencies are not pre-installed.
+Run with: python3 -m pytest tests/test_serper.py -v
+
+They use `unittest.mock` and tiny in-test stubs for `requests` and `dify_plugin`
+so they can run in environments where the plugin dependencies are not installed.
 """
 
 from __future__ import annotations
