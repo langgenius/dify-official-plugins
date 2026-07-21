@@ -16,14 +16,16 @@ class OpenweatherTool(Tool):
         city = tool_parameters.get("city", "")
         if not city:
             yield self.create_text_message("Please tell me your city")
+            return
         if "api_key" not in self.runtime.credentials or not self.runtime.credentials.get("api_key"):
             yield self.create_text_message("OpenWeather API key is required.")
+            return
         units = tool_parameters.get("units", "metric")
         lang = tool_parameters.get("lang", "zh_cn")
         try:
             url = "https://api.openweathermap.org/data/2.5/weather"
             params = {"q": city, "appid": self.runtime.credentials.get("api_key"), "units": units, "lang": lang}
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 yield self.create_text_message(
