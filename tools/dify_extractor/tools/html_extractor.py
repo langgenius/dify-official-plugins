@@ -1,40 +1,25 @@
-"""Abstract interface for document loader implementations."""
+"""HTML document extractor."""
 
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 
-from tools.extractor_base import BaseExtractor
 from tools.document import Document, ExtractorResult
+from tools.extractor_base import BaseExtractor
+from tools.helpers import decode_text
 
 
 class HtmlExtractor(BaseExtractor):
-    """
-    Load html files.
-
-    Args:
-        file_bytes: HTML content in bytes format.
-        file_name: file name.
-    """
-
-    def __init__(self, file_bytes: bytes, file_name: str):
-        """Initialize with file bytes."""
-        self._file_bytes = file_bytes
-        self._file_name = file_name
-
     def extract(self) -> ExtractorResult:
-        text = self._load_as_text()
+        html = decode_text(self.context.file_bytes, self.context.file_name)
+        soup = BeautifulSoup(html, "html.parser")
+        for element in soup(["script", "style", "noscript"]):
+            element.decompose()
+        text = "\n".join(line.strip() for line in soup.get_text("\n").splitlines() if line.strip())
         return ExtractorResult(
             md_content=text,
             documents=[
-                Document(page_content=text, metadata={"source": self._file_name})
+                Document(
+                    page_content=text,
+                    metadata={"source": self.context.file_name},
+                )
             ],
         )
-
-    def _load_as_text(self) -> str:
-        from io import BytesIO
-
-        text: str = ""
-        with BytesIO(self._file_bytes) as fp:
-            soup = BeautifulSoup(fp, "html.parser")
-            text = soup.get_text()
-            text = text.strip() if text else ""
-        return text
