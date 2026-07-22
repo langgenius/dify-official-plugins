@@ -5,6 +5,7 @@ import re
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
+from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Union
 
 from dify_plugin.entities.model import AIModelEntity
@@ -12,6 +13,7 @@ from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
+    LLMUsage,
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -50,6 +52,10 @@ NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash", "gemini-3.5-flash-lite"}
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
 _DISABLE_SYSTEM_PROMOTION = "_disable_system_promotion"
+_SERVICE_TIER_PRICE_MULTIPLIERS = {
+    "flex": Decimal("0.5"),
+    "priority": Decimal("1.8"),
+}
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -275,6 +281,43 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         if isinstance(service_tier, types.ServiceTier):
             config.service_tier = service_tier
+
+    @staticmethod
+    def _apply_service_tier_pricing(
+        usage: LLMUsage,
+        response: types.GenerateContentResponse,
+        requested_service_tier: types.ServiceTier | str | None = None,
+    ) -> LLMUsage:
+        headers = getattr(getattr(response, "sdk_http_response", None), "headers", None)
+        actual_service_tier = (
+            next(
+                (
+                    str(value).lower()
+                    for name, value in headers.items()
+                    if name.lower() == "x-gemini-service-tier"
+                ),
+                None,
+            )
+            if isinstance(headers, Mapping)
+            else None
+        )
+        requested = (
+            requested_service_tier.value
+            if isinstance(requested_service_tier, types.ServiceTier)
+            else requested_service_tier
+        )
+        multiplier = _SERVICE_TIER_PRICE_MULTIPLIERS.get(
+            actual_service_tier or str(requested or "standard").lower()
+        )
+        if multiplier is None:
+            return usage
+
+        usage.prompt_unit_price *= multiplier
+        usage.prompt_price *= multiplier
+        usage.completion_unit_price *= multiplier
+        usage.completion_price *= multiplier
+        usage.total_price = usage.prompt_price + usage.completion_price
+        return usage
 
     @staticmethod
     def _set_image_config(
@@ -738,6 +781,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: types.GenerateContentResponse,
         prompt_messages: list[PromptMessage],
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> LLMResult:
         """
         Handle llm response
@@ -779,6 +823,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
         )
+        usage = self._apply_service_tier_pricing(
+            usage, response, requested_service_tier
+        )
 
         # transform response
         return LLMResult(
@@ -795,6 +842,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         response: Iterator[types.GenerateContentResponse],
         prompt_messages: list[PromptMessage],
         genai_client: genai.Client,
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -877,6 +925,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     credentials=dict(credentials),
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
+                )
+                usage = self._apply_service_tier_pricing(
+                    usage, chunk, requested_service_tier
                 )
                 yield LLMResultChunk(
                     model=model,
@@ -1192,14 +1243,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model=model, contents=contents, config=config
             )
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages, genai_client
+                model,
+                credentials,
+                response,
+                prompt_messages,
+                genai_client,
+                config.service_tier,
             )
 
         response = genai_client.models.generate_content(
             model=model, contents=contents, config=config
         )
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages
+            model, credentials, response, prompt_messages, config.service_tier
         )
 
     def get_num_tokens(

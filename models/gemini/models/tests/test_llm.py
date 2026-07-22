@@ -1,9 +1,11 @@
 import base64
 import dataclasses
 import time
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
 import pytest
+from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
@@ -1382,6 +1384,99 @@ class TestHandleGenerateResponse:
         """Setup test fixtures"""
         self.llm = GoogleLargeLanguageModel([])
         self.credentials = {"google_api_key": "test_key"}
+
+    @staticmethod
+    def _usage() -> LLMUsage:
+        return LLMUsage(
+            prompt_tokens=2,
+            prompt_unit_price=Decimal("1.5"),
+            prompt_price_unit=Decimal("0.000001"),
+            prompt_price=Decimal("3"),
+            completion_tokens=2,
+            completion_unit_price=Decimal("7.5"),
+            completion_price_unit=Decimal("0.000001"),
+            completion_price=Decimal("15"),
+            total_tokens=4,
+            total_price=Decimal("18"),
+            currency="USD",
+            latency=0,
+        )
+
+    @pytest.mark.parametrize(
+        ("actual_tier", "requested_tier", "multiplier"),
+        [
+            ("flex", types.ServiceTier.PRIORITY, Decimal("0.5")),
+            ("standard", types.ServiceTier.FLEX, Decimal("1")),
+            ("priority", None, Decimal("1.8")),
+            (None, types.ServiceTier.FLEX, Decimal("0.5")),
+        ],
+    )
+    def test_service_tier_pricing(
+        self,
+        actual_tier: str | None,
+        requested_tier: types.ServiceTier | None,
+        multiplier: Decimal,
+    ):
+        headers = (
+            {"X-Gemini-Service-Tier": actual_tier} if actual_tier is not None else {}
+        )
+        response = types.GenerateContentResponse(
+            sdk_http_response=types.HttpResponse(headers=headers)
+        )
+        usage = self._usage()
+
+        result = self.llm._apply_service_tier_pricing(usage, response, requested_tier)
+
+        assert result.prompt_unit_price == Decimal("1.5") * multiplier
+        assert result.prompt_price == Decimal("3") * multiplier
+        assert result.completion_unit_price == Decimal("7.5") * multiplier
+        assert result.completion_price == Decimal("15") * multiplier
+        assert result.total_price == Decimal("18") * multiplier
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_generation_applies_requested_service_tier_pricing(
+        self, stream: bool
+    ) -> None:
+        response = types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(
+                    content=types.Content(
+                        role="model", parts=[types.Part.from_text(text="OK")]
+                    ),
+                    finish_reason=types.FinishReason.STOP,
+                )
+            ],
+            usage_metadata=types.GenerateContentResponseUsageMetadata(
+                prompt_tokens_details=[
+                    types.ModalityTokenCount(
+                        modality=types.MediaModality.TEXT, token_count=2
+                    )
+                ],
+                candidates_token_count=2,
+            ),
+            sdk_http_response=types.HttpResponse(headers={}),
+        )
+        client = Mock()
+        client.models.generate_content.return_value = response
+        client.models.generate_content_stream.return_value = iter([response])
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=client),
+            patch.object(self.llm, "_calc_response_usage", return_value=self._usage()),
+        ):
+            result = self.llm._generate(
+                model="gemini-3.6-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Reply with OK.")],
+                model_parameters={"service_tier": "flex"},
+                stream=stream,
+            )
+            usage = list(result)[-1].delta.usage if stream else result.usage
+
+        assert usage is not None
+        assert usage.prompt_price == Decimal("1.5")
+        assert usage.completion_price == Decimal("7.5")
+        assert usage.total_price == Decimal("9")
 
     def test_non_streaming_response_returns_structured_content(self):
         """Test that non-streaming response returns content as list of PromptMessageContent

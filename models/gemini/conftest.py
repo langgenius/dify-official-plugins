@@ -18,5 +18,6 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
     skipped = pytest.mark.skip(reason="live tests require GEMINI_API_KEY")
     for item in items:
-        if item.get_closest_marker("live") is not None:
+        in_gemini = Path(str(item.path)).resolve().is_relative_to(ROOT)
+        if in_gemini and item.get_closest_marker("live") is not None:
             item.add_marker(skipped)
