@@ -20,14 +20,15 @@ Copy the example environment file and provide a Google AI Studio API key.
 cp .env.example .env
 ```
 
-Set these values in `.env`.
+Set this value in `.env`.
 
 ```dotenv
 GEMINI_API_KEY=your-google-api-key
-RUN_GEMINI_LIVE=1
 ```
 
-Live tests always require `RUN_GEMINI_LIVE=1` to prevent accidental billable requests in local and CI environments.
+Pytest automatically loads `.env` and skips live tests when `GEMINI_API_KEY` is empty or missing.
+
+If a configured key is rejected by Google, the live test fails instead of hiding the authentication error as a skip.
 
 ## Run live tests
 
@@ -65,6 +66,6 @@ Responses are intentionally short to limit API cost.
 
 ## Troubleshooting
 
-Skipped live tests mean the API key or the local opt-in flag is missing.
+Live tests skip only when the API key is empty or missing.
 
-Authentication and model-access failures are test failures once live testing is explicitly enabled.
+Authentication and model-access failures are test failures when an API key is configured.

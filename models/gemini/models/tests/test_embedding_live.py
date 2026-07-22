@@ -5,11 +5,10 @@ These tests call the real Google Gemini API and require a valid API key.
 
 Usage:
     export GEMINI_API_KEY="your-google-api-key"
-    export RUN_GEMINI_LIVE=1
     cd models/gemini
     pytest models/tests/test_embedding_live.py -v -s
 
-All tests are marked with @pytest.mark.live and run only when explicitly enabled.
+All tests are marked with @pytest.mark.live and skip when no API key is available.
 """
 
 import os
