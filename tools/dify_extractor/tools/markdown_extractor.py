@@ -1,218 +1,82 @@
-"""Abstract interface for document loader implementations."""
+"""Markdown document extractor."""
 
-import mimetypes
 import re
-import uuid
-from pathlib import Path
-from typing import Optional, cast
-from urllib.parse import urlparse
 
-import requests
-from dify_plugin import Tool
-from dify_plugin.invocations.file import UploadFileResponse
-
-from tools.extractor_base import BaseExtractor
-from tools.helpers import detect_file_encodings
 from tools.document import Document, ExtractorResult
+from tools.extractor_base import BaseExtractor
+from tools.helpers import decode_text
+
+_REMOTE_IMAGE_PATTERN = re.compile(
+    r"!\[(?P<alt>[^\]]*)\]\((?P<url>https?://[^\s)]+)(?P<title>\s+(?:\"[^\"]*\"|'[^']*'))?\)",
+    re.IGNORECASE,
+)
+_FENCE_PATTERN = re.compile(r"^\s*(`{3,}|~{3,})")
+_HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
 
 class MarkdownExtractor(BaseExtractor):
-    """Load Markdown files.
-
-    Args:
-        file_bytes: Markdown content in bytes format.
-        file_name: file name.
-        tool: tool.
-        remove_hyperlinks: remove hyperlinks.
-        remove_images: remove images.
-        encoding: encoding.
-        autodetect_encoding: autodetect encoding.
-    """
-
-    def __init__(
-        self,
-        file_bytes: bytes,
-        file_name: str,
-        tool: Tool,
-        remove_hyperlinks: bool = False,
-        remove_images: bool = False,
-        encoding: Optional[str] = None,
-        autodetect_encoding: bool = True,
-    ):
-        """Initialize with file bytes."""
-        self._file_bytes = file_bytes
-        self._file_name = file_name
-        self._tool = tool
-        self._remove_hyperlinks = remove_hyperlinks
-        self._remove_images = remove_images
-        self._encoding = encoding
-        self._autodetect_encoding = autodetect_encoding
-
     def extract(self) -> ExtractorResult:
-        """Load from bytes."""
-        md_content, tups, img_list = self.parse_tups()
-        documents = []
-        for header, value in tups:
-            value = value.strip()
-            if header is None:
-                documents.append(Document(page_content=value))
-            else:
-                documents.append(Document(page_content=f"\n\n{header}\n{value}"))
+        content = decode_text(self.context.file_bytes, self.context.file_name)
+        image_files = []
+        image_service = self.context.image_service
 
+        if image_service:
+
+            def replace_remote_image(match: re.Match[str]) -> str:
+                asset = image_service.download_and_upload(match.group("url"))
+                if asset is None:
+                    return match.group(0)
+                image_files.append(asset.file)
+                title = match.group("title") or ""
+                return f"![{match.group('alt')}]({asset.file.preview_url}{title})"
+
+            content = _REMOTE_IMAGE_PATTERN.sub(replace_remote_image, content)
+
+        documents = [
+            Document(
+                page_content=section,
+                metadata={"source": self.context.file_name},
+            )
+            for section in self._split_sections(content)
+            if section.strip()
+        ]
         return ExtractorResult(
-            md_content=md_content, documents=documents, img_list=img_list, origin_result=None
+            md_content=content,
+            documents=documents,
+            img_list=image_files,
         )
 
     @staticmethod
-    def _is_valid_url(url: str) -> bool:
-        """Check if the url is valid."""
-        parsed = urlparse(url)
-        return bool(parsed.netloc) and bool(parsed.scheme)
+    def _split_sections(markdown_text: str) -> list[str]:
+        sections: list[str] = []
+        current_header: str | None = None
+        current_lines: list[str] = []
+        active_fence: str | None = None
 
-    def markdown_to_tups(self, markdown_text: str) -> list[tuple[Optional[str], str]]:
-        """Convert a markdown file to a dictionary.
+        def flush() -> None:
+            body = "\n".join(current_lines).strip()
+            if current_header is not None:
+                sections.append(f"{current_header}\n{body}".rstrip())
+            elif body:
+                sections.append(body)
 
-        The keys are the headers and the values are the text under each header.
-
-        """
-        markdown_tups: list[tuple[Optional[str], str]] = []
-        lines = markdown_text.split("\n")
-
-        current_header = None
-        current_text = ""
-        code_block_flag = False
-
-        for line in lines:
-            if line.startswith("```"):
-                code_block_flag = not code_block_flag
-                current_text += line + "\n"
+        for line in markdown_text.splitlines():
+            fence = _FENCE_PATTERN.match(line)
+            if fence:
+                marker = fence.group(1)[0]
+                if active_fence is None:
+                    active_fence = marker
+                elif active_fence == marker:
+                    active_fence = None
+                current_lines.append(line)
                 continue
-            if code_block_flag:
-                current_text += line + "\n"
-                continue
-            header_match = re.match(r"^#+\s", line)
-            if header_match:
-                if current_header is not None:
-                    markdown_tups.append((current_header, current_text))
 
-                current_header = line
-                current_text = ""
+            heading = _HEADING_PATTERN.match(line) if active_fence is None else None
+            if heading:
+                flush()
+                current_header = heading.group(2).strip()
+                current_lines = []
             else:
-                current_text += line + "\n"
-        markdown_tups.append((current_header, current_text))
-
-        if current_header is not None:
-            # pass linting, assert keys are defined
-            markdown_tups = [
-                (re.sub(r"#", "", cast(str, key)).strip(), re.sub(r"<.*?>", "", value))
-                for key, value in markdown_tups
-            ]
-        else:
-            markdown_tups = [
-                (key, re.sub("\n", "", value)) for key, value in markdown_tups
-            ]
-
-        return markdown_tups
-
-    def remove_images(self, content: str) -> str:
-        """Get a dictionary of a markdown file from its path."""
-        pattern = r"!{1}\[\[(.*)\]\]"
-        content = re.sub(pattern, "", content)
-        return content
-
-    def remove_hyperlinks(self, content: str) -> str:
-        """Get a dictionary of a markdown file from its path."""
-        pattern = r"\[(.*?)\]\((.*?)\)"
-        content = re.sub(pattern, r"\1", content)
-        return content
-
-    def parse_tups(self) -> tuple[str, list[tuple[Optional[str], str]], list[UploadFileResponse]]:
-        """Parse bytes into tuples."""
-        content = ""
-        try:
-            content = self._file_bytes.decode(
-                self._encoding if self._encoding else "utf-8"
-            )
-        except UnicodeDecodeError as e:
-            if self._autodetect_encoding:
-                detected_encodings = detect_file_encodings(self._file_bytes)
-                for encoding in detected_encodings:
-                    try:
-                        content = self._file_bytes.decode(encoding.encoding if encoding.encoding else "utf-8")
-                        break
-                    except UnicodeDecodeError:
-                        continue
-            else:
-                raise RuntimeError("Error decoding markdown content") from e
-
-        image_link_pattern = r"!\[.*?\]\((.*?)\)"
-        img_url_list = re.findall(image_link_pattern, content)
-        img_map = {}
-        img_list = []
-        for img_url in img_url_list:
-            if not self._is_valid_url(img_url):
-                continue
-            response = requests.get(img_url)
-            if response.status_code == 200:
-                image_ext = mimetypes.guess_extension(response.headers["Content-Type"])
-                if image_ext is None:
-                    continue
-                file_uuid = str(uuid.uuid4())
-                file_name = file_uuid + "." + image_ext
-                mime_type, _ = mimetypes.guess_type(file_name)
-
-                file_res = self._tool.session.file.upload(
-                    file_name, response.content, mime_type if mime_type else "image/png"
-                )
-                img_map[img_url] = file_res.preview_url
-                img_list.append(file_res)
-            else:
-                continue
-
-        for img_url, preview_url in img_map.items():
-            content = content.replace(img_url, preview_url)
-        if self._remove_hyperlinks:
-            content = self.remove_hyperlinks(content)
-
-        if self._remove_images:
-            content = self.remove_images(content)
-
-        return content, self._markdown_to_tups(content), img_list
-
-
-    def _markdown_to_tups(self, markdown_text: str) -> list[tuple[Optional[str], str]]:
-        """Convert a markdown file to a dictionary.
-
-        The keys are the headers and the values are the text under each header.
-
-        """
-        markdown_tups: list[tuple[Optional[str], str]] = []
-        lines = markdown_text.split("\n")
-
-        current_header = None
-        current_text = ""
-        code_block_flag = False
-
-        for line in lines:
-            if line.startswith("```"):
-                code_block_flag = not code_block_flag
-                current_text += line + "\n"
-                continue
-            if code_block_flag:
-                current_text += line + "\n"
-                continue
-            header_match = re.match(r"^#+\s", line)
-            if header_match:
-                markdown_tups.append((current_header, current_text))
-                current_header = line
-                current_text = ""
-            else:
-                current_text += line + "\n"
-        markdown_tups.append((current_header, current_text))
-
-        markdown_tups = [
-            (re.sub(r"#", "", cast(str, key)).strip() if key else None, re.sub(r"<.*?>", "", value))
-            for key, value in markdown_tups
-        ]
-
-        return markdown_tups
+                current_lines.append(line)
+        flush()
+        return sections

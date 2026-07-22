@@ -1,57 +1,106 @@
-"""Document loader helpers."""
+"""Shared decoding, Markdown, and archive-safety helpers."""
 
-import concurrent.futures
-from pathlib import Path
-from typing import NamedTuple, Optional, cast
+from __future__ import annotations
+
+import math
+from collections.abc import Iterable, Sequence
+from io import BytesIO
+from zipfile import BadZipFile, ZipFile
+
+import chardet
+
+from tools.errors import ExtractionError
+
+MAX_ARCHIVE_ENTRIES = 10_000
+MAX_ARCHIVE_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+MAX_ARCHIVE_COMPRESSION_RATIO = 1_000
+
+_BAD_OFFICE_FORMAT_HINTS = {
+    ".docx": "old binary .doc instead of .docx",
+    ".xlsx": "old binary .xls instead of .xlsx",
+    ".pptx": "old binary .ppt instead of .pptx",
+}
 
 
-class FileEncoding(NamedTuple):
-    """A file encoding as the NamedTuple."""
+def decode_text(file_bytes: bytes, file_name: str, preferred_encoding: str | None = None) -> str:
+    """Decode text strictly, trying UTF-8/BOM handling before detected encodings."""
+    if not file_bytes:
+        raise ExtractionError(f"File '{file_name}' is empty.")
 
-    encoding: Optional[str]
-    """The encoding of the file."""
-    confidence: float
-    """The confidence of the encoding."""
-    language: Optional[str]
-    """The language of the file."""
+    candidates = [preferred_encoding, "utf-8-sig"]
+    detected = chardet.detect_all(file_bytes) or [chardet.detect(file_bytes)]
+    candidates.extend(result.get("encoding") for result in detected)
 
-
-def detect_file_encodings(file_bytes: bytes, timeout: int = 5) -> list[FileEncoding]:
-    """Try to detect the file encoding from bytes.
-
-    Args:
-        file_bytes: file bytes
-        timeout: timeout in seconds
-    """
-    import chardet
-    from io import BytesIO
-    import csv
-
-    def try_decode(data: bytes, encoding: str) -> bool:
+    attempted: set[str] = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        normalized = candidate.casefold()
+        if normalized in attempted:
+            continue
+        attempted.add(normalized)
         try:
-            with BytesIO(data) as f:
-                csv.Sniffer().sniff(f.read(1024).decode(encoding))
-            return True
-        except:
-            return False
+            return file_bytes.decode(candidate)
+        except (LookupError, UnicodeDecodeError):
+            continue
 
-    def read_and_detect(data: bytes) -> list[dict]:
-        raw_results = chardet.detect_all(data) or [chardet.detect(data)]
+    raise ExtractionError(f"File '{file_name}' could not be decoded as text.")
 
-        valid_results = []
-        for result in raw_results:
-            if result["encoding"] and try_decode(data, result["encoding"]):
-                valid_results.append(result)
 
-        return valid_results or raw_results
+def escape_markdown_cell(value: object) -> str:
+    """Escape a value for use inside a GitHub-style Markdown table."""
+    if value is None:
+        return ""
+    text = str(value)
+    text = text.replace("\\", "\\\\").replace("|", "\\|")
+    return text.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>")
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(read_and_detect, file_bytes)
-        try:
-            encodings = future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError("Timeout reached while detecting encoding")
 
-    if all(encoding["encoding"] is None for encoding in encodings):
-        raise RuntimeError("Could not detect encoding")
-    return [FileEncoding(**enc) for enc in encodings if enc["encoding"] is not None]
+def render_markdown_table(headers: Sequence[object], rows: Iterable[Sequence[object]]) -> str:
+    """Render a consistently escaped Markdown table."""
+    escaped_headers = [escape_markdown_cell(header) for header in headers]
+    lines = [
+        "| " + " | ".join(escaped_headers) + " |",
+        "| " + " | ".join("---" for _ in escaped_headers) + " |",
+    ]
+    lines.extend(
+        "| " + " | ".join(escape_markdown_cell(value) for value in row) + " |" for row in rows
+    )
+    return "\n".join(lines) + "\n"
+
+
+def validate_office_archive(file_bytes: bytes, file_name: str, extension: str) -> None:
+    """Reject corrupt or suspiciously expanded OOXML archives before parsing."""
+    try:
+        with ZipFile(BytesIO(file_bytes)) as archive:
+            entries = archive.infolist()
+    except BadZipFile as exc:
+        hint = _BAD_OFFICE_FORMAT_HINTS.get(extension)
+        suffix = f" (for example, {hint})" if hint else ""
+        raise ExtractionError(
+            f"File '{file_name}' is not a valid {extension} file. "
+            f"It may be corrupted or use an incompatible format{suffix}."
+        ) from exc
+
+    if len(entries) > MAX_ARCHIVE_ENTRIES:
+        raise ExtractionError(
+            f"File '{file_name}' contains too many archive entries "
+            f"(maximum {MAX_ARCHIVE_ENTRIES:,})."
+        )
+
+    total_uncompressed = sum(entry.file_size for entry in entries)
+    total_compressed = sum(entry.compress_size for entry in entries)
+    if total_uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
+        raise ExtractionError(f"File '{file_name}' expands beyond the 200 MiB safety limit.")
+
+    ratios = [entry.file_size / max(entry.compress_size, 1) for entry in entries if entry.file_size]
+    total_ratio = total_uncompressed / max(total_compressed, 1)
+    if total_ratio > MAX_ARCHIVE_COMPRESSION_RATIO or any(
+        ratio > MAX_ARCHIVE_COMPRESSION_RATIO for ratio in ratios
+    ):
+        raise ExtractionError(
+            f"File '{file_name}' exceeds the archive compression-ratio safety limit."
+        )
+
+    if not math.isfinite(total_ratio):
+        raise ExtractionError(f"File '{file_name}' has invalid archive metadata.")
