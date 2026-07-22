@@ -26,6 +26,7 @@ dev = [
 
 [tool.pytest.ini_options]
 # Pytest configuration for Gemini plugin tests
+addopts = "--tb=short"
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -53,9 +54,6 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore:Monkey-patching ssl after ssl has already been imported:gevent.monkey.MonkeyPatchWarning"
 ]
-
-# Coverage options (if using pytest-cov)
-# addopts = ["--cov=models/llm", "--cov-report=term-missing", "--cov-report=html"]
 
 [tool.black]
 # Equivalent to: uv run black -C -l 100

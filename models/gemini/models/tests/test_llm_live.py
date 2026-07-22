@@ -34,7 +34,6 @@ schemas = [
     )
     for model in MODELS
 ]
-llm = GoogleLargeLanguageModel(schemas)
 
 
 def _invoke(
@@ -46,6 +45,8 @@ def _invoke(
     required_tool: str | None = None,
     stream: bool,
 ) -> list[LLMResultChunk]:
+    llm = GoogleLargeLanguageModel(schemas)
+
     def invoke() -> list[LLMResultChunk]:
         return list(
             llm.invoke(
