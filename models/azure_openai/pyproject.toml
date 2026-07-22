@@ -13,7 +13,7 @@ dependencies = [
     "httpx>=0.28.1",
     "numpy>=2.4.6",
     "openai>=2.38.0",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
     "pydantic>=2.13.4",
     "tiktoken>=0.13.0",
 ]
