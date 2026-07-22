@@ -2,7 +2,7 @@
 # Microsoft OneDrive Plugin
 
 **Author**: langgenius
-**Version**: 0.0.1
+**Version**: 0.0.7
 **Type**: plugin
 
 ## Introduction
@@ -54,12 +54,19 @@ This plugin integrates with Microsoft OneDrive, enabling you to search, retrieve
     <img src="_assets/client_secret.png" alt="Azure Portal" width="600">
 </p>
 
-5. Configure the plugin in Dify:
+5. Review the delegated Microsoft Graph permissions requested during authorization:
+    - `Files.Read.All`: Read files that the signed-in user can access for file retrieval and search.
+    - `Files.ReadWrite.All`: Read, create, update, and delete files that the signed-in user can access for upload and delete operations.
+    - `Files.ReadWrite.All` applies to every file the signed-in user can access, not only files created through Dify.
+    - Review or pre-approve these permissions in Microsoft Entra ID according to your organization's consent policy.
+    - See the [Microsoft Graph permissions reference](https://learn.microsoft.com/graph/permissions-reference#filesreadwriteall) for the complete permission definitions.
+
+6. Configure the plugin in Dify:
     - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Azure Portal.
     - Make sure you have the same redirect URI as specified in the Azure Portal. If not, you will need to update it in the Azure Portal.
     - Click `Save and authorize` to initiate the OAuth flow.
 
-6. Enjoy using the Microsoft OneDrive plugin in Dify!
+7. Enjoy using the Microsoft OneDrive plugin in Dify!
 
 <p align="center">
     <img src="_assets/setup.png" alt="Plugin Configuration" width="45%">
@@ -102,4 +109,4 @@ Upload a file to OneDrive root directory.
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
 
-Last updated: July 31, 2025
+Last updated: July 22, 2026
