@@ -76,6 +76,9 @@ DEFAULT_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
 # Format: "{function_name}::sig::{base64_encoded_signature}"
 SIGNATURE_SEPARATOR = "::sig::"
 
+# Regions where Vertex AI Model Garden currently serves Mistral AI models.
+MISTRAL_SUPPORTED_REGIONS = {"europe-west4", "us-central1"}
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,6 +107,17 @@ def _decode_tool_call_id(tool_call_id: str) -> tuple[str, Optional[str]]:
             except Exception:
                 pass
     return tool_call_id, None
+
+
+def _normalize_mistral_tool_call_id(tool_call_id: Optional[str], fallback: str) -> str:
+    """
+    The mistralai-gcp SDK defaults an omitted ToolCall.id to the literal
+    string "null" rather than None, so that sentinel must not be treated
+    as a real id (it isn't unique and can't be matched back to a response).
+    """
+    if tool_call_id and tool_call_id != "null":
+        return tool_call_id
+    return fallback
 
 
 def _extract_thought_signature(part) -> Optional[str]:
@@ -450,7 +464,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             token = gcp_credentials.token
         vertex_mistral_location = credentials.get("vertex_mistral_location")
         vertex_location = credentials.get("vertex_location")
-        location = vertex_mistral_location or vertex_location or "us-central1"
+        if vertex_mistral_location:
+            location = vertex_mistral_location
+        elif vertex_location in MISTRAL_SUPPORTED_REGIONS:
+            location = vertex_location
+        else:
+            location = "us-central1"
         client = MistralGCP(project_id=project_id, region=location, access_token=token)
 
         request_kwargs: dict[str, Any] = {
@@ -558,7 +577,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     arguments = json.dumps(arguments)
                 tool_calls.append(
                     AssistantPromptMessage.ToolCall(
-                        id=tool_call.id or tool_call.function.name,
+                        id=_normalize_mistral_tool_call_id(tool_call.id, tool_call.function.name),
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name=tool_call.function.name,
@@ -625,11 +644,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         slot = tool_call_accumulator.setdefault(
                             tool_call.index or 0, {"id": "", "name": "", "arguments": ""}
                         )
-                        # The SDK defaults an absent id to the literal string "null" rather than
-                        # None, so that sentinel must not be allowed to clobber a real id already
-                        # captured from an earlier fragment.
-                        if tool_call.id and tool_call.id != "null":
-                            slot["id"] = tool_call.id
+                        slot["id"] = _normalize_mistral_tool_call_id(tool_call.id, slot["id"])
                         if tool_call.function:
                             if tool_call.function.name:
                                 slot["name"] = tool_call.function.name
@@ -827,7 +842,10 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         try:
             ping_message = SystemPromptMessage(content="ping")
-            self._generate(model, credentials, [ping_message], {"max_tokens_to_sample": 5})
+            if "mistral" in model or "codestral" in model:
+                self._generate_mistral(model, credentials, [ping_message], {"max_tokens": 5}, stream=False)
+            else:
+                self._generate(model, credentials, [ping_message], {"max_tokens_to_sample": 5})
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
