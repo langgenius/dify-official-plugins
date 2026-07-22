@@ -1,12 +1,12 @@
 author: langgenius
 created_at: "2026-05-25T00:00:00+08:00"
 description:
-  en_US: BytePlus ModelArk multimodal model invocation.
-  zh_Hans: BytePlus ModelArk 多模态模型调用。
+  en_US: SOTA video and image generation model provided by BytePlus
+  zh_Hans: BytePlus 提供的 SOTA 视频和图像生成模型
 icon: icon_s_en.svg
 label:
-  en_US: BytePlus ModelArk
-  zh_Hans: BytePlus ModelArk
+  en_US: BytePlus Seedance & Seedream
+  zh_Hans: BytePlus Seedance & Seedream
 meta:
   arch:
     - amd64
@@ -32,4 +32,4 @@ resource:
       text_embedding: false
       tts: false
 type: plugin
-version: 0.0.4
+version: 0.0.5

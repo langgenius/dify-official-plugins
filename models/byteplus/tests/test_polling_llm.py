@@ -206,6 +206,34 @@ def test_provider_yaml_exposes_custom_video_model() -> None:
     assert {"ark_api_key", "api_endpoint_host", "endpoint_type"} <= variables
 
 
+def test_plugin_metadata_matches_byteplus_marketing_copy() -> None:
+    plugin_root = Path(__file__).resolve().parents[1]
+    manifest = yaml.safe_load(
+        (plugin_root / "manifest.yaml").read_text(encoding="utf-8")
+    )
+    provider = yaml.safe_load(
+        (plugin_root / "provider/byteplus.yaml").read_text(encoding="utf-8")
+    )
+    readme = (plugin_root / "README.md").read_text(encoding="utf-8")
+    title = "BytePlus Seedance & Seedream"
+    description = "SOTA video and image generation model provided by BytePlus"
+    api_key_url = (
+        "https://console.byteplus.com/auth/signup/"
+        "?utm_source=SFCRM"
+        "&utm_content=276309cc-045a-ac1e-3037-10d92577cecb"
+        "&redirectURI=https%3A%2F%2Fconsole.byteplus.com%2Fark"
+    )
+
+    assert set(manifest["label"].values()) == {title}
+    assert manifest["description"]["en_US"] == description
+    assert set(provider["label"].values()) == {title}
+    assert provider["description"]["en_US"] == description
+    assert set(provider["help"]["url"].values()) == {api_key_url}
+    assert f"# {title}" in readme
+    assert api_key_url in readme
+    assert "https://console.byteplus.com/ark/" not in readme
+
+
 def test_custom_video_schema_exposes_polling_features() -> None:
     schema = make_model().get_customizable_model_schema(
         "ep-test", video_credentials()
