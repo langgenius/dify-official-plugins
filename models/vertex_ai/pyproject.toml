@@ -17,6 +17,7 @@ dependencies = [
     "requests>=2.34.2",
     "sentencepiece>=0.2.1",
     "tiktoken>=0.13.0",
+    "mistralai[gcp]>=2.7.1",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
