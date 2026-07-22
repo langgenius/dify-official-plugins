@@ -26,4 +26,4 @@ class LemonadeTextEmbeddingModel(OAICompatEmbeddingModel):
         :return:
         """
         # Use shared validation function
-        validate_lemonade_credentials(credentials)
+        validate_lemonade_credentials(credentials, model)
