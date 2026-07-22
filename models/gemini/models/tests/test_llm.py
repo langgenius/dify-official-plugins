@@ -422,6 +422,22 @@ def test_file_url():
     assert file_url == "http://127.0.0.1/static/files/foo/bar.png"
 
 
+def test_json_schema_uses_json_schema_config_field():
+    config = types.GenerateContentConfig()
+    GoogleLargeLanguageModel._set_chat_parameters(
+        config=config,
+        model_parameters={
+            "json_schema": '{"type":"object","additionalProperties":false}'
+        },
+    )
+
+    assert config.response_json_schema == {
+        "type": "object",
+        "additionalProperties": False,
+    }
+    assert config.response_schema is None
+
+
 class TestBuildGeminiContents:
     """Test suite for the _build_gemini_contents method"""
 

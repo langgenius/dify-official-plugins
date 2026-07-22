@@ -228,7 +228,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     schema = json.loads(schema)
                 except (TypeError, ValueError) as exc:
                     raise InvokeError("Invalid JSON Schema") from exc
-                config.response_schema = schema
+                config.response_json_schema = schema
 
         if stop:
             config.stop_sequences = stop
