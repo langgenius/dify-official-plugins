@@ -18,6 +18,7 @@ from anthropic.types import (
     MessageStopEvent,
     MessageStreamEvent,
 )
+from mistralai.gcp.client import MistralGCP
 from dify_plugin.entities.model import PriceType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
@@ -158,6 +159,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         if "claude" in model:
             return self._generate_anthropic(model, credentials, prompt_messages, model_parameters, stop, stream, user)
+        if "mistral" in model or "codestral" in model:
+            return self._generate_mistral(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _generate_anthropic(
@@ -405,6 +408,273 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_dict
+
+    def _generate_mistral(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Invoke Mistral AI large language model, served through Vertex AI Model Garden
+
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_messages: prompt messages
+        :param model_parameters: model parameters
+        :param tools: tools for tool calling
+        :param stop: stop words
+        :param stream: is stream response
+        :param user: unique user id
+        :return: full response or stream response chunk generator result
+        """
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
+        project_id = credentials["vertex_project_id"]
+        SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+        token = None
+        if service_account_info:
+            gcp_credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+            gcp_credentials.refresh(google.auth.transport.requests.Request())
+            token = gcp_credentials.token
+        vertex_mistral_location = credentials.get("vertex_mistral_location")
+        vertex_location = credentials.get("vertex_location")
+        location = vertex_mistral_location or vertex_location or "us-central1"
+        client = MistralGCP(project_id=project_id, region=location, access_token=token)
+
+        request_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": self._convert_mistral_prompt_messages(prompt_messages),
+        }
+        if tools:
+            request_kwargs["tools"] = self._convert_mistral_tools(tools)
+        if stop:
+            request_kwargs["stop"] = stop
+        for key, value in model_parameters.items():
+            if value is not None:
+                request_kwargs[key] = value
+
+        if stream:
+            response = client.chat.stream(**request_kwargs)
+            return self._handle_mistral_stream_response(model, credentials, response, prompt_messages)
+        response = client.chat.complete(**request_kwargs)
+        return self._handle_mistral_response(model, credentials, response, prompt_messages)
+
+    def _convert_mistral_prompt_messages(self, prompt_messages: list[PromptMessage]) -> list[dict]:
+        """
+        Convert PromptMessage list to Mistral chat completion message dicts
+        """
+        return [self._convert_mistral_prompt_message_to_dict(message) for message in prompt_messages]
+
+    def _convert_mistral_prompt_message_to_dict(self, message: PromptMessage) -> dict:
+        """
+        Convert a single PromptMessage to a Mistral chat completion message dict
+        """
+        if isinstance(message, UserPromptMessage):
+            message = cast(UserPromptMessage, message)
+            if isinstance(message.content, str):
+                return {"role": "user", "content": message.content}
+            sub_messages = []
+            for message_content in message.content:
+                if message_content.type == PromptMessageContentType.TEXT:
+                    message_content = cast(TextPromptMessageContent, message_content)
+                    sub_messages.append({"type": "text", "text": message_content.data})
+                elif message_content.type == PromptMessageContentType.IMAGE:
+                    message_content = cast(ImagePromptMessageContent, message_content)
+                    sub_messages.append({"type": "image_url", "image_url": {"url": message_content.data}})
+            return {"role": "user", "content": sub_messages}
+        elif isinstance(message, AssistantPromptMessage):
+            message = cast(AssistantPromptMessage, message)
+            message_dict: dict[str, Any] = {"role": "assistant", "content": message.content or ""}
+            if message.tool_calls:
+                message_dict["tool_calls"] = [
+                    {
+                        "id": tool_call.id,
+                        "type": "function",
+                        "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments},
+                    }
+                    for tool_call in message.tool_calls
+                ]
+            return message_dict
+        elif isinstance(message, SystemPromptMessage):
+            message = cast(SystemPromptMessage, message)
+            return {"role": "system", "content": message.content}
+        elif isinstance(message, ToolPromptMessage):
+            message = cast(ToolPromptMessage, message)
+            return {"role": "tool", "content": message.content, "tool_call_id": message.tool_call_id, "name": message.name}
+        else:
+            raise ValueError(f"Got unknown type {message}")
+
+    def _convert_mistral_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
+        """
+        Convert PromptMessageTool list to Mistral tool dicts
+        """
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in tools
+        ]
+
+    def _handle_mistral_response(
+        self, model: str, credentials: dict, response: Any, prompt_messages: list[PromptMessage]
+    ) -> LLMResult:
+        """
+        Handle Mistral chat completion response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response
+        :param prompt_messages: prompt messages
+        :return: full response chunk generator result
+        """
+        choice = response.choices[0]
+        assistant_message = choice.message
+        content = assistant_message.content
+        if isinstance(content, list):
+            content = "".join(chunk.text for chunk in content if getattr(chunk, "type", None) == "text")
+
+        tool_calls = []
+        if assistant_message.tool_calls:
+            for tool_call in assistant_message.tool_calls:
+                arguments = tool_call.function.arguments
+                if isinstance(arguments, dict):
+                    arguments = json.dumps(arguments)
+                tool_calls.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=tool_call.id or tool_call.function.name,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call.function.name,
+                            arguments=arguments,
+                        ),
+                    )
+                )
+
+        assistant_prompt_message = AssistantPromptMessage(content=content or "", tool_calls=tool_calls)
+
+        usage_info = response.usage
+        if usage_info:
+            prompt_tokens = usage_info.prompt_tokens or 0
+            completion_tokens = usage_info.completion_tokens or 0
+        else:
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        return LLMResult(
+            model=response.model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage
+        )
+
+    def _handle_mistral_stream_response(
+        self, model: str, credentials: dict, response: Any, prompt_messages: list[PromptMessage]
+    ) -> Generator:
+        """
+        Handle Mistral chat completion stream response
+
+        Tool call argument fragments are buffered across chunks and only surfaced
+        as complete ToolCall objects in the terminating chunk, since downstream
+        consumers expect `function.arguments` to already be a full JSON string.
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response stream
+        :param prompt_messages: prompt messages
+        :return: full response or stream response chunk generator result
+        """
+        try:
+            return_model = model
+            input_tokens = 0
+            output_tokens = 0
+            finish_reason = None
+            index = 0
+            tool_call_accumulator: dict[int, dict] = {}
+
+            for event in response:
+                chunk = event.data
+                return_model = chunk.model or return_model
+                if chunk.usage:
+                    input_tokens = chunk.usage.prompt_tokens or input_tokens
+                    output_tokens = chunk.usage.completion_tokens or output_tokens
+                if not chunk.choices:
+                    continue
+
+                choice = chunk.choices[0]
+                delta = choice.delta
+                index = choice.index if choice.index is not None else index
+                if choice.finish_reason:
+                    finish_reason = choice.finish_reason
+
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        slot = tool_call_accumulator.setdefault(
+                            tool_call.index or 0, {"id": "", "name": "", "arguments": ""}
+                        )
+                        # The SDK defaults an absent id to the literal string "null" rather than
+                        # None, so that sentinel must not be allowed to clobber a real id already
+                        # captured from an earlier fragment.
+                        if tool_call.id and tool_call.id != "null":
+                            slot["id"] = tool_call.id
+                        if tool_call.function:
+                            if tool_call.function.name:
+                                slot["name"] = tool_call.function.name
+                            arguments = tool_call.function.arguments
+                            if isinstance(arguments, dict):
+                                arguments = json.dumps(arguments)
+                            if arguments:
+                                slot["arguments"] += arguments
+                    continue
+
+                delta_content = delta.content
+                if isinstance(delta_content, list):
+                    delta_content = "".join(c.text for c in delta_content if getattr(c, "type", None) == "text")
+                if delta_content:
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index, message=AssistantPromptMessage(content=delta_content)
+                        ),
+                    )
+
+            tool_calls = [
+                AssistantPromptMessage.ToolCall(
+                    id=slot["id"] or slot["name"],
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=slot["name"],
+                        arguments=slot["arguments"] or "{}",
+                    ),
+                )
+                for slot in tool_call_accumulator.values()
+            ]
+            usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
+            yield LLMResultChunk(
+                model=return_model,
+                prompt_messages=prompt_messages,
+                delta=LLMResultChunkDelta(
+                    index=index + 1,
+                    message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                    finish_reason=finish_reason,
+                    usage=usage,
+                ),
+            )
+        except Exception as ex:
+            raise InvokeError(str(ex))
 
     def get_num_tokens(
         self,
