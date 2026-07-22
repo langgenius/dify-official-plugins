@@ -12,7 +12,7 @@ dependencies = [
     "google-genai>=2.6.0",
     "httpx>=0.28.1",
     "openai>=2.38.0",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
     "requests>=2.34.2",
     "urllib3>=2.7.0",
 ]

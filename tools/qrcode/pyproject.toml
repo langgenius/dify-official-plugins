@@ -10,7 +10,7 @@ dependencies = [
     "dify_plugin>=0.9.0",
     "qrcode>=8.2",
     "pypng>=0.20220715.0",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
