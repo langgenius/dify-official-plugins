@@ -1,7 +1,9 @@
+from decimal import Decimal
 from pathlib import Path
 
+import pytest
 import yaml
-from dify_plugin.entities.model import AIModelEntity
+from dify_plugin.entities.model import AIModelEntity, ModelFeature, ModelPropertyKey
 from models.llm.llm import GoogleLargeLanguageModel
 from models.llm.model_schema import (
     INLINE_FILE_PARAMETER_NAME,
@@ -10,6 +12,10 @@ from models.llm.model_schema import (
 
 
 LLM_SCHEMA_DIR = Path(__file__).parents[1] / "llm"
+LATEST_FLASH_MODELS = (
+    ("gemini-3.6-flash", "Medium", Decimal("1.50"), Decimal("7.50")),
+    ("gemini-3.5-flash-lite", "Minimal", Decimal("0.30"), Decimal("2.50")),
+)
 
 
 def _load_llm_model_schemas() -> list[AIModelEntity]:
@@ -51,3 +57,55 @@ def test_inline_file_parameter_covers_newer_gemini_models_without_yaml_edits():
     assert INLINE_FILE_PARAMETER_NAME not in {
         rule.name for rule in text_only.parameter_rules
     }
+
+
+@pytest.mark.parametrize(
+    ("model", "thinking_level", "input_price", "output_price"),
+    LATEST_FLASH_MODELS,
+)
+def test_latest_flash_model_contract(
+    model: str,
+    thinking_level: str,
+    input_price: Decimal,
+    output_price: Decimal,
+):
+    llm = GoogleLargeLanguageModel(_load_llm_model_schemas())
+    schema = llm.get_model_schema(model)
+    assert schema is not None
+
+    assert schema.model_properties[ModelPropertyKey.CONTEXT_SIZE] == 1_048_576
+    assert {
+        ModelFeature.TOOL_CALL,
+        ModelFeature.MULTI_TOOL_CALL,
+        ModelFeature.STREAM_TOOL_CALL,
+        ModelFeature.VISION,
+        ModelFeature.DOCUMENT,
+        ModelFeature.VIDEO,
+        ModelFeature.AUDIO,
+        ModelFeature.STRUCTURED_OUTPUT,
+    } <= set(schema.features or [])
+
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+    assert not {"temperature", "top_p", "top_k"} & rules.keys()
+    assert rules["include_thoughts"].default is False
+    assert rules["media_resolution"].options == ["Default", "Low", "Medium", "High"]
+    assert rules["thinking_level"].default == thinking_level
+    assert rules["thinking_level"].options == ["Minimal", "Low", "Medium", "High"]
+    assert rules["max_output_tokens"].default == 65_536
+    assert rules["max_output_tokens"].max == 65_536
+    assert rules["service_tier"].default == "standard"
+    assert rules["service_tier"].options == ["flex", "standard", "priority"]
+    assert schema.pricing is not None
+    assert schema.pricing.input == input_price
+    assert schema.pricing.output == output_price
+    assert schema.pricing.unit == Decimal("0.000001")
+    assert schema.pricing.currency == "USD"
+
+
+def test_latest_flash_models_are_first_in_display_order():
+    position = yaml.safe_load((LLM_SCHEMA_DIR / "_position.yaml").read_text())
+    assert position[:3] == [
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+    ]
