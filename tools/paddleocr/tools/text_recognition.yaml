@@ -20,6 +20,10 @@ parameters:
           zh_Hans: PP-OCRv5
         value: PP-OCRv5
       - label:
+          en_US: PP-OCRv5-latin
+          zh_Hans: PP-OCRv5-latin
+        value: PP-OCRv5-latin
+      - label:
           en_US: PP-OCRv6
           zh_Hans: PP-OCRv6
         value: PP-OCRv6
@@ -66,6 +70,17 @@ parameters:
       en_US: File type. "Auto Detect" will infer the type from the uploaded file metadata when available. "PDF" is for PDF files, and "Image" is for image files.
       zh_Hans: 文件类型。“自动检测”会在可用时根据上传文件元数据推断类型，“PDF”表示 PDF 文件，“图片”表示图像文件。
     llm_description: File type. "auto" will infer the type from uploaded file metadata when available, "pdf" is for PDF files, and "image" is for image files.
+    form: llm
+  - name: pageRanges
+    type: string
+    required: false
+    label:
+      en_US: PDF Page Ranges
+      zh_Hans: PDF 页码范围
+    human_description:
+      en_US: Optional PDF pages to process, using expressions such as "2,4-6". Leave empty to process every page.
+      zh_Hans: 可选的 PDF 处理页码范围，例如“2,4-6”。留空则处理全部页面。
+    llm_description: Optional PDF pages to process, using expressions such as "2,4-6". Leave empty to process every page.
     form: llm
   - name: useDocOrientationClassify
     type: boolean
