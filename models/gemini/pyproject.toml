@@ -32,10 +32,12 @@ python_functions = ["test_*"]
 
 # Test discovery paths
 testpaths = ["models/tests/"]
+pythonpath = ["."]
 
 # Markers
 markers = [
-    "integration: marks tests as integration tests (requires API key)",
+    "integration: marks integration tests",
+    "live: sends billable requests to the real Gemini API",
     "unit: marks tests as unit tests (no API key required)"
 ]
 

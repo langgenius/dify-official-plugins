@@ -575,6 +575,21 @@ class TestBuildGeminiContents:
         assert config.top_p is None
         assert config.top_k is None
 
+    def test_new_model_credentials_validation_omits_sampling_parameters(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            self.llm.validate_credentials(
+                model="gemini-3.6-flash",
+                credentials={"google_api_key": "test-key"},
+            )
+
+        config = mock_client.models.generate_content.call_args.kwargs["config"]
+        assert config.max_output_tokens == 20
+        assert config.temperature is None
+        assert config.top_p is None
+        assert config.top_k is None
+
     @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
     def test_new_models_reject_assistant_prefill(self, model):
         mock_client = Mock()

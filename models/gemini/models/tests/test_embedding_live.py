@@ -5,11 +5,11 @@ These tests call the real Google Gemini API and require a valid API key.
 
 Usage:
     export GEMINI_API_KEY="your-google-api-key"
+    export RUN_GEMINI_LIVE=1
     cd models/gemini
     pytest models/tests/test_embedding_live.py -v -s
 
-All tests are marked with @pytest.mark.live so they can be skipped
-in CI or when no API key is available.
+All tests are marked with @pytest.mark.live and run only when explicitly enabled.
 """
 
 import os
@@ -23,20 +23,15 @@ from google.genai.types import EmbedContentConfig
 
 # ---- Configuration ----
 
-API_KEY = os.environ.get("GEMINI_API_KEY", "")
 MODEL_NAME = "gemini-embedding-2-preview"
 
-# Skip all tests in this module if no API key is set
-pytestmark = pytest.mark.skipif(
-    not API_KEY,
-    reason="GEMINI_API_KEY environment variable not set",
-)
+pytestmark = pytest.mark.live
 
 
 @pytest.fixture(scope="module")
 def client():
     """Create a Google Genai client."""
-    return genai.Client(api_key=API_KEY)
+    return genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 
 def _make_tiny_jpeg() -> bytes:
