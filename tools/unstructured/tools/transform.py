@@ -226,7 +226,7 @@ class TransformTool(Tool):
             meta={"filename": filename, "mime_type": mime_type},
         )
         yield self.create_variable_message("job_id", result["job_id"])
-        yield self.create_variable_message("output_ref", result.get("output_ref", ""))
+        yield self.create_variable_message("output_ref", result.get("output_ref") or "")
         yield self.create_variable_message(
             "result",
             content.decode("utf-8"),
