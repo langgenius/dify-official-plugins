@@ -6,22 +6,21 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.utils import (
     call_paddleocr_api,
-    camel_to_snake,
     cleanup_temp_file,
     get_api_client_config,
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType", "model"}
+_SKIP_KEYS = {"file", "fileType", "model", "pageRanges"}
 
 
 def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
-    """Build OCR options dict from parameters using dynamic conversion."""
+    """Build the camelCase optional payload expected by the HTTP API."""
     options_dict = {}
     for api_name, value in params.items():
         if value is None or api_name in _SKIP_KEYS:
             continue
-        options_dict[camel_to_snake(api_name)] = value
+        options_dict[api_name] = value
     return options_dict
 
 
@@ -51,6 +50,7 @@ class TextRecognitionTool(Tool):
 
             # Get model selection
             model = tool_parameters.get("model") or "PP-OCRv5"
+            page_ranges = tool_parameters.get("pageRanges")
 
             # Call API
             if file_input.startswith(("http://", "https://")):
@@ -61,6 +61,7 @@ class TextRecognitionTool(Tool):
                     options=options,
                     client_config=client_config,
                     is_document_parsing=False,
+                    page_ranges=page_ranges,
                 )
             else:
                 result = call_paddleocr_api(
@@ -70,6 +71,7 @@ class TextRecognitionTool(Tool):
                     options=options,
                     client_config=client_config,
                     is_document_parsing=False,
+                    page_ranges=page_ranges,
                 )
 
             # Extract text for output
@@ -84,16 +86,18 @@ class TextRecognitionTool(Tool):
             yield self.create_text_message("\n\n".join(all_text))
 
             # Return raw result as JSON
-            yield self.create_json_message({
-                "job_id": result["job_id"],
-                "pages": [
-                    {
-                        "pruned_result": page["pruned_result"],
-                        "ocr_image_url": page["ocr_image_url"],
-                    }
-                    for page in result["pages"]
-                ]
-            })
+            yield self.create_json_message(
+                {
+                    "job_id": result["job_id"],
+                    "pages": [
+                        {
+                            "pruned_result": page["pruned_result"],
+                            "ocr_image_url": page["ocr_image_url"],
+                        }
+                        for page in result["pages"]
+                    ],
+                }
+            )
 
         finally:
             # Clean up temporary file if created
