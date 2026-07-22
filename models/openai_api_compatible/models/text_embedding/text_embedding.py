@@ -25,7 +25,11 @@ from dify_plugin.entities.model.text_embedding import (
     TextEmbeddingResult,
     EmbeddingUsage,
 )
-from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+    InvokeServerUnavailableError,
+)
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
     OAICompatEmbeddingModel,
 )
@@ -36,6 +40,12 @@ from dify_plugin.entities.model.text_embedding import (
 
 
 logger = logging.getLogger(__name__)
+
+def _get_encoding_format(credentials: Mapping[str, Any]) -> Literal["float"] | None:
+    encoding_format = credentials.get("encoding_format")
+    if encoding_format == "float":
+        return encoding_format
+    return None
 
 def create_chat_embeddings(
     client: OpenAI,
@@ -73,7 +83,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Add vision feature if vision support is enabled
@@ -85,6 +95,14 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 entity.features.append(ModelFeature.VISION)
 
         return entity
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        try:
+            self._invoke(model=model, credentials=credentials, texts=["ping"])
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _invoke(
         self,
@@ -204,6 +222,8 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 }
                 text_embeddings = []
 
+                encoding_format = _get_encoding_format(credentials)
+
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
 
@@ -212,7 +232,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         "input": batch,
                     }
 
-                    encoding_format = credentials.get("encoding_format")
                     if encoding_format:
                         payload["encoding_format"] = encoding_format
 
@@ -305,6 +324,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         Embed inputs containing multimodal content using vLLM chat embeddings API.
         Returns (embeddings, used_tokens, total_price, unit_price, price_unit, currency).
         """
+        # Resolve the upstream model id the same way the text-only path does, so a
+        # configured endpoint_model_name override reaches the API instead of the
+        # Dify display/registration name (which would 404 upstream).
+        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
+
         client = OpenAI(api_key=api_key, base_url=endpoint_url)
 
         batched_embeddings = []
@@ -332,7 +356,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         {"role": "user", "content": [{"type": "text", "text": prompt}]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,
@@ -349,7 +373,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         ]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,
@@ -373,7 +397,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         ]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,

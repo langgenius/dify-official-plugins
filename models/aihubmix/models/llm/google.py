@@ -7,10 +7,11 @@ import tempfile
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
+from decimal import Decimal
 from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
 
 import requests
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -49,8 +50,13 @@ IMAGE_GENERATION_MODELS = {
     "gemini-2.5-flash-image",
     "gemini-3-pro-image-preview",
 }
+NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash"}
 
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
+_SERVICE_TIER_PRICE_MULTIPLIERS = {
+    "flex": Decimal("0.5"),
+    "priority": Decimal("1.8"),
+}
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -304,7 +310,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 schema = json.loads(schema)
             except (TypeError, ValueError) as exc:
                 raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
+            config.response_json_schema = schema
             config.response_mime_type = "application/json"
 
         if stop:
@@ -324,6 +330,63 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
             elif media_resolution in ["High"]:
                 config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
+    @staticmethod
+    def _set_service_tier(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any]
+    ) -> None:
+        service_tier = model_parameters.get("service_tier")
+        if service_tier is None:
+            return
+
+        if isinstance(service_tier, str):
+            tier_map = {
+                "standard": types.ServiceTier.STANDARD,
+                "flex": types.ServiceTier.FLEX,
+                "priority": types.ServiceTier.PRIORITY,
+            }
+            service_tier = tier_map.get(
+                service_tier.lower(), types.ServiceTier.UNSPECIFIED
+            )
+        if isinstance(service_tier, types.ServiceTier):
+            config.service_tier = service_tier
+
+    @staticmethod
+    def _apply_service_tier_pricing(
+        usage: LLMUsage,
+        response: types.GenerateContentResponse,
+        requested_service_tier: types.ServiceTier | str | None = None,
+    ) -> LLMUsage:
+        headers = getattr(getattr(response, "sdk_http_response", None), "headers", None)
+        actual_service_tier = (
+            next(
+                (
+                    str(value).lower()
+                    for name, value in headers.items()
+                    if name.lower() == "x-gemini-service-tier"
+                ),
+                None,
+            )
+            if isinstance(headers, Mapping)
+            else None
+        )
+        requested = (
+            requested_service_tier.value
+            if isinstance(requested_service_tier, types.ServiceTier)
+            else requested_service_tier
+        )
+        multiplier = _SERVICE_TIER_PRICE_MULTIPLIERS.get(
+            actual_service_tier or str(requested or "standard").lower()
+        )
+        if multiplier is None:
+            return usage
+
+        usage.prompt_unit_price *= multiplier
+        usage.prompt_price *= multiplier
+        usage.completion_unit_price *= multiplier
+        usage.completion_price *= multiplier
+        usage.total_price = usage.prompt_price + usage.completion_price
+        return usage
 
     @staticmethod
     def _set_image_config(
@@ -646,12 +709,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
-                call = message.tool_calls[0]
-                _unsafe_part = types.Part.from_function_call(
-                    name=call.function.name, args=json.loads(call.function.arguments)
-                )
-                _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
-                parts.append(_unsafe_part)
+                for call in message.tool_calls:
+                    parts.append(
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                id=call.id,
+                                name=call.function.name,
+                                args=json.loads(call.function.arguments),
+                            ),
+                            thought_signature=DEFAULT_THOUGHT_SIGNATURE,
+                        )
+                    )
 
             # Filter out assistant messages with empty parts to avoid invalid requests
             if not parts:
@@ -675,8 +743,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 # https://googleapis.github.io/python-genai/genai.html#genai.types.Content.role
                 role="user",
                 parts=[
-                    types.Part.from_function_response(
-                        name=message.name, response={"response": message.content}
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            id=message.tool_call_id,
+                            name=message.name,
+                            response={"response": message.content},
+                        )
                     )
                 ],
             )
@@ -690,6 +762,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: types.GenerateContentResponse,
         prompt_messages: list[PromptMessage],
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> LLMResult:
         """
         Handle llm response
@@ -725,6 +798,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
         )
+        usage = self._apply_service_tier_pricing(
+            usage, response, requested_service_tier
+        )
 
         # transform response
         return LLMResult(
@@ -741,6 +817,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         response: Iterator[types.GenerateContentResponse],
         prompt_messages: list[PromptMessage],
         genai_client: genai.Client,
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -817,6 +894,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                 )
+                usage = self._apply_service_tier_pricing(
+                    usage, chunk, requested_service_tier
+                )
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=list(prompt_messages),
@@ -891,9 +971,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             # representing the [FunctionDeclaration.name] with the parameters and their values.
             if part.function_call:
                 function_call_part: types.FunctionCall = part.function_call
-                # Generate a unique ID since Gemini API doesn't provide one
-                function_call_id = f"gemini_call_{function_call_part.name}_{time.time_ns()}"
-                logging.info(f"Generated function call ID: {function_call_id}")
+                function_call_id = function_call_part.id
+                if not function_call_id:
+                    function_call_id = f"gemini_call_{function_call_part.name}_{time.time_ns()}"
+                    logging.info(f"Generated function call ID: {function_call_id}")
                 function_call_name = function_call_part.name
                 function_call_args = function_call_part.args
                 if not isinstance(function_call_name, str):
@@ -986,12 +1067,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        if model in NO_SAMPLING_OR_PREFILL_MODELS:
+            for parameter in ("temperature", "top_p", "top_k"):
+                model_parameters.pop(parameter, None)
 
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         genai_client = genai.Client(api_key=credentials["api_key"], http_options={
-            "base_url": "https://aihubmix.com/gemini",
+            "base_url": f"{api_url}/gemini",
             "headers": {
                 "APP-Code": "Dify2025"
             }
@@ -1000,6 +1085,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == ChatConfig == #
 
         self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
+        self._set_service_tier(config=config, model_parameters=model_parameters)
 
         # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
@@ -1010,6 +1096,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             file_server_url_prefix=file_server_url_prefix,
             model_parameters=model_parameters,
         )
+
+        if model in NO_SAMPLING_OR_PREFILL_MODELS:
+            last_nonempty_content = next(
+                (content for content in reversed(contents) if content.parts), None
+            )
+            if not last_nonempty_content or last_nonempty_content.role == "model":
+                raise InvokeBadRequestError(
+                    f"{model} requires a non-empty final user turn"
+                )
 
         # == ImageConfig == #
 
@@ -1051,13 +1146,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model=model, contents=contents, config=config
             )
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages, genai_client
+                model,
+                credentials,
+                response,
+                prompt_messages,
+                genai_client,
+                config.service_tier,
             )
 
         response = genai_client.models.generate_content(
             model=model, contents=contents, config=config
         )
-        return self._handle_generate_response(model, credentials, response, prompt_messages)
+        return self._handle_generate_response(
+            model, credentials, response, prompt_messages, config.service_tier
+        )
 
     def get_num_tokens(
         self,

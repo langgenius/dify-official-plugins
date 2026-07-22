@@ -18,7 +18,7 @@ class TavilySearch:
     """
 
     def __init__(self, api_key: str, project_id: str | None = None) -> None:
-        self.client = TavilyClient(api_key=api_key, project_id=project_id)
+        self.client = TavilyClient(api_key=api_key, project_id=project_id, client_name="dify")
 
     def search(self, params: dict[str, Any]) -> dict:
         """
@@ -108,8 +108,10 @@ class TavilySearch:
         processed_params.setdefault("search_depth", "basic")
         processed_params.setdefault("topic", "general")
         processed_params.setdefault("max_results", 5)
-        if processed_params.get("search_depth") == "advanced":
+        if processed_params.get("search_depth") in {"advanced", "fast"}:
             processed_params.setdefault("chunks_per_source", 3)
+        else:
+            processed_params.pop("chunks_per_source", None)
         return processed_params
 
 

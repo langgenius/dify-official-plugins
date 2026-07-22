@@ -9,6 +9,77 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
 
+PRO_MODEL = "doubao-seedream-5.0-pro"
+PRO_SIZES = {"1K", "2K"}
+
+
+def extract_images(data: dict[str, Any]) -> list[dict[str, str]]:
+    images: list[dict[str, str]] = []
+    output = data.get("output")
+    if not isinstance(output, list):
+        return images
+
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        if isinstance(item.get("b64_json"), str):
+            images.append({"b64_json": item["b64_json"]})
+        elif isinstance(item.get("bytesBase64"), str):
+            images.append({"b64_json": item["bytesBase64"]})
+        elif isinstance(item.get("url"), str):
+            images.append({"url": item["url"]})
+    return images
+
+
+def detect_image_format(image_bytes: bytes) -> tuple[str, str]:
+    if image_bytes.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg", "jpg"
+    if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png", "png"
+    if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
+        return "image/webp", "webp"
+    return "image/png", "png"
+
+
+def build_input_payload(
+    *,
+    model: str,
+    prompt: str,
+    size: str,
+    stream: bool,
+    response_format: str,
+    watermark: bool,
+    generation_mode: str,
+    sequential_image_generation: str,
+    max_sequential_images: int,
+    reference_image: str = "",
+    image_strength: float = 0.5,
+) -> dict[str, Any]:
+    if model == PRO_MODEL:
+        if stream:
+            raise InvokeError(f"{PRO_MODEL} does not support streaming")
+        if size not in PRO_SIZES:
+            raise InvokeError(f"{PRO_MODEL} supports only 1K and 2K output sizes")
+        if generation_mode == "sequential" or sequential_image_generation == "enabled":
+            raise InvokeError(f"{PRO_MODEL} does not support sequential image generation")
+
+    payload: dict[str, Any] = {
+        "prompt": prompt,
+        "size": size,
+        "stream": stream,
+        "response_format": response_format,
+        "watermark": watermark,
+    }
+    if generation_mode == "image_to_image":
+        payload["image"] = reference_image
+        payload["image_strength"] = image_strength
+    if model != PRO_MODEL:
+        payload["sequential_image_generation"] = sequential_image_generation
+        if sequential_image_generation == "enabled":
+            payload["sequential_image_generation_options"] = {"max_images": max_sequential_images}
+    return payload
+
+
 class DoubaoTool(Tool):
     """
     Doubao Seedream Image Generation Tool
@@ -20,13 +91,16 @@ class DoubaoTool(Tool):
     - Sequential Generation: Create consistent series of images (storyboards, variations)
     """
 
-    BASE_URL = "https://aihubmix.com/v1"
+    DEFAULT_BASE_URL = "https://api.inferera.com"
 
     DEFAULT_MODEL = "doubao-seedream-5.0-lite"
-    
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
     def get_endpoint(self, model: str) -> str:
         """Get the appropriate endpoint based on model selection"""
-        return f"{self.BASE_URL}/models/doubao/{model}/predictions"
+        return f"{self.get_base_url()}/v1/models/doubao/{model}/predictions"
     
     # Generation modes
     MODE_TEXT_TO_IMAGE = "text_to_image"
@@ -150,7 +224,6 @@ class DoubaoTool(Tool):
                 raise InvokeError("Max sequential images must be at least 1")
             if sequential_image_generation == "enabled" and max_sequential_images > 8:
                 raise InvokeError("Max sequential images cannot exceed 8")
-            
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
@@ -163,24 +236,19 @@ class DoubaoTool(Tool):
             }
             
             # Prepare request payload based on generation mode
-            input_payload = {
-                "prompt": prompt,
-                "size": size,
-                "sequential_image_generation": sequential_image_generation,
-                "stream": stream,
-                "response_format": response_format,
-                "watermark": watermark
-            }
-            
-            # Add mode-specific parameters
-            if generation_mode == self.MODE_IMAGE_TO_IMAGE:
-                input_payload["image"] = reference_image
-                input_payload["image_strength"] = image_strength
-            
-            if sequential_image_generation == "enabled":
-                input_payload["sequential_image_generation_options"] = {
-                    "max_images": max_sequential_images
-                }
+            input_payload = build_input_payload(
+                model=model,
+                prompt=prompt,
+                size=size,
+                stream=stream,
+                response_format=response_format,
+                watermark=watermark,
+                generation_mode=generation_mode,
+                sequential_image_generation=sequential_image_generation,
+                max_sequential_images=max_sequential_images,
+                reference_image=reference_image,
+                image_strength=image_strength,
+            )
             
             payload = {"input": input_payload}
             
@@ -223,13 +291,7 @@ class DoubaoTool(Tool):
             data = response.json()
             
             # Extract image data from response
-            images = []
-            if "output" in data and isinstance(data["output"], list):
-                for item in data["output"]:
-                    if "b64_json" in item:
-                        images.append({"b64_json": item["b64_json"]})
-                    elif "url" in item:
-                        images.append({"url": item["url"]})
+            images = extract_images(data)
             
             if not images:
                 raise InvokeError("No images were generated")
@@ -240,8 +302,8 @@ class DoubaoTool(Tool):
                     # Decode base64 and return as blob
                     base64_data = img["b64_json"]
                     image_bytes = base64.b64decode(base64_data)
-                    filename = f"doubao_image_{idx + 1}.png"
-                    mime_type = "image/png"
+                    mime_type, extension = detect_image_format(image_bytes)
+                    filename = f"doubao_image_{idx + 1}.{extension}"
                     yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
                 elif "url" in img:
                     # For URL responses, create image message
@@ -262,8 +324,9 @@ class DoubaoTool(Tool):
             })
             
             # Also create text message with image URLs
-            image_urls = "\n".join([img['url'] for img in images])
-            yield self.create_text_message(image_urls)
+            image_urls = "\n".join(img["url"] for img in images if "url" in img)
+            if image_urls:
+                yield self.create_text_message(image_urls)
                 
         except Exception as e:
             raise InvokeError(f"Doubao Seedream image generation failed: {str(e)}")

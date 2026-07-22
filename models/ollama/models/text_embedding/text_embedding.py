@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from decimal import Decimal
@@ -58,6 +57,9 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
         :return: embeddings result
         """
         headers = {"Content-Type": "application/json"}
+        api_key = credentials.get("api_key")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         endpoint_url = credentials.get("base_url", "")
         if endpoint_url and not endpoint_url.endswith("/"):
             endpoint_url += "/"
@@ -72,9 +74,14 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
                 inputs.append(text[0:cutoff])
             else:
                 inputs.append(text)
-        payload = {"input": inputs, "model": model, "options": {"use_mmap": True}}
+        payload = {
+            "input": inputs,
+            "model": model,
+            "truncate": True,
+            "options": {"use_mmap": True},
+        }
         response = requests.post(
-            endpoint_url, headers=headers, data=json.dumps(payload), timeout=(10, 300)
+            endpoint_url, headers=headers, json=payload, timeout=(10, 300)
         )
         response.raise_for_status()
         response_data = response.json()
@@ -130,7 +137,7 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={

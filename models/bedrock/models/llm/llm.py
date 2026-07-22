@@ -103,6 +103,20 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "ai21.jamba-1-5", "support_system_prompts": True, "support_tool_use": False},
     ]
 
+    # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
+    # These do NOT go through the standard Converse API path.
+    _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-5.6-sol",
+        "openai.gpt-5.6-terra",
+        "openai.gpt-5.6-luna",
+        "openai.gpt-5.5",
+        "openai.gpt-5.4",
+    })
+
+    @staticmethod
+    def _is_bedrock_mantle_model(model_id: str) -> bool:
+        return model_id in BedrockLargeLanguageModel._BEDROCK_MANTLE_MODEL_IDS
+
     @staticmethod
     def _find_model_info(model_id):
         for model in BedrockLargeLanguageModel.CONVERSE_API_ENABLED_MODEL_INFO:
@@ -110,6 +124,130 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 return model
         logger.info(f"current model id: {model_id} did not support by Converse API")
         return None
+
+    # ------------------------------------------------------------------
+    # Claude 5 (Sonnet 5 / Fable 5) refusal handling
+    # The models' safety classifiers block requests (materially more frequent
+    # on Fable 5). The model card documents stop_reason "refusal" for the
+    # native Messages API; the Converse StopReason enum has no "refusal"
+    # (live-verified) — a classifier block is expected to surface as
+    # "content_filtered", with native stop_details available only when
+    # additionalModelResponseFieldPaths requests it. Both signals are checked;
+    # Task 7 live verification prunes this set.
+    # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
+    # ------------------------------------------------------------------
+    CLAUDE5_REFUSAL_STOP_REASONS = ("refusal", "content_filtered")
+    CLAUDE5_RESPONSE_FIELD_PATHS = ["/stop_details"]
+    CLAUDE5_FALLBACK_MODEL_NAME = "Claude 4.8 Opus"
+
+    @staticmethod
+    def _is_claude5_refusal(stop_reason, additional_fields) -> bool:
+        """True when a Converse outcome is a Claude 5 safety-classifier block."""
+        if stop_reason in BedrockLargeLanguageModel.CLAUDE5_REFUSAL_STOP_REASONS:
+            return True
+        if additional_fields and additional_fields.get("stop_details"):
+            return True
+        return False
+
+    @staticmethod
+    def _extract_refusal_detail(response: dict) -> str:
+        """Best-effort extraction of refusal category/explanation from a Converse response."""
+        try:
+            fields = response.get("additionalModelResponseFields") or {}
+            details = fields.get("stop_details") or fields.get("stopDetails") or {}
+            category = details.get("category")
+            explanation = details.get("explanation")
+            parts = [p for p in (category, explanation) if p]
+            if parts:
+                return "; ".join(parts)
+        except Exception:  # noqa: BLE001 - diagnostics only, never fail here
+            pass
+        return "no further details provided by the API"
+
+    @staticmethod
+    def _claude5_refusal_error(model_id: str, detail: str, fallback_attempted: bool) -> InvokeError:
+        if fallback_attempted:
+            hint = (
+                "The refusal occurred after partial output was already streamed, "
+                "so automatic fallback to Claude 4.8 Opus was not possible."
+            )
+        else:
+            hint = (
+                "Enable 'Refusal Fallback to Claude 4.8 Opus' to retry refused "
+                "requests automatically, or rephrase the request."
+            )
+        return InvokeError(
+            f"{model_id} refused this request via its safety classifiers "
+            f"({detail}). {hint}"
+        )
+
+    @staticmethod
+    def _wrap_claude5_stream(stream_gen, fallback_factory, model_id):
+        """
+        Wrap a Claude 5 converse stream to handle safety-classifier refusals.
+
+        - Refusal BEFORE any content chunk was yielded: if fallback_factory is
+          provided, silently restart on the fallback stream; otherwise raise.
+        - Refusal AFTER content was yielded: always raise (chunks cannot be
+          retracted from the Dify stream).
+        """
+        saw_content = False
+        for chunk in stream_gen:
+            delta = chunk.delta
+            finish_reason = delta.finish_reason if delta else None
+            if finish_reason in BedrockLargeLanguageModel.CLAUDE5_REFUSAL_STOP_REASONS:
+                detail = f"stop reason: {finish_reason}; see plugin logs"
+                if not saw_content and fallback_factory is not None:
+                    logger.warning(
+                        f"[REFUSAL FALLBACK] {model_id} refused before producing output; "
+                        f"restarting stream on Claude 4.8 Opus"
+                    )
+                    yield from fallback_factory()
+                    return
+                raise BedrockLargeLanguageModel._claude5_refusal_error(
+                    model_id, detail, fallback_attempted=saw_content
+                )
+            if delta and delta.message and delta.message.content:
+                saw_content = True
+            yield chunk
+
+    @staticmethod
+    def _fold_reasoning_content(content: list) -> tuple[list, str]:
+        """
+        Split a non-streaming Converse content list into non-reasoning blocks and
+        a ``<think>`` prefix built from any ``reasoningContent`` blocks.
+
+        Adaptive-thinking models may return reasoningContent blocks in
+        non-streaming responses; folding them into <think> text (mirrors the
+        streaming handler) avoids crashing on unknown block shapes downstream.
+
+        :return: (content without reasoning blocks, reasoning_prefix)
+        """
+        reasoning_texts = [
+            block["reasoningContent"]["reasoningText"]["text"]
+            for block in content
+            if isinstance(block, dict)
+            and isinstance(block.get("reasoningContent"), dict)
+            and isinstance(block["reasoningContent"].get("reasoningText"), dict)
+            and isinstance(block["reasoningContent"]["reasoningText"].get("text"), str)
+        ]
+        filtered = [b for b in content if not isinstance(b, dict) or "reasoningContent" not in b]
+        reasoning_prefix = f"<think>\n{''.join(reasoning_texts)}\n</think>\n" if reasoning_texts else ""
+        return filtered, reasoning_prefix
+
+    @staticmethod
+    def _claude5_fallback_call_inputs(parameters: dict, credentials: dict) -> tuple[dict, dict, str]:
+        """Build (params, credentials, model_id) for the Opus 4.8 fallback call."""
+        fallback_model_id = model_ids.get_claude5_fallback_model_id(parameters["modelId"])
+        fb_params = {**parameters, "modelId": fallback_model_id}
+        # stop_details paths are Claude-5-specific; drop for the fallback model
+        fb_params.pop("additionalModelResponseFieldPaths", None)
+        fb_credentials = {**credentials}
+        fb_credentials["model_parameters"] = {
+            **credentials.get("model_parameters", {}),
+            "model_name": BedrockLargeLanguageModel.CLAUDE5_FALLBACK_MODEL_NAME,
+        }
+        return fb_params, fb_credentials, fallback_model_id
 
     def _code_block_mode_wrapper(
             self,
@@ -231,6 +369,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 logger.error(f"Failed to invoke inference profile: {str(e)}")
                 raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
         else:
+            # Check for bedrock-mantle models (GPT-5.5, GPT-5.4) before attempting Converse API.
+            # These models use a different endpoint and the OpenAI Responses API.
+            _model_name = model_parameters.get('model_name')
+            if _model_name:
+                _candidate_id = model_ids.get_model_id(model, _model_name)
+                if _candidate_id and self._is_bedrock_mantle_model(_candidate_id):
+                    return self._generate_with_responses_api(
+                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user
+                    )
+
             # Traditional model - try converse API first, then fall back if needed
             model_info = self._get_model_info(model, credentials, model_parameters)
             if model_info:
@@ -307,7 +455,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             region_prefix = None
             cross_region = model_parameters.pop('cross-region', 'disabled')
 
-            if cross_region in ('geographic', 'global'):
+            if model_ids.is_claude5_model(model_id):
+                # Claude 5 models are profile-only (us./global.) — dedicated
+                # resolution that bypasses the legacy whitelist. See model_ids.
+                try:
+                    model_id = model_ids.resolve_claude5_profile_id(model_id, cross_region, region_name)
+                except ValueError as e:
+                    raise InvokeError(str(e))
+            elif cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
                 prefer_global = (cross_region == 'global')
                 region_prefix = model_ids.get_region_area(region_name, prefer_global=prefer_global)
@@ -361,6 +516,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)
         latest_two_messages_cache_checkpoint = model_parameters.pop("latest_two_messages_cache_checkpoint", False)
         logger.info(f"---cache_checkpoints--- system: {system_cache_checkpoint}, penultimate: {latest_two_messages_cache_checkpoint}")
+
+        # Claude 5 refusal fallback (pop BEFORE parameter conversion)
+        refusal_fallback = model_parameters.pop("refusal_fallback", True)
+        is_claude5 = model_ids.is_claude5_profile_id(model_info["model"])
+
         model_id = model_info["model"]
         logger.debug(f"Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
 
@@ -390,6 +550,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             "inferenceConfig": inference_config,
             "additionalModelRequestFields": additional_model_fields,
         }
+
+        if is_claude5:
+            parameters["additionalModelResponseFieldPaths"] = self.CLAUDE5_RESPONSE_FIELD_PATHS
 
         # Bedrock native Structured Outputs via Converse API outputConfig.
         # When a user-defined JSON schema is provided (from Dify's structured output UI),
@@ -466,12 +629,65 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
             if stream:
                 response = bedrock_client.converse_stream(**parameters)
-                return self._handle_converse_stream_response(
+                stream_gen = self._handle_converse_stream_response(
                     model_info["model"], credentials, response, prompt_messages
                 )
+                if is_claude5:
+                    fallback_factory = None
+                    if refusal_fallback:
+                        def fallback_factory():
+                            fb_params, fb_credentials, fb_id = self._claude5_fallback_call_inputs(
+                                parameters, credentials
+                            )
+                            # [ADV] runs during generator iteration, outside this
+                            # method's try/except — map ClientError here too
+                            try:
+                                fb_response = bedrock_client.converse_stream(**fb_params)
+                            except ClientError as ex:
+                                error_code = ex.response["Error"]["Code"]
+                                raise self._map_client_to_invoke_error(
+                                    error_code, f"{error_code}: {ex.response['Error']['Message']}"
+                                )
+                            except Exception as ex:
+                                # Runs at stream-iteration time, outside the SDK's
+                                # _transform_invoke_error wrapper — normalize non-API
+                                # failures (network, endpoint) to InvokeError, matching
+                                # what the wrapper produces for the primary call.
+                                raise InvokeError(str(ex))
+                            return self._handle_converse_stream_response(
+                                fb_id, fb_credentials, fb_response, prompt_messages
+                            )
+
+                    return self._wrap_claude5_stream(
+                        stream_gen, fallback_factory, parameters["modelId"]
+                    )
+                return stream_gen
             else:
                 logger.info(f"converse: {parameters}")
                 response = bedrock_client.converse(**parameters)
+
+                # Claude 5: safety-classifier block (content_filtered / stop_details)
+                if is_claude5 and self._is_claude5_refusal(
+                    response.get("stopReason"), response.get("additionalModelResponseFields")
+                ):
+                    detail = self._extract_refusal_detail(response)
+                    if refusal_fallback:
+                        fb_params, fb_credentials, fallback_model_id = (
+                            self._claude5_fallback_call_inputs(parameters, credentials)
+                        )
+                        logger.warning(
+                            f"[REFUSAL FALLBACK] {parameters['modelId']} refused ({detail}); "
+                            f"retrying with {fallback_model_id}"
+                        )
+                        response = bedrock_client.converse(**fb_params)
+                        # [ADV] hand off with fallback identity so pricing/model
+                        # reporting reflect Opus 4.8, not the refused Claude 5 model
+                        return self._handle_converse_response(
+                            fallback_model_id, fb_credentials, response, prompt_messages
+                        )
+                    raise self._claude5_refusal_error(
+                        parameters["modelId"], detail, fallback_attempted=False
+                    )
 
                 # Log cache usage metrics if available
                 if "usage" in response:
@@ -504,7 +720,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 return self._handle_converse_response(model_info["model"], credentials, response, prompt_messages)
         except ClientError as ex:
             error_code = ex.response["Error"]["Code"]
-            full_error_msg = f"{error_code}: {ex.response['Error']['Message']}"
+            error_message = ex.response["Error"]["Message"]
+            full_error_msg = f"{error_code}: {error_message}"
+            # Fable 5 requires account-level data-retention opt-in; surface
+            # actionable guidance instead of the raw ValidationException.
+            if is_claude5 and error_message and any(
+                kw in error_message.lower()
+                for kw in ("retention", "provider_data_share", "data sharing", "data share")
+            ):
+                raise InvokeBadRequestError(
+                    f"{full_error_msg}\n"
+                    "Claude Fable 5 requires opting in to provider data sharing: set your "
+                    "account's data retention mode to 'provider_data_share' via the Bedrock "
+                    "Data Retention API (no console UI at launch). See the Data Retention "
+                    "section of the model card: https://docs.aws.amazon.com/bedrock/latest/"
+                    "userguide/model-card-anthropic-claude-fable-5.html . "
+                    "The Dify plugin does not change account settings."
+                )
             raise self._map_client_to_invoke_error(error_code, full_error_msg)
         except (EndpointConnectionError, NoRegionError, ServiceNotInRegionError) as ex:
             raise InvokeConnectionError(str(ex))
@@ -528,6 +760,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :return: full response chunk generator result
         """
         response_content = response["output"]["message"]["content"]
+        # Adaptive-thinking models may return reasoningContent blocks in
+        # non-streaming responses; fold them into <think> text (mirrors the
+        # streaming handler) instead of crashing on unknown block shapes.
+        response_content, reasoning_prefix = self._fold_reasoning_content(response_content)
         # transform assistant message to prompt message
         if response["stopReason"] == "tool_use":
             tool_calls = []
@@ -542,9 +778,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             )
             tool_calls.append(tool_call)
 
-            assistant_prompt_message = AssistantPromptMessage(content=text, tool_calls=tool_calls)
+            assistant_prompt_message = AssistantPromptMessage(content=reasoning_prefix + text, tool_calls=tool_calls)
         else:
-            assistant_prompt_message = AssistantPromptMessage(content=response_content[0]["text"])
+            # A reasoning-only Converse response (e.g. max_tokens exhausted during
+            # the thinking phase) leaves the filtered list empty; guard the index
+            # so we surface the folded <think> prefix instead of an IndexError.
+            text = response_content[0]["text"] if response_content else ""
+            assistant_prompt_message = AssistantPromptMessage(content=reasoning_prefix + text)
 
         # calculate num tokens
         if response["usage"]:
@@ -774,8 +1014,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "anthropic_beta" in model_parameters:
             additional_model_fields["anthropic_beta"] = list(map(lambda v:v.strip(), model_parameters["anthropic_beta"].strip().split(",")))
 
+        # Claude 5 generation models (Sonnet 5 / Fable 5): adaptive thinking is
+        # always on; depth is controlled by `effort` (replaces budget_tokens).
+        # Only the 'anthropic claude 5' family yaml exposes this parameter.
+        if "effort" in model_parameters:
+            additional_model_fields["thinking"] = {"type": "adaptive"}
+            additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
+            # Claude 5 rejects non-default sampling params. The family yaml does
+            # not expose them, but drop any that reach here through callers that
+            # bypass the SDK's parameter-rule filtering (e.g. direct _invoke).
+            inference_config.pop("temperature", None)
+            inference_config.pop("topP", None)
+            additional_model_fields.pop("top_k", None)
+
         # process reasoning related parameters, construct nested reasoning_config structure
-        if "reasoning_type" in model_parameters:
+        if "reasoning_type" in model_parameters and "effort" not in model_parameters:
             reasoning_type = model_parameters["reasoning_type"]
             if reasoning_type:
                 reasoning_config = {
@@ -1074,7 +1327,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=matched_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1105,7 +1358,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=fallback_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1547,6 +1800,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Extract the model family from the model ID and check individual models first
         if "anthropic.claude" in model_id:
+            # Claude 5 generation models have a distinct parameter surface
+            if model_ids.is_claude5_profile_id(model_id):
+                return (model_schema.model == "anthropic claude 5" or
+                       model_schema.model.startswith("claude-5-"))
             return (model_schema.model == "anthropic claude" or
                    model_schema.model.startswith("claude-"))
         elif "amazon.nova" in model_id:
@@ -1601,7 +1858,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Create model name mapping for individual model files
         model_name_mapping = {
+            # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            'GPT-5.6 Sol': 'gpt-5-6-sol',
+            'GPT-5.6 Terra': 'gpt-5-6-terra',
+            'GPT-5.6 Luna': 'gpt-5-6-luna',
+            'GPT-5.5': 'gpt-5-5',
+            'GPT-5.4': 'gpt-5-4',
             # Claude models
+            # Claude 5 generation models
+            'Sonnet 5': 'claude-5-sonnet',
+            'Fable 5': 'claude-5-fable',
+            'Claude 4.8 Opus': 'claude-4-8-opus',
+            'Claude 4.7 Opus': 'claude-4-7-opus',
             'Claude 4.0 Sonnet': 'claude-4-sonnet',
             'Claude 4.0 Opus': 'claude-4-opus',
             'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
@@ -1739,3 +2007,250 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Fallback to parent class implementation
         return super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+    # -------------------------------------------------------------------------
+    # bedrock-mantle / OpenAI Responses API path (GPT-5.5, GPT-5.4)
+    # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-55.html
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _map_openai_exception(ex: Exception) -> None:
+        """Map openai SDK exceptions to the corresponding Dify invoke error types."""
+        try:
+            import openai
+            if isinstance(ex, openai.APIConnectionError):
+                raise InvokeConnectionError(str(ex))
+            elif isinstance(ex, openai.AuthenticationError):
+                raise InvokeAuthorizationError(str(ex))
+            elif isinstance(ex, openai.RateLimitError):
+                raise InvokeRateLimitError(str(ex))
+            elif isinstance(ex, openai.BadRequestError):
+                raise InvokeBadRequestError(str(ex))
+            elif isinstance(ex, openai.InternalServerError):
+                raise InvokeServerUnavailableError(str(ex))
+        except ImportError:
+            pass
+        raise InvokeError(str(ex))
+
+    def _get_mantle_auth_token(self, credentials: dict) -> str:
+        """
+        Return a Bearer token for the bedrock-mantle endpoint.
+
+        - API_Key auth: use the long-term Bedrock API key directly.
+        - Access_Secret_Key / IAM_Role: generate a short-lived token via
+          aws-bedrock-token-generator (official AWS library).
+        """
+        auth_method = credentials.get("auth_method", "IAM_Role")
+        region = credentials.get("aws_region", "us-east-2")
+
+        if auth_method == "API_Key":
+            api_key = credentials.get("bedrock_api_key")
+            if not api_key:
+                raise InvokeBadRequestError("bedrock_api_key is required for API_Key auth")
+            return api_key
+
+        # IAM_Role or Access_Secret_Key: generate a short-lived bearer token.
+        try:
+            from aws_bedrock_token_generator import provide_token
+        except ImportError:
+            raise InvokeBadRequestError(
+                "aws-bedrock-token-generator is required for IAM-based authentication "
+                "with GPT-5.5/5.4. Install it with: pip install aws-bedrock-token-generator"
+            )
+
+        aws_access_key_id = credentials.get("aws_access_key_id")
+        aws_secret_access_key = credentials.get("aws_secret_access_key")
+
+        if auth_method == "Access_Secret_Key" and aws_access_key_id and aws_secret_access_key:
+            from botocore.credentials import Credentials as BotocoreCredentials
+            creds = BotocoreCredentials(
+                access_key=aws_access_key_id,
+                secret_key=aws_secret_access_key,
+                token=credentials.get("aws_session_token"),
+            )
+            return provide_token(region=region, aws_credentials_provider=creds)
+
+        # IAM_Role: rely on the environment (instance profile, env vars, etc.)
+        return provide_token(region=region)
+
+    def _build_responses_api_input(self, prompt_messages: list[PromptMessage]) -> list[dict]:
+        """Convert Dify prompt messages to OpenAI Responses API input format."""
+        result = []
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                result.append({"role": "system", "content": message.content or ""})
+            elif isinstance(message, UserPromptMessage):
+                if isinstance(message.content, str):
+                    content = message.content
+                else:
+                    content = " ".join(
+                        c.data for c in message.content
+                        if c.type == PromptMessageContentType.TEXT
+                    )
+                result.append({"role": "user", "content": content})
+            elif isinstance(message, AssistantPromptMessage):
+                result.append({"role": "assistant", "content": message.content or ""})
+        return result
+
+    def _generate_with_responses_api(
+        self,
+        model_id: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Invoke GPT-5.5 / GPT-5.4 via bedrock-mantle endpoint using the OpenAI Responses API.
+        Authentication supports API Key, Access/Secret Key, and IAM Role.
+        """
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise InvokeBadRequestError(
+                "openai package is required for GPT-5.5/5.4. "
+                "Install it with: pip install openai"
+            )
+
+        region = credentials.get("aws_region", "us-east-2")
+        token = self._get_mantle_auth_token(credentials)
+        base_url = f"https://bedrock-mantle.{region}.api.aws/openai/v1"
+
+        client = OpenAI(api_key=token, base_url=base_url)
+        input_messages = self._build_responses_api_input(prompt_messages)
+
+        params: dict = {
+            "model": model_id,
+            "input": input_messages,
+            "stream": stream,
+        }
+
+        # Copy to avoid mutating the caller's dict (retry mechanisms may reuse it).
+        model_parameters = model_parameters.copy()
+        model_name = model_parameters.pop("model_name", None)
+        model_parameters.pop("cross-region", None)
+        model_parameters.pop("system_cache_checkpoint", None)
+        model_parameters.pop("latest_two_messages_cache_checkpoint", None)
+        model_parameters.pop("response_format", None)
+
+        if "max_tokens" in model_parameters:
+            params["max_output_tokens"] = model_parameters["max_tokens"]
+        if "temperature" in model_parameters:
+            params["temperature"] = model_parameters["temperature"]
+        # NOTE: top_p is intentionally NOT forwarded on the bedrock-mantle path.
+        # GPT-5.5 / GPT-5.6 reject top_p outright (400 unsupported_parameter), and
+        # even GPT-5.4 rejects it once reasoning is active (which it is by default
+        # here). These are reasoning models driven by reasoning_effort, so top_p
+        # does not apply. It remains in openai.yaml only for the GPT OSS Converse
+        # models, which are handled on a separate code path.
+        # GPT-5.6/5.5/5.4 reasoning models: pass reasoning effort through the
+        # Responses API. Effort values: none, low, medium, high, xhigh, max.
+        reasoning_effort = model_parameters.get("reasoning_effort")
+        if reasoning_effort:
+            params["reasoning"] = {"effort": reasoning_effort}
+
+        # Store model_name for pricing calculation, deriving it from model_id if not set.
+        credentials_for_pricing = credentials.copy()
+        if model_name:
+            resolved_model_name = model_name
+        elif "gpt-5.6-sol" in model_id:
+            resolved_model_name = "GPT-5.6 Sol"
+        elif "gpt-5.6-terra" in model_id:
+            resolved_model_name = "GPT-5.6 Terra"
+        elif "gpt-5.6-luna" in model_id:
+            resolved_model_name = "GPT-5.6 Luna"
+        elif "gpt-5.5" in model_id:
+            resolved_model_name = "GPT-5.5"
+        else:
+            resolved_model_name = "GPT-5.4"
+        credentials_for_pricing["model_parameters"] = {
+            **credentials_for_pricing.get("model_parameters", {}),
+            "model_name": resolved_model_name,
+        }
+
+        try:
+            response = client.responses.create(**params)
+            if stream:
+                return self._handle_responses_api_stream(
+                    model_id, credentials_for_pricing, response, prompt_messages
+                )
+            else:
+                return self._handle_responses_api_response(
+                    model_id, credentials_for_pricing, response, prompt_messages
+                )
+        except Exception as ex:
+            self._map_openai_exception(ex)
+
+    def _handle_responses_api_response(
+        self,
+        model: str,
+        credentials: dict,
+        response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """Convert a non-streaming OpenAI Responses API response to LLMResult."""
+        text = response.output_text or ""
+        usage = getattr(response, "usage", None)
+        prompt_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+        completion_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+        dify_usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=AssistantPromptMessage(content=text),
+            usage=dify_usage,
+        )
+
+    def _handle_responses_api_stream(
+        self,
+        model: str,
+        credentials: dict,
+        stream_response,
+        prompt_messages: list[PromptMessage],
+    ) -> Generator:
+        """Convert a streaming OpenAI Responses API response to LLMResultChunk generator."""
+        index = 0
+        input_tokens = 0
+        output_tokens = 0
+
+        try:
+            for event in stream_response:
+                event_type = type(event).__name__
+
+                if event_type == "ResponseTextDeltaEvent":
+                    delta_text = getattr(event, "delta", "")
+                    if delta_text:
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(content=delta_text),
+                            ),
+                        )
+                        index += 1
+
+                elif event_type == "ResponseCompletedEvent":
+                    resp = getattr(event, "response", None)
+                    usage = getattr(resp, "usage", None) if resp else None
+                    if usage:
+                        input_tokens = getattr(usage, "input_tokens", 0)
+                        output_tokens = getattr(usage, "output_tokens", 0)
+                    dify_usage = self._calc_response_usage(
+                        model, credentials, input_tokens, output_tokens
+                    )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=""),
+                            finish_reason="stop",
+                            usage=dify_usage,
+                        ),
+                    )
+        except Exception as ex:
+            self._map_openai_exception(ex)

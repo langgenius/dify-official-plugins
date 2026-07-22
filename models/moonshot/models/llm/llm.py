@@ -1,10 +1,7 @@
-
 import re
 from collections.abc import Generator
-from typing import Optional, Union, cast
 
 from dify_plugin import OAICompatLargeLanguageModel
-
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -21,15 +18,28 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
+    UserPromptMessage,
+    VideoPromptMessageContent,
 )
-
-
+from dify_plugin.errors.model import CredentialsValidateFailedError
+from requests import Response
 
 
 class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
-    # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
+    _THINKING_MODELS = {
+        "kimi-k2-thinking",
+        "kimi-k2-thinking-turbo",
+        "kimi-k2.5",
+        "kimi-k2.6",
+        "kimi-k2.7-code",
+        "kimi-k2.7-code-highspeed",
+        "kimi-k3",
+    }
+    _INTERNATIONAL_ENDPOINT = "https://api.moonshot.ai/v1"
+    _MAINLAND_ENDPOINT = "https://api.moonshot.cn/v1"
 
     def _invoke(
         self,
@@ -37,19 +47,17 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+        user: str | None = None,
+    ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
         self._add_function_call(model, credentials)
         user = user[:32] if user else None
 
-        # Store current model for use in _convert_prompt_message_to_dict
         credentials["_current_model"] = model
 
-        # 处理 Kimi K2.5 / K2.6 等思考模型的 thinking 参数
         if "thinking" in model_parameters:
             thinking = model_parameters.pop("thinking")
             if thinking:
@@ -57,35 +65,57 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
 
-        # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
 
-        return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user=user)
+        return super()._invoke(
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user=user,
+        )
 
     def _clean_messages(self, messages: list[PromptMessage]) -> list[PromptMessage]:
         cleaned: list[PromptMessage] = []
         for m in messages:
-            # Keep messages that have content or tool calls
             has_tool_calls = isinstance(m, AssistantPromptMessage) and m.tool_calls
             if not m.content and not has_tool_calls:
                 continue
-            
-            # Tool and system messages should NEVER be merged - each has a unique tool_call_id
+
             if isinstance(m, ToolPromptMessage) or isinstance(m, SystemPromptMessage):
                 cleaned.append(m.model_copy())
                 continue
-            
+
             if cleaned and cleaned[-1].role == m.role:
                 prev = cleaned[-1]
-                # Merge content if both are strings
                 if isinstance(prev.content, str) and isinstance(m.content, str):
                     if prev.content and m.content:
                         prev.content += "\n\n" + m.content
                     else:
                         prev.content = prev.content or m.content
-                
-                # Merge tool_calls if both are assistants
-                if isinstance(prev, AssistantPromptMessage) and isinstance(m, AssistantPromptMessage):
+                elif isinstance(prev.content, list) and isinstance(m.content, list):
+                    prev.content = [*prev.content, *m.content]
+                elif isinstance(prev.content, str) and isinstance(m.content, list):
+                    prev.content = [
+                        TextPromptMessageContent(data=prev.content),
+                        *m.content,
+                    ]
+                elif isinstance(prev.content, list) and isinstance(m.content, str):
+                    prev.content = [
+                        *prev.content,
+                        TextPromptMessageContent(data=m.content),
+                    ]
+
+                if isinstance(prev, AssistantPromptMessage) and isinstance(
+                    m, AssistantPromptMessage
+                ):
+                    if isinstance(prev.content, str) and self._THINK_PATTERN.search(
+                        prev.content
+                    ):
+                        prev.opaque_body = None
                     if m.tool_calls:
                         if not prev.tool_calls:
                             prev.tool_calls = []
@@ -95,27 +125,63 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         return cleaned
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        # An explicitly set endpoint_url (including a proxy/gateway URL) is used
+        # as-is with no fallback, so existing configurations stay untouched.
+        if credentials.get("endpoint_url"):
+            self._add_custom_parameters(credentials)
+            super().validate_credentials(model, credentials)
+            return
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        # endpoint_url left blank: Moonshot runs two platforms whose API keys are
+        # not interchangeable. Try the international endpoint first (the platform
+        # the plugin's docs point to), then mainland China, and persist whichever
+        # authenticates so later invokes use it directly without re-probing.
+        last_error: CredentialsValidateFailedError | None = None
+        for endpoint_url in (self._INTERNATIONAL_ENDPOINT, self._MAINLAND_ENDPOINT):
+            trial = dict(credentials)
+            trial["endpoint_url"] = endpoint_url
+            self._add_custom_parameters(trial)
+            try:
+                super().validate_credentials(model, trial)
+            except CredentialsValidateFailedError as error:
+                last_error = error
+                continue
+            credentials["endpoint_url"] = endpoint_url
+            self._add_custom_parameters(credentials)
+            return
+
+        # Both endpoints rejected the key: it is genuinely invalid, so surface the
+        # original authentication error (from the mainland attempt, matching the
+        # pre-change default) rather than a synthesized one.
+        if last_error is not None:
+            raise last_error
+
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> AIModelEntity | None:
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
-            features=[ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL]
+            features=[
+                ModelFeature.TOOL_CALL,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ]
             if credentials.get("function_calling_type") == "tool_call"
             else [],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
-                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 4096)),
+                ModelPropertyKey.CONTEXT_SIZE: int(
+                    credentials.get("context_size", 4096)
+                ),
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
             },
             parameter_rules=[
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -124,13 +190,13 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 4096)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
             ],
@@ -138,88 +204,129 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        if "endpoint_url" not in credentials or credentials["endpoint_url"] == "":
-            credentials["endpoint_url"] = "https://api.moonshot.cn/v1"
+        if not credentials.get("endpoint_url"):
+            credentials["endpoint_url"] = self._MAINLAND_ENDPOINT
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
-        if model_schema and {ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL}.intersection(
-            model_schema.features or []
-        ):
+        if model_schema and {
+            ModelFeature.TOOL_CALL,
+            ModelFeature.MULTI_TOOL_CALL,
+        }.intersection(model_schema.features or []):
             credentials["function_calling_type"] = "tool_call"
 
-    def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: Optional[dict] = None) -> dict:
-        """
-        Convert PromptMessage to dict for OpenAI API format.
-        For Kimi K2.5 / K2.6 thinking mode, extract <think> content to reasoning_content field.
-        """
+    def _handle_generate_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        result = super()._handle_generate_response(
+            model,
+            credentials,
+            response,
+            prompt_messages,
+        )
+        if LLMMode.value_of(credentials["mode"]) is not LLMMode.CHAT:
+            return result
+
+        response_message = response.json()["choices"][0].get("message", {})
+        reasoning_content = response_message.get("reasoning_content")
+        if not isinstance(reasoning_content, str):
+            return result
+
+        opaque_body = (
+            result.message.opaque_body
+            if isinstance(result.message.opaque_body, dict)
+            else {}
+        )
+        result.message.opaque_body = {
+            **opaque_body,
+            "reasoning_content": reasoning_content,
+        }
+        if reasoning_content:
+            result.message.content = (
+                f"<think>{reasoning_content}</think>{result.message.content or ''}"
+            )
+        return result
+
+    def _convert_prompt_message_to_dict(
+        self,
+        message: PromptMessage,
+        credentials: dict | None = None,
+    ) -> dict:
         credentials = credentials or {}
         model_name = credentials.get("_current_model", "").lower()
-
-        # 判断是否为支持深度思考模式的模型（K2.5、K2.6 以及 K2-thinking 系列）
-        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2-thinking"])
-
-        # Use base implementation for standard conversion
+        is_thinking_model = model_name in self._THINKING_MODELS
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
+
+        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            for index, content in enumerate(message.content):
+                if isinstance(content, VideoPromptMessageContent):
+                    message_dict["content"].insert(
+                        index,
+                        {
+                            "type": "video_url",
+                            "video_url": {"url": content.data},
+                        },
+                    )
 
         if isinstance(message, AssistantPromptMessage):
             content = message.content or ""
             reasoning_content = None
 
+            if isinstance(message.opaque_body, dict):
+                raw_reasoning_content = message.opaque_body.get("reasoning_content")
+                if isinstance(raw_reasoning_content, str):
+                    reasoning_content = raw_reasoning_content
+
             if isinstance(content, str):
-                # Extract <think> content from text
-                clean_content, extracted_reasoning = self._extract_reasoning_content(content)
-                if extracted_reasoning:
+                clean_content, extracted_reasoning = self._extract_reasoning_content(
+                    content
+                )
+                if reasoning_content is None and extracted_reasoning is not None:
                     reasoning_content = extracted_reasoning
+                if extracted_reasoning is not None:
                     content = clean_content
 
-            # For Kimi K2.5 thinking mode, assistant messages MUST include reasoning_content
-            # when thinking is enabled (even if empty string) - especially for tool call messages
             if is_thinking_model or reasoning_content is not None:
                 message_dict["reasoning_content"] = reasoning_content or ""
-                # Update content if it was cleaned
                 message_dict["content"] = content
 
         return message_dict
 
-    def _extract_reasoning_content(self, text: str) -> tuple[str, Optional[str]]:
+    def _extract_reasoning_content(self, text: str) -> tuple[str, str | None]:
         if not text:
             return text, None
-        
+
         matches = self._THINK_PATTERN.findall(text)
-        reasoning_content = "\n".join(match.strip() for match in matches) if matches else None
-        
-        # Remove all <think> blocks
-        clean_text = self._THINK_PATTERN.sub("", text)
-        clean_text = re.sub(r"\n\s*\n", "\n\n", clean_text).strip()
-        
-        return clean_text, reasoning_content
+        reasoning_content = "\n\n".join(matches) if matches else None
+        return self._THINK_PATTERN.sub("", text), reasoning_content
 
-    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
-
-        :param delta: delta dictionary from LLM streaming response
-        :param is_reasoning: is reasoning
-        :return: tuple of (processed_content, is_reasoning)
-        """
-
+    def _wrap_thinking_by_reasoning_content(
+        self,
+        delta: dict,
+        is_reasoning: bool,
+    ) -> tuple[str, bool]:
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
-        output = content
-        if reasoning_content:
+        if reasoning_content == "":
+            if content and is_reasoning:
+                return "</think>" + content, False
+            return content, is_reasoning
+
+        if reasoning_content is not None:
+            output = reasoning_content
             if not is_reasoning:
-                output = "<think>\n" + reasoning_content
+                output = "<think>" + output
                 is_reasoning = True
-            else:
-                output = reasoning_content
-        else:
-            if is_reasoning:
+
+            if content:
+                output += "</think>" + content
                 is_reasoning = False
-                if not reasoning_content:
-                    output = "\n</think>"
-                if content:
-                    output += content
-            
-        return output, is_reasoning
+            return output, is_reasoning
+
+        if is_reasoning:
+            return "</think>" + content, False
+        return content, False

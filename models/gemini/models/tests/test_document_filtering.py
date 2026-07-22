@@ -26,12 +26,13 @@ from google import genai
 from google.genai import types
 
 try:
+    from models.llm.file_parts import GeminiFileMode, GeminiFilePartFactory
     from models.llm.llm import GoogleLargeLanguageModel
 except ImportError:
     import sys
-    import os
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from models.llm.file_parts import GeminiFileMode, GeminiFilePartFactory
     from models.llm.llm import GoogleLargeLanguageModel
 
 # Load environment variables
@@ -557,70 +558,42 @@ class TestDocumentFilteringUnit:
         content = DocumentPromptMessageContent(
             format="pdf", base64_data=base64_data, mime_type="application/pdf"
         )
-
-        # Debug: Check if cache is truly empty
-        cache_key = f"{content.type.value}:{hash(content.data)}"
-        print(f"Cache key: {cache_key}")
-        print(f"Cache exists before: {self.memory_cache.exists(cache_key)}")
+        file_factory = GeminiFilePartFactory(
+            genai_client=self.mock_client,
+            file_server_url_prefix=None,
+            cache=self.memory_cache,
+            mode=GeminiFileMode.FILES_API,
+        )
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-            # First upload - should call mock
-            uri1, mime1 = self.llm._upload_file_content_to_google(
-                content, self.mock_client
-            )
-            print(
-                f"After first upload - call count: {self.mock_client.files.upload.call_count}"
-            )
-            print(f"Cache exists after first: {self.memory_cache.exists(cache_key)}")
+            payload = file_factory.read_payload(content)
+            uploaded1 = file_factory.upload_payload(payload)
+            uploaded2 = file_factory.upload_payload(payload)
 
-            # Second upload (should use cache)
-            uri2, mime2 = self.llm._upload_file_content_to_google(
-                content, self.mock_client
-            )
-            print(
-                f"After second upload - call count: {self.mock_client.files.upload.call_count}"
-            )
-
-        assert uri1 == uri2 == "gs://test-bucket/test-file"
-        assert mime1 == mime2 == "application/pdf"
-
-        # Should only upload once due to caching
-        print(f"{self.mock_client.files.upload.call_count=}")
+        assert uploaded1.uri == uploaded2.uri == "gs://test-bucket/test-file"
+        assert uploaded1.mime_type == uploaded2.mime_type == "application/pdf"
         assert self.mock_client.files.upload.call_count == 1
 
 
-@pytest.mark.skipif(
-    not os.getenv("GEMINI_API_KEY"), reason="GEMINI_API_KEY not found in environment"
-)
+@pytest.mark.live
+@pytest.mark.integration
 class TestDocumentFilteringIntegration:
     """Integration tests with real Gemini API (requires API key)."""
 
     @classmethod
     def setup_class(cls):
         """Setup class-level fixtures."""
-        cls.api_key = os.getenv("GEMINI_API_KEY")
-        if not cls.api_key:
-            pytest.skip("GEMINI_API_KEY not found")
+        cls.api_key = os.environ["GEMINI_API_KEY"]
+        cls.llm = GoogleLargeLanguageModel([])
+        cls.llm.validate_credentials(
+            model=GEMINI_TEST_CONFIG["model"],
+            credentials={"google_api_key": cls.api_key},
+        )
+        cls.client = genai.Client(api_key=cls.api_key)
+        cls.model = GEMINI_TEST_CONFIG["model"]
 
     def setup_method(self):
         """Setup test fixtures."""
-        self.llm = GoogleLargeLanguageModel([])
-
-        # Validate credentials first
-        try:
-            self.llm.validate_credentials(
-                model=GEMINI_TEST_CONFIG["model"],
-                credentials={"google_api_key": self.api_key},
-            )
-        except Exception as e:
-            pytest.skip(f"Invalid GEMINI_API_KEY: {e}")
-
-        # Create real client
-        self.client = genai.Client(api_key=self.api_key)
-
-        self.model = GEMINI_TEST_CONFIG["model"]
-
-        # Create minimal cost configuration
         self.config = types.GenerateContentConfig(
             max_output_tokens=GEMINI_TEST_CONFIG["max_output_tokens"],
             temperature=GEMINI_TEST_CONFIG["temperature"],
@@ -662,7 +635,6 @@ class TestDocumentFilteringIntegration:
 
         self.memory_cache.clear()
 
-    @pytest.mark.integration
     def test_real_pdf_upload_and_processing(self):
         """Test real PDF upload and processing with Gemini API."""
         pdf_bytes = DocumentGenerator.create_pdf_bytes()
@@ -702,7 +674,6 @@ class TestDocumentFilteringIntegration:
 
         assert response.text  # Should get some response
 
-    @pytest.mark.integration
     def test_real_text_document_upload(self):
         """Test real text document upload."""
         text_bytes = DocumentGenerator.create_text_bytes(
@@ -736,7 +707,6 @@ class TestDocumentFilteringIntegration:
 
         assert response.text
 
-    @pytest.mark.integration
     def test_real_markdown_document_upload(self):
         """Test real Markdown document upload."""
         md_bytes = DocumentGenerator.create_markdown_bytes(
@@ -767,7 +737,6 @@ class TestDocumentFilteringIntegration:
 
         assert response.text
 
-    @pytest.mark.integration
     def test_real_filtering_with_mixed_documents(self):
         """Test real API with mixed supported/unsupported documents."""
         message = UserPromptMessage(
@@ -818,7 +787,6 @@ class TestDocumentFilteringIntegration:
 
         assert response.text
 
-    @pytest.mark.integration
     def test_real_unsupported_document_rejection(self):
         """Test that unsupported documents are properly filtered in real calls."""
         message = UserPromptMessage(
@@ -850,17 +818,3 @@ class TestDocumentFilteringIntegration:
         )
 
         assert response.text
-
-
-# Configuration for pytest
-def pytest_configure(config):
-    """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test (requires API key)"
-    )
-
-
-# Run tests:
-# All tests: pytest test_document_filtering.py -v
-# Unit tests only: pytest test_document_filtering.py::TestDocumentFilteringUnit -v
-# Integration tests only: pytest test_document_filtering.py::TestDocumentFilteringIntegration -v -m integration

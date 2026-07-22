@@ -11,30 +11,43 @@ from flask import Request
 
 class SharePointDatasourceProvider(DatasourceProvider):
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
+    _DEFAULT_TENANT_ID = "organizations"
     # SharePoint permission configuration - supports site-specific and general permissions
     _GENERAL_SCOPES = "openid offline_access User.Read Sites.Read.All Files.Read.All"
+
+    def _normalize_tenant_id(self, tenant_id: Any) -> str:
+        tenant_id = str(tenant_id or self._DEFAULT_TENANT_ID).strip()
+        return tenant_id or self._DEFAULT_TENANT_ID
+
+    def _tenant_path(self, tenant_id: str) -> str:
+        return urllib.parse.quote(self._normalize_tenant_id(tenant_id), safe="")
 
     def _get_tenant_id_for_auth(self, system_credentials: Mapping[str, Any]) -> str:
         """
         Get tenant ID for authorization from system credentials.
-        Defaults to 'common' for multi-tenant apps if not specified.
+        Defaults to 'organizations' for organization-only multi-tenant apps if not specified.
         """
-        return system_credentials.get("tenant_id") or "common"
+        return self._normalize_tenant_id(system_credentials.get("tenant_id"))
 
-    def _get_tenant_id_for_token(self, credentials: Mapping[str, Any]) -> str:
+    def _get_tenant_id_for_token(
+        self, credentials: Mapping[str, Any], system_credentials: Mapping[str, Any] | None = None
+    ) -> str:
         """
         Get tenant ID for token refresh from saved credentials.
-        For backward compatibility, defaults to 'common' if not saved.
+        Defaults to 'organizations' if not saved.
         """
-        return credentials.get("tenant_id") or "common"
+        system_credentials = system_credentials or {}
+        return self._normalize_tenant_id(credentials.get("tenant_id") or system_credentials.get("tenant_id"))
 
     def _get_auth_url(self, tenant_id: str) -> str:
         """Get the OAuth authorization URL with the appropriate tenant ID."""
-        return f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
+        return (
+            f"https://login.microsoftonline.com/{self._tenant_path(tenant_id)}/oauth2/v2.0/authorize"
+        )
 
     def _get_token_url(self, tenant_id: str) -> str:
         """Get the OAuth token URL with the appropriate tenant ID."""
-        return f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+        return f"https://login.microsoftonline.com/{self._tenant_path(tenant_id)}/oauth2/v2.0/token"
 
     def _get_sharepoint_scopes(self, subdomain: str) -> str:
         """
@@ -140,6 +153,8 @@ class SharePointDatasourceProvider(DatasourceProvider):
             
             if not access_token:
                 raise DatasourceOAuthError(f"Failed to get access token: {response_data}")
+            if not refresh_token:
+                raise DatasourceOAuthError("SharePoint OAuth response missing refresh_token")
 
             # Get user information
             userinfo_headers = {
@@ -197,9 +212,8 @@ class SharePointDatasourceProvider(DatasourceProvider):
         if not subdomain:
             raise DatasourceOAuthError("Missing SharePoint subdomain configuration")
 
-        # Get tenant_id from saved credentials for consistent token refresh
-        # For backward compatibility, defaults to "common" if not found
-        tenant_id = self._get_tenant_id_for_token(credentials)
+        # Get tenant_id from saved credentials for consistent token refresh.
+        tenant_id = self._get_tenant_id_for_token(credentials, system_credentials)
 
         # Use the same permission scopes as initial authorization
         scopes = self._get_sharepoint_scopes(subdomain)

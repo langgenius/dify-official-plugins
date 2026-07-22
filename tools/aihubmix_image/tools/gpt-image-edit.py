@@ -21,6 +21,11 @@ class GptImageEditTool(Tool):
     - Base64 encoded strings
     """
     
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
     def create_image_info(self, base64_data: str, size: str) -> dict:
         mime_type = "image/png"
         return {
@@ -126,7 +131,7 @@ class GptImageEditTool(Tool):
             # Initialize OpenAI client with AiHubMix endpoint
             client = OpenAI(
                 api_key=api_key,
-                base_url="https://aihubmix.com/v1",
+                base_url=f"{self.get_base_url()}/v1",
                 timeout=180  # Increase timeout to 180 seconds for image editing
             )
             

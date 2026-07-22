@@ -7,9 +7,16 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
+    "dify_plugin>=0.9.1",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: sends billable requests to the real Moonshot API",
+]

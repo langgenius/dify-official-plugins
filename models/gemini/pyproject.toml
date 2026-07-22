@@ -7,33 +7,38 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify-plugin>=0.7.4,<0.8.0",
-    "google-genai>=1.73.0",
-    "google-generativeai>=0.8.5",
-    "numpy>=2.4.1",
+    "dify-plugin>=0.9.0",
+    "google-genai>=2.5.0",
+    "numpy>=2.4.6",
+    "requests>=2.34.2",
 ]
 
-# uv run ruff check --fix && uv run ruff format
+# uv run black . && uv run ruff check --fix && uv run ruff format
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
-    "ruff>=0.14.14",
-    "python-dotenv>=1.2.1",
-    "Pillow>=12.1.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.14",
+    "python-dotenv>=1.2.2",
+    "Pillow>=12.2.0",
+    "black>=26.5.1",
+    "pyyaml>=6.0.3",
 ]
 
 [tool.pytest.ini_options]
 # Pytest configuration for Gemini plugin tests
+addopts = "--tb=short"
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 # Test discovery paths
 testpaths = ["models/tests/"]
+pythonpath = ["."]
 
 # Markers
 markers = [
-    "integration: marks tests as integration tests (requires API key)",
+    "integration: marks integration tests",
+    "live: sends billable requests to the real Gemini API",
     "unit: marks tests as unit tests (no API key required)"
 ]
 
@@ -50,5 +55,8 @@ filterwarnings = [
     "ignore:Monkey-patching ssl after ssl has already been imported:gevent.monkey.MonkeyPatchWarning"
 ]
 
-# Coverage options (if using pytest-cov)
-# addopts = ["--cov=models/llm", "--cov-report=term-missing", "--cov-report=html"]
+[tool.black]
+# Equivalent to: uv run black -C -l 100
+line-length = 100
+skip-string-normalization = true
+include = '(^|/)llm\.py$'

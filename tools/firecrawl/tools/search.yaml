@@ -1,0 +1,176 @@
+description:
+  human:
+    en_US: Search the web with Firecrawl and optionally scrape the returned results.
+    zh_Hans: 使用 Firecrawl 搜索网页，并可选择抓取返回的结果。
+  llm: Search the web with Firecrawl. Returns search result metadata and can optionally scrape each result when scrape formats are provided.
+extra:
+  python:
+    source: tools/search.py
+identity:
+  author: yasu-oh
+  label:
+    en_US: Search
+    zh_Hans: 搜索
+  name: search
+parameters:
+- form: llm
+  human_description:
+    en_US: The search query. Maximum length is 500 characters.
+    zh_Hans: 搜索查询。最大长度为 500 个字符。
+  label:
+    en_US: Query
+    zh_Hans: 查询
+  llm_description: The search query. This is a required parameter.
+  name: query
+  required: true
+  type: string
+- form: form
+  human_description:
+    en_US: Maximum number of results to return. When multiple sources are used, this applies per source type.
+    zh_Hans: 返回的最大结果数。使用多个来源时，该限制适用于每个来源类型。
+  label:
+    en_US: Limit
+    zh_Hans: 最大结果数
+  min: 1
+  max: 100
+  name: limit
+  type: number
+  default: 10
+- form: form
+  human_description:
+    en_US: 'Result sources to search. Available options: web, images, news. Use commas to separate multiple sources.'
+    zh_Hans: '要搜索的结果来源。可选项：web, images, news。多个来源请使用英文逗号分隔。'
+  label:
+    en_US: Sources
+    zh_Hans: 来源
+  name: sources
+  placeholder:
+    en_US: web
+    zh_Hans: web
+  type: string
+- form: form
+  human_description:
+    en_US: 'Search result categories. Available options: github, research, pdf. Use commas to separate multiple categories.'
+    zh_Hans: '搜索结果类别。可选项：github, research, pdf。多个类别请使用英文逗号分隔。'
+  label:
+    en_US: Categories
+    zh_Hans: 类别
+  name: categories
+  placeholder:
+    en_US: github,research
+    zh_Hans: github,research
+  type: string
+- form: form
+  human_description:
+    en_US: Restrict results to these hostnames. Cannot be used with exclude domains. Use commas to separate multiple domains.
+    zh_Hans: 将结果限制为这些主机名。不能与排除域名同时使用。多个域名请使用英文逗号分隔。
+  label:
+    en_US: Include Domains
+    zh_Hans: 包含域名
+  name: includeDomains
+  placeholder:
+    en_US: firecrawl.dev,docs.firecrawl.dev
+    zh_Hans: firecrawl.dev,docs.firecrawl.dev
+  type: string
+- form: form
+  human_description:
+    en_US: Exclude results from these hostnames. Cannot be used with include domains. Use commas to separate multiple domains.
+    zh_Hans: 从这些主机名中排除结果。不能与包含域名同时使用。多个域名请使用英文逗号分隔。
+  label:
+    en_US: Exclude Domains
+    zh_Hans: 排除域名
+  name: excludeDomains
+  placeholder:
+    en_US: example.com
+    zh_Hans: example.com
+  type: string
+- form: form
+  human_description:
+    en_US: Time-based search parameter such as qdr:h, qdr:d, qdr:w, qdr:m, qdr:y, sbd:1, or a custom date range.
+    zh_Hans: 基于时间的搜索参数，例如 qdr:h、qdr:d、qdr:w、qdr:m、qdr:y、sbd:1，或自定义日期范围。
+  label:
+    en_US: Time-Based Search
+    zh_Hans: 时间搜索参数
+  name: tbs
+  placeholder:
+    en_US: qdr:w
+    zh_Hans: qdr:w
+  type: string
+- form: form
+  human_description:
+    en_US: Location for geo-targeted search results. For best results, use together with country.
+    zh_Hans: 用于地理定位搜索结果的位置。为获得最佳结果，请与国家代码一起使用。
+  label:
+    en_US: Location
+    zh_Hans: 位置
+  name: location
+  placeholder:
+    en_US: San Francisco,California,United States
+    zh_Hans: San Francisco,California,United States
+  type: string
+- form: form
+  human_description:
+    en_US: ISO country code for geo-targeted search results.
+    zh_Hans: 用于地理定位搜索结果的 ISO 国家代码。
+  label:
+    en_US: Country
+    zh_Hans: 国家代码
+  name: country
+  placeholder:
+    en_US: US
+    zh_Hans: US
+  type: string
+- form: form
+  human_description:
+    en_US: Timeout in milliseconds.
+    zh_Hans: 请求超时时间（毫秒）。
+  label:
+    en_US: Timeout
+    zh_Hans: 超时时间
+  min: 0
+  name: timeout
+  type: number
+  default: 60000
+- form: form
+  human_description:
+    en_US: Ignore invalid URLs in returned search results.
+    zh_Hans: 忽略返回的搜索结果中的无效 URL。
+  label:
+    en_US: Ignore Invalid URLs
+    zh_Hans: 忽略无效 URL
+  name: ignoreInvalidURLs
+  type: boolean
+  default: false
+- form: form
+  human_description:
+    en_US: 'Enterprise Zero Data Retention search options. Available options: anon, zdr. Use commas to separate multiple options. Must be enabled for your Firecrawl team.'
+    zh_Hans: '企业级零数据保留搜索选项。可选项：anon, zdr。多个选项请使用英文逗号分隔。必须在您的 Firecrawl 团队中启用。'
+  label:
+    en_US: Enterprise Options
+    zh_Hans: 企业选项
+  name: enterprise
+  placeholder:
+    en_US: anon,zdr
+    zh_Hans: anon,zdr
+  type: string
+- form: form
+  human_description:
+    en_US: 'Scrape each search result and include these output formats. Available options include: markdown, html, rawHtml, links, screenshot, summary. Use commas to separate multiple formats.'
+    zh_Hans: '抓取每个搜索结果并包含这些输出格式。可选项包括：markdown, html, rawHtml, links, screenshot, summary。多个格式请使用英文逗号分隔。'
+  label:
+    en_US: Scrape Formats
+    zh_Hans: 抓取格式
+  name: scrapeFormats
+  placeholder:
+    en_US: markdown,summary
+    zh_Hans: markdown,summary
+  type: string
+- form: form
+  human_description:
+    en_US: Only return the main content when scraping search results.
+    zh_Hans: 抓取搜索结果时仅返回页面主要内容。
+  label:
+    en_US: Only Main Content
+    zh_Hans: 仅抓取主要内容
+  name: onlyMainContent
+  type: boolean

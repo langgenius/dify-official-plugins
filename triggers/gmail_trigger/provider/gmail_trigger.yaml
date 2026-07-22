@@ -138,10 +138,6 @@ subscription_constructor:
       type: "secret-input"
       label:
         en_US: "Gmail Email"
-    - name: "refresh_token"
-      type: "secret-input"
-      label:
-        en_US: "Refresh Token"
   extra:
     python:
       source: provider/gmail_trigger.py

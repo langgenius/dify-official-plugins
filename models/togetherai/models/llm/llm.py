@@ -63,7 +63,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
         features = []
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.LLM,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             features=features,
@@ -74,7 +74,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
             parameter_rules=[
                 ParameterRule(
                     name=DefaultParameterName.TEMPERATURE.value,
-                    label=I18nObject(en_US="Temperature"),
+                    label=I18nObject(en_us="Temperature"),
                     type=ParameterType.FLOAT,
                     default=float(cred_with_endpoint.get("temperature", 0.7)),
                     min=0,
@@ -83,7 +83,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.TOP_P.value,
-                    label=I18nObject(en_US="Top P"),
+                    label=I18nObject(en_us="Top P"),
                     type=ParameterType.FLOAT,
                     default=float(cred_with_endpoint.get("top_p", 1)),
                     min=0,
@@ -92,7 +92,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=TOP_K,
-                    label=I18nObject(en_US="Top K"),
+                    label=I18nObject(en_us="Top K"),
                     type=ParameterType.INT,
                     default=int(cred_with_endpoint.get("top_k", 50)),
                     min=-2147483647,
@@ -101,7 +101,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=REPETITION_PENALTY,
-                    label=I18nObject(en_US="Repetition Penalty"),
+                    label=I18nObject(en_us="Repetition Penalty"),
                     type=ParameterType.FLOAT,
                     default=float(cred_with_endpoint.get("repetition_penalty", 1)),
                     min=-3.4,
@@ -110,7 +110,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.MAX_TOKENS.value,
-                    label=I18nObject(en_US="Max Tokens"),
+                    label=I18nObject(en_us="Max Tokens"),
                     type=ParameterType.INT,
                     default=512,
                     min=1,
@@ -118,7 +118,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.FREQUENCY_PENALTY.value,
-                    label=I18nObject(en_US="Frequency Penalty"),
+                    label=I18nObject(en_us="Frequency Penalty"),
                     type=ParameterType.FLOAT,
                     default=float(credentials.get("frequency_penalty", 0)),
                     min=-2,
@@ -126,7 +126,7 @@ class TogetherAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.PRESENCE_PENALTY.value,
-                    label=I18nObject(en_US="Presence Penalty"),
+                    label=I18nObject(en_us="Presence Penalty"),
                     type=ParameterType.FLOAT,
                     default=float(credentials.get("presence_penalty", 0)),
                     min=-2,
