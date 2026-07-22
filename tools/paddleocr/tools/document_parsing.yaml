@@ -63,6 +63,17 @@ parameters:
       zh_Hans: 文件类型。“自动检测”会在可用时根据上传文件元数据推断类型，“PDF”表示 PDF 文件，“图片”表示图像文件。
     llm_description: File type. "auto" will infer the type from uploaded file metadata when available, "pdf" is for PDF files, and "image" is for image files.
     form: llm
+  - name: pageRanges
+    type: string
+    required: false
+    label:
+      en_US: PDF Page Ranges
+      zh_Hans: PDF 页码范围
+    human_description:
+      en_US: Optional PDF pages to process, using expressions such as "2,4-6". Leave empty to process every page.
+      zh_Hans: 可选的 PDF 处理页码范围，例如“2,4-6”。留空则处理全部页面。
+    llm_description: Optional PDF pages to process, using expressions such as "2,4-6". Leave empty to process every page.
+    form: llm
   - name: useDocOrientationClassify
     type: boolean
     required: false
@@ -447,6 +458,39 @@ parameters:
       en_US: Whether to include formula numbers in the output markdown text.
       zh_Hans: 是否在输出的 Markdown 文本中包含公式编号。
     llm_description: Whether to include formula numbers in the output markdown text.
+    form: llm
+  - name: returnMarkdownImages
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Return Markdown Images
+      zh_Hans: 是否返回 Markdown 图片
+    human_description:
+      en_US: Whether to return images referenced by the generated Markdown. Disable this to reduce result size when images are not needed.
+      zh_Hans: 是否返回生成的 Markdown 所引用的图片。不需要图片时可关闭以减小结果大小。
+    llm_description: Whether to return images referenced by the generated Markdown.
+    form: llm
+  - name: outputFormats
+    type: select
+    required: false
+    default: none
+    options:
+      - label:
+          en_US: No Additional Export
+          zh_Hans: 不生成额外导出
+        value: none
+      - label:
+          en_US: DOCX
+          zh_Hans: DOCX
+        value: docx
+    label:
+      en_US: Additional Output Format
+      zh_Hans: 额外输出格式
+    human_description:
+      en_US: Optionally return the parsed document as a DOCX file in addition to Markdown and JSON.
+      zh_Hans: 除 Markdown 和 JSON 外，可选择额外返回 DOCX 文件。
+    llm_description: Optionally return the parsed document as a DOCX file in addition to Markdown and JSON.
     form: llm
   - name: visualize
     type: boolean

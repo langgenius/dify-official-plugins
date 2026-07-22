@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Generator
 from typing import Any
 
@@ -5,18 +6,20 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.utils import (
+    DOCX_MIME_TYPE,
     call_paddleocr_api,
-    camel_to_snake,
     cleanup_temp_file,
     get_api_client_config,
+    iter_docx_exports,
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType", "model"}
+_SKIP_KEYS = {"file", "fileType", "model", "pageRanges"}
+logger = logging.getLogger(__name__)
 
 
 def build_paddleocr_vl_options(params: dict[str, Any]) -> dict[str, Any]:
-    """Build PaddleOCRVLOptions dict from parameters using dynamic conversion."""
+    """Build the camelCase optional payload expected by the HTTP API."""
     options_dict = {}
     for api_name, value in params.items():
         if value is None or api_name in _SKIP_KEYS:
@@ -25,7 +28,12 @@ def build_paddleocr_vl_options(params: dict[str, Any]) -> dict[str, Any]:
             continue
         if api_name == "markdownIgnoreLabels" and isinstance(value, str):
             value = [label.strip() for label in value.split(",") if label.strip()]
-        options_dict[camel_to_snake(api_name)] = value
+        if api_name == "outputFormats":
+            if value in ("", "none"):
+                continue
+            if isinstance(value, str):
+                value = [value]
+        options_dict[api_name] = value
     return options_dict
 
 
@@ -55,6 +63,7 @@ class DocumentParsingVlTool(Tool):
 
             # Get model selection
             model = tool_parameters.get("model") or "PaddleOCR-VL-1.6"
+            page_ranges = tool_parameters.get("pageRanges")
 
             # Call API
             if file_input.startswith(("http://", "https://")):
@@ -65,6 +74,7 @@ class DocumentParsingVlTool(Tool):
                     options=options,
                     client_config=client_config,
                     is_document_parsing=True,
+                    page_ranges=page_ranges,
                 )
             else:
                 result = call_paddleocr_api(
@@ -74,6 +84,7 @@ class DocumentParsingVlTool(Tool):
                     options=options,
                     client_config=client_config,
                     is_document_parsing=True,
+                    page_ranges=page_ranges,
                 )
 
             # Process images from result
@@ -90,6 +101,7 @@ class DocumentParsingVlTool(Tool):
                                 continue
                             try:
                                 import requests
+
                                 image_bytes = requests.get(image_url, timeout=(10, 600)).content
                                 file_name = f"paddleocr_vl_image_{len(images)}.jpg"
                                 upload_response = self.session.file.upload(
@@ -100,7 +112,7 @@ class DocumentParsingVlTool(Tool):
                                 if not upload_response.preview_url:
                                     failed_images.append(image_path)
                             except Exception as e:
-                                self.runtime.logger.warning(f"Failed to process image {image_path}: {e}")
+                                logger.warning(f"Failed to process image {image_path}: {e}")
                                 failed_images.append(image_path)
 
             # Build markdown with image replacement
@@ -113,29 +125,40 @@ class DocumentParsingVlTool(Tool):
                         if upload_response.preview_url:
                             markdown_text = markdown_text.replace(
                                 f'src="{image_path}"',
-                                f'src="{upload_response.preview_url}"'
+                                f'src="{upload_response.preview_url}"',
                             )
                         else:
                             markdown_text = markdown_text.replace(
-                                f'src="{image_path}"',
-                                'src="[Image unavailable]"'
+                                f'src="{image_path}"', 'src="[Image unavailable]"'
                             )
                     markdown_text_list.append(markdown_text)
 
             yield self.create_text_message("\n\n".join(markdown_text_list))
 
+            for filename, document_bytes in iter_docx_exports(
+                result,
+                filename_prefix="paddleocr-vl-document",
+                warning_logger=logger,
+            ):
+                yield self.create_blob_message(
+                    blob=document_bytes,
+                    meta={"filename": filename, "mime_type": DOCX_MIME_TYPE},
+                )
+
             # Return raw result as JSON
-            yield self.create_json_message({
-                "job_id": result["job_id"],
-                "pages": [
-                    {
-                        "markdown_text": page["markdown_text"],
-                        "markdown_images": page["markdown_images"],
-                        "output_images": page["output_images"],
-                    }
-                    for page in result["pages"]
-                ]
-            })
+            yield self.create_json_message(
+                {
+                    "job_id": result["job_id"],
+                    "pages": [
+                        {
+                            "markdown_text": page["markdown_text"],
+                            "markdown_images": page["markdown_images"],
+                            "output_images": page["output_images"],
+                        }
+                        for page in result["pages"]
+                    ],
+                }
+            )
 
         finally:
             # Clean up temporary file if created

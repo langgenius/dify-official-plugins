@@ -21,21 +21,6 @@ logger = logging.getLogger(__name__)
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
 
-def camel_to_snake(name: str) -> str:
-    """Convert camelCase or PascalCase to snake_case.
-
-    Args:
-        name: camelCase or PascalCase string
-
-    Returns:
-        snake_case string
-    """
-    # Handle camelCase
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    # Handle PascalCase
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-
 def extract_base_url(api_url: str) -> str:
     """Extract base URL from full API URL.
 
@@ -91,7 +76,9 @@ def normalize_file_input(file_value: Any, file_type: str | None) -> Tuple[str, b
     if isinstance(file_value, File):
         encoded_file = base64.b64encode(file_value.blob).decode("utf-8")
         temp_file = base64_to_temp_file(encoded_file, infer_file_extension(file_value))
-        file_type_code = explicit_file_type if explicit_file_type is not None else infer_file_type(file_value)
+        file_type_code = (
+            explicit_file_type if explicit_file_type is not None else infer_file_type(file_value)
+        )
         return temp_file, True, file_type_code
 
     if isinstance(file_value, str):
@@ -273,7 +260,10 @@ def replace_markdown_image_paths(
 def process_images_from_result(
     result: dict, tool_instance
 ) -> Tuple[
-    List[UploadFileResponse], dict[str, UploadFileResponse], List[str], List[Tuple[bytes, dict]]
+    List[UploadFileResponse],
+    dict[str, UploadFileResponse],
+    List[str],
+    List[Tuple[bytes, dict]],
 ]:
     """Extract and process images from API result
 
@@ -294,7 +284,9 @@ def process_images_from_result(
         if markdown_data:
             image_dict = markdown_data.get("images", {})
             if image_dict:
-                logger.debug(f"Found {len(image_dict)} images to process: {list(image_dict.keys())}")
+                logger.debug(
+                    f"Found {len(image_dict)} images to process: {list(image_dict.keys())}"
+                )
             else:
                 logger.debug("No images found in this markdown item")
 
@@ -337,7 +329,10 @@ def process_images_from_result(
                                 f"No preview URL for uploaded image {image_path}, creating blob message as fallback"
                             )
                             blob_messages.append(
-                                (image_bytes, {"filename": file_name, "mime_type": "image/jpeg"})
+                                (
+                                    image_bytes,
+                                    {"filename": file_name, "mime_type": "image/jpeg"},
+                                )
                             )
                             failed_images.append(image_path)
                         else:
@@ -349,7 +344,10 @@ def process_images_from_result(
                             f"Creating blob message as fallback for failed upload of {image_path}"
                         )
                         blob_messages.append(
-                            (image_bytes, {"filename": file_name, "mime_type": "image/jpeg"})
+                            (
+                                image_bytes,
+                                {"filename": file_name, "mime_type": "image/jpeg"},
+                            )
                         )
                         failed_images.append(image_path)
 
@@ -412,6 +410,63 @@ def download_image_from_url(image_url: str) -> bytes:
         raise RuntimeError(f"Failed to download image from {image_url}: {e}") from e
 
 
+DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def load_export_content(content: str) -> bytes:
+    """Load an exported document from a pre-signed URL or Base64 content."""
+    if not isinstance(content, str) or not content.strip():
+        raise RuntimeError("Export content is empty or invalid.")
+
+    content = content.strip()
+    if content.startswith(("http://", "https://")):
+        import requests
+
+        try:
+            response = requests.get(content, timeout=(10, 600))
+            response.raise_for_status()
+            return response.content
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"Failed to download document export: {e}") from e
+
+    encoded_content = "".join(extract_base64(content).split())
+    try:
+        return base64.b64decode(encoded_content, validate=True)
+    except (ValueError, TypeError) as e:
+        raise RuntimeError("Document export content is not valid Base64.") from e
+
+
+def iter_docx_exports(
+    result: dict[str, Any],
+    *,
+    filename_prefix: str,
+    warning_logger: Any | None = None,
+):
+    """Yield successfully decoded DOCX exports without failing the parse result."""
+    pages = result.get("pages", [])
+    page_count = len(pages)
+
+    for page_number, page in enumerate(pages, start=1):
+        docx_export = (page.get("exports") or {}).get("docx")
+        if not docx_export:
+            continue
+
+        content = docx_export.get("content") if isinstance(docx_export, dict) else docx_export
+        try:
+            document_bytes = load_export_content(content)
+        except Exception as e:
+            active_logger = warning_logger or logger
+            active_logger.warning(f"Failed to process DOCX export for page {page_number}: {e}")
+            continue
+
+        filename = (
+            f"{filename_prefix}.docx"
+            if page_count == 1
+            else f"{filename_prefix}-page-{page_number}.docx"
+        )
+        yield filename, document_bytes
+
+
 # ==================== HTTP Async Job API Implementation ====================
 
 DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com"
@@ -449,8 +504,6 @@ def get_api_client_config(access_token: str, *, base_url: str | None = None) -> 
     }
 
 
-
-
 def _submit_job(
     model: str,
     file_url: str | None,
@@ -458,6 +511,7 @@ def _submit_job(
     options: dict[str, Any],
     base_url: str,
     headers: dict[str, str],
+    page_ranges: str | None = None,
 ) -> str:
     """Submit job and return job_id.
 
@@ -479,6 +533,9 @@ def _submit_job(
 
     jobs_url = f"{base_url}{API_PATH}"
 
+    if isinstance(page_ranges, str):
+        page_ranges = page_ranges.strip() or None
+
     try:
         if file_url:
             # Submit with URL
@@ -487,16 +544,26 @@ def _submit_job(
                 "model": model,
                 "optionalPayload": options,
             }
-            resp = requests.post(jobs_url, json=body, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            if page_ranges is not None:
+                body["pageRanges"] = page_ranges
+            resp = requests.post(
+                jobs_url, json=body, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT
+            )
         else:
             # Submit with file
             data = {
                 "model": model,
                 "optionalPayload": json.dumps(options),
             }
+            if page_ranges is not None:
+                data["pageRanges"] = page_ranges
             with open(file_path, "rb") as f:
                 resp = requests.post(
-                    jobs_url, data=data, files={"file": f}, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT
+                    jobs_url,
+                    data=data,
+                    files={"file": f},
+                    headers=headers,
+                    timeout=DEFAULT_REQUEST_TIMEOUT,
                 )
     except requests.Timeout as e:
         raise RuntimeError(f"Request timed out: {e}") from e
@@ -565,7 +632,12 @@ def _poll_job(
         if not 200 <= resp.status_code < 300:
             try:
                 payload = resp.json()
-                msg = payload.get("msg") or payload.get("message") or payload.get("error") or resp.text
+                msg = (
+                    payload.get("msg")
+                    or payload.get("message")
+                    or payload.get("error")
+                    or resp.text
+                )
             except ValueError:
                 msg = resp.text
             raise RuntimeError(f"Poll failed (HTTP {resp.status_code}): {msg}")
@@ -610,7 +682,9 @@ def _poll_job(
             return jsonl_data, data
 
         if state == "failed":
-            error_msg = data.get("data", {}).get("errorMsg") or data.get("errorMsg") or "Unknown error"
+            error_msg = (
+                data.get("data", {}).get("errorMsg") or data.get("errorMsg") or "Unknown error"
+            )
             raise RuntimeError(f"Job {job_id} failed: {error_msg}")
 
         # Continue polling
@@ -679,6 +753,7 @@ def _parse_doc_parsing_result(job_id: str, jsonl_data: list[dict[str, Any]]) -> 
                         "markdown_text": markdown["text"],
                         "markdown_images": markdown.get("images", {}),
                         "output_images": item.get("outputImages", {}),
+                        "exports": item.get("exports", {}),
                     }
                 )
         return {
@@ -696,6 +771,7 @@ def call_paddleocr_api(
     options: dict[str, Any],
     client_config: dict[str, Any],
     is_document_parsing: bool = False,
+    page_ranges: str | None = None,
 ) -> dict[str, Any]:
     """Call PaddleOCR API using async job pattern.
 
@@ -714,11 +790,15 @@ def call_paddleocr_api(
         RuntimeError: If API call fails
     """
     job_id = _submit_job(
-        model, file_url, file_path, options, client_config["base_url"], client_config["headers"]
+        model,
+        file_url,
+        file_path,
+        options,
+        client_config["base_url"],
+        client_config["headers"],
+        page_ranges,
     )
-    jsonl_data, status_data = _poll_job(
-        job_id, client_config["base_url"], client_config["headers"]
-    )
+    jsonl_data, status_data = _poll_job(job_id, client_config["base_url"], client_config["headers"])
 
     if is_document_parsing:
         return _parse_doc_parsing_result(job_id, jsonl_data)
