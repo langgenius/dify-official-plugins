@@ -2,8 +2,8 @@ configurate_methods:
   - customizable-model
   - predefined-model
 description:
-  en_US: Fast open-source speech recognition. 170x faster than Whisper.
-  zh_Hans: 开源语音识别，比 Whisper 快 170 倍。
+  en_US: OpenAI-compatible self-hosted speech recognition with multilingual models.
+  zh_Hans: 支持 OpenAI 兼容接口与多语种模型的自托管语音识别。
 extra:
   python:
     model_sources:
