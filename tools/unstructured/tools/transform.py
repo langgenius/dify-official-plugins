@@ -18,12 +18,13 @@ _TERMINAL_STATUSES = {"COMPLETED", "FAILED", "STOPPED"}
 _DEFAULT_MCP_URL = "https://mcp.transform.unstructured.io"
 _REQUIRED_TRANSFORM_TOOLS = {
     "request_file_upload_url",
-    "transform_files",
-    "check_transform_status",
-    "get_transform_results",
+    "start_transform_job",
+    "check_job_status",
+    "get_job_results",
 }
 _JOB_TIMEOUT_SECONDS = 10 * 60
 _RESULTS_RETRY_SECONDS = 2
+_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 
 class _TransformToolError(RuntimeError):
@@ -89,6 +90,11 @@ def _validate_transform_tools(names: set[str]) -> None:
         raise RuntimeError(f"endpoint is missing required tools: {', '.join(missing)}")
 
 
+def _validate_upload_size(size_bytes: int) -> None:
+    if size_bytes > _MAX_UPLOAD_BYTES:
+        raise ValueError("Transform supports files up to 50 MB")
+
+
 def _redacted_url(url: Any) -> str:
     parsed = urlparse(str(url))
     return urlunparse(parsed._replace(query="", fragment=""))
@@ -103,7 +109,7 @@ def _ensure_transfer_success(response: httpx.Response, operation: str) -> None:
     )
 
 
-async def _get_transform_results(
+async def _get_job_results(
     session: ClientSession,
     *,
     job_id: str,
@@ -114,7 +120,7 @@ async def _get_transform_results(
         try:
             return _tool_payload(
                 await session.call_tool(
-                    "get_transform_results",
+                    "get_job_results",
                     {"job_id": job_id, "output_format": output_format},
                 )
             )
@@ -211,15 +217,16 @@ class TransformTool(Tool):
 
         output_format = tool_parameters.get("output_format") or "md"
         content = result["content"]
+        text_content = content.decode("utf-8")
         filename = result["filename"]
         mime_type = result["mime_type"]
         if output_format == "json":
             try:
-                yield self.create_json_message(json.loads(content.decode("utf-8")))
+                yield self.create_json_message(json.loads(text_content))
             except json.JSONDecodeError:
-                yield self.create_text_message(content.decode("utf-8"))
+                yield self.create_text_message(text_content)
         else:
-            yield self.create_text_message(content.decode("utf-8"))
+            yield self.create_text_message(text_content)
 
         yield self.create_blob_message(
             content,
@@ -229,7 +236,7 @@ class TransformTool(Tool):
         yield self.create_variable_message("output_ref", result.get("output_ref") or "")
         yield self.create_variable_message(
             "result",
-            content.decode("utf-8"),
+            text_content,
         )
 
     async def _transform(
@@ -267,6 +274,7 @@ class TransformTool(Tool):
                 ) as session:
                     await session.initialize()
                     if file:
+                        _validate_upload_size(len(file.blob))
                         content_type = (
                             getattr(file, "mime_type", None)
                             or mimetypes.guess_type(file.filename)[0]
@@ -296,7 +304,7 @@ class TransformTool(Tool):
 
                     job = _tool_payload(
                         await session.call_tool(
-                            "transform_files",
+                            "start_transform_job",
                             {"file_refs": [file_ref], "stages": _stages(parameters)},
                         )
                     )
@@ -306,7 +314,7 @@ class TransformTool(Tool):
                     while True:
                         status = _tool_payload(
                             await session.call_tool(
-                                "check_transform_status", {"job_id": job_id}
+                                "check_job_status", {"job_id": job_id}
                             )
                         )
                         state = status["status"]
@@ -323,7 +331,7 @@ class TransformTool(Tool):
                     if state != "COMPLETED":
                         raise RuntimeError(f"Transform job {job_id} ended with {state}")
 
-                    results = await _get_transform_results(
+                    results = await _get_job_results(
                         session,
                         job_id=job_id,
                         output_format=output_format,
