@@ -2,7 +2,7 @@
 
 **Author:** AIHubMix
 
-**Version:** 0.1.3
+**Version:** 0.1.4
 
 **Type:** Dify Plugin
 
