@@ -16,6 +16,8 @@ Set the provider fields as follows:
 
 The tool supports `auto`, `fast`, `hi_res`, and `vlm` parsing, optional enrichments, chunking, and embedding. See the [Transform quickstart](https://docs.unstructured.io/transform/quickstart) for account and usage details.
 
+Local files and inline results are limited to 50 MB. JSON results omit embedded base64 images to keep Dify workflows within the plugin's memory allocation. When a result exceeds the inline limit, use the job ID and `output_ref` reported in the error to retrieve the full output from Unstructured Transform.
+
 ### Partition
 
 The existing Partition tool remains available for legacy Partition API and self-hosted deployments. Configure its API URL and choose either **Local Deployment** or **Unstructured Official API**.

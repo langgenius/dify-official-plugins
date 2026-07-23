@@ -11,7 +11,7 @@ description:
     en_US: Convert a document to Markdown, JSON, HTML, or text with optional enrichment, chunking, and embedding.
     zh_Hans: 将文档转换为 Markdown、JSON、HTML 或文本，并可选择扩充、分块和嵌入。
     ja_JP: ドキュメントを Markdown、JSON、HTML、またはテキストに変換し、必要に応じて拡充、チャンク化、埋め込みを行います。
-    pt_BR: Converta um documento em Markdown, JSON, HTML ou texto, com enriquecimento, fragmentacao e embeddings opcionais.
+    pt_BR: Converta um documento em Markdown, JSON, HTML ou texto, com enriquecimento, fragmentação e embeddings opcionais.
   llm: Convert PDFs, DOCX, PPTX, HTML, images, and scanned documents into structured output. Can also enrich, chunk, and embed documents for RAG.
 parameters:
   - name: file
@@ -26,7 +26,7 @@ parameters:
       en_US: A local file to transform. Provide either this field or a public URL.
       zh_Hans: 要转换的本地文件。请提供此字段或公共 URL。
       ja_JP: 変換するローカルファイル。このフィールドまたは公開 URL を指定します。
-      pt_BR: Um arquivo local para transformar. Informe este campo ou uma URL publica.
+      pt_BR: Um arquivo local para transformar. Informe este campo ou uma URL pública.
     llm_description: A file to transform. Use this or file_url, but not both.
     form: llm
   - name: file_url
@@ -36,12 +36,12 @@ parameters:
       en_US: Public File URL
       zh_Hans: 公共文件 URL
       ja_JP: 公開ファイル URL
-      pt_BR: URL publica do arquivo
+      pt_BR: URL pública do arquivo
     human_description:
       en_US: A public HTTP(S) URL for the document. Provide either this field or a file.
       zh_Hans: 文档的公共 HTTP(S) URL。请提供此字段或文件。
       ja_JP: ドキュメントの公開 HTTP(S) URL。このフィールドまたはファイルを指定します。
-      pt_BR: Uma URL HTTP(S) publica do documento. Informe este campo ou um arquivo.
+      pt_BR: Uma URL HTTP(S) pública do documento. Informe este campo ou um arquivo.
     llm_description: A public HTTP(S) document URL. Use this or file, but not both.
     form: llm
   - name: output_format
@@ -52,7 +52,7 @@ parameters:
       en_US: Output Format
       zh_Hans: 输出格式
       ja_JP: 出力形式
-      pt_BR: Formato de saida
+      pt_BR: Formato de saída
     human_description:
       en_US: Format returned by Transform.
       zh_Hans: Transform 返回的格式。
@@ -81,12 +81,12 @@ parameters:
       en_US: Parsing Strategy
       zh_Hans: 解析策略
       ja_JP: 解析戦略
-      pt_BR: Estrategia de analise
+      pt_BR: Estratégia de análise
     human_description:
       en_US: Parsing strategy. Use hi_res for enrichments and scanned or layout-heavy documents.
       zh_Hans: 解析策略。对于扩充、扫描件或布局复杂的文档，请使用 hi_res。
       ja_JP: 解析戦略。拡充、スキャン、レイアウト重視の文書には hi_res を使用します。
-      pt_BR: Estrategia de analise. Use hi_res para enriquecimento e documentos digitalizados ou com layout complexo.
+      pt_BR: Estratégia de análise. Use hi_res para enriquecimento e documentos digitalizados ou com layout complexo.
     llm_description: Parsing strategy. auto is the default; hi_res is recommended when enrichments are enabled.
     form: form
     options:
@@ -114,7 +114,7 @@ parameters:
       en_US: Optional comma-separated language codes, such as eng,spa.
       zh_Hans: 可选的逗号分隔语言代码，例如 eng,spa。
       ja_JP: eng,spa のようなカンマ区切りの言語コード（任意）。
-      pt_BR: Codigos de idioma opcionais separados por virgula, como eng,spa.
+      pt_BR: Códigos de idioma opcionais separados por vírgula, como eng,spa.
     llm_description: Optional comma-separated language codes used for parsing and OCR.
     form: form
   - name: enrichments
@@ -129,7 +129,7 @@ parameters:
       en_US: Optional comma-separated enrichments, such as table_to_html,image_description,ner.
       zh_Hans: 可选的逗号分隔扩充，例如 table_to_html,image_description,ner。
       ja_JP: table_to_html,image_description,ner のようなカンマ区切りの拡充（任意）。
-      pt_BR: Enriquecimentos opcionais separados por virgula, como table_to_html,image_description,ner.
+      pt_BR: Enriquecimentos opcionais separados por vírgula, como table_to_html,image_description,ner.
     llm_description: Optional comma-separated enrichments. Valid values are image_description, table_description, table_to_html, ner, and generative_ocr.
     form: form
   - name: chunking_strategy
@@ -139,12 +139,12 @@ parameters:
       en_US: Chunking Strategy
       zh_Hans: 分块策略
       ja_JP: チャンク戦略
-      pt_BR: Estrategia de fragmentacao
+      pt_BR: Estratégia de fragmentação
     human_description:
       en_US: Optionally split the transformed elements into retrieval-sized chunks.
       zh_Hans: 可选择将转换后的元素拆分为适合检索的块。
       ja_JP: 変換された要素を検索向けサイズのチャンクに分割します（任意）。
-      pt_BR: Opcionalmente, divida os elementos transformados em fragmentos adequados para recuperacao.
+      pt_BR: Opcionalmente, divida os elementos transformados em fragmentos adequados para recuperação.
     llm_description: Optional chunking strategy for RAG preprocessing.
     form: form
     options:
@@ -169,12 +169,12 @@ parameters:
       en_US: Maximum Characters per Chunk
       zh_Hans: 每块最大字符数
       ja_JP: チャンクあたりの最大文字数
-      pt_BR: Maximo de caracteres por fragmento
+      pt_BR: Máximo de caracteres por fragmento
     human_description:
       en_US: Maximum chunk size when a chunking strategy is selected.
       zh_Hans: 选择分块策略时的最大块大小。
       ja_JP: チャンク戦略を選択した場合の最大チャンクサイズ。
-      pt_BR: Tamanho maximo do fragmento quando uma estrategia e selecionada.
+      pt_BR: Tamanho máximo do fragmento quando uma estratégia é selecionada.
     llm_description: Maximum characters per chunk.
     form: form
   - name: embed
@@ -190,7 +190,7 @@ parameters:
       en_US: Attach embeddings for RAG. Best used with a chunking strategy.
       zh_Hans: 为 RAG 附加嵌入。最好与分块策略一起使用。
       ja_JP: RAG 用の埋め込みを付加します。チャンク戦略との併用を推奨します。
-      pt_BR: Anexe embeddings para RAG. Recomendado com uma estrategia de fragmentacao.
+      pt_BR: Anexe embeddings para RAG. Recomendado com uma estratégia de fragmentação.
     llm_description: Whether to add embeddings. Enable with chunking for RAG ingestion.
     form: form
 output_schema:

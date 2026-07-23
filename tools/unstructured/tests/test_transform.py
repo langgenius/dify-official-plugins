@@ -10,8 +10,10 @@ from tools import transform as transform_module
 from tools.partition import PartitionTool
 from tools.transform import (
     TransformTool,
+    _MAX_RESULT_BYTES,
     _ensure_transfer_success,
     _get_job_results,
+    _require_public_file_url,
     _require_public_https_transfer_url,
     _stages,
     _tool_payload,
@@ -32,6 +34,8 @@ def _install_transform_fakes(
     monkeypatch: pytest.MonkeyPatch,
     *,
     results: dict,
+    download_chunks: tuple[bytes, ...] = (b"# Transformed document",),
+    download_headers: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, dict]], list[tuple]]:
     tool_calls: list[tuple[str, dict]] = []
     transfers: list[tuple] = []
@@ -41,6 +45,17 @@ def _install_transform_fakes(
             {"status": "COMPLETED"},
         ]
     )
+
+    class FakeDownloadResponse:
+        def __init__(self, url: str) -> None:
+            self.headers = download_headers or {}
+            self.is_success = True
+            self.request = httpx.Request("GET", url)
+            self.status_code = 200
+
+        async def aiter_bytes(self):
+            for chunk in download_chunks:
+                yield chunk
 
     class FakeHttpClient:
         def __init__(self, **options: object) -> None:
@@ -59,13 +74,11 @@ def _install_transform_fakes(
             transfers.append(("PUT", url, headers, content))
             return httpx.Response(200, request=httpx.Request("PUT", url))
 
-        async def get(self, url: str) -> httpx.Response:
+        @asynccontextmanager
+        async def stream(self, method: str, url: str):
+            assert method == "GET"
             transfers.append(("GET", url))
-            return httpx.Response(
-                200,
-                content=b"# Transformed document",
-                request=httpx.Request("GET", url),
-            )
+            yield FakeDownloadResponse(url)
 
     class FakeSession:
         def __init__(self, *_: object, **__: object) -> None:
@@ -287,6 +300,29 @@ def test_retries_results_until_materialized(monkeypatch: pytest.MonkeyPatch) -> 
     assert responses == []
 
 
+def test_omits_base64_images_from_json_results() -> None:
+    class FakeSession:
+        async def call_tool(self, name: str, arguments: dict[str, str]):
+            assert name == "get_job_results"
+            assert arguments == {
+                "job_id": "job-123",
+                "output_format": "json",
+                "image_base64": "none",
+            }
+            return _mcp_result({"files": [{"content": "[]"}]})
+
+    async def run() -> dict:
+        deadline = asyncio.get_running_loop().time() + 10
+        return await _get_job_results(
+            FakeSession(),
+            job_id="job-123",
+            output_format="json",
+            deadline=deadline,
+        )
+
+    assert asyncio.run(run()) == {"files": [{"content": "[]"}]}
+
+
 def test_orchestrates_local_file_transform(monkeypatch: pytest.MonkeyPatch) -> None:
     tool_calls, transfers = _install_transform_fakes(
         monkeypatch,
@@ -384,15 +420,109 @@ def test_orchestrates_public_url_transform(monkeypatch: pytest.MonkeyPatch) -> N
     assert result["output_ref"] == "s3://output/url-document"
 
 
-def test_rejects_malformed_public_file_url() -> None:
+@pytest.mark.parametrize(
+    "file_url",
+    [
+        "https:///document.pdf",
+        "http://127.0.0.1/document.pdf",
+        "https://10.0.0.1/document.pdf",
+        "https://user:password@example.com/document.pdf",
+        "http://localhost/document.pdf",
+    ],
+)
+def test_rejects_non_public_file_url(file_url: str) -> None:
     with pytest.raises(ValueError, match=r"public HTTP\(S\) URL"):
+        _require_public_file_url(file_url)
+
+
+def test_rejects_download_over_content_length_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_transform_fakes(
+        monkeypatch,
+        results={
+            "files": [
+                {
+                    "download_url": "https://storage.example.com/result",
+                    "output_ref": "s3://output/large-document",
+                }
+            ]
+        },
+        download_headers={"content-length": str(_MAX_RESULT_BYTES + 1)},
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
         asyncio.run(
             TransformTool._transform(
                 None,
                 api_url="https://mcp.transform.unstructured.io",
                 api_key="test-key",
                 parameters={
-                    "file_url": "https:///document.pdf",
+                    "file_url": "https://example.com/document.pdf",
+                    "output_format": "md",
+                },
+            )
+        )
+
+    message = str(exc_info.value)
+    assert "50 MB inline result limit" in message
+    assert "job-123" in message
+    assert "s3://output/large-document" in message
+
+
+def test_rejects_download_that_streams_over_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(transform_module, "_MAX_RESULT_BYTES", 8)
+    _install_transform_fakes(
+        monkeypatch,
+        results={
+            "files": [
+                {
+                    "download_url": "https://storage.example.com/result",
+                    "output_ref": "s3://output/large-document",
+                }
+            ]
+        },
+        download_chunks=(b"12345", b"6789"),
+    )
+
+    with pytest.raises(RuntimeError, match="inline result limit"):
+        asyncio.run(
+            TransformTool._transform(
+                None,
+                api_url="https://mcp.transform.unstructured.io",
+                api_key="test-key",
+                parameters={
+                    "file_url": "https://example.com/document.pdf",
+                    "output_format": "md",
+                },
+            )
+        )
+
+
+def test_rejects_oversized_inline_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(transform_module, "_MAX_RESULT_BYTES", 4)
+    _install_transform_fakes(
+        monkeypatch,
+        results={
+            "files": [
+                {
+                    "content": "12345",
+                    "output_ref": "s3://output/large-document",
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(RuntimeError, match="inline result limit"):
+        asyncio.run(
+            TransformTool._transform(
+                None,
+                api_url="https://mcp.transform.unstructured.io",
+                api_key="test-key",
+                parameters={
+                    "file_url": "https://example.com/document.pdf",
                     "output_format": "md",
                 },
             )

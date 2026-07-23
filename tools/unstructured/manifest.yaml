@@ -11,10 +11,10 @@ description:
   en_US: Convert documents into clean Markdown, JSON, HTML, or text, with optional RAG preprocessing.
   ja_JP: ドキュメントを Markdown、JSON、HTML、またはテキストに変換し、RAG 前処理も実行できます。
   zh_Hans: 将文档转换为 Markdown、JSON、HTML 或文本，并可执行 RAG 预处理。
-  pt_BR: Converta documentos em Markdown, JSON, HTML ou texto, com pre-processamento RAG opcional.
+  pt_BR: Converta documentos em Markdown, JSON, HTML ou texto, com pré-processamento RAG opcional.
 icon: icon.svg
 resource:
-  memory: 268435456
+  memory: 536870912
   permission:
     storage:
       enabled: true

@@ -28,9 +28,9 @@ credentials_for_provider:
       ja_JP: サーバータイプ
       zh_Hans: 服务类型
     placeholder:
-      en_US: Please select Unstructured service type, local deployment or official API
-      ja_JP: Unstructuredサービスのタイプを選択してください、ローカルデプロイまたは公式API
-      zh_Hans: 请选择Unstructured服务类型,本地部署或官方API
+      en_US: Select Unstructured Transform, local deployment, or the official API
+      ja_JP: Unstructured Transform、ローカルデプロイ、または公式APIを選択してください
+      zh_Hans: 请选择 Unstructured Transform、本地部署或官方 API
     required: true
     type: select
     options:

@@ -27,6 +27,7 @@ _REQUIRED_TRANSFORM_TOOLS = {
 _JOB_TIMEOUT_SECONDS = 10 * 60
 _RESULTS_RETRY_SECONDS = 2
 _MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+_MAX_RESULT_BYTES = 50 * 1024 * 1024
 
 
 class _TransformToolError(RuntimeError):
@@ -96,8 +97,7 @@ def _require_hosted_transform_url(api_url: str) -> None:
         or parsed.fragment
     ):
         raise ToolProviderCredentialValidationError(
-            "Use the hosted Transform MCP HTTPS URL: "
-            f"{_DEFAULT_MCP_URL}"
+            f"Use the hosted Transform MCP HTTPS URL: {_DEFAULT_MCP_URL}"
         )
 
 
@@ -110,6 +110,32 @@ def _validate_transform_tools(names: set[str]) -> None:
 def _validate_upload_size(size_bytes: int) -> None:
     if size_bytes > _MAX_UPLOAD_BYTES:
         raise ValueError("Transform supports files up to 50 MB")
+
+
+def _require_public_file_url(url: str) -> None:
+    parsed = urlparse(url)
+    try:
+        parsed.port
+    except ValueError:
+        raise ValueError("file_url must be a public HTTP(S) URL") from None
+    hostname = parsed.hostname
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not hostname
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        raise ValueError("file_url must be a public HTTP(S) URL")
+
+    normalized_host = hostname.rstrip(".").lower()
+    if normalized_host == "localhost" or normalized_host.endswith(".localhost"):
+        raise ValueError("file_url must be a public HTTP(S) URL")
+    try:
+        address = ipaddress.ip_address(normalized_host)
+    except ValueError:
+        return
+    if not address.is_global:
+        raise ValueError("file_url must be a public HTTP(S) URL")
 
 
 def _redacted_url(url: Any) -> str:
@@ -166,6 +192,47 @@ def _ensure_transfer_success(response: httpx.Response, operation: str) -> None:
     )
 
 
+def _raise_result_too_large(job_id: str, output_ref: Any) -> None:
+    reference = f" Output reference: {output_ref}." if output_ref else ""
+    raise RuntimeError(
+        f"Transform result for job {job_id} exceeds Dify's 50 MB inline "
+        f"result limit.{reference}"
+    )
+
+
+def _validate_result_size(size_bytes: int, job_id: str, output_ref: Any) -> None:
+    if size_bytes > _MAX_RESULT_BYTES:
+        _raise_result_too_large(job_id, output_ref)
+
+
+async def _download_result(
+    client: httpx.AsyncClient,
+    *,
+    url: Any,
+    job_id: str,
+    output_ref: Any,
+) -> bytes:
+    await _require_public_https_transfer_url(url, "Result download")
+    async with client.stream("GET", str(url)) as response:
+        _ensure_transfer_success(response, "Result download")
+        raw_content_length = response.headers.get("content-length")
+        if raw_content_length:
+            try:
+                _validate_result_size(
+                    int(raw_content_length),
+                    job_id,
+                    output_ref,
+                )
+            except ValueError:
+                pass
+
+        content = bytearray()
+        async for chunk in response.aiter_bytes():
+            _validate_result_size(len(content) + len(chunk), job_id, output_ref)
+            content.extend(chunk)
+    return bytes(content)
+
+
 async def _get_job_results(
     session: ClientSession,
     *,
@@ -175,10 +242,13 @@ async def _get_job_results(
 ) -> dict[str, Any]:
     while True:
         try:
+            arguments = {"job_id": job_id, "output_format": output_format}
+            if output_format == "json":
+                arguments["image_base64"] = "none"
             return _tool_payload(
                 await session.call_tool(
                     "get_job_results",
-                    {"job_id": job_id, "output_format": output_format},
+                    arguments,
                 )
             )
         except _TransformToolError as exc:
@@ -207,9 +277,7 @@ def _stages(parameters: dict[str, Any]) -> dict[str, Any]:
 
     if chunking_strategy := parameters.get("chunking_strategy"):
         raw_max_characters = parameters.get("max_characters")
-        max_characters = (
-            800 if raw_max_characters is None else int(raw_max_characters)
-        )
+        max_characters = 800 if raw_max_characters is None else int(raw_max_characters)
         if max_characters <= 0:
             raise ValueError("max_characters must be greater than zero")
         stages["chunk"] = {
@@ -314,12 +382,7 @@ class TransformTool(Tool):
         if bool(file) == bool(file_url):
             raise ValueError("Provide exactly one of file or file_url")
         if file_url:
-            parsed_file_url = urlparse(file_url)
-            if (
-                parsed_file_url.scheme not in {"http", "https"}
-                or not parsed_file_url.hostname
-            ):
-                raise ValueError("file_url must be a public HTTP(S) URL")
+            _require_public_file_url(file_url)
 
         output_format = parameters.get("output_format") or "md"
         mcp_timeout = timedelta(minutes=2)
@@ -411,13 +474,18 @@ class TransformTool(Tool):
                     first = results["files"][0]
                     if "content" in first:
                         content = first["content"].encode("utf-8")
-                    else:
-                        await _require_public_https_transfer_url(
-                            first["download_url"], "Result download"
+                        _validate_result_size(
+                            len(content),
+                            job_id,
+                            first.get("output_ref"),
                         )
-                        download = await transfer_http.get(first["download_url"])
-                        _ensure_transfer_success(download, "Result download")
-                        content = download.content
+                    else:
+                        content = await _download_result(
+                            transfer_http,
+                            url=first["download_url"],
+                            job_id=job_id,
+                            output_ref=first.get("output_ref"),
+                        )
 
         suffix = {"md": ".md", "json": ".json", "html": ".html", "txt": ".txt"}[
             output_format
