@@ -62,7 +62,7 @@ parameter_rules:
   - name: thinking_level
     type: string
     required: true
-    default: "Medium"
+    default: "Minimal"
     options:
       - Minimal
       - Low
@@ -72,8 +72,8 @@ parameter_rules:
       en_US: Thinking level
       zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking level. Default is Medium.
-      zh_Hans: 思考层级。默认为 Medium。
+      en_US: Indicates the thinking level. Default is Minimal.
+      zh_Hans: 思考层级。默认为 Minimal。
   - name: grounding
     type: boolean
     required: true

@@ -45,7 +45,7 @@ parameter_rules:
       zh_Hans: 控制模型的思考能力。none 关闭思考，其他档位开启思考。
       en_US: Controls the model's thinking capability. none disables thinking, other levels enable thinking.
 pricing:
-  input: '0.44'
-  output: '2.2'
+  input: '0.155'
+  output: '0.31'
   unit: '0.000001'
   currency: USD
