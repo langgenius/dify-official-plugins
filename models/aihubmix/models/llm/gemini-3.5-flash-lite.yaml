@@ -1,0 +1,95 @@
+# https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite
+model: gemini-3.5-flash-lite
+label:
+  en_US: Gemini 3.5 Flash-Lite
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: include_thoughts
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Include thoughts
+    help:
+      en_US: Return thought content when available.
+  - name: media_resolution
+    type: string
+    required: true
+    default: Default
+    options:
+      - Default
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Media resolution
+    help:
+      en_US: Controls visual input resolution and the corresponding token usage.
+  - name: thinking_level
+    type: string
+    required: true
+    default: Minimal
+    options:
+      - Minimal
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Thinking level
+    help:
+      en_US: Controls Gemini thinking depth. The model default is Minimal.
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+    help:
+      en_US: Ground responses with Google Search.
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: URL context
+    help:
+      en_US: Allow Gemini to retrieve URL context.
+  - name: code_execution
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Code execution
+    help:
+      en_US: Allow Gemini to use code execution.
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+    label:
+      en_US: Output length
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0.30'
+  output: '2.50'
+  unit: '0.000001'
+  currency: USD

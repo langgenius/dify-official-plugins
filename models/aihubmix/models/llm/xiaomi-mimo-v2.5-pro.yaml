@@ -17,7 +17,6 @@ parameter_rules:
     max: 4096
   - name: response_format
     label:
-      zh_Hans: 回复格式
       en_US: Response Format
     type: string
     required: false
@@ -27,8 +26,19 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: reasoning_effort
+    label:
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - none
+      - high
+    help:
+      en_US: Controls the model thinking capability. none disables thinking; high enables it.
 pricing:
-  input: '1.1'
-  output: '3.3'
+  input: '0.48'
+  output: '0.96'
   unit: '0.000001'
   currency: USD
