@@ -4,7 +4,7 @@ SOTA video and image generation model provided by BytePlus.
 
 ## Configure
 
-1. Create an Ark API Key in BytePlus Console: https://console.byteplus.com/auth/signup/?utm_source=SFCRM&utm_content=276309cc-045a-ac1e-3037-10d92577cecb&redirectURI=https%3A%2F%2Fconsole.byteplus.com%2Fark
+1. Create an Ark API Key in [BytePlus Console](https://console.byteplus.com/auth/signup/?utm_source=SFCRM&utm_content=276309cc-045a-ac1e-3037-10d92577cecb&redirectURI=https%3A%2F%2Fconsole.byteplus.com%2Fark).
 2. In Dify, go to **Settings -> Model Provider -> BytePlus Seedance & Seedream**.
 3. Fill in the API Key and API Endpoint, then save.
 
