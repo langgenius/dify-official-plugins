@@ -1,6 +1,8 @@
 import asyncio
+import ipaddress
 import json
 import mimetypes
+import socket
 from collections.abc import Generator
 from datetime import timedelta
 from pathlib import Path
@@ -76,11 +78,26 @@ def _tool_payload(result: Any) -> dict[str, Any]:
     return payload
 
 
-def _require_https_transform_url(api_url: str) -> None:
+def _require_hosted_transform_url(api_url: str) -> None:
     parsed = urlparse(api_url)
-    if parsed.scheme != "https" or not parsed.netloc:
+    try:
+        port = parsed.port
+    except ValueError:
+        port = -1
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "mcp.transform.unstructured.io"
+        or port not in {None, 443}
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
         raise ToolProviderCredentialValidationError(
-            "Enter a valid HTTPS Transform MCP URL"
+            "Use the hosted Transform MCP HTTPS URL: "
+            f"{_DEFAULT_MCP_URL}"
         )
 
 
@@ -98,6 +115,46 @@ def _validate_upload_size(size_bytes: int) -> None:
 def _redacted_url(url: Any) -> str:
     parsed = urlparse(str(url))
     return urlunparse(parsed._replace(query="", fragment=""))
+
+
+async def _require_public_https_transfer_url(url: Any, operation: str) -> None:
+    parsed = urlparse(str(url))
+    try:
+        port = parsed.port
+    except ValueError:
+        port = -1
+    hostname = parsed.hostname
+    if (
+        parsed.scheme != "https"
+        or not hostname
+        or port not in {None, 443}
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        raise RuntimeError(
+            f"{operation} requires a public HTTPS URL at {_redacted_url(url)}"
+        )
+
+    try:
+        addresses = {ipaddress.ip_address(hostname)}
+    except ValueError:
+        try:
+            resolved = await asyncio.to_thread(
+                socket.getaddrinfo,
+                hostname,
+                port or 443,
+                type=socket.SOCK_STREAM,
+            )
+        except OSError as exc:
+            raise RuntimeError(
+                f"{operation} URL host could not be resolved: {_redacted_url(url)}"
+            ) from exc
+        addresses = {ipaddress.ip_address(item[4][0]) for item in resolved}
+
+    if not addresses or any(not address.is_global for address in addresses):
+        raise RuntimeError(
+            f"{operation} requires a public HTTPS URL at {_redacted_url(url)}"
+        )
 
 
 def _ensure_transfer_success(response: httpx.Response, operation: str) -> None:
@@ -149,9 +206,15 @@ def _stages(parameters: dict[str, Any]) -> dict[str, Any]:
         stages["enrich"] = {"types": enrichments}
 
     if chunking_strategy := parameters.get("chunking_strategy"):
+        raw_max_characters = parameters.get("max_characters")
+        max_characters = (
+            800 if raw_max_characters is None else int(raw_max_characters)
+        )
+        if max_characters <= 0:
+            raise ValueError("max_characters must be greater than zero")
         stages["chunk"] = {
             "strategy": chunking_strategy,
-            "max_characters": int(parameters.get("max_characters") or 800),
+            "max_characters": max_characters,
         }
 
     if parameters.get("embed"):
@@ -162,13 +225,13 @@ def _stages(parameters: dict[str, Any]) -> dict[str, Any]:
 class TransformTool(Tool):
     @staticmethod
     def validate_credentials(credentials: dict[str, Any]) -> None:
-        api_url = (credentials.get("api_url") or _DEFAULT_MCP_URL).rstrip("/")
+        api_url = (credentials.get("api_url") or _DEFAULT_MCP_URL).strip().rstrip("/")
         api_key = credentials.get("api_key")
         if not api_key:
             raise ToolProviderCredentialValidationError(
                 "Enter an Unstructured Transform API key"
             )
-        _require_https_transform_url(api_url)
+        _require_hosted_transform_url(api_url)
         try:
             asyncio.run(TransformTool._validate_connection(api_url, api_key))
         except Exception as exc:
@@ -199,13 +262,13 @@ class TransformTool(Tool):
             raise ToolProviderCredentialValidationError(
                 "Select Unstructured Transform in the provider credentials"
             )
-        api_url = (credentials.get("api_url") or _DEFAULT_MCP_URL).rstrip("/")
+        api_url = (credentials.get("api_url") or _DEFAULT_MCP_URL).strip().rstrip("/")
         api_key = credentials.get("api_key")
         if not api_key:
             raise ToolProviderCredentialValidationError(
                 "Enter an Unstructured Transform API key"
             )
-        _require_https_transform_url(api_url)
+        _require_hosted_transform_url(api_url)
 
         result = asyncio.run(
             self._transform(
@@ -250,8 +313,13 @@ class TransformTool(Tool):
         file_url = (parameters.get("file_url") or "").strip()
         if bool(file) == bool(file_url):
             raise ValueError("Provide exactly one of file or file_url")
-        if file_url and urlparse(file_url).scheme not in {"http", "https"}:
-            raise ValueError("file_url must be a public HTTP(S) URL")
+        if file_url:
+            parsed_file_url = urlparse(file_url)
+            if (
+                parsed_file_url.scheme not in {"http", "https"}
+                or not parsed_file_url.hostname
+            ):
+                raise ValueError("file_url must be a public HTTP(S) URL")
 
         output_format = parameters.get("output_format") or "md"
         mcp_timeout = timedelta(minutes=2)
@@ -260,7 +328,7 @@ class TransformTool(Tool):
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=120,
             ) as mcp_http,
-            httpx.AsyncClient(timeout=120, follow_redirects=True) as transfer_http,
+            httpx.AsyncClient(timeout=120, follow_redirects=False) as transfer_http,
         ):
             async with streamable_http_client(api_url, http_client=mcp_http) as (
                 read_stream,
@@ -289,6 +357,9 @@ class TransformTool(Tool):
                                     "size_bytes": len(file.blob),
                                 },
                             )
+                        )
+                        await _require_public_https_transfer_url(
+                            upload["upload_url"], "File upload"
                         )
                         upload_response = await transfer_http.put(
                             upload["upload_url"],
@@ -341,6 +412,9 @@ class TransformTool(Tool):
                     if "content" in first:
                         content = first["content"].encode("utf-8")
                     else:
+                        await _require_public_https_transfer_url(
+                            first["download_url"], "Result download"
+                        )
                         download = await transfer_http.get(first["download_url"])
                         _ensure_transfer_success(download, "Result download")
                         content = download.content

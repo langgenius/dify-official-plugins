@@ -164,6 +164,7 @@ parameters:
     type: number
     required: false
     default: 800
+    min: 1
     label:
       en_US: Maximum Characters per Chunk
       zh_Hans: 每块最大字符数

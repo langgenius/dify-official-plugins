@@ -12,6 +12,7 @@ from tools.transform import (
     TransformTool,
     _ensure_transfer_success,
     _get_job_results,
+    _require_public_https_transfer_url,
     _stages,
     _tool_payload,
     _validate_transform_tools,
@@ -42,8 +43,9 @@ def _install_transform_fakes(
     )
 
     class FakeHttpClient:
-        def __init__(self, **_: object) -> None:
-            pass
+        def __init__(self, **options: object) -> None:
+            if "follow_redirects" in options:
+                assert options["follow_redirects"] is False
 
         async def __aenter__(self):
             return self
@@ -109,6 +111,19 @@ def _install_transform_fakes(
         transform_module, "streamable_http_client", fake_streamable_http_client
     )
     monkeypatch.setattr(transform_module.asyncio, "sleep", no_sleep)
+    monkeypatch.setattr(
+        transform_module.socket,
+        "getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (
+                transform_module.socket.AF_INET,
+                transform_module.socket.SOCK_STREAM,
+                6,
+                "",
+                ("8.8.8.8", 443),
+            )
+        ],
+    )
     return tool_calls, transfers
 
 
@@ -163,6 +178,16 @@ def test_requires_https_transform_url() -> None:
         )
 
 
+def test_requires_hosted_transform_url() -> None:
+    with pytest.raises(ToolProviderCredentialValidationError, match="hosted"):
+        TransformTool.validate_credentials(
+            {
+                "api_url": "https://example.com",
+                "api_key": "secret",
+            }
+        )
+
+
 def test_validates_complete_transform_protocol() -> None:
     with pytest.raises(RuntimeError) as exc_info:
         _validate_transform_tools({"start_transform_job"})
@@ -178,6 +203,27 @@ def test_rejects_files_over_transform_limit() -> None:
 
     with pytest.raises(ValueError, match="50 MB"):
         _validate_upload_size(50 * 1024 * 1024 + 1)
+
+
+@pytest.mark.parametrize("max_characters", [0, -1])
+def test_rejects_non_positive_chunk_size(max_characters: int) -> None:
+    with pytest.raises(ValueError, match="greater than zero"):
+        _stages(
+            {
+                "chunking_strategy": "chunk_by_title",
+                "max_characters": max_characters,
+            }
+        )
+
+
+def test_rejects_private_transfer_destination() -> None:
+    with pytest.raises(RuntimeError, match="public HTTPS"):
+        asyncio.run(
+            _require_public_https_transfer_url(
+                "https://127.0.0.1/result?signature=secret",
+                "Result download",
+            )
+        )
 
 
 @pytest.mark.parametrize("operation", ["File upload", "Result download"])
@@ -336,6 +382,21 @@ def test_orchestrates_public_url_transform(monkeypatch: pytest.MonkeyPatch) -> N
     assert result["filename"] == "document.md"
     assert result["content"] == b"# URL document"
     assert result["output_ref"] == "s3://output/url-document"
+
+
+def test_rejects_malformed_public_file_url() -> None:
+    with pytest.raises(ValueError, match=r"public HTTP\(S\) URL"):
+        asyncio.run(
+            TransformTool._transform(
+                None,
+                api_url="https://mcp.transform.unstructured.io",
+                api_key="test-key",
+                parameters={
+                    "file_url": "https:///document.pdf",
+                    "output_format": "md",
+                },
+            )
+        )
 
 
 def test_partition_rejects_transform_credentials() -> None:
