@@ -190,6 +190,17 @@ class S3FilesDownload(Tool):
             entry["content_type"] = content_type
             entry["content_length"] = response.get("ContentLength")
             entry["etag"] = response.get("ETag")
+            # Surface SSE metadata returned by S3 so downstream code can verify
+            # the object was actually encrypted with the expected scheme/key.
+            # boto3 transparently decrypts SSE-KMS objects when the caller's
+            # IAM principal has kms:Decrypt on the key, so no extra parameter
+            # is needed on the GetObject call itself.
+            if response.get("ServerSideEncryption"):
+                entry["server_side_encryption"] = response["ServerSideEncryption"]
+            if response.get("SSEKMSKeyId"):
+                entry["kms_key_id"] = response["SSEKMSKeyId"]
+            if response.get("BucketKeyEnabled"):
+                entry["bucket_key_enabled"] = True
             entry["last_modified"] = (
                 response.get("LastModified").isoformat() if response.get("LastModified") else None
             )
