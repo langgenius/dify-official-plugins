@@ -5,7 +5,7 @@ credentials_for_provider:
       ja_JP: UnstructuredのAPI URL
       zh_Hans: Unstructured服务的API URL
     placeholder:
-      en_US: Please input your Unstructured server's API URL
+      en_US: Use https://mcp.transform.unstructured.io for Transform
       ja_JP: UnstructuredサーバのAPI URLを入力してください
       zh_Hans: 请输入你的 Unstructured 服务的 API URL
     required: true
@@ -16,24 +16,29 @@ credentials_for_provider:
       ja_JP: トークン
       zh_Hans: 令牌
     placeholder:
-      en_US: Please input your Unstructured server's api_key
+      en_US: Enter the API key for the selected Unstructured service
       ja_JP: Unstructuredサーバのトークンを入力してください
       zh_Hans: 请输入你的 Unstructured 服务的令牌
     required: false
     type: secret-input
-    url: https://platform.unstructured.io/app/account/api-keys
+    url: https://docs.unstructured.io/
   server_type:
     label:
       en_US: Server Type
       ja_JP: サーバータイプ
       zh_Hans: 服务类型
     placeholder:
-      en_US: Please select Unstructured service type, local deployment or official API
-      ja_JP: Unstructuredサービスのタイプを選択してください、ローカルデプロイまたは公式API
-      zh_Hans: 请选择Unstructured服务类型,本地部署或官方API
+      en_US: Select Unstructured Transform, local deployment, or the official API
+      ja_JP: Unstructured Transform、ローカルデプロイ、または公式APIを選択してください
+      zh_Hans: 请选择 Unstructured Transform、本地部署或官方 API
     required: true
     type: select
     options:
+      - value: transform
+        label:
+          en_US: Unstructured Transform
+          ja_JP: Unstructured Transform
+          zh_Hans: Unstructured Transform
       - value: local
         label:
           en_US: Local Deployment
@@ -53,13 +58,14 @@ identity:
     zh_Hans: Unstructured
     pt_BR: Unstructured
   description:
-    en_US: unstructured
-    zh_Hans: unstructured
-    pt_BR: unstructured
+    en_US: Convert PDFs, Office documents, HTML, and images into AI-ready structured output.
+    zh_Hans: 将 PDF、Office 文档、HTML 和图像转换为适用于 AI 的结构化输出。
+    pt_BR: Converta PDFs, documentos do Office, HTML e imagens em dados estruturados prontos para IA.
   icon: icon.svg
   tags: []
 tools:
   - tools/partition.yaml
+  - tools/transform.yaml
 extra:
   python:
     source: provider/unstructured.py
