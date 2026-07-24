@@ -4,7 +4,7 @@ Vertex AI in Google Cloud Platform.
 
 ## Features
 - Provides llm, text-embedding models in Dify.
-- Includes predefined llm models such as gemini-3.1-flash-image-preview, gemini-2.5-flash-preview-09-2025, gemini-2.5-pro-exp-03-25.
+- Includes predefined llm models such as gemini-3.5-flash-lite, gemini-3.1-flash-image-preview, gemini-2.5-flash-preview-09-2025, gemini-2.5-pro-exp-03-25.
 - Includes predefined text embedding models such as text-embedding-005, text-embedding-004, text-multilingual-embedding-002.
 - Supports predefined model configuration.
 
