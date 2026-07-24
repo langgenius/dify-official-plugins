@@ -1,0 +1,24 @@
+model: openai/gpt-5.1
+label:
+  en_US: GPT-5.1
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 400000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 128000
+    min: 1
+    max: 128000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.0125'
+  output: '0.1'
+  currency: CNY
+  unit: '0.000001'

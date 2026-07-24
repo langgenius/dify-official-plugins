@@ -1,0 +1,136 @@
+provider: shengsuanyun
+label:
+  en_US: "ShengSuanYun"
+  zh_Hans: "胜算云"
+description:
+  en_US: "Models provided by ShengSuanYun."
+  zh_Hans: "胜算云提供的AI模型。"
+icon_small:
+  en_US: "icon_s_en.svg"
+icon_large:
+  en_US: "icon_s_en.svg"
+background: "#E5E7EB"
+help:
+  title:
+    en_US: "Get your API Key from ShengSuanYun"
+    zh_Hans: "从胜算云获取 API Key"
+  url:
+    en_US: "https://console.shengsuanyun.com/user/keys"
+supported_model_types:
+  - llm
+  - "text-embedding"
+  - tts
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: text-input
+      default: "4096"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: "4096"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: max_tokens_to_sample
+      label:
+        zh_Hans: 最大 token 上限
+        en_US: Upper bound for max tokens
+      show_on:
+        - variable: __model_type
+          value: llm
+      default: "4096"
+      type: text-input
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: Vision 支持
+        en_US: Vision Support
+      type: select
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+    - label:
+        en_US: Base URL
+        zh_Hans: Base URL
+      default: https://router.shengsuanyun.com/api/v1
+      placeholder:
+        en_US: Enter your Base URL, e.g. https://router.shengsuanyun.com/api/v1
+        zh_Hans: 在此输入您的 Base URL, 如 https://router.shengsuanyun.com/api/v1
+      required: false
+      type: text-input
+      variable: base_url
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - "models/llm/*/*.yaml"
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+      - "models/text_embedding/*.yaml"
+  tts:
+    position: models/tts/_position.yaml
+    predefined:
+      - models/tts/*/*.yaml
+extra:
+  python:
+    provider_source: provider/shengsuanyun.py
+    model_sources:
+      - "models/text_embedding/text_embedding.py"
+      - "models/llm/llm.py"
+      - "models/tts/tts.py"
