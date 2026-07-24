@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -13,6 +14,8 @@ from models._common import get_ws_base_address
 from pydub import AudioSegment
 
 from ..constant import BURY_POINT_HEADER
+
+logger = logging.getLogger(__name__)
 
 _AUDIO_MAGIC = [
     (0, b"fLaC", "flac"),
@@ -47,11 +50,115 @@ _SUBPROCESS_ENV = "TONGYI_STT_SUBPROCESS"
 _SUBPROCESS_TRUE_VALUES = {"1", "true", "yes", "on"}
 _RECOGNITION_TIMEOUT_ENV = "TONGYI_STT_RECOGNITION_TIMEOUT"
 _DEFAULT_RECOGNITION_TIMEOUT = 120
+_DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
 
 
 def _is_subprocess_enabled() -> bool:
     value = os.getenv(_SUBPROCESS_ENV)
     return value is not None and value.strip().lower() in _SUBPROCESS_TRUE_VALUES
+
+
+def _patch_dashscope_async_bridge_for_gevent() -> None:
+    """Patch DashScope's global async bridge to use native threads under gevent.
+
+    This replaces ``dashscope.common.utils.iter_over_async`` for the current
+    plugin process. It affects all subsequent DashScope calls that use that
+    helper, and is intentionally guarded so it is only applied once.
+    """
+
+    global _DASHSCOPE_ASYNC_BRIDGE_PATCHED
+    if _DASHSCOPE_ASYNC_BRIDGE_PATCHED:
+        return
+
+    try:
+        from gevent import monkey as gevent_monkey
+    except ImportError:
+        _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
+        return
+    except Exception as ex:
+        logger.warning("DashScope async bridge patch skipped: failed to import gevent: %s", ex)
+        _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
+        return
+
+    if not gevent_monkey.is_module_patched("threading"):
+        _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
+        return
+
+    import asyncio
+    import queue
+    import threading
+
+    try:
+        import dashscope.common.utils as dashscope_utils
+        from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
+        from dashscope.common.logging import logger as dashscope_logger
+    except ImportError as ex:
+        logger.warning("DashScope async bridge patch skipped: incompatible DashScope SDK: %s", ex)
+        _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
+        return
+    except Exception as ex:
+        logger.warning(
+            "DashScope async bridge patch skipped: failed to import DashScope internals: %s", ex
+        )
+        _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
+        return
+
+    try:
+        native_thread = gevent_monkey.get_original("threading", "Thread")
+        native_queue = gevent_monkey.get_original("queue", "Queue")
+    except Exception as ex:
+        logger.warning(
+            "DashScope async bridge patch falling back to current thread primitives: %s", ex
+        )
+        native_thread = threading.Thread
+        native_queue = queue.Queue
+
+    def iter_over_async_with_native_bridge(ait):
+        loop = asyncio.new_event_loop()
+        ait = ait.__aiter__()
+
+        async def get_next():
+            try:
+                obj = await ait.__anext__()
+                return False, obj
+            except StopAsyncIteration:
+                return True, None
+
+        def iter_thread(loop, message_queue):
+            asyncio.set_event_loop(loop)
+            try:
+                while True:
+                    try:
+                        done, obj = loop.run_until_complete(get_next())
+                        if done:
+                            message_queue.put((True, None, None))
+                            break
+                        message_queue.put((False, None, obj))
+                    except BaseException as ex:  # noqa: E722
+                        dashscope_logger.exception(ex)
+                        message_queue.put((True, ex, None))
+                        break
+            finally:
+                loop.close()
+
+        message_queue = native_queue()
+        worker = native_thread(
+            target=iter_thread, args=(loop, message_queue), name="dashscope_iter_async_thread"
+        )
+        worker.daemon = True
+        worker.start()
+        while True:
+            finished, error, obj = message_queue.get()
+            if finished:
+                if error is not None:
+                    yield DashScopeAPIResponse(
+                        -1, "", "Unknown", message=f"Error type: {type(error)}, message: {error}"
+                    )
+                break
+            yield obj
+
+    dashscope_utils.iter_over_async = iter_over_async_with_native_bridge
+    _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
 
 
 def _get_recognition_timeout() -> int:
@@ -173,6 +280,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                     raise ValueError(data or "Unknown error in STT worker subprocess")
                 sentence_list = data
             else:
+                _patch_dashscope_async_bridge_for_gevent()
                 recognition = Recognition(
                     model=str(model),
                     format=str(audio_format),
