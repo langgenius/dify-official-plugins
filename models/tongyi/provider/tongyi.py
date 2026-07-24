@@ -5,6 +5,13 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
+# Sentinel model used for credential validation. Picked as one of the oldest
+# Tongyi chat models so it has broad availability across all DashScope
+# tiers — a key valid for any Tongyi model will pass validation against it.
+# Callers can override the sentinel by passing `validate_model` in the
+# credentials dict (e.g. when the key only covers a different model).
+DEFAULT_VALIDATE_MODEL = "qwen-turbo"
+
 
 class TongyiProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -22,9 +29,14 @@ class TongyiProvider(ModelProvider):
                 model_instance = model_obj(model_schemas=self.provider_schema.models)
             else:
                 model_instance = model_obj
-            model_instance.validate_credentials(model="qwen-flash", credentials=credentials)
+            validate_model = credentials.get("validate_model") or DEFAULT_VALIDATE_MODEL
+            model_instance.validate_credentials(
+                model=validate_model, credentials=credentials
+            )
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
-            logger.exception(f"{self.get_provider_schema().provider} credentials validate failed")
+            logger.exception(
+                f"{self.get_provider_schema().provider} credentials validate failed"
+            )
             raise ex
