@@ -1,0 +1,17 @@
+[project]
+name = "jalapenocloud"
+version = "0.1.0"
+description = "JalapenoCloud model provider plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Managed with uv; refresh the lockfile with `uv lock`.
+dependencies = [
+    "dify_plugin>=0.9.0",
+    "httpx>=0.28.1",
+    "openai>=2.38.0",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []

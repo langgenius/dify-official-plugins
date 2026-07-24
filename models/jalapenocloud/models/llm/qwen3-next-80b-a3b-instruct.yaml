@@ -1,0 +1,39 @@
+model: Qwen3-Next-80B-A3B-Instruct
+label:
+  en_US: Qwen3-Next-80B-A3B-Instruct
+  zh_Hans: Qwen3-Next-80B-A3B-Instruct
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 32768
+    min: 1
+    max: 65536
+  - name: top_p
+    use_template: top_p
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: "0.15"
+  output: "1.50"
+  unit: "0.000001"
+  currency: USD
