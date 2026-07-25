@@ -97,10 +97,6 @@ parameter_rules:
     default: 128000
     min: 1
     max: 128000
-  - name: response_format
-    use_template: response_format
-  - name: json_schema
-    use_template: json_schema
   - name: prompt_caching_message_flow
     label:
       zh_Hans: 大消息自动缓存阈值
@@ -174,9 +170,12 @@ parameter_rules:
     help:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
+  - name: response_format
+    use_template: response_format
+  - name: json_schema
+    use_template: json_schema
 
 # https://claude.com/pricing#api
-# Claude Opus 5: $5 / input MTok, $25 / output MTok.
 pricing:
   input: '5.00'
   output: '25.00'
