@@ -2,6 +2,7 @@ import base64
 import binascii
 import logging
 import re
+import threading
 import time
 import numpy as np
 from typing import Optional, Union
@@ -33,6 +34,31 @@ TASK_TYPE_BY_INPUT_TYPE = {
     EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
     EmbeddingInputType.QUERY: "RETRIEVAL_QUERY",
 }
+
+# Cache of genai.Client instances keyed by api_key, distinct from the LLM
+# module's client cache (models/llm/llm.py) to avoid collisions if both
+# modules are loaded in the same process. Reusing the client avoids a fresh
+# TCP+TLS handshake to generativelanguage.googleapis.com on every embedding
+# call. Bounded with oldest-first eviction to avoid unbounded growth in
+# multi-tenant deployments with many distinct API keys.
+_GENAI_EMB_CLIENT_CACHE_MAX_SIZE = 100
+_genai_emb_client_cache: dict[str, genai.Client] = {}
+_genai_emb_client_cache_lock = threading.Lock()
+
+
+def _get_genai_client(api_key: str) -> genai.Client:
+    """Return a cached genai.Client for the given API key, creating one if needed."""
+    _key = api_key.strip()
+    with _genai_emb_client_cache_lock:
+        client = _genai_emb_client_cache.get(_key)
+        if client is not None:
+            _genai_emb_client_cache[_key] = _genai_emb_client_cache.pop(_key)
+            return client
+        if len(_genai_emb_client_cache) >= _GENAI_EMB_CLIENT_CACHE_MAX_SIZE:
+            _genai_emb_client_cache.pop(next(iter(_genai_emb_client_cache)))
+        client = genai.Client(api_key=_key)
+        _genai_emb_client_cache[_key] = client
+        return client
 
 
 class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
@@ -74,7 +100,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :param user: unique user id
         :return: embeddings result
         """
-        client = genai.Client(api_key=credentials["google_api_key"])
+        client = _get_genai_client(credentials["google_api_key"])
 
         # get model properties
         context_size = self._get_context_size(model, credentials)
@@ -157,7 +183,14 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         splitted_text = []
         for text in texts:
-            num_tokens = self._count_tokens(client, model, text)
+            # Estimate locally via GPT-2 BPE instead of calling `_count_tokens`
+            # (an API round-trip, and in fact two: `client.models.get()` to
+            # check supported actions, then `client.models.count_tokens()`).
+            # GPT-2 overestimates vs Gemini's SentencePiece tokenizer, so the
+            # resulting chunks end up conservatively smaller -- this never
+            # exceeds the context limit, it just avoids ~150-400ms of network
+            # latency per recursion level for every embedded document.
+            num_tokens = self._get_num_tokens_by_gpt2(text)
             if num_tokens >= context_size and len(text) > 1:
                 # `context_size` is a token budget, not a character index. Estimate a
                 # character cutoff from the token-to-character ratio so the head is
@@ -403,7 +436,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :return: embeddings result
         """
         self.started_at = time.perf_counter()
-        client = genai.Client(api_key=credentials["google_api_key"])
+        client = _get_genai_client(credentials["google_api_key"])
 
         # Convert MultiModalContent to Google Genai format, tracking content types
         contents = []  # converted content for API call

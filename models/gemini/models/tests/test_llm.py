@@ -1502,6 +1502,12 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        # Explicitly 0 (not left as an auto-vivified Mock attribute): with the
+        # #3333 fallback `prompt_tokens_standard or usage_metadata.prompt_token_count
+        # or 0`, an unset Mock attribute is truthy and would poison `prompt_tokens`
+        # with a non-numeric value instead of falling through to the manual
+        # `get_num_tokens` calculation this test exercises.
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 10
 
@@ -1549,6 +1555,7 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 5
 
@@ -1603,6 +1610,7 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 15
 
