@@ -73,13 +73,23 @@ class TestClaude5RegionResolutionInGetModelInfo:
         assert info["model"] == "global.anthropic.claude-sonnet-5"
         assert info["support_tool_use"] is True
 
+    def test_opus5_global_resolution(self):
+        info, _ = self._get_model_info("Opus 5", "global", "ap-northeast-1")
+        assert info["model"] == "global.anthropic.claude-opus-5"
+
     def test_geographic_us(self):
         info, _ = self._get_model_info("Fable 5", "geographic", "us-west-2")
         assert info["model"] == "us.anthropic.claude-fable-5"
 
-    def test_geographic_eu_raises_actionable_error(self):
+    def test_opus5_geographic_eu(self):
+        # Opus 5 / Sonnet 5 have eu. geo profiles (live-verified)
+        info, _ = self._get_model_info("Opus 5", "geographic", "eu-central-1")
+        assert info["model"] == "eu.anthropic.claude-opus-5"
+
+    def test_geographic_eu_raises_actionable_error_for_fable5(self):
+        # Fable 5 has no eu. geo profile — only us. and global.
         with pytest.raises(llm_mod.InvokeError, match="global"):
-            self._get_model_info("Sonnet 5", "geographic", "eu-central-1")
+            self._get_model_info("Fable 5", "geographic", "eu-central-1")
 
     def test_cross_region_param_is_consumed(self):
         _, params = self._get_model_info("Sonnet 5", "global", "us-east-1")

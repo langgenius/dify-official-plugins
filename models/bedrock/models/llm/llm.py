@@ -1866,6 +1866,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
             'Claude 4.8 Opus': 'claude-4-8-opus',
