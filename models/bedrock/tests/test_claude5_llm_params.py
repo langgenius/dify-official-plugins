@@ -62,6 +62,26 @@ class TestEffortConversion:
         assert additional["thinking"] == {"type": "adaptive"}
 
 
+class TestClaude5FamilyYamlSurface:
+    def test_structured_output_params_not_exposed(self):
+        # Live-verified: Opus 5 / Sonnet 5 reject Converse
+        # outputConfig.textFormat ("output_config.format: Extra inputs are not
+        # permitted") and reject the prefill-based response_format fallback.
+        # Neither parameter may appear on the Claude 5 family yaml.
+        import yaml
+        from pathlib import Path
+        yaml_path = (
+            Path(__file__).resolve().parent.parent
+            / "models" / "llm" / "anthropic-claude-5.yaml"
+        )
+        schema = yaml.safe_load(yaml_path.read_text())
+        param_names = {r["name"] for r in schema["parameter_rules"]}
+        assert "json_schema" not in param_names
+        assert "response_format" not in param_names
+        # sampling params stay unexposed too
+        assert not {"temperature", "top_p", "top_k"} & param_names
+
+
 class TestClaude5RegionResolutionInGetModelInfo:
     def _get_model_info(self, model_name, cross_region, region):
         params = {"model_name": model_name, "cross-region": cross_region}
@@ -85,6 +105,20 @@ class TestClaude5RegionResolutionInGetModelInfo:
         # Opus 5 / Sonnet 5 have eu. geo profiles (live-verified)
         info, _ = self._get_model_info("Opus 5", "geographic", "eu-central-1")
         assert info["model"] == "eu.anthropic.claude-opus-5"
+
+    @pytest.mark.parametrize("model_name,expected", [
+        ("Opus 5", "au.anthropic.claude-opus-5"),
+        ("Sonnet 5", "au.anthropic.claude-sonnet-5"),
+    ])
+    def test_au_profile_resolves_through_converse_route(self, model_name, expected):
+        # Integration guard: the au. profile ID must not only resolve but also
+        # match a CONVERSE_API_ENABLED_MODEL_INFO prefix — otherwise
+        # _get_model_info returns None and _invoke falls back to the legacy
+        # bare-ID path, which Claude 5 models reject (profile-only).
+        info, _ = self._get_model_info(model_name, "geographic", "ap-southeast-2")
+        assert info is not None
+        assert info["model"] == expected
+        assert info["support_tool_use"] is True
 
     def test_geographic_eu_raises_actionable_error_for_fable5(self):
         # Fable 5 has no eu. geo profile — only us. and global.

@@ -85,6 +85,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "jp.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "au.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
