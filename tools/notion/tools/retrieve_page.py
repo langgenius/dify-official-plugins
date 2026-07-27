@@ -46,7 +46,9 @@ class _FetchBudget:
 
 
 class RetrievePageTool(Tool):
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         # Extract parameters
         page_id = tool_parameters.get("page_id", "")
         include_content = tool_parameters.get("include_content", True)
@@ -93,8 +95,13 @@ class RetrievePageTool(Tool):
                     try:
                         all_blocks = self._fetch_all_children(client, page_id, budget)
                         formatted_page["content"] = self._format_blocks(
-                            client, all_blocks, budget, collected_images,
-                            depth=0, max_depth=max_depth, max_images=max_images,
+                            client,
+                            all_blocks,
+                            budget,
+                            collected_images,
+                            depth=0,
+                            max_depth=max_depth,
+                            max_images=max_images,
                         )
                     except requests.HTTPError as e:
                         # If we can't get the content, just return the page data
@@ -106,14 +113,18 @@ class RetrievePageTool(Tool):
                 # Telemetry: observable cost of this retrieval.
                 formatted_page["api_calls_made"] = budget.api_calls_made
                 formatted_page["total_blocks_fetched"] = budget.total_blocks_fetched
-                formatted_page["elapsed_seconds"] = round(time.monotonic() - started_at, 3)
+                formatted_page["elapsed_seconds"] = round(
+                    time.monotonic() - started_at, 3
+                )
                 if budget.truncated:
                     formatted_page["fetch_truncated"] = True
                     formatted_page["fetch_truncated_reason"] = (
                         f"max_api_calls={max_api_calls} exceeded; increase the limit or raise max_depth with care."
                     )
                 if len(collected_images) > max_images:
-                    formatted_page["images_skipped"] = len(collected_images) - max_images
+                    formatted_page["images_skipped"] = (
+                        len(collected_images) - max_images
+                    )
                     collected_images = collected_images[:max_images]
 
                 # Return results
@@ -137,7 +148,8 @@ class RetrievePageTool(Tool):
                             image["block_id"],
                             max_bytes=min(
                                 DEFAULT_MAX_IMAGE_SIZE,
-                                DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE - total_downloaded_bytes,
+                                DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE
+                                - total_downloaded_bytes,
                             ),
                         )
                         yield self.create_blob_message(
@@ -156,7 +168,9 @@ class RetrievePageTool(Tool):
 
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
-                    yield self.create_text_message(f"Page not found or you don't have access to it: {page_id}")
+                    yield self.create_text_message(
+                        f"Page not found or you don't have access to it: {page_id}"
+                    )
                 else:
                     yield self.create_text_message(f"Error retrieving page: {e}")
                 return
@@ -165,7 +179,9 @@ class RetrievePageTool(Tool):
             yield self.create_text_message(f"Error retrieving Notion page: {str(e)}")
             return
 
-    def _format_page_data(self, client: NotionClient, page_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_page_data(
+        self, client: NotionClient, page_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Format the page data for the response."""
         result = {
             "id": page_data.get("id", ""),
@@ -198,7 +214,9 @@ class RetrievePageTool(Tool):
                 value = select_data.get("name") if select_data else None
             elif prop_type == "multi_select":
                 multi_select = prop_data.get("multi_select", [])
-                value = [item.get("name") for item in multi_select] if multi_select else []
+                value = (
+                    [item.get("name") for item in multi_select] if multi_select else []
+                )
             elif prop_type == "date":
                 date_data = prop_data.get("date", {})
                 start = date_data.get("start") if date_data else None
@@ -236,7 +254,9 @@ class RetrievePageTool(Tool):
                 budget.mark_truncated()
                 break
             budget.spend()
-            response = client.retrieve_block_children(block_id, start_cursor=start_cursor)
+            response = client.retrieve_block_children(
+                block_id, start_cursor=start_cursor
+            )
             page_results = response.get("results", [])
             blocks.extend(page_results)
             budget.total_blocks_fetched += len(page_results)
@@ -268,7 +288,7 @@ class RetrievePageTool(Tool):
             formatted_block = {
                 "id": block_id,
                 "type": block_type,
-                "has_children": has_children
+                "has_children": has_children,
             }
 
             # Extract content based on block type
@@ -331,11 +351,13 @@ class RetrievePageTool(Tool):
                 formatted_block["url"] = image_url
 
                 if image_url:
-                    collected_images.append({
-                        "block_id": block_id,
-                        "url": image_url,
-                        "caption": caption_text,
-                    })
+                    collected_images.append(
+                        {
+                            "block_id": block_id,
+                            "url": image_url,
+                            "caption": caption_text,
+                        }
+                    )
             elif block_type == "table_row":
                 cells = block.get("table_row", {}).get("cells", [])
                 cell_texts = [client.extract_plain_text(cell) for cell in cells]
@@ -357,10 +379,17 @@ class RetrievePageTool(Tool):
                     budget.mark_truncated()
                 else:
                     try:
-                        child_blocks = self._fetch_all_children(client, block_id, budget)
+                        child_blocks = self._fetch_all_children(
+                            client, block_id, budget
+                        )
                         formatted_block["children"] = self._format_blocks(
-                            client, child_blocks, budget, collected_images,
-                            depth=depth + 1, max_depth=max_depth, max_images=max_images,
+                            client,
+                            child_blocks,
+                            budget,
+                            collected_images,
+                            depth=depth + 1,
+                            max_depth=max_depth,
+                            max_images=max_images,
                         )
                     except requests.HTTPError as e:
                         # Record per-block failure but keep the rest of the page intact
@@ -416,18 +445,24 @@ def _coerce_positive_int(value: Any, default: int) -> int:
 def _download_image(url: str, block_id: str, max_bytes: int) -> tuple[bytes, str, str]:
     """Stream-download an image, aborting once it exceeds max_bytes so a single
     huge or malicious response can't exhaust the plugin's memory budget."""
-    with requests.get(url, timeout=DEFAULT_IMAGE_DOWNLOAD_TIMEOUT, stream=True) as response:
+    with requests.get(
+        url, timeout=DEFAULT_IMAGE_DOWNLOAD_TIMEOUT, stream=True
+    ) as response:
         response.raise_for_status()
 
         content_length = response.headers.get("Content-Length")
         if content_length and int(content_length) > max_bytes:
-            raise ValueError(f"Image at {url} exceeds the {max_bytes}-byte download limit")
+            raise ValueError(
+                f"Image at {url} exceeds the {max_bytes}-byte download limit"
+            )
 
         content = bytearray()
         for chunk in response.iter_content(chunk_size=IMAGE_DOWNLOAD_CHUNK_SIZE):
             content.extend(chunk)
             if len(content) > max_bytes:
-                raise ValueError(f"Image at {url} exceeds the {max_bytes}-byte download limit")
+                raise ValueError(
+                    f"Image at {url} exceeds the {max_bytes}-byte download limit"
+                )
 
         mime_type = _guess_image_mime_type(response, url)
         filename = _guess_image_filename(url, block_id, mime_type)
@@ -440,7 +475,11 @@ def _guess_image_mime_type(response: requests.Response, url: str) -> str:
     or not an image type, then a hardcoded default."""
     content_type = response.headers.get("Content-Type", "")
     mime_type = content_type.split(";")[0].strip().lower()
-    if mime_type and mime_type != "application/octet-stream" and mime_type.startswith("image/"):
+    if (
+        mime_type
+        and mime_type != "application/octet-stream"
+        and mime_type.startswith("image/")
+    ):
         return mime_type
     guessed_type, _ = mimetypes.guess_type(urlparse(url).path)
     return guessed_type or DEFAULT_IMAGE_MIME_TYPE
