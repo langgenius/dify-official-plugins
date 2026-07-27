@@ -32,10 +32,10 @@ All tests stub ``requests.post`` to avoid hitting the network.
 """
 
 import sys
-import time
 import types
 from pathlib import Path
 from unittest.mock import patch
+
 
 # Pytest is not installed in this minimal environment; provide a minimal
 # stand-in for the only feature we use (pytest.raises as a context manager).
@@ -114,7 +114,9 @@ class _FakeToolProviderOAuthError(Exception):
     pass
 
 
-_fake_errors.ToolProviderCredentialValidationError = _FakeToolProviderCredentialValidationError
+_fake_errors.ToolProviderCredentialValidationError = (
+    _FakeToolProviderCredentialValidationError
+)
 _fake_errors.ToolProviderOAuthError = _FakeToolProviderOAuthError
 _fake_dify.ToolProvider = type("ToolProvider", (), {})
 _fake_dify.entities = types.ModuleType("dify_plugin.entities")
@@ -180,9 +182,12 @@ def test_successful_refresh_returns_new_access_token_and_expires_at() -> None:
         "refresh_token": "new-refresh",
         "expires_in": 3600,
     }
-    with patch.object(
-        github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
-    ), patch.object(github_module.time, "time", return_value=1_000_000):
+    with (
+        patch.object(
+            github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
+        ),
+        patch.object(github_module.time, "time", return_value=1_000_000),
+    ):
         result = provider._oauth_refresh_credentials(
             redirect_uri="https://example.com/cb",
             system_credentials={"client_id": "cid", "client_secret": "csec"},
@@ -201,9 +206,12 @@ def test_successful_refresh_without_new_refresh_token_keeps_old_one() -> None:
     provider = GithubProvider.__new__(GithubProvider)
     credentials = {"access_tokens": "old", "refresh_token": "old-refresh"}
     new_payload = {"access_token": "new-token", "expires_in": 7200}
-    with patch.object(
-        github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
-    ), patch.object(github_module.time, "time", return_value=1_000_000):
+    with (
+        patch.object(
+            github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
+        ),
+        patch.object(github_module.time, "time", return_value=1_000_000),
+    ):
         result = provider._oauth_refresh_credentials(
             redirect_uri="https://example.com/cb",
             system_credentials={"client_id": "cid", "client_secret": "csec"},
@@ -238,7 +246,9 @@ def test_refresh_failure_http_400_raises_oauth_error() -> None:
     credentials = {"access_tokens": "old", "refresh_token": "r"}
     err_payload = {"error": "invalid_grant", "error_description": "token revoked"}
     with patch.object(
-        github_module.requests, "post", return_value=_FakeResponse(err_payload, 400, "bad")
+        github_module.requests,
+        "post",
+        return_value=_FakeResponse(err_payload, 400, "bad"),
     ):
         with pytest.raises(_FakeToolProviderOAuthError, match="token revoked"):
             provider._oauth_refresh_credentials(
@@ -256,7 +266,9 @@ def test_refresh_failure_missing_access_token_raises_oauth_error() -> None:
     with patch.object(
         github_module.requests, "post", return_value=_FakeResponse(bad_payload, 200)
     ):
-        with pytest.raises(_FakeToolProviderOAuthError, match="temporarily_unavailable"):
+        with pytest.raises(
+            _FakeToolProviderOAuthError, match="temporarily_unavailable"
+        ):
             provider._oauth_refresh_credentials(
                 redirect_uri="https://example.com/cb",
                 system_credentials={"client_id": "cid", "client_secret": "csec"},
@@ -277,9 +289,12 @@ def test_expires_in_smaller_than_safety_margin_clamps_to_real_expiry() -> None:
     provider = GithubProvider.__new__(GithubProvider)
     credentials = {"access_tokens": "old", "refresh_token": "r"}
     new_payload = {"access_token": "new", "expires_in": 5}
-    with patch.object(
-        github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
-    ), patch.object(github_module.time, "time", return_value=1_000_000):
+    with (
+        patch.object(
+            github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
+        ),
+        patch.object(github_module.time, "time", return_value=1_000_000),
+    ):
         result = provider._oauth_refresh_credentials(
             redirect_uri="https://example.com/cb",
             system_credentials={"client_id": "cid", "client_secret": "csec"},
@@ -317,7 +332,9 @@ class _HtmlResponse(_FakeResponse):
         super().__init__(payload=None, status_code=status_code, text=body)
 
     def json(self):
-        raise ValueError(f"Expecting value: line 1 column 1 (char 0) — body={self.text!r}")
+        raise ValueError(
+            f"Expecting value: line 1 column 1 (char 0) — body={self.text!r}"
+        )
 
 
 def test_refresh_failure_http_400_with_html_body_surfaces_snippet() -> None:
@@ -328,7 +345,8 @@ def test_refresh_failure_http_400_with_html_body_surfaces_snippet() -> None:
     credentials = {"access_tokens": "old", "refresh_token": "r"}
     html = "<html><body>400 Bad Request — nginx</body></html>"
     with patch.object(
-        github_module.requests, "post",
+        github_module.requests,
+        "post",
         return_value=_HtmlResponse(400, html),
     ):
         with pytest.raises(_FakeToolProviderOAuthError, match="nginx"):
@@ -346,10 +364,13 @@ def test_refresh_failure_http_502_with_empty_body_surfaces_snippet() -> None:
     provider = GithubProvider.__new__(GithubProvider)
     credentials = {"access_tokens": "old", "refresh_token": "r"}
     with patch.object(
-        github_module.requests, "post",
+        github_module.requests,
+        "post",
         return_value=_HtmlResponse(502, ""),
     ):
-        with pytest.raises(_FakeToolProviderOAuthError, match="GitHub OAuth refresh failed"):
+        with pytest.raises(
+            _FakeToolProviderOAuthError, match="GitHub OAuth refresh failed"
+        ):
             provider._oauth_refresh_credentials(
                 redirect_uri="https://example.com/cb",
                 system_credentials={"client_id": "cid", "client_secret": "csec"},
@@ -378,9 +399,12 @@ def test_initial_auth_persists_refresh_token_and_expires_in() -> None:
         "scope": "read:user",
         "token_type": "bearer",
     }
-    with patch.object(
-        github_module.requests, "post", return_value=_FakeResponse(payload, 200)
-    ), patch.object(github_module.time, "time", return_value=2_000_000):
+    with (
+        patch.object(
+            github_module.requests, "post", return_value=_FakeResponse(payload, 200)
+        ),
+        patch.object(github_module.time, "time", return_value=2_000_000),
+    ):
         result = provider._oauth_get_credentials(
             redirect_uri="https://example.com/cb",
             system_credentials={"client_id": "cid", "client_secret": "csec"},
