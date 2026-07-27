@@ -46,7 +46,9 @@ class SearchAPI:
         return {
             "engine": "google",
             "q": query,
-            **{key: value for (key, value) in kwargs.items() if value not in {None, ""}},
+            **{
+                key: value for (key, value) in kwargs.items() if value not in {None, ""}
+            },
         }
 
     @staticmethod
@@ -64,7 +66,14 @@ class SearchAPI:
                 toret += res["knowledge_graph"]["description"] + "\n"
             if "organic_results" in res and "snippet" in res["organic_results"][0]:
                 for item in res["organic_results"]:
-                    toret += "content: " + item["snippet"] + "\n" + "link: " + item["link"] + "\n"
+                    toret += (
+                        "content: "
+                        + item["snippet"]
+                        + "\n"
+                        + "link: "
+                        + item["link"]
+                        + "\n"
+                    )
             if toret == "":
                 toret = "No good search result found"
         elif type == "link":

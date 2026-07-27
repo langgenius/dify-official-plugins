@@ -20,12 +20,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-_HERE = Path(__file__).resolve().parent          # tests/
-_PLUGIN_ROOT = _HERE.parent                       # tools/searchapi/
-sys.path.insert(0, str(_PLUGIN_ROOT))             # so `tools.google` etc. resolve
+_HERE = Path(__file__).resolve().parent  # tests/
+_PLUGIN_ROOT = _HERE.parent  # tools/searchapi/
+sys.path.insert(0, str(_PLUGIN_ROOT))  # so `tools.google` etc. resolve
 
 
 # ---- Stub modules for optional/unavailable dependencies ---------------------
+
 
 def _ensure_stub_modules() -> None:
     """Insert minimal stubs into sys.modules if a dep is not installed."""
@@ -109,17 +110,22 @@ youtube_transcripts = _load_module("youtube_transcripts.py")
 
 # ---- Local helpers ----------------------------------------------------------
 
+
 class _FakeResponse:
     def __init__(self, payload=None, *, status_code=200):
-        self._payload = payload if payload is not None else {
-            "organic_results": [
-                {
-                    "title": "Example result",
-                    "link": "https://example.com",
-                    "snippet": "An example snippet.",
-                }
-            ]
-        }
+        self._payload = (
+            payload
+            if payload is not None
+            else {
+                "organic_results": [
+                    {
+                        "title": "Example result",
+                        "link": "https://example.com",
+                        "snippet": "An example snippet.",
+                    }
+                ]
+            }
+        )
         self.status_code = status_code
 
     def raise_for_status(self):
@@ -158,6 +164,7 @@ def _flatten(messages):
 # =============================================================================
 # Bug 2: missing-credential guard
 # =============================================================================
+
 
 def test_google_missing_api_key_returns_message_and_no_http_call():
     tool = _make_tool(google.GoogleTool, credentials={})
@@ -212,6 +219,7 @@ def test_youtube_transcripts_missing_api_key_returns_message_and_no_http_call():
 # any regression to bare-dict access surfaces here.
 # =============================================================================
 
+
 def test_google_missing_api_key_does_not_raise_keyerror():
     tool = _make_tool(google.GoogleTool, credentials={})
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
@@ -226,12 +234,15 @@ def test_google_missing_api_key_does_not_raise_keyerror():
 # Bug 3: invoke fall-through on invalid hl / gl (google / google_news / google_jobs)
 # =============================================================================
 
+
 def test_google_invalid_hl_returns_message_and_no_http_call():
     tool = _make_tool(google.GoogleTool, credentials={"searchapi_api_key": "secret"})
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(google.requests, "get", fake_get):
         messages = _flatten(
-            tool._invoke({"query": "hello", "result_type": "text", "hl": "12", "gl": "us"})
+            tool._invoke(
+                {"query": "hello", "result_type": "text", "hl": "12", "gl": "us"}
+            )
         )
     assert messages[0][0] == "text"
     assert "Invalid 'hl' parameter" in messages[0][1]
@@ -243,14 +254,18 @@ def test_google_invalid_gl_returns_message_and_no_http_call():
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(google.requests, "get", fake_get):
         messages = _flatten(
-            tool._invoke({"query": "hello", "result_type": "text", "hl": "en", "gl": "12"})
+            tool._invoke(
+                {"query": "hello", "result_type": "text", "hl": "en", "gl": "12"}
+            )
         )
     assert "Invalid 'gl' parameter" in messages[0][1]
     assert fake_get.call_count == 0
 
 
 def test_google_news_invalid_hl_returns_message_and_no_http_call():
-    tool = _make_tool(google_news.GoogleNewsTool, credentials={"searchapi_api_key": "secret"})
+    tool = _make_tool(
+        google_news.GoogleNewsTool, credentials={"searchapi_api_key": "secret"}
+    )
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(google_news.requests, "get", fake_get):
         messages = _flatten(
@@ -261,7 +276,9 @@ def test_google_news_invalid_hl_returns_message_and_no_http_call():
 
 
 def test_google_jobs_invalid_gl_returns_message_and_no_http_call():
-    tool = _make_tool(google_jobs.GoogleJobsTool, credentials={"searchapi_api_key": "secret"})
+    tool = _make_tool(
+        google_jobs.GoogleJobsTool, credentials={"searchapi_api_key": "secret"}
+    )
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(google_jobs.requests, "get", fake_get):
         messages = _flatten(
@@ -294,6 +311,7 @@ def test_google_valid_bcp47_hl_gl_proceeds_to_http_call():
 # Bug 1: requests.get forwards a 10s timeout on every call site.
 # =============================================================================
 
+
 def test_google_requests_get_uses_10s_timeout_on_results_call():
     tool = _make_tool(google.GoogleTool, credentials={"searchapi_api_key": "secret"})
     fake_response = _FakeResponse()
@@ -306,7 +324,9 @@ def test_google_requests_get_uses_10s_timeout_on_results_call():
 
 
 def test_google_news_requests_get_uses_10s_timeout_on_results_call():
-    tool = _make_tool(google_news.GoogleNewsTool, credentials={"searchapi_api_key": "secret"})
+    tool = _make_tool(
+        google_news.GoogleNewsTool, credentials={"searchapi_api_key": "secret"}
+    )
     fake_response = _FakeResponse()
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(google_news.requests, "get", fake_get):
@@ -316,7 +336,9 @@ def test_google_news_requests_get_uses_10s_timeout_on_results_call():
 
 
 def test_google_jobs_requests_get_uses_10s_timeout_on_results_call():
-    tool = _make_tool(google_jobs.GoogleJobsTool, credentials={"searchapi_api_key": "secret"})
+    tool = _make_tool(
+        google_jobs.GoogleJobsTool, credentials={"searchapi_api_key": "secret"}
+    )
     fake_response = _FakeResponse()
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(google_jobs.requests, "get", fake_get):
@@ -326,7 +348,10 @@ def test_google_jobs_requests_get_uses_10s_timeout_on_results_call():
 
 
 def test_youtube_transcripts_requests_get_uses_10s_timeout_on_results_call():
-    tool = _make_tool(youtube_transcripts.YoutubeTranscriptsTool, credentials={"searchapi_api_key": "secret"})
+    tool = _make_tool(
+        youtube_transcripts.YoutubeTranscriptsTool,
+        credentials={"searchapi_api_key": "secret"},
+    )
     fake_response = _FakeResponse(payload={"transcripts": [{"text": "hi"}]})
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(youtube_transcripts.requests, "get", fake_get):
@@ -339,6 +364,7 @@ def test_youtube_transcripts_requests_get_uses_10s_timeout_on_results_call():
 # Happy-path smoke: a valid invocation still produces text and link messages.
 # =============================================================================
 
+
 def test_google_happy_path_yields_text_and_link_messages():
     tool = _make_tool(google.GoogleTool, credentials={"searchapi_api_key": "secret"})
     fake_response = _FakeResponse(
@@ -350,9 +376,7 @@ def test_google_happy_path_yields_text_and_link_messages():
     )
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(google.requests, "get", fake_get):
-        messages = _flatten(
-            tool._invoke({"query": "hello", "result_type": "text"})
-        )
+        messages = _flatten(tool._invoke({"query": "hello", "result_type": "text"}))
     kinds = [m[0] for m in messages]
     assert "text" in kinds
     assert "link" in kinds
@@ -362,13 +386,14 @@ def test_google_happy_path_yields_text_and_link_messages():
 # Network failure surfaces as a friendly message, not a stack trace.
 # =============================================================================
 
+
 def test_google_request_exception_yields_friendly_message():
     tool = _make_tool(google.GoogleTool, credentials={"searchapi_api_key": "secret"})
-    fake_get = mock.Mock(side_effect=google.requests.exceptions.RequestException("boom"))
+    fake_get = mock.Mock(
+        side_effect=google.requests.exceptions.RequestException("boom")
+    )
     with mock.patch.object(google.requests, "get", fake_get):
-        messages = _flatten(
-            tool._invoke({"query": "hello", "result_type": "text"})
-        )
-    assert any(
-        m[0] == "text" and "boom" in m[1] for m in messages
-    ), f"expected friendly error message containing 'boom', got {messages!r}"
+        messages = _flatten(tool._invoke({"query": "hello", "result_type": "text"}))
+    assert any(m[0] == "text" and "boom" in m[1] for m in messages), (
+        f"expected friendly error message containing 'boom', got {messages!r}"
+    )

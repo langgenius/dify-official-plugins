@@ -1,5 +1,5 @@
 import json
-from typing import Any, Generator, Union
+from typing import Any, Generator
 import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
@@ -31,7 +31,11 @@ class GeocoderTool(Tool):
         params = {"keyWord": keyword}
         try:
             response = requests.get(
-                base_url + "?ds=" + json.dumps(params, ensure_ascii=False) + "&tk=" + tk,
+                base_url
+                + "?ds="
+                + json.dumps(params, ensure_ascii=False)
+                + "&tk="
+                + tk,
                 timeout=10,
             )
             response.raise_for_status()

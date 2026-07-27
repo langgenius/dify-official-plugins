@@ -22,7 +22,11 @@ def _ensure_stub_modules() -> None:
         requests_stub.PreparedRequest = type(
             "PreparedRequest",
             (),
-            {"prepare_url": lambda self, url, params: setattr(self, "url", url + "?q=test") or None},
+            {
+                "prepare_url": lambda self, url, params: (
+                    setattr(self, "url", url + "?q=test") or None
+                )
+            },
         )
         requests_stub.get = lambda *a, **k: (_ for _ in ()).throw(
             AssertionError("requests.get must be patched")
@@ -77,7 +81,9 @@ class _FakeResponse:
     ok = True
 
     def json(self):
-        return {"web": {"results": [{"title": "T", "url": "https://x", "description": "S"}]}}
+        return {
+            "web": {"results": [{"title": "T", "url": "https://x", "description": "S"}]}
+        }
 
 
 def _make_tool(credentials):
@@ -114,7 +120,9 @@ def test_brave_happy_path():
 
 def test_brave_request_exception():
     tool = _make_tool({"brave_search_api_key": "secret"})
-    fake_get = mock.Mock(side_effect=brave_search.requests.exceptions.RequestException("timeout"))
+    fake_get = mock.Mock(
+        side_effect=brave_search.requests.exceptions.RequestException("timeout")
+    )
     with mock.patch.object(brave_search.requests, "get", fake_get):
         msgs = list(tool._invoke({"query": "hello"}))
     assert any(m[0] == "text" and "timeout" in m[1] for m in msgs)

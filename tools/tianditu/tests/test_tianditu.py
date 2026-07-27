@@ -23,12 +23,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-_HERE = Path(__file__).resolve().parent          # tests/
-_PLUGIN_ROOT = _HERE.parent                       # tools/tianditu/
-sys.path.insert(0, str(_PLUGIN_ROOT))             # so `tools.geocoder` etc. resolve
+_HERE = Path(__file__).resolve().parent  # tests/
+_PLUGIN_ROOT = _HERE.parent  # tools/tianditu/
+sys.path.insert(0, str(_PLUGIN_ROOT))  # so `tools.geocoder` etc. resolve
 
 
 # ---- Stub modules ----------------------------------------------------------
+
 
 def _ensure_stub_modules() -> None:
     if "requests" not in sys.modules:
@@ -83,8 +84,12 @@ _ensure_stub_modules()
 
 # Force-fresh imports so we get the patched stubs above.
 for _name in list(sys.modules):
-    if _name.startswith("tools.tianditu") or _name.startswith("tools.geocoder") \
-            or _name.startswith("tools.staticmap") or _name.startswith("tools.poisearch"):
+    if (
+        _name.startswith("tools.tianditu")
+        or _name.startswith("tools.geocoder")
+        or _name.startswith("tools.staticmap")
+        or _name.startswith("tools.poisearch")
+    ):
         sys.modules.pop(_name, None)
 
 from importlib import util as _importlib_util  # noqa: E402
@@ -105,6 +110,7 @@ poisearch = _load_module("poisearch.py")
 
 
 # ---- Helpers ---------------------------------------------------------------
+
 
 class _FakeResponse:
     def __init__(self, payload=None, *, raw_bytes=b"\x89PNG\r\n", status_code=200):
@@ -162,6 +168,7 @@ def _flatten(messages):
 # Bug 2: missing-credential guard
 # =============================================================================
 
+
 def test_geocoder_missing_api_key_returns_message_and_no_http_call():
     tool = _make_tool(geocoder.GeocoderTool, credentials={})
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
@@ -195,7 +202,9 @@ def test_poisearch_missing_api_key_returns_message_and_no_http_call():
     tool = _make_tool(poisearch.PoiSearchTool, credentials={})
     fake_get = mock.Mock(side_effect=AssertionError("requests.get must not be called"))
     with mock.patch.object(poisearch.requests, "get", fake_get):
-        messages = _flatten(tool._invoke({"keyword": "Beijing", "baseAddress": "Beijing"}))
+        messages = _flatten(
+            tool._invoke({"keyword": "Beijing", "baseAddress": "Beijing"})
+        )
     assert messages[0][1] == "Tianditu API key is required."
     assert fake_get.call_count == 0
 
@@ -203,6 +212,7 @@ def test_poisearch_missing_api_key_returns_message_and_no_http_call():
 # =============================================================================
 # Bug 2 corollary: missing key did NOT raise KeyError pre-fix.
 # =============================================================================
+
 
 def test_geocoder_missing_api_key_does_not_raise_keyerror():
     tool = _make_tool(geocoder.GeocoderTool, credentials={})
@@ -216,6 +226,7 @@ def test_geocoder_missing_api_key_does_not_raise_keyerror():
 # Bug 1: requests.get forwards a 10s timeout on every call.
 # =============================================================================
 
+
 def test_geocoder_requests_get_uses_10s_timeout():
     tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret"})
     fake_response = _FakeResponse(payload={"status": "0", "message": "ok"})
@@ -228,7 +239,9 @@ def test_geocoder_requests_get_uses_10s_timeout():
 
 
 def test_staticmap_requests_get_uses_10s_timeout_on_every_call():
-    tool = _make_tool(staticmap.PoiSearchTool, credentials={"tianditu_api_key": "secret"})
+    tool = _make_tool(
+        staticmap.PoiSearchTool, credentials={"tianditu_api_key": "secret"}
+    )
     fake_response = _FakeResponse()
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(staticmap.requests, "get", fake_get):
@@ -241,7 +254,9 @@ def test_staticmap_requests_get_uses_10s_timeout_on_every_call():
 
 
 def test_poisearch_requests_get_uses_10s_timeout_on_every_call():
-    tool = _make_tool(poisearch.PoiSearchTool, credentials={"tianditu_api_key": "secret"})
+    tool = _make_tool(
+        poisearch.PoiSearchTool, credentials={"tianditu_api_key": "secret"}
+    )
     fake_response = _FakeResponse()
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(poisearch.requests, "get", fake_get):
@@ -257,6 +272,7 @@ def test_poisearch_requests_get_uses_10s_timeout_on_every_call():
 # Happy-path smoke
 # =============================================================================
 
+
 def test_geocoder_happy_path_yields_json_message():
     tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret"})
     fake_response = _FakeResponse()
@@ -267,7 +283,9 @@ def test_geocoder_happy_path_yields_json_message():
 
 
 def test_staticmap_happy_path_yields_blob_message():
-    tool = _make_tool(staticmap.PoiSearchTool, credentials={"tianditu_api_key": "secret"})
+    tool = _make_tool(
+        staticmap.PoiSearchTool, credentials={"tianditu_api_key": "secret"}
+    )
     fake_response = _FakeResponse()
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(staticmap.requests, "get", fake_get):
@@ -279,21 +297,26 @@ def test_staticmap_happy_path_yields_blob_message():
 # Network failure surfaces as a friendly message, not a stack trace.
 # =============================================================================
 
+
 def test_geocoder_request_exception_yields_friendly_message():
     tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret"})
-    fake_get = mock.Mock(side_effect=geocoder.requests.exceptions.RequestException("boom"))
+    fake_get = mock.Mock(
+        side_effect=geocoder.requests.exceptions.RequestException("boom")
+    )
     with mock.patch.object(geocoder.requests, "get", fake_get):
         messages = _flatten(tool._invoke({"keyword": "Beijing"}))
     assert any(
         m[0] == "text" and "network or upstream failure" in m[1] for m in messages
     ), f"expected generic friendly error, got {messages!r}"
-    assert not any(
-        m[0] == "text" and "boom" in m[1] for m in messages
-    ), "exception text must not be forwarded to the user"
+    assert not any(m[0] == "text" and "boom" in m[1] for m in messages), (
+        "exception text must not be forwarded to the user"
+    )
 
 
 def test_geocoder_request_does_not_leak_tk_in_message():
-    tool = _make_tool(geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret-key"})
+    tool = _make_tool(
+        geocoder.GeocoderTool, credentials={"tianditu_api_key": "secret-key"}
+    )
     fake_get = mock.Mock(
         side_effect=geocoder.requests.exceptions.RequestException(
             "GET http://api.tianditu.gov.cn/geocoder?ds=%7B%22keyWord%22%3A%22Beijing%22%7D&tk=secret-key"
@@ -312,5 +335,7 @@ def test_geocoder_http_4xx_returns_message_and_no_json_dump():
     fake_get = mock.Mock(return_value=fake_response)
     with mock.patch.object(geocoder.requests, "get", fake_get):
         messages = _flatten(tool._invoke({"keyword": "Beijing"}))
-    assert any(m[0] == "text" and "network or upstream failure" in m[1] for m in messages)
+    assert any(
+        m[0] == "text" and "network or upstream failure" in m[1] for m in messages
+    )
     assert not any(m[0] == "json" for m in messages)

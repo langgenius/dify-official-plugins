@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool

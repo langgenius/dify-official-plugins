@@ -14,7 +14,11 @@ class SerperSearchTool(Tool):
             result["description"] = response["knowledgeGraph"].get("description", "")
         if "organic" in response:
             result["organic"] = [
-                {"title": item.get("title", ""), "link": item.get("link", ""), "snippet": item.get("snippet", "")}
+                {
+                    "title": item.get("title", ""),
+                    "link": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                }
                 for item in response["organic"]
             ]
         return result

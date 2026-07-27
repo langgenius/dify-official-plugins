@@ -23,12 +23,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-_HERE = Path(__file__).resolve().parent          # tests/
-_PLUGIN_ROOT = _HERE.parent                       # tools/serper/
-sys.path.insert(0, str(_PLUGIN_ROOT))             # so `tools.serper_search` works
+_HERE = Path(__file__).resolve().parent  # tests/
+_PLUGIN_ROOT = _HERE.parent  # tools/serper/
+sys.path.insert(0, str(_PLUGIN_ROOT))  # so `tools.serper_search` works
 
 
 # ---- Stub modules ----------------------------------------------------------
+
 
 def _ensure_stub_modules() -> None:
     """Insert minimal stubs into sys.modules if a dep is not installed."""
@@ -103,12 +104,17 @@ serper = _load_module("serper_search.py")
 
 # ---- Helpers ---------------------------------------------------------------
 
+
 class _FakeResponse:
     def __init__(self, payload=None, *, status_code=200):
-        self._payload = payload if payload is not None else {
-            "knowledgeGraph": {"title": "Example", "description": "An example."},
-            "organic": [{"title": "T", "link": "https://x", "snippet": "S"}],
-        }
+        self._payload = (
+            payload
+            if payload is not None
+            else {
+                "knowledgeGraph": {"title": "Example", "description": "An example."},
+                "organic": [{"title": "T", "link": "https://x", "snippet": "S"}],
+            }
+        )
         self.status_code = status_code
 
     def raise_for_status(self):
@@ -141,6 +147,7 @@ def _flatten(messages):
 # =============================================================================
 # Bug 2: missing-credential guard
 # =============================================================================
+
 
 def test_serper_missing_api_key_returns_message_and_no_http_call():
     tool = _make_tool(credentials={})
@@ -175,6 +182,7 @@ def test_serper_missing_api_key_does_not_raise_keyerror():
 # Bug 1: requests.get forwards a 10s timeout.
 # =============================================================================
 
+
 def test_serper_requests_get_uses_10s_timeout():
     tool = _make_tool(credentials={"serperapi_api_key": "secret"})
     fake_response = _FakeResponse()
@@ -190,6 +198,7 @@ def test_serper_requests_get_uses_10s_timeout():
 # Happy-path smoke
 # =============================================================================
 
+
 def test_serper_happy_path_yields_json_message():
     tool = _make_tool(credentials={"serperapi_api_key": "secret"})
     fake_response = _FakeResponse()
@@ -203,11 +212,14 @@ def test_serper_happy_path_yields_json_message():
 # Network failure surfaces as a friendly message, not a stack trace.
 # =============================================================================
 
+
 def test_serper_request_exception_yields_friendly_message():
     tool = _make_tool(credentials={"serperapi_api_key": "secret"})
-    fake_get = mock.Mock(side_effect=serper.requests.exceptions.RequestException("boom"))
+    fake_get = mock.Mock(
+        side_effect=serper.requests.exceptions.RequestException("boom")
+    )
     with mock.patch.object(serper.requests, "get", fake_get):
         messages = _flatten(tool._invoke({"query": "hello"}))
-    assert any(
-        m[0] == "text" and "boom" in m[1] for m in messages
-    ), f"expected friendly error message containing 'boom', got {messages!r}"
+    assert any(m[0] == "text" and "boom" in m[1] for m in messages), (
+        f"expected friendly error message containing 'boom', got {messages!r}"
+    )

@@ -31,7 +31,9 @@ class ExecuteCodeTool(Tool):
             "expected_output": tool_parameters.get("expected_output", ""),
             "additional_files": tool_parameters.get("additional_files", ""),
         }
-        response = post(url, data=json.dumps(payload), headers=headers, params=querystring)
+        response = post(
+            url, data=json.dumps(payload), headers=headers, params=querystring
+        )
         if response.status_code != 201:
             raise Exception(response.text)
         token = response.json()["token"]
@@ -50,4 +52,6 @@ class ExecuteCodeTool(Tool):
                 text=f"stdout: {result.get('stdout', '')}\nstderr: {result.get('stderr', '')}\ncompile_output: {result.get('compile_output', '')}\nmessage: {result.get('message', '')}\nstatus: {result['status']['description']}\ntime: {result.get('time', '')} seconds\nmemory: {result.get('memory', '')} bytes"
             )
         else:
-            yield self.create_text_message(text=f"Error retrieving submission details: {poll_response.text}")
+            yield self.create_text_message(
+                text=f"Error retrieving submission details: {poll_response.text}"
+            )
