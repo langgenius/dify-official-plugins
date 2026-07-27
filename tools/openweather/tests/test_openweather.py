@@ -41,7 +41,7 @@ class _FakeRequestsGet:
 
 
 _fake_requests.get = _FakeRequestsGet()  # type: ignore[attr-defined]
-sys.modules.setdefault("requests", _fake_requests)
+sys.modules["requests"] = _fake_requests
 
 real_requests = _fake_requests  # for patch.object(...)
 
@@ -89,7 +89,9 @@ class _FakeToolProviderCredentialValidationError(Exception):
     pass
 
 
-_fake_errors.ToolProviderCredentialValidationError = _FakeToolProviderCredentialValidationError
+_fake_errors.ToolProviderCredentialValidationError = (
+    _FakeToolProviderCredentialValidationError
+)
 
 
 class _FakeToolProvider:
@@ -143,7 +145,7 @@ from provider.openweather import (  # noqa: E402
     query_weather,
 )
 
-import tools.weather as tool_module  # noqa: E402
+import tools.weather as tool_module  # noqa: E402,F401
 from tools.weather import OpenweatherTool  # noqa: E402
 
 
@@ -202,7 +204,9 @@ def _make_tool(credentials, summary_text="summary: "):
             return self.t + text
 
     tool.runtime = _Runtime(credentials)
-    tool.session = type("_S", (), {"model": type("_M", (), {"summary": _Summary(summary_text)})()})()
+    tool.session = type(
+        "_S", (), {"model": type("_M", (), {"summary": _Summary(summary_text)})()}
+    )()
     return tool
 
 
@@ -215,14 +219,12 @@ def test_invoke_missing_city_returns_message_and_no_http_call():
     tool = _make_tool(credentials={"api_key": "abc"})
     rec = _RecordingGet(response=_FakeResponse({}, 200))
     with patch.object(real_requests, "get", rec):
-        out = list(
-            tool._invoke(
-                tool_parameters={"city": ""}
-            )
-        )
+        out = list(tool._invoke(tool_parameters={"city": ""}))
 
     assert out == [("text", "Please tell me your city")]
-    assert rec.calls == [], f"requests.get should not have been called; got {rec.calls!r}"
+    assert rec.calls == [], (
+        f"requests.get should not have been called; got {rec.calls!r}"
+    )
 
 
 def test_invoke_missing_api_key_returns_message_and_no_http_call():
@@ -238,7 +240,9 @@ def test_invoke_missing_api_key_returns_message_and_no_http_call():
         )
 
     assert out == [("text", "OpenWeather API key is required.")]
-    assert rec.calls == [], f"requests.get should not have been called; got {rec.calls!r}"
+    assert rec.calls == [], (
+        f"requests.get should not have been called; got {rec.calls!r}"
+    )
 
 
 def test_invoke_success_yields_summary():
@@ -290,7 +294,9 @@ def test_validate_credentials_http_401_surfaces_message():
     fake_response = _FakeResponse(payload=payload, status_code=401, text=str(payload))
 
     with patch.object(provider_module, "query_weather", return_value=fake_response):
-        with pytest.raises(_FakeToolProviderCredentialValidationError, match="Invalid API key"):
+        with pytest.raises(
+            _FakeToolProviderCredentialValidationError, match="Invalid API key"
+        ):
             provider._validate_credentials({"api_key": "abc"})
 
 
@@ -300,7 +306,9 @@ def test_validate_credentials_missing_api_key_does_not_call_api():
     provider = OpenweatherProvider.__new__(OpenweatherProvider)
     rec = _RecordingGet()
     with patch.object(provider_module, "query_weather", side_effect=lambda **_: rec()):
-        with pytest.raises(_FakeToolProviderCredentialValidationError, match="required"):
+        with pytest.raises(
+            _FakeToolProviderCredentialValidationError, match="required"
+        ):
             provider._validate_credentials({})
 
 
