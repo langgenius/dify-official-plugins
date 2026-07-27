@@ -21,7 +21,7 @@ class AwsS3StorageDatasourceProvider(DatasourceProvider):
                 raise ToolProviderCredentialValidationError(
                     "AWS S3 Storage region is required."
                 )
-            
+
             client = boto3.client(
                 "s3",
                 aws_secret_access_key=credentials.get("secret_access_key"),
