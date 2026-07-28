@@ -31,6 +31,15 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 
 ![](../_assets/configure.png)
 
+### 临时凭证支持
+
+插件现在支持来自 SSO/SAML 认证的 AWS 临时凭证（例如 `aws sso login` 或 `saml2aws login`）：
+
+- **Access Key 认证**：使用 Access Key 认证时，您可以选择性地提供 AWS Session Token 用于临时凭证。该字段为可选项，仅在使用 SSO/STS 获得的临时凭证时需要填写。
+- **IAM Role 认证**：使用 IAM Role 认证时，插件会自动从 `~/.aws/credentials` 文件读取凭证。当令牌过期时，插件会自动检测并重试，从磁盘刷新凭证，使凭证轮换（如 `saml2aws login` 或 `aws sso login` 产生的临时令牌）透明地生效。
+
+此功能适用于需要临时凭证的用户场景，无需额外配置即可自动处理令牌过期和刷新。
+
 
 
 ## Claude 5 系列模型（Sonnet 5 / Fable 5）
