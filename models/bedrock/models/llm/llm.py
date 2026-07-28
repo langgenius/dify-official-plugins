@@ -301,7 +301,44 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
-        Invoke large language model
+        Invoke large language model with automatic retry on expired credentials.
+
+        If the first attempt fails due to an expired AWS token, a fresh boto3 client
+        is created (re-reading ~/.aws/credentials from disk) and the call is retried once.
+        This handles saml2aws / AWS SSO token refresh transparently.
+        """
+        from provider.get_bedrock_client import is_expired_token_error, invalidate_client_cache
+
+        try:
+            return self._invoke_inner(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+        except Exception as exc:
+            if is_expired_token_error(exc):
+                logger.warning("AWS token expired, invalidating client cache and retrying with refreshed credentials...")
+                invalidate_client_cache()
+                try:
+                    return self._invoke_inner(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+                except Exception as retry_exc:
+                    if is_expired_token_error(retry_exc):
+                        raise InvokeAuthorizationError(
+                            "AWS credentials have expired. Please re-authenticate "
+                            "(e.g. saml2aws login) and try again."
+                        ) from None
+                    raise
+            raise
+
+    def _invoke_inner(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Inner invoke logic (no retry handling).
 
         :param model: model name
         :param credentials: model credentials

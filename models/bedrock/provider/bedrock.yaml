@@ -66,6 +66,18 @@ provider_credential_schema:
       placeholder:
         en_US: Enter your Secret Access Key
         zh_Hans: 在此输入您的 Secret Access Key
+    - variable: aws_session_token
+      required: false
+      show_on:
+        - variable: auth_method
+          value: Access_Secret_Key
+      label:
+        en_US: Session Token (for temporary credentials from SSO/STS)
+        zh_Hans: Session Token（用于 SSO/STS 临时凭证）
+      type: secret-input
+      placeholder:
+        en_US: Enter your AWS Session Token (optional, for temporary credentials)
+        zh_Hans: 在此输入您的 AWS Session Token（可选，用于临时凭证）
     - variable: bedrock_api_key
       required: true
       show_on:
