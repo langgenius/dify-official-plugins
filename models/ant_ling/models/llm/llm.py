@@ -57,7 +57,7 @@ def _is_transient_error(e: Exception) -> bool:
     err_type_name = type(e).__name__.lower()
     return any(
         kw in err_str or kw in err_type_name
-        for kw in ("ssl", "timeout", "connection", "rate_limit", "rate limit", "429", "502", "503", "504")
+        for kw in ("ssl", "timeout", "connection", "rate_limit", "rate limit", "429", "500", "502", "503", "504")
     )
 
 
@@ -80,20 +80,21 @@ class AntLingLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
 
-        extra_body = {}
-        if model_parameters.get("enable_search") is True:
-            extra_body["enable_search"] = True
-            if model_parameters.get("forced_search") is True:
-                extra_body["search_options"] = {"forced_search": True}
+        enable_search = model_parameters.pop("enable_search", None)
+        forced_search = model_parameters.pop("forced_search", None)
+        reasoning_effort = model_parameters.pop("reasoning_effort", None)
+        thinking = model_parameters.pop("thinking", None)
 
-        if (effort := model_parameters.get("reasoning_effort")) in REASONING_EFFORT_VALID_VALUES:
-            extra_body["reasoning"] = {"effort": effort}
+        if enable_search is True:
+            model_parameters["enable_search"] = True
+            if forced_search is True:
+                model_parameters["search_options"] = {"forced_search": True}
 
-        if model_parameters.get("thinking") == THINKING_DISABLED:
-            extra_body["thinking"] = {"type": THINKING_DISABLED}
+        if reasoning_effort in REASONING_EFFORT_VALID_VALUES:
+            model_parameters["reasoning"] = {"effort": reasoning_effort}
 
-        if extra_body:
-            model_parameters["extra_body"] = extra_body
+        if thinking == THINKING_DISABLED:
+            model_parameters["thinking"] = {"type": THINKING_DISABLED}
 
         def _invoke_stream_wrapper():
             for attempt in range(MAX_RETRIES + 1):
@@ -148,28 +149,25 @@ class AntLingLargeLanguageModel(OAICompatLargeLanguageModel):
         self, model: str, credentials: dict
     ) -> AIModelEntity | None:
         self._add_custom_parameters(credentials)
-        return AIModelEntity(
-            model=model,
-            label=I18nObject(en_us=model, zh_hans=model),
-            model_type=ModelType.LLM,
-            features=[
-                ModelFeature.AGENT_THOUGHT,
-                ModelFeature.TOOL_CALL,
-                ModelFeature.STREAM_TOOL_CALL,
-            ],
-            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-            model_properties={
-                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", DEFAULT_CONTEXT_SIZE)),
-                ModelPropertyKey.MAX_CHUNKS: int(credentials.get("max_tokens", DEFAULT_MAX_TOKENS)),
-                ModelPropertyKey.MODE: LLMMode.CHAT.value,
-            },
+        entity = super().get_customizable_model_schema(model, credentials)
+        if not entity:
+            return None
+        entity.label = I18nObject(en_us=model, zh_hans=model)
+        entity.features = [
+            ModelFeature.AGENT_THOUGHT,
+            ModelFeature.TOOL_CALL,
+            ModelFeature.STREAM_TOOL_CALL,
+        ]
+        entity.model_properties[ModelPropertyKey.CONTEXT_SIZE] = int(
+            credentials.get("context_size", DEFAULT_CONTEXT_SIZE)
         )
+        entity.model_properties[ModelPropertyKey.MODE] = LLMMode.CHAT.value
+        return entity
 
     @staticmethod
     def _add_custom_parameters(credentials: dict) -> None:
-        credentials["endpoint_url"] = str(
-            URL(credentials.get("endpoint_url", DEFAULT_ENDPOINT_URL))
-        )
+        endpoint_url = (credentials.get("endpoint_url") or "").strip() or DEFAULT_ENDPOINT_URL
+        credentials["endpoint_url"] = str(URL(endpoint_url))
         credentials["mode"] = LLMMode.CHAT.value
         credentials["function_calling_type"] = FUNCTION_CALLING_TYPE
         credentials["stream_function_calling"] = STREAM_FUNCTION_CALLING

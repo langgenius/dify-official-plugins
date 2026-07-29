@@ -6,7 +6,7 @@ description:
   en_US: Models provided by Ant Group, including Ling-3.0-flash, Ling-2.6-1T, and Ring-2.6-1T.
   zh_Hans: 蚂蚁集团百灵系列大模型，涵盖 Ling-3.0-flash、Ling-2.6-1T 和 Ring-2.6-1T。
 icon_small:
-  en_US: icon_s_zh.svg
+  en_US: icon_s_en.svg
   zh_Hans: icon_s_zh.svg
 icon_large:
   en_US: icon_l_en.svg

@@ -15,6 +15,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from dify_plugin.entities.model import ModelPropertyKey
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessageTool,
@@ -199,9 +200,9 @@ class TestAntLingFullCoverageMatrix(unittest.TestCase):
         try:
             res = self._invoke_with_metrics(model, [UserPromptMessage(content=prompt)], model_parameters, tools=tools)
             print(f"  [PASS] TTFT: {res['ttft_sec']:.3f}s | TPS: {res['tps']:.2f} t/s | Tokens: {res['estimated_tokens']} | Total: {res['duration_sec']:.2f}s")
-            self._record_session(test_name, model, prompt, res['duration_sec'], "PASS", res['content'], res['thought'], res['tool_calls'], res['ttft_sec'], res['tps'], res['estimated_tokens'])
             if assert_fn:
                 assert_fn(res)
+            self._record_session(test_name, model, prompt, res['duration_sec'], "PASS", res['content'], res['thought'], res['tool_calls'], res['ttft_sec'], res['tps'], res['estimated_tokens'])
             return res
         except Exception as e:
             self._record_session(test_name, model, prompt, 0.0, "FAIL", error=str(e))
@@ -379,6 +380,7 @@ class TestAntLingFullCoverageMatrix(unittest.TestCase):
             dur = time.time() - start_t
             self.assertIsNotNone(schema)
             self.assertEqual(schema.model, model_name)
+            self.assertNotIn(ModelPropertyKey.MAX_CHUNKS, schema.model_properties)
             self._record_session(test_name, model_name, "Custom Model Schema", dur, "PASS", f"Schema generated: {schema.model}")
         except Exception as e:
             self._record_session(test_name, model_name, "Custom Model Schema", time.time() - start_t, "FAIL", error=str(e))
@@ -460,6 +462,7 @@ Requirements:
             self.fail(f"{test_name} failed: {e}")
 
     def test_402_non_existent_model_error_handling(self):
+        self._skip_if_no_api_key()
         test_name = "Non-Existent Model Error Test"
         print(f"\n---> Running: {test_name}")
         start_t = time.time()
@@ -471,12 +474,18 @@ Requirements:
                 model_parameters={"max_tokens": 10},
                 stream=True,
             )
-            for chunk in response:
+            for _ in response:
                 pass
-            self.fail("Calling non-existent model should raise an error")
+        except AssertionError as ae:
+            self._record_session(test_name, "NonExistent-Model-999", "Hello", 0.0, "FAIL", error=str(ae))
+            raise ae
         except Exception as e:
             dur = time.time() - start_t
             self._record_session(test_name, "NonExistent-Model-999", "Hello", dur, "PASS", error=str(e))
+            return
+
+        self._record_session(test_name, "NonExistent-Model-999", "Hello", 0.0, "FAIL", error="Expected error not raised")
+        self.fail("Calling non-existent model should raise an error")
 
     def test_403_exponential_backoff_retry_handling(self):
         test_name = "Exponential Backoff Retry Test"
@@ -509,6 +518,86 @@ Requirements:
                     self.assertEqual(mock_sleep.call_count, 5)
                     self._record_session(test_name, "Ling-3.0-flash", "Test", dur, "PASS", error=str(e))
 
+    def test_404_model_parameters_top_level_transformation(self):
+        test_name = "Model Parameters Top Level Transformation Test"
+        print(f"\n---> Running: {test_name}")
+        from unittest.mock import patch
+
+        captured_params = {}
+
+        def mock_super_invoke(model, credentials, prompt_messages, model_parameters, tools=None, stop=None, stream=True, user=None):
+            nonlocal captured_params
+            captured_params = model_parameters.copy()
+            return iter([])
+
+        params = {
+            "enable_search": True,
+            "forced_search": True,
+            "reasoning_effort": "high",
+            "thinking": "disabled",
+            "temperature": 0.7,
+        }
+
+        with patch("dify_plugin.OAICompatLargeLanguageModel._invoke", side_effect=mock_super_invoke):
+            res = self.llm_model._invoke(
+                model="Ling-3.0-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Test")],
+                model_parameters=params,
+                stream=True,
+            )
+            for _ in res:
+                pass
+
+        self.assertNotIn("extra_body", captured_params)
+        self.assertNotIn("forced_search", captured_params)
+        self.assertNotIn("reasoning_effort", captured_params)
+        self.assertEqual(captured_params.get("enable_search"), True)
+        self.assertEqual(captured_params.get("search_options"), {"forced_search": True})
+        self.assertEqual(captured_params.get("reasoning"), {"effort": "high"})
+        self.assertEqual(captured_params.get("thinking"), {"type": "disabled"})
+        self.assertEqual(captured_params.get("temperature"), 0.7)
+
+    def test_405_transient_error_500_retry_handling(self):
+        test_name = "Transient Error 500 Retry Test"
+        print(f"\n---> Running: {test_name}")
+        from unittest.mock import patch
+
+        call_count = 0
+
+        def mock_failing_invoke(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise Exception("InvokeError: HTTP 500 Internal Server Error")
+
+        with patch("dify_plugin.OAICompatLargeLanguageModel._invoke", side_effect=mock_failing_invoke):
+            with patch("time.sleep") as mock_sleep:
+                try:
+                    res = self.llm_model._invoke(
+                        model="Ling-3.0-flash",
+                        credentials=self.credentials,
+                        prompt_messages=[UserPromptMessage(content="Test")],
+                        model_parameters={"max_tokens": 10},
+                        stream=True,
+                    )
+                    for _ in res:
+                        pass
+                    self.fail("Should have raised Exception after exhausting retries")
+                except Exception as e:
+                    self.assertEqual(call_count, 6)
+                    self.assertEqual(mock_sleep.call_count, 5)
+
+    def test_406_empty_endpoint_url_fallback(self):
+        test_name = "Empty Endpoint URL Fallback Test"
+        print(f"\n---> Running: {test_name}")
+        for empty_val in ["", "   ", None]:
+            creds = {"endpoint_url": empty_val, "api_key": "test_key"}
+            self.llm_model._add_custom_parameters(creds)
+            self.assertEqual(creds["endpoint_url"], "https://api.ant-ling.com/v1")
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
+

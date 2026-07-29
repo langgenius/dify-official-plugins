@@ -12,8 +12,8 @@ class AntLingModelProvider(ModelProvider):
         Validate provider credentials by delegating to the LLM model instance.
         """
         try:
-            model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="Ling-3.0-flash", credentials=credentials)
+            validate_model = (credentials.get("validate_model") or "").strip() or "Ling-3.0-flash"
+            model_instance.validate_credentials(model=validate_model, credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
