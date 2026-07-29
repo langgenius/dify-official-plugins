@@ -1,4 +1,4 @@
-# https://platform.openai.com/docs/models/gpt-5-mini
+# https://developers.openai.com/api/docs/models/gpt-5-mini
 model: gpt-5-mini
 label:
   zh_Hans: gpt-5-mini
@@ -9,6 +9,7 @@ features:
   - agent-thought
   - stream-tool-call
   - vision
+  - structured-output
 model_properties:
   mode: chat
   context_size: 400000
@@ -67,10 +68,25 @@ parameter_rules:
       en_US: Streaming
     type: boolean
     help:
-      zh_Hans: GPT-5 系列模型流式输出需要 KYC 验证，若想跳过这个限制使用模型，请关闭流式响应。
-      en_US: GPT-5 series models require KYC validation for streaming output, if you want to use the models without this limitation, please turn off streaming responses.
+      zh_Hans: 是否启用流式响应。
+      en_US: Whether to enable streaming responses.
     required: true
     default: true
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: Auto 跟随项目设置；Default、Flex 和 Priority 分别使用标准、低成本和低延迟处理。
+      en_US: Auto follows the project setting; Default, Flex, and Priority select standard, lower-cost, and lower-latency processing respectively.
+    required: false
+    default: auto
+    options:
+      - auto
+      - default
+      - flex
+      - priority
 pricing:
   input: '0.25'
   output: '2.00'

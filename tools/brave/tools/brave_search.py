@@ -121,6 +121,7 @@ class BraveSearchTool(Tool):
             base_url = BRAVE_BASE_URL
         if not query:
             yield self.create_text_message("Please input query")
+            return
         tool = BraveSearch.from_api_key(
             api_key=api_key,
             base_url=base_url,
@@ -129,6 +130,6 @@ class BraveSearchTool(Tool):
         )
         results = tool._run(query)
         if not results:
-            yield self.create_text_message(f"No results found for '{query}' in Tavily")
+            yield self.create_text_message(f"No results found for '{query}' in Brave")
         else:
             yield self.create_text_message(text=results)

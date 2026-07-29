@@ -53,8 +53,8 @@ provider_credential_schema:
         en_US: Enter your API Key
     - variable: endpoint_url
       label:
-        en_US: API Endpoint URL
-        zh_Hans: API 端点地址
+        en_US: API Base URL
+        zh_Hans: API Base URL
       type: text-input
       required: false
       placeholder:

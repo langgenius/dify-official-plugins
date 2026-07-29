@@ -3,7 +3,10 @@ from typing import Any
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
-from e2b_code_interpreter import Sandbox
+try:
+    from e2b_sandbox import get_sandbox
+except ModuleNotFoundError:
+    from tools.e2b.e2b_sandbox import get_sandbox
 
 
 class E2bProvider(ToolProvider):
@@ -11,12 +14,7 @@ class E2bProvider(ToolProvider):
         try:
             api_key = credentials.get("api_key")
             domain = credentials.get("domain")
-            sandbox_args = {"api_key": api_key}
-            if domain:
-                sandbox_args["domain"] = domain
-
-            sbx = Sandbox(**sandbox_args)
-            running_sandboxes = sbx.list(**sandbox_args)
+            sbx = get_sandbox(api_key=api_key, domain=domain, timeout=120)
 
             sbx.kill()
 

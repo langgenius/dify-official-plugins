@@ -1,0 +1,6 @@
+# https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create
+model: gpt-4o-mini-transcribe-2025-12-15
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm

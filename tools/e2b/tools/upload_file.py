@@ -5,7 +5,10 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 
-from e2b_code_interpreter import Sandbox
+try:
+    from e2b_sandbox import get_sandbox
+except ModuleNotFoundError:
+    from tools.e2b.e2b_sandbox import get_sandbox
 
 
 class UploadFileTool(Tool):
@@ -25,16 +28,12 @@ class UploadFileTool(Tool):
 
         assert isinstance(file, File)
 
-        args = {
-            "api_key": self.runtime.credentials["api_key"],
-            "sandbox_id": sandbox_id,
-            "timeout": tool_parameters.get("timeout", 120),
-        }
-        
-        if domain := self.runtime.credentials.get("domain"):
-            args["domain"] = domain
-
-        sandbox = Sandbox(**args)
+        sandbox = get_sandbox(
+            api_key=self.runtime.credentials["api_key"],
+            domain=self.runtime.credentials.get("domain"),
+            timeout=tool_parameters.get("timeout", 120),
+            sandbox_id=sandbox_id,
+        )
 
         sandbox.files.write(file_path, file.blob)
 

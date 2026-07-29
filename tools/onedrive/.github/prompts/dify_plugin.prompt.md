@@ -1,6 +1,6 @@
 # Prompt for Dify Plugin Tool Development
 
-You are a senior developer that can help me with developing Dify Plugin Tool, which is an AI Agent Tool that can be used on AI Agent Development Tool, Dify. You are going to follow the instruction below to help me build a Plugin Tool called {     }. The author of this tool is {     }. This Tool should have the functionality of {     }. Make sure you are editing upon the existing project folder: {     } and file structure. Most importantly, the yaml file’s indentation and formatting should strictly follow the examples of yaml file. Once the plugin tool is ready, set up venv and install all the requirements under the plugin directory. You should only change the file the instruction told you to change. Don’t change anything else, for example the env.example file.
+You are a senior developer that can help me with developing Dify Plugin Tool, which is an AI Agent Tool that can be used on AI Agent Development Tool, Dify. You are going to follow the instruction below to help me build a Plugin Tool called {     }. The author of this tool is {     }. This Tool should have the functionality of {     }. Make sure you are editing upon the existing project folder: {     } and file structure. Most importantly, the yaml file’s indentation and formatting should strictly follow the examples of yaml file. Once the plugin tool is ready, set up a virtual environment and sync the dependencies declared in `pyproject.toml` with `uv sync`. You should only change the file the instruction told you to change. Don’t change anything else, for example the env.example file.
 
 Before you applying anything, I want you to {read the documentation of the API access of the tool}/{understand what’s the functionality of the tool, what’s the input of the tool, what functionality does it have, and what output do we take}.
 
@@ -18,14 +18,12 @@ The scaffold of Dify Plugin Tool is listed below, and you should follow the foll
 │   ├── your_plugin.py       # Class that inherits from Tool; implements API functionality
 │   └── your_plugin.yaml     # Defines tool parameters, descriptions, and UI elements
 │
-├── .diftyignore              # Lists files to exclude when publishing to marketplace
+├── .difyignore               # Lists files to exclude when publishing to marketplace
 │
 ├── .env.example              # Template for environment variables needed for testing
 │                            # Contains REMOTE_INSTALL_KEY placeholder
 │
-├── .gitignore                # Standard Git ignore file for version control
 │
-├── [GUIDE.md](http://guide.md/)                  # Detailed usage instructions shown to users in marketplace
 │
 ├── [main.py](http://main.py/)                   # Entry point for local testing via python -m main test
 │                            # Generally shouldn't be modified
@@ -40,7 +38,8 @@ The scaffold of Dify Plugin Tool is listed below, and you should follow the foll
 │
 ├── [README.md](http://readme.md/)                 # General documentation and overview for developers
 │
-└── requirements.txt          # Python package dependencies required by the plugin`
+└── pyproject.toml            # Python package metadata and direct dependencies
+└── uv.lock                   # Locked dependency resolution for reproducible installs`
 
 # 1. How to edit manifest.yaml
 
@@ -1411,6 +1410,6 @@ As you mentioned, if you want to include images in either document:
 
 Both of these files should be written in Markdown format (`.md` extension) and placed in the root directory of your plugin project. Make sure to keep them up-to-date as your plugin evolves.
 
-## Requirements.txt
+## Dependencies
 
-You should always use the latest dependencies by using `~=` in your txt file, and the `dify_plugin~=0.0.1b72` is a must be.
+Declare runtime dependencies in `pyproject.toml`, keep `dify_plugin` in the dependency list, and run `uv lock` to refresh `uv.lock` after dependency changes.

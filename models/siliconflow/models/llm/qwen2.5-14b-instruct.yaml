@@ -45,7 +45,8 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.7'
-  output: '0.7'
-  unit: '0.000001'
+  input: "0.7"
+  output: "0.7"
+  unit: "0.000001"
   currency: RMB
+deprecated: true

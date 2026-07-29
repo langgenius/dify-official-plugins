@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import secrets
 import time
@@ -357,9 +358,14 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         )
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("Client ID is required to start Google Calendar OAuth flow")
+
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
-            "client_id": system_credentials["client_id"],
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": self._DEFAULT_SCOPE,
@@ -376,6 +382,15 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         request: Request,
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(
+                f"Google Calendar OAuth authorization failed: {error}: {description}".strip(": ")
+            )
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No authorization code provided")
@@ -401,13 +416,16 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         if resp.status_code != 200:
             raise TriggerProviderOAuthError(f"OAuth token exchange failed: {_parse_google_error(resp)}")
 
-        payload: dict[str, Any] = resp.json() or {}
+        try:
+            payload: dict[str, Any] = resp.json() or {}
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Google OAuth token response was not valid JSON") from exc
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError("Google OAuth response missing access_token")
 
         expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
 
         credentials: dict[str, Any] = {"access_token": access_token}
         refresh_token = payload.get("refresh_token")
@@ -458,13 +476,16 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
         if resp.status_code != 200:
             raise TriggerProviderOAuthError(f"OAuth refresh failed: {_parse_google_error(resp)}")
 
-        payload: dict[str, Any] = resp.json() or {}
+        try:
+            payload: dict[str, Any] = resp.json() or {}
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Google OAuth refresh response was not valid JSON") from exc
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError("Google OAuth refresh response missing access_token")
 
         expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
 
         refreshed: dict[str, Any] = {"access_token": access_token, "refresh_token": refresh_token}
         if credentials.get("account_email"):
@@ -705,7 +726,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                     calendar_id = it.get("id")
                     summary = it.get("summary") or calendar_id
                     if calendar_id:
-                        options.append(ParameterOption(value=str(calendar_id), label=I18nObject(en_US=str(summary))))
+                        options.append(ParameterOption(value=str(calendar_id), label=I18nObject(en_us=str(summary))))
 
             page_token = data.get("nextPageToken")
             if page_token:
@@ -714,5 +735,30 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 break
 
         if not any(opt.value == "primary" for opt in options):
-            options.insert(0, ParameterOption(value="primary", label=I18nObject(en_US="Primary Calendar")))
+            options.insert(0, ParameterOption(value="primary", label=I18nObject(en_us="Primary Calendar")))
         return options
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"google_calendar:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"google_calendar:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError(
+                "Unable to persist Google Calendar OAuth state; storage permission is required."
+            ) from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Google Calendar OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Google Calendar OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Google Calendar OAuth state.") from exc

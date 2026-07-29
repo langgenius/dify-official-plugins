@@ -189,7 +189,7 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TEXT_EMBEDDING,
             model_properties={

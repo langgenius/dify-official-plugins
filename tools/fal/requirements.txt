@@ -1,2 +1,0 @@
-dify_plugin>=0.1.0,<0.2.0
-fal-client == 0.5.6

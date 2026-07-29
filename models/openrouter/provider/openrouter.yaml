@@ -6,6 +6,7 @@ extra:
   python:
     model_sources:
     - models/llm/llm.py
+    - models/text_embedding/text_embedding.py
     provider_source: provider/openrouter.py
 help:
   title:
@@ -29,6 +30,15 @@ model_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - label:
+      en_US: API Base URL
+      zh_Hans: API Base URL
+    placeholder:
+      en_US: Base URL, e.g. https://openrouter.ai/api/v1
+      zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
+    required: false
+    type: text-input
+    variable: endpoint_url
   - default: chat
     label:
       en_US: Completion mode
@@ -118,6 +128,10 @@ models:
     position: models/llm/_position.yaml
     predefined:
     - models/llm/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+    - models/text_embedding/*.yaml
 provider: openrouter
 provider_credential_schema:
   credential_form_schemas:
@@ -129,5 +143,15 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - label:
+      en_US: API Base URL
+      zh_Hans: API Base URL
+    placeholder:
+      en_US: Base URL, e.g. https://openrouter.ai/api/v1
+      zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
+    required: false
+    type: text-input
+    variable: endpoint_url
 supported_model_types:
 - llm
+- text-embedding

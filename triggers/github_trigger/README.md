@@ -21,7 +21,7 @@ Step-by-step Setup
 
 - Options:
   - Import the `.difypkg` in Plugin Center (Plugins → Import).
-  - During development, make sure your runtime installs the dependencies from `requirements.txt`.
+  - During development, sync the plugin environment with `uv sync --project .` or run commands with `uv run --project .`.
 
 2. Choose an authentication strategy (Administrator)
 

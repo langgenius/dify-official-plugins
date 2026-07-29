@@ -8,6 +8,7 @@ features:
   - agent-thought
   - stream-tool-call
   - vision
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1047576
@@ -40,6 +41,20 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: Auto 跟随项目设置；Default 使用标准处理；Priority 使用低延迟处理。
+      en_US: Auto follows the project setting; Default selects standard processing; Priority selects lower-latency processing.
+    required: false
+    default: auto
+    options:
+      - auto
+      - default
+      - priority
 pricing:
   input: '2.00'
   output: '8.00'

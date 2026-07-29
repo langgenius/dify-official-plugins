@@ -62,7 +62,7 @@ parameters:
       pt_BR: Maximum Iterations
     default: 3
     min: 1
-    max: 30
+    max: 500
 extra:
   python:
     source: strategies/ReAct.py

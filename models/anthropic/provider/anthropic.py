@@ -17,7 +17,7 @@ class AnthropicProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="claude-opus-4-20250514", credentials=credentials)
+            model_instance.validate_credentials(model="claude-sonnet-4-6", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

@@ -61,7 +61,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Add vision feature if vision support is enabled

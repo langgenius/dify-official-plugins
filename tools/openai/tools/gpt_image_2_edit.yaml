@@ -1,0 +1,101 @@
+description:
+  human:
+    en_US: GPT Image 2 Edit is a tool to modify one or more images based on a prompt.
+    zh_Hans: GPT Image 2 Edit 是一个可根据提示词修改一张或多张图像的工具。
+  llm: A tool to edit one or more images using OpenAI's gpt-image-2 model.
+extra:
+  python:
+    source: tools/gpt_image_2_edit.py
+identity:
+  author: OpenAI
+  description:
+    en_US: Edit one or more images with OpenAI's gpt-image-2 model as a standalone tool.
+    zh_Hans: 使用 OpenAI 的 gpt-image-2 模型独立编辑一张或多张图像。
+  label:
+    en_US: GPT Image 2 Edit
+    zh_Hans: GPT 图像 2 编辑
+  name: gpt_image_2_edit
+parameters:
+- form: llm
+  human_description:
+    en_US: A text description of how to edit and combine the input image or images.
+    zh_Hans: 描述如何编辑和组合输入图像的文本说明。
+  label:
+    en_US: Prompt
+    zh_Hans: 提示词
+  llm_description: A detailed description of how the input images should be edited.
+  name: prompt
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: One or more images to edit.
+    zh_Hans: 要编辑的一张或多张图像。
+  label:
+    en_US: Image(s)
+    zh_Hans: 图像
+  name: image
+  required: true
+  type: files
+- form: llm
+  human_description:
+    en_US: Optional mask image used for inpainting.
+    zh_Hans: 可选的蒙版图像，用于局部编辑。
+  label:
+    en_US: Mask
+    zh_Hans: 蒙版
+  name: mask
+  required: false
+  type: file
+- default: auto
+  form: form
+  human_description:
+    en_US: Output size. Use auto or provide a supported size string such as 1024x1024.
+    zh_Hans: 输出尺寸。可使用 auto，或填写支持的尺寸字符串，例如 1024x1024。
+  label:
+    en_US: Image Size
+    zh_Hans: 图像大小
+  name: size
+  required: false
+  type: string
+- default: auto
+  form: form
+  human_description:
+    en_US: Image quality.
+    zh_Hans: 图像质量。
+  label:
+    en_US: Image Quality
+    zh_Hans: 图像质量
+  name: quality
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      zh_Hans: 低
+    value: low
+  - label:
+      en_US: Medium
+      zh_Hans: 中
+    value: medium
+  - label:
+      en_US: High
+      zh_Hans: 高
+    value: high
+  required: false
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: Number of images to generate (between 1 and 10).
+    zh_Hans: 要生成的图像数量（1 到 10）。
+  label:
+    en_US: Number of Images
+    zh_Hans: 图像数量
+  name: n
+  min: 1
+  max: 10
+  required: false
+  type: number

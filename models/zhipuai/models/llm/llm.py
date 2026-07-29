@@ -35,6 +35,9 @@ viso_models = [
     "glm-4v-flash",
     "glm-4.1v-thinking-flash",
     "glm-4.1v-thinking-flashx",
+    "glm-4.6v-flash",
+    "glm-4.6v-flashx",
+    "glm-5v-turbo",
 ]
 
 TOKEN_BEGIN_OF_BOX = "<|begin_of_box|>"

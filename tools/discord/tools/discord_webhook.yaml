@@ -27,19 +27,19 @@ parameters:
     zh_Hans: Discord入站Webhook的url
   name: webhook_url
   required: true
-  type: string
+  type: secret-input
 - form: llm
   human_description:
-    en_US: Content to sent to the channel or person.
-    pt_BR: Content to sent to the channel or person.
-    zh_Hans: 消息内容文本
+    en_US: Message text to send. Required unless embeds, components, or poll are provided.
+    pt_BR: Message text to send. Required unless embeds, components, or poll are provided.
+    zh_Hans: 要发送的消息文本。如果提供了 embeds、components 或 poll，则可为空。
   label:
     en_US: content
     pt_BR: content
     zh_Hans: 消息内容
-  llm_description: Content of the message
+  llm_description: Message content. Discord allows up to 2000 characters. Required unless embeds_json, components_json, or poll_json is provided.
   name: content
-  required: true
+  required: false
   type: string
 - form: llm
   human_description:
@@ -64,5 +64,144 @@ parameters:
     pt_BR: Discord Webhook Avatar
     zh_Hans: Discord Webhook头像
   name: avatar_url
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Whether Discord should read the message aloud with text-to-speech.
+    pt_BR: Whether Discord should read the message aloud with text-to-speech.
+    zh_Hans: 是否使用文本转语音朗读消息。
+  label:
+    en_US: Text to speech
+    pt_BR: Text to speech
+    zh_Hans: 文本转语音
+  llm_description: Set true to send the webhook message as TTS.
+  name: tts
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Wait for Discord to return the created message object.
+    pt_BR: Wait for Discord to return the created message object.
+    zh_Hans: 等待 Discord 返回已创建的消息对象。
+  label:
+    en_US: Wait for response
+    pt_BR: Wait for response
+    zh_Hans: 等待响应
+  name: wait
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Thread ID to send the webhook message into.
+    pt_BR: Thread ID to send the webhook message into.
+    zh_Hans: 要发送消息的线程 ID。
+  label:
+    en_US: Thread ID
+    pt_BR: Thread ID
+    zh_Hans: 线程 ID
+  name: thread_id
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Name of a thread to create in a forum or media channel.
+    pt_BR: Name of a thread to create in a forum or media channel.
+    zh_Hans: 在论坛或媒体频道中创建的线程名称。
+  label:
+    en_US: Thread name
+    pt_BR: Thread name
+    zh_Hans: 线程名称
+  llm_description: Optional thread name for forum or media channels.
+  name: thread_name
+  required: false
+  type: string
+- form: form
+  human_description:
+    en_US: Discord message flags as an integer.
+    pt_BR: Discord message flags as an integer.
+    zh_Hans: Discord 消息 flags，整数格式。
+  label:
+    en_US: Message flags
+    pt_BR: Message flags
+    zh_Hans: 消息 flags
+  name: flags
+  required: false
+  type: number
+- form: form
+  human_description:
+    en_US: Allow sending components with application-owned webhooks.
+    pt_BR: Allow sending components with application-owned webhooks.
+    zh_Hans: 允许应用拥有的 webhook 发送 components。
+  label:
+    en_US: With components
+    pt_BR: With components
+    zh_Hans: 启用 components
+  name: with_components
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: JSON array of Discord embed objects. Discord allows up to 10 embeds.
+    pt_BR: JSON array of Discord embed objects. Discord allows up to 10 embeds.
+    zh_Hans: Discord embed 对象的 JSON 数组，最多 10 个。
+  label:
+    en_US: Embeds JSON
+    pt_BR: Embeds JSON
+    zh_Hans: Embeds JSON
+  llm_description: Optional JSON array of Discord embed objects, up to 10 items.
+  name: embeds_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON object controlling which mentions Discord should parse.
+    pt_BR: JSON object controlling which mentions Discord should parse.
+    zh_Hans: 控制 Discord 解析哪些 mention 的 JSON 对象。
+  label:
+    en_US: Allowed mentions JSON
+    pt_BR: Allowed mentions JSON
+    zh_Hans: Allowed mentions JSON
+  llm_description: 'Optional Discord allowed_mentions JSON object, for example {"parse": []}.'
+  name: allowed_mentions_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON array of Discord message component objects.
+    pt_BR: JSON array of Discord message component objects.
+    zh_Hans: Discord 消息 component 对象的 JSON 数组。
+  label:
+    en_US: Components JSON
+    pt_BR: Components JSON
+    zh_Hans: Components JSON
+  llm_description: Optional JSON array of Discord message components.
+  name: components_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON object for a Discord poll.
+    pt_BR: JSON object for a Discord poll.
+    zh_Hans: Discord poll 的 JSON 对象。
+  label:
+    en_US: Poll JSON
+    pt_BR: Poll JSON
+    zh_Hans: Poll JSON
+  llm_description: Optional Discord poll JSON object.
+  name: poll_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON array of tag IDs to apply when creating a forum or media channel thread.
+    pt_BR: JSON array of tag IDs to apply when creating a forum or media channel thread.
+    zh_Hans: 在论坛或媒体频道创建线程时应用的标签 ID JSON 数组。
+  label:
+    en_US: Applied tags JSON
+    pt_BR: Applied tags JSON
+    zh_Hans: Applied tags JSON
+  llm_description: Optional JSON array of Discord snowflake tag IDs.
+  name: applied_tags_json
   required: false
   type: string

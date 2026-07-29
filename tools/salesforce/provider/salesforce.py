@@ -6,7 +6,9 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 try:
     from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
 except ImportError:
-    raise ImportError("Please install simple-salesforce: pip install simple-salesforce~=0.1.45")
+    raise ImportError(
+        "simple-salesforce is declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class SalesforceProvider(ToolProvider):

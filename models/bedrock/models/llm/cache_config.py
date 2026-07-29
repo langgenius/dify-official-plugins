@@ -7,6 +7,10 @@ logger = logging.getLogger(__name__)
 
 # Models that support prompt caching
 CACHE_SUPPORTED_MODELS = [
+    "anthropic.claude-sonnet-5",
+    "anthropic.claude-fable-5",
+    "anthropic.claude-opus-4-8",
+    "anthropic.claude-opus-4-7",
     "anthropic.claude-sonnet-4-5-20250929-v1:0",
     "anthropic.claude-haiku-4-5-20251001-v1:0",
     "anthropic.claude-sonnet-4-20250514-v1:0",
@@ -22,6 +26,26 @@ CACHE_SUPPORTED_MODELS = [
 
 # Cache configuration for each model
 CACHE_CONFIG = {
+    "anthropic.claude-sonnet-5": {
+        "min_tokens": 4096,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
+    "anthropic.claude-fable-5": {
+        "min_tokens": 1024,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
+    "anthropic.claude-opus-4-8": {
+        "min_tokens": 4096,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
+    "anthropic.claude-opus-4-7": {
+        "min_tokens": 4096,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
     "anthropic.claude-sonnet-4-5-20250929-v1:0": {
         "min_tokens": 1024,
         "max_checkpoints": 4,
@@ -74,14 +98,25 @@ CACHE_CONFIG = {
     }
 }
 
+_PROFILE_PREFIXES = ("global.", "us.", "eu.", "apac.", "jp.", "au.")
+
+
+def _strip_profile_prefix(model_id: str) -> str:
+    """Remove a leading cross-region profile prefix if present."""
+    for prefix in _PROFILE_PREFIXES:
+        if model_id.startswith(prefix):
+            return model_id[len(prefix):]
+    return model_id
+
+
 def is_cache_supported(model_id: str) -> bool:
     """
     Check if the model supports prompt caching
-    
+
     :param model_id: Model ID to check
     :return: True if the model supports caching, False otherwise
     """
-    model_id = model_id.replace("us.","").replace("eu.","").replace("apac.","")
+    model_id = _strip_profile_prefix(model_id)
 
     result = model_id in CACHE_SUPPORTED_MODELS
     # Removed redundant print statement
@@ -94,7 +129,7 @@ def get_cache_config(model_id: str) -> dict:
     :param model_id: Model ID
     :return: Cache configuration dictionary
     """
-    model_id = model_id.replace("us.","").replace("eu.","").replace("apac.","")
+    model_id = _strip_profile_prefix(model_id)
 
     if model_id in CACHE_CONFIG:
         config = CACHE_CONFIG[model_id]

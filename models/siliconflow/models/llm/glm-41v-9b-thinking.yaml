@@ -48,7 +48,8 @@ parameter_rules:
     options:
       - text
 pricing:
-  input: '0'
-  output: '0'
-  unit: '0'
+  input: "0"
+  output: "0"
+  unit: "0"
   currency: RMB
+deprecated: true

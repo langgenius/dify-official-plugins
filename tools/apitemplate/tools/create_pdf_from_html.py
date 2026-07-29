@@ -18,6 +18,7 @@ class CreatePdfFromHtmlTool(Tool):
             css_styles = tool_parameters.get("css_styles", "").strip()
             template_data_str = tool_parameters.get("template_data", "").strip()
             filename = tool_parameters.get("filename", "").strip()
+            cloud_storage = tool_parameters.get("cloud_storage")
             
             # Validate required parameters
             if not html_body:
@@ -55,6 +56,17 @@ class CreatePdfFromHtmlTool(Tool):
                 if not filename.endswith('.pdf'):
                     filename += '.pdf'
                 params["filename"] = filename
+            
+            # Add cloud_storage flag if explicitly provided
+            # The API expects an integer (1 = upload to CDN, 0 = skip CDN upload)
+            if cloud_storage is not None and cloud_storage != "":
+                try:
+                    params["cloud_storage"] = int(cloud_storage)
+                except (TypeError, ValueError):
+                    yield self.create_text_message(
+                        "Invalid cloud_storage value. Expected '1' or '0'."
+                    )
+                    return
             
             # Build request body
             request_body = {
@@ -100,21 +112,29 @@ class CreatePdfFromHtmlTool(Tool):
             download_url = result.get("download_url", "")
             total_pages = result.get("total_pages", 0)
             transaction_ref = result.get("transaction_ref", "")
+            post_actions = result.get("post_actions") or []
             
             # Create success response
             summary = f"PDF generated successfully from HTML! {total_pages} pages created."
             if filename:
                 summary += f" Filename: {filename}"
+            if post_actions:
+                summary += f" {len(post_actions)} post action(s) executed."
             
             yield self.create_text_message(summary)
-            yield self.create_json_message({
+            
+            response_payload = {
                 "status": "success",
                 "download_url": download_url,
                 "total_pages": total_pages,
                 "transaction_ref": transaction_ref,
                 "filename": filename if filename else f"{transaction_ref}.pdf",
                 "source": "html"
-            })
+            }
+            if post_actions:
+                response_payload["post_actions"] = post_actions
+            
+            yield self.create_json_message(response_payload)
             
         except requests.exceptions.RequestException as e:
             yield self.create_text_message(f"Network error: {str(e)}")

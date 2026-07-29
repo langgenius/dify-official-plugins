@@ -42,10 +42,14 @@ def get_all_embedding_models() -> list[str]:
 def test_embedding_invoke(model_name: str) -> None:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable is required")
+        pytest.skip("GEMINI_API_KEY is not set")
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:
+        if os.getenv("CI"):
+            raise ValueError(
+                "PLUGIN_FILE_PATH environment variable is required in CI when provider API key is set"
+            )
         plugin_path = str(Path(__file__).parent.parent)
 
     payload = ModelInvokeTextEmbeddingRequest(

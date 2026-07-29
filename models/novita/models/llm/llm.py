@@ -10,7 +10,7 @@ from ..oaiapi import OAIAPICompatLargeLanguageModel
 
 class NovitaLargeLanguageModel(OAIAPICompatLargeLanguageModel):
     def _update_endpoint_url(self, credentials: dict):
-        credentials["endpoint_url"] = "https://api.novita.ai/v3/openai"
+        credentials["endpoint_url"] = "https://api.novita.ai/openai/v1"
         credentials["extra_headers"] = {"X-Novita-Source": "dify.ai"}
         return credentials
 

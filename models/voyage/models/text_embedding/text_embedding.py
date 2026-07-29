@@ -194,7 +194,7 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size"))},

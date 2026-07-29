@@ -1,0 +1,42 @@
+model: kimi-k2.7-code
+label:
+  zh_Hans: kimi-k2.7-code
+  en_US: kimi-k2.7-code
+model_type: llm
+features:
+  - vision
+  - video
+  - structured-output
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: max_completion_tokens
+    use_template: max_tokens
+    default: 32768
+    min: 1
+    max: 262144
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '6.5'
+  output: '27'
+  unit: '0.000001'
+  currency: RMB

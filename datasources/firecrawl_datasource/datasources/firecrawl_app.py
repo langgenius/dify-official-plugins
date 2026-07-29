@@ -108,21 +108,44 @@ class FirecrawlApp:
         while True:
             status = self.check_crawl_status(job_id)
             if status["status"] == "completed":
-                status = self.format_crawl_status_response(status["status"], status)
-                return status
+                url_data_list = self._collect_all_crawl_pages(status)
+                return self.format_crawl_status_response(status["status"], status, url_data_list)
             elif status["status"] == "failed":
                 raise HTTPError(f"Job {job_id} failed: {status['error']}")
             time.sleep(poll_interval)
 
+    def _collect_all_crawl_pages(self, first_page: dict[str, Any]) -> list[dict[str, Any]]:
+        """Collect all crawl result pages by following pagination links.
+
+        Raises an exception if any paginated request fails, to avoid returning
+        partial data that is inconsistent with the reported total.
+
+        The number of pages processed is capped at ``total`` (the
+        server-reported page count) to guard against infinite loops caused by
+        a misbehaving server that keeps returning a ``next`` URL.
+        """
+        # Normalize to avoid None bypassing the zero-guard when the API returns null.
+        total: int = first_page.get("total") or 0
+        url_data_list: list[dict[str, Any]] = []
+        current_page = first_page
+        pages_processed = 0
+        while True:
+            for item in current_page.get("data", []):
+                if isinstance(item, dict) and "metadata" in item and "markdown" in item:
+                    url_data_list.append(self._extract_common_fields(item))
+            next_url: str | None = current_page.get("next")
+            pages_processed += 1
+            if not next_url or pages_processed >= total:
+                break
+            next_response = self._request("GET", next_url)
+            if next_response is None:
+                raise HTTPError(f"Failed to fetch next crawl page after multiple retries")
+            current_page = next_response
+        return url_data_list
+
     def format_crawl_status_response(
-        self, status: str, crawl_status_response: dict[str, Any]
+        self, status: str, crawl_status_response: dict[str, Any], url_data_list: list[dict[str, Any]]
     ) -> dict[str, Any]:
-        data = crawl_status_response.get("data", [])
-        url_data_list = []
-        for item in data:
-            if isinstance(item, dict) and "metadata" in item and "markdown" in item:
-                url_data = self._extract_common_fields(item)
-                url_data_list.append(url_data)
         return {
             "status": status,
             "total": crawl_status_response.get("total"),

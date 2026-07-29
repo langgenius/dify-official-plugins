@@ -39,20 +39,21 @@ subscription_constructor:
     client_schema:
     - name: "tenant_id"
       type: "secret-input"
-      required: true
+      required: false
       url: https://portal.azure.com
       placeholder:
-        en_US: "Please input your Azure Tenant ID"
-        zh_Hans: "请输入你的 Azure Tenant ID"
-        ja_JP: "Azure テナントIDを入力してください"
+        en_US: "Tenant ID/domain, organizations, or common"
+        zh_Hans: "租户 ID/域名、organizations 或 common"
+        ja_JP: "テナントID/ドメイン、organizations、common"
       help:
-        en_US: "Tenant ID for your Azure AD directory."
-        zh_Hans: "你的 Azure AD 目录的 Tenant ID。"
-        ja_JP: "あなたの Azure AD ディレクトリのテナントIDです。"
+        en_US: "Use a tenant ID or domain for single-tenant apps, organizations for work or school accounts only, or common only when personal Microsoft accounts are required."
+        zh_Hans: "填租户 ID 或域名用于单租户；填 organizations 仅允许组织账号；只有需要个人 Microsoft 账号时才填 common。"
+        ja_JP: "シングルテナントの場合はテナントIDまたはドメイン、職場または学校アカウントのみの場合は organizations、個人の Microsoft アカウントが必要な場合のみ common を入力します。"
       label:
-        en_US: "Tenant ID"
-        zh_Hans: "Tenant ID"
-        ja_JP: "テナントID"
+        en_US: "Tenant"
+        zh_Hans: "Tenant"
+        ja_JP: "テナント"
+      default: "organizations"
     - name: "client_id"
       type: "secret-input"
       required: true

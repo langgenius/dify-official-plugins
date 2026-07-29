@@ -61,6 +61,12 @@ Extensions facilitate external integrations through HTTP webhooks. Build custom 
 
 In the future, all new official plugins developed by Dify will be updated and maintained in this repository.
 
+### Dependency Management
+
+Python plugins should declare dependencies in `pyproject.toml` and commit the generated `uv.lock`. After changing dependencies, run `uv lock` and commit both files. Use `uv sync --frozen` from the plugin directory to reproduce the locked environment.
+
+During the migration from `requirements.txt`, legacy plugins without `uv.lock` may keep using `requirements.txt`. CI/CD uses `uv.lock` first and falls back to `requirements.txt` only when no lock file is present.
+
 ### Security disclosure
 
 To protect your privacy, please avoid posting security issues on GitHub. Instead, send your questions to [security@dify.ai](mailto:security@dify.ai) and we will provide you with a more detailed answer.

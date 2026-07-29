@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any
 
 from dify_plugin.invocations.file import UploadFileResponse
 from pydantic import BaseModel, Field
@@ -9,12 +9,12 @@ class ChildDocument(BaseModel):
 
     page_content: str
 
-    vector: Optional[list[float]] = None
+    vector: list[float] | None = None
 
     """Arbitrary metadata about the page content (e.g., source, relationships to other
         documents, etc.).
     """
-    metadata: dict = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class Document(BaseModel):
@@ -22,16 +22,16 @@ class Document(BaseModel):
 
     page_content: str
 
-    vector: Optional[list[float]] = None
+    vector: list[float] | None = None
 
     """Arbitrary metadata about the page content (e.g., source, relationships to other
         documents, etc.).
     """
-    metadata: dict = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
-    provider: Optional[str] = "dify"
+    provider: str | None = "dify"
 
-    children: Optional[list[ChildDocument]] = None
+    children: list[ChildDocument] | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -39,9 +39,7 @@ class Document(BaseModel):
             "vector": self.vector if self.vector is not None else None,
             "metadata": self.metadata,
             "provider": self.provider,
-            "children": [child.model_dump() for child in self.children]
-            if self.children
-            else None,
+            "children": [child.model_dump() for child in self.children] if self.children else None,
         }
 
 
@@ -49,6 +47,6 @@ class ExtractorResult(BaseModel):
     """Class for storing the result of an extractor."""
 
     md_content: str
-    documents: Optional[list[Document]] = None
-    img_list: Optional[list[UploadFileResponse]] = None
-    origin_result: Optional[dict] = None
+    documents: list[Document] = Field(default_factory=list)
+    img_list: list[UploadFileResponse] = Field(default_factory=list)
+    origin_result: dict[str, Any] | None = None

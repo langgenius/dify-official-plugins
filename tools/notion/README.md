@@ -76,6 +76,16 @@ Create a new Notion page titled "Meeting Notes" with content "Discussed project 
 Get the Notion page with ID "abc123" and include its content
 ```
 
+`retrieve_page` fetches every block on the page, paginating `blocks.children.list`
+and recursing into blocks with `has_children` (toggles, callouts, quotes, bulleted /
+numbered list items, columns, etc.). It does **not** descend into `child_page` /
+`child_database` blocks — those are separate resources and should be fetched
+separately. Recursion is bounded by `max_depth` (default 5) and total Notion API
+calls are capped by `max_api_calls` (default 500). The response includes
+`api_calls_made`, `total_blocks_fetched`, and `elapsed_seconds`, plus
+`fetch_truncated: true` if the cap was hit. Large or deeply-nested pages can take
+several seconds; tune `max_depth` / `max_api_calls` for latency-sensitive contexts.
+
 ### Update a Page
 ```
 Update the title of Notion page "abc123" to "Updated Meeting Notes" and add "Follow-up scheduled for next week" to the content

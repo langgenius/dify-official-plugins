@@ -1,36 +1,56 @@
 credentials_for_provider:
+
   base_url:
     label:
       en_US: Base URL
-      zh_Hans: 服务地址
-    placeholder:
-      en_US: https://somark.tech/api/v1
-      zh_Hans: https://somark.tech/api/v1
-    default: https://somark.tech/api/v1
+      zh_Hans: Base URL
     required: true
+    type: select
+    default: https://somark.cn/api/v1
+    options:
+      - value: https://somark.cn/api/v1
+        label:
+          en_US: Mainland China (somark.cn)
+          zh_Hans: 中国大陆 (somark.cn)
+      - value: https://somark.ai/api/v1
+        label:
+          en_US: Taiwan (China), Hong Kong (China), Macau (China), and other overseas regions (somark.ai)
+          zh_Hans: 中国台湾、中国香港、中国澳门及其他海外地区 (somark.ai)
+      - value: custom
+        label:
+          en_US: Self-hosted (custom URL)
+          zh_Hans: 自托管（自定义地址）
+
+  custom_base_url:
+    label:
+      en_US: Custom Base URL
+      zh_Hans: 自定义 Base URL
+    placeholder:
+      en_US: https://your-domain.com/api/v1
+      zh_Hans: https://your-domain.com/api/v1
+    required: false
     type: text-input
+
   api_key:
     label:
       en_US: API Key
-      zh_Hans: API 密钥
+      zh_Hans: API Key
     placeholder:
-      en_US: Enter your Somark API Key
-      zh_Hans: 请输入您的 Somark API 密钥
-    required: true
+      en_US: Required for SoMark API; leave blank for self-hosted deployment
+      zh_Hans: 使用 SoMark API 时填写；私有化部署无需填写
+    required: false
     type: secret-input
-    help:
-      en_US: "No API Key? [Get 1000 free pages here](https://somark.tech/workbench/purchase)"
-      zh_Hans: "没有 ApiKey？[点击此处免费领 1000 页](https://somark.tech/workbench/purchase)"
+    url: https://docs.somark.ai/documentation/api
 
 identity:
   author: SoulCode
   name: somark
   label:
-    en_US: Somark
-    zh_Hans: Somark
+    en_US: SoMark
+    zh_Hans: SoMark
   description:
-    en_US: Somark Document Extraction Service
-    zh_Hans: Somark 文档解析服务
+    en_US: SoMark Document Parsing Service
+    zh_Hans: SoMark 文档解析服务
   icon: icon.png
 
 extra:

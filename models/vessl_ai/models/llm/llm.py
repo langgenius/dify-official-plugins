@@ -19,7 +19,7 @@ class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
         features = []
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.LLM,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             features=features,
@@ -27,7 +27,7 @@ class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
             parameter_rules=[
                 ParameterRule(
                     name=DefaultParameterName.TEMPERATURE.value,
-                    label=I18nObject(en_US="Temperature"),
+                    label=I18nObject(en_us="Temperature"),
                     type=ParameterType.FLOAT,
                     default=float(credentials.get("temperature", 0.7)),
                     min=0,
@@ -36,7 +36,7 @@ class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.TOP_P.value,
-                    label=I18nObject(en_US="Top P"),
+                    label=I18nObject(en_us="Top P"),
                     type=ParameterType.FLOAT,
                     default=float(credentials.get("top_p", 1)),
                     min=0,
@@ -45,7 +45,7 @@ class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.TOP_K.value,
-                    label=I18nObject(en_US="Top K"),
+                    label=I18nObject(en_us="Top K"),
                     type=ParameterType.INT,
                     default=int(credentials.get("top_k", 50)),
                     min=-2147483647,
@@ -54,7 +54,7 @@ class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ParameterRule(
                     name=DefaultParameterName.MAX_TOKENS.value,
-                    label=I18nObject(en_US="Max Tokens"),
+                    label=I18nObject(en_us="Max Tokens"),
                     type=ParameterType.INT,
                     default=512,
                     min=1,

@@ -7,7 +7,9 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 try:
     from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
 except ImportError:
-    raise ImportError("Please install simple-salesforce: pip install simple-salesforce~=0.1.45")
+    raise ImportError(
+        "simple-salesforce is declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class CreateCaseTool(Tool):
@@ -130,4 +132,3 @@ class CreateCaseTool(Tool):
         except Exception as e:
             yield self.create_text_message(f"Unexpected error: {str(e)}")
             return
-

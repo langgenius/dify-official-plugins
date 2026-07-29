@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenAI offers powerful AI models for various tasks including image generation, editing, and deep research analysis. Dify has integrated tools leveraging these capabilities, including DALL-E 2, DALL-E 3, GPT-IMAGE-1, and the Deep Research tool. This document outlines the steps to configure and use these OpenAI tools in Dify.
+OpenAI offers powerful AI models for various tasks including image generation, editing, and deep research analysis. Dify has integrated tools leveraging these capabilities, including DALL-E 2, DALL-E 3, GPT-IMAGE-1, GPT-IMAGE-2, and the Deep Research tool. This document outlines the steps to configure and use these OpenAI tools in Dify.
 
 ### Available Tools
 
@@ -11,6 +11,8 @@ OpenAI offers powerful AI models for various tasks including image generation, e
 - **DALL-E 3**: Advanced image generation with improved quality and prompt adherence
 - **GPT Image Generate**: General-purpose image generation
 - **GPT Image Edit**: Edit existing images based on text instructions
+- **GPT Image 2 Generate**: Standalone image generation tool backed by `gpt-image-2`
+- **GPT Image 2 Edit**: Standalone image editing tool backed by `gpt-image-2`
 
 #### Deep Research Tool
 - **Deep Research**: Perform comprehensive research and analysis using OpenAI's specialized research models (o3-deep-research, o4-mini-deep-research). This tool can find, analyze, and synthesize information from hundreds of sources to create detailed reports with proper citations.
@@ -21,13 +23,13 @@ OpenAI offers powerful AI models for various tasks including image generation, e
 
 Please apply for an API Key on the [OpenAI Platform](https://platform.openai.com/). This key will be used for all OpenAI image tools.
 
-**Important Note for GPT Image-1 Model:** If you plan to use the GPT-Image-1 model, your organization must complete verification first. Without organization verification, you'll receive a 403 error. To complete verification, please visit the [API Organization Verification guide](https://help.openai.com/en/articles/10910291-api-organization-verification).
+**Important Note for GPT Image models:** If you plan to use GPT Image models, your organization may need to complete verification first. Without organization verification, you'll receive a 403 error. To complete verification, please visit the [API Organization Verification guide](https://help.openai.com/en/articles/10910291-api-organization-verification).
 
 **Important Note for Deep Research Tool:** The Deep Research tool requires access to OpenAI's specialized research models. Ensure your API key has access to these models and be aware that deep research tasks may consume significant tokens and time.
 
 ### 2. Get OpenAI tools from Plugin Marketplace
 
-The OpenAI tools (including DALL-E, GPT IMAGE, and Deep Research) can be found in the Plugin Marketplace. Please install the ones you need.
+The OpenAI tools (including DALL-E, GPT IMAGE, GPT IMAGE 2, and Deep Research) can be found in the Plugin Marketplace. Please install the ones you need.
 
 ### 3. Fill in the configuration in Dify
 
@@ -46,7 +48,7 @@ You can use the OpenAI tools in the following application types:
 
 ![Chatflow/Workflow Application](./_assets/openai_2.png)
 
-Both Chatflow and Workflow applications support nodes for the installed OpenAI tools (e.g., `DALL-E 3`, `GPT Image Generate`, `Deep Research`). After adding a node, you need to fill in the necessary inputs with variables referencing user input or previous node outputs. 
+Both Chatflow and Workflow applications support nodes for the installed OpenAI tools (e.g., `DALL-E 3`, `GPT Image Generate`, `GPT Image 2 Generate`, `Deep Research`). After adding a node, you need to fill in the necessary inputs with variables referencing user input or previous node outputs.
 
 For image tools, use variables to reference the image output in the "End" node or subsequent nodes.
 
@@ -90,5 +92,4 @@ When a research task is completed, it will return comprehensive reports with num
 - **Response ID**: The ID of the task to cancel
 
 ![Deep Research Canceled](./_assets/openai_6.png)
-
 

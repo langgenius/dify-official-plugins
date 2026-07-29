@@ -155,12 +155,11 @@ Here are some example usage scenarios:
 - **Protocol**: WebDAV over HTTPS
 - **Authentication**: HTTP Basic Authentication with NextCloud app passwords
 - **WebDAV Endpoint**: `/remote.php/webdav/` (automatically appended to server URL)
-- **Dependencies**: `webdavclient3~=3.14.6`
+- **Dependencies**: `requests>=2.32.5`, `webdavclient3~=3.14.6`
 - **File Support**: Text files, binary files (via base64 encoding), and all standard file operations
 
 ## License
 
 This plugin is licensed under the same license terms as the Dify platform.
-
 
 

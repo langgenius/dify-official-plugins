@@ -1,35 +1,23 @@
-import io
+"""PDF document extractor."""
+
 import logging
-import mimetypes
-import uuid
-from collections.abc import Iterator
 from io import BytesIO
-
-from dify_plugin import Tool
-
-from tools.document import Document, ExtractorResult
-from tools.extractor_base import BaseExtractor
 
 import pypdfium2
 import pypdfium2.raw as pdfium_c
+
+from tools.document import Document, ExtractorResult
+from tools.errors import ExtractionError
+from tools.extractor_base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
 
 class PdfExtractor(BaseExtractor):
-    """Load pdf files.
-
-    Args:
-        tool: Tool instance
-        file_bytes: file bytes
-        file_name: file name.
-    """
-
-    # Magic bytes for image format detection: (magic_bytes, extension, mime_type)
     IMAGE_FORMATS = [
         (b"\xff\xd8\xff", "jpg", "image/jpeg"),
         (b"\x89PNG\r\n\x1a\n", "png", "image/png"),
-        (b"\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a", "jp2", "image/jp2"),
+        (b"\x00\x00\x00\x0cjP  \r\n\x87\n", "jp2", "image/jp2"),
         (b"GIF8", "gif", "image/gif"),
         (b"BM", "bmp", "image/bmp"),
         (b"II*\x00", "tiff", "image/tiff"),
@@ -37,98 +25,95 @@ class PdfExtractor(BaseExtractor):
         (b"II+\x00", "tiff", "image/tiff"),
         (b"MM\x00+", "tiff", "image/tiff"),
     ]
-    MAX_MAGIC_LEN = max(len(m) for m, _, _ in IMAGE_FORMATS)
-
-    def __init__(self, tool: Tool, file_bytes: bytes, file_name: str):
-        self._file_bytes = file_bytes
-        self._file_name = file_name
-        self._tool = tool
+    MAX_MAGIC_LENGTH = max(len(magic) for magic, _, _ in IMAGE_FORMATS)
 
     def extract(self) -> ExtractorResult:
-        documents, img_list = self.parse()
-        text_list = []
-        for document in documents:
-            text_list.append(document.page_content)
-        text = "\n\n".join(text_list)
+        try:
+            documents, image_files = self._parse()
+        except pypdfium2.PdfiumError as exc:
+            raise ExtractionError(
+                f"File '{self.context.file_name}' is not a valid PDF file."
+            ) from exc
+        return ExtractorResult(
+            md_content="\n\n".join(document.page_content for document in documents),
+            documents=documents,
+            img_list=image_files,
+        )
 
-        return ExtractorResult(md_content=text, documents=documents, img_list=img_list)
-
-    def parse(self) -> tuple[list[Document], list]:
-        """Parse the bytes and return documents and images."""
-        documents = []
-        img_list = []
-        with BytesIO(self._file_bytes) as file:
-            pdf_reader = pypdfium2.PdfDocument(file, autoclose=True)
-            try:
-                for page_number, page in enumerate(pdf_reader):
+    def _parse(self) -> tuple[list[Document], list]:
+        documents: list[Document] = []
+        image_files = []
+        pdf_document = pypdfium2.PdfDocument(BytesIO(self.context.file_bytes), autoclose=True)
+        try:
+            for page_number in range(len(pdf_document)):
+                page = pdf_document[page_number]
+                try:
                     text_page = page.get_textpage()
-                    content = text_page.get_text_range()
-                    text_page.close()
+                    try:
+                        content = text_page.get_text_range()
+                    finally:
+                        text_page.close()
 
-                    image_content, page_img_list = self._extract_images(page)
+                    image_content, page_images = self._extract_images(page, page_number)
                     if image_content:
-                        content += "\n" + image_content
-                    img_list.extend(page_img_list)
-
+                        content = f"{content}\n{image_content}".strip()
+                    image_files.extend(page_images)
+                    documents.append(
+                        Document(
+                            page_content=content,
+                            metadata={
+                                "source": self.context.file_name,
+                                "page": page_number,
+                            },
+                        )
+                    )
+                finally:
                     page.close()
-                    metadata = {"source": self._file_name, "page": page_number}
-                    documents.append(Document(page_content=content, metadata=metadata))
-            finally:
-                pdf_reader.close()
-        return documents, img_list
+        finally:
+            pdf_document.close()
+        return documents, image_files
 
-    def _extract_images(self, page) -> tuple[str, list]:
-        """
-        Extract images from a PDF page, save them to storage,
-        and return markdown image links.
+    def _extract_images(self, page, page_number: int) -> tuple[str, list]:
+        image_service = self.context.image_service
+        if image_service is None:
+            return "", []
 
-        Args:
-            page: pypdfium2 page object.
-
-        Returns:
-            Markdown string containing links to the extracted images.
-        """
-        image_content = []
-        img_list = []
-
+        image_markdown: list[str] = []
+        image_files = []
         try:
             image_objects = page.get_objects(filter=(pdfium_c.FPDF_PAGEOBJ_IMAGE,))
-            for obj in image_objects:
-                try:
-                    # Extract image bytes
-                    img_byte_arr = io.BytesIO()
-                    # Extract DCTDecode (JPEG) and JPXDecode (JPEG 2000) images directly
-                    # Fallback to png for other formats
-                    obj.extract(img_byte_arr, fb_format="png")
-                    img_bytes = img_byte_arr.getvalue()
+        except Exception as exc:
+            logger.warning("Failed to enumerate images on PDF page %d: %s", page_number, exc)
+            return "", []
 
-                    if not img_bytes:
-                        continue
-
-                    header = img_bytes[: self.MAX_MAGIC_LEN]
-                    image_ext = None
-                    mime_type = None
-                    for magic, ext, mime in self.IMAGE_FORMATS:
-                        if header.startswith(magic):
-                            image_ext = ext
-                            mime_type = mime
-                            break
-
-                    if not image_ext or not mime_type:
-                        continue
-
-                    file_uuid = str(uuid.uuid4())
-                    file_name = file_uuid + "." + image_ext
-
-                    file_res = self._tool.session.file.upload(
-                        file_name, img_bytes, mime_type
-                    )
-                    image_content.append(f"![image]({file_res.preview_url})")
-                    img_list.append(file_res)
-                except Exception as e:
-                    logger.warning("Failed to extract image from PDF: %s", e)
+        for image_index, image_object in enumerate(image_objects):
+            try:
+                image_buffer = BytesIO()
+                image_object.extract(image_buffer, fb_format="png")
+                image_bytes = image_buffer.getvalue()
+                image_type = self._detect_image_type(image_bytes)
+                if image_type is None:
                     continue
-        except Exception as e:
-            logger.warning("Failed to get objects from PDF page: %s", e)
+                extension, mime_type = image_type
+                asset = image_service.upload_embedded(
+                    image_bytes,
+                    extension=extension,
+                    mime_type=mime_type,
+                    source=(
+                        f"{self.context.file_name}:page-{page_number + 1}-image-{image_index + 1}"
+                    ),
+                )
+                if asset:
+                    image_markdown.append(asset.markdown)
+                    image_files.append(asset.file)
+            except Exception as exc:
+                logger.warning("Failed to extract an image from PDF page %d: %s", page_number, exc)
+        return "\n".join(image_markdown), image_files
 
-        return "\n".join(image_content), img_list
+    @classmethod
+    def _detect_image_type(cls, image_bytes: bytes) -> tuple[str, str] | None:
+        header = image_bytes[: cls.MAX_MAGIC_LENGTH]
+        for magic, extension, mime_type in cls.IMAGE_FORMATS:
+            if header.startswith(magic):
+                return extension, mime_type
+        return None

@@ -211,9 +211,10 @@ class MineruTool(Tool):
         if (
             tool_parameters.get("backend", "pipeline") == "vlm-sglang-client"
             or tool_parameters.get("backend", "pipeline") == "vlm-http-client"
+            or tool_parameters.get("backend", "pipeline") == "hybrid-http-client"
         ) and not tool_parameters.get("server_url"):
             raise ToolProviderCredentialValidationError(
-                "When backend is vlm-sglang-client or vlm-http-client, server_url is required"
+                "When backend is vlm-sglang-client, vlm-http-client or hybrid-http-client, server_url is required"
             )
 
         body = {
@@ -257,8 +258,8 @@ class MineruTool(Tool):
         for file_name, result in results.items():
             result_item = {"filename": file_name}
 
+            result_item["images"] = []
             if result.get("images"):
-                result_item["images"] = []
                 for img_name, encoded_image_data in result["images"].items():
                     try:
                         file_res = self._process_base64_image(encoded_image_data, img_name)
@@ -274,7 +275,7 @@ class MineruTool(Tool):
                     except Exception as e:
                         logger.error(f"Failed to process image {img_name}: {e}")
 
-                yield self.create_variable_message("images", result_item["images"])
+            yield self.create_variable_message("images", result_item["images"])
 
             if result.get("content_list"):
                 try:

@@ -32,8 +32,19 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         
         client = storage.Client.from_service_account_info(json.loads(credentials))
         if not bucket_name:
-            buckets = client.list_buckets()
-            file_buckets = [OnlineDriveFileBucket(bucket=bucket.name, files=[], is_truncated=False, next_page_parameters={}) for bucket in buckets]
+            bucket_names_raw = self.runtime.credentials.get("bucket_names", "").strip()
+            if bucket_names_raw:
+                configured_buckets = [name.strip() for name in bucket_names_raw.split(",") if name.strip()]
+                file_buckets = [
+                    OnlineDriveFileBucket(bucket=name, files=[], is_truncated=False, next_page_parameters={})
+                    for name in configured_buckets
+                ]
+            else:
+                buckets = client.list_buckets()
+                file_buckets = [
+                    OnlineDriveFileBucket(bucket=bucket.name, files=[], is_truncated=False, next_page_parameters={})
+                    for bucket in buckets
+                ]
             return OnlineDriveBrowseFilesResponse(result=file_buckets)
         else:
             if not next_page_parameters and prefix:

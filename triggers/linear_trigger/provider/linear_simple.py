@@ -144,29 +144,23 @@ class LinearTrigger(Trigger):
         Linear includes webhookTimestamp in the payload (UNIX timestamp in milliseconds).
         We reject webhooks older than 60 seconds.
         """
+        payload = request.get_json(force=True)
+        if not isinstance(payload, Mapping):
+            raise TriggerValidationError("Linear payload must be a JSON object")
+
+        webhook_timestamp = payload.get("webhookTimestamp")
+        if not webhook_timestamp:
+            # Older Linear webhook deliveries may not include a timestamp.
+            return
+
         try:
-            payload = request.get_json(force=True)
-            webhook_timestamp = payload.get("webhookTimestamp")
+            webhook_time = float(webhook_timestamp) / 1000
+        except (TypeError, ValueError) as exc:
+            raise TriggerValidationError("Invalid Linear webhook timestamp") from exc
 
-            if not webhook_timestamp:
-                # Timestamp validation is optional
-                return
-
-            # Convert to seconds (Linear sends milliseconds)
-            webhook_time = webhook_timestamp / 1000
-            current_time = time.time()
-
-            # Check if timestamp is within 60 seconds
-            if abs(current_time - webhook_time) > 60:
-                raise TriggerValidationError(
-                    "Webhook timestamp is too old or too far in the future"
-                )
-
-        except TriggerValidationError:
-            raise
-        except Exception:
-            # If timestamp validation fails, just log and continue
-            pass
+        current_time = time.time()
+        if abs(current_time - webhook_time) > 60:
+            raise TriggerValidationError("Webhook timestamp is too old or too far in the future")
 
 
 class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -189,6 +183,14 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         Refresh Linear OAuth credentials.
         """
         return OAuthCredentials(credentials=credentials, expires_at=-1)
+
+    def _oauth_refresh_credentials(
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> TriggerOAuthCredentials:
+        return TriggerOAuthCredentials(credentials=dict(credentials), expires_at=-1)
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         """
@@ -252,6 +254,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         # Generate CSRF protection state
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
 
         # Build authorization URL parameters
         params = {
@@ -281,6 +284,13 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         Returns:
             OAuth credentials containing access_token
         """
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"Linear OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         # Extract authorization code from callback
         code = request.args.get("code")
         if not code:
@@ -313,7 +323,15 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 timeout=10,
             )
 
-            data = response.json()
+            try:
+                data = response.json()
+            except ValueError as exc:
+                raise TriggerProviderOAuthError("Linear OAuth token response was not valid JSON") from exc
+
+            if response.status_code >= 400:
+                raise TriggerProviderOAuthError(
+                    f"OAuth error: {data.get('error_description') or data.get('error') or response.text}"
+                )
 
             # Check for errors in response
             if "error" in data:
@@ -653,7 +671,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 options.append(
                     ParameterOption(
                         value=team["id"],
-                        label=I18nObject(en_US=label_text),
+                        label=I18nObject(en_us=label_text),
                         icon=team.get("icon"),
                     )
                 )
@@ -704,3 +722,28 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                     {"message": f"HTTP {response.status_code}: {response.text[:200]}"}
                 ]
             }
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        import hashlib
+
+        digest = hashlib.sha256(f"linear:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"linear:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Linear OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Linear OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Linear OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Linear OAuth state.") from exc

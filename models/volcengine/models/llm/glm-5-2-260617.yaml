@@ -1,0 +1,33 @@
+model: glm-5-2-260617
+label:
+  en_US: glm-5-2-260617
+  zh_Hans: glm-5-2-260617
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: max
+    options:
+      - none
+      - high
+      - max
+    help:
+      zh_Hans: 控制思维链长度，平衡效果、时延与成本。none 关闭思考；high 深度分析处理复杂问题；max 最高程度思考适配高难度推理任务。
+      en_US: Controls chain-of-thought length to balance quality, latency, and cost. none disables thinking; high enables deep analysis; max maximizes reasoning for hardest tasks.
+pricing:
+  input: "8"
+  output: "28"
+  unit: "0.000001"
+  currency: RMB

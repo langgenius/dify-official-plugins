@@ -1,0 +1,172 @@
+identity:
+  name: "wan"
+  author: "langgenius"
+  label:
+    en_US: "Wan"
+    zh_Hans: "Wan"
+    pt_BR: "Wan"
+    ja_JP: "Wan"
+description:
+  human:
+    en_US: "Alibaba Wan 2.7. wan2.7-image-pro renders up to 4K with optional thinking mode for higher quality (10-30s extra); wan2.7-image is the standard 2K generator."
+    zh_Hans: "阿里 Wan 2.7 系列。wan2.7-image-pro 最高 4K，可启用思考模式提升质量（额外 10-30 秒）；wan2.7-image 主打 2K 标准生成。"
+    pt_BR: "Wan 2.7 da Alibaba. wan2.7-image-pro renderiza até 4K com modo de pensamento opcional para maior qualidade (10-30s adicionais); wan2.7-image é o gerador 2K padrão."
+    ja_JP: "Alibaba Wan 2.7 シリーズ。wan2.7-image-pro は最大 4K、思考モードを有効化すると品質向上（10-30 秒追加）。wan2.7-image は 2K 標準生成。"
+  llm: "Generate images with Alibaba Wan 2.7 series. Pro supports up to 4K and an optional thinking mode for better quality at the cost of latency."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description (max 800 characters)"
+      zh_Hans: "图像描述提示词（最长 800 字符）"
+      pt_BR: "Descrição textual (máx. 800 caracteres)"
+      ja_JP: "画像説明（最大 800 文字）"
+    llm_description: "Text prompt for Wan image generation, up to 800 chars"
+    form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Wan model variant"
+      zh_Hans: "万相模型变体"
+      pt_BR: "Variante do modelo Wan"
+      ja_JP: "万相モデルバリアント"
+    llm_description: "Wan model: wan2.7-image-pro (4K + thinking), wan2.7-image (2K)"
+    form: form
+    default: "wan2.7-image-pro"
+    options:
+      - value: "wan2.7-image-pro"
+        label:
+          en_US: "wan2.7-image-pro (4K + thinking)"
+          zh_Hans: "wan2.7-image-pro（4K 思考模式）"
+          pt_BR: "wan2.7-image-pro (4K + thinking)"
+          ja_JP: "wan2.7-image-pro（4K 思考モード）"
+      - value: "wan2.7-image"
+        label:
+          en_US: "wan2.7-image (2K)"
+          zh_Hans: "wan2.7-image（2K 标准版）"
+          pt_BR: "wan2.7-image (2K)"
+          ja_JP: "wan2.7-image（2K 標準版）"
+
+  - name: size
+    type: select
+    required: false
+    label:
+      en_US: "Size"
+      zh_Hans: "图像尺寸"
+      pt_BR: "Tamanho"
+      ja_JP: "画像サイズ"
+    human_description:
+      en_US: "Output resolution. wan2.7-image-pro supports 1K/2K/4K, wan2.7-image supports 1K/2K"
+      zh_Hans: "输出分辨率。wan2.7-image-pro 支持 1K/2K/4K，wan2.7-image 支持 1K/2K"
+      pt_BR: "Resolução de saída"
+      ja_JP: "出力解像度"
+    llm_description: "Output size for Wan generation"
+    form: form
+    default: "2K"
+    options:
+      - value: "1K"
+        label:
+          en_US: "1K"
+          zh_Hans: "1K"
+          pt_BR: "1K"
+          ja_JP: "1K"
+      - value: "2K"
+        label:
+          en_US: "2K"
+          zh_Hans: "2K"
+          pt_BR: "2K"
+          ja_JP: "2K"
+      - value: "4K"
+        label:
+          en_US: "4K (wan2.7-image-pro only)"
+          zh_Hans: "4K（仅 wan2.7-image-pro）"
+          pt_BR: "4K (apenas wan2.7-image-pro)"
+          ja_JP: "4K（wan2.7-image-pro のみ）"
+
+  - name: n
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of images. wan2.7 series default 1 (group mode 1-12), wan2.6 supports 1-4"
+      zh_Hans: "生成数量。wan2.7 系列默认 1（组图模式 1-12），wan2.6 支持 1-4"
+      pt_BR: "Número de imagens"
+      ja_JP: "画像数"
+    llm_description: "Number of images to generate"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+
+  - name: thinking_mode
+    type: boolean
+    required: false
+    label:
+      en_US: "Thinking Mode (wan2.7 only)"
+      zh_Hans: "思考模式（仅 wan2.7）"
+      pt_BR: "Modo de Pensamento (apenas wan2.7)"
+      ja_JP: "思考モード（wan2.7 のみ）"
+    human_description:
+      en_US: "Enable thinking mode for higher quality (adds 10-30s). Only for wan2.7 series."
+      zh_Hans: "启用思考模式以提升质量（增加耗时 10-30 秒）。仅 wan2.7 系列。"
+      pt_BR: "Ativar modo de pensamento para maior qualidade. Apenas wan2.7."
+      ja_JP: "思考モードを有効化（10-30 秒追加）。wan2.7 シリーズのみ。"
+    llm_description: "Thinking mode for wan2.7 series. Default true."
+    form: form
+    default: true
+
+  - name: seed
+    type: number
+    required: false
+    label:
+      en_US: "Seed"
+      zh_Hans: "随机种子"
+      pt_BR: "Seed"
+      ja_JP: "シード"
+    human_description:
+      en_US: "Random seed (0-2147483647). Same seed + prompt = reproducible result"
+      zh_Hans: "随机种子（0-2147483647）。相同种子 + 提示词可复现结果"
+      pt_BR: "Seed aleatória"
+      ja_JP: "ランダムシード"
+    llm_description: "Random seed for reproducible generation"
+    form: form
+    min: 0
+    max: 2147483647
+
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Watermark"
+      zh_Hans: "水印"
+      pt_BR: "Marca d'água"
+      ja_JP: "透かし"
+    human_description:
+      en_US: "Add watermark to generated image"
+      zh_Hans: "在生成的图像中添加水印"
+      pt_BR: "Adicionar marca d'água"
+      ja_JP: "透かしを追加"
+    llm_description: "Whether to add watermark"
+    form: form
+    default: false
+
+extra:
+  python:
+    source: tools/wan.py

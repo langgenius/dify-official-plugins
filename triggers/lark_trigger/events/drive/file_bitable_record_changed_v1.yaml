@@ -71,9 +71,23 @@ output_schema:
           record_id:
             type: string
           before_value:
-            type: string
+            type: array
+            items:
+              type: object
+              properties:
+                field_id:
+                  type: string
+                field_value:
+                  type: string
           after_value:
-            type: string
+            type: array
+            items:
+              type: object
+              properties:
+                field_id:
+                  type: string
+                field_value:
+                  type: string
       description: List of record actions performed
     
     action_count:

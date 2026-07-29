@@ -4,6 +4,21 @@ Azure OpenAI Service is a cloud-based platform that provides access to advanced 
 ## Configure
 Once the plugin is installed, configure your Azure OpenAI Service Model by providing the Model Type, Deployment Name, API Endpoint URL, Authentication Method, and the Base Model. The API Version is optional when your endpoint already uses the Azure OpenAI `v1` path, for example `https://<resource>.openai.azure.com/openai/v1/`.
 
+### Web Search (Azure native)
+
+This plugin supports Azure OpenAI native Web Search for models that use the Responses API path in this provider.
+
+Available model parameters:
+- **Enable Web Search** (`enable_web_search`): Enables `tools: [{"type": "web_search"}]`.
+- **Web Search Country** (`web_search_user_country`): Optional ISO 3166-1 alpha-2 country code (for example, `US`, `JP`).
+- **Allowed Domains** (`web_search_allowed_domains`): Optional allowlist of domains (comma/newline-separated).
+- **Include Source Metadata** (`web_search_include_sources`): Optional opt-in flag to request `include=["web_search_call.action.sources"]`.
+
+Notes:
+- Web Search is controlled by Azure subscription settings and can be blocked by admins.
+- Grounding with Bing terms, privacy, and pricing apply.
+- If your endpoint/API version does not support Web Search for the selected model, Azure will return an API error.
+
 ### Authentication Methods
 
 This plugin supports two authentication methods:

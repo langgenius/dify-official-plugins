@@ -61,7 +61,7 @@ parameters:
       zh_Hans: 最大迭代次数
       pt_BR: Maximum Iterations
     default: 3
-    max: 30
+    max: 500
     min: 1
 extra:
   python:

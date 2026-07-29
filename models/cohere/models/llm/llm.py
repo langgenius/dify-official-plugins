@@ -692,7 +692,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         base_model_schema_parameters_rules = base_model_schema.parameter_rules
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(zh_Hans=model, en_US=model),
+            label=I18nObject(zh_hans=model, en_us=model),
             model_type=ModelType.LLM,
             features=list(base_model_schema_features),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,

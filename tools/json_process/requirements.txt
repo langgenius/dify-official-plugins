@@ -1,2 +1,0 @@
-dify_plugin==0.0.1b65
-jsonpath_ng~=1.7.0

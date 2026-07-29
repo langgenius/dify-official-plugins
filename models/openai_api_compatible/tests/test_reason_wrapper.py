@@ -59,3 +59,30 @@ def test_wrap_plain_content_when_not_in_reasoning():
     out, is_reasoning = m._wrap_thinking_by_reasoning_content({"content": "plain"}, is_reasoning)
     assert out == "plain"
     assert is_reasoning is False
+
+def test_wrap_reasoning_and_content_both_not_empty():
+    """
+    Test that reasoning and content are wrapped correctly when both are not empty.
+    """
+    m = OpenAILargeLanguageModel(model_schemas=[])
+    is_reasoning = False
+
+    # 1) start reasoning with legacy key 'reasoning_content'
+    out, is_reasoning = m._wrap_thinking_by_reasoning_content({"reasoning_content": "X"}, is_reasoning)
+    assert out == "<think>\nX"
+    assert is_reasoning is True
+
+    # 2) continue reasoning
+    out, is_reasoning = m._wrap_thinking_by_reasoning_content({"reasoning_content": "Y"}, is_reasoning)
+    assert out == "Y"
+    assert is_reasoning is True
+
+    # 3) reasoning and content are not empty
+    out, is_reasoning = m._wrap_thinking_by_reasoning_content({"reasoning_content": "Z", "content": "Hello"}, is_reasoning)
+    assert out == "Z\n</think>Hello"
+    assert is_reasoning is False
+
+    # 4) close reasoning block on next plain content
+    out, is_reasoning = m._wrap_thinking_by_reasoning_content({"content": "end"}, is_reasoning)
+    assert out == "end"
+    assert is_reasoning is False

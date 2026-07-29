@@ -1,7 +1,7 @@
 import logging
-from dify_plugin.entities.model import ModelType
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin import ModelProvider
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,13 @@ class FireworksProvider(ModelProvider):
         :param credentials: provider credentials, credentials form defined in `provider_credential_schema`.
         """
         try:
-            model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(
-                model="accounts/fireworks/models/llama-v3p1-8b-instruct", credentials=credentials
+            client = OpenAI(
+                api_key=credentials["fireworks_api_key"],
+                base_url="https://api.fireworks.ai/inference/v1",
             )
+            client.models.list()
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
             logger.exception(f"{self.get_provider_schema().provider} credentials validate failed")
-            raise ex
+            raise CredentialsValidateFailedError(str(ex))

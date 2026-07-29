@@ -111,8 +111,6 @@ def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
         
         # Check if the requested model is available
         if model not in available_models:
-            base_url = credentials.get("endpoint_url", "").rstrip("/")
-            management_url = f"{base_url}:8000/#model-management"
             raise CredentialsValidateFailedError(
                 f"Model '{model}' is not available on the Lemonade server. "
                 "Please pull the model first. You can find more information about it at "
@@ -129,7 +127,7 @@ def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
 
 class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
@@ -152,10 +150,10 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
-                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的格式。",
+                        en_us="Specifying the format that the model must output.",
+                        zh_hans="指定模型必须输出的格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
@@ -172,10 +170,10 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         entity.parameter_rules += [
             ParameterRule(
                 name="enable_thinking",
-                label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                label=I18nObject(en_us="Thinking mode", zh_hans="思考模式"),
                 help=I18nObject(
-                    en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                    zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                    en_us="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                    zh_hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                 ),
                 type=ParameterType.BOOLEAN,
                 required=False,
@@ -202,11 +200,11 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
             # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content

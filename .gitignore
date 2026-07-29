@@ -192,4 +192,10 @@ models/openai_api_compatible/PR_DESCRIPTION.md
 
 # local venv
 models/volcengine/.venv/
-models/volcengine/uv.lock
+
+# Plugin-local generated files
+.pdm-python
+.pdm-build/
+models/gemini/file_cache.json
+tools/zoom/pdm.lock
+tools/zoom/.pre-commit-config.yaml

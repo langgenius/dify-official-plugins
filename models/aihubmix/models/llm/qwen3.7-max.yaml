@@ -1,0 +1,37 @@
+model: qwen3.7-max
+label:
+  en_US: Qwen3.7 Max
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+model_properties:
+  mode: chat
+  context_size: 1014784
+parameter_rules:
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 深度思考
+      en_US: Deep Thinking
+    help:
+      zh_Hans: 是否开启深度思考模式，开启后模型会先进行推理再给出回答。
+      en_US: Whether to enable deep thinking mode. When enabled, the model will reason before answering.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: "1.69"
+  output: "5.07"
+  unit: "0.000001"
+  currency: USD

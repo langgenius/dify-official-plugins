@@ -8,11 +8,11 @@ identity:
     ja_JP: "Qwen Image"
 description:
   human:
-    en_US: "Qwen Image Image Generation Model"
-    zh_Hans: "Qwen Image 图像生成模型"
-    pt_BR: "Modelo de geração de imagens Qwen Image"
-    ja_JP: "Qwen Image 画像生成モデル"
-  llm: "Generate image using Qwen Image model (qianfan/qwen-image) optimized for Chinese prompts and fast processing"
+    en_US: "Alibaba Qwen-Image text-to-image. 2.0-pro has the strongest text rendering and semantics, max excels at industrial design and geometric reasoning, plus supports custom resolution, the base qwen-image is the entry option."
+    zh_Hans: "阿里 Qwen-Image 文生图。2.0-pro 文字渲染与语义理解最强，max 擅长工业设计与几何推理，plus 支持自定义分辨率，基础版 qwen-image 适合入门。"
+    pt_BR: "Texto-para-imagem Qwen-Image da Alibaba. 2.0-pro tem a melhor renderização de texto e semântica; max se destaca em design industrial e raciocínio geométrico; plus suporta resolução personalizada; qwen-image base é a opção de entrada."
+    ja_JP: "Alibaba Qwen-Image のテキストから画像生成。2.0-pro はテキスト描画と意味理解が最強、max は工業デザインと幾何推論に優れる、plus はカスタム解像度対応、qwen-image はベース版。"
+  llm: "Generate images with Alibaba Qwen-Image (qwen-image / 2.0 / 2.0-pro / max / plus). Particularly strong on Chinese prompts and rendering legible text inside images."
 parameters:
   - name: prompt
     type: string
@@ -29,7 +29,55 @@ parameters:
       ja_JP: "生成したい画像のテキスト説明"
     llm_description: "Text prompt for Qwen Image generation, describing the desired image content"
     form: llm
-  
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Qwen Image model variant"
+      zh_Hans: "Qwen Image 模型变体"
+      pt_BR: "Variante do modelo Qwen Image"
+      ja_JP: "Qwen Image モデルバリアント"
+    llm_description: "Qwen Image model selection. qwen-image-2.0-pro is strongest, qwen-image-max excels at industrial design, qwen-image-plus supports custom resolution."
+    form: form
+    default: "qwen-image"
+    options:
+      - value: "qwen-image"
+        label:
+          en_US: "qwen-image (base)"
+          zh_Hans: "qwen-image（基础版）"
+          pt_BR: "qwen-image (base)"
+          ja_JP: "qwen-image（ベース）"
+      - value: "qwen-image-2.0-pro"
+        label:
+          en_US: "qwen-image-2.0-pro"
+          zh_Hans: "qwen-image-2.0-pro"
+          pt_BR: "qwen-image-2.0-pro"
+          ja_JP: "qwen-image-2.0-pro"
+      - value: "qwen-image-2.0"
+        label:
+          en_US: "qwen-image-2.0"
+          zh_Hans: "qwen-image-2.0"
+          pt_BR: "qwen-image-2.0"
+          ja_JP: "qwen-image-2.0"
+      - value: "qwen-image-max"
+        label:
+          en_US: "qwen-image-max"
+          zh_Hans: "qwen-image-max"
+          pt_BR: "qwen-image-max"
+          ja_JP: "qwen-image-max"
+      - value: "qwen-image-plus"
+        label:
+          en_US: "qwen-image-plus"
+          zh_Hans: "qwen-image-plus"
+          pt_BR: "qwen-image-plus"
+          ja_JP: "qwen-image-plus"
+
   - name: resolution
     type: select
     required: false
@@ -53,6 +101,36 @@ parameters:
           zh_Hans: "1024x1024"
           pt_BR: "1024x1024"
           ja_JP: "1024x1024"
+      - value: "1328x1328"
+        label:
+          en_US: "1328x1328"
+          zh_Hans: "1328x1328"
+          pt_BR: "1328x1328"
+          ja_JP: "1328x1328"
+      - value: "1664x928"
+        label:
+          en_US: "1664x928 (16:9)"
+          zh_Hans: "1664x928 (16:9)"
+          pt_BR: "1664x928 (16:9)"
+          ja_JP: "1664x928 (16:9)"
+      - value: "928x1664"
+        label:
+          en_US: "928x1664 (9:16)"
+          zh_Hans: "928x1664 (9:16)"
+          pt_BR: "928x1664 (9:16)"
+          ja_JP: "928x1664 (9:16)"
+      - value: "1472x1104"
+        label:
+          en_US: "1472x1104 (4:3)"
+          zh_Hans: "1472x1104 (4:3)"
+          pt_BR: "1472x1104 (4:3)"
+          ja_JP: "1472x1104 (4:3)"
+      - value: "1104x1472"
+        label:
+          en_US: "1104x1472 (3:4)"
+          zh_Hans: "1104x1472 (3:4)"
+          pt_BR: "1104x1472 (3:4)"
+          ja_JP: "1104x1472 (3:4)"
       - value: "768x1024"
         label:
           en_US: "768x1024"

@@ -59,11 +59,6 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
         invoke LLM
         see `core.model_runtime.model_providers.__base.large_language_model.LargeLanguageModel._invoke`
         """
-        if "temperature" in model_parameters:
-            if model_parameters["temperature"] < 0.01:
-                model_parameters["temperature"] = 0.01
-            elif model_parameters["temperature"] > 1.0:
-                model_parameters["temperature"] = 0.99
         credentials['mode'] = 'chat'
 
         return self._generate(
@@ -477,14 +472,14 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
                 name='temperature', type=ParameterType.FLOAT,
                 use_template='temperature',
                 label=I18nObject(
-                    zh_Hans='温度', en_US='Temperature'
+                    zh_hans='温度', en_us='Temperature'
                 )
             ),
             ParameterRule(
                 name='top_p', type=ParameterType.FLOAT,
                 use_template='top_p',
                 label=I18nObject(
-                    zh_Hans='Top P', en_US='Top P'
+                    zh_hans='Top P', en_us='Top P'
                 )
             ),
             ParameterRule(
@@ -493,7 +488,7 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
                 min=1,
                 default=512,
                 label=I18nObject(
-                    zh_Hans='最大生成长度', en_US='Max Tokens'
+                    zh_hans='最大生成长度', en_us='Max Tokens'
                 )
             )
         ]
@@ -501,7 +496,7 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
         entity = AIModelEntity(
             model=model,
             label=I18nObject(
-                en_US=model
+                en_us=model
             ),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,

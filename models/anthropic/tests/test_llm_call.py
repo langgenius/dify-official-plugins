@@ -43,7 +43,7 @@ def get_all_models() -> list[str]:
 def test_llm_invoke(model_name: str) -> None:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+        pytest.skip("ANTHROPIC_API_KEY is not set")
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:

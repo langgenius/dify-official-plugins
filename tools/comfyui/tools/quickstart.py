@@ -9,7 +9,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from tools.comfyui_client import ComfyUiClient, FileType
-from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_model_manager import ComfyUIModel, ModelManager
 from tools.comfyui_workflow import ComfyUiWorkflow
 
 
@@ -74,7 +74,13 @@ class QuickStart(Tool):
 
         workflow = ""
         output_images = []
-        if ui.feature == "qwen_image":
+        if ui.feature == "z_image":
+            workflow, output_images = self.z_image(ui)
+        elif ui.feature == "z_image_turbo":
+            workflow, output_images = self.z_image_turbo(ui)
+        elif ui.feature == "longcat":
+            workflow, output_images = self.longcat(ui)
+        elif ui.feature == "qwen_image":
             workflow, output_images = self.qwen_image(ui)
         elif ui.feature == "qwen_image_edit":
             workflow, output_images = self.qwen_image_edit(ui)
@@ -104,6 +110,112 @@ class QuickStart(Tool):
                 },
             )
 
+    def z_image(self, ui: QuickStartConfig):
+        if ui.width is None or ui.height is None:
+            raise ToolProviderCredentialValidationError("Please input width and height")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "z_image.json")
+        with open(filepath, encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
+
+        models = [
+            ComfyUIModel(
+                name="ae.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+                directory="vae",
+            ),
+            ComfyUIModel(
+                name="qwen_3_4b.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
+                directory="text_encoders",
+            ),
+            ComfyUIModel(
+                name="z_image_bf16.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image/resolve/main/split_files/diffusion_models/z_image_bf16.safetensors",
+                directory="diffusion_models",
+            ),
+        ]
+        for model in models:
+            self.model_manager.download_model(model.url, model.directory)
+        workflow.set_prompt("76:67", ui.prompt)
+        if ui.negative_prompt:
+            workflow.set_prompt("76:71", ui.negative_prompt)
+        workflow.set_sd3_latent_image(None, ui.width, ui.height)
+
+        output_images = self.comfyui.generate(workflow)
+        return workflow.json_str(), output_images
+
+    def z_image_turbo(self, ui: QuickStartConfig):
+        if ui.width is None or ui.height is None:
+            raise ToolProviderCredentialValidationError("Please input width and height")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "z_image_turbo.json")
+        with open(filepath, encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
+
+        models = [
+            ComfyUIModel(
+                name="qwen_3_4b.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
+                directory="text_encoders",
+            ),
+            ComfyUIModel(
+                name="ae.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+                directory="vae",
+            ),
+            ComfyUIModel(
+                name="z_image_turbo_bf16.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors",
+                directory="diffusion_models",
+            ),
+        ]
+        for model in models:
+            self.model_manager.download_model(model.url, model.directory)
+        workflow.set_prompt(None, ui.prompt)
+        workflow.set_sd3_latent_image(None, ui.width, ui.height)
+
+        output_images = self.comfyui.generate(workflow)
+        return workflow.json_str(), output_images
+
+    def longcat(self, ui: QuickStartConfig):
+        if ui.width is None or ui.height is None:
+            raise ToolProviderCredentialValidationError("Please input width and height")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "longcat.json")
+        with open(filepath, encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
+
+        models = [
+            ComfyUIModel(
+                name="longcat_image_bf16.safetensors",
+                url="https://huggingface.co/Comfy-Org/LongCat-Image/resolve/main/split_files/diffusion_models/longcat_image_bf16.safetensors",
+                directory="diffusion_models",
+            ),
+            ComfyUIModel(
+                name="qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                url="https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                directory="text_encoders",
+            ),
+            ComfyUIModel(
+                name="ae.safetensors",
+                url="https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+                directory="vae",
+            ),
+        ]
+        for model in models:
+            self.model_manager.download_model(model.url, model.directory)
+        workflow.set_prompt("13:4", ui.prompt)
+        if ui.negative_prompt:
+            workflow.set_prompt("13:5", ui.negative_prompt)
+        workflow.set_sd3_latent_image(None, ui.width, ui.height)
+
+        output_images = self.comfyui.generate(workflow)
+        return workflow.json_str(), output_images
+
     def qwen_image(self, ui: QuickStartConfig):
         models = [
             {
@@ -130,7 +242,6 @@ class QuickStart(Tool):
         for model in models:
             self.model_manager.download_model(model["url"], model["directory"])
 
-        current_dir = os.path.dirname(os.path.realpath(__file__))
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image.json")
         with open(filepath, encoding="utf-8") as f:

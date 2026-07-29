@@ -90,6 +90,40 @@ parameters:
     llm_description: "Optional custom filename for the PDF. If not provided, a UUID will be used. Must end with '.pdf'. Example: 'report_123.pdf'"
     form: llm
 
+  - name: cloud_storage
+    type: select
+    required: false
+    default: "1"
+    label:
+      en_US: "Cloud Storage"
+      ja_JP: "クラウドストレージ"
+      zh_Hans: "云存储"
+      pt_BR: "Armazenamento em Nuvem"
+      zh_Hant: "雲端儲存"
+    human_description:
+      en_US: "Whether to upload the generated PDF to APITemplate.io's CDN. Set to 0 if you have configured a Post Action to upload to your own S3 bucket."
+      ja_JP: "生成された PDF を APITemplate.io の CDN にアップロードするかどうか。Post Action で独自の S3 にアップロードするように構成している場合は 0 に設定します。"
+      zh_Hans: "是否将生成的 PDF 上传到 APITemplate.io 的 CDN。如果您已配置 Post Action 上传到您自己的 S3 存储桶，请设置为 0。"
+      pt_BR: "Se deve enviar o PDF gerado para o CDN do APITemplate.io. Defina como 0 se você configurou uma Post Action para enviar para seu próprio bucket S3."
+      zh_Hant: "是否將生成的 PDF 上傳到 APITemplate.io 的 CDN。如果您已設定 Post Action 上傳到您自己的 S3 儲存桶，請設定為 0。"
+    llm_description: "Controls whether the generated PDF is uploaded to APITemplate.io's storage CDN. Use '1' (default) to upload to the CDN, or '0' to skip the CDN upload (useful when using a Post Action to upload to your own S3 bucket)."
+    options:
+      - value: "1"
+        label:
+          en_US: "Upload to CDN (default)"
+          ja_JP: "CDN にアップロード（デフォルト）"
+          zh_Hans: "上传到 CDN（默认）"
+          pt_BR: "Enviar para o CDN (padrão)"
+          zh_Hant: "上傳到 CDN（預設）"
+      - value: "0"
+        label:
+          en_US: "Skip CDN upload"
+          ja_JP: "CDN アップロードをスキップ"
+          zh_Hans: "跳过 CDN 上传"
+          pt_BR: "Pular envio para o CDN"
+          zh_Hant: "略過 CDN 上傳"
+    form: form
+
 extra:
   python:
     source: tools/create_pdf_from_html.py 

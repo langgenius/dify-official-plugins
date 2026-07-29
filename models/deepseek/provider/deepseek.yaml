@@ -2,8 +2,8 @@ background: '#c0cdff'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by deepseek, such as deepseek-reasoner、deepseek-chat、deepseek-coder.
-  zh_Hans: 深度求索提供的模型，例如 deepseek-reasoner、deepseek-chat、deepseek-coder 。
+  en_US: Models provided by DeepSeek, such as deepseek-v4-flash, deepseek-v4-pro, deepseek-chat and deepseek-reasoner.
+  zh_Hans: DeepSeek 提供的模型，例如 deepseek-v4-flash、deepseek-v4-pro、deepseek-chat 和 deepseek-reasoner。
 extra:
   python:
     model_sources:
@@ -39,8 +39,8 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: Base URL, e.g. https://api.deepseek.com/v1 or https://api.deepseek.com
       zh_Hans: Base URL, e.g. https://api.deepseek.com/v1 or https://api.deepseek.com

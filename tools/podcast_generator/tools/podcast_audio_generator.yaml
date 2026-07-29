@@ -124,7 +124,7 @@ parameters:
   - label:
       en_US: Verse
     value: verse
-  required: true
+  required: false
   type: select
 
 - form: llm

@@ -1,0 +1,131 @@
+identity:
+  name: "ideogram"
+  author: "langgenius"
+  label:
+    en_US: "Ideogram V3"
+    zh_Hans: "Ideogram V3"
+    pt_BR: "Ideogram V3"
+    ja_JP: "Ideogram V3"
+description:
+  human:
+    en_US: "Ideogram V3 text-to-image. Choose rendering speed (QUALITY / DEFAULT / TURBO) and aspect ratio. Note: returned image URLs require a proxy connection to fetch."
+    zh_Hans: "Ideogram V3 文生图。可选 QUALITY / DEFAULT / TURBO 三档渲染速度与多种宽高比。注意：返回的图片链接需通过代理网络才能下载。"
+    pt_BR: "Texto-para-imagem Ideogram V3. Escolha velocidade de renderização (QUALITY / DEFAULT / TURBO) e proporção. Os URLs retornados exigem conexão via proxy."
+    ja_JP: "Ideogram V3 のテキストから画像生成。レンダリング速度（QUALITY / DEFAULT / TURBO）とアスペクト比を選択可能。返却される画像 URL の取得にはプロキシが必要。"
+  llm: "Generate images with Ideogram V3. Pick rendering_speed (QUALITY for best quality, TURBO for fastest) and aspect_ratio. Output URLs may require proxy access in some regions."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of the image"
+      zh_Hans: "图像的文字描述"
+      pt_BR: "Descrição textual da imagem"
+      ja_JP: "画像のテキスト説明"
+    llm_description: "Text prompt for Ideogram V3 generation"
+    form: llm
+
+  - name: rendering_speed
+    type: select
+    required: false
+    label:
+      en_US: "Rendering Speed"
+      zh_Hans: "渲染速度"
+      pt_BR: "Velocidade de Renderização"
+      ja_JP: "レンダリング速度"
+    human_description:
+      en_US: "Rendering speed/quality trade-off"
+      zh_Hans: "渲染速度与质量的权衡"
+      pt_BR: "Equilíbrio entre velocidade e qualidade"
+      ja_JP: "速度と品質のトレードオフ"
+    llm_description: "Rendering speed for Ideogram V3"
+    form: form
+    default: "QUALITY"
+    options:
+      - value: "QUALITY"
+        label:
+          en_US: "QUALITY (best)"
+          zh_Hans: "QUALITY（最高质量）"
+          pt_BR: "QUALITY (melhor)"
+          ja_JP: "QUALITY（最高品質）"
+      - value: "DEFAULT"
+        label:
+          en_US: "DEFAULT"
+          zh_Hans: "DEFAULT（默认）"
+          pt_BR: "DEFAULT"
+          ja_JP: "DEFAULT（デフォルト）"
+      - value: "TURBO"
+        label:
+          en_US: "TURBO (fastest)"
+          zh_Hans: "TURBO（最快）"
+          pt_BR: "TURBO (mais rápido)"
+          ja_JP: "TURBO（最速）"
+
+  - name: aspect_ratio
+    type: select
+    required: false
+    label:
+      en_US: "Aspect Ratio"
+      zh_Hans: "宽高比"
+      pt_BR: "Proporção"
+      ja_JP: "アスペクト比"
+    human_description:
+      en_US: "Image aspect ratio (Ideogram uses xY format)"
+      zh_Hans: "图像宽高比（Ideogram 使用 xY 格式）"
+      pt_BR: "Proporção da imagem"
+      ja_JP: "画像のアスペクト比"
+    llm_description: "Aspect ratio for Ideogram V3 generation"
+    form: form
+    default: "1x1"
+    options:
+      - value: "1x1"
+        label:
+          en_US: "1:1 (square)"
+          zh_Hans: "1:1（方形）"
+          pt_BR: "1:1 (quadrado)"
+          ja_JP: "1:1（正方形）"
+      - value: "16x9"
+        label:
+          en_US: "16:9 (landscape)"
+          zh_Hans: "16:9（横屏）"
+          pt_BR: "16:9 (paisagem)"
+          ja_JP: "16:9（横）"
+      - value: "9x16"
+        label:
+          en_US: "9:16 (portrait)"
+          zh_Hans: "9:16（竖屏）"
+          pt_BR: "9:16 (retrato)"
+          ja_JP: "9:16（縦）"
+      - value: "4x3"
+        label:
+          en_US: "4:3"
+          zh_Hans: "4:3"
+          pt_BR: "4:3"
+          ja_JP: "4:3"
+      - value: "3x4"
+        label:
+          en_US: "3:4"
+          zh_Hans: "3:4"
+          pt_BR: "3:4"
+          ja_JP: "3:4"
+      - value: "2x1"
+        label:
+          en_US: "2:1 (wide)"
+          zh_Hans: "2:1（宽屏）"
+          pt_BR: "2:1 (largo)"
+          ja_JP: "2:1（ワイド）"
+      - value: "1x2"
+        label:
+          en_US: "1:2 (tall)"
+          zh_Hans: "1:2（高屏）"
+          pt_BR: "1:2 (alto)"
+          ja_JP: "1:2（縦長）"
+
+extra:
+  python:
+    source: tools/ideogram.py

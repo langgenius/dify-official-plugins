@@ -30,5 +30,6 @@ class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @staticmethod
     def _add_custom_parameters(credentials: dict) -> None:
-        credentials["endpoint_url"] = "https://api.xiaomimimo.com/v1"
+        if not credentials.get("endpoint_url"):
+            credentials["endpoint_url"] = "https://api.xiaomimimo.com/v1"
         credentials["mode"] = LLMMode.CHAT.value

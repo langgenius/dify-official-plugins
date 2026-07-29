@@ -57,6 +57,9 @@ class OllamaRerankModel(RerankModel):
             return RerankResult(model=model, docs=[])
 
         headers = {"Content-Type": "application/json"}
+        api_key = credentials.get("api_key")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         endpoint_url = credentials.get("base_url", "").rstrip("/")
         if not endpoint_url.endswith("/rerank"):
             endpoint_url = endpoint_url + "/api/rerank"
@@ -165,7 +168,7 @@ class OllamaRerankModel(RerankModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.RERANK,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={

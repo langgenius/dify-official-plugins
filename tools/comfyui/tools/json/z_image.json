@@ -1,0 +1,141 @@
+{
+    "9": {
+        "inputs": {
+            "filename_prefix": "z-image",
+            "images": [
+                "76:65",
+                0
+            ]
+        },
+        "class_type": "SaveImage",
+        "_meta": {
+            "title": "画像を保存"
+        }
+    },
+    "76:67": {
+        "inputs": {
+            "text": "A fashion photography work full of surreal romanticism, using a low-angle upward shooting composition, with a clear light blue sky as the background, and the visual focus concentrated on the fantasy blue vegetation and the model walking through it.\n\nThe vegetation in the picture is processed into varying shades of blue, from light ice blue to deep cobalt blue. The textures of the leaves and branches are delicate and realistic. The warm brown tree trunks form a sharp contrast with the cool blue leaves, resembling a dreamy forest from another world. An African-American model wearing a yellow and white vertical striped long dress walks slowly on the sand. The warm tones of the dress echo with the surrounding cool blue vegetation. The noon sun casts clear shadows on the sand, enhancing the sense of space and reality in the picture.\n\nThe entire scene, with its clean and transparent colors and fantasy settings, not only exudes the vastness of the natural wilderness but also presents a quiet and poetic high-fashion sense due to the surreal vegetation.",
+            "clip": [
+                "76:62",
+                0
+            ]
+        },
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+            "title": "CLIP Text Encode (Positive Prompt)"
+        }
+    },
+    "76:68": {
+        "inputs": {
+            "width": 1024,
+            "height": 1024,
+            "batch_size": 1
+        },
+        "class_type": "EmptySD3LatentImage",
+        "_meta": {
+            "title": "空のSD3潜在画像"
+        }
+    },
+    "76:63": {
+        "inputs": {
+            "vae_name": "ae.safetensors"
+        },
+        "class_type": "VAELoader",
+        "_meta": {
+            "title": "VAEを読み込む"
+        }
+    },
+    "76:62": {
+        "inputs": {
+            "clip_name": "qwen_3_4b.safetensors",
+            "type": "lumina2",
+            "device": "default"
+        },
+        "class_type": "CLIPLoader",
+        "_meta": {
+            "title": "CLIPを読み込む"
+        }
+    },
+    "76:65": {
+        "inputs": {
+            "samples": [
+                "76:69",
+                0
+            ],
+            "vae": [
+                "76:63",
+                0
+            ]
+        },
+        "class_type": "VAEDecode",
+        "_meta": {
+            "title": "VAEデコード"
+        }
+    },
+    "76:70": {
+        "inputs": {
+            "shift": 3,
+            "model": [
+                "76:66",
+                0
+            ]
+        },
+        "class_type": "ModelSamplingAuraFlow",
+        "_meta": {
+            "title": "モデルサンプリングオーラフロー"
+        }
+    },
+    "76:66": {
+        "inputs": {
+            "unet_name": "z_image_bf16.safetensors",
+            "weight_dtype": "default"
+        },
+        "class_type": "UNETLoader",
+        "_meta": {
+            "title": "拡散モデルを読み込む"
+        }
+    },
+    "76:71": {
+        "inputs": {
+            "text": "",
+            "clip": [
+                "76:62",
+                0
+            ]
+        },
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+            "title": "CLIP Text Encode (Negative Prompt)"
+        }
+    },
+    "76:69": {
+        "inputs": {
+            "seed": 770044821593082,
+            "steps": 25,
+            "cfg": 4,
+            "sampler_name": "res_multistep",
+            "scheduler": "simple",
+            "denoise": 1,
+            "model": [
+                "76:70",
+                0
+            ],
+            "positive": [
+                "76:67",
+                0
+            ],
+            "negative": [
+                "76:71",
+                0
+            ],
+            "latent_image": [
+                "76:68",
+                0
+            ]
+        },
+        "class_type": "KSampler",
+        "_meta": {
+            "title": "Kサンプラー"
+        }
+    }
+}

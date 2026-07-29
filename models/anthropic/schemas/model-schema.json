@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://jhlfund.com/schemas/dify-model.yaml.json",
+  "title": "Dify Plugin Model Configuration",
+  "description": "JSON Schema for Dify plugin model definition YAML files (AIModelEntity). Provides auto-completion and validation for model manifests under models/<type>/*.yaml.",
+  "type": "object",
+  "required": ["model", "model_type", "model_properties"],
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "type": "string",
+      "description": "Unique model identifier (e.g. 'gpt-4o', 'gpt-image-2')."
+    },
+    "label": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Fallback label string (treated as en_US)."
+        },
+        {
+          "$ref": "#/definitions/I18nObject"
+        }
+      ],
+      "description": "Human-readable model name. Auto-filled from 'model' when omitted."
+    },
+    "model_type": {
+      "type": "string",
+      "enum": [
+        "llm",
+        "text-embedding",
+        "rerank",
+        "speech2text",
+        "moderation",
+        "tts",
+        "text2img"
+      ],
+      "description": "The functional category of this model."
+    },
+    "features": {
+      "type": "array",
+      "description": "Capabilities this model supports.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "tool-call",
+          "multi-tool-call",
+          "agent-thought",
+          "vision",
+          "stream-tool-call",
+          "document",
+          "video",
+          "audio",
+          "structured-output",
+          "polling"
+        ]
+      }
+    },
+    "fetch_from": {
+      "type": "string",
+      "enum": ["predefined-model", "customizable-model"],
+      "default": "predefined-model",
+      "description": "Whether this model is bundled (predefined) or user-defined (customizable)."
+    },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark the model as deprecated."
+    },
+    "model_properties": {
+      "type": "object",
+      "description": "Model-type-specific properties. Keys are fixed enums; values depend on the key.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["chat", "completion"],
+          "description": "(LLM only) Interaction mode: 'chat' for conversational, 'completion' for single-turn."
+        },
+        "context_size": {
+          "type": "integer",
+          "description": "Maximum context window in tokens (e.g. 65536, 131072)."
+        },
+        "max_chunks": {
+          "type": "integer",
+          "description": "(text-embedding) Maximum number of chunks."
+        },
+        "file_upload_limit": {
+          "type": "integer",
+          "description": "Maximum number of files allowed in a single upload."
+        },
+        "supported_file_extensions": {
+          "type": "array",
+          "description": "List of supported file extensions (e.g. ['.pdf', '.txt']).",
+          "items": { "type": "string" }
+        },
+        "max_characters_per_chunk": {
+          "type": "integer",
+          "description": "(text-embedding) Max characters per chunk."
+        },
+        "default_voice": {
+          "type": "string",
+          "description": "(TTS) Default voice identifier."
+        },
+        "voices": {
+          "type": "array",
+          "description": "(TTS) List of available voice objects.",
+          "items": { "type": "object" }
+        },
+        "word_limit": {
+          "type": "integer",
+          "description": "(TTS) Maximum words per request."
+        },
+        "audio_type": {
+          "type": "string",
+          "description": "(TTS) Output audio format (e.g. 'mp3', 'wav')."
+        },
+        "max_workers": {
+          "type": "integer",
+          "description": "(TTS) Max concurrency workers."
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameter_rules": {
+      "type": "array",
+      "description": "List of tunable parameters exposed to end-users in Dify.",
+      "items": { "$ref": "#/definitions/ParameterRule" }
+    },
+    "pricing": {
+      "$ref": "#/definitions/PriceConfig",
+      "description": "Pricing configuration for this model."
+    }
+  },
+  "definitions": {
+    "I18nObject": {
+      "type": "object",
+      "description": "Internationalised label / help text.",
+      "required": ["en_US"],
+      "additionalProperties": false,
+      "properties": {
+        "en_US": {
+          "type": "string",
+          "description": "English (US) — mandatory."
+        },
+        "zh_Hans": {
+          "type": "string",
+          "description": "Simplified Chinese."
+        },
+        "pt_BR": {
+          "type": "string",
+          "description": "Brazilian Portuguese."
+        },
+        "ja_JP": {
+          "type": "string",
+          "description": "Japanese."
+        }
+      }
+    },
+    "ParameterRule": {
+      "type": "object",
+      "description": "A single tunable parameter exposed in the Dify UI.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Machine-readable parameter name (e.g. 'temperature')."
+        },
+        "use_template": {
+          "type": "string",
+          "enum": [
+            "temperature",
+            "top_p",
+            "top_k",
+            "presence_penalty",
+            "frequency_penalty",
+            "max_tokens",
+            "response_format",
+            "json_schema"
+          ],
+          "description": "Reuse a built-in parameter template. When set, template defaults (label, type, help, min, max, etc.) are auto-injected; you can still override any field individually."
+        },
+        "label": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/I18nObject" }
+          ],
+          "description": "Human-readable parameter label. Defaults to 'name' when omitted."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["float", "int", "string", "boolean", "text"],
+          "description": "Data type of the parameter. Required unless 'use_template' is provided."
+        },
+        "help": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/I18nObject" }
+          ],
+          "description": "Tooltip / helper text shown in the UI."
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the user must provide a value for this parameter."
+        },
+        "default": {
+          "description": "Default value used when the user does not override it."
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum allowed value (numeric parameters only)."
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum allowed value (numeric parameters only)."
+        },
+        "precision": {
+          "type": "integer",
+          "description": "Number of decimal places to keep (float parameters only)."
+        },
+        "options": {
+          "type": "array",
+          "description": "Allowed string values (enum-like) for 'string' or 'text' parameters.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "PriceConfig": {
+      "type": "object",
+      "description": "Per-token (or per-unit) pricing information.",
+      "required": ["input", "unit", "currency"],
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Input-side price per 'unit' tokens (e.g. '0.0015'). Use string to preserve Decimal precision."
+        },
+        "output": {
+          "type": "string",
+          "description": "Output-side price per 'unit' tokens (e.g. '0.002'). Omit if not applicable (e.g. embedding)."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The divisor that 'input'/'output' map to. E.g. '0.000001' means the price is per 1 000 000 tokens.",
+          "examples": ["0.000001", "0.001", "1"]
+        },
+        "currency": {
+          "type": "string",
+          "description": "ISO currency code.",
+          "examples": ["USD", "CNY"]
+        }
+      }
+    }
+  }
+}

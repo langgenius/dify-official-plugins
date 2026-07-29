@@ -13,25 +13,6 @@ model_properties:
   mode: chat
   context_size: 991000
 parameter_rules:
-  - name: thinking
-    label:
-      zh_Hans: 推理模式
-      en_US: Thinking Mode
-    type: boolean
-    default: false
-    required: false
-    help:
-      zh_Hans: 控制模型的推理能力。
-      en_US: Controls the model's thinking capability.
-  - name: thinking_budget
-    label:
-      zh_Hans: 推理预算
-      en_US: Thinking Budget
-    type: int
-    default: 1024
-    min: 0
-    max: 32000
-    required: false
   - name: temperature
     use_template: temperature
   - name: top_p
@@ -41,6 +22,28 @@ parameter_rules:
     default: 8192
     min: 1
     max: 64000
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+  - name: thinking_budget
+    required: false
+    type: int
+    default: 2048
+    min: 1
+    max: 81920
+    label:
+      zh_Hans: 思考长度限制
+      en_US: Thinking budget
+    help:
+      zh_Hans: 思考过程的最大长度，只在思考模式为 true 时生效。
+      en_US: The maximum length of the thinking process, only effective when thinking mode is true.
   - name: response_format
     label:
       zh_Hans: 回复格式

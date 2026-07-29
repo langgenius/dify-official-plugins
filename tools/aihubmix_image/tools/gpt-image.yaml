@@ -8,11 +8,11 @@ identity:
     ja_JP: "GPT Image"
 description:
   human:
-    en_US: "GPT Image Image Generation Model, supporting gpt-image-1 and gpt-image-1-mini"
-    zh_Hans: "GPT Image 图像生成模型，支持 gpt-image-1 和 gpt-image-1-mini "
-    pt_BR: "Modelo de geração de imagens GPT Image, suportando gpt-image-1 e gpt-image-1-mini"
-    ja_JP: "GPT Image 画像生成モデル、gpt-image-1 と gpt-image-1-mini をサポート"
-  llm: "Generate image using GPT Image model (gpt-image-1 and gpt-image-1-mini) with fast processing and good quality"
+    en_US: "OpenAI text-to-image. gpt-image-2 has the strongest instruction following, gpt-image-1.5 balances quality and cost, dall-e-3 is the long-standing photorealistic / artistic option."
+    zh_Hans: "OpenAI 文生图。gpt-image-2 指令跟随最强，gpt-image-1.5 在质量与成本间均衡，dall-e-3 偏写实和艺术风。"
+    pt_BR: "Texto-para-imagem da OpenAI. gpt-image-2 tem a melhor aderência ao prompt; gpt-image-1.5 equilibra qualidade e custo; dall-e-3 é a opção fotorrealista / artística clássica."
+    ja_JP: "OpenAI のテキストから画像生成。gpt-image-2 はプロンプト追従性が最も高く、gpt-image-1.5 は品質とコストのバランス、dall-e-3 はフォトリアリスティック / アート系の定番。"
+  llm: "Generate images with OpenAI: gpt-image-2 (best instruction following, recommended default), gpt-image-1.5 (balanced quality/cost), or dall-e-3 (photorealistic and artistic). Up to 4 images per call; outputs base64 or URL."
 parameters:
   - name: prompt
     type: string
@@ -45,20 +45,26 @@ parameters:
       ja_JP: "使用するGPT Imageモデル"
     llm_description: "GPT Image model selection for image generation"
     form: form
-    default: "gpt-image-1"
+    default: "gpt-image-2"
     options:
-      - value: "gpt-image-1"
+      - value: "gpt-image-2"
         label:
-          en_US: "gpt-image-1"
-          zh_Hans: "gpt-image-1"
-          pt_BR: "gpt-image-1"
-          ja_JP: "gpt-image-1"
-      - value: "gpt-image-1-mini"
+          en_US: "gpt-image-2"
+          zh_Hans: "gpt-image-2"
+          pt_BR: "gpt-image-2"
+          ja_JP: "gpt-image-2"
+      - value: "gpt-image-1.5"
         label:
-          en_US: "gpt-image-1-mini"
-          zh_Hans: "gpt-image-1-mini"
-          pt_BR: "gpt-image-1-mini"
-          ja_JP: "gpt-image-1-mini"
+          en_US: "gpt-image-1.5"
+          zh_Hans: "gpt-image-1.5"
+          pt_BR: "gpt-image-1.5"
+          ja_JP: "gpt-image-1.5"
+      - value: "dall-e-3"
+        label:
+          en_US: "dall-e-3"
+          zh_Hans: "dall-e-3"
+          pt_BR: "dall-e-3"
+          ja_JP: "dall-e-3"
   
   - name: resolution
     type: select
@@ -77,6 +83,12 @@ parameters:
     form: form
     default: "1024x1024"
     options:
+      - value: "auto"
+        label:
+          en_US: "auto"
+          zh_Hans: "auto（自动）"
+          pt_BR: "auto"
+          ja_JP: "auto（自動）"
       - value: "1024x1024"
         label:
           en_US: "1024x1024"
@@ -89,7 +101,7 @@ parameters:
           zh_Hans: "1536x1024"
           pt_BR: "1536x1024"
           ja_JP: "1536x1024"
-      - value: "1024x2048"
+      - value: "1024x1536"
         label:
           en_US: "1024x1536"
           zh_Hans: "1024x1536"
