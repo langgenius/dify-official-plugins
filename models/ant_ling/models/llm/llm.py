@@ -55,10 +55,30 @@ def _is_transient_error(e: Exception) -> bool:
 
     err_str = str(e).lower()
     err_type_name = type(e).__name__.lower()
-    return any(
-        kw in err_str or kw in err_type_name
-        for kw in ("ssl", "timeout", "connection", "rate_limit", "rate limit", "429", "500", "502", "503", "504")
-    )
+
+    if any(kw in err_str or kw in err_type_name for kw in ("ssl", "timeout", "connection", "rate_limit", "rate limit")):
+        return True
+
+    for code_str in ("429", "500", "502", "503", "504"):
+        patterns = (
+            f"http {code_str}",
+            f"status {code_str}",
+            f"status_code {code_str}",
+            f"code {code_str}",
+            f"code: {code_str}",
+            f'code": {code_str}',
+            f'code":{code_str}',
+            f"code': {code_str}",
+            f"code':{code_str}",
+            f'"{code_str}"',
+            f"'{code_str}'",
+            f"{code_str} internal",
+            f" {code_str} ",
+        )
+        if any(p in err_str for p in patterns):
+            return True
+
+    return False
 
 
 def _calculate_backoff_sleep(base_delay: float) -> float:

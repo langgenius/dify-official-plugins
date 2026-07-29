@@ -607,6 +607,17 @@ Requirements:
             provider.validate_provider_credentials({"api_key": "test_key", "validate_model": "Ling-3.0-flash"})
             mock_model_instance.validate_credentials.assert_called_once()
 
+    def test_408_bare_500_not_matched_as_transient_error(self):
+        test_name = "Bare 500 Substring Not Transient Error Test"
+        print(f"\n---> Running: {test_name}")
+        from models.llm.llm import _is_transient_error
+
+        self.assertFalse(_is_transient_error(Exception("max_tokens must be <= 500")))
+        self.assertFalse(_is_transient_error(Exception("connect to http://localhost:5000 failed")))
+
+        self.assertTrue(_is_transient_error(Exception("InvokeError: HTTP 500 Internal Server Error")))
+        self.assertTrue(_is_transient_error(Exception('{"code": 500, "message": "server error"}')))
+
 
 if __name__ == "__main__":
     unittest.main()
