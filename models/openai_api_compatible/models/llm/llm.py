@@ -322,6 +322,23 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 )
             )
 
+        # Configure web search parameter if supported
+        web_search_support = credentials.get("web_search_support", "not_supported")
+        if web_search_support != "not_supported":
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="web_search",
+                    label=I18nObject(en_us="Web Search", zh_hans="联网搜索"),
+                    help=I18nObject(
+                        en_us="Whether to enable web search. When enabled, the model will search the internet for relevant information to generate responses.",
+                        zh_hans="是否启用联网搜索。启用后，模型将搜索互联网以获取相关信息来生成回复。",
+                    ),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
+                )
+            )
+
         # Register VIDEO/AUDIO/DOCUMENT features when the corresponding credential is enabled.
         # Without these on entity.features, Dify host filters out non-image attachments
         # before they reach _convert_prompt_message_to_dict, causing silent drop.
@@ -514,6 +531,33 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
                 chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
         
+        # Handle web search based on credential configuration
+        web_search_support = credentials.get("web_search_support", "not_supported")
+        enable_web_search = model_parameters.pop("web_search", False)
+        if enable_web_search and web_search_support != "not_supported":
+            if web_search_support == "tool_standard":
+                # Standard tools format: {"type": "web_search", "web_search": {"enable": true}}
+                # Used by ZhipuAI, Baichuan, etc.
+                web_search_tool = {
+                    "type": "web_search",
+                    "web_search": {"enable": True},
+                }
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_tool)
+                else:
+                    model_parameters["tools"] = [web_search_tool]
+            elif web_search_support == "tool_simple":
+                # Simple tools format: {"type": "web_search"}
+                # Used by Volcengine, etc.
+                web_search_tool = {"type": "web_search"}
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_tool)
+                else:
+                    model_parameters["tools"] = [web_search_tool]
+            elif web_search_support == "parameter":
+                # Parameter format: top-level web_search parameter
+                model_parameters["web_search"] = True
+
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
