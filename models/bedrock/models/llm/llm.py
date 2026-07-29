@@ -85,6 +85,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "jp.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "au.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
@@ -1866,6 +1868,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
             'Claude 4.8 Opus': 'claude-4-8-opus',
