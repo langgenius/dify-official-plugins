@@ -54,6 +54,53 @@ provider_credential_schema:
       placeholder:
         en_US: Leave empty for default (https://api.ant-ling.com/v1) or enter custom proxy/gateway
         zh_Hans: 若无特殊需求请留空（默认使用 https://api.ant-ling.com/v1）
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Ant Ling API Key
+        zh_Hans: 在此输入您的蚂蚁百灵 API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL (选填)
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Leave empty for default (https://api.ant-ling.com/v1) or enter custom proxy/gateway
+        zh_Hans: 若无特殊需求请留空（默认使用 https://api.ant-ling.com/v1）
+    - variable: context_size
+      label:
+        en_US: Model Context Size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: '256000'
+      placeholder:
+        en_US: Enter your model context size
+        zh_Hans: 输入模型上下文长度
+    - variable: max_tokens
+      label:
+        en_US: Upper Bound for Max Tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      required: true
+      default: '32768'
+      placeholder:
+        en_US: Enter max tokens limit
+        zh_Hans: 输入最大 token 上限
 models:
   llm:
     position: models/llm/_position.yaml
