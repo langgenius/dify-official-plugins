@@ -13,6 +13,7 @@ class AntLingModelProvider(ModelProvider):
         """
         try:
             validate_model = (credentials.get("validate_model") or "").strip() or "Ling-3.0-flash"
+            model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(model=validate_model, credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex

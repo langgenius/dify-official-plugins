@@ -595,9 +595,22 @@ Requirements:
             self.llm_model._add_custom_parameters(creds)
             self.assertEqual(creds["endpoint_url"], "https://api.ant-ling.com/v1")
 
+    def test_407_provider_validate_credentials_execution(self):
+        test_name = "Provider Validate Credentials Execution Test"
+        print(f"\n---> Running: {test_name}")
+        from unittest.mock import MagicMock, patch
+        from provider.ant_ling import AntLingModelProvider
+
+        provider = AntLingModelProvider(provider_schemas=MagicMock(), model_factory=MagicMock())
+        mock_model_instance = MagicMock()
+        with patch.object(provider, "get_model_instance", return_value=mock_model_instance):
+            provider.validate_provider_credentials({"api_key": "test_key", "validate_model": "Ling-3.0-flash"})
+            mock_model_instance.validate_credentials.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
