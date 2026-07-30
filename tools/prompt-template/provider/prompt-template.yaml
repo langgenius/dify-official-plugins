@@ -1,0 +1,15 @@
+identity:
+  author: tanzhangjia
+  name: prompt_template
+  label:
+    en_US: Prompt Template
+    zh_Hans: 提示词模板
+  description:
+    en_US: Render prompt templates with workflow variables — just like the LLM node prompt editor, but outputs a string.
+    zh_Hans: 用工作流变量渲染提示词模板，就像大模型节点的 prompt 编辑器一样，但输出字符串。
+  icon: icon.svg
+  tags:
+    - utilities
+extra:
+  python:
+    source: provider/__init__.py

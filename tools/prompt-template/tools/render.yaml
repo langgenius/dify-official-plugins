@@ -1,0 +1,73 @@
+description:
+  human:
+    en_US: Render prompt templates with workflow variables — just like the LLM node prompt editor, but outputs a string.
+    zh_Hans: 用工作流变量渲染提示词模板，就像大模型节点的 prompt 编辑器一样，但输出字符串。
+  llm: A tool that replaces {{variable}} placeholders with actual workflow variable values. Use it to assemble prompts before routing to LLM nodes, Code nodes, or HTTP nodes.
+extra:
+  python:
+    source: tools/__init__.py
+identity:
+  author: tanzhangjia
+  label:
+    en_US: Render Prompt
+    zh_Hans: 渲染提示词
+  name: render
+parameters:
+  - name: system_template
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: System Prompt Template
+      zh_Hans: 系统提示词模板
+    human_description:
+      en_US: Template for system prompt. Use {{variable}} syntax. Output goes to first text message.
+      zh_Hans: 系统提示词模板，使用 {{变量}} 语法。输出到第一条文本消息。
+    placeholder:
+      en_US: You are a {{role}}. Today is {{date}}.
+      zh_Hans: 你是一个{{role}}。今天是{{date}}。
+  - name: user_template
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: User Prompt Template
+      zh_Hans: 用户提示词模板
+    human_description:
+      en_US: Template for user prompt. Use {{variable}} syntax. Output goes to second text message.
+      zh_Hans: 用户提示词模板，使用 {{变量}} 语法。输出到第二条文本消息。
+    placeholder:
+      en_US: Context: {{ctx}}\n\nQuestion: {{q}}
+      zh_Hans: 上下文：{{ctx}}\n\n问题：{{q}}
+  - name: extra_vars
+    type: object
+    required: false
+    form: llm
+    label:
+      en_US: Extra Variables
+      zh_Hans: 额外变量
+    human_description:
+      en_US: Additional key-value pairs referenced in templates.
+      zh_Hans: 额外的键值对变量。
+  - name: fallback
+    type: string
+    required: false
+    form: llm
+    default: ""
+    label:
+      en_US: Fallback Text
+      zh_Hans: 缺失变量替代文本
+    human_description:
+      en_US: What to use when a variable is not found. Default: empty string.
+      zh_Hans: 当变量未找到时使用什么文本。默认空字符串。
+  - name: system_only
+    type: boolean
+    required: false
+    form: llm
+    default: false
+    label:
+      en_US: System Only
+      zh_Hans: 仅输出系统提示词
+    human_description:
+      en_US: When enabled, only renders system_template and outputs a single message.
+      zh_Hans: 开启后仅渲染 system_template，输出单条消息。
