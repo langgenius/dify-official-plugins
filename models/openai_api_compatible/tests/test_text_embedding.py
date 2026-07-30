@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from models.text_embedding.text_embedding import OpenAITextEmbeddingModel
 
 
@@ -63,6 +65,30 @@ def test_text_embedding_validate_credentials_uses_runtime_payload_shape(mock_pos
 
     payload = mock_post.call_args.kwargs["json"]
     assert payload == {"model": "Qwen3-Embedding-8B", "input": ["ping"], "encoding_format": "float"}
+
+
+@pytest.mark.parametrize("vision_support", ["no_support", "support"])
+@patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.requests.post")
+def test_plain_text_containing_image_marker_uses_text_embedding(
+    mock_post, mock_openai, vision_support
+):
+    mock_post.return_value = _successful_embedding_response()
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+    text = "Docker Image: langgenius/dify-api:latest"
+
+    result = model._invoke(
+        model="display-name",
+        credentials=_credentials(api_key="", vision_support=vision_support),
+        texts=[text],
+    )
+
+    mock_openai.assert_not_called()
+    assert mock_post.call_args.kwargs["json"] == {
+        "model": "Qwen3-Embedding-8B",
+        "input": [text],
+    }
+    assert result.embeddings == [[0.1, 0.2, 0.3]]
 
 
 def _chat_embedding_response() -> MagicMock:
