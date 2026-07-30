@@ -32,8 +32,11 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
     max_texts_per_request: int = 1000
     default_token_limit: int = 120_000
     token_limits: dict[str, int] = {
+        "voyage-4": 320_000,
+        "voyage-4-lite": 1_000_000,
         "voyage-3.5": 320_000,
         "voyage-3.5-lite": 1_000_000,
+        # voyage-4-large and voyage-context-4 are both 120K, i.e. the default.
     }
     # The gpt2 estimator is not Voyage's tokenizer, so leave headroom for it to
     # under-count. Splitting one extra request is much cheaper than a failed ingest.
@@ -90,42 +93,71 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
         base_url = credentials.get("base_url", self.api_base)
         base_url = base_url.removesuffix("/")
 
-        url = base_url + "/embeddings"
+        # The contextualised models take chunks grouped by document on a separate
+        # endpoint; everything else uses the flat one.
+        is_contextual = model.startswith("voyage-context-")
+        url = base_url + ("/contextualizedembeddings" if is_contextual else "/embeddings")
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
-
-        # Use framework's input type (automatic detection)
-        voyage_input_type = "null"
-        if input_type is not None:
-            voyage_input_type = input_type.value
 
         # Check if this is a multimodal model
         is_multimodal = model.startswith("voyage-multimodal")
         image_url = credentials.get("image_url", "") if is_multimodal else ""
         image_base64 = credentials.get("image_base64", "") if is_multimodal else ""
 
+        # Contextualising a batch is only meaningful when the texts are chunks of one
+        # document. Dify does not tell the plugin where document boundaries fall, so
+        # this stays opt-in -- and it never applies to a query, which has no siblings.
+        contextualize_batch = (
+            is_contextual
+            and str(credentials.get("contextualize_batch", "")).lower() in ("true", "1", "yes")
+            and input_type == EmbeddingInputType.DOCUMENT
+        )
+
         embeddings: list[list[float]] = []
         total_tokens = 0
 
         for batch in self._split_batches(model, texts):
             # Prepare input data
-            if is_multimodal and (image_url or image_base64):
+            if is_contextual:
+                # Each text is its own context group unless the batch is opted in.
+                payload = {"inputs": [batch] if contextualize_batch else [[t] for t in batch]}
+            elif is_multimodal and (image_url or image_base64):
                 # Multimodal input format
-                payload = []
+                entries = []
                 for text in batch:
                     entry = {"text": text}
                     if image_url:
                         entry["image_url"] = image_url
                     elif image_base64:
                         entry["image_base64"] = image_base64
-                    payload.append([entry])
+                    entries.append([entry])
+                payload = {"input": entries}
             else:
                 # Standard text embedding model, or text-only for a multimodal one
-                payload = batch
+                payload = {"input": batch}
 
-            data = {"model": model, "input": payload, "input_type": voyage_input_type}
+            data = {"model": model, **payload}
+            # Omit the key rather than sending the string "null", which the API rejects.
+            if input_type is not None:
+                data["input_type"] = input_type.value
+            if credentials.get("output_dimension"):
+                data["output_dimension"] = int(credentials["output_dimension"])
+            if credentials.get("output_dtype"):
+                data["output_dtype"] = credentials["output_dtype"]
 
             resp = self._post(url, headers, data)
-            embeddings.extend([float(v) for v in x["embedding"]] for x in resp["data"])
+            # The contextualised response nests one result object per input group.
+            # Sort by index at both levels: embeddings must come back in input order
+            # or every chunk in the batch is stored against the wrong segment.
+            if is_contextual:
+                rows = [
+                    x
+                    for group in sorted(resp["data"], key=lambda g: g["index"])
+                    for x in sorted(group["data"], key=lambda x: x["index"])
+                ]
+            else:
+                rows = sorted(resp["data"], key=lambda x: x["index"])
+            embeddings.extend([float(v) for v in x["embedding"]] for x in rows)
             total_tokens += resp["usage"]["total_tokens"]
 
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=total_tokens)
