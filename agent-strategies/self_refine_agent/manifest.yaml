@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: "KERVIN-FARMER"
+author: "langgenius"
 name: "self_refine_agent"
 label:
   en_US: "Self-Refine Agent Strategy"
