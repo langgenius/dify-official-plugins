@@ -560,8 +560,8 @@ class ReActAgentStrategy(AgentStrategy):
                 tool_call_args = {params[0]: tool_call_args} if len(params) == 1 else {}
         tool_call_args = cast(dict[str, Any], tool_call_args)
         tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
-        provider_type = ToolProviderType(tool_instance.provider_type)
         try:
+            provider_type = ToolProviderType(tool_instance.provider_type)
             tool_invoke_responses = self.session.tool.invoke(
                 provider_type=provider_type,
                 provider=tool_instance.identity.provider,

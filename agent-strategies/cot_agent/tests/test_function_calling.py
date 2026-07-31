@@ -14,6 +14,7 @@ from dify_plugin.entities.model.llm import (
     LLMUsage,
 )
 from dify_plugin.entities.model.message import AssistantPromptMessage
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 
 from strategies.function_calling import FunctionCallingAgentStrategy
 
@@ -163,6 +164,54 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
             "<think>\nAnalyzing the request.\n</think>",
         )
         self.assertFalse(thinking_started)
+
+
+class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
+    def test_workflow_keeps_text_and_omits_json_and_variable(self):
+        responses = [
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.TEXT,
+                message=ToolInvokeMessage.TextMessage(text='{"answer": "ok"}'),
+            ),
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.JSON,
+                message=ToolInvokeMessage.JsonMessage(
+                    json_object={"answer": "ok"},
+                ),
+            ),
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.VARIABLE,
+                message=ToolInvokeMessage.VariableMessage(
+                    variable_name="answer",
+                    variable_value="ok",
+                ),
+            ),
+        ]
+
+        result = "".join(
+            FunctionCallingAgentStrategy._format_tool_response(
+                response=response,
+                provider_type=ToolProviderType.WORKFLOW,
+            )
+            for response in responses
+        )
+
+        self.assertEqual(result, '{"answer": "ok"}')
+
+    def test_non_workflow_json_remains_visible(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.JSON,
+            message=ToolInvokeMessage.JsonMessage(
+                json_object={"answer": "ok"},
+            ),
+        )
+
+        result = FunctionCallingAgentStrategy._format_tool_response(
+            response=response,
+            provider_type=ToolProviderType.BUILT_IN,
+        )
+
+        self.assertEqual(result, 'tool response: {"answer": "ok"}.')
 
 
 if __name__ == "__main__":

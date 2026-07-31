@@ -99,6 +99,30 @@ class FunctionCallingAgentStrategy(AgentStrategy):
     instruction: str | None = ""
 
     @staticmethod
+    def _format_tool_response(
+        *,
+        response: ToolInvokeMessage,
+        provider_type: ToolProviderType,
+    ) -> str:
+        if response.type == ToolInvokeMessage.MessageType.TEXT:
+            return cast(ToolInvokeMessage.TextMessage, response.message).text
+        if response.type == ToolInvokeMessage.MessageType.JSON:
+            json_message = cast(ToolInvokeMessage.JsonMessage, response.message)
+            if (
+                provider_type == ToolProviderType.WORKFLOW
+                or getattr(json_message, "suppress_output", False)
+            ):
+                return ""
+            text = json.dumps(
+                json_message.json_object,
+                ensure_ascii=False,
+            )
+            return f"tool response: {text}."
+        if response.type == ToolInvokeMessage.MessageType.VARIABLE:
+            return ""
+        raise ValueError(f"unsupported tool response type: {response.type}")
+
+    @staticmethod
     def _get_streaming_content_state(
         *,
         content: str,
@@ -473,10 +497,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.TEXT
                                 ):
-                                    tool_result += cast(
-                                        ToolInvokeMessage.TextMessage,
-                                        tool_invoke_response.message,
-                                    ).text
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
+                                    )
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.LINK
@@ -534,25 +558,18 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.JSON
                                 ):
-                                    json_message = cast(
-                                        ToolInvokeMessage.JsonMessage,
-                                        tool_invoke_response.message,
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
                                     )
-                                    if (
-                                        provider_type == ToolProviderType.WORKFLOW
-                                        or getattr(json_message, "suppress_output", False)
-                                    ):
-                                        continue
-                                    text = json.dumps(
-                                        json_message.json_object,
-                                        ensure_ascii=False,
-                                    )
-                                    tool_result += f"tool response: {text}."
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.VARIABLE
                                 ):
-                                    continue
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
+                                    )
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.BLOB
