@@ -34,8 +34,4 @@ tags:
   - social
   - productivity
 type: plugin
-<<<<<<< HEAD
-version: 0.0.8
-=======
-version: 0.0.8
->>>>>>> f0795f53 (feat(discord): add get channel messages tool)
+version: 0.0.6
