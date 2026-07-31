@@ -457,8 +457,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else:
                         # invoke tool
                         try:
+                            provider_type = ToolProviderType(tool_instance.provider_type)
                             tool_invoke_responses = self.session.tool.invoke(
-                                provider_type=ToolProviderType(tool_instance.provider_type),
+                                provider_type=provider_type,
                                 provider=tool_instance.identity.provider,
                                 tool_name=tool_instance.identity.name,
                                 parameters={
@@ -533,14 +534,25 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.JSON
                                 ):
+                                    json_message = cast(
+                                        ToolInvokeMessage.JsonMessage,
+                                        tool_invoke_response.message,
+                                    )
+                                    if (
+                                        provider_type == ToolProviderType.WORKFLOW
+                                        or getattr(json_message, "suppress_output", False)
+                                    ):
+                                        continue
                                     text = json.dumps(
-                                        cast(
-                                            ToolInvokeMessage.JsonMessage,
-                                            tool_invoke_response.message,
-                                        ).json_object,
+                                        json_message.json_object,
                                         ensure_ascii=False,
                                     )
                                     tool_result += f"tool response: {text}."
+                                elif (
+                                    tool_invoke_response.type
+                                    == ToolInvokeMessage.MessageType.VARIABLE
+                                ):
+                                    continue
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.BLOB
