@@ -1,8 +1,6 @@
 # Slack Plugin for Dify
 
-**Languages:** [English](README.md) | [简体中文](README_zh.md) | 日本語 | [한국어](README_ko.md)
-
-**Author:** an · **Version:** 0.0.1 · **Type:** tool plugin
+**Author:** langgenius · **Version:** 0.1.0 · **Type:** tool plugin
 
 Slack Web API を通じて、Dify のエージェントやワークフローから Slack を自動化します。
 **n8n の Slack ノード** との機能同等性を目指して構築されており、7 つのリソースにわたる 41 の操作を提供します。

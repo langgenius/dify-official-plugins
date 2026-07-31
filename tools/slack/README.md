@@ -1,8 +1,6 @@
 # Slack Plugin for Dify
 
-**Languages:** English | [简体中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md)
-
-**Author:** an · **Version:** 0.0.1 · **Type:** tool plugin
+**Author:** langgenius · **Version:** 0.1.0 · **Type:** tool plugin
 
 Automate Slack from Dify agents and workflows via the Slack Web API. Built for
 feature parity with the **n8n Slack node** — 41 operations across 7 resources.

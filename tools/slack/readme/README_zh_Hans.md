@@ -1,7 +1,5 @@
 # Slack Plugin for Dify
 
-**Languages:** [English](README.md) | 简体中文 | [日本語](README_ja.md) | [한국어](README_ko.md)
-
 **作者：** an · **版本：** 0.0.1 · **类型：** 工具插件
 
 通过 Slack Web API，从 Dify 智能体和工作流中自动化操作 Slack。其设计目标是与
