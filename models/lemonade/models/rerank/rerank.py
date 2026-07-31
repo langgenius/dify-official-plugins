@@ -18,7 +18,7 @@ class LemonadeRerankModel(OAICompatRerankModel):
         :return:
         """
         # Use shared validation function
-        validate_lemonade_credentials(credentials)
+        validate_lemonade_credentials(credentials, model)
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict

@@ -12,9 +12,9 @@ Open the Plugin Marketplace, search for the PaddleOCR plugin, and install it to 
 
 ### 2. Fill in the configuration in Dify
 
-You can get your AI Studio access token from [this page](https://aistudio.baidu.com/index/accessToken).
+Get an AI Studio access token from the [AI Studio Access Token page](https://aistudio.baidu.com/account/accessToken), then enter it in the plugin settings.
 
-For each tool provided by the plugin, there is a corresponding API URL. It is required to provide at least one API URL in order to use the PaddleOCR plugin. To obtain the API URL, visit the [PaddleOCR official website](https://aistudio.baidu.com/paddleocr), click the **API** button, choose the example code for the tool you want to use (e.g., *PP-OCRv5*), and copy the `API_URL`. You do not need to provide URLs for all tools—only for those you intend to use.
+The optional **Base URL** setting is only needed when requests must pass through a custom gateway. Leave it empty to use the official PaddleOCR service.
 
 ### 3. Use the plugin
 
@@ -28,7 +28,19 @@ Both Chatflow and Workflow applications support adding a PaddleOCR tool node.
 
 Add a PaddleOCR tool in the Agent application, and then enter commands to call the tool.
 
-The `file` input supports Dify uploaded image/PDF files directly. The plugin converts uploaded files to the base64 payload expected by PaddleOCR. For compatibility with existing workflows, URL and base64 string values are still accepted by the runtime.
+The `file` input supports Dify uploaded image/PDF files directly and submits their contents to the PaddleOCR async job API. For compatibility with existing workflows, URL and base64 string values are still accepted by the runtime.
+
+## Supported capabilities
+
+| Tool | Supported models |
+| --- | --- |
+| Text Recognition | `PP-OCRv5` (default), `PP-OCRv5-latin`, `PP-OCRv6` |
+| Document Parsing | `PP-StructureV3` |
+| Large Model Document Parsing | `PaddleOCR-VL-1.6` (default), `PaddleOCR-VL-1.5`, `PaddleOCR-VL` |
+
+All tools accept an optional PDF page range such as `2,4-6`. Both document parsing tools can skip Markdown image resources when they are not needed and can return an additional DOCX file alongside the Markdown and JSON results.
+
+See the [PaddleOCR official API documentation](https://www.paddleocr.ai/latest/en/version3.x/inference_deployment/serving/paddleocr_official_api/cli.html) for the hosted service model matrix and request behavior.
 
 ## Credits
 

@@ -3,8 +3,8 @@ configurate_methods:
 - customizable-model
 - predefined-model
 description:
-  en_US: BytePlus ModelArk pre-provided model invocation.
-  zh_Hans: BytePlus ModelArk 预置模型调用。
+  en_US: SOTA video and image generation model provided by BytePlus
+  zh_Hans: BytePlus 提供的 SOTA 视频和图像生成模型
 extra:
   python:
     model_sources:
@@ -15,16 +15,16 @@ help:
     en_US: Get your Ark API Key from BytePlus Console
     zh_Hans: 从 BytePlus 控制台获取 Ark API Key
   url:
-    en_US: https://console.byteplus.com/ark/
-    zh_Hans: https://console.byteplus.com/ark/
+    en_US: https://console.byteplus.com/auth/signup/?utm_source=SFCRM&utm_content=276309cc-045a-ac1e-3037-10d92577cecb&redirectURI=https%3A%2F%2Fconsole.byteplus.com%2Fark
+    zh_Hans: https://console.byteplus.com/auth/signup/?utm_source=SFCRM&utm_content=276309cc-045a-ac1e-3037-10d92577cecb&redirectURI=https%3A%2F%2Fconsole.byteplus.com%2Fark
 icon_large:
   en_US: icon_l_en.svg
   zh_Hans: icon_l_en.svg
 icon_small:
   en_US: icon_s_en.svg
 label:
-  en_US: BytePlus ModelArk
-  zh_Hans: BytePlus ModelArk
+  en_US: BytePlus Seedance & Seedream
+  zh_Hans: BytePlus Seedance & Seedream
 model_credential_schema:
   model:
     label:

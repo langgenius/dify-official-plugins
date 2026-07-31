@@ -1,9 +1,11 @@
 import base64
 import dataclasses
 import time
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
 import pytest
+from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
@@ -17,6 +19,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
+from dify_plugin.errors.model import InvokeBadRequestError
 from google.genai import types
 from models.llm.file_parts import (
     FILE_DOWNLOAD_TIMEOUT_SECONDS,
@@ -421,6 +424,22 @@ def test_file_url():
     assert file_url == "http://127.0.0.1/static/files/foo/bar.png"
 
 
+def test_json_schema_uses_json_schema_config_field():
+    config = types.GenerateContentConfig()
+    GoogleLargeLanguageModel._set_chat_parameters(
+        config=config,
+        model_parameters={
+            "json_schema": '{"type":"object","additionalProperties":false}'
+        },
+    )
+
+    assert config.response_json_schema == {
+        "type": "object",
+        "additionalProperties": False,
+    }
+    assert config.response_schema is None
+
+
 class TestBuildGeminiContents:
     """Test suite for the _build_gemini_contents method"""
 
@@ -553,6 +572,65 @@ class TestBuildGeminiContents:
             "Draw a red fox.",
         ]
 
+    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    def test_new_models_drop_deprecated_sampling_parameters(self, model):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model=model,
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={"temperature": 0, "top_p": 0.9, "top_k": 40},
+                stream=False,
+            )
+
+        config = mock_client.models.generate_content.call_args.kwargs["config"]
+        assert config.temperature is None
+        assert config.top_p is None
+        assert config.top_k is None
+
+    def test_new_model_credentials_validation_omits_sampling_parameters(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            self.llm.validate_credentials(
+                model="gemini-3.6-flash",
+                credentials={"google_api_key": "test-key"},
+            )
+
+        config = mock_client.models.generate_content.call_args.kwargs["config"]
+        assert config.max_output_tokens == 20
+        assert config.temperature is None
+        assert config.top_p is None
+        assert config.top_k is None
+
+    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    def test_new_models_reject_assistant_prefill(self, model):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            pytest.raises(
+                InvokeBadRequestError, match="requires a non-empty final user turn"
+            ),
+        ):
+            self.llm._generate(
+                model=model,
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    AssistantPromptMessage(content="Prefill"),
+                    UserPromptMessage(content=""),
+                ],
+                model_parameters={},
+                stream=False,
+            )
+
+        mock_client.models.generate_content.assert_not_called()
+
     def test_multiple_text_system_messages_keep_last_scalar(self):
         messages = [
             SystemPromptMessage(content="First instruction."),
@@ -664,6 +742,26 @@ class TestBuildGeminiContents:
             ].system_instruction
             is None
         )
+
+    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    def test_new_models_accept_scalar_system_only_prompt(self, model):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._generate(
+                model=model,
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[SystemPromptMessage(content="Instruction")],
+                model_parameters={},
+                stream=False,
+            )
+
+        request = mock_client.models.generate_content.call_args.kwargs
+        assert request["config"].system_instruction == "Instruction"
+        assert [part.text for part in request["contents"][0].parts] == ["Instruction"]
 
     @pytest.mark.parametrize(
         "empty_message",
@@ -876,9 +974,10 @@ class TestBuildGeminiContents:
         assert contents[0].parts[0].function_response.response == {
             "response": "The weather is sunny and 72°F"
         }
+        assert contents[0].parts[0].function_response.id == messages[0].tool_call_id
 
-    def test_assistant_message_with_tool_calls(self):
-        """Test conversion of assistant messages with tool calls"""
+    def test_parallel_tool_call_ids_round_trip(self):
+        """Test conversion of parallel tool calls and responses"""
         messages = [
             AssistantPromptMessage(
                 content="I'll check the weather for you",
@@ -889,9 +988,23 @@ class TestBuildGeminiContents:
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name="get_weather", arguments='{"location": "New York"}'
                         ),
-                    )
+                    ),
+                    AssistantPromptMessage.ToolCall(
+                        id="call_456",
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name="get_time",
+                            arguments='{"timezone": "America/New_York"}',
+                        ),
+                    ),
                 ],
-            )
+            ),
+            ToolPromptMessage(
+                name="get_weather", content="Sunny", tool_call_id="call_123"
+            ),
+            ToolPromptMessage(
+                name="get_time", content="12:00", tool_call_id="call_456"
+            ),
         ]
 
         contents = self.llm._build_gemini_contents(
@@ -900,12 +1013,20 @@ class TestBuildGeminiContents:
             config=self.mock_config,
         )
 
-        assert len(contents) == 1
+        assert len(contents) == 2
         assert contents[0].role == "model"
-        assert len(contents[0].parts) == 2
+        assert len(contents[0].parts) == 3
         assert contents[0].parts[0].text == "I'll check the weather for you"
         assert contents[0].parts[1].function_call.name == "get_weather"
         assert contents[0].parts[1].function_call.args == {"location": "New York"}
+        assert contents[0].parts[1].function_call.id == "call_123"
+        assert contents[0].parts[2].function_call.name == "get_time"
+        assert contents[0].parts[2].function_call.id == "call_456"
+        assert contents[1].role == "user"
+        assert [part.function_response.id for part in contents[1].parts] == [
+            "call_123",
+            "call_456",
+        ]
 
     def test_role_alternation_merging(self):
         """Test that consecutive messages with the same role are merged"""
@@ -1002,9 +1123,11 @@ class TestBuildGeminiContents:
         assert not contents[3].parts[0].function_call
         assert contents[3].parts[1].function_call.name == "current_time"
         assert contents[3].parts[1].function_call.args == {}
+        assert contents[3].parts[1].function_call.id == tool_id
 
         assert contents[4].role == "user"
         assert contents[4].parts[0].function_response.name == "current_time"
+        assert contents[4].parts[0].function_response.id == tool_id
         _r = contents[4].parts[0].function_response.response.get("response")
         assert _r == "2025-08-12 02:08:12"
 
@@ -1262,6 +1385,99 @@ class TestHandleGenerateResponse:
         self.llm = GoogleLargeLanguageModel([])
         self.credentials = {"google_api_key": "test_key"}
 
+    @staticmethod
+    def _usage() -> LLMUsage:
+        return LLMUsage(
+            prompt_tokens=2,
+            prompt_unit_price=Decimal("1.5"),
+            prompt_price_unit=Decimal("0.000001"),
+            prompt_price=Decimal("3"),
+            completion_tokens=2,
+            completion_unit_price=Decimal("7.5"),
+            completion_price_unit=Decimal("0.000001"),
+            completion_price=Decimal("15"),
+            total_tokens=4,
+            total_price=Decimal("18"),
+            currency="USD",
+            latency=0,
+        )
+
+    @pytest.mark.parametrize(
+        ("actual_tier", "requested_tier", "multiplier"),
+        [
+            ("flex", types.ServiceTier.PRIORITY, Decimal("0.5")),
+            ("standard", types.ServiceTier.FLEX, Decimal("1")),
+            ("priority", None, Decimal("1.8")),
+            (None, types.ServiceTier.FLEX, Decimal("0.5")),
+        ],
+    )
+    def test_service_tier_pricing(
+        self,
+        actual_tier: str | None,
+        requested_tier: types.ServiceTier | None,
+        multiplier: Decimal,
+    ):
+        headers = (
+            {"X-Gemini-Service-Tier": actual_tier} if actual_tier is not None else {}
+        )
+        response = types.GenerateContentResponse(
+            sdk_http_response=types.HttpResponse(headers=headers)
+        )
+        usage = self._usage()
+
+        result = self.llm._apply_service_tier_pricing(usage, response, requested_tier)
+
+        assert result.prompt_unit_price == Decimal("1.5") * multiplier
+        assert result.prompt_price == Decimal("3") * multiplier
+        assert result.completion_unit_price == Decimal("7.5") * multiplier
+        assert result.completion_price == Decimal("15") * multiplier
+        assert result.total_price == Decimal("18") * multiplier
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_generation_applies_requested_service_tier_pricing(
+        self, stream: bool
+    ) -> None:
+        response = types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(
+                    content=types.Content(
+                        role="model", parts=[types.Part.from_text(text="OK")]
+                    ),
+                    finish_reason=types.FinishReason.STOP,
+                )
+            ],
+            usage_metadata=types.GenerateContentResponseUsageMetadata(
+                prompt_tokens_details=[
+                    types.ModalityTokenCount(
+                        modality=types.MediaModality.TEXT, token_count=2
+                    )
+                ],
+                candidates_token_count=2,
+            ),
+            sdk_http_response=types.HttpResponse(headers={}),
+        )
+        client = Mock()
+        client.models.generate_content.return_value = response
+        client.models.generate_content_stream.return_value = iter([response])
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=client),
+            patch.object(self.llm, "_calc_response_usage", return_value=self._usage()),
+        ):
+            result = self.llm._generate(
+                model="gemini-3.6-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Reply with OK.")],
+                model_parameters={"service_tier": "flex"},
+                stream=stream,
+            )
+            usage = list(result)[-1].delta.usage if stream else result.usage
+
+        assert usage is not None
+        assert usage.prompt_price == Decimal("1.5")
+        assert usage.completion_price == Decimal("7.5")
+        assert usage.total_price == Decimal("9")
+
     def test_non_streaming_response_returns_structured_content(self):
         """Test that non-streaming response returns content as list of PromptMessageContent
 
@@ -1313,6 +1529,7 @@ class TestHandleGenerateResponse:
     def test_non_streaming_response_with_function_call(self):
         """Test non-streaming response with function call returns structured content"""
         mock_function_call = Mock()
+        mock_function_call.id = "call_123"
         mock_function_call.name = "get_weather"
         mock_function_call.args = {"location": "Tokyo"}
 
@@ -1352,11 +1569,13 @@ class TestHandleGenerateResponse:
         assert isinstance(result.message.content, list)
         # Should have tool calls
         assert len(result.message.tool_calls) == 1
+        assert result.message.tool_calls[0].id == "call_123"
         assert result.message.tool_calls[0].function.name == "get_weather"
 
     def test_non_streaming_response_with_mixed_content(self):
         """Test non-streaming response with text and function call"""
         mock_function_call = Mock()
+        mock_function_call.id = "call_456"
         mock_function_call.name = "search"
         mock_function_call.args = {"query": "test"}
 
