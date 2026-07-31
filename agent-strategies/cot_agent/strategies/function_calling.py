@@ -29,6 +29,10 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+THINK_START = "<think>"
+THINK_END = "</think>"
+
+
 class LogMetadata:
     """Metadata keys for logging"""
     STARTED_AT = "started_at"
@@ -93,6 +97,27 @@ class FunctionCallingParams(BaseModel):
 class FunctionCallingAgentStrategy(AgentStrategy):
     query: str = ""
     instruction: str | None = ""
+
+    @staticmethod
+    def _get_streaming_content_state(
+        *,
+        content: str,
+        function_call_state: bool,
+        thinking_started: bool,
+        iteration_step: int,
+        max_iteration_steps: int,
+    ) -> tuple[bool, bool]:
+        should_stream = (
+            not function_call_state
+            or iteration_step == max_iteration_steps
+            or (thinking_started and content.strip() == THINK_END)
+        )
+        if should_stream:
+            if content.strip() == THINK_START:
+                thinking_started = True
+            elif content.strip() == THINK_END:
+                thinking_started = False
+        return should_stream, thinking_started
 
     @property
     def _user_prompt_message(self) -> UserPromptMessage:
@@ -196,6 +221,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             # save full response
             response = ""
+            thinking_started = False
 
             # save tool call names and inputs
             tool_call_names = ""
@@ -216,20 +242,31 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if isinstance(chunk.delta.message.content, list):
                             for content in chunk.delta.message.content:
                                 response += content.data
-                                if (
-                                    not function_call_state
-                                    or iteration_step == max_iteration_steps
-                                ):
+                                should_stream, thinking_started = (
+                                    self._get_streaming_content_state(
+                                        content=content.data,
+                                        function_call_state=function_call_state,
+                                        thinking_started=thinking_started,
+                                        iteration_step=iteration_step,
+                                        max_iteration_steps=max_iteration_steps,
+                                    )
+                                )
+                                if should_stream:
                                     yield self.create_text_message(content.data)
                         else:
-                            response += str(chunk.delta.message.content)
-                            if (
-                                not function_call_state
-                                or iteration_step == max_iteration_steps
-                            ):
-                                yield self.create_text_message(
-                                    str(chunk.delta.message.content)
+                            response_content = str(chunk.delta.message.content)
+                            response += response_content
+                            should_stream, thinking_started = (
+                                self._get_streaming_content_state(
+                                    content=response_content,
+                                    function_call_state=function_call_state,
+                                    thinking_started=thinking_started,
+                                    iteration_step=iteration_step,
+                                    max_iteration_steps=max_iteration_steps,
                                 )
+                            )
+                            if should_stream:
+                                yield self.create_text_message(response_content)
 
                     if chunk.delta.usage:
                         self.increase_usage(llm_usage, chunk.delta.usage)

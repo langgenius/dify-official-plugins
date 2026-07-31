@@ -135,6 +135,35 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
 
         self.assertIn("Failed to parse tool-call arguments as JSON", str(ctx.exception))
 
+    def test_only_thinking_end_streams_after_tool_call(self):
+        thinking_started = False
+        streamed_content = []
+
+        for function_call_state, content in [
+            (False, "<think>\n"),
+            (False, "Analyzing the request."),
+            (True, "Hidden intermediate content"),
+            (True, "\n</think>"),
+        ]:
+            should_stream, thinking_started = (
+                self.strategy._get_streaming_content_state(
+                    content=content,
+                    function_call_state=function_call_state,
+                    thinking_started=thinking_started,
+                    iteration_step=1,
+                    max_iteration_steps=3,
+                )
+            )
+            if should_stream:
+                streamed_content.append(content)
+
+        response = "".join(streamed_content)
+        self.assertEqual(
+            response,
+            "<think>\nAnalyzing the request.\n</think>",
+        )
+        self.assertFalse(thinking_started)
+
 
 if __name__ == "__main__":
     unittest.main()
