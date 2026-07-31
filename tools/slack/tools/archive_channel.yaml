@@ -1,0 +1,26 @@
+identity:
+  name: archive_channel
+  author: langgenius
+  label:
+    en_US: "Archive Channel"
+    zh_Hans: "归档频道"
+description:
+  human:
+    en_US: "Archive a channel."
+    zh_Hans: "归档一个频道。"
+  llm: "Archive a Slack channel using conversations.archive."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to archive."
+      zh_Hans: "要归档的频道 ID。"
+    llm_description: "The channel ID to archive."
+    form: llm
+extra:
+  python:
+    source: tools/archive_channel.py

@@ -1,0 +1,37 @@
+identity:
+  name: delete_message
+  author: langgenius
+  label:
+    en_US: "Delete Message"
+    zh_Hans: "删除消息"
+description:
+  human:
+    en_US: "Delete a Slack message."
+    zh_Hans: "删除一条 Slack 消息。"
+  llm: "Delete a Slack message using chat.delete. Requires the channel and the message ts."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID containing the message."
+      zh_Hans: "包含该消息的频道 ID。"
+    llm_description: "The channel ID where the message lives."
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "The ts of the message to delete."
+      zh_Hans: "要删除的消息的 ts。"
+    llm_description: "The timestamp (ts) of the message to delete."
+    form: llm
+extra:
+  python:
+    source: tools/delete_message.py

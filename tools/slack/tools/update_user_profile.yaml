@@ -1,0 +1,59 @@
+identity:
+  name: update_user_profile
+  author: langgenius
+  label:
+    en_US: "Update User Profile"
+    zh_Hans: "更新用户资料"
+description:
+  human:
+    en_US: "Update the authenticated user's profile (requires a User Token)."
+    zh_Hans: "更新已认证用户的资料（需要用户令牌）。"
+  llm: "Update a Slack user's profile using users.profile.set. Provide a profile JSON object, or a single field name and value. Requires a User Token with users.profile:write."
+parameters:
+  - name: profile
+    type: string
+    required: false
+    label:
+      en_US: "Profile (JSON)"
+      zh_Hans: "资料 (JSON)"
+    human_description:
+      en_US: "JSON object of profile fields to set."
+      zh_Hans: "要设置的资料字段的 JSON 对象。"
+    llm_description: "A JSON object of profile fields to set, e.g. {\"status_text\":\"On leave\",\"status_emoji\":\":palm_tree:\"}."
+    form: llm
+  - name: name
+    type: string
+    required: false
+    label:
+      en_US: "Field Name"
+      zh_Hans: "字段名称"
+    human_description:
+      en_US: "A single profile field name to set (with value)."
+      zh_Hans: "要设置的单个资料字段名称（配合值）。"
+    llm_description: "A single profile field name to set, e.g. 'status_text'. Use with 'value'. Ignored if 'profile' is provided."
+    form: llm
+  - name: value
+    type: string
+    required: false
+    label:
+      en_US: "Field Value"
+      zh_Hans: "字段值"
+    human_description:
+      en_US: "Value for the single field."
+      zh_Hans: "单个字段的值。"
+    llm_description: "The value for the single field named in 'name'."
+    form: llm
+  - name: user
+    type: string
+    required: false
+    label:
+      en_US: "User ID (admin)"
+      zh_Hans: "用户 ID（管理员）"
+    human_description:
+      en_US: "Target user ID (admin only). Defaults to the token owner."
+      zh_Hans: "目标用户 ID（仅管理员）。默认为令牌所有者。"
+    llm_description: "Optional target user ID (admin only). Defaults to the authenticated user."
+    form: llm
+extra:
+  python:
+    source: tools/update_user_profile.py

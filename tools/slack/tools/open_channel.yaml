@@ -1,0 +1,49 @@
+identity:
+  name: open_channel
+  author: langgenius
+  label:
+    en_US: "Open Conversation"
+    zh_Hans: "打开会话"
+description:
+  human:
+    en_US: "Open or resume a direct message or multi-person DM."
+    zh_Hans: "打开或恢复私信或多人私信会话。"
+  llm: "Open or resume a direct message / multi-person DM using conversations.open. Provide either user IDs (to open a DM) or an existing channel ID to resume."
+parameters:
+  - name: users
+    type: string
+    required: false
+    label:
+      en_US: "Users"
+      zh_Hans: "用户"
+    human_description:
+      en_US: "Comma-separated user IDs to open a DM/MPIM with."
+      zh_Hans: "逗号分隔的用户 ID，用于开启私信/多人私信。"
+    llm_description: "Comma-separated user IDs to open a DM or multi-person DM with, e.g. 'U111,U222'."
+    form: llm
+  - name: channel
+    type: string
+    required: false
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Existing conversation ID to resume (instead of users)."
+      zh_Hans: "要恢复的现有会话 ID（替代 users）。"
+    llm_description: "An existing conversation ID to resume. Use instead of 'users'."
+    form: llm
+  - name: return_im
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Return IM"
+      zh_Hans: "返回 IM 详情"
+    human_description:
+      en_US: "Return full conversation info."
+      zh_Hans: "返回完整的会话信息。"
+    llm_description: "When true, returns the full conversation object."
+    form: llm
+extra:
+  python:
+    source: tools/open_channel.py

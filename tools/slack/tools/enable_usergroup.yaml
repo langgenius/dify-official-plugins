@@ -1,0 +1,26 @@
+identity:
+  name: enable_usergroup
+  author: langgenius
+  label:
+    en_US: "Enable User Group"
+    zh_Hans: "启用用户组"
+description:
+  human:
+    en_US: "Enable a user group."
+    zh_Hans: "启用一个用户组。"
+  llm: "Enable a Slack user group using usergroups.enable."
+parameters:
+  - name: usergroup
+    type: string
+    required: true
+    label:
+      en_US: "User Group ID"
+      zh_Hans: "用户组 ID"
+    human_description:
+      en_US: "The user group ID to enable."
+      zh_Hans: "要启用的用户组 ID。"
+    llm_description: "The ID of the user group to enable."
+    form: llm
+extra:
+  python:
+    source: tools/enable_usergroup.py

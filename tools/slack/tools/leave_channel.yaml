@@ -1,0 +1,26 @@
+identity:
+  name: leave_channel
+  author: langgenius
+  label:
+    en_US: "Leave Channel"
+    zh_Hans: "离开频道"
+description:
+  human:
+    en_US: "Leave a channel."
+    zh_Hans: "离开一个频道。"
+  llm: "Leave a Slack channel using conversations.leave."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to leave."
+      zh_Hans: "要离开的频道 ID。"
+    llm_description: "The channel ID to leave."
+    form: llm
+extra:
+  python:
+    source: tools/leave_channel.py

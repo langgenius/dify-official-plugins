@@ -1,0 +1,38 @@
+identity:
+  name: get_user_profile
+  author: langgenius
+  label:
+    en_US: "Get User Profile"
+    zh_Hans: "获取用户资料"
+description:
+  human:
+    en_US: "Get a user's profile."
+    zh_Hans: "获取用户的资料。"
+  llm: "Retrieve a Slack user's profile fields using users.profile.get."
+parameters:
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: "User ID"
+      zh_Hans: "用户 ID"
+    human_description:
+      en_US: "The user ID whose profile to fetch."
+      zh_Hans: "要获取资料的用户 ID。"
+    llm_description: "The Slack user ID whose profile to fetch."
+    form: llm
+  - name: include_labels
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Labels"
+      zh_Hans: "包含标签"
+    human_description:
+      en_US: "Include labels for custom profile fields."
+      zh_Hans: "包含自定义资料字段的标签。"
+    llm_description: "When true, includes labels for each custom profile field."
+    form: llm
+extra:
+  python:
+    source: tools/get_user_profile.py

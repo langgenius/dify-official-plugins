@@ -1,0 +1,50 @@
+identity:
+  name: list_users
+  author: langgenius
+  label:
+    en_US: "List Users"
+    zh_Hans: "列出用户"
+description:
+  human:
+    en_US: "List all users in the workspace."
+    zh_Hans: "列出工作区中的所有用户。"
+  llm: "List all Slack users (members) in the workspace using users.list, with pagination."
+parameters:
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Limit"
+      zh_Hans: "数量限制"
+    human_description:
+      en_US: "Max users to return per page."
+      zh_Hans: "每页返回的最大用户数。"
+    llm_description: "Maximum number of users per page. Default 100."
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: "Cursor"
+      zh_Hans: "游标"
+    human_description:
+      en_US: "Pagination cursor from a previous response."
+      zh_Hans: "上一次响应返回的分页游标。"
+    llm_description: "Pagination cursor to fetch the next page."
+    form: llm
+  - name: include_locale
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Locale"
+      zh_Hans: "包含区域设置"
+    human_description:
+      en_US: "Include each user's locale."
+      zh_Hans: "包含每个用户的区域设置。"
+    llm_description: "When true, includes locale information for each user."
+    form: llm
+extra:
+  python:
+    source: tools/list_users.py

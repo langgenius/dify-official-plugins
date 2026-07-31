@@ -1,0 +1,39 @@
+identity:
+  name: list_stars
+  author: langgenius
+  label:
+    en_US: "List Stars"
+    zh_Hans: "列出星标"
+description:
+  human:
+    en_US: "List the authenticated user's starred items (requires a User Token)."
+    zh_Hans: "列出已认证用户的星标项（需要用户令牌）。"
+  llm: "List the starred items of the authenticated user using stars.list. Requires a User Token with stars:read."
+parameters:
+  - name: count
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Count"
+      zh_Hans: "数量"
+    human_description:
+      en_US: "Results per page."
+      zh_Hans: "每页结果数。"
+    llm_description: "Number of items to return per page. Default 100."
+    form: llm
+  - name: page
+    type: number
+    required: false
+    default: 1
+    label:
+      en_US: "Page"
+      zh_Hans: "页码"
+    human_description:
+      en_US: "Page number."
+      zh_Hans: "页码。"
+    llm_description: "Page number of results to fetch."
+    form: llm
+extra:
+  python:
+    source: tools/list_stars.py

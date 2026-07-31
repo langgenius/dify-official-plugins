@@ -1,0 +1,94 @@
+identity:
+  name: send_message
+  author: langgenius
+  label:
+    en_US: "Send Message"
+    zh_Hans: "发送消息"
+description:
+  human:
+    en_US: "Send a message to a Slack channel, DM, or thread."
+    zh_Hans: "向 Slack 频道、私信或话题发送消息。"
+  llm: "Post a message to a Slack channel, direct message, or thread using chat.postMessage. Provide a channel ID (or name) and text and/or Block Kit blocks."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID (e.g. C012AB3CD) or #channel-name, or a user ID for a DM."
+      zh_Hans: "频道 ID（如 C012AB3CD）或 #频道名，或用户 ID 以发送私信。"
+    llm_description: "The target channel ID (e.g. C012AB3CD), a #channel-name, or a user ID (e.g. U012AB3CD) for a direct message."
+    form: llm
+  - name: text
+    type: string
+    required: false
+    label:
+      en_US: "Text"
+      zh_Hans: "文本"
+    human_description:
+      en_US: "Message text (supports Slack mrkdwn). Required unless blocks are provided."
+      zh_Hans: "消息文本（支持 Slack mrkdwn）。若未提供 blocks 则必填。"
+    llm_description: "The message text. Supports Slack markup. Required unless 'blocks' is supplied."
+    form: llm
+  - name: blocks
+    type: string
+    required: false
+    label:
+      en_US: "Blocks (JSON)"
+      zh_Hans: "Blocks (JSON)"
+    human_description:
+      en_US: "Optional Block Kit JSON array for rich layout."
+      zh_Hans: "可选的 Block Kit JSON 数组，用于富文本布局。"
+    llm_description: "Optional Block Kit blocks as a JSON array, e.g. [{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"hi\"}}]."
+    form: llm
+  - name: attachments
+    type: string
+    required: false
+    label:
+      en_US: "Attachments (JSON)"
+      zh_Hans: "附件 (JSON)"
+    human_description:
+      en_US: "Optional legacy attachments as a JSON array."
+      zh_Hans: "可选的旧版附件 JSON 数组。"
+    llm_description: "Optional legacy 'attachments' as a JSON array."
+    form: llm
+  - name: thread_ts
+    type: string
+    required: false
+    label:
+      en_US: "Thread Timestamp"
+      zh_Hans: "话题时间戳"
+    human_description:
+      en_US: "ts of a parent message to reply in its thread."
+      zh_Hans: "父消息的 ts，用于在其话题中回复。"
+    llm_description: "The 'ts' of a parent message; set to reply inside that thread."
+    form: llm
+  - name: reply_broadcast
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Broadcast Reply"
+      zh_Hans: "广播回复"
+    human_description:
+      en_US: "Also send the threaded reply to the channel."
+      zh_Hans: "同时将话题回复发送到频道。"
+    llm_description: "When true and thread_ts is set, the reply is also broadcast to the channel."
+    form: llm
+  - name: unfurl_links
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Unfurl Links"
+      zh_Hans: "展开链接"
+    human_description:
+      en_US: "Enable link previews."
+      zh_Hans: "启用链接预览。"
+    llm_description: "Whether to enable unfurling of primarily text-based content links."
+    form: llm
+extra:
+  python:
+    source: tools/send_message.py

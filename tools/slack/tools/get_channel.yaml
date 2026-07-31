@@ -1,0 +1,38 @@
+identity:
+  name: get_channel
+  author: langgenius
+  label:
+    en_US: "Get Channel"
+    zh_Hans: "获取频道"
+description:
+  human:
+    en_US: "Get information about a channel."
+    zh_Hans: "获取某个频道的信息。"
+  llm: "Retrieve metadata about a Slack channel using conversations.info."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to retrieve."
+      zh_Hans: "要获取的频道 ID。"
+    llm_description: "The channel ID (e.g. C012AB3CD)."
+    form: llm
+  - name: include_num_members
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Member Count"
+      zh_Hans: "包含成员数"
+    human_description:
+      en_US: "Include the member count in the result."
+      zh_Hans: "在结果中包含成员数量。"
+    llm_description: "When true, includes the number of members."
+    form: llm
+extra:
+  python:
+    source: tools/get_channel.py

@@ -1,0 +1,26 @@
+identity:
+  name: close_channel
+  author: langgenius
+  label:
+    en_US: "Close Conversation"
+    zh_Hans: "关闭会话"
+description:
+  human:
+    en_US: "Close a direct message or conversation."
+    zh_Hans: "关闭私信或会话。"
+  llm: "Close a Slack conversation (DM/MPIM) using conversations.close."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Conversation ID to close."
+      zh_Hans: "要关闭的会话 ID。"
+    llm_description: "The conversation ID to close."
+    form: llm
+extra:
+  python:
+    source: tools/close_channel.py

@@ -1,0 +1,71 @@
+identity:
+  name: channel_history
+  author: langgenius
+  label:
+    en_US: "Get Channel History"
+    zh_Hans: "获取频道历史"
+description:
+  human:
+    en_US: "Fetch a channel's message history."
+    zh_Hans: "获取频道的消息历史。"
+  llm: "Retrieve messages from a Slack channel using conversations.history, with optional time bounds and pagination."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to read history from."
+      zh_Hans: "要读取历史的频道 ID。"
+    llm_description: "The channel ID to read message history from."
+    form: llm
+  - name: oldest
+    type: string
+    required: false
+    label:
+      en_US: "Oldest"
+      zh_Hans: "起始时间戳"
+    human_description:
+      en_US: "Only messages after this ts."
+      zh_Hans: "仅返回此 ts 之后的消息。"
+    llm_description: "Only include messages after this Unix/ts timestamp."
+    form: llm
+  - name: latest
+    type: string
+    required: false
+    label:
+      en_US: "Latest"
+      zh_Hans: "结束时间戳"
+    human_description:
+      en_US: "Only messages before this ts."
+      zh_Hans: "仅返回此 ts 之前的消息。"
+    llm_description: "Only include messages before this Unix/ts timestamp."
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Limit"
+      zh_Hans: "数量限制"
+    human_description:
+      en_US: "Max messages to return (max 1000)."
+      zh_Hans: "返回的最大消息数（最多 1000）。"
+    llm_description: "Maximum number of messages per page. Max 1000, default 100."
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: "Cursor"
+      zh_Hans: "游标"
+    human_description:
+      en_US: "Pagination cursor from a previous response."
+      zh_Hans: "上一次响应返回的分页游标。"
+    llm_description: "Pagination cursor to fetch the next page."
+    form: llm
+extra:
+  python:
+    source: tools/channel_history.py

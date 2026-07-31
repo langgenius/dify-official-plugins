@@ -1,0 +1,37 @@
+identity:
+  name: set_channel_topic
+  author: langgenius
+  label:
+    en_US: "Set Channel Topic"
+    zh_Hans: "设置频道主题"
+description:
+  human:
+    en_US: "Set a channel's topic."
+    zh_Hans: "设置频道的主题。"
+  llm: "Set the topic of a Slack channel using conversations.setTopic."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID."
+      zh_Hans: "频道 ID。"
+    llm_description: "The channel ID."
+    form: llm
+  - name: topic
+    type: string
+    required: true
+    label:
+      en_US: "Topic"
+      zh_Hans: "主题"
+    human_description:
+      en_US: "The topic text."
+      zh_Hans: "主题文本。"
+    llm_description: "The new topic for the channel."
+    form: llm
+extra:
+  python:
+    source: tools/set_channel_topic.py

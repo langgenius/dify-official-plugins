@@ -1,0 +1,37 @@
+identity:
+  name: rename_channel
+  author: langgenius
+  label:
+    en_US: "Rename Channel"
+    zh_Hans: "重命名频道"
+description:
+  human:
+    en_US: "Rename a channel."
+    zh_Hans: "重命名频道。"
+  llm: "Rename a Slack channel using conversations.rename."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to rename."
+      zh_Hans: "要重命名的频道 ID。"
+    llm_description: "The channel ID to rename."
+    form: llm
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: "New Name"
+      zh_Hans: "新名称"
+    human_description:
+      en_US: "New channel name."
+      zh_Hans: "新的频道名称。"
+    llm_description: "The new name for the channel (lowercase, no spaces)."
+    form: llm
+extra:
+  python:
+    source: tools/rename_channel.py

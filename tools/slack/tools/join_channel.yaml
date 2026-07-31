@@ -1,0 +1,26 @@
+identity:
+  name: join_channel
+  author: langgenius
+  label:
+    en_US: "Join Channel"
+    zh_Hans: "加入频道"
+description:
+  human:
+    en_US: "Join a public channel."
+    zh_Hans: "加入一个公开频道。"
+  llm: "Join a Slack public channel using conversations.join."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to join."
+      zh_Hans: "要加入的频道 ID。"
+    llm_description: "The channel ID to join."
+    form: llm
+extra:
+  python:
+    source: tools/join_channel.py

@@ -1,0 +1,26 @@
+identity:
+  name: unarchive_channel
+  author: langgenius
+  label:
+    en_US: "Unarchive Channel"
+    zh_Hans: "取消归档频道"
+description:
+  human:
+    en_US: "Unarchive a channel."
+    zh_Hans: "取消归档一个频道。"
+  llm: "Unarchive a Slack channel using conversations.unarchive."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to unarchive."
+      zh_Hans: "要取消归档的频道 ID。"
+    llm_description: "The channel ID to unarchive."
+    form: llm
+extra:
+  python:
+    source: tools/unarchive_channel.py

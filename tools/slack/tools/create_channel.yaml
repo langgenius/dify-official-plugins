@@ -1,0 +1,38 @@
+identity:
+  name: create_channel
+  author: langgenius
+  label:
+    en_US: "Create Channel"
+    zh_Hans: "创建频道"
+description:
+  human:
+    en_US: "Create a new Slack channel."
+    zh_Hans: "创建一个新的 Slack 频道。"
+  llm: "Create a public or private Slack channel using conversations.create."
+parameters:
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: "Name"
+      zh_Hans: "名称"
+    human_description:
+      en_US: "Channel name (lowercase, no spaces)."
+      zh_Hans: "频道名称（小写、无空格）。"
+    llm_description: "The channel name. Lowercase letters, numbers, hyphens and underscores only."
+    form: llm
+  - name: is_private
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Private"
+      zh_Hans: "私有"
+    human_description:
+      en_US: "Create as a private channel."
+      zh_Hans: "创建为私有频道。"
+    llm_description: "When true, creates a private channel."
+    form: llm
+extra:
+  python:
+    source: tools/create_channel.py

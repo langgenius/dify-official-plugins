@@ -1,0 +1,26 @@
+identity:
+  name: get_user
+  author: langgenius
+  label:
+    en_US: "Get User"
+    zh_Hans: "获取用户"
+description:
+  human:
+    en_US: "Get information about a user."
+    zh_Hans: "获取某个用户的信息。"
+  llm: "Retrieve information about a Slack user using users.info."
+parameters:
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: "User ID"
+      zh_Hans: "用户 ID"
+    human_description:
+      en_US: "The user ID (e.g. U012AB3CD)."
+      zh_Hans: "用户 ID（如 U012AB3CD）。"
+    llm_description: "The Slack user ID to retrieve."
+    form: llm
+extra:
+  python:
+    source: tools/get_user.py

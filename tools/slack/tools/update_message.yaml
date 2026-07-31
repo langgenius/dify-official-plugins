@@ -1,0 +1,70 @@
+identity:
+  name: update_message
+  author: langgenius
+  label:
+    en_US: "Update Message"
+    zh_Hans: "更新消息"
+description:
+  human:
+    en_US: "Update an existing Slack message."
+    zh_Hans: "更新已发送的 Slack 消息。"
+  llm: "Edit a previously sent Slack message using chat.update. Requires the channel and the message ts."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID containing the message."
+      zh_Hans: "包含该消息的频道 ID。"
+    llm_description: "The channel ID where the message lives."
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "The ts of the message to update."
+      zh_Hans: "要更新的消息的 ts。"
+    llm_description: "The timestamp (ts) of the target message."
+    form: llm
+  - name: text
+    type: string
+    required: false
+    label:
+      en_US: "Text"
+      zh_Hans: "文本"
+    human_description:
+      en_US: "New message text (required unless blocks provided)."
+      zh_Hans: "新的消息文本（若未提供 blocks 则必填）。"
+    llm_description: "The new message text. Required unless 'blocks' is supplied."
+    form: llm
+  - name: blocks
+    type: string
+    required: false
+    label:
+      en_US: "Blocks (JSON)"
+      zh_Hans: "Blocks (JSON)"
+    human_description:
+      en_US: "New Block Kit JSON array."
+      zh_Hans: "新的 Block Kit JSON 数组。"
+    llm_description: "Optional new Block Kit blocks as a JSON array."
+    form: llm
+  - name: attachments
+    type: string
+    required: false
+    label:
+      en_US: "Attachments (JSON)"
+      zh_Hans: "附件 (JSON)"
+    human_description:
+      en_US: "New attachments as a JSON array."
+      zh_Hans: "新的附件 JSON 数组。"
+    llm_description: "Optional new legacy attachments as a JSON array."
+    form: llm
+extra:
+  python:
+    source: tools/update_message.py

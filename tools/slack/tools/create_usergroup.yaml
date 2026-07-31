@@ -1,0 +1,59 @@
+identity:
+  name: create_usergroup
+  author: langgenius
+  label:
+    en_US: "Create User Group"
+    zh_Hans: "创建用户组"
+description:
+  human:
+    en_US: "Create a user group."
+    zh_Hans: "创建一个用户组。"
+  llm: "Create a Slack user group using usergroups.create."
+parameters:
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: "Name"
+      zh_Hans: "名称"
+    human_description:
+      en_US: "Name of the user group."
+      zh_Hans: "用户组名称。"
+    llm_description: "A name for the user group."
+    form: llm
+  - name: handle
+    type: string
+    required: false
+    label:
+      en_US: "Handle"
+      zh_Hans: "标识"
+    human_description:
+      en_US: "Mention handle (unique, no @)."
+      zh_Hans: "提及标识（唯一，无 @）。"
+    llm_description: "A unique mention handle for the group (without @)."
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: "Description"
+      zh_Hans: "描述"
+    human_description:
+      en_US: "Short description."
+      zh_Hans: "简短描述。"
+    llm_description: "A short description of the group."
+    form: llm
+  - name: channels
+    type: string
+    required: false
+    label:
+      en_US: "Default Channels"
+      zh_Hans: "默认频道"
+    human_description:
+      en_US: "Comma-separated default channel IDs."
+      zh_Hans: "逗号分隔的默认频道 ID。"
+    llm_description: "Comma-separated channel IDs to set as the group's default channels."
+    form: llm
+extra:
+  python:
+    source: tools/create_usergroup.py

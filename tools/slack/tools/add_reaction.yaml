@@ -1,0 +1,48 @@
+identity:
+  name: add_reaction
+  author: langgenius
+  label:
+    en_US: "Add Reaction"
+    zh_Hans: "添加表情回应"
+description:
+  human:
+    en_US: "Add an emoji reaction to a message."
+    zh_Hans: "为一条消息添加表情回应。"
+  llm: "Add an emoji reaction to a Slack message using reactions.add."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID of the message."
+      zh_Hans: "消息所在的频道 ID。"
+    llm_description: "The channel ID where the message lives."
+    form: llm
+  - name: timestamp
+    type: string
+    required: true
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "ts of the message to react to."
+      zh_Hans: "要回应的消息的 ts。"
+    llm_description: "The ts of the message to react to."
+    form: llm
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: "Emoji Name"
+      zh_Hans: "表情名称"
+    human_description:
+      en_US: "Emoji name without colons (e.g. thumbsup)."
+      zh_Hans: "不带冒号的表情名称（如 thumbsup）。"
+    llm_description: "The emoji name without colons, e.g. 'thumbsup'."
+    form: llm
+extra:
+  python:
+    source: tools/add_reaction.py

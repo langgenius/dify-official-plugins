@@ -1,0 +1,70 @@
+identity:
+  name: update_usergroup
+  author: langgenius
+  label:
+    en_US: "Update User Group"
+    zh_Hans: "更新用户组"
+description:
+  human:
+    en_US: "Update a user group."
+    zh_Hans: "更新一个用户组。"
+  llm: "Update a Slack user group using usergroups.update. Requires the usergroup ID; other fields are optional."
+parameters:
+  - name: usergroup
+    type: string
+    required: true
+    label:
+      en_US: "User Group ID"
+      zh_Hans: "用户组 ID"
+    human_description:
+      en_US: "The user group ID to update."
+      zh_Hans: "要更新的用户组 ID。"
+    llm_description: "The ID of the user group to update (e.g. S012AB3CD)."
+    form: llm
+  - name: name
+    type: string
+    required: false
+    label:
+      en_US: "Name"
+      zh_Hans: "名称"
+    human_description:
+      en_US: "New name."
+      zh_Hans: "新名称。"
+    llm_description: "A new name for the group."
+    form: llm
+  - name: handle
+    type: string
+    required: false
+    label:
+      en_US: "Handle"
+      zh_Hans: "标识"
+    human_description:
+      en_US: "New mention handle."
+      zh_Hans: "新的提及标识。"
+    llm_description: "A new unique mention handle (without @)."
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: "Description"
+      zh_Hans: "描述"
+    human_description:
+      en_US: "New description."
+      zh_Hans: "新的描述。"
+    llm_description: "A new description for the group."
+    form: llm
+  - name: channels
+    type: string
+    required: false
+    label:
+      en_US: "Default Channels"
+      zh_Hans: "默认频道"
+    human_description:
+      en_US: "Comma-separated default channel IDs."
+      zh_Hans: "逗号分隔的默认频道 ID。"
+    llm_description: "Comma-separated channel IDs to set as the group's default channels."
+    form: llm
+extra:
+  python:
+    source: tools/update_usergroup.py

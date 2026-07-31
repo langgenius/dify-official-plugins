@@ -1,0 +1,51 @@
+identity:
+  name: list_usergroups
+  author: langgenius
+  label:
+    en_US: "List User Groups"
+    zh_Hans: "列出用户组"
+description:
+  human:
+    en_US: "List the workspace's user groups."
+    zh_Hans: "列出工作区的用户组。"
+  llm: "List Slack user groups using usergroups.list."
+parameters:
+  - name: include_disabled
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Disabled"
+      zh_Hans: "包含已停用"
+    human_description:
+      en_US: "Include disabled user groups."
+      zh_Hans: "包含已停用的用户组。"
+    llm_description: "When true, disabled user groups are included."
+    form: llm
+  - name: include_count
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Count"
+      zh_Hans: "包含数量"
+    human_description:
+      en_US: "Include the user count per group."
+      zh_Hans: "包含每个组的用户数。"
+    llm_description: "When true, includes the number of users in each group."
+    form: llm
+  - name: include_users
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Users"
+      zh_Hans: "包含用户"
+    human_description:
+      en_US: "Include the list of user IDs per group."
+      zh_Hans: "包含每个组的用户 ID 列表。"
+    llm_description: "When true, includes the user IDs of each group's members."
+    form: llm
+extra:
+  python:
+    source: tools/list_usergroups.py

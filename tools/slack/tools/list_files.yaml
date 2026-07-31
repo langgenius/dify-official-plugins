@@ -1,0 +1,72 @@
+identity:
+  name: list_files
+  author: langgenius
+  label:
+    en_US: "List Files"
+    zh_Hans: "列出文件"
+description:
+  human:
+    en_US: "List files in the workspace, optionally filtered."
+    zh_Hans: "列出工作区中的文件，可选筛选。"
+  llm: "List Slack files using files.list. Filter by channel, user, and type."
+parameters:
+  - name: channel
+    type: string
+    required: false
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Filter files in this channel."
+      zh_Hans: "筛选此频道中的文件。"
+    llm_description: "Filter to files shared in this channel ID."
+    form: llm
+  - name: user
+    type: string
+    required: false
+    label:
+      en_US: "User"
+      zh_Hans: "用户"
+    human_description:
+      en_US: "Filter files from this user."
+      zh_Hans: "筛选此用户的文件。"
+    llm_description: "Filter to files created by this user ID."
+    form: llm
+  - name: types
+    type: string
+    required: false
+    label:
+      en_US: "Types"
+      zh_Hans: "类型"
+    human_description:
+      en_US: "Comma-separated types: all, spaces, snippets, images, gdocs, zips, pdfs."
+      zh_Hans: "逗号分隔的类型：all、spaces、snippets、images、gdocs、zips、pdfs。"
+    llm_description: "Comma-separated file types to include, e.g. 'images,pdfs'."
+    form: llm
+  - name: count
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Count"
+      zh_Hans: "数量"
+    human_description:
+      en_US: "Results per page."
+      zh_Hans: "每页结果数。"
+    llm_description: "Number of files to return per page. Default 100."
+    form: llm
+  - name: page
+    type: number
+    required: false
+    default: 1
+    label:
+      en_US: "Page"
+      zh_Hans: "页码"
+    human_description:
+      en_US: "Page number."
+      zh_Hans: "页码。"
+    llm_description: "Page number of results to fetch."
+    form: llm
+extra:
+  python:
+    source: tools/list_files.py

@@ -1,0 +1,92 @@
+identity:
+  name: upload_file
+  author: langgenius
+  label:
+    en_US: "Upload File"
+    zh_Hans: "上传文件"
+description:
+  human:
+    en_US: "Upload a file to Slack and optionally share it to a channel."
+    zh_Hans: "上传文件到 Slack，并可选择分享到某个频道。"
+  llm: "Upload a file to Slack using the external upload flow (getUploadURLExternal + completeUploadExternal). Provide either a file input or text content, plus a filename. Optionally share to a channel with an initial comment."
+parameters:
+  - name: file
+    type: file
+    required: false
+    label:
+      en_US: "File"
+      zh_Hans: "文件"
+    human_description:
+      en_US: "The file to upload."
+      zh_Hans: "要上传的文件。"
+    llm_description: "The file to upload. Provide this or 'content'."
+    form: llm
+  - name: content
+    type: string
+    required: false
+    label:
+      en_US: "Text Content"
+      zh_Hans: "文本内容"
+    human_description:
+      en_US: "Text content to upload as a file (if no file is provided)."
+      zh_Hans: "作为文件上传的文本内容（若未提供文件）。"
+    llm_description: "Raw text content to upload as a file. Used when 'file' is not provided."
+    form: llm
+  - name: filename
+    type: string
+    required: false
+    label:
+      en_US: "Filename"
+      zh_Hans: "文件名"
+    human_description:
+      en_US: "Name for the uploaded file."
+      zh_Hans: "上传文件的名称。"
+    llm_description: "The filename to use, e.g. 'report.txt'. Defaults to the uploaded file's name or 'upload'."
+    form: llm
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: "Title"
+      zh_Hans: "标题"
+    human_description:
+      en_US: "Title shown in Slack."
+      zh_Hans: "在 Slack 中显示的标题。"
+    llm_description: "Optional display title for the file."
+    form: llm
+  - name: channel
+    type: string
+    required: false
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to share the file to."
+      zh_Hans: "要分享文件的频道 ID。"
+    llm_description: "Optional channel ID to share the uploaded file to."
+    form: llm
+  - name: initial_comment
+    type: string
+    required: false
+    label:
+      en_US: "Initial Comment"
+      zh_Hans: "初始评论"
+    human_description:
+      en_US: "Message posted alongside the file."
+      zh_Hans: "与文件一起发布的消息。"
+    llm_description: "Optional message to post with the file."
+    form: llm
+  - name: thread_ts
+    type: string
+    required: false
+    label:
+      en_US: "Thread Timestamp"
+      zh_Hans: "话题时间戳"
+    human_description:
+      en_US: "ts of a parent message to share into its thread."
+      zh_Hans: "父消息的 ts，用于分享到其话题中。"
+    llm_description: "Optional parent message ts to share the file into that thread."
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py

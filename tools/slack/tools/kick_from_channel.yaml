@@ -1,0 +1,37 @@
+identity:
+  name: kick_from_channel
+  author: langgenius
+  label:
+    en_US: "Remove from Channel"
+    zh_Hans: "从频道移除"
+description:
+  human:
+    en_US: "Remove a user from a channel."
+    zh_Hans: "将用户从频道中移除。"
+  llm: "Remove (kick) a user from a Slack channel using conversations.kick."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID."
+      zh_Hans: "频道 ID。"
+    llm_description: "The channel ID to remove the user from."
+    form: llm
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: "User"
+      zh_Hans: "用户"
+    human_description:
+      en_US: "User ID to remove."
+      zh_Hans: "要移除的用户 ID。"
+    llm_description: "The user ID to remove from the channel."
+    form: llm
+extra:
+  python:
+    source: tools/kick_from_channel.py

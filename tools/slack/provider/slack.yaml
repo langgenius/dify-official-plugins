@@ -1,32 +1,104 @@
-credentials_for_provider:
-  webhook_url:
-    type: secret-input
-    required: true
-    label:
-      en_US: "Slack Webhook URL"
-      zh_Hans: "Slack Webhook URL"
-      pt_BR: "URL do Webhook do Slack"
-    description:
-      en_US: "Slack Webhook URL"
-      zh_Hans: "Slack Webhook URL"
-      pt_BR: "URL do Webhook do Slack"
-extra:
-  python:
-    source: provider/slack.py
 identity:
-  author: Pan YANG
-  description:
-    en_US: Slack Webhook
-    pt_BR: Slack Webhook
-    zh_Hans: Slack Webhook
-  icon: icon.svg
+  author: langgenius
+  name: slack
   label:
     en_US: Slack
-    pt_BR: Slack
     zh_Hans: Slack
-  name: slack
+    ja_JP: Slack
+    pt_BR: Slack
+  description:
+    en_US: "Automate Slack: messages, channels, files, reactions, stars, users, and user groups via the Slack Web API."
+    zh_Hans: "通过 Slack Web API 自动化 Slack：消息、频道、文件、表情回应、星标、用户和用户组。"
+    ja_JP: "Slack Web API を通じて Slack を自動化：メッセージ、チャンネル、ファイル、リアクション、スター、ユーザー、ユーザーグループ。"
+    pt_BR: "Automatize o Slack: mensagens, canais, arquivos, reações, favoritos, usuários e grupos via API Web do Slack."
+  icon: icon.svg
   tags:
     - social
     - productivity
+
+credentials_for_provider:
+  slack_bot_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: "Slack Bot Token"
+      zh_Hans: "Slack 机器人令牌"
+      ja_JP: "Slack ボットトークン"
+      pt_BR: "Token de Bot do Slack"
+    placeholder:
+      en_US: "xoxb-..."
+      zh_Hans: "xoxb-..."
+      ja_JP: "xoxb-..."
+      pt_BR: "xoxb-..."
+    help:
+      en_US: "A Bot User OAuth Token (xoxb-...) from your Slack app's OAuth & Permissions page. Add the scopes each operation needs (e.g. chat:write, channels:read)."
+      zh_Hans: "来自 Slack 应用 OAuth & Permissions 页面的机器人用户 OAuth 令牌（xoxb-...）。请为所需操作添加相应权限范围（如 chat:write、channels:read）。"
+      ja_JP: "Slack アプリの OAuth & Permissions ページのボットユーザー OAuth トークン（xoxb-...）。各操作に必要なスコープ（chat:write、channels:read など）を追加してください。"
+      pt_BR: "Um token OAuth de usuário de bot (xoxb-...) da página OAuth & Permissions do seu app Slack. Adicione os escopos que cada operação precisa (ex.: chat:write, channels:read)."
+    url: https://api.slack.com/authentication/token-types#bot
+  slack_user_token:
+    type: secret-input
+    required: false
+    label:
+      en_US: "Slack User Token (optional)"
+      zh_Hans: "Slack 用户令牌（可选）"
+      ja_JP: "Slack ユーザートークン（任意）"
+      pt_BR: "Token de Usuário do Slack (opcional)"
+    placeholder:
+      en_US: "xoxp-..."
+      zh_Hans: "xoxp-..."
+      ja_JP: "xoxp-..."
+      pt_BR: "xoxp-..."
+    help:
+      en_US: "A User OAuth Token (xoxp-...). Required only for Search Messages, Star operations, and Update User's Profile, which Slack does not allow with bot tokens."
+      zh_Hans: "用户 OAuth 令牌（xoxp-...）。仅搜索消息、星标操作和更新用户资料需要，这些操作 Slack 不允许使用机器人令牌。"
+      ja_JP: "ユーザー OAuth トークン（xoxp-...）。メッセージ検索、スター操作、ユーザープロフィール更新でのみ必要です（ボットトークンでは不可）。"
+      pt_BR: "Um token OAuth de usuário (xoxp-...). Necessário apenas para Buscar Mensagens, operações de Favoritos e Atualizar Perfil, que o Slack não permite com tokens de bot."
+    url: https://api.slack.com/authentication/token-types#user
+
 tools:
-  - tools/slack_webhook.yaml
+  - tools/send_message.yaml
+  - tools/update_message.yaml
+  - tools/delete_message.yaml
+  - tools/get_permalink.yaml
+  - tools/search_messages.yaml
+  - tools/create_channel.yaml
+  - tools/get_channel.yaml
+  - tools/list_channels.yaml
+  - tools/channel_history.yaml
+  - tools/channel_replies.yaml
+  - tools/invite_to_channel.yaml
+  - tools/kick_from_channel.yaml
+  - tools/join_channel.yaml
+  - tools/leave_channel.yaml
+  - tools/open_channel.yaml
+  - tools/close_channel.yaml
+  - tools/archive_channel.yaml
+  - tools/unarchive_channel.yaml
+  - tools/list_channel_members.yaml
+  - tools/rename_channel.yaml
+  - tools/set_channel_purpose.yaml
+  - tools/set_channel_topic.yaml
+  - tools/upload_file.yaml
+  - tools/get_file.yaml
+  - tools/list_files.yaml
+  - tools/add_reaction.yaml
+  - tools/get_reactions.yaml
+  - tools/remove_reaction.yaml
+  - tools/add_star.yaml
+  - tools/remove_star.yaml
+  - tools/list_stars.yaml
+  - tools/get_user.yaml
+  - tools/list_users.yaml
+  - tools/get_user_profile.yaml
+  - tools/get_user_presence.yaml
+  - tools/update_user_profile.yaml
+  - tools/create_usergroup.yaml
+  - tools/update_usergroup.yaml
+  - tools/enable_usergroup.yaml
+  - tools/disable_usergroup.yaml
+  - tools/list_usergroups.yaml
+
+extra:
+  python:
+    source: provider/slack.py

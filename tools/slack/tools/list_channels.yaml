@@ -1,0 +1,62 @@
+identity:
+  name: list_channels
+  author: langgenius
+  label:
+    en_US: "List Channels"
+    zh_Hans: "列出频道"
+description:
+  human:
+    en_US: "List channels in the workspace."
+    zh_Hans: "列出工作区中的频道。"
+  llm: "List Slack conversations (channels) using conversations.list. Filter by types and exclude archived channels."
+parameters:
+  - name: types
+    type: string
+    required: false
+    default: "public_channel"
+    label:
+      en_US: "Types"
+      zh_Hans: "类型"
+    human_description:
+      en_US: "Comma-separated: public_channel, private_channel, mpim, im."
+      zh_Hans: "逗号分隔：public_channel、private_channel、mpim、im。"
+    llm_description: "Comma-separated conversation types to include: public_channel, private_channel, mpim, im."
+    form: llm
+  - name: exclude_archived
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Exclude Archived"
+      zh_Hans: "排除已归档"
+    human_description:
+      en_US: "Exclude archived channels."
+      zh_Hans: "排除已归档的频道。"
+    llm_description: "When true, archived channels are omitted."
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Limit"
+      zh_Hans: "数量限制"
+    human_description:
+      en_US: "Max channels to return (max 1000)."
+      zh_Hans: "返回的最大频道数（最多 1000）。"
+    llm_description: "Maximum number of channels per page. Max 1000, default 100."
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: "Cursor"
+      zh_Hans: "游标"
+    human_description:
+      en_US: "Pagination cursor from a previous response."
+      zh_Hans: "上一次响应返回的分页游标。"
+    llm_description: "Pagination cursor to fetch the next page."
+    form: llm
+extra:
+  python:
+    source: tools/list_channels.py

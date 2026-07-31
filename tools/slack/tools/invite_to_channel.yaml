@@ -1,0 +1,37 @@
+identity:
+  name: invite_to_channel
+  author: langgenius
+  label:
+    en_US: "Invite to Channel"
+    zh_Hans: "邀请到频道"
+description:
+  human:
+    en_US: "Invite users to a channel."
+    zh_Hans: "邀请用户加入频道。"
+  llm: "Invite one or more users to a Slack channel using conversations.invite."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID to invite into."
+      zh_Hans: "要邀请加入的频道 ID。"
+    llm_description: "The channel ID to invite users to."
+    form: llm
+  - name: users
+    type: string
+    required: true
+    label:
+      en_US: "Users"
+      zh_Hans: "用户"
+    human_description:
+      en_US: "Comma-separated user IDs (max 1000)."
+      zh_Hans: "逗号分隔的用户 ID（最多 1000）。"
+    llm_description: "Comma-separated list of user IDs to invite, e.g. 'U111,U222'."
+    form: llm
+extra:
+  python:
+    source: tools/invite_to_channel.py

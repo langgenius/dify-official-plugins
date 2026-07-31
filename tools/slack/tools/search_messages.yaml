@@ -1,0 +1,71 @@
+identity:
+  name: search_messages
+  author: langgenius
+  label:
+    en_US: "Search Messages"
+    zh_Hans: "搜索消息"
+description:
+  human:
+    en_US: "Search messages across the workspace (requires a User Token)."
+    zh_Hans: "在工作区中搜索消息（需要用户令牌）。"
+  llm: "Search Slack messages with a query string using search.messages. Requires a User Token (xoxp-) with search:read; bot tokens cannot search."
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: "Query"
+      zh_Hans: "查询"
+    human_description:
+      en_US: "Search query, supports Slack search operators."
+      zh_Hans: "搜索查询，支持 Slack 搜索操作符。"
+    llm_description: "The search query string, e.g. 'from:@ada in:#general budget'."
+    form: llm
+  - name: count
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: "Count"
+      zh_Hans: "数量"
+    human_description:
+      en_US: "Results per page (max 100)."
+      zh_Hans: "每页结果数（最多 100）。"
+    llm_description: "Number of results to return per page. Maximum 100, default 20."
+    form: llm
+  - name: page
+    type: number
+    required: false
+    default: 1
+    label:
+      en_US: "Page"
+      zh_Hans: "页码"
+    human_description:
+      en_US: "Page number of results."
+      zh_Hans: "结果页码。"
+    llm_description: "Page number of results to fetch."
+    form: llm
+  - name: sort
+    type: select
+    required: false
+    default: score
+    options:
+      - value: score
+        label:
+          en_US: "Relevance"
+          zh_Hans: "相关性"
+      - value: timestamp
+        label:
+          en_US: "Timestamp"
+          zh_Hans: "时间"
+    label:
+      en_US: "Sort"
+      zh_Hans: "排序"
+    human_description:
+      en_US: "Sort by relevance or time."
+      zh_Hans: "按相关性或时间排序。"
+    llm_description: "Sort results by 'score' (relevance) or 'timestamp'."
+    form: llm
+extra:
+  python:
+    source: tools/search_messages.py

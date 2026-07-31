@@ -1,0 +1,48 @@
+identity:
+  name: remove_star
+  author: langgenius
+  label:
+    en_US: "Remove Star"
+    zh_Hans: "移除星标"
+description:
+  human:
+    en_US: "Remove a star from a message or file (requires a User Token)."
+    zh_Hans: "从消息或文件移除星标（需要用户令牌）。"
+  llm: "Remove a star from a Slack message or file using stars.remove. Provide channel+timestamp or a file ID. Requires a User Token with stars:write."
+parameters:
+  - name: channel
+    type: string
+    required: false
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID (with timestamp) of the starred message."
+      zh_Hans: "已加星标消息的频道 ID（配合时间戳）。"
+    llm_description: "The channel ID of the starred message. Use with 'timestamp'."
+    form: llm
+  - name: timestamp
+    type: string
+    required: false
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "ts of the starred message."
+      zh_Hans: "已加星标消息的 ts。"
+    llm_description: "The ts of the starred message. Use with 'channel'."
+    form: llm
+  - name: file
+    type: string
+    required: false
+    label:
+      en_US: "File ID"
+      zh_Hans: "文件 ID"
+    human_description:
+      en_US: "File ID whose star to remove."
+      zh_Hans: "要移除星标的文件 ID。"
+    llm_description: "A file ID whose star to remove instead of a message."
+    form: llm
+extra:
+  python:
+    source: tools/remove_star.py

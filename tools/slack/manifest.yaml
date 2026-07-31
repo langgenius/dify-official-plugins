@@ -1,37 +1,56 @@
+version: 0.1.0
+type: plugin
 author: langgenius
-created_at: "2024-09-20T08:03:44.658609186Z"
-description:
-  en_US: Slack Webhook
-  pt_BR: Slack Webhook
-  zh_Hans: Slack Webhook
-icon: icon.svg
+name: slack
 label:
   en_US: Slack
-  pt_BR: Slack
   zh_Hans: Slack
+  ja_JP: Slack
+  pt_BR: Slack
+description:
+  en_US: Automate Slack — send and manage messages, channels, files, reactions, stars, users, and user groups. Feature parity with the n8n Slack node.
+  zh_Hans: 自动化 Slack —— 发送与管理消息、频道、文件、表情回应、星标、用户和用户组。与 n8n Slack 节点功能对等。
+  ja_JP: Slack を自動化 —— メッセージ、チャンネル、ファイル、リアクション、スター、ユーザー、ユーザーグループの送信・管理。n8n Slack ノードと同等の機能。
+  pt_BR: Automatize o Slack — envie e gerencie mensagens, canais, arquivos, reações, favoritos, usuários e grupos de usuários. Paridade com o nó Slack do n8n.
+icon: icon.svg
+icon_dark: icon-dark.svg
+tags:
+  - social
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: false
+      llm: false
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    node:
+      enabled: false
+    endpoint:
+      enabled: false
+    app:
+      enabled: false
+    storage:
+      enabled: false
+      size: 1048576
+plugins:
+  tools:
+    - provider/slack.yaml
 meta:
+  version: 0.0.1
   arch:
     - amd64
     - arm64
   runner:
-    entrypoint: main
     language: python
     version: "3.12"
-  version: 0.0.1
-name: slack
-plugins:
-  tools:
-    - provider/slack.yaml
-resource:
-  memory: 1048576
-  permission:
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
-tags:
-  - social
-  - productivity
-type: plugin
-version: 0.0.9
+    entrypoint: main
+  minimum_dify_version: null
+created_at: "2024-09-20T08:03:44.658609186Z"
+privacy: PRIVACY.md
+verified: false

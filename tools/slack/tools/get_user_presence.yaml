@@ -1,0 +1,26 @@
+identity:
+  name: get_user_presence
+  author: langgenius
+  label:
+    en_US: "Get User Presence"
+    zh_Hans: "获取用户在线状态"
+description:
+  human:
+    en_US: "Get a user's presence (active/away)."
+    zh_Hans: "获取用户的在线状态（活跃/离开）。"
+  llm: "Retrieve a Slack user's presence status (active or away) using users.getPresence."
+parameters:
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: "User ID"
+      zh_Hans: "用户 ID"
+    human_description:
+      en_US: "The user ID whose presence to check."
+      zh_Hans: "要查询在线状态的用户 ID。"
+    llm_description: "The Slack user ID whose presence to check."
+    form: llm
+extra:
+  python:
+    source: tools/get_user_presence.py

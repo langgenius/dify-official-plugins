@@ -1,0 +1,37 @@
+identity:
+  name: get_reactions
+  author: langgenius
+  label:
+    en_US: "Get Reactions"
+    zh_Hans: "获取表情回应"
+description:
+  human:
+    en_US: "Get the reactions on a message."
+    zh_Hans: "获取一条消息上的表情回应。"
+  llm: "Retrieve the reactions on a Slack message using reactions.get."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID of the message."
+      zh_Hans: "消息所在的频道 ID。"
+    llm_description: "The channel ID where the message lives."
+    form: llm
+  - name: timestamp
+    type: string
+    required: true
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "ts of the message."
+      zh_Hans: "该消息的 ts。"
+    llm_description: "The ts of the message to inspect."
+    form: llm
+extra:
+  python:
+    source: tools/get_reactions.py

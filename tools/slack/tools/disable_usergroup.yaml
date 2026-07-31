@@ -1,0 +1,26 @@
+identity:
+  name: disable_usergroup
+  author: langgenius
+  label:
+    en_US: "Disable User Group"
+    zh_Hans: "停用用户组"
+description:
+  human:
+    en_US: "Disable a user group."
+    zh_Hans: "停用一个用户组。"
+  llm: "Disable a Slack user group using usergroups.disable."
+parameters:
+  - name: usergroup
+    type: string
+    required: true
+    label:
+      en_US: "User Group ID"
+      zh_Hans: "用户组 ID"
+    human_description:
+      en_US: "The user group ID to disable."
+      zh_Hans: "要停用的用户组 ID。"
+    llm_description: "The ID of the user group to disable."
+    form: llm
+extra:
+  python:
+    source: tools/disable_usergroup.py

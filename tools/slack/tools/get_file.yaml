@@ -1,0 +1,26 @@
+identity:
+  name: get_file
+  author: langgenius
+  label:
+    en_US: "Get File"
+    zh_Hans: "获取文件"
+description:
+  human:
+    en_US: "Get information about a file."
+    zh_Hans: "获取某个文件的信息。"
+  llm: "Retrieve metadata about a Slack file using files.info."
+parameters:
+  - name: file
+    type: string
+    required: true
+    label:
+      en_US: "File ID"
+      zh_Hans: "文件 ID"
+    human_description:
+      en_US: "The file ID."
+      zh_Hans: "文件 ID。"
+    llm_description: "The Slack file ID (e.g. F012AB3CD)."
+    form: llm
+extra:
+  python:
+    source: tools/get_file.py

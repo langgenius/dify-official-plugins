@@ -1,0 +1,60 @@
+identity:
+  name: channel_replies
+  author: langgenius
+  label:
+    en_US: "Get Thread Replies"
+    zh_Hans: "获取话题回复"
+description:
+  human:
+    en_US: "Fetch replies in a message thread."
+    zh_Hans: "获取消息话题中的回复。"
+  llm: "Retrieve replies to a threaded Slack message using conversations.replies. Requires the channel and the parent message ts."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID containing the thread."
+      zh_Hans: "包含该话题的频道 ID。"
+    llm_description: "The channel ID containing the thread."
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: "Thread Timestamp"
+      zh_Hans: "话题时间戳"
+    human_description:
+      en_US: "ts of the parent (thread root) message."
+      zh_Hans: "父（话题根）消息的 ts。"
+    llm_description: "The ts of the parent message whose replies to fetch."
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: "Limit"
+      zh_Hans: "数量限制"
+    human_description:
+      en_US: "Max replies to return (max 1000)."
+      zh_Hans: "返回的最大回复数（最多 1000）。"
+    llm_description: "Maximum number of replies per page. Max 1000, default 100."
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: "Cursor"
+      zh_Hans: "游标"
+    human_description:
+      en_US: "Pagination cursor from a previous response."
+      zh_Hans: "上一次响应返回的分页游标。"
+    llm_description: "Pagination cursor to fetch the next page."
+    form: llm
+extra:
+  python:
+    source: tools/channel_replies.py

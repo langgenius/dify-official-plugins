@@ -1,0 +1,37 @@
+identity:
+  name: set_channel_purpose
+  author: langgenius
+  label:
+    en_US: "Set Channel Purpose"
+    zh_Hans: "设置频道用途"
+description:
+  human:
+    en_US: "Set a channel's purpose (description)."
+    zh_Hans: "设置频道的用途（描述）。"
+  llm: "Set the purpose/description of a Slack channel using conversations.setPurpose."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID."
+      zh_Hans: "频道 ID。"
+    llm_description: "The channel ID."
+    form: llm
+  - name: purpose
+    type: string
+    required: true
+    label:
+      en_US: "Purpose"
+      zh_Hans: "用途"
+    human_description:
+      en_US: "The purpose text."
+      zh_Hans: "用途文本。"
+    llm_description: "The new purpose (description) for the channel."
+    form: llm
+extra:
+  python:
+    source: tools/set_channel_purpose.py

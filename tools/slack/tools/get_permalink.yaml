@@ -1,0 +1,37 @@
+identity:
+  name: get_permalink
+  author: langgenius
+  label:
+    en_US: "Get Message Permalink"
+    zh_Hans: "获取消息永久链接"
+description:
+  human:
+    en_US: "Get a permanent link to a Slack message."
+    zh_Hans: "获取某条 Slack 消息的永久链接。"
+  llm: "Retrieve a permalink URL for a specific Slack message using chat.getPermalink."
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: "Channel"
+      zh_Hans: "频道"
+    human_description:
+      en_US: "Channel ID containing the message."
+      zh_Hans: "包含该消息的频道 ID。"
+    llm_description: "The channel ID where the message lives."
+    form: llm
+  - name: message_ts
+    type: string
+    required: true
+    label:
+      en_US: "Message Timestamp"
+      zh_Hans: "消息时间戳"
+    human_description:
+      en_US: "The ts of the message."
+      zh_Hans: "该消息的 ts。"
+    llm_description: "The timestamp (ts) of the message to get a permalink for."
+    form: llm
+extra:
+  python:
+    source: tools/get_permalink.py
