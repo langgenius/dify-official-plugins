@@ -7,6 +7,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
+
 from models.llm.llm import AnthropicLargeLanguageModel, PromptCachingHandler
 
 
@@ -73,13 +74,13 @@ def test_calc_adjusted_prompt_tokens() -> None:
     assert (
         calculate(
             1000,
-            cache_creation_input_tokens=6,
-            cache_read_input_tokens=19,
-            cache_creation_5m_input_tokens=5,
-            cache_creation_1h_input_tokens=1,
+            cache_creation_input_tokens=107,
+            cache_read_input_tokens=109,
+            cache_creation_5m_input_tokens=101,
+            cache_creation_1h_input_tokens=103,
             cache_creation_fallback_multiplier=2.0,
         )
-        == 1009
+        == 1342
     )
 
 
@@ -106,12 +107,13 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
 @pytest.mark.parametrize(
     ("model", "expected"),
     [
-        ("CLAUDE-SONNET-5-latest", (True, False, True, False, False)),
+        ("CLAUDE-SONNET-5", (True, False, True, False, False)),
         ("CLAUDE-OPUS-4-7-latest", (True, False, False, True, False)),
         ("CLAUDE-OPUS-4-8-latest", (True, False, False, True, False)),
         ("CLAUDE-FABLE-5-latest", (True, True, False, True, False)),
         ("CLAUDE-MYTHOS-5-latest", (True, True, False, True, False)),
         ("CLAUDE-OPUS-5-latest", (True, False, True, True, True)),
+        ("CLAUDE-SONNET-4-6", (False, False, False, False, False)),
         ("not-claude-opus-5-latest", (False, False, False, False, False)),
     ],
 )
