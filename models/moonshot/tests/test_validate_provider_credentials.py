@@ -2,8 +2,7 @@
 
 The provider's credential validation method must:
 - accept an optional `validate_model` override in the credentials dict,
-- fall back to a sentinel model with broad Moonshot API availability when no
-  override is provided,
+- fall back to the current Kimi model when no override is provided,
 - propagate CredentialsValidateFailedError unchanged from the underlying
   model validator,
 - propagate unexpected exceptions through the existing exception handler.
@@ -39,12 +38,9 @@ def _provider() -> MoonshotProvider:
     return provider
 
 
-def test_default_validate_model_is_kimi_k2_0711_preview() -> None:
-    """The default sentinel is kimi-k2-0711-preview: the earliest Kimi
-    K-series model in the plugin's catalog, with broad availability
-    across all Moonshot API key tiers.
-    """
-    assert DEFAULT_VALIDATE_MODEL == "kimi-k2-0711-preview"
+def test_default_validate_model_is_kimi_k3() -> None:
+    """The default sentinel is the current Kimi model."""
+    assert DEFAULT_VALIDATE_MODEL == "kimi-k3"
 
 
 def test_default_validate_model_is_in_plugin_catalog() -> None:

@@ -5,14 +5,8 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
-# Sentinel model used for credential validation. Picked as the earliest Kimi
-# K-series chat model in the plugin's predefined catalog so it has broad
-# availability across Moonshot API key tiers — a key valid for any K-series
-# model will pass validation against it. Moonshot API keys that only cover
-# the older moonshot-v1-* series (which the previous default used to fail on)
-# are no longer impacted: callers can override the sentinel by passing
-# `validate_model` in the credentials dict.
-DEFAULT_VALIDATE_MODEL = "kimi-k2-0711-preview"
+# Callers can override the credential validation model with `validate_model`.
+DEFAULT_VALIDATE_MODEL = "kimi-k3"
 
 
 class MoonshotProvider(ModelProvider):
