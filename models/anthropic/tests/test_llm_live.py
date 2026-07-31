@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import (
     ModelActions,
@@ -15,7 +14,7 @@ from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.integration.run import PluginRunner
 
 
-def get_all_models() -> list[str]:
+def _get_all_models() -> list[str]:
     """Read model names from models/llm/_position.yaml."""
     models_dir = Path(__file__).parent.parent / "models" / "llm"
     position_file = models_dir / "_position.yaml"
@@ -30,7 +29,7 @@ def get_all_models() -> list[str]:
     if data is None:
         return []
     if not isinstance(data, list):
-        raise ValueError(f"Expected a YAML list in {position_file}")
+        raise TypeError(f"Expected a YAML list in {position_file}")
 
     models: list[str] = []
     for item in data:
@@ -39,7 +38,7 @@ def get_all_models() -> list[str]:
     return models
 
 
-@pytest.mark.parametrize("model_name", get_all_models())
+@pytest.mark.parametrize("model_name", _get_all_models())
 def test_llm_invoke(model_name: str) -> None:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -65,17 +64,18 @@ def test_llm_invoke(model_name: str) -> None:
     with PluginRunner(
         config=IntegrationConfig(), plugin_package_path=plugin_path
     ) as runner:
-        results: list[LLMResultChunk] = []
-        for result in runner.invoke(
-            access_type=PluginInvokeType.Model,
-            access_action=ModelActions.InvokeLLM,
-            payload=payload,
-            response_type=LLMResultChunk,
-        ):
-            results.append(result)
+        results = list(
+            runner.invoke(
+                access_type=PluginInvokeType.Model,
+                access_action=ModelActions.InvokeLLM,
+                payload=payload,
+                response_type=LLMResultChunk,
+            )
+        )
 
-        # Verify we received multiple chunks
-        assert len(results) > 0, f"No results received for model {model_name}"
-
-        # Verify concatenated content is non-empty
-        assert any(not r.delta.message.is_empty() for r in results if r.delta.message.content), f"Empty content for model {model_name}"
+        assert results, f"No results received for model {model_name}"
+        assert any(
+            not result.delta.message.is_empty()
+            for result in results
+            if result.delta.message.content
+        ), f"Empty content for model {model_name}"
