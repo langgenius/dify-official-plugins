@@ -35,6 +35,9 @@ class Gemini3ProImagePreviewTool(Tool):
     """
     
     DEFAULT_BASE_URL = "https://api.inferera.com"
+    LITE_MODEL = "gemini-3.1-flash-lite-image"
+    VALID_RATIOS = ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"]
+    VALID_RESOLUTIONS = ["1K", "2K", "4K"]
 
     def get_gemini_base_url(self) -> str:
         root = (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
@@ -44,19 +47,17 @@ class Gemini3ProImagePreviewTool(Tool):
     MODE_TEXT_TO_IMAGE = "text_to_image"
     MODE_IMAGE_TO_IMAGE = "image_to_image"
     
-    def create_image_info(self, base64_data: str, aspect_ratio: str, resolution: str, image_format: str = "png") -> dict:
-        mime_type = {
-            "png": "image/png",
-            "jpeg": "image/jpeg",
-            "webp": "image/webp"
-        }.get(image_format, "image/png")
-        
+    def create_image_info(self, base64_data: str, aspect_ratio: str, resolution: str, mime_type: str) -> dict:
         return {
             "url": f"data:{mime_type};base64,{base64_data}",
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
-            "format": image_format
+            "mime_type": mime_type,
         }
+
+    @staticmethod
+    def extension_for_mime_type(mime_type: str) -> str:
+        return {"image/jpeg": "jpg", "image/webp": "webp"}.get(mime_type, "png")
     
     def _process_image_input(self, image_input: Any) -> Optional[Image.Image]:
         """
@@ -143,23 +144,21 @@ class Gemini3ProImagePreviewTool(Tool):
             reference_images_str = tool_parameters.get("reference_images", "").strip()
             single_image_str = tool_parameters.get("image", "").strip()
             
+            model = tool_parameters.get("model", "gemini-3-pro-image-preview")
+
             # Generation parameters
             aspect_ratio = tool_parameters.get("aspect_ratio", "1:1")
-            resolution = tool_parameters.get("resolution", "4K")
-            image_format = tool_parameters.get("image_format", "png")
+            default_resolution = "1K" if model == self.LITE_MODEL else "4K"
+            resolution = tool_parameters.get("resolution", default_resolution)
             
             # Validate parameters
-            valid_ratios = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
-            if aspect_ratio not in valid_ratios:
-                raise InvokeError(f"Invalid aspect ratio. Must be one of: {', '.join(valid_ratios)}")
+            if aspect_ratio not in self.VALID_RATIOS:
+                raise InvokeError(f"Invalid aspect ratio. Must be one of: {', '.join(self.VALID_RATIOS)}")
             
-            valid_resolutions = ["1K", "2K", "4K"]
-            if resolution not in valid_resolutions:
-                raise InvokeError(f"Invalid resolution. Must be one of: {', '.join(valid_resolutions)}")
-            
-            valid_formats = ["png", "jpeg", "webp"]
-            if image_format not in valid_formats:
-                raise InvokeError(f"Invalid image format. Must be one of: {', '.join(valid_formats)}")
+            if resolution not in self.VALID_RESOLUTIONS:
+                raise InvokeError(f"Invalid resolution. Must be one of: {', '.join(self.VALID_RESOLUTIONS)}")
+            if model == self.LITE_MODEL and resolution != "1K":
+                raise InvokeError("gemini-3.1-flash-lite-image only supports 1K output")
             
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
@@ -229,8 +228,6 @@ class Gemini3ProImagePreviewTool(Tool):
                 config.tools = [{"google_search": {}}]
                 yield self.create_text_message("Google Search enabled - fetching real-time information...")
             
-            model = tool_parameters.get("model", "gemini-3-pro-image-preview")
-            
             yield self.create_text_message(f"Generating image with {model} (mode: {generation_mode}, {aspect_ratio}, {resolution})...")
             
             # Make API request
@@ -269,8 +266,11 @@ class Gemini3ProImagePreviewTool(Tool):
                     if not img_bytes:
                         decode_errors.append("inline_data has no image bytes")
                         continue
+                    mime_type = getattr(inline_data, "mime_type", None) or "image/png"
+                    if not str(mime_type).startswith("image/"):
+                        mime_type = "image/png"
                     base64_data = base64.b64encode(img_bytes).decode()
-                    image_info = self.create_image_info(base64_data, aspect_ratio, resolution, image_format)
+                    image_info = self.create_image_info(base64_data, aspect_ratio, resolution, str(mime_type))
                     images.append(image_info)
                 except Exception as decode_err:
                     decode_errors.append(str(decode_err))
@@ -294,15 +294,10 @@ class Gemini3ProImagePreviewTool(Tool):
                 base64_data = image_info["url"].split(",")[1]
                 image_bytes = base64.b64decode(base64_data)
                 
-                file_extension = image_format if image_format != "jpeg" else "jpg"
+                mime_type = image_info["mime_type"]
+                file_extension = self.extension_for_mime_type(mime_type)
                 filename = f"gemini_image_{idx + 1}.{file_extension}"
-                
-                mime_type = {
-                    "png": "image/png",
-                    "jpeg": "image/jpeg",
-                    "webp": "image/webp"
-                }.get(image_format, "image/png")
-                
+
                 yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
             
             # Return metadata as JSON
@@ -314,7 +309,6 @@ class Gemini3ProImagePreviewTool(Tool):
                 "num_reference_images": len(reference_images),
                 "aspect_ratio": aspect_ratio,
                 "resolution": resolution,
-                "image_format": image_format,
                 "num_images": len(images),
                 "text_content": text_content
             })

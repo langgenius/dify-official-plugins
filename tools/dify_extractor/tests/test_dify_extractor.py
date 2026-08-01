@@ -1,10 +1,11 @@
-import sys
-from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import pytest
 
 from tools.dify_extractor import DifyExtractorTool
+from tools.document import Document, ExtractorResult
+from tools.errors import ExtractionError
+from tools.extractor_base import BaseExtractor
 
 
 class _MessageToolMixin:
@@ -17,42 +18,189 @@ class _MessageToolMixin:
 
 def _make_tool() -> DifyExtractorTool:
     tool = object.__new__(DifyExtractorTool)
-    tool.create_text_message = _MessageToolMixin.create_text_message.__get__(tool, DifyExtractorTool)
-    tool.create_variable_message = _MessageToolMixin.create_variable_message.__get__(tool, DifyExtractorTool)
+    tool.create_text_message = _MessageToolMixin.create_text_message.__get__(
+        tool, DifyExtractorTool
+    )
+    tool.create_variable_message = _MessageToolMixin.create_variable_message.__get__(
+        tool, DifyExtractorTool
+    )
     return tool
 
 
-def test_invoke_returns_error_for_corrupt_docx():
-    tool = _make_tool()
-    corrupt_file = SimpleNamespace(filename="report.docx", blob=b"not a zip file")
+def _file(
+    blob: bytes,
+    filename: str | None = "sample.txt",
+    extension: str | None = None,
+    mime_type: str | None = "text/plain",
+):
+    return SimpleNamespace(
+        filename=filename,
+        extension=extension,
+        mime_type=mime_type,
+        blob=blob,
+    )
 
-    messages = list(tool._invoke({"file": corrupt_file}))
+
+def test_success_preserves_message_order_and_outputs():
+    messages = list(_make_tool()._invoke({"file": _file(b"hello")}))
+
+    assert [message["type"] for message in messages] == ["text", "variable"]
+    assert messages[0]["value"] == "hello"
+    assert messages[1]["name"] == "documents"
+    assert messages[1]["value"][0].metadata == {"source": "sample.txt"}
+
+
+def test_missing_file_returns_one_error_message():
+    messages = list(_make_tool()._invoke({}))
+
+    assert messages == [{"type": "text", "value": "A file is required."}]
+
+
+def test_missing_filename_uses_supplied_extension():
+    messages = list(
+        _make_tool()._invoke(
+            {"file": _file(b"hello", filename=None, extension="txt", mime_type=None)}
+        )
+    )
+
+    assert messages[0]["value"] == "hello"
+    assert messages[1]["value"][0].metadata["source"] == "uploaded.txt"
+
+
+def test_supplied_extension_resolves_misnamed_file():
+    messages = list(
+        _make_tool()._invoke(
+            {
+                "file": _file(
+                    b'{"answer": 42}',
+                    filename="payload.bin",
+                    extension="json",
+                    mime_type="application/json",
+                )
+            }
+        )
+    )
+
+    assert messages[0]["value"].startswith("```json")
+
+
+def test_text_mime_type_enables_smart_fallback():
+    messages = list(
+        _make_tool()._invoke(
+            {"file": _file(b"plain", filename="sample.unknown", mime_type="text/plain")}
+        )
+    )
+
+    assert messages[0]["value"] == "plain"
+
+
+def test_unsupported_binary_returns_one_error_message():
+    messages = list(
+        _make_tool()._invoke(
+            {
+                "file": _file(
+                    b"binary",
+                    filename="archive.zip",
+                    mime_type="application/zip",
+                )
+            }
+        )
+    )
 
     assert len(messages) == 1
-    assert messages[0]["type"] == "text"
-    assert "not a valid .docx file" in messages[0]["value"]
-    assert "old binary .doc instead of .docx" in messages[0]["value"]
+    assert "Unsupported file format '.zip'" in messages[0]["value"]
 
 
-def test_invoke_returns_error_for_corrupt_pptx():
-    tool = _make_tool()
-    corrupt_file = SimpleNamespace(filename="slides.pptx", blob=b"not a zip file")
+def test_empty_file_returns_one_error_message():
+    messages = list(_make_tool()._invoke({"file": _file(b"")}))
 
-    messages = list(tool._invoke({"file": corrupt_file}))
-
-    assert len(messages) == 1
-    assert messages[0]["type"] == "text"
-    assert "not a valid .pptx file" in messages[0]["value"]
-    assert "old binary .ppt instead of .pptx" in messages[0]["value"]
+    assert messages == [{"type": "text", "value": "File 'sample.txt' is empty."}]
 
 
-def test_invoke_returns_error_for_corrupt_xlsx():
-    tool = _make_tool()
-    corrupt_file = SimpleNamespace(filename="sheet.xlsx", blob=b"not a zip file")
+def test_blob_read_failure_is_actionable():
+    class BrokenFile:
+        filename = "report.txt"
+        extension = ".txt"
+        mime_type = "text/plain"
 
-    messages = list(tool._invoke({"file": corrupt_file}))
+        @property
+        def blob(self):
+            raise ConnectionError("secret internal URL")
+
+    messages = list(_make_tool()._invoke({"file": BrokenFile()}))
 
     assert len(messages) == 1
-    assert messages[0]["type"] == "text"
-    assert "not a valid .xlsx file" in messages[0]["value"]
-    assert "old binary .xls instead of .xlsx" in messages[0]["value"]
+    assert "FILES_URL" in messages[0]["value"]
+    assert "secret internal URL" not in messages[0]["value"]
+
+
+def test_invalid_json_returns_error_without_document_variables():
+    messages = list(
+        _make_tool()._invoke(
+            {
+                "file": _file(
+                    b"{broken",
+                    filename="payload.json",
+                    mime_type="application/json",
+                )
+            }
+        )
+    )
+
+    assert len(messages) == 1
+    assert "invalid JSON" in messages[0]["value"]
+
+
+def test_header_only_csv_is_rejected_as_empty_content():
+    messages = list(
+        _make_tool()._invoke(
+            {"file": _file(b"name,age\n", filename="people.csv", mime_type="text/csv")}
+        )
+    )
+
+    assert len(messages) == 1
+    assert "contains no extractable content" in messages[0]["value"]
+
+
+@pytest.mark.parametrize(
+    ("extension", "format_hint"),
+    [
+        (".docx", "old binary .doc instead of .docx"),
+        (".pptx", "old binary .ppt instead of .pptx"),
+        (".xlsx", "old binary .xls instead of .xlsx"),
+    ],
+)
+def test_corrupt_office_file_returns_tailored_error(extension, format_hint):
+    filename = f"report{extension}"
+    messages = list(
+        _make_tool()._invoke({"file": _file(b"not a zip file", filename=filename, mime_type=None)})
+    )
+
+    assert len(messages) == 1
+    assert f"not a valid {extension} file" in messages[0]["value"]
+    assert format_hint in messages[0]["value"]
+
+
+def test_unexpected_extractor_error_is_sanitized(monkeypatch):
+    class BrokenExtractor(BaseExtractor):
+        def extract(self):
+            raise RuntimeError("database password")
+
+    monkeypatch.setitem(
+        __import__("tools.dify_extractor", fromlist=["_EXTRACTORS"])._EXTRACTORS,
+        ".txt",
+        BrokenExtractor,
+    )
+    messages = list(_make_tool()._invoke({"file": _file(b"hello")}))
+
+    assert len(messages) == 1
+    assert "database password" not in messages[0]["value"]
+    assert "plugin logs" in messages[0]["value"]
+
+
+def test_result_validation_accepts_only_meaningful_documents():
+    with pytest.raises(ExtractionError, match="no extractable content"):
+        DifyExtractorTool._validate_result(
+            ExtractorResult(md_content="heading", documents=[Document(page_content="")]),
+            "empty.txt",
+        )

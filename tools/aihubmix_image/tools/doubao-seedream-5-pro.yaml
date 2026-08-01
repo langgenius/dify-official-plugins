@@ -1,0 +1,185 @@
+identity:
+  name: "doubao-seedream-5-pro"
+  author: "langgenius"
+  label:
+    en_US: "Doubao Seedream 5.0 Pro"
+    zh_Hans: "Doubao Seedream 5.0 Pro"
+    pt_BR: "Doubao Seedream 5.0 Pro"
+    ja_JP: "Doubao Seedream 5.0 Pro"
+description:
+  human:
+    en_US: "Generate or edit production-quality images with Doubao Seedream 5.0 Pro."
+    zh_Hans: "使用 Doubao Seedream 5.0 Pro 生成或编辑高质量图像。"
+    pt_BR: "Gere ou edite imagens de alta qualidade com o Doubao Seedream 5.0 Pro."
+    ja_JP: "Doubao Seedream 5.0 Pro で高品質な画像を生成または編集します。"
+  llm: "Generate or edit one image with Doubao Seedream 5.0 Pro."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Describe the image to generate or how to transform the reference image"
+      zh_Hans: "描述要生成的图像，或说明如何修改参考图"
+      pt_BR: "Descreva a imagem ou como transformar a imagem de referência"
+      ja_JP: "生成する画像または参照画像の編集内容を説明します"
+    llm_description: "Image generation or editing instruction"
+    form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Fixed Doubao Seedream 5.0 Pro model"
+      zh_Hans: "固定的 Doubao Seedream 5.0 Pro 模型"
+      pt_BR: "Modelo fixo Doubao Seedream 5.0 Pro"
+      ja_JP: "固定の Doubao Seedream 5.0 Pro モデル"
+    llm_description: "Fixed model selection"
+    form: form
+    default: "doubao-seedream-5.0-pro"
+    options:
+      - value: "doubao-seedream-5.0-pro"
+        label:
+          en_US: "doubao-seedream-5.0-pro"
+          zh_Hans: "doubao-seedream-5.0-pro"
+          pt_BR: "doubao-seedream-5.0-pro"
+          ja_JP: "doubao-seedream-5.0-pro"
+
+  - name: generation_mode
+    type: select
+    required: false
+    label:
+      en_US: "Generation Mode"
+      zh_Hans: "生成模式"
+      pt_BR: "Modo de Geração"
+      ja_JP: "生成モード"
+    human_description:
+      en_US: "Generate from text or edit one reference image"
+      zh_Hans: "文生图或编辑一张参考图"
+      pt_BR: "Gerar a partir de texto ou editar uma imagem"
+      ja_JP: "テキスト生成または参照画像の編集"
+    llm_description: "Select text-to-image or image-to-image mode"
+    form: form
+    default: "text_to_image"
+    options:
+      - value: "text_to_image"
+        label:
+          en_US: "Text-to-Image"
+          zh_Hans: "文生图"
+          pt_BR: "Texto para imagem"
+          ja_JP: "テキストから画像"
+      - value: "image_to_image"
+        label:
+          en_US: "Image-to-Image"
+          zh_Hans: "图生图"
+          pt_BR: "Imagem para imagem"
+          ja_JP: "画像から画像"
+
+  - name: reference_image
+    type: string
+    required: false
+    label:
+      en_US: "Reference Image"
+      zh_Hans: "参考图像"
+      pt_BR: "Imagem de Referência"
+      ja_JP: "参照画像"
+    human_description:
+      en_US: "Reference image URL, base64 data, or Dify file variable for image-to-image mode"
+      zh_Hans: "图生图模式使用的图片 URL、base64 数据或 Dify 文件变量"
+      pt_BR: "URL, base64 ou variável de arquivo Dify para o modo imagem para imagem"
+      ja_JP: "画像編集で使用する URL、base64、または Dify ファイル変数"
+    llm_description: "Reference image required for image-to-image mode"
+    form: form
+
+  - name: image_strength
+    type: number
+    required: false
+    label:
+      en_US: "Image Strength"
+      zh_Hans: "图像强度"
+      pt_BR: "Força da Imagem"
+      ja_JP: "画像強度"
+    human_description:
+      en_US: "How much to transform the reference image (0.0-1.0)"
+      zh_Hans: "参考图像的变换程度（0.0-1.0）"
+      pt_BR: "Quanto transformar a imagem de referência (0.0-1.0)"
+      ja_JP: "参照画像を変換する度合い（0.0-1.0）"
+    llm_description: "Image transformation strength for image-to-image mode"
+    form: form
+    default: 0.5
+    min: 0.0
+    max: 1.0
+
+  - name: size
+    type: select
+    required: false
+    label:
+      en_US: "Image Size"
+      zh_Hans: "图像尺寸"
+      pt_BR: "Tamanho da Imagem"
+      ja_JP: "画像サイズ"
+    human_description:
+      en_US: "Verified output image size"
+      zh_Hans: "已验证的输出图像尺寸"
+      pt_BR: "Tamanho verificado da imagem de saída"
+      ja_JP: "検証済みの出力画像サイズ"
+    llm_description: "Output image size"
+    form: form
+    default: "2K"
+    options:
+      - value: "1K"
+        label: {en_US: "1K", zh_Hans: "1K", pt_BR: "1K", ja_JP: "1K"}
+      - value: "2K"
+        label: {en_US: "2K", zh_Hans: "2K", pt_BR: "2K", ja_JP: "2K"}
+
+  - name: response_format
+    type: select
+    required: false
+    label:
+      en_US: "Response Format"
+      zh_Hans: "响应格式"
+      pt_BR: "Formato de Resposta"
+      ja_JP: "応答形式"
+    human_description:
+      en_US: "Return an image URL or Base64 image data"
+      zh_Hans: "返回图片 URL 或 Base64 图片数据"
+      pt_BR: "Retornar URL ou dados Base64 da imagem"
+      ja_JP: "画像 URL または Base64 データを返します"
+    llm_description: "Generated image response format"
+    form: form
+    default: "url"
+    options:
+      - value: "url"
+        label: {en_US: "URL", zh_Hans: "URL", pt_BR: "URL", ja_JP: "URL"}
+      - value: "b64_json"
+        label: {en_US: "Base64 JSON", zh_Hans: "Base64 JSON", pt_BR: "Base64 JSON", ja_JP: "Base64 JSON"}
+
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Add Watermark"
+      zh_Hans: "添加水印"
+      pt_BR: "Adicionar Marca d'água"
+      ja_JP: "透かしを追加"
+    human_description:
+      en_US: "Whether to add a watermark to the generated image"
+      zh_Hans: "是否在生成图像中添加水印"
+      pt_BR: "Adicionar marca d'água à imagem gerada"
+      ja_JP: "生成画像に透かしを追加するかどうか"
+    llm_description: "Whether to add a watermark"
+    form: form
+    default: true
+
+extra:
+  python:
+    source: tools/doubao.py

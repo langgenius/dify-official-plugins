@@ -181,6 +181,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-opus-5",
         "claude-sonnet-5",
         "claude-fable-5",
         "claude-mythos-5",
@@ -192,6 +193,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     TASK_BUDGET_SUPPORTED_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-opus-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -201,6 +203,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     # which the API would interpret as its adaptive-on default).
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-sonnet-5",
+        "claude-opus-5",
+    )
+    # Models where thinking can be disabled only at effort `high` or below
+    # (thinking.type=disabled combined with effort xhigh/max returns a 400). GA on
+    # Claude Opus 5 onward. The plugin clamps effort to high when disabling thinking
+    # on these models so the request still succeeds.
+    DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
+        "claude-opus-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -237,6 +247,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _supports_task_budget(self, model: str) -> bool:
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
+
+    def _enforces_disabled_thinking_effort_cap(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.DISABLED_THINKING_EFFORT_CAP_MODELS
+        )
 
     def _predefined_model_has_parameter(self, model: str, parameter_name: str) -> bool:
         for model_schema in self.model_schemas:
@@ -452,6 +469,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
+            disabling_thinking = False
             if always_on_adaptive_thinking:
                 # Fable/Mythos: adaptive thinking is always on and cannot be disabled.
                 extra_model_kwargs["thinking"] = {
@@ -465,10 +483,23 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     "display": thinking_display or "omitted",
                 }
             elif adaptive_thinking_default_on and thinking_was_set:
-                # Sonnet 5: omitted thinking uses the API's adaptive-on default.
-                # Only an explicit false should turn thinking off.
+                # Sonnet 5 / Opus 5: thinking is on by default. An explicit false
+                # turns it off; omitting the field uses the API's adaptive-on default.
                 extra_model_kwargs["thinking"] = {"type": "disabled"}
+                disabling_thinking = True
             # else: Opus 4.7/4.8 — thinking is off unless opted in; omit the field.
+
+            # Opus 5+: thinking.type=disabled is rejected (400) when effort is xhigh
+            # or max. Preserve the user's "thinking off" intent by clamping effort to
+            # high (the maximum allowed with thinking disabled) so the request still
+            # succeeds. See whats-new-opus-5 / migration-guide.
+            if disabling_thinking and self._enforces_disabled_thinking_effort_cap(model):
+                if effort in ("xhigh", "max"):
+                    logging.warning(
+                        f"Model {model} rejects thinking=disabled with "
+                        f"effort={effort}; clamping effort to 'high' to avoid a 400."
+                    )
+                    effort = "high"
 
             output_config: dict[str, Any] = {}
             if effort:

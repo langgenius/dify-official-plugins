@@ -29,6 +29,10 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+THINK_START = "<think>"
+THINK_END = "</think>"
+
+
 class LogMetadata:
     """Metadata keys for logging"""
     STARTED_AT = "started_at"
@@ -93,6 +97,51 @@ class FunctionCallingParams(BaseModel):
 class FunctionCallingAgentStrategy(AgentStrategy):
     query: str = ""
     instruction: str | None = ""
+
+    @staticmethod
+    def _format_tool_response(
+        *,
+        response: ToolInvokeMessage,
+        provider_type: ToolProviderType,
+    ) -> str:
+        if response.type == ToolInvokeMessage.MessageType.TEXT:
+            return cast(ToolInvokeMessage.TextMessage, response.message).text
+        if response.type == ToolInvokeMessage.MessageType.JSON:
+            json_message = cast(ToolInvokeMessage.JsonMessage, response.message)
+            if (
+                provider_type == ToolProviderType.WORKFLOW
+                or getattr(json_message, "suppress_output", False)
+            ):
+                return ""
+            text = json.dumps(
+                json_message.json_object,
+                ensure_ascii=False,
+            )
+            return f"tool response: {text}."
+        if response.type == ToolInvokeMessage.MessageType.VARIABLE:
+            return ""
+        raise ValueError(f"unsupported tool response type: {response.type}")
+
+    @staticmethod
+    def _get_streaming_content_state(
+        *,
+        content: str,
+        function_call_state: bool,
+        thinking_started: bool,
+        iteration_step: int,
+        max_iteration_steps: int,
+    ) -> tuple[bool, bool]:
+        should_stream = (
+            not function_call_state
+            or iteration_step == max_iteration_steps
+            or (thinking_started and content.strip() == THINK_END)
+        )
+        if should_stream:
+            if content.strip() == THINK_START:
+                thinking_started = True
+            elif content.strip() == THINK_END:
+                thinking_started = False
+        return should_stream, thinking_started
 
     @property
     def _user_prompt_message(self) -> UserPromptMessage:
@@ -196,6 +245,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             # save full response
             response = ""
+            thinking_started = False
 
             # save tool call names and inputs
             tool_call_names = ""
@@ -216,20 +266,31 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if isinstance(chunk.delta.message.content, list):
                             for content in chunk.delta.message.content:
                                 response += content.data
-                                if (
-                                    not function_call_state
-                                    or iteration_step == max_iteration_steps
-                                ):
+                                should_stream, thinking_started = (
+                                    self._get_streaming_content_state(
+                                        content=content.data,
+                                        function_call_state=function_call_state,
+                                        thinking_started=thinking_started,
+                                        iteration_step=iteration_step,
+                                        max_iteration_steps=max_iteration_steps,
+                                    )
+                                )
+                                if should_stream:
                                     yield self.create_text_message(content.data)
                         else:
-                            response += str(chunk.delta.message.content)
-                            if (
-                                not function_call_state
-                                or iteration_step == max_iteration_steps
-                            ):
-                                yield self.create_text_message(
-                                    str(chunk.delta.message.content)
+                            response_content = str(chunk.delta.message.content)
+                            response += response_content
+                            should_stream, thinking_started = (
+                                self._get_streaming_content_state(
+                                    content=response_content,
+                                    function_call_state=function_call_state,
+                                    thinking_started=thinking_started,
+                                    iteration_step=iteration_step,
+                                    max_iteration_steps=max_iteration_steps,
                                 )
+                            )
+                            if should_stream:
+                                yield self.create_text_message(response_content)
 
                     if chunk.delta.usage:
                         self.increase_usage(llm_usage, chunk.delta.usage)
@@ -420,8 +481,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else:
                         # invoke tool
                         try:
+                            provider_type = ToolProviderType(tool_instance.provider_type)
                             tool_invoke_responses = self.session.tool.invoke(
-                                provider_type=ToolProviderType(tool_instance.provider_type),
+                                provider_type=provider_type,
                                 provider=tool_instance.identity.provider,
                                 tool_name=tool_instance.identity.name,
                                 parameters={
@@ -435,10 +497,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.TEXT
                                 ):
-                                    tool_result += cast(
-                                        ToolInvokeMessage.TextMessage,
-                                        tool_invoke_response.message,
-                                    ).text
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
+                                    )
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.LINK
@@ -496,14 +558,18 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.JSON
                                 ):
-                                    text = json.dumps(
-                                        cast(
-                                            ToolInvokeMessage.JsonMessage,
-                                            tool_invoke_response.message,
-                                        ).json_object,
-                                        ensure_ascii=False,
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
                                     )
-                                    tool_result += f"tool response: {text}."
+                                elif (
+                                    tool_invoke_response.type
+                                    == ToolInvokeMessage.MessageType.VARIABLE
+                                ):
+                                    tool_result += self._format_tool_response(
+                                        response=tool_invoke_response,
+                                        provider_type=provider_type,
+                                    )
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.BLOB
