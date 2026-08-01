@@ -15,13 +15,11 @@ The models of Amazon Bedrock.
 3. Add the credentials in the plugin settings.
 4. Save the configuration.
 
-## Temporary Credentials
+### Temporary Credentials
+The plugin supports AWS temporary credentials from SSO/SAML authentication (e.g., `aws sso login` or `saml2aws login`):
 
-### Temporary Credentials (IAM Role / SSO / SAML)
-
-When using IAM Role authentication with temporary credentials (AWS SSO, SAML federation, or IMDS), the plugin automatically refreshes credentials on every invocation. This means you can use `aws sso login`, `saml2aws login`, or other credential refresh tools while the plugin is running, and the new credentials will be picked up immediately without restarting the plugin daemon.
-
-The plugin creates a fresh boto3 session for each request, ensuring that disk-refreshed credentials are always used and preventing `ExpiredTokenException` errors from cached stale tokens.
+- **Access Key authentication**: optionally provide an AWS Session Token for temporary credentials. The plugin will use the session token alongside your access key and secret key.
+- **IAM Role authentication**: credentials are automatically refreshed on every invocation. The plugin creates a fresh boto3 session for each IAM Role authentication call, which picks up the latest credentials from disk (via `saml2aws login`, `aws sso login`, IMDS, etc.). This proactive approach eliminates `ExpiredTokenException` errors and makes credential rotation transparent without requiring plugin daemon restarts.
 
 ## Usage
 Select **Amazon Bedrock** as the model provider in Dify, choose an available model, and use it in applications, agents, or workflows.
