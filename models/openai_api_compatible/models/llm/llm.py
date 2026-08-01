@@ -578,6 +578,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if "max_completion_tokens" not in model_parameters and "max_tokens" in model_parameters:
                 model_parameters["max_completion_tokens"] = model_parameters.pop("max_tokens")
 
+        # The base SDK adds a top-level "user" to the request body whenever user is truthy.
+        # Some OpenAI-compatible gateways reject that optional parameter outright, so allow
+        # the credential to suppress it. Default keeps today's behaviour: user is still sent.
+        if credentials.get("user_identity_support", "support") == "no_support":
+            user = None
+
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
