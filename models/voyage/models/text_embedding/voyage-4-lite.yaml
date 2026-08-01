@@ -1,0 +1,9 @@
+model: voyage-4-lite
+model_type: text-embedding
+model_properties:
+  context_size: 32000
+  max_chunks: 128
+pricing:
+  input: '0.00002'
+  unit: '0.001'
+  currency: USD

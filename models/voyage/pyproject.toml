@@ -6,7 +6,14 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.9.0",
+    # 0.10.0 is a hard floor, not a preference. Before it, the SDK's
+    # ModelInvokeTextEmbeddingRequest had no `input_type` field and
+    # PluginExecutor.invoke_text_embedding never forwarded one, so the
+    # "input_type": "query" Dify sends for search queries was dropped and every
+    # query was embedded with this plugin's DOCUMENT default. Voyage's query and
+    # document prompts are not interchangeable; the mismatch costs most of the
+    # retrieval quality (measured MRR 0.019 vs 0.631 on a 1,589-chunk corpus).
+    "dify_plugin>=0.10.0",
     "httpx>=0.28.1",
     "requests>=2.34.2",
 ]
