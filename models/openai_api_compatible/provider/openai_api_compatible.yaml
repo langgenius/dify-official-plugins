@@ -270,6 +270,44 @@ model_credential_schema:
       help:
         en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
         zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
+    - variable: web_search_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Web Search Support
+        zh_Hans: 联网搜索支持
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: not_supported
+          label:
+            en_US: Not Supported
+            zh_Hans: 不支持
+        - value: tool_standard
+          label:
+            en_US: Standard Tools Format
+            zh_Hans: 标准 Tools 格式
+        - value: tool_simple
+          label:
+            en_US: Simple Tools Format
+            zh_Hans: 简单 Tools 格式
+        - value: parameter
+          label:
+            en_US: Parameter Format
+            zh_Hans: 参数格式
+      help:
+        en_US: >
+          Configure web search support and format. 
+          Standard Tools: {"type": "web_search", "web_search": {"enable": true}} (ZhipuAI, Baichuan). 
+          Simple Tools: {"type": "web_search"} (Volcengine). 
+          Parameter: {"web_search": true} as a top-level parameter.
+        zh_Hans: >
+          配置联网搜索支持和格式。
+          标准 Tools 格式: {"type": "web_search", "web_search": {"enable": true}} (智谱AI、百川)。
+          简单 Tools 格式: {"type": "web_search"} (火山引擎)。
+          参数格式: {"web_search": true} 作为顶层参数。
     - variable: compatibility_mode
       show_on:
         - variable: __model_type
