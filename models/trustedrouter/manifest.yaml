@@ -1,0 +1,30 @@
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: trustedrouter
+author: langgenius
+icon: trustedrouter_square.svg
+description:
+  en_US: TrustedRouter is an OpenAI-compatible LLM router with privacy-focused routing tiers, including zero-data-retention and end-to-end confidential inference.
+  zh_Hans: TrustedRouter 是一个 OpenAI 兼容的大模型路由服务，提供注重隐私的路由等级，包括零数据保留和端到端机密推理。
+  ja_JP: TrustedRouter は、ゼロデータ保持やエンドツーエンドの機密推論など、プライバシー重視のルーティング階層を備えた OpenAI 互換の LLM ルーターです。
+  pt_BR: TrustedRouter é um roteador de LLM compatível com OpenAI com níveis de roteamento focados em privacidade, incluindo retenção zero de dados e inferência confidencial de ponta a ponta.
+label:
+  en_US: TrustedRouter
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: false
+type: plugin
+plugins:
+  models:
+    - provider/trustedrouter.yaml
+version: 0.0.1
+created_at: 2026-08-03T00:00:00.000000000-00:00
