@@ -231,7 +231,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-max-2026-01-23", "qwen3-max-preview",
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
-            # Qwen3.5/3.6/3.7 series (default: thinking ENABLED - must explicitly disable)
+            # Qwen3.5/3.6/3.7/3.8 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3.8-max",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
@@ -269,6 +270,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-max-2026-01-23", "qwen3-max-preview",
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
+            "qwen3.8-max",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
