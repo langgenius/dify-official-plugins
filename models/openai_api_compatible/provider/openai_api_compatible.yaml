@@ -557,6 +557,69 @@ model_credential_schema:
       help:
         en_US: "List voice names separated by commas. First voice will be used as default."
         zh_Hans: "用英文逗号分隔的声音列表。第一个声音将作为默认值。"
+    - variable: tts_api_format
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: TTS API Format
+        zh_Hans: TTS API 格式
+      type: select
+      required: false
+      default: openai
+      options:
+        - value: openai
+          label:
+            en_US: OpenAI Compatible
+            zh_Hans: OpenAI 兼容
+        - value: byteplus
+          label:
+            en_US: BytePlus TTS
+            zh_Hans: BytePlus TTS
+      help:
+        en_US: "Select the TTS API format. Use 'BytePlus TTS' for BytePlus/Volcengine TTS services."
+        zh_Hans: "选择 TTS API 格式。使用 'BytePlus TTS' 适配 BytePlus/火山引擎 TTS 服务。"
+    - variable: tts_resource_id
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Resource ID (BytePlus)
+        zh_Hans: Resource ID (BytePlus)
+      type: text-input
+      required: false
+      placeholder:
+        en_US: "e.g. seed-tts-2.0 (optional, defaults to model name)"
+        zh_Hans: "例如 seed-tts-2.0（可选，默认使用模型名称）"
+      help:
+        en_US: "BytePlus TTS Resource ID. If empty, the model name will be used."
+        zh_Hans: "BytePlus TTS 的 Resource ID。留空则使用模型名称。"
+    - variable: tts_sample_rate
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Sample Rate (BytePlus)
+        zh_Hans: 采样率 (BytePlus)
+      type: select
+      required: false
+      default: "24000"
+      options:
+        - value: "24000"
+          label:
+            en_US: "24000 Hz"
+            zh_Hans: "24000 Hz"
+        - value: "16000"
+          label:
+            en_US: "16000 Hz"
+            zh_Hans: "16000 Hz"
+        - value: "8000"
+          label:
+            en_US: "8000 Hz"
+            zh_Hans: "8000 Hz"
+      help:
+        en_US: "Audio sample rate for BytePlus TTS output."
+        zh_Hans: "BytePlus TTS 输出的音频采样率。"
     - variable: document_prefix
       label:
         zh_Hans: 文档前缀
