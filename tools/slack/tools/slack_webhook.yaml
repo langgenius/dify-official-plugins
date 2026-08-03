@@ -9,7 +9,7 @@ extra:
   python:
     source: tools/slack_webhook.py
 identity:
-  author: Pan YANG
+  author: langgenius
   icon: icon.svg
   label:
     en_US: Incoming Webhook to send message

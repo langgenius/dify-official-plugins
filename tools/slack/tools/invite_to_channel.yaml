@@ -1,6 +1,6 @@
 identity:
   name: invite_to_channel
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Invite Users to Channel
     zh_Hans: 邀请用户加入频道
@@ -15,7 +15,7 @@ description:
   llm: Invites users to a channel using conversations.invite. Requires the channel ID and one or more user IDs (comma-separated).
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

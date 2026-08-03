@@ -101,7 +101,7 @@ settings:
 
 #### Then, in Dify
 
-5. Install the Slack plugin and paste the token into the **Access Token** field. (A user token starting with `xoxp-` is also accepted, matching n8n's "Slack API" credential.)
+5. Install the Slack plugin and paste the token into the **Access Token** field. (A user token starting with `xoxp-` is also accepted, in which case actions run as the authorizing user.)
 6. Invite the bot to any channel it needs to act in (`/invite @your-bot`).
 
 > **Note:** You must click **Install to Workspace** *after* adding scopes for the `xoxb-` token to appear. Changing scopes later requires re-installing the app.

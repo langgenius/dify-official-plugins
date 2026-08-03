@@ -1,6 +1,6 @@
 identity:
   name: schedule_message
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Schedule Message
     zh_Hans: 定时发送消息
@@ -15,7 +15,7 @@ description:
   llm: Schedules a message for future delivery using chat.scheduleMessage. Requires the channel, the message text, and post_at as a Unix epoch timestamp (in seconds) in the future.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

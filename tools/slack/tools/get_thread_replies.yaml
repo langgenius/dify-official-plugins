@@ -1,6 +1,6 @@
 identity:
   name: get_thread_replies
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Get Thread Replies
     zh_Hans: 获取线程回复
@@ -15,7 +15,7 @@ description:
   llm: Retrieves the replies of a threaded conversation using conversations.replies. Requires the channel ID and the parent message ts (timestamp).
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

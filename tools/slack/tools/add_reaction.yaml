@@ -1,6 +1,6 @@
 identity:
   name: add_reaction
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Add Reaction
     zh_Hans: 添加表情回应
@@ -15,7 +15,7 @@ description:
   llm: Adds an emoji reaction to a message using reactions.add. Requires the channel ID, the message timestamp, and the emoji name (without surrounding colons, e.g. thumbsup).
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

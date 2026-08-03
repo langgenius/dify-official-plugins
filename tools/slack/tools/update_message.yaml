@@ -1,6 +1,6 @@
 identity:
   name: update_message
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Update Message
     zh_Hans: 更新消息
@@ -15,7 +15,7 @@ description:
   llm: Updates the text of an existing Slack message using chat.update. Requires the channel ID and the ts (timestamp) of the message to edit, plus the new text.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

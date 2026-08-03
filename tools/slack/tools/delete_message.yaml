@@ -1,6 +1,6 @@
 identity:
   name: delete_message
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Delete Message
     zh_Hans: 删除消息
@@ -15,7 +15,7 @@ description:
   llm: Deletes a message using chat.delete. Requires the channel ID and the ts (timestamp) of the message to delete. A bot token can only delete messages it posted.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

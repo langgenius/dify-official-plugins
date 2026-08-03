@@ -3,10 +3,10 @@ from typing import Any, Generator
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from slack_api import SlackApiError, SlackClient
+from slack_api import ChannelSelectMixin, SlackApiError, SlackClient
 
 
-class ArchiveChannelTool(Tool):
+class ArchiveChannelTool(ChannelSelectMixin, Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:

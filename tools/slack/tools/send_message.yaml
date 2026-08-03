@@ -1,6 +1,6 @@
 identity:
   name: send_message
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Send Message
     zh_Hans: 发送消息
@@ -15,7 +15,7 @@ description:
   llm: Sends a message to a Slack conversation using chat.postMessage. Requires the target channel (channel ID like C0123456789, or a #channel-name) and the message text. Optionally reply inside a thread by passing thread_ts.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

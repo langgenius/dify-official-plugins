@@ -1,6 +1,6 @@
 identity:
   name: get_channel_history
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Get Channel History
     zh_Hans: 获取频道历史消息
@@ -15,7 +15,7 @@ description:
   llm: Retrieves a channel's message history using conversations.history. Requires the channel ID. Supports limit and optional oldest/latest Unix timestamps to bound the range.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

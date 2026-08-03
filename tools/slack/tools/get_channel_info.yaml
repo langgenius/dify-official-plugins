@@ -1,6 +1,6 @@
 identity:
   name: get_channel_info
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Get Channel Info
     zh_Hans: 获取频道信息
@@ -15,7 +15,7 @@ description:
   llm: Retrieves metadata about a channel using conversations.info. Requires the channel ID.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

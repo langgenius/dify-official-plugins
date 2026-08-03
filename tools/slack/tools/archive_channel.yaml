@@ -1,6 +1,6 @@
 identity:
   name: archive_channel
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Archive Channel
     zh_Hans: 归档频道
@@ -15,7 +15,7 @@ description:
   llm: Archives a channel using conversations.archive. Requires the channel ID.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

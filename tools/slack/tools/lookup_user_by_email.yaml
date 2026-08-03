@@ -1,6 +1,6 @@
 identity:
   name: lookup_user_by_email
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Look Up User by Email
     zh_Hans: 通过邮箱查找用户

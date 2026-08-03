@@ -1,6 +1,6 @@
 identity:
   name: get_permalink
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Get Message Permalink
     zh_Hans: 获取消息永久链接
@@ -15,7 +15,7 @@ description:
   llm: Returns a permalink URL for a specific message using chat.getPermalink. Requires the channel ID and the message ts (timestamp).
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel

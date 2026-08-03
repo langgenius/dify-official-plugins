@@ -1,6 +1,6 @@
 identity:
   name: set_channel_topic
-  author: Pan YANG
+  author: langgenius
   label:
     en_US: Set Channel Topic
     zh_Hans: 设置频道话题
@@ -15,7 +15,7 @@ description:
   llm: Sets a channel's topic using conversations.setTopic. Requires the channel ID and the new topic text.
 parameters:
   - name: channel
-    type: string
+    type: dynamic-select
     required: true
     label:
       en_US: Channel
