@@ -1,0 +1,50 @@
+identity:
+  name: list_users
+  author: langgenius
+  label:
+    en_US: List Users
+    zh_Hans: 列出用户
+    ja_JP: ユーザー一覧
+    ko_KR: 사용자 목록
+description:
+  human:
+    en_US: List members of the Slack workspace.
+    zh_Hans: 列出 Slack 工作区的成员。
+    ja_JP: Slack ワークスペースのメンバーを一覧表示します。
+    ko_KR: Slack 워크스페이스의 멤버를 나열합니다.
+  llm: Lists all users in the workspace using users.list. Supports pagination via limit and cursor.
+parameters:
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Limit
+      zh_Hans: 数量限制
+      ja_JP: 上限数
+      ko_KR: 개수 제한
+    human_description:
+      en_US: Maximum number of users to return (1-1000). Defaults to 100.
+      zh_Hans: 返回用户的最大数量（1-1000）。默认为 100。
+      ja_JP: 返すユーザーの最大数（1〜1000）。デフォルトは 100 です。
+      ko_KR: 반환할 사용자의 최대 개수(1~1000). 기본값은 100입니다.
+    llm_description: Maximum number of users to return, between 1 and 1000. Defaults to 100.
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: Cursor
+      zh_Hans: 游标
+      ja_JP: カーソル
+      ko_KR: 커서
+    human_description:
+      en_US: Pagination cursor (next_cursor) returned by a previous call.
+      zh_Hans: 上一次调用返回的分页游标（next_cursor）。
+      ja_JP: 前回の呼び出しで返されたページネーションカーソル（next_cursor）。
+      ko_KR: 이전 호출에서 반환된 페이지네이션 커서(next_cursor).
+    llm_description: Pagination cursor from a previous response's response_metadata.next_cursor to fetch the next page.
+    form: llm
+extra:
+  python:
+    source: tools/list_users.py
