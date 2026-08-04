@@ -1,0 +1,116 @@
+identity:
+  author: langgenius
+  name: teams
+  label:
+    en_US: Microsoft Teams
+    zh_Hans: Microsoft Teams
+    pt_BR: Microsoft Teams
+    ja_JP: Microsoft Teams
+    zh_Hant: Microsoft Teams
+  description:
+    en_US: Post messages to Teams channels and chats, and list teams and channels
+    zh_Hans: 向 Teams 频道和聊天发送消息，并列出团队和频道
+    pt_BR: Publique mensagens em canais e chats do Teams e liste equipes e canais
+    ja_JP: Teams のチャネルやチャットにメッセージを投稿し、チームやチャネルを一覧表示します
+    zh_Hant: 向 Teams 頻道和聊天發送訊息，並列出團隊和頻道
+  icon: icon.svg
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "客户端 ID"
+        pt_BR: "ID do Cliente"
+        ja_JP: "クライアント ID"
+        zh_Hant: "客戶端 ID"
+      placeholder:
+        en_US: "Please input your Azure AD application client ID"
+        zh_Hans: "请输入您的 Azure AD 应用程序客户端 ID"
+        pt_BR: "Por favor, insira o ID do cliente do seu aplicativo Azure AD"
+        ja_JP: "Azure AD アプリケーションのクライアント ID を入力してください"
+        zh_Hant: "請輸入您的 Azure AD 應用程式客戶端 ID"
+      help:
+        en_US: "Get your client ID from Azure Portal > App Registrations"
+        zh_Hans: "从 Azure 门户 > 应用注册获取您的客户端 ID"
+        pt_BR: "Obtenha seu ID de cliente no Portal do Azure > Registros de Aplicativos"
+        ja_JP: "Azure ポータル > アプリの登録からクライアント ID を取得してください"
+        zh_Hant: "請從 Azure 入口網站 > 應用程式註冊取得您的客戶端 ID"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "客户端密钥"
+        pt_BR: "Segredo do Cliente"
+        ja_JP: "クライアントシークレット"
+        zh_Hant: "客戶端密鑰"
+      placeholder:
+        en_US: "Please input your Azure AD application client secret"
+        zh_Hans: "请输入您的 Azure AD 应用程序客户端密钥"
+        pt_BR: "Por favor, insira o segredo do cliente do seu aplicativo Azure AD"
+        ja_JP: "Azure AD アプリケーションのクライアントシークレットを入力してください"
+        zh_Hant: "請輸入您的 Azure AD 應用程式客戶端密鑰"
+      help:
+        en_US: "Get your client secret from Azure Portal > App Registrations > Your App > Certificates & secrets"
+        zh_Hans: "从 Azure 门户 > 应用注册 > 您的应用 > 证书和密码获取您的客户端密钥"
+        pt_BR: "Obtenha seu segredo de cliente no Portal do Azure > Registros de Aplicativos > Seu Aplicativo > Certificados e segredos"
+        ja_JP: "Azure ポータル > アプリの登録 > あなたのアプリ > 証明書とシークレットからクライアントシークレットを取得してください"
+        zh_Hant: "請從 Azure 入口網站 > 應用程式註冊 > 您的應用程式 > 憑證和祕密取得您的客戶端密鑰"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+    - name: "tenant_id"
+      type: "text-input"
+      required: false
+      default: common
+      label:
+        en_US: "Tenant ID"
+        zh_Hans: "租户 ID"
+        pt_BR: "ID do Locatário"
+        ja_JP: "テナント ID"
+        zh_Hant: "租戶 ID"
+      placeholder:
+        en_US: "Please input your Azure AD tenant ID; If you are not an enterprise user, leave it blank"
+        zh_Hans: "请输入您的 Azure AD 租户 ID；如果您不是企业版用户，请留空"
+        pt_BR: "Por favor, insira o ID do locatário do seu Azure AD; Se você não for um usuário corporativo, deixe em branco"
+        ja_JP: "Azure AD テナント ID を入力してください; 企業ユーザーでない場合は空白のままにしてください"
+        zh_Hant: "請輸入您的 Azure AD 租戶 ID；如果您不是企業用戶，請留空"
+      help:
+        en_US: "Get your tenant ID from Azure Portal > Azure Active Directory > Properties"
+        zh_Hans: "从 Azure 门户 > Azure Active Directory > 属性获取您的租户 ID"
+        pt_BR: "Obtenha seu ID de locatário no Portal do Azure > Azure Active Directory > Propriedades"
+        ja_JP: "Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください"
+        zh_Hant: "請從 Azure 入口網站 > Azure Active Directory > 屬性取得您的租戶 ID"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        pt_BR: "Token de Acesso"
+        ja_JP: "アクセストークン"
+        zh_Hant: "存取權杖"
+      placeholder:
+        en_US: "Please input your Microsoft Graph access token"
+        zh_Hans: "请输入您的 Microsoft Graph 访问令牌"
+        pt_BR: "Por favor, insira seu token de acesso do Microsoft Graph"
+        ja_JP: "Microsoft Graph アクセストークンを入力してください"
+        zh_Hant: "請輸入您的 Microsoft Graph 存取權杖"
+      help:
+        en_US: "Get your access token from Microsoft Graph API"
+        zh_Hans: "从 Microsoft Graph API 获取您的访问令牌"
+        pt_BR: "Obtenha seu token de acesso da API do Microsoft Graph"
+        ja_JP: "Microsoft Graph API からアクセストークンを取得してください"
+        zh_Hant: "從 Microsoft Graph API 取得您的存取權杖"
+tools:
+  - tools/list_teams.yaml
+  - tools/list_channels.yaml
+  - tools/send_channel_message.yaml
+  - tools/send_chat_message.yaml
+  - tools/list_chats.yaml
+  - tools/list_channel_messages.yaml
+extra:
+  python:
+    source: provider/teams.py

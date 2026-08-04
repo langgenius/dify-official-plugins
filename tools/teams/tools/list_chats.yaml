@@ -1,0 +1,39 @@
+identity:
+  name: list_chats
+  author: langgenius
+  label:
+    en_US: List Chats
+    zh_Hans: 列出聊天
+    pt_BR: Listar Chats
+    ja_JP: チャット一覧
+    zh_Hant: 列出聊天
+description:
+  human:
+    en_US: List your Microsoft Teams chats
+    zh_Hans: 列出您的 Microsoft Teams 聊天
+    pt_BR: Listar seus chats do Microsoft Teams
+    ja_JP: あなたの Microsoft Teams チャットを一覧表示
+    zh_Hant: 列出您的 Microsoft Teams 聊天
+  llm: List the users Microsoft Teams chats using the Microsoft Graph API, returns chat id, topic and chatType
+parameters:
+  - name: top
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Top
+      zh_Hans: 数量
+      pt_BR: Quantidade
+      ja_JP: 件数
+      zh_Hant: 數量
+    human_description:
+      en_US: The maximum number of chats to return
+      zh_Hans: 要返回的最大聊天数
+      pt_BR: O número máximo de chats a retornar
+      ja_JP: 返すチャットの最大数
+      zh_Hant: 要返回的最大聊天數
+    llm_description: The maximum number of chats to return, default is 20
+    form: llm
+extra:
+  python:
+    source: tools/list_chats.py

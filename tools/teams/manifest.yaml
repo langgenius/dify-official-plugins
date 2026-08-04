@@ -1,0 +1,37 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: teams
+label:
+  en_US: Microsoft Teams
+  ja_JP: Microsoft Teams
+  zh_Hans: Microsoft Teams
+  pt_BR: Microsoft Teams
+description:
+  en_US: Post messages to Microsoft Teams channels and chats, and list teams and channels via Microsoft Graph.
+  ja_JP: Microsoft Graph を通じて Teams のチャネルやチャットにメッセージを投稿し、チームやチャネルを一覧表示します。
+  zh_Hans: 通过 Microsoft Graph 向 Teams 频道和聊天发送消息，并列出团队和频道。
+  pt_BR: Publique mensagens em canais e chats do Microsoft Teams e liste equipes e canais via Microsoft Graph.
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/teams.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2026-08-04T13:43:31.815689+09:00
+privacy: PRIVACY.md
+verified: false
