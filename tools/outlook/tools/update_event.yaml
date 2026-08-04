@@ -1,0 +1,142 @@
+identity:
+  name: update_event
+  display_name: Update Event
+  author: Dify
+  label:
+    en_US: Update Event
+    zh_Hans: 更新事件
+    pt_BR: Atualizar Evento
+    ja_JP: イベント更新
+    zh_Hant: 更新事件
+description:
+  human:
+    en_US: Update an existing calendar event in your Outlook account
+    zh_Hans: 更新您的 Outlook 账户中现有的日历事件
+    pt_BR: Atualizar um evento de calendário existente na sua conta do Outlook
+    ja_JP: Outlook アカウントの既存のカレンダーイベントを更新
+    zh_Hant: 更新您的 Outlook 帳戶中現有的行事曆事件
+  llm: Update an existing calendar event in the users Outlook account using Microsoft Graph API, only provided fields are changed
+parameters:
+  - name: event_id
+    type: string
+    required: true
+    label:
+      en_US: Event ID
+      zh_Hans: 事件 ID
+      pt_BR: ID do Evento
+      ja_JP: イベント ID
+      zh_Hant: 事件 ID
+    human_description:
+      en_US: The ID of the event to update
+      zh_Hans: 要更新的事件的 ID
+      pt_BR: O ID do evento a atualizar
+      ja_JP: 更新するイベントの ID
+      zh_Hant: 要更新的事件的 ID
+    llm_description: The ID of the event to update
+    form: llm
+  - name: subject
+    type: string
+    required: false
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+      zh_Hant: 主題
+    human_description:
+      en_US: The new subject or title of the event
+      zh_Hans: 事件的新主题或标题
+      pt_BR: O novo assunto ou título do evento
+      ja_JP: イベントの新しい件名またはタイトル
+      zh_Hant: 事件的新主題或標題
+    llm_description: The new subject or title of the event
+    form: llm
+  - name: start_datetime
+    type: string
+    required: false
+    label:
+      en_US: Start Datetime
+      zh_Hans: 开始时间
+      pt_BR: Data e Hora de Início
+      ja_JP: 開始日時
+      zh_Hant: 開始時間
+    human_description:
+      en_US: The new start date and time in ISO 8601 format, e.g. 2026-08-10T14:00:00
+      zh_Hans: ISO 8601 格式的新开始日期和时间，例如 2026-08-10T14:00:00
+      pt_BR: A nova data e hora de início no formato ISO 8601, por exemplo 2026-08-10T14:00:00
+      ja_JP: ISO 8601 形式の新しい開始日時、例 2026-08-10T14:00:00
+      zh_Hant: ISO 8601 格式的新開始日期和時間，例如 2026-08-10T14:00:00
+    llm_description: The new start date and time in ISO 8601 format, e.g. 2026-08-10T14:00:00
+    form: llm
+  - name: end_datetime
+    type: string
+    required: false
+    label:
+      en_US: End Datetime
+      zh_Hans: 结束时间
+      pt_BR: Data e Hora de Término
+      ja_JP: 終了日時
+      zh_Hant: 結束時間
+    human_description:
+      en_US: The new end date and time in ISO 8601 format, e.g. 2026-08-10T15:00:00
+      zh_Hans: ISO 8601 格式的新结束日期和时间，例如 2026-08-10T15:00:00
+      pt_BR: A nova data e hora de término no formato ISO 8601, por exemplo 2026-08-10T15:00:00
+      ja_JP: ISO 8601 形式の新しい終了日時、例 2026-08-10T15:00:00
+      zh_Hant: ISO 8601 格式的新結束日期和時間，例如 2026-08-10T15:00:00
+    llm_description: The new end date and time in ISO 8601 format, e.g. 2026-08-10T15:00:00
+    form: llm
+  - name: time_zone
+    type: string
+    required: false
+    default: UTC
+    label:
+      en_US: Time Zone
+      zh_Hans: 时区
+      pt_BR: Fuso Horário
+      ja_JP: タイムゾーン
+      zh_Hant: 時區
+    human_description:
+      en_US: The time zone for the updated start and end times, e.g. UTC or Asia/Tokyo
+      zh_Hans: 更新后的开始和结束时间的时区，例如 UTC 或 Asia/Tokyo
+      pt_BR: O fuso horário para os horários de início e término atualizados, por exemplo UTC ou Asia/Tokyo
+      ja_JP: 更新後の開始と終了時刻のタイムゾーン、例 UTC または Asia/Tokyo
+      zh_Hant: 更新後的開始和結束時間的時區，例如 UTC 或 Asia/Tokyo
+    llm_description: The time zone for the updated start and end times, default is UTC, only used when a datetime is provided
+    form: llm
+  - name: body
+    type: string
+    required: false
+    label:
+      en_US: Body
+      zh_Hans: 正文
+      pt_BR: Corpo
+      ja_JP: 本文
+      zh_Hant: 內文
+    human_description:
+      en_US: The new description or body content of the event
+      zh_Hans: 事件的新描述或正文内容
+      pt_BR: A nova descrição ou conteúdo do corpo do evento
+      ja_JP: イベントの新しい説明または本文内容
+      zh_Hant: 事件的新描述或內文內容
+    llm_description: The new description or body content of the event
+    form: llm
+  - name: location
+    type: string
+    required: false
+    label:
+      en_US: Location
+      zh_Hans: 地点
+      pt_BR: Local
+      ja_JP: 場所
+      zh_Hant: 地點
+    human_description:
+      en_US: The new location of the event
+      zh_Hans: 事件的新地点
+      pt_BR: O novo local do evento
+      ja_JP: イベントの新しい場所
+      zh_Hant: 事件的新地點
+    llm_description: The new location of the event
+    form: llm
+extra:
+  python:
+    source: tools/update_event.py
