@@ -1,27 +1,27 @@
-## Privacy Policy
+# Privacy Policy
 
-!!! Please fill in the privacy policy of the plugin.
+## Data Collection
 
-> Replace this template with the actual privacy policy of your plugin before publishing.
-> An empty or placeholder PRIVACY.md will cause your Marketplace submission to be rejected.
-> See the [Plugin Privacy Protection Guidelines](https://docs.dify.ai/plugins/publish-plugins/plugin-privacy-protection-guidelines) for details.
+This plugin does not collect or store personal data of its own. To operate it uses Microsoft OAuth2: you authorize a Microsoft (Azure AD) application, and Dify stores the resulting **access token** and **refresh token**. These are used only to authenticate requests to the Microsoft Graph API.
 
-### Data Collection
+## Data Processing
 
-Describe what data your plugin collects, for example:
+When you invoke a tool, the parameters you supply (team/channel/chat IDs, message text) and, for reads, the data returned by Microsoft Graph (teams, channels, chats, messages) are sent directly between Dify and Microsoft Graph to perform the requested action. The plugin acts only as a pass-through and does not retain this data after a request completes. Because it uses delegated permissions, actions are performed as the signed-in user.
 
-- Whether the plugin collects personal data (name, email, phone number, etc.)
-- Credentials or API keys the plugin requires and how they are stored
-- Any other user content the plugin processes
+## Third-party Services
 
-### Data Usage
+This plugin communicates with **Microsoft Graph / Microsoft 365** (https://graph.microsoft.com). Your use of Microsoft services is governed by the Microsoft Privacy Statement: https://privacy.microsoft.com/privacystatement
 
-Describe how the collected data is used and whether it is shared with any third-party services. List each third-party service the plugin calls and link to its privacy policy.
+## Data Retention
 
-### Data Retention
+The plugin itself retains no data. OAuth tokens are retained by your Dify instance for as long as the plugin is configured, and access tokens are refreshed automatically. Messages and other content are subject to Microsoft's own retention policies.
 
-Describe how long data is retained and how users can request deletion.
+## User Rights
 
-### Contact
+Because the plugin stores no data of its own, requests regarding data access, correction, or deletion should be directed to your Dify administrator (for stored tokens) and to Microsoft (for data held in your Microsoft 365 tenant).
 
-Provide a contact method for privacy-related questions.
+## Contact Information
+
+For privacy-related questions about this plugin, please contact the plugin author via the Dify Marketplace listing.
+
+Last updated: 2026-08-04
