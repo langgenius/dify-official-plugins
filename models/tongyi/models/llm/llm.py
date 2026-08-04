@@ -1,6 +1,6 @@
 import base64
-import logging
 import json
+import logging
 import os
 import tempfile
 import uuid
@@ -9,6 +9,10 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Optional, Union, cast
 
+# isort: off
+import dify_plugin  # noqa: F401 - patches gevent before HTTP SDK imports
+# isort: on
+import openai
 from dashscope import Generation, MultiModalConversation, get_tokenizer
 from dashscope.api_entities.dashscope_response import GenerationResponse
 from dashscope.common.error import (
@@ -37,6 +41,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
@@ -48,7 +53,6 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
     VideoPromptMessageContent,
-    AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -60,10 +64,11 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from openai import OpenAI
+
 from models._common import get_http_base_address
+
 from ..constant import BURY_POINT_HEADER
-from .qwen_long import QwenLongFileUploader
+from .qwen_long import MAX_DOCUMENT_INPUT_BASE64_BYTES, QwenLongFiles
 
 logger = logging.getLogger(__name__)
 
@@ -305,45 +310,89 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         base_address = get_http_base_address(credentials)
 
-        if ModelFeature.VISION in (model_schema.features or []):
-            params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                credentials, prompt_messages, rich_content=True
-            )
-            response = MultiModalConversation.call(
-                **params,
-                stream=stream,
-                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
-                incremental_output=incremental_output,
-                base_address=base_address,
-            )
-        else:
-            if model.startswith("qwen-long"):
-                params["messages"] = self._convert_qwen_long_prompt_messages(
-                    credentials, prompt_messages
+        qwen_long_files = None
+        try:
+            if ModelFeature.VISION in (model_schema.features or []):
+                params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
+                    prompt_messages, rich_content=True
+                )
+                response = MultiModalConversation.call(
+                    **params,
+                    stream=stream,
+                    headers=self._get_market_bury_point_header(
+                        params["messages"], extra_headers_str
+                    ),
+                    incremental_output=incremental_output,
+                    base_address=base_address,
                 )
             else:
-                params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                    credentials, prompt_messages
+                if model.startswith("qwen-long"):
+                    if credentials.get("use_international_endpoint", "false") == "true":
+                        raise InvokeBadRequestError(
+                            "Qwen-Long is only available in the Beijing region."
+                        )
+                    if tools:
+                        raise InvokeBadRequestError("Qwen-Long does not support tools.")
+                    qwen_long_files = QwenLongFiles(
+                        openai.OpenAI(
+                            api_key=credentials["dashscope_api_key"],
+                            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            max_retries=0,
+                            timeout=120,
+                        )
+                    )
+                    params["messages"] = self._convert_qwen_long_prompt_messages(
+                        qwen_long_files, prompt_messages
+                    )
+                else:
+                    params["messages"] = (
+                        self._convert_prompt_messages_to_tongyi_messages(
+                            prompt_messages
+                        )
+                    )
+                response = Generation.call(
+                    **params,
+                    headers=self._get_market_bury_point_header(
+                        params["messages"], extra_headers_str
+                    ),
+                    result_format="message",
+                    stream=stream,
+                    incremental_output=incremental_output,
+                    base_address=base_address,
                 )
-            response = Generation.call(
-                **params,
-                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
-                result_format="message",
-                stream=stream,
-                incremental_output=incremental_output,
-                base_address=base_address,
-            )
+        except BaseException:
+            if qwen_long_files:
+                qwen_long_files.cleanup()
+            raise
+
         if stream:
-            return self._handle_generate_stream_response(
+            result = self._handle_generate_stream_response(
                 model,
                 credentials,
                 response,
                 prompt_messages,
                 incremental_output,
             )
-        return self._handle_generate_response(
-            model, credentials, response, prompt_messages
-        )
+            if qwen_long_files:
+                result = self._cleanup_qwen_long_stream(result, qwen_long_files)
+            return result
+        try:
+            return self._handle_generate_response(
+                model, credentials, response, prompt_messages
+            )
+        finally:
+            if qwen_long_files:
+                qwen_long_files.cleanup()
+
+    @staticmethod
+    def _cleanup_qwen_long_stream(
+        result: Generator,
+        files: QwenLongFiles,
+    ) -> Generator:
+        try:
+            yield from result
+        finally:
+            files.cleanup()
 
     def _handle_generate_response(
         self,
@@ -596,84 +645,120 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
     def _convert_qwen_long_prompt_messages(
         self,
-        credentials: dict,
+        files: QwenLongFiles,
         prompt_messages: list[PromptMessage],
     ) -> list[dict]:
-        document_count = sum(
-            1
-            for prompt_message in prompt_messages
-            if isinstance(prompt_message.content, list)
-            for content in prompt_message.content
-            if isinstance(content, DocumentPromptMessageContent)
-        )
+        normalized_messages: list[
+            tuple[str, str, list[DocumentPromptMessageContent]]
+        ] = []
+        document_count = 0
+        document_base64_bytes = 0
+        index = 0
+
+        while index < len(prompt_messages):
+            prompt_message = prompt_messages[index]
+            if isinstance(prompt_message, SystemPromptMessage):
+                if isinstance(prompt_message.content, list) and any(
+                    not isinstance(content, TextPromptMessageContent)
+                    for content in prompt_message.content
+                ):
+                    raise InvokeBadRequestError(
+                        "Qwen-Long only supports text system messages."
+                    )
+                text = prompt_message.get_text_content().strip()
+                if text:
+                    normalized_messages.append(("system", text, []))
+                index += 1
+                continue
+
+            if isinstance(prompt_message, UserPromptMessage):
+                user_run = []
+                while index < len(prompt_messages) and isinstance(
+                    prompt_messages[index], UserPromptMessage
+                ):
+                    user_run.append(prompt_messages[index])
+                    index += 1
+
+                texts = []
+                documents = []
+                for user_message in user_run:
+                    if isinstance(user_message.content, list):
+                        for content in user_message.content:
+                            if isinstance(content, DocumentPromptMessageContent):
+                                documents.append(content)
+                            elif not isinstance(content, TextPromptMessageContent):
+                                raise InvokeBadRequestError(
+                                    f"Qwen-Long does not support {content.type.value} input."
+                                )
+                    texts.append(user_message.get_text_content().strip())
+
+                question = "\n".join(text for text in texts if text)
+                if not question:
+                    raise InvokeBadRequestError(
+                        "Qwen-Long requires a non-empty text question."
+                    )
+                normalized_messages.append(("user", question, documents))
+                document_count += len(documents)
+                document_base64_bytes += sum(
+                    len(document.base64_data) for document in documents
+                )
+                continue
+
+            if isinstance(prompt_message, AssistantPromptMessage):
+                if isinstance(prompt_message.content, list) and any(
+                    not isinstance(content, TextPromptMessageContent)
+                    for content in prompt_message.content
+                ):
+                    raise InvokeBadRequestError(
+                        "Qwen-Long only supports text assistant messages."
+                    )
+                normalized_messages.append(
+                    ("assistant", prompt_message.get_text_content() or " ", [])
+                )
+                index += 1
+                continue
+
+            if isinstance(prompt_message, ToolPromptMessage):
+                raise InvokeBadRequestError("Qwen-Long does not support tool messages.")
+
+            raise ValueError(f"Got unknown type {prompt_message}")
+
         if document_count > 100:
             raise InvokeBadRequestError(
                 "Qwen-Long supports at most 100 documents per request."
             )
-
-        messages = []
-        has_role_definition = bool(
-            prompt_messages
-            and isinstance(prompt_messages[0], SystemPromptMessage)
-            and prompt_messages[0].get_text_content().strip()
-        )
-        if document_count and not has_role_definition:
-            messages.append(
-                {"role": "system", "content": "You are a helpful assistant."}
+        if document_base64_bytes > MAX_DOCUMENT_INPUT_BASE64_BYTES:
+            raise InvokeBadRequestError(
+                "Qwen-Long document input exceeds this plugin's aggregate size limit."
             )
 
-        for prompt_message in prompt_messages:
-            if isinstance(prompt_message, SystemPromptMessage):
-                content = prompt_message.get_text_content()
-                if content:
-                    messages.append({"role": "system", "content": content})
-                continue
+        has_role_definition = bool(
+            normalized_messages
+            and normalized_messages[0][0] == "system"
+            and normalized_messages[0][1]
+        )
+        if document_count and not has_role_definition:
+            normalized_messages.insert(
+                0, ("system", "You are a helpful assistant.", [])
+            )
 
-            if isinstance(prompt_message, UserPromptMessage):
-                text_content = prompt_message.get_text_content().strip()
-                if not text_content:
-                    raise InvokeBadRequestError(
-                        "Qwen-Long requires a non-empty text question."
-                    )
+        messages = []
+        for role, text, documents in normalized_messages:
+            if role == "system" and text:
+                messages.append({"role": "system", "content": text})
+            if documents:
+                file_ids = [
+                    f"fileid://{files.upload(document)}" for document in documents
+                ]
+                messages.append({"role": "system", "content": ",".join(file_ids)})
+            if role != "system":
+                messages.append({"role": role, "content": text})
 
-                file_ids = []
-                if isinstance(prompt_message.content, list):
-                    for content in prompt_message.content:
-                        if isinstance(content, DocumentPromptMessageContent):
-                            file_id = self._upload_file_to_tongyi(
-                                credentials, content
-                            )
-                            file_ids.append(f"fileid://{file_id}")
-                        elif not isinstance(content, TextPromptMessageContent):
-                            raise InvokeBadRequestError(
-                                f"Qwen-Long does not support {content.type.value} input."
-                            )
-
-                if file_ids:
-                    messages.append(
-                        {"role": "system", "content": ",".join(file_ids)}
-                    )
-
-                messages.append({"role": "user", "content": text_content})
-                continue
-
-            if isinstance(prompt_message, AssistantPromptMessage):
-                content = prompt_message.get_text_content() or " "
-                messages.append({"role": "assistant", "content": content})
-                continue
-
-            if isinstance(prompt_message, ToolPromptMessage):
-                raise InvokeBadRequestError(
-                    "Qwen-Long does not support tool messages."
-                )
-
-            raise ValueError(f"Got unknown type {prompt_message}")
-
+        files.wait_until_processed()
         return messages
 
     def _convert_prompt_messages_to_tongyi_messages(
         self,
-        credentials: dict,
         prompt_messages: list[PromptMessage],
         rich_content: bool = False,
     ) -> list[dict]:
@@ -710,7 +795,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     )
                 else:
                     user_messages = []
-                    file_id_list = []
                     for message_content in prompt_message.content:
                         if message_content.type == PromptMessageContentType.TEXT:
                             message_content = cast(
@@ -751,19 +835,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                 audio_data = self._save_base64_to_file(audio_data)
                             sub_message_dict = {"audio": audio_data}
                             user_messages.append(sub_message_dict)
-                        elif message_content.type == PromptMessageContentType.DOCUMENT:
-                            message_content = cast(
-                                DocumentPromptMessageContent, message_content
-                            )
-                            file_id = self._upload_file_to_tongyi(
-                                credentials, message_content
-                            )
-                            file_id_url = f"fileid://{file_id}"
-                            file_id_list.append(file_id_url)
-                    if len(file_id_list) > 0:
-                        tongyi_messages.append(
-                            {"role": "system", "content": ",".join(file_id_list)}
-                        )
                     user_messages = sorted(user_messages, key=lambda x: "text" in x)
                     tongyi_messages.append({"role": "user", "content": user_messages})
             elif isinstance(prompt_message, AssistantPromptMessage):
@@ -819,27 +890,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             except Exception as e:
                 logger.warning(f"Failed to remove temporary file {file_path}: {e}")
         self._temp_files.clear()
-
-    def _upload_file_to_tongyi(
-        self, credentials: dict, message_content: DocumentPromptMessageContent
-    ) -> str:
-        """
-        Upload file to Tongyi
-
-        :param credentials: credentials for Tongyi
-        :param message_content: message content to upload
-        :return: file ID in Tongyi
-        """
-        client = OpenAI(
-            api_key=credentials["dashscope_api_key"],
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        if credentials.get("use_international_endpoint", "false") == "true":
-            client = OpenAI(
-                api_key=credentials["dashscope_api_key"],
-                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-            )
-        return QwenLongFileUploader(client).upload(message_content)
 
     def _convert_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
         """
@@ -961,6 +1011,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             else:
                 raise InvokeServerUnavailableError(error_msg)
 
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InvokeError):
+            return error
+        return super()._transform_invoke_error(error)
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -972,14 +1027,29 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: Invoke error mapping
         """
         return {
-            InvokeConnectionError: [RequestFailure],
-            InvokeServerUnavailableError: [ServiceUnavailableError],
-            InvokeRateLimitError: [],
-            InvokeAuthorizationError: [AuthenticationError],
+            InvokeServerUnavailableError: [
+                ServiceUnavailableError,
+                openai.InternalServerError,
+            ],
+            InvokeConnectionError: [
+                RequestFailure,
+                openai.APIConnectionError,
+                openai.APITimeoutError,
+            ],
+            InvokeRateLimitError: [openai.RateLimitError],
+            InvokeAuthorizationError: [
+                AuthenticationError,
+                openai.AuthenticationError,
+                openai.PermissionDeniedError,
+            ],
             InvokeBadRequestError: [
                 InvalidParameter,
                 UnsupportedModel,
                 UnsupportedHTTPMethod,
+                openai.BadRequestError,
+                openai.NotFoundError,
+                openai.UnprocessableEntityError,
+                openai.APIError,
             ],
         }
 
