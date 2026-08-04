@@ -1,0 +1,73 @@
+identity:
+  name: send_chat_message
+  author: langgenius
+  label:
+    en_US: Send Chat Message
+    zh_Hans: 发送聊天消息
+    pt_BR: Enviar Mensagem de Chat
+    ja_JP: チャットメッセージ送信
+    zh_Hant: 發送聊天訊息
+description:
+  human:
+    en_US: Send a message to a Microsoft Teams chat
+    zh_Hans: 向 Microsoft Teams 聊天发送消息
+    pt_BR: Enviar uma mensagem para um chat do Microsoft Teams
+    ja_JP: Microsoft Teams のチャットにメッセージを送信
+    zh_Hant: 向 Microsoft Teams 聊天發送訊息
+  llm: Send a message to a Microsoft Teams chat using the Microsoft Graph API, returns the created message
+parameters:
+  - name: chat_id
+    type: string
+    required: true
+    label:
+      en_US: Chat ID
+      zh_Hans: 聊天 ID
+      pt_BR: ID do Chat
+      ja_JP: チャット ID
+      zh_Hant: 聊天 ID
+    human_description:
+      en_US: The ID of the chat to send the message to
+      zh_Hans: 要发送消息的聊天 ID
+      pt_BR: O ID do chat para enviar a mensagem
+      ja_JP: メッセージを送信するチャットの ID
+      zh_Hant: 要發送訊息的聊天 ID
+    llm_description: The ID of the Microsoft Teams chat to send the message to
+    form: llm
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: Message
+      zh_Hans: 消息
+      pt_BR: Mensagem
+      ja_JP: メッセージ
+      zh_Hant: 訊息
+    human_description:
+      en_US: The message content to send to the chat
+      zh_Hans: 要发送到聊天的消息内容
+      pt_BR: O conteúdo da mensagem a enviar ao chat
+      ja_JP: チャットに送信するメッセージの内容
+      zh_Hant: 要發送到聊天的訊息內容
+    llm_description: The text content of the message to send to the chat
+    form: llm
+  - name: content_type
+    type: string
+    required: false
+    default: html
+    label:
+      en_US: Content Type
+      zh_Hans: 内容类型
+      pt_BR: Tipo de Conteúdo
+      ja_JP: コンテンツタイプ
+      zh_Hant: 內容類型
+    human_description:
+      en_US: The content type of the message, either html or text
+      zh_Hans: 消息的内容类型，html 或 text
+      pt_BR: O tipo de conteúdo da mensagem, html ou text
+      ja_JP: メッセージのコンテンツタイプ、html または text
+      zh_Hant: 訊息的內容類型，html 或 text
+    llm_description: The content type of the message body, either html or text, default is html
+    form: llm
+extra:
+  python:
+    source: tools/send_chat_message.py
