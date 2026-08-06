@@ -35,6 +35,39 @@ parameters:
       zh_Hant: 要返回的最大事件數
     llm_description: Maximum number of events to return, default is 25
     form: llm
+  - name: order
+    type: select
+    required: false
+    default: desc
+    options:
+      - value: desc
+        label:
+          en_US: Descending (latest first)
+          zh_Hans: 降序（最新在前）
+          pt_BR: Decrescente (mais recentes primeiro)
+          ja_JP: 降順（最新が先頭）
+          zh_Hant: 降序（最新在前）
+      - value: asc
+        label:
+          en_US: Ascending (oldest first)
+          zh_Hans: 升序（最早在前）
+          pt_BR: Crescente (mais antigos primeiro)
+          ja_JP: 昇順（古い順）
+          zh_Hant: 升序（最早在前）
+    label:
+      en_US: Sort Order
+      zh_Hans: 排序
+      pt_BR: Ordem de classificação
+      ja_JP: 並び順
+      zh_Hant: 排序
+    human_description:
+      en_US: Sort events by start time - descending (latest first) or ascending (oldest first)
+      zh_Hans: 按开始时间排序 - 降序（最新在前）或升序（最早在前）
+      pt_BR: Ordenar eventos por horário de início - decrescente (mais recentes primeiro) ou crescente (mais antigos primeiro)
+      ja_JP: 開始時刻でイベントを並べ替え - 降順（最新が先頭）または昇順（古い順）
+      zh_Hant: 按開始時間排序 - 降序（最新在前）或升序（最早在前）
+    llm_description: Sort order by event start time. Use 'desc' for latest first (default) or 'asc' for oldest first.
+    form: llm
   - name: calendar_id
     type: string
     required: false

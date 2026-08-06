@@ -14,6 +14,9 @@ class ListEventsTool(Tool):
         try:
             top = tool_parameters.get("top") or 25
             calendar_id = tool_parameters.get("calendar_id")
+            order = (tool_parameters.get("order") or "desc").lower()
+            if order not in ("asc", "desc"):
+                order = "desc"
 
             access_token = self.runtime.credentials.get("access_token")
             if not access_token:
@@ -32,7 +35,7 @@ class ListEventsTool(Tool):
 
             params = {
                 "$top": int(top),
-                "$orderby": "start/dateTime",
+                "$orderby": f"start/dateTime {order}",
                 "$select": "id,subject,start,end,organizer,webLink"
             }
 
