@@ -15,7 +15,7 @@ description:
   llm: Invites users to a channel using conversations.invite. Requires the channel ID and one or more user IDs (comma-separated).
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

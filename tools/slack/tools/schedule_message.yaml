@@ -15,7 +15,7 @@ description:
   llm: Schedules a message for future delivery using chat.scheduleMessage. Requires the channel, the message text, and post_at as a Unix epoch timestamp (in seconds) in the future.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

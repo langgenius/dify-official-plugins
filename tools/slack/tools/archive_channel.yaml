@@ -15,7 +15,7 @@ description:
   llm: Archives a channel using conversations.archive. Requires the channel ID.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

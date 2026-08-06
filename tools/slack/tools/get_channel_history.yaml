@@ -15,7 +15,7 @@ description:
   llm: Retrieves a channel's message history using conversations.history. Requires the channel ID. Supports limit and optional oldest/latest Unix timestamps to bound the range.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

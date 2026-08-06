@@ -15,7 +15,7 @@ description:
   llm: Retrieves the replies of a threaded conversation using conversations.replies. Requires the channel ID and the parent message ts (timestamp).
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

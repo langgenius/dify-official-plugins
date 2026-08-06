@@ -15,7 +15,7 @@ description:
   llm: Updates the text of an existing Slack message using chat.update. Requires the channel ID and the ts (timestamp) of the message to edit, plus the new text.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

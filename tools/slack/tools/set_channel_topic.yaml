@@ -15,7 +15,7 @@ description:
   llm: Sets a channel's topic using conversations.setTopic. Requires the channel ID and the new topic text.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

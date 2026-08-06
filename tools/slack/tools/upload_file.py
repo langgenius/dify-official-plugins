@@ -4,10 +4,10 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 
-from slack_api import ChannelSelectMixin, SlackApiError, SlackClient
+from slack_api import SlackApiError, SlackClient
 
 
-class UploadFileTool(ChannelSelectMixin, Tool):
+class UploadFileTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
