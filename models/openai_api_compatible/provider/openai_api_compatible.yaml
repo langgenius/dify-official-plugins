@@ -356,6 +356,34 @@ model_credential_schema:
       help:
         en_US: Some OpenAI-compatible endpoints require max_completion_tokens (Responses API). Choose explicitly if auto-detection is wrong.
         zh_Hans: 一些兼容端要求使用 max_completion_tokens（Responses API）。若自动判断不准确，可在此显式指定。
+    - variable: user_identity_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: User Identity Support
+        zh_Hans: 用户标识支持
+      type: select
+      required: false
+      default: support
+      help:
+        en_US: >
+          Whether the endpoint accepts the optional top-level user parameter.
+          Some OpenAI-compatible gateways reject it as an unsupported parameter.
+          Choose Not Support to omit it from the request body.
+        zh_Hans: >
+          端点是否接受可选的顶层 user 参数。
+          部分 OpenAI 兼容网关会将其视为不支持的参数而拒绝请求。
+          选择「不支持」可将其从请求体中省略。
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
     - variable: function_calling_type
       show_on:
         - variable: __model_type

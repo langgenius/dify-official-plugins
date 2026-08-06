@@ -20,6 +20,21 @@ parameter_rules:
     default: 8192
     min: 1
     max: 384000
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - none
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制模型的思考强度。none 关闭思考（即非思考模式），low/high/max 对应不同强度的思考。
+      en_US: Controls the model's reasoning intensity. none disables thinking (non-thinking mode); low/high/max enable progressively stronger thinking.
   - name: response_format
     label:
       zh_Hans: 回复格式

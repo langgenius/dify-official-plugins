@@ -1,0 +1,64 @@
+identity:
+  name: schedule_message
+  author: langgenius
+  label:
+    en_US: Schedule Message
+    zh_Hans: 定时发送消息
+    ja_JP: メッセージを予約送信
+    ko_KR: 메시지 예약
+description:
+  human:
+    en_US: Schedule a message to be sent to a channel at a future time.
+    zh_Hans: 安排一条消息在未来某个时间发送到频道。
+    ja_JP: 将来の指定した時刻にチャンネルへメッセージを送信するよう予約します。
+    ko_KR: 나중에 지정한 시각에 채널로 메시지를 보내도록 예약합니다.
+  llm: Schedules a message for future delivery using chat.scheduleMessage. Requires the channel, the message text, and post_at as a Unix epoch timestamp (in seconds) in the future.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel, private group, or user (DM) to send the message to.
+      zh_Hans: 发送消息的频道、私有群组或用户（私信）。
+      ja_JP: メッセージを送信するチャンネル、プライベートグループ、またはユーザー（DM）。
+      ko_KR: "메시지를 보낼 채널, 비공개 그룹 또는 사용자(DM)입니다."
+    llm_description: The target channel ID (e.g. C0123456789) or channel name (e.g. #general).
+    form: llm
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Message Text
+      zh_Hans: 消息内容
+      ja_JP: メッセージ本文
+      ko_KR: 메시지 내용
+    human_description:
+      en_US: The text of the message to schedule.
+      zh_Hans: 要定时发送的消息文本。
+      ja_JP: 予約送信するメッセージのテキスト。
+      ko_KR: 예약 전송할 메시지의 텍스트입니다.
+    llm_description: The message body to schedule. Supports Slack mrkdwn formatting.
+    form: llm
+  - name: post_at
+    type: number
+    required: true
+    label:
+      en_US: Post At (Unix Timestamp)
+      zh_Hans: 发送时间（Unix 时间戳）
+      ja_JP: 送信時刻（Unix タイムスタンプ）
+      ko_KR: 전송 시각(Unix 타임스탬프)
+    human_description:
+      en_US: The time to send the message, as a Unix epoch timestamp in seconds. Must be in the future and within 120 days.
+      zh_Hans: 发送消息的时间，Unix 纪元时间戳（秒）。必须在未来且不超过 120 天。
+      ja_JP: メッセージを送信する時刻。Unix エポックタイムスタンプ（秒）で指定します。将来かつ 120 日以内である必要があります。
+      ko_KR: 메시지를 보낼 시각으로, Unix 에포크 타임스탬프(초)로 지정합니다. 미래 시점이면서 120일 이내여야 합니다.
+    llm_description: The Unix epoch timestamp in seconds at which to send the message. Must be a future time no more than 120 days ahead.
+    form: llm
+extra:
+  python:
+    source: tools/schedule_message.py
