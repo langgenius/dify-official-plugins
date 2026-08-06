@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Microsoft Teams">
+  <title>Microsoft Teams</title>
+  <!-- person (lighter purple) -->
+  <circle cx="74" cy="62" r="28" fill="#8B93F0"/>
+  <path d="M34 108h80a8 8 0 0 1 8 8v42a48 48 0 0 1-96 0v-42a8 8 0 0 1 8-8z" fill="#8B93F0"/>
+  <!-- Teams tile (purple) -->
+  <rect x="108" y="66" width="108" height="108" rx="16" fill="#6B74E0"/>
+  <!-- white "T" -->
+  <path d="M130 92h64v16h-24v54h-16v-54h-24z" fill="#ffffff"/>
+</svg>

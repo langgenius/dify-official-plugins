@@ -10,7 +10,7 @@ from dify_plugin.entities.oauth import ToolOAuthCredentials
 
 
 class OutlookProvider(ToolProvider):
-    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite offline_access"
+    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite Calendars.ReadWrite offline_access"
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate access token by calling Microsoft Graph API."""

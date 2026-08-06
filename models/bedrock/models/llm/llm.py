@@ -1554,9 +1554,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # need workaround for ai21 models which doesn't support streaming
         if stream and model_prefix != "ai21":
-            invoke = runtime_client.invoke_model_with_response_stream
+            invoke = bedrock_client.invoke_model_with_response_stream
         else:
-            invoke = runtime_client.invoke_model
+            invoke = bedrock_client.invoke_model
 
         try:
             body_jsonstr = json.dumps(payload)
@@ -1572,8 +1572,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        # Re-raise any other exception (NameError, TypeError, ValueError, etc.) so
+        # real bugs surface instead of being wrapped in a generic InvokeError.
+        # The previous bare `except Exception` swallowed an undefined-name
+        # bug and re-raised as InvokeError, hiding the root cause from the
+        # caller and from any future maintainer reading the call site. See
+        # issue #3564.
 
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)

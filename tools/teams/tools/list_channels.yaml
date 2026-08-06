@@ -1,0 +1,38 @@
+identity:
+  name: list_channels
+  author: langgenius
+  label:
+    en_US: List Channels
+    zh_Hans: 列出频道
+    pt_BR: Listar Canais
+    ja_JP: チャネル一覧
+    zh_Hant: 列出頻道
+description:
+  human:
+    en_US: List the channels of a Microsoft Teams team
+    zh_Hans: 列出 Microsoft Teams 团队中的频道
+    pt_BR: Listar os canais de uma equipe do Microsoft Teams
+    ja_JP: Microsoft Teams のチームのチャネルを一覧表示
+    zh_Hant: 列出 Microsoft Teams 團隊中的頻道
+  llm: List the channels of a Microsoft Teams team using the Microsoft Graph API, returns channel id, displayName and description
+parameters:
+  - name: team_id
+    type: string
+    required: true
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チーム ID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: The ID of the team to list channels from
+      zh_Hans: 要列出频道的团队 ID
+      pt_BR: O ID da equipe para listar os canais
+      ja_JP: チャネルを一覧表示するチームの ID
+      zh_Hant: 要列出頻道的團隊 ID
+    llm_description: The ID of the Microsoft Teams team to list channels from
+    form: llm
+extra:
+  python:
+    source: tools/list_channels.py
