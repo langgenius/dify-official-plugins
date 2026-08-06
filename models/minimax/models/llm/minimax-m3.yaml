@@ -6,6 +6,7 @@ features:
   - agent-thought
   - vision
   - video
+  - document
   - tool-call
   - stream-tool-call
 model_properties:
@@ -40,6 +41,16 @@ parameter_rules:
       zh_Hans: 启用 MiniMax-M3 自适应思考。
     options:
       - adaptive
+  - name: exclude_reasoning_tokens
+    label:
+      en_US: Hide the thought process
+      zh_Hans: 隐藏思考过程
+    type: boolean
+    default: true
+    required: false
+    help:
+      en_US: Whether to hide the thought process.
+      zh_Hans: 是否隐藏思考过程。
 # Official pricing is tiered; this flat estimate uses the standard <=512k input-token tier.
 pricing:
   input: "4.2"

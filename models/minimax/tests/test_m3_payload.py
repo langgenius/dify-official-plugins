@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import yaml
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     TextPromptMessageContent,
     UserPromptMessage,
@@ -43,6 +44,7 @@ def test_m3_yaml_parameters_match_official_limits() -> None:
         "agent-thought",
         "vision",
         "video",
+        "document",
         "tool-call",
         "stream-tool-call",
     ]
@@ -54,6 +56,7 @@ def test_m3_yaml_parameters_match_official_limits() -> None:
     assert rules["top_p"]["default"] == 0.95
     assert rules["max_tokens"]["max"] == 524288
     assert rules["thinking"]["options"] == ["adaptive"]
+    assert rules["exclude_reasoning_tokens"]["default"] is True
 
 
 def test_m3_thinking_uses_adaptive_or_omits_unsupported_modes() -> None:
@@ -113,6 +116,12 @@ def test_m3_multimodal_user_message_uses_anthropic_sources() -> None:
                 base64_data="AAAA",
                 mime_type="video/mp4",
             ),
+            DocumentPromptMessageContent(
+                format="base64",
+                base64_data="BBBB",
+                mime_type="application/pdf",
+                filename="report.pdf",
+            ),
         ]
     )
 
@@ -137,6 +146,42 @@ def test_m3_multimodal_user_message_uses_anthropic_sources() -> None:
                     "data": "AAAA",
                 },
             },
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": "BBBB",
+                },
+            },
+        ],
+    }
+
+
+def test_m3_document_url_uses_anthropic_source() -> None:
+    message = UserPromptMessage(
+        content=[
+            DocumentPromptMessageContent(
+                format="url",
+                url="https://example.com/report.pdf",
+                mime_type="application/pdf",
+                filename="report.pdf",
+            )
+        ]
+    )
+
+    converted = _llm()._convert_prompt_message_to_anthropic_message(message)
+
+    assert converted == {
+        "role": "user",
+        "content": [
+            {
+                "type": "document",
+                "source": {
+                    "type": "url",
+                    "url": "https://example.com/report.pdf",
+                },
+            }
         ],
     }
 
@@ -352,6 +397,58 @@ def test_stream_thinking_closes_before_tool_call_without_text_delta() -> None:
     }
 
 
+def test_stream_can_hide_thinking_without_dropping_opaque_content() -> None:
+    llm = _llm()
+    events = [
+        _event("message_start", message=SimpleNamespace(usage=_usage())),
+        _event(
+            "content_block_start",
+            index=0,
+            content_block=SimpleNamespace(type="thinking", signature="sig"),
+        ),
+        _event(
+            "content_block_delta",
+            index=0,
+            delta=SimpleNamespace(type="thinking_delta", thinking="hidden reason"),
+        ),
+        _event(
+            "content_block_start",
+            index=1,
+            content_block=SimpleNamespace(type="text", text=""),
+        ),
+        _event(
+            "content_block_delta",
+            index=1,
+            delta=SimpleNamespace(type="text_delta", text="Visible answer"),
+        ),
+        _event(
+            "message_delta",
+            delta=SimpleNamespace(stop_reason="end_turn"),
+            usage=_usage(output_tokens=3),
+        ),
+        _event("message_stop"),
+    ]
+
+    chunks = list(
+        llm._handle_chat_generate_stream_response(
+            model="minimax-m3",
+            prompt_messages=[UserPromptMessage(content="hi")],
+            credentials={},
+            response=events,
+            exclude_reasoning_tokens=True,
+        )
+    )
+
+    contents = [chunk.delta.message.content for chunk in chunks]
+    assert contents == ["Visible answer", ""]
+    assert chunks[-1].delta.message.opaque_body == {
+        "minimax_anthropic_content": [
+            {"type": "thinking", "thinking": "hidden reason", "signature": "sig"},
+            {"type": "text", "text": "Visible answer"},
+        ]
+    }
+
+
 def test_non_stream_tool_call_replays_opaque_content_without_duplicate_thinking_text() -> None:
     llm = _llm()
     response = SimpleNamespace(
@@ -379,6 +476,33 @@ def test_non_stream_tool_call_replays_opaque_content_without_duplicate_thinking_
             {"type": "text", "text": "I will call a tool."},
             {"type": "tool_use", "id": "call_1", "name": "search", "input": {"query": "m3"}},
         ],
+    }
+
+
+def test_non_stream_can_hide_thinking_without_dropping_opaque_content() -> None:
+    llm = _llm()
+    response = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="thinking", thinking="hidden reason", signature="sig"),
+            SimpleNamespace(type="text", text="Visible answer"),
+        ],
+        usage=_usage(output_tokens=3),
+    )
+
+    result = llm._handle_chat_generate_response(
+        model="minimax-m3",
+        prompt_messages=[UserPromptMessage(content="hi")],
+        credentials={},
+        response=response,
+        exclude_reasoning_tokens=True,
+    )
+
+    assert result.message.content == "Visible answer"
+    assert result.message.opaque_body == {
+        "minimax_anthropic_content": [
+            {"type": "thinking", "thinking": "hidden reason", "signature": "sig"},
+            {"type": "text", "text": "Visible answer"},
+        ]
     }
 
 
