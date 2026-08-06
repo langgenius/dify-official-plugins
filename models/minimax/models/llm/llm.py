@@ -8,6 +8,7 @@ from anthropic.types import Message
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageTool,
@@ -93,6 +94,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
         thinking = model_parameters.pop("thinking", None)
         thinking_budget = int(model_parameters.pop("thinking_budget", 1024) or 1024)
+        exclude_reasoning_tokens = model_parameters.pop(
+            "exclude_reasoning_tokens", request_model == "MiniMax-M3"
+        )
 
         max_tokens = int(model_parameters.pop("max_tokens", 1024) or 1024)
         if max_tokens <= 0:
@@ -135,6 +139,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 credentials=credentials,
                 response=response,
                 tools=tools,
+                exclude_reasoning_tokens=exclude_reasoning_tokens is True,
             )
 
         response = client.messages.create(stream=False, **request_kwargs)
@@ -144,6 +149,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             credentials=credentials,
             response=response,
             tools=tools,
+            exclude_reasoning_tokens=exclude_reasoning_tokens is True,
         )
 
     def validate_credentials(self, model: str, credentials: Mapping[str, Any]) -> None:
@@ -278,6 +284,8 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             return self._create_media_content_block("image", content.data)
         if isinstance(content, VideoPromptMessageContent):
             return self._create_media_content_block("video", content.data)
+        if isinstance(content, DocumentPromptMessageContent):
+            return self._create_media_content_block("document", content.data)
 
         if isinstance(content, dict):
             content_type = content.get("type")
@@ -292,6 +300,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             if self._is_content_type(content_type, "video", "video_url"):
                 video_url = self._extract_media_url(content, "video_url")
                 return self._create_media_content_block("video", str(video_url or ""))
+            if self._is_content_type(content_type, "document", "document_url"):
+                document_url = self._extract_media_url(content, "document_url")
+                return self._create_media_content_block("document", str(document_url or ""))
             return None
 
         content_type = getattr(content, "type", None)
@@ -301,6 +312,10 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             return self._create_media_content_block("image", str(getattr(content, "data", "")))
         if self._is_content_type(content_type, "video"):
             return self._create_media_content_block("video", str(getattr(content, "data", "")))
+        if self._is_content_type(content_type, "document"):
+            return self._create_media_content_block(
+                "document", str(getattr(content, "data", ""))
+            )
         return None
 
     def _is_content_type(self, content_type: Any, *expected: str) -> bool:
@@ -442,6 +457,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: Message,
         tools: Optional[list[PromptMessageTool]] = None,
+        exclude_reasoning_tokens: bool = False,
     ) -> LLMResult:
         text_chunks: list[str] = []
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
@@ -499,7 +515,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
         # 构建包含思考内容的完整文本
         assistant_text = ""
-        if thinking_blocks:
+        if thinking_blocks and not exclude_reasoning_tokens:
             # 将所有思考内容用<think>标签包裹
             thinking_contents = []
             for block in thinking_blocks:
@@ -562,6 +578,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: Stream,
         tools: Optional[list[PromptMessageTool]] = None,
+        exclude_reasoning_tokens: bool = False,
     ) -> Generator[LLMResultChunk, None, None]:
         input_tokens = 0
         output_tokens = 0
@@ -581,6 +598,8 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             if is_reasoning_started != 1:
                 return None
             is_reasoning_started = 2
+            if exclude_reasoning_tokens:
+                return None
             return LLMResultChunk(
                 model=model,
                 prompt_messages=prompt_messages,
@@ -657,7 +676,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                     )
                 elif getattr(block, "type", "") == "thinking":
                     # 开始思考块时,输出<think>标签
-                    if is_reasoning_started == 0:
+                    if is_reasoning_started == 0 and not exclude_reasoning_tokens:
                         yield LLMResultChunk(
                             model=model,
                             prompt_messages=prompt_messages,
@@ -730,7 +749,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                         prev = str(thinking_block.get("thinking", ""))
                         thinking_block["thinking"] = prev + thinking
                         # 实时输出思考内容
-                        if is_reasoning_started == 0:
+                        if is_reasoning_started == 0 and not exclude_reasoning_tokens:
                             yield LLMResultChunk(
                                 model=model,
                                 prompt_messages=prompt_messages,
@@ -740,14 +759,15 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                                 ),
                             )
                             is_reasoning_started = 1
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=event_index,
-                                message=AssistantPromptMessage(content=thinking),
-                            ),
-                        )
+                        if not exclude_reasoning_tokens:
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(
+                                    index=event_index,
+                                    message=AssistantPromptMessage(content=thinking),
+                                ),
+                            )
                 elif delta_type == "signature_delta":
                     signature = getattr(delta, "signature", "")
                     thinking_block = streamed_thinking_blocks.get(str(event_index))
