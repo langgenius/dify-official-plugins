@@ -30,7 +30,7 @@ parameters:
     llm_description: The file to upload to Slack. Accepts documents, images, and other file types.
     form: llm
   - name: channel
-    type: dynamic-select
+    type: string
     required: false
     label:
       en_US: Channel

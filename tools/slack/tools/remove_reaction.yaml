@@ -15,7 +15,7 @@ description:
   llm: Removes an emoji reaction from a message using reactions.remove. Requires the channel ID, the message timestamp, and the emoji name (without colons).
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

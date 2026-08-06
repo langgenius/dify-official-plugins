@@ -74,35 +74,6 @@ class SlackClient:
         """Validate the token and return the authed identity (team, user, etc.)."""
         return self.api_call("auth.test")
 
-    def list_channel_options(self, max_pages: int = 10) -> list[dict[str, str]]:
-        """Return channels the token can access as [{'id','name'}].
-
-        Public and private channels are queried separately and merged: Slack's
-        ``conversations.list`` reliably returns private channels only when
-        ``types`` is a single value, and drops them from a combined query.
-        """
-        seen: dict[str, str] = {}
-        for channel_type in ("public_channel", "private_channel"):
-            cursor: Optional[str] = None
-            for _ in range(max_pages):
-                resp = self.api_call(
-                    "conversations.list",
-                    {
-                        "types": channel_type,
-                        "limit": 200,
-                        "cursor": cursor,
-                        "exclude_archived": True,
-                    },
-                )
-                for ch in resp.get("channels", []):
-                    cid = ch.get("id")
-                    if cid and cid not in seen:
-                        seen[cid] = ch.get("name") or cid
-                cursor = (resp.get("response_metadata") or {}).get("next_cursor") or None
-                if not cursor:
-                    break
-        return [{"id": cid, "name": name} for cid, name in seen.items()]
-
     def upload_file(
         self,
         *,
@@ -155,34 +126,3 @@ class SlackClient:
             },
         )
 
-
-class ChannelSelectMixin:
-    """Mixin for Tools whose `channel` parameter is a dynamic-select.
-
-    Implements `_fetch_parameter_options` so Dify can populate the dropdown with
-    every channel (public and private) the configured access token can see.
-    """
-
-    def _fetch_parameter_options(self, parameter: str):
-        from dify_plugin.entities import I18nObject, ParameterOption
-
-        if parameter != "channel":
-            return []
-        token = (self.runtime.credentials or {}).get("access_token")
-        if not token:
-            raise ValueError("A Slack Access Token is required to list channels.")
-        try:
-            channels = SlackClient(token).list_channel_options()
-        except SlackApiError as e:
-            resp = e.response or {}
-            detail = ""
-            if resp.get("needed") is not None or resp.get("provided") is not None:
-                detail = f" (needed: {resp.get('needed')}; provided: {resp.get('provided')})"
-            raise ValueError(
-                f"Could not list channels: {e.slack_error}{detail}. Ensure the token has "
-                "the 'channels:read' and 'groups:read' scopes, then reinstall the app."
-            )
-        return [
-            ParameterOption(value=c["id"], label=I18nObject(en_us=c["name"]))
-            for c in channels
-        ]

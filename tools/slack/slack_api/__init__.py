@@ -1,3 +1,3 @@
-from slack_api.client import ChannelSelectMixin, SlackApiError, SlackClient
+from slack_api.client import SlackApiError, SlackClient
 
-__all__ = ["SlackClient", "SlackApiError", "ChannelSelectMixin"]
+__all__ = ["SlackClient", "SlackApiError"]

@@ -15,7 +15,7 @@ description:
   llm: Adds an emoji reaction to a message using reactions.add. Requires the channel ID, the message timestamp, and the emoji name (without surrounding colons, e.g. thumbsup).
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

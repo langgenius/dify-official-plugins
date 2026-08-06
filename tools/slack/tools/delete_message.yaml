@@ -15,7 +15,7 @@ description:
   llm: Deletes a message using chat.delete. Requires the channel ID and the ts (timestamp) of the message to delete. A bot token can only delete messages it posted.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

@@ -15,7 +15,7 @@ description:
   llm: Sends a message to a Slack conversation using chat.postMessage. Requires the target channel (channel ID like C0123456789, or a #channel-name) and the message text. Optionally reply inside a thread by passing thread_ts.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

@@ -15,7 +15,7 @@ description:
   llm: Retrieves metadata about a channel using conversations.info. Requires the channel ID.
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel

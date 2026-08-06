@@ -15,7 +15,7 @@ description:
   llm: Returns a permalink URL for a specific message using chat.getPermalink. Requires the channel ID and the message ts (timestamp).
 parameters:
   - name: channel
-    type: dynamic-select
+    type: string
     required: true
     label:
       en_US: Channel
