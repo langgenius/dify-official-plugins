@@ -6,7 +6,13 @@ from typing import Optional, Union, Any
 
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
-from dify_plugin.entities.model import AIModelEntity, ModelFeature
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    I18nObject,
+    ModelFeature,
+    ParameterRule,
+    ParameterType,
+)
 from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
@@ -200,7 +206,8 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
         # Only convert file content to text descriptions for models that don't support vision
         model_schema = self.get_model_schema(model, credentials)
-        if not (model_schema and ModelFeature.VISION in (model_schema.features or [])):
+        model_features = getattr(model_schema, "features", None) or []
+        if ModelFeature.VISION not in model_features:
             prompt_messages = self._convert_files_to_text(prompt_messages)
 
         if model in IMAGE_GENERATION_MODELS:
@@ -213,10 +220,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         # Allow data collection by default so that all available providers can serve requests.
         # Without this, models whose only providers require data collection would return a 404
         # ("No endpoints available matching your guardrail restrictions and data policy").
-        if "provider" not in model_parameters:
-            model_parameters["provider"] = {"data_collection": "allow"}
-        elif isinstance(model_parameters["provider"], dict) and "data_collection" not in model_parameters["provider"]:
-            model_parameters["provider"]["data_collection"] = "allow"
+        provider_parameters = model_parameters.setdefault("provider", {})
+        if isinstance(provider_parameters, dict):
+            provider_parameters.setdefault("data_collection", "allow")
 
         return self._generate(
             model,
@@ -322,7 +328,46 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> AIModelEntity:
-        return super().get_customizable_model_schema(model, credentials)
+        entity = super().get_customizable_model_schema(model, credentials)
+
+        if credentials.get("reasoning_support") != "support":
+            return entity
+
+        features = [*(entity.features or []), ModelFeature.AGENT_THOUGHT]
+        entity.features = list(dict.fromkeys(features))
+        entity.parameter_rules.extend(
+            [
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_us="Reasoning Effort", zh_hans="推理程度"),
+                    help=I18nObject(
+                        en_us="Controls how much effort the model spends on reasoning.",
+                        zh_hans="控制模型用于推理的工作量。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["low", "medium", "high"],
+                    required=False,
+                ),
+                ParameterRule(
+                    name="exclude_reasoning_tokens",
+                    label=I18nObject(
+                        en_us="Hide the thought process", zh_hans="隐藏思考过程"
+                    ),
+                    help=I18nObject(
+                        en_us=(
+                            "Lets the model reason internally without returning "
+                            "reasoning tokens in its response."
+                        ),
+                        zh_hans="允许模型在内部推理，但不在响应中返回推理 token。",
+                    ),
+                    type=ParameterType.BOOLEAN,
+                    default=True,
+                    required=False,
+                ),
+            ]
+        )
+
+        return entity
 
     def get_num_tokens(
         self,
