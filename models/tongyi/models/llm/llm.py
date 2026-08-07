@@ -199,7 +199,25 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
 
         response_format = model_parameters.get("response_format")
-        if response_format:
+        json_schema = model_parameters.pop("json_schema", None)
+        if response_format == "json_schema":
+            if not json_schema:
+                raise ValueError(
+                    "json_schema is required when response_format is json_schema"
+                )
+            if isinstance(json_schema, str):
+                try:
+                    json_schema = json.loads(json_schema)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"Invalid json_schema: {exc}") from exc
+            json_schema = dict(json_schema)
+            strict = json_schema.pop("strict", True)
+            model_parameters["response_format"] = {
+                "type": "json_schema",
+                "json_schema": json_schema,
+                "strict": strict,
+            }
+        elif response_format and not isinstance(response_format, dict):
             model_parameters["response_format"] = {"type": response_format}
 
         if model.startswith("qwen-mt"):
@@ -219,8 +237,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(
                     "There is one and only one User Message in the messages array."
                 )
-        # For models that support enable_thinking parameter, explicitly set it to False if not provided
-        # This overrides API-level defaults where some models default to thinking mode enabled
+        # For models that support enable_thinking, set a stable default when omitted.
         # Reference: https://help.aliyun.com/zh/model-studio/deep-thinking
         thinking_capable_models = {
             # Qwen Plus/Turbo series (default: thinking disabled, but explicit False ensures consistency)
@@ -231,7 +248,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-max-2026-01-23", "qwen3-max-preview",
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
-            # Qwen3.5/3.6/3.7/3.8 series (default: thinking ENABLED - must explicitly disable)
+            # Qwen3.5/3.6/3.7/3.8 series
             "qwen3.8-max",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
@@ -245,7 +262,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
-            model_parameters["enable_thinking"] = False
+            model_parameters["enable_thinking"] = model == "qwen3.8-max"
+        if model == "qwen3.8-max":
+            if not model_parameters["enable_thinking"]:
+                model_parameters.pop("reasoning_effort", None)
+            # Dify stores reasoning in content, which preserved thinking rejects.
+            model_parameters["preserve_thinking"] = False
 
         extra_headers_str = ''
         if model_parameters.get('extra_headers',''):
