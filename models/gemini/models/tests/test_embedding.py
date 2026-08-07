@@ -1145,19 +1145,31 @@ class TestSplitTextsTermination:
     a text counted as ``>= context_size`` tokens while being <= ``context_size``
     characters (token-dense content like CJK / code / base64), the head slice was
     the unchanged text and the recursion never terminated.
+
+    Updated for issue #3333: the splitter no longer calls the live
+    ``_count_tokens`` API (an HTTP round-trip) to decide whether a chunk needs
+    splitting -- it now uses the local, instant ``_get_num_tokens_by_gpt2``
+    estimate instead (see ``_split_texts_to_fit_model_specs``). The
+    recursion-safety behavior covered by these tests is unaffected by that
+    change, so they are updated to mock the new dependency in the same way.
+    ``client``/``model`` are still accepted by ``_split_texts_to_fit_model_specs``
+    for call-site compatibility, even though they are no longer used to
+    estimate tokens.
     """
 
     def setup_method(self):
         self.model = GeminiTextEmbeddingModel([])
 
-    def _patch_count_tokens(self, chars_per_token: float):
-        """Patch _count_tokens with a deterministic char-based token estimate."""
+    def _patch_token_estimate(self, chars_per_token: float):
+        """Patch _get_num_tokens_by_gpt2 with a deterministic char-based token estimate."""
 
-        def fake_count_tokens(_client, _model, text):
+        def fake_estimate(text):
             # at least 1 token for any non-empty text
             return max(1, int(len(text) / chars_per_token) + (1 if text else 0))
 
-        return patch.object(self.model, "_count_tokens", side_effect=fake_count_tokens)
+        return patch.object(
+            self.model, "_get_num_tokens_by_gpt2", side_effect=fake_estimate
+        )
 
     def test_token_dense_text_terminates(self):
         """Token-dense text (more tokens than chars) must not recurse forever."""
@@ -1166,7 +1178,7 @@ class TestSplitTextsTermination:
         # as ~200 tokens (>> context_size). The original code sliced at the token
         # count as a char index, leaving the head unchanged -> infinite recursion.
         text = "字" * 50  # 50 chars
-        with self._patch_count_tokens(
+        with self._patch_token_estimate(
             chars_per_token=0.25
         ):  # ~4 tokens/char => ~200 tokens
             result = self.model._split_texts_to_fit_model_specs(
@@ -1182,7 +1194,7 @@ class TestSplitTextsTermination:
         """A long text splits into multiple chunks that each fit the context size."""
         context_size = 32
         text = ("The quick brown fox jumps over the lazy dog. " * 40).strip()
-        with self._patch_count_tokens(chars_per_token=4.0):  # ~1 token / 4 chars
+        with self._patch_token_estimate(chars_per_token=4.0):  # ~1 token / 4 chars
             result = self.model._split_texts_to_fit_model_specs(
                 Mock(), "gemini-embedding-2-preview", [text], context_size
             )
@@ -1195,7 +1207,7 @@ class TestSplitTextsTermination:
         """Text already within the context size is returned unchanged."""
         context_size = 1000
         text = "hello world"
-        with self._patch_count_tokens(chars_per_token=4.0):
+        with self._patch_token_estimate(chars_per_token=4.0):
             result = self.model._split_texts_to_fit_model_specs(
                 Mock(), "gemini-embedding-2-preview", [text], context_size
             )
@@ -1212,12 +1224,34 @@ class TestSplitTextsTermination:
         """
         context_size = 0
         text = "字字字字字"  # 5 chars, > 1 -> enters the split branch
-        with patch.object(self.model, "_count_tokens", return_value=0):
+        with patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=0):
             result = self.model._split_texts_to_fit_model_specs(
                 Mock(), "gemini-embedding-2-preview", [text], context_size
             )
         # No crash, the recursion terminated, and the text is preserved.
         assert "".join(chunk for chunk, _ in result) == text
+
+    def test_splitter_never_calls_live_count_tokens_api(self):
+        """Issue #3333: the splitter must not perform any network round-trip.
+
+        ``_count_tokens`` calls ``client.models.get()`` and
+        ``client.models.count_tokens()`` -- both are blocking HTTP requests.
+        The splitter should rely exclusively on the local GPT-2 estimate.
+        """
+        context_size = 8192
+        text = "The quick brown fox jumps over the lazy dog."
+        mock_client = Mock()
+        with patch.object(
+            self.model,
+            "_count_tokens",
+            side_effect=AssertionError("must not be called"),
+        ):
+            result = self.model._split_texts_to_fit_model_specs(
+                mock_client, "gemini-embedding-2-preview", [text], context_size
+            )
+        assert result[0][0] == text
+        mock_client.models.get.assert_not_called()
+        mock_client.models.count_tokens.assert_not_called()
 
 
 # ================================================================

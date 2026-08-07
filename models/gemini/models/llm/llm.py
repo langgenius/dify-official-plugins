@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+import threading
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
@@ -46,6 +47,16 @@ from .utils import FileCache
 
 file_cache = FileCache()
 
+# Cache of genai.Client instances keyed by (api_key, base_url). Reusing the
+# client (and its underlying httpx connection pool) avoids a fresh TCP+TLS
+# handshake to generativelanguage.googleapis.com on every LLM node call.
+# Bounded with a simple oldest-first eviction so long-running multi-tenant
+# deployments (many distinct API keys) cannot grow this dict unboundedly and
+# leak open HTTP connection pools.
+_GENAI_CLIENT_CACHE_MAX_SIZE = 100
+_genai_client_cache: dict[tuple[str, Optional[str]], genai.Client] = {}
+_genai_client_cache_lock = threading.Lock()
+
 IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
 NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash", "gemini-3.5-flash-lite"}
 
@@ -56,6 +67,35 @@ _SERVICE_TIER_PRICE_MULTIPLIERS = {
     "flex": Decimal("0.5"),
     "priority": Decimal("1.8"),
 }
+
+
+def _get_genai_client(api_key: str, base_url: Optional[str] = None) -> genai.Client:
+    """Return a cached genai.Client for the given credentials, creating one if needed.
+
+    :param api_key: Google API key
+    :param base_url: optional custom API base URL (falsy values normalized to
+        None so "" and None share the same cache entry)
+    :return: cached or newly created genai.Client
+    """
+    cache_key = (api_key.strip(), base_url or None)
+    with _genai_client_cache_lock:
+        client = _genai_client_cache.get(cache_key)
+        if client is not None:
+            # Move to end (most-recently-used) so eviction picks the
+            # least-recently-used entry, not the oldest-inserted.
+            _genai_client_cache[cache_key] = _genai_client_cache.pop(cache_key)
+            return client
+        if len(_genai_client_cache) >= _GENAI_CLIENT_CACHE_MAX_SIZE:
+            # Evict the least-recently-used entry (first in insertion order
+            # after the LRU reordering above) to bound memory/connection-pool
+            # growth in multi-tenant deployments with many distinct API keys.
+            _genai_client_cache.pop(next(iter(_genai_client_cache)))
+        client = genai.Client(
+            api_key=api_key.strip(),
+            http_options=types.HttpOptions(base_url=base_url or None),
+        )
+        _genai_client_cache[cache_key] = client
+        return client
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -216,7 +256,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # The reasoning content and final answer of the Gemini model are priced using the same standard.
         completion_tokens = thoughts_token_count + candidates_token_count
         # The `prompt_tokens` includes the historical conversation QA plus the current input.
-        prompt_tokens = prompt_tokens_standard
+        # Fall back to the API's aggregate `prompt_token_count` when the
+        # per-modality breakdown is absent (some models/configs omit it).
+        # Without this fallback, `prompt_tokens` silently becomes 0, which
+        # forces the caller into the expensive local GPT-2 tokenizer fallback
+        # (see `get_num_tokens` / `_get_num_tokens_by_gpt2`) even though the
+        # API already returned an accurate total.
+        prompt_tokens = prompt_tokens_standard or usage_metadata.prompt_token_count or 0
 
         return prompt_tokens, completion_tokens
 
@@ -1142,11 +1188,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        genai_client = genai.Client(
-            api_key=credentials["google_api_key"],
-            http_options=types.HttpOptions(
-                base_url=credentials.get("google_base_url", None)
-            ),
+        genai_client = _get_genai_client(
+            credentials["google_api_key"], credentials.get("google_base_url", None)
         )
 
         # == ChatConfig == #
