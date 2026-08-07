@@ -1,0 +1,71 @@
+identity:
+  name: web_fetch
+  author: parallel
+  label:
+    en_US: Web Fetch
+    zh_Hans: 网页获取
+description:
+  human:
+    en_US: Fetch clean, relevant Markdown content from one or more URLs with Parallel.
+    zh_Hans: 使用 Parallel 从一个或多个 URL 获取简洁、相关的 Markdown 内容。
+  llm: Fetch content from specific URLs when search excerpts are insufficient or exact page content is needed.
+parameters:
+  - name: urls
+    type: array
+    required: true
+    form: llm
+    label:
+      en_US: URLs
+      zh_Hans: URL 列表
+    human_description:
+      en_US: One or more HTTP or HTTPS URLs to fetch, up to 20.
+      zh_Hans: 要获取的一个或多个 HTTP 或 HTTPS URL，最多 20 个。
+    llm_description: A list of up to 20 HTTP or HTTPS URLs whose content is needed.
+  - name: objective
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Fetch Objective
+      zh_Hans: 获取目标
+    human_description:
+      en_US: The information to focus on within the pages.
+      zh_Hans: 要在页面中重点查找的信息。
+    llm_description: Optional description, up to 200 characters, of the information to extract from the URLs.
+  - name: search_queries
+    type: array
+    required: false
+    form: llm
+    label:
+      en_US: Search Queries
+      zh_Hans: 搜索查询
+    human_description:
+      en_US: Optional prior search queries used to focus the extracted content.
+      zh_Hans: 用于聚焦提取内容的可选先前搜索查询。
+    llm_description: Optional related keyword queries from the search that surfaced these URLs.
+  - name: full_content
+    type: boolean
+    required: false
+    default: false
+    form: form
+    label:
+      en_US: Full Content
+      zh_Hans: 完整内容
+    human_description:
+      en_US: Return the full page as Markdown instead of focused excerpts. This can be very large.
+      zh_Hans: 返回完整页面的 Markdown，而不是聚焦摘要。内容可能非常大。
+    llm_description: Enable only when the entire page is explicitly required; focused excerpts are smaller and preferred.
+  - name: session_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Session ID
+      zh_Hans: 会话 ID
+    human_description:
+      en_US: An optional session ID returned by an earlier Parallel search or fetch call.
+      zh_Hans: 先前 Parallel 搜索或获取调用返回的可选会话 ID。
+    llm_description: Reuse the session_id returned by an earlier Parallel web_search or web_fetch call in the same conversation. Leave blank on the first call.
+extra:
+  python:
+    source: tools/web_fetch.py

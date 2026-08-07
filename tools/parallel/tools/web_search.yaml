@@ -1,0 +1,48 @@
+identity:
+  name: web_search
+  author: parallel
+  label:
+    en_US: Web Search
+    zh_Hans: 网络搜索
+description:
+  human:
+    en_US: Search the live web with Parallel and return relevant, citation-ready excerpts.
+    zh_Hans: 使用 Parallel 搜索实时网络并返回相关的可引用摘要。
+  llm: Search the live web for current facts and return relevant excerpts. Use 2-3 concise, related search queries when possible.
+parameters:
+  - name: objective
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Search Objective
+      zh_Hans: 搜索目标
+    human_description:
+      en_US: A focused description of the information to find.
+      zh_Hans: 对要查找的信息的明确描述。
+    llm_description: A focused, atomic description of the information to find, including preferred sources or freshness when relevant.
+  - name: search_queries
+    type: array
+    required: true
+    form: llm
+    label:
+      en_US: Search Queries
+      zh_Hans: 搜索查询
+    human_description:
+      en_US: One or more concise keyword queries related to the objective.
+      zh_Hans: 与目标相关的一个或多个简洁关键词查询。
+    llm_description: One or more related keyword queries, ideally 2-3 queries of 3-6 words each. Search operators are supported.
+  - name: session_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Session ID
+      zh_Hans: 会话 ID
+    human_description:
+      en_US: An optional session ID returned by an earlier Parallel search or fetch call.
+      zh_Hans: 先前 Parallel 搜索或获取调用返回的可选会话 ID。
+    llm_description: Reuse the session_id returned by an earlier Parallel web_search or web_fetch call in the same conversation. Leave blank on the first call.
+extra:
+  python:
+    source: tools/web_search.py

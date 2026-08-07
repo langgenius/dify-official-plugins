@@ -1,0 +1,19 @@
+credentials_for_provider: {}
+identity:
+  author: parallel
+  name: parallel
+  label:
+    en_US: Parallel
+    zh_Hans: Parallel
+  description:
+    en_US: Live web search and URL fetching for agents through Parallel Search MCP.
+    zh_Hans: 通过 Parallel Search MCP 为智能体提供实时网络搜索和 URL 内容获取。
+  icon: icon.svg
+  tags:
+    - search
+tools:
+  - tools/web_search.yaml
+  - tools/web_fetch.yaml
+extra:
+  python:
+    source: provider/parallel.py
