@@ -1,0 +1,23 @@
+model: xiaomi/mimo-v2-omni
+label:
+  en_US: MiMo-V2-Omni
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 128000
+    min: 1
+    max: 128000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.003999'
+  output: '0.019999'
+  currency: CNY
+  unit: '0.000001'

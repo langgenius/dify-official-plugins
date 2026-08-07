@@ -1,0 +1,24 @@
+model: anthropic/claude-haiku-4.5
+label:
+  en_US: Claude Haiku 4.5
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 200000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 64000
+    min: 1
+    max: 64000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.01'
+  output: '0.05'
+  currency: CNY
+  unit: '0.000001'
