@@ -1,18 +1,4 @@
 settings:
-  - name: aws_secret_access_key
-    type: secret-input
-    required: true
-    label:
-      en_US: AWS Secret Access Key
-      zh_Hans: AWS 秘密访问密钥
-      ja_Jp: AWS シークレットアクセスキー
-      pt_BR: Chave de Acesso Secreta da AWS
-    placeholder:
-      en_US: Please input your AWS Secret Access Key
-      zh_Hans: 请输入你的 AWS 秘密访问密钥
-      ja_Jp: あなたの AWS シークレットアクセスキーを入力してください
-      pt_BR: Por favor, insira sua Chave de Acesso Secreta da AWS
-
   - name: aws_access_key_id
     type: secret-input
     required: true
@@ -27,6 +13,34 @@ settings:
       ja_Jp: あなたの AWS アクセスキー ID を入力してください
       pt_BR: Por favor, insira seu ID da Chave de Acesso da AWS
 
+  - name: aws_secret_access_key
+    type: secret-input
+    required: true
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS 秘密访问密钥
+      ja_Jp: AWS シークレットアクセスキー
+      pt_BR: Chave de Acesso Secreta da AWS
+    placeholder:
+      en_US: Please input your AWS Secret Access Key
+      zh_Hans: 请输入你的 AWS 秘密访问密钥
+      ja_Jp: あなたの AWS シークレットアクセスキーを入力してください
+      pt_BR: Por favor, insira sua Chave de Acesso Secreta da AWS
+
+  - name: aws_session_token
+    type: secret-input
+    required: false
+    label:
+      en_US: AWS Session Token
+      zh_Hans: AWS 会话令牌
+      ja_Jp: AWS セッショントークン
+      pt_BR: Token de Sessão AWS
+    placeholder:
+      en_US: Optional - required for temporary/STS credentials
+      zh_Hans: 可选 - 临时/STS凭证需要此项
+      ja_Jp: オプション - 一時的/STS認証情報に必要
+      pt_BR: Opcional - necessário para credenciais temporárias/STS
+
   - name: region_name
     type: text-input
     required: true
@@ -40,6 +54,52 @@ settings:
       zh_Hans: 请输入你的 AWS 区域名称（例如：us-east-1）
       ja_Jp: あなたの AWS リージョン名を入力してください（例：us-east-1）
       pt_BR: Please input your AWS Region Name (e.g., us-east-1)
+
+  - name: knowledge_base_type
+    type: select
+    required: false
+    default: VECTOR
+    label:
+      en_US: Knowledge Base Type
+      zh_Hans: 知识库类型
+      ja_Jp: ナレッジベースタイプ
+      pt_BR: Tipo de Base de Conhecimento
+    options:
+      - value: MANAGED
+        label:
+          en_US: Managed (Recommended)
+          zh_Hans: 托管（推荐）
+          ja_Jp: マネージド（推奨）
+          pt_BR: Gerenciado (Recomendado)
+      - value: VECTOR
+        label:
+          en_US: Vector (Legacy)
+          zh_Hans: 向量（旧版）
+          ja_Jp: ベクター（レガシー）
+          pt_BR: Vetor (Legado)
+
+  - name: use_agentic_retrieval
+    type: select
+    required: false
+    default: "Yes"
+    label:
+      en_US: Use Agentic Retrieval
+      zh_Hans: 使用智能检索
+      ja_Jp: エージェント検索を使用
+      pt_BR: Usar Recuperação Agêntica
+    options:
+      - value: "Yes"
+        label:
+          en_US: "Yes"
+          zh_Hans: 是
+          ja_Jp: はい
+          pt_BR: Sim
+      - value: "No"
+        label:
+          en_US: "No"
+          zh_Hans: 否
+          ja_Jp: いいえ
+          pt_BR: Não
 
 endpoints:
   - endpoints/aws_bedrock_knowledge_base.yaml

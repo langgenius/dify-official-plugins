@@ -35,3 +35,31 @@ Follow these steps to connect your Dify Knowledge Base with AWS Bedrock Knowledg
 <img src="./_assets/retrieval_test.png" width="600" />
 
 
+
+## Managed Knowledge Base Support (New)
+
+This plugin now supports **Amazon Bedrock Managed Knowledge Bases** in addition to traditional vector-store-backed knowledge bases.
+
+### New Settings
+
+| Setting | Description |
+|---------|-------------|
+| **Knowledge Base Type** | Choose between `MANAGED` (Bedrock-managed KB) or `VECTOR` (traditional vector-store-backed KB). |
+| **AWS Session Token** | Optional session token for temporary AWS credentials (e.g., from STS AssumeRole). |
+| **Use Agentic Retrieval** | Toggle (`Yes`/`No`) to enable agentic retrieval mode. |
+
+### How It Works
+
+- **MANAGED type** — Uses `managedSearchConfiguration` when calling the Bedrock Knowledge Base API. No `overrideSearchType` is needed since the managed KB handles search configuration internally.
+- **VECTOR type** — Behaves as before, using the traditional vector store retrieval with optional `overrideSearchType`.
+
+### Agentic Retrieval
+
+When **Use Agentic Retrieval** is set to `Yes`, the plugin leverages Bedrock's agentic retrieval capabilities:
+
+- **Query decomposition** — Complex queries are automatically broken into sub-queries for more comprehensive retrieval.
+- **Managed reranking** — Results are reranked by Bedrock for improved relevance without requiring a separate reranker configuration.
+
+### Requirements
+
+- **boto3 >= 1.43** is required for agentic retrieval support. Earlier versions do not include the necessary API parameters.
