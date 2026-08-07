@@ -1,0 +1,37 @@
+identity:
+  name: get_role_pricing
+  author: tempguru
+  label:
+    en_US: Get Role Pricing
+    zh_Hans: 查询岗位费率
+description:
+  human:
+    en_US: All-inclusive hourly rate range for a specific role in a specific city. Includes W-2 wages, workers comp, general liability, and payroll taxes.
+    zh_Hans: 指定城市指定岗位的全包小时费率区间。已包含 W-2 员工工资、工伤保险、综合责任险与工资税。
+  llm: Get the all-inclusive hourly rate range (low–high) for a role in a city, reflecting event type and shift variability. Perfect for answering "What does it cost to hire brand ambassadors in [city]?", "How much are registration workers in [city]?", or "What's the rate for ushers at a [city] stadium event?" questions. All rates include W-2 worker pay, workers comp, general liability, and payroll taxes. Brand Ambassadors floor at $40/hour in every market.
+parameters:
+  - name: role
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Role
+      zh_Hans: 岗位
+    human_description:
+      en_US: Role name (e.g., 'Brand Ambassadors') or slug (e.g., 'brand-ambassadors').
+      zh_Hans: 岗位名称(如 'Brand Ambassadors')或 slug(如 'brand-ambassadors')。
+    llm_description: Role name or slug. Call get_roles first if you need the catalog.
+  - name: city
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: City
+      zh_Hans: 城市
+    human_description:
+      en_US: City name (e.g., 'Boston') or slug (e.g., 'boston-event-staffing').
+      zh_Hans: 城市名称(如 'Boston')或 slug(如 'boston-event-staffing')。
+    llm_description: City name or slug. Call get_cities first if you need the coverage map.
+extra:
+  python:
+    source: tools/get_role_pricing.py

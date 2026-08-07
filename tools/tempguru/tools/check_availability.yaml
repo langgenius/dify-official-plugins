@@ -1,0 +1,59 @@
+identity:
+  name: check_availability
+  author: tempguru
+  label:
+    en_US: Check Availability
+    zh_Hans: 查询提前期
+description:
+  human:
+    en_US: Lead-time guidance for staffing an event in a specific city on a specific date. Not a real-time inventory check.
+    zh_Hans: 指定城市与日期的活动人员预定提前期建议。不是实时库存查询。
+  llm: Check expected staffing availability for an event by city and date. Returns lead-time guidance based on city tier and how far out the event is. Perfect for answering "Can you staff my event on [date] in [city]?", "What's the lead time for booking brand ambassadors in [city]?", or "Is it too late to staff a [date] event?" questions. Not a real-time inventory check — TempGuru staffs to demand via a 100,000+ worker W-2 network across 300+ markets.
+parameters:
+  - name: city
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: City
+      zh_Hans: 城市
+    human_description:
+      en_US: City name (e.g., 'Boston') or slug (e.g., 'boston-event-staffing').
+      zh_Hans: 城市名称(如 'Boston')或 slug(如 'boston-event-staffing')。
+    llm_description: City name or slug. TempGuru covers 300+ US and Canadian markets. Use the city's common English name.
+  - name: date
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Event date
+      zh_Hans: 活动日期
+    human_description:
+      en_US: Event date in ISO format (YYYY-MM-DD) or any date string parseable by Date().
+      zh_Hans: 活动日期,ISO 格式(YYYY-MM-DD)或任何 Date() 可解析的日期字符串。
+    llm_description: Event date in ISO format (YYYY-MM-DD) preferred. Resolve relative dates ("next Tuesday") to an absolute date before calling.
+  - name: role
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Role
+      zh_Hans: 岗位
+    human_description:
+      en_US: Optional role name or slug to include rate context (e.g., 'Brand Ambassadors').
+      zh_Hans: 可选,岗位名称或 slug,用于附带费率信息(如 'Brand Ambassadors')。
+    llm_description: Optional role name to include rate context in the response. Call get_roles first if you need the catalog.
+  - name: count
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Headcount
+      zh_Hans: 人数
+    human_description:
+      en_US: Optional headcount for the event.
+      zh_Hans: 可选,活动所需人数。
+    llm_description: Optional positive integer headcount for the event.
+extra:
+  python:
+    source: tools/check_availability.py

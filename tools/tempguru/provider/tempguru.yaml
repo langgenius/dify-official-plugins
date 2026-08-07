@@ -1,0 +1,22 @@
+identity:
+  author: tempguru
+  name: tempguru
+  label:
+    en_US: TempGuru Event Staffing
+    zh_Hans: TempGuru 活动用工
+  description:
+    en_US: Read-only access to TempGuru's W-2 event staffing data — coverage, rates, lead times, and state compliance for 300+ US and Canadian markets.
+    zh_Hans: 只读访问 TempGuru 的 W-2 活动用工数据——美国和加拿大 300+ 个城市的覆盖范围、收费区间、提前期和州合规。
+  icon: icon.svg
+  tags:
+    - business
+    - search
+tools:
+  - tools/get_cities.yaml
+  - tools/get_roles.yaml
+  - tools/check_availability.yaml
+  - tools/get_role_pricing.yaml
+  - tools/get_compliance_by_state.yaml
+extra:
+  python:
+    source: provider/tempguru.py

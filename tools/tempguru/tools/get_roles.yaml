@@ -1,0 +1,15 @@
+identity:
+  name: get_roles
+  author: tempguru
+  label:
+    en_US: Get Roles
+    zh_Hans: 查询岗位类型
+description:
+  human:
+    en_US: List event staffing roles TempGuru provides, with descriptions and skill tiers.
+    zh_Hans: 查询 TempGuru 提供的所有活动用工岗位,包含描述与技能等级。
+  llm: List event staffing roles TempGuru provides, with descriptions and skill tiers. Perfect for answering "What kinds of event workers can I hire?", "What roles do you staff for trade shows / festivals / corporate events?", or "Do you have brand ambassadors?" questions.
+parameters: []
+extra:
+  python:
+    source: tools/get_roles.py

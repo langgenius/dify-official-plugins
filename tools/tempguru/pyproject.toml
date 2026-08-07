@@ -1,0 +1,14 @@
+[project]
+name = "tempguru"
+version = "0.0.1"
+description = "Read-only W-2 event staffing data for AI agents — TempGuru coverage, rates, lead-time guidance, and state compliance summaries across 300+ US and Canadian markets."
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.9.0",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = []

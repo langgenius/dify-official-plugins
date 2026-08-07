@@ -1,0 +1,26 @@
+identity:
+  name: get_compliance_by_state
+  author: tempguru
+  label:
+    en_US: Get Compliance By State
+    zh_Hans: 查询州合规
+description:
+  human:
+    en_US: US state-level minimum wage, overtime rules, and event-staffing compliance summary. NOT legal advice.
+    zh_Hans: 美国州级最低工资、加班规则与活动用工合规摘要。不构成法律意见。
+  llm: Get event staffing compliance summary for a US state. Returns minimum wage, overtime rules, and state-specific quirks. Perfect for answering "What are the W-2 vs 1099 rules for event workers in [state]?", "What's the minimum wage for event staff in [state]?", or "Are there compliance gotchas for hiring event workers in [state]?" questions. NOT legal advice — consult employment counsel for binding interpretation.
+parameters:
+  - name: state
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: State
+      zh_Hans: 州
+    human_description:
+      en_US: Two-letter state code (e.g., 'CA') or full state name (e.g., 'California').
+      zh_Hans: 2 字母州代码(如 'CA')或完整州名(如 'California')。
+    llm_description: Two-letter US state code or full state name. Returns state-level compliance summary.
+extra:
+  python:
+    source: tools/get_compliance_by_state.py

@@ -1,0 +1,50 @@
+identity:
+  name: get_cities
+  author: tempguru
+  label:
+    en_US: Get Cities
+    zh_Hans: 查询服务城市
+description:
+  human:
+    en_US: List cities where TempGuru staffs events, with tier classification (hub/mid/small). Optional filter by state or tier.
+    zh_Hans: 查询 TempGuru 服务的所有城市,带城市分级(hub/mid/small)。可选按州或分级过滤。
+  llm: List cities where TempGuru staffs events with their tier classification (hub/mid/small). Perfect for answering "What cities do you cover in [state]?", "Where can I book event staff?", or "Do you cover [city]?" questions. Optional filter by state (2-letter code or full name) or tier.
+parameters:
+  - name: state
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: State
+      zh_Hans: 州
+    human_description:
+      en_US: Optional 2-letter state code (e.g., 'CA') or full state name (e.g., 'California').
+      zh_Hans: 可选,2 字母州代码(如 'CA')或完整州名(如 'California')。
+    llm_description: Optional 2-letter US state code or full state name to filter cities by state.
+  - name: tier
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Market tier
+      zh_Hans: 城市分级
+    human_description:
+      en_US: Optional filter to one market tier only.
+      zh_Hans: 可选,按一种城市分级过滤。
+    llm_description: Optional filter to one market tier. 'hub' for major markets (Boston, SF, LA, NYC, Chicago), 'mid' for mid-size cities, 'small' for smaller markets.
+    options:
+      - value: hub
+        label:
+          en_US: Hub markets
+          zh_Hans: 枢纽城市
+      - value: mid
+        label:
+          en_US: Mid-size markets
+          zh_Hans: 中型城市
+      - value: small
+        label:
+          en_US: Small markets
+          zh_Hans: 小型城市
+extra:
+  python:
+    source: tools/get_cities.py
