@@ -1,0 +1,139 @@
+model: qwen3.8-max
+label:
+  zh_Hans: Qwen3.8 Max
+  en_US: Qwen3.8 Max
+model_type: llm
+features:
+  - vision
+  - video
+  - structured-output
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 991000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 0.6
+    min: 0.6
+    max: 1.99
+    help:
+      zh_Hans: 控制生成文本的随机性。Qwen3.8 Max 会将低于 0.6 的值按 0.6 处理。
+      en_US: Controls generation randomness. Qwen3.8 Max treats values below 0.6 as 0.6.
+  - name: max_completion_tokens
+    use_template: max_tokens
+    type: int
+    default: 128000
+    min: 1
+    max: 128000
+    help:
+      zh_Hans: 指定思维链与回复合计的最大 Token 数量。
+      en_US: Specifies the maximum total number of tokens for reasoning and the answer.
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: null
+    min: 0.01
+    max: 1.0
+    help:
+      zh_Hans: 核采样的概率阈值，取值范围为（0, 1.0]。值越大，生成结果越随机。
+      en_US: Nucleus sampling threshold in the range (0, 1.0]. Higher values increase randomness.
+  - name: top_k
+    type: int
+    default: 20
+    min: 0
+    max: 100
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    help:
+      zh_Hans: 每步生成时参与采样的候选 Token 数量。
+      en_US: The number of candidate tokens sampled at each generation step.
+  - name: seed
+    required: false
+    type: int
+    default: 1234
+    min: 0
+    max: 2147483647
+    label:
+      zh_Hans: 随机种子
+      en_US: Random seed
+    help:
+      zh_Hans: 用于尽可能复现相同输入与参数下的生成结果，取值范围为 [0, 2^31-1]。
+      en_US: Used to make generation reproducible where possible, in the range [0, 2^31-1].
+  - name: repetition_penalty
+    required: false
+    type: float
+    default: 1.05
+    label:
+      zh_Hans: 重复惩罚
+      en_US: Repetition penalty
+    help:
+      zh_Hans: 控制生成内容的重复度，必须大于 0；1.0 表示不惩罚。
+      en_US: Controls repetition and must be greater than 0; 1.0 applies no penalty.
+  - name: enable_search
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    help:
+      zh_Hans: 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑"自行判断"是否使用互联网搜索结果。
+      en_US: The model has a built-in Internet search service. This parameter controls whether the model refers to Internet search results when generating text. When Internet search is enabled, the model will use the search results as reference information in the text generation process, but the model will "judge" whether to use Internet search results based on its internal logic.
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: true
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+  - name: reasoning_effort
+    required: false
+    type: string
+    default: xhigh
+    options:
+      - low
+      - medium
+      - xhigh
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning effort
+    help:
+      zh_Hans: 思考模式的推理强度，分别对应 4096、16384 与 262144 个思维链 Token。
+      en_US: Reasoning effort, corresponding to 4096, 16384, or 262144 chain-of-thought tokens.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: extra_headers
+    required: false
+    type: string
+    label:
+      zh_Hans: 额外请求头，Json字符串格式
+      en_US: Extra Headers
+    help:
+      zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
+      en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
+# https://aihubmix.com/model/qwen3.8-max
+pricing:
+  input: '1.69'
+  output: '5.07'
+  unit: '0.000001'
+  currency: USD
