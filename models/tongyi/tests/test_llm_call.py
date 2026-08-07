@@ -51,7 +51,7 @@ def get_all_models() -> list[str]:
 def test_llm_invoke(model_name: str) -> None:
     api_key = os.getenv("DASHSCOPE_API_KEY")
     if not api_key:
-        pytest.skip("DASHSCOPE_API_KEY is not set")
+        pytest.skip("DASHSCOPE_API_KEY is required for live LLM invocation tests")
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:

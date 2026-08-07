@@ -1535,7 +1535,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dashscope", specifier = ">=1.25.18" },
+    { name = "dashscope", specifier = ">=1.25.18,<1.26.0" },
     { name = "dify-plugin", specifier = ">=0.9.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openai", specifier = ">=2.38.0" },

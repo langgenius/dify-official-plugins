@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from io import BytesIO, StringIO
+from collections.abc import AsyncIterator
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -79,16 +80,19 @@ def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
     recognition = MagicMock()
     recognition.call.return_value = result
 
-    with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio) as decode_mock:
-        with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
-            assert (
-                _model()._invoke(
-                    model="paraformer-realtime-v1",
-                    credentials={"dashscope_api_key": "test-key"},
-                    file=file_obj,
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "false"}):
+        with patch(
+            "models.speech2text.speech2text.AudioSegment.from_file", return_value=audio
+        ) as decode_mock:
+            with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
+                assert (
+                    _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={"dashscope_api_key": "test-key"},
+                        file=file_obj,
+                    )
+                    == "hello"
                 )
-                == "hello"
-            )
 
     decode_mock.assert_called_once()
     assert decode_mock.call_args.kwargs["format"] == "wav"
@@ -102,22 +106,72 @@ def test_invoke_normalizes_non_dict_sentences() -> None:
     recognition = MagicMock()
     recognition.call.return_value = result
 
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "false"}):
+        with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
+            with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
+                assert (
+                    _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={"dashscope_api_key": "test-key"},
+                        file=file_obj,
+                    )
+                    == "hello\nworld"
+                )
+
+
+def test_invoke_patches_dashscope_async_bridge_by_default(monkeypatch) -> None:
+    audio = MagicMock(frame_rate=16000)
+    result = MagicMock()
+    result.get_sentence.return_value = [{"text": "hello"}]
+    recognition = MagicMock()
+    recognition.call.return_value = result
+
+    monkeypatch.delenv("TONGYI_STT_SUBPROCESS", raising=False)
     with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
         with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
-            assert (
-                _model()._invoke(
-                    model="paraformer-realtime-v1",
-                    credentials={"dashscope_api_key": "test-key"},
-                    file=file_obj,
-                )
-                == "hello\nworld"
-            )
+            with patch(
+                "models.speech2text.speech2text._patch_dashscope_async_bridge_for_gevent"
+            ) as patch_mock:
+                with patch(
+                    "models.speech2text.speech2text._run_recognition_in_subprocess",
+                    side_effect=AssertionError("subprocess path should stay disabled"),
+                ) as run_mock:
+                    result_text = _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={"dashscope_api_key": "test-key"},
+                        file=_wav_file(),
+                    )
+
+    assert result_text == "hello"
+    patch_mock.assert_called_once()
+    run_mock.assert_not_called()
 
 
-def test_invoke_uses_subprocess_when_env_set() -> None:
+def test_dashscope_async_bridge_patch_yields_results() -> None:
+    import dashscope.common.utils as dashscope_utils
+    from models.speech2text import speech2text as st2
+
+    async def stream() -> AsyncIterator[str]:
+        yield "hello"
+        yield "world"
+
+    original_iter_over_async = dashscope_utils.iter_over_async
+    original_flag = st2._DASHSCOPE_ASYNC_BRIDGE_PATCHED
+    st2._DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
+    try:
+        st2._patch_dashscope_async_bridge_for_gevent()
+
+        assert list(dashscope_utils.iter_over_async(stream())) == ["hello", "world"]
+    finally:
+        dashscope_utils.iter_over_async = original_iter_over_async
+        st2._DASHSCOPE_ASYNC_BRIDGE_PATCHED = original_flag
+
+
+def test_invoke_uses_subprocess_when_env_is_true() -> None:
     from models.speech2text import speech2text as st2
 
     audio = MagicMock(frame_rate=16000)
+
     with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "1"}):
         with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
             with patch(
@@ -138,30 +192,6 @@ def test_invoke_uses_subprocess_when_env_set() -> None:
     assert api_key == "test-key"
     assert headers == dict(st2.BURY_POINT_HEADER)
     assert headers is not st2.BURY_POINT_HEADER
-
-
-def test_invoke_does_not_use_subprocess_when_env_is_zero() -> None:
-    audio = MagicMock(frame_rate=16000)
-    result = MagicMock()
-    result.get_sentence.return_value = [{"text": "hello"}]
-    recognition = MagicMock()
-    recognition.call.return_value = result
-
-    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "0"}):
-        with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
-            with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
-                with patch(
-                    "models.speech2text.speech2text._run_recognition_in_subprocess",
-                    side_effect=AssertionError("subprocess path should stay disabled"),
-                ) as run_mock:
-                    result_text = _model()._invoke(
-                        model="paraformer-realtime-v1",
-                        credentials={"dashscope_api_key": "test-key"},
-                        file=_wav_file(),
-                    )
-
-    assert result_text == "hello"
-    run_mock.assert_not_called()
 
 
 def test_invoke_raises_when_subprocess_returns_error() -> None:
