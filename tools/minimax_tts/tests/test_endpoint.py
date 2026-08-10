@@ -44,3 +44,29 @@ def test_no_hardcoded_host_left_in_api_calls():
                             assert "api.minimax.chat" not in part.value, (
                                 f"hardcoded host in f-string {py.name}:{node.lineno}"
                             )
+
+
+def test_validation_rejects_junk_key_and_names_the_endpoint():
+    """Unmocked, real-network: every MiniMax host answers HTTP 200 with a
+    base_resp error for a bad key, so before this change credential validation
+    PASSED with any junk key on any endpoint. Asserts the invoke path the
+    provider validates through now raises, naming the configured host."""
+    import dify_plugin  # noqa: F401  (gevent-patches ssl; must precede requests)
+    import pytest
+
+    from tools.tts import MinimaxTTS
+
+    for choice, host in (
+        ("legacy", "api.minimax.chat"),
+        ("china", "api.minimaxi.com"),
+        ("international", "api.minimax.io"),
+    ):
+        credentials = {
+            "group_id": "1234567890",
+            "api_key": "junk-invalid-on-purpose",
+            "api_endpoint": choice,
+        }
+        tool = MinimaxTTS.from_credentials(credentials)
+        with pytest.raises(Exception, match=host):
+            for _ in tool.invoke(tool_parameters={"text": "test"}):
+                pass
