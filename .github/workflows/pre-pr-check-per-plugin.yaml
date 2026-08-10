@@ -79,7 +79,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: 3.12.7
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
@@ -170,7 +170,7 @@ jobs:
             exit 0
           fi
 
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "$MARKETPLACE_TOKEN" --plugin-daemon-path .scripts/dify -u "$MARKETPLACE_BASE_URL" -f --test
+          uv run --with requests --with dify_plugin python .scripts/uploader -d "${{ matrix.plugin_path }}" -t "$MARKETPLACE_TOKEN" --plugin-daemon-path .scripts/dify -u "$MARKETPLACE_BASE_URL" -f --test
 
       - name: Package plugin
         run: |

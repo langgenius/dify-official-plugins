@@ -1,0 +1,65 @@
+identity:
+  name: "mai-image"
+  author: "langgenius"
+  label:
+    en_US: "Microsoft MAI Image"
+    zh_Hans: "微软 MAI Image"
+    pt_BR: "Microsoft MAI Image"
+    ja_JP: "Microsoft MAI Image"
+description:
+  human:
+    en_US: "Generate images with Microsoft MAI Image 2.5 or its faster Flash variant."
+    zh_Hans: "使用微软 MAI Image 2.5 或速度更快的 Flash 版本生成图像。"
+    pt_BR: "Gere imagens com o Microsoft MAI Image 2.5 ou a variante Flash."
+    ja_JP: "Microsoft MAI Image 2.5 または高速な Flash 版で画像を生成します。"
+  llm: "Generate one image with Microsoft MAI Image 2.5. Use Flash for lower latency."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of the image to generate"
+      zh_Hans: "描述要生成的图像"
+      pt_BR: "Descrição da imagem a gerar"
+      ja_JP: "生成する画像の説明"
+    llm_description: "Text prompt for image generation"
+    form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Choose quality or speed"
+      zh_Hans: "选择质量优先或速度优先"
+      pt_BR: "Escolha qualidade ou velocidade"
+      ja_JP: "品質または速度を選択"
+    llm_description: "MAI Image model selection"
+    form: form
+    default: "mai-image-2.5-flash"
+    options:
+      - value: "mai-image-2.5-flash"
+        label:
+          en_US: "MAI Image 2.5 Flash"
+          zh_Hans: "MAI Image 2.5 Flash"
+          pt_BR: "MAI Image 2.5 Flash"
+          ja_JP: "MAI Image 2.5 Flash"
+      - value: "mai-image-2.5"
+        label:
+          en_US: "MAI Image 2.5"
+          zh_Hans: "MAI Image 2.5"
+          pt_BR: "MAI Image 2.5"
+          ja_JP: "MAI Image 2.5"
+
+extra:
+  python:
+    source: tools/mai-image.py

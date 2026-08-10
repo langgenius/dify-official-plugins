@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Models that support prompt caching
 CACHE_SUPPORTED_MODELS = [
+    "anthropic.claude-opus-5",
     "anthropic.claude-sonnet-5",
     "anthropic.claude-fable-5",
     "anthropic.claude-opus-4-8",
@@ -26,6 +27,11 @@ CACHE_SUPPORTED_MODELS = [
 
 # Cache configuration for each model
 CACHE_CONFIG = {
+    "anthropic.claude-opus-5": {
+        "min_tokens": 512,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
     "anthropic.claude-sonnet-5": {
         "min_tokens": 4096,
         "max_checkpoints": 4,

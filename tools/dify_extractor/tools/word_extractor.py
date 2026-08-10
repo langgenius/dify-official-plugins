@@ -1,122 +1,67 @@
-"""Abstract interface for document loader implementations."""
+"""DOCX document extractor."""
 
 import logging
-import mimetypes
 import re
-import uuid
 from io import BytesIO
-from urllib.parse import urlparse
-import requests
-from dify_plugin import Tool
+
 from docx import Document as DocxDocument
 from docx.oxml.ns import qn
 from docx.text.run import Run
 
 from tools.document import Document, ExtractorResult
 from tools.extractor_base import BaseExtractor
+from tools.helpers import render_markdown_table
+from tools.image_assets import is_http_url
 
 logger = logging.getLogger(__name__)
 
 
 class WordExtractor(BaseExtractor):
-    """Load docx files.
-
-    Args:
-        tool: Tool instance
-        file_bytes: file bytes
-        file_name: file name
-        encoding: encoding
-        autodetect_encoding: autodetect encoding
-    """
-
-    def __init__(self, tool: Tool, file_bytes: bytes, file_name: str):
-        """Initialize with file path."""
-        self._file_bytes = file_bytes
-        self._file_name = file_name
-        self._tool = tool
-
     def extract(self) -> ExtractorResult:
-        """Load given path as single page."""
-        content, img_list = self.parse_docx(self._file_bytes)
+        content, img_list = self.parse_docx(self.context.file_bytes)
         return ExtractorResult(
             md_content=content,
-            documents=[
-                Document(page_content=content, metadata={"source": self._file_name})
-            ],
+            documents=[Document(page_content=content, metadata={"source": self.context.file_name})],
             img_list=img_list,
-            origin_result=None
         )
 
-    @staticmethod
-    def _is_valid_url(url: str) -> bool:
-        """Check if the url is valid."""
-        parsed = urlparse(url)
-        return bool(parsed.netloc) and bool(parsed.scheme)
-
     def _extract_images_from_docx(self, doc):
-        image_count = 0
         image_map = {}
         img_list = []
-        for rId, rel in doc.part.rels.items():
-            if "image" in rel.target_ref:
-                image_count += 1
-                if rel.is_external:
-                    url = rel.target_ref
-                    if not self._is_valid_url(url):
-                        continue
-                    try:
-                        response = requests.get(url)
-                    except requests.exceptions.RequestException as e:
-                        logger.exception("Failed to download image from URL: %s, error: %s", url, e)
-                        continue
-                    if response.status_code == 200:
-                        image_ext = mimetypes.guess_extension(
-                            response.headers["Content-Type"]
-                        )
-                        if image_ext is None:
-                            continue
-                        file_uuid = str(uuid.uuid4())
-                        file_name = file_uuid + "." + image_ext
-                        mime_type, _ = mimetypes.guess_type(file_name)
+        image_service = self.context.image_service
+        if image_service is None:
+            return image_map, img_list
 
-                        file_res = self._tool.session.file.upload(
-                            file_name, response.content, mime_type or "application/octet-stream"
-                        )
-                        image_map[rId] = f"![image]({file_res.preview_url})"
-                        img_list.append(file_res)
-                else:
-                    image_ext = rel.target_ref.split(".")[-1]
-                    if image_ext is None:
-                        continue
-                    # user uuid as file name
-                    file_uuid = str(uuid.uuid4())
-                    file_name = file_uuid + "." + image_ext
-                    mime_type, _ = mimetypes.guess_type(file_name)
-
-                    file_res = self._tool.session.file.upload(
-                        file_name, rel.target_part.blob, mime_type or "application/octet-stream"
-                    )
-
-                    image_map[rel.target_part] = f"![image]({file_res.preview_url})"
-                    img_list.append(file_res)
+        for relationship_id, relationship in doc.part.rels.items():
+            if "image" not in relationship.target_ref:
+                continue
+            if relationship.is_external:
+                asset = image_service.download_and_upload(relationship.target_ref)
+                map_key = relationship_id
+            else:
+                extension = relationship.target_ref.rsplit(".", 1)[-1]
+                asset = image_service.upload_embedded(
+                    relationship.target_part.blob,
+                    extension=extension,
+                    source=f"{self.context.file_name}:{relationship.target_ref}",
+                )
+                map_key = relationship.target_part
+            if asset:
+                image_map[map_key] = asset.markdown
+                img_list.append(asset.file)
+            elif relationship.is_external and is_http_url(relationship.target_ref):
+                image_map[map_key] = f"![image]({relationship.target_ref})"
 
         return image_map, img_list
 
     def _table_to_markdown(self, table, image_map):
-        markdown = ""
-        # calculate the total number of columns
+        if not table.rows:
+            return ""
         total_cols = max(len(row.cells) for row in table.rows)
-
         header_row = table.rows[0]
         headers = self._parse_row(header_row, image_map, total_cols)
-        markdown += "| " + " | ".join(headers) + " |\n"
-        markdown += "| " + " | ".join(["---"] * total_cols) + " |\n"
-
-        for row in table.rows[1:]:
-            row_cells = self._parse_row(row, image_map, total_cols)
-            markdown += "| " + " | ".join(row_cells) + " |\n"
-
-        return markdown
+        rows = [self._parse_row(row, image_map, total_cols) for row in table.rows[1:]]
+        return render_markdown_table(headers, rows)
 
     def _parse_row(self, row, image_map, total_cols):
         # Initialize a row, all of which are empty by default
@@ -171,22 +116,6 @@ class WordExtractor(BaseExtractor):
                 paragraph_content.append(run.text)
         return "".join(paragraph_content).strip()
 
-    def _parse_paragraph(self, paragraph, image_map):
-        paragraph_content = []
-        for run in paragraph.runs:
-            if run.element.xpath(".//a:blip"):
-                for blip in run.element.xpath(".//a:blip"):
-                    embed_id = blip.get(
-                        "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-                    )
-                    if embed_id:
-                        rel_target = run.part.rels[embed_id].target_ref
-                        if rel_target in image_map:
-                            paragraph_content.append(image_map[rel_target])
-            if run.text.strip():
-                paragraph_content.append(run.text.strip())
-        return " ".join(paragraph_content) if paragraph_content else ""
-
     def parse_docx(self, file_bytes):
         doc = DocxDocument(BytesIO(file_bytes))
 
@@ -208,7 +137,11 @@ class WordExtractor(BaseExtractor):
 
             def process_run(run, target_buffer):
                 # Helper to extract text and embedded images from a run element and append them to target_buffer
-                if hasattr(run.element, "tag") and isinstance(run.element.tag, str) and run.element.tag.endswith("r"):
+                if (
+                    hasattr(run.element, "tag")
+                    and isinstance(run.element.tag, str)
+                    and run.element.tag.endswith("r")
+                ):
                     # Process drawing type images
                     drawing_elements = run.element.findall(
                         ".//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing"
@@ -258,8 +191,8 @@ class WordExtractor(BaseExtractor):
                             )
                             if image_id and image_id in doc.part.rels:
                                 append_image_link(image_id, has_drawing, target_buffer)
-                if run.text.strip():
-                    target_buffer.append(run.text.strip())
+                if run.text:
+                    target_buffer.append(run.text)
 
             def process_hyperlink(hyperlink_elem, target_buffer):
                 # Helper to extract text from a hyperlink element and append it to target_buffer
@@ -310,7 +243,9 @@ class WordExtractor(BaseExtractor):
                         for instr in instr_texts:
                             if instr.text and "HYPERLINK" in instr.text:
                                 # Quick regex to extract URL
-                                match = re.search(r'HYPERLINK\s+"([^"]+)"', instr.text, re.IGNORECASE)
+                                match = re.search(
+                                    r'HYPERLINK\s+"([^"]+)"', instr.text, re.IGNORECASE
+                                )
                                 if match:
                                     hyperlink_field_url = match.group(1)
 
@@ -340,28 +275,28 @@ class WordExtractor(BaseExtractor):
                                 is_collecting_field_text = False
 
                     # Decide where to append content
-                    target_buffer = hyperlink_field_text_parts if is_collecting_field_text else paragraph_content
+                    target_buffer = (
+                        hyperlink_field_text_parts
+                        if is_collecting_field_text
+                        else paragraph_content
+                    )
                     process_run(run, target_buffer)
                 elif tag == qn("w:hyperlink"):
                     process_hyperlink(child, paragraph_content)
-            return "".join(paragraph_content) if paragraph_content else ""
+            return "".join(paragraph_content).strip() if paragraph_content else ""
 
         paragraphs = doc.paragraphs.copy()
         tables = doc.tables.copy()
         for element in doc.element.body:
             if hasattr(element, "tag"):
-                if isinstance(element.tag, str) and element.tag.endswith(
-                    "p"
-                ):  # paragraph
+                if isinstance(element.tag, str) and element.tag.endswith("p"):  # paragraph
                     para = paragraphs.pop(0)
                     parsed_paragraph = parse_paragraph(para)
                     if parsed_paragraph.strip():
                         content.append(parsed_paragraph)
                     else:
                         content.append("\n")
-                elif isinstance(element.tag, str) and element.tag.endswith(
-                    "tbl"
-                ):  # table
+                elif isinstance(element.tag, str) and element.tag.endswith("tbl"):  # table
                     table = tables.pop(0)
                     content.append(self._table_to_markdown(table, image_map))
-        return "\n".join(content), img_list
+        return "\n".join(content).strip(), img_list

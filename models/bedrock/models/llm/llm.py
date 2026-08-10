@@ -85,6 +85,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "jp.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "au.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
@@ -106,6 +108,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
     # These do NOT go through the standard Converse API path.
     _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-5.6-sol",
+        "openai.gpt-5.6-terra",
+        "openai.gpt-5.6-luna",
         "openai.gpt-5.5",
         "openai.gpt-5.4",
     })
@@ -1549,9 +1554,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # need workaround for ai21 models which doesn't support streaming
         if stream and model_prefix != "ai21":
-            invoke = runtime_client.invoke_model_with_response_stream
+            invoke = bedrock_client.invoke_model_with_response_stream
         else:
-            invoke = runtime_client.invoke_model
+            invoke = bedrock_client.invoke_model
 
         try:
             body_jsonstr = json.dumps(payload)
@@ -1567,8 +1572,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        # Re-raise any other exception (NameError, TypeError, ValueError, etc.) so
+        # real bugs surface instead of being wrapped in a generic InvokeError.
+        # The previous bare `except Exception` swallowed an undefined-name
+        # bug and re-raised as InvokeError, hiding the root cause from the
+        # caller and from any future maintainer reading the call site. See
+        # issue #3564.
 
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
@@ -1856,10 +1865,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Create model name mapping for individual model files
         model_name_mapping = {
             # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            'GPT-5.6 Sol': 'gpt-5-6-sol',
+            'GPT-5.6 Terra': 'gpt-5-6-terra',
+            'GPT-5.6 Luna': 'gpt-5-6-luna',
             'GPT-5.5': 'gpt-5-5',
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
             'Claude 4.8 Opus': 'claude-4-8-opus',
@@ -2133,12 +2146,32 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             params["max_output_tokens"] = model_parameters["max_tokens"]
         if "temperature" in model_parameters:
             params["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters:
-            params["top_p"] = model_parameters["top_p"]
+        # NOTE: top_p is intentionally NOT forwarded on the bedrock-mantle path.
+        # GPT-5.5 / GPT-5.6 reject top_p outright (400 unsupported_parameter), and
+        # even GPT-5.4 rejects it once reasoning is active (which it is by default
+        # here). These are reasoning models driven by reasoning_effort, so top_p
+        # does not apply. It remains in openai.yaml only for the GPT OSS Converse
+        # models, which are handled on a separate code path.
+        # GPT-5.6/5.5/5.4 reasoning models: pass reasoning effort through the
+        # Responses API. Effort values: none, low, medium, high, xhigh, max.
+        reasoning_effort = model_parameters.get("reasoning_effort")
+        if reasoning_effort:
+            params["reasoning"] = {"effort": reasoning_effort}
 
         # Store model_name for pricing calculation, deriving it from model_id if not set.
         credentials_for_pricing = credentials.copy()
-        resolved_model_name = model_name or ("GPT-5.5" if "gpt-5.5" in model_id else "GPT-5.4")
+        if model_name:
+            resolved_model_name = model_name
+        elif "gpt-5.6-sol" in model_id:
+            resolved_model_name = "GPT-5.6 Sol"
+        elif "gpt-5.6-terra" in model_id:
+            resolved_model_name = "GPT-5.6 Terra"
+        elif "gpt-5.6-luna" in model_id:
+            resolved_model_name = "GPT-5.6 Luna"
+        elif "gpt-5.5" in model_id:
+            resolved_model_name = "GPT-5.5"
+        else:
+            resolved_model_name = "GPT-5.4"
         credentials_for_pricing["model_parameters"] = {
             **credentials_for_pricing.get("model_parameters", {}),
             "model_name": resolved_model_name,

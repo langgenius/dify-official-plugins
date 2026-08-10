@@ -8,6 +8,7 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude 5': {
+        'Opus 5': 'anthropic.claude-opus-5',
         'Sonnet 5': 'anthropic.claude-sonnet-5',
         'Fable 5': 'anthropic.claude-fable-5',
     },
@@ -74,6 +75,9 @@ BEDROCK_MODEL_IDS = {
         'Qwen3 Coder 30B': 'qwen.qwen3-coder-30b-a3b-v1:0'
     },
     'openai': {
+        'GPT-5.6 Sol': 'openai.gpt-5.6-sol',
+        'GPT-5.6 Terra': 'openai.gpt-5.6-terra',
+        'GPT-5.6 Luna': 'openai.gpt-5.6-luna',
         'GPT-5.5': 'openai.gpt-5.5',
         'GPT-5.4': 'openai.gpt-5.4',
         'GPT OSS 120B': 'openai.gpt-oss-120b-1:0',
@@ -92,6 +96,9 @@ def is_support_cross_region(model_id):
         "openai.gpt-oss-20b-1:0",
         "openai.gpt-5.5",
         "openai.gpt-5.4",
+        "openai.gpt-5.6-sol",
+        "openai.gpt-5.6-terra",
+        "openai.gpt-5.6-luna",
     ]
     return model_id not in unsupport_model_list
 
@@ -137,15 +144,21 @@ def get_region_area(region_name, prefer_global=False):
 
 # Claude 5 generation models are invocable ONLY through inference profiles
 # (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
-# converse returns ValidationException) and, unlike earlier Claude models,
-# only 'us' and 'global' profiles exist — there are no eu./apac. geo
-# profiles. See the model cards:
+# converse returns ValidationException). Geo profile coverage varies per
+# model (live-verified via list-inference-profiles): Opus 5 and Sonnet 5
+# have us./eu./au. geo profiles, Fable 5 only us. — there is no apac. geo
+# profile for any of them. See the model cards:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
 CLAUDE5_PROFILE_PREFIXES = {
-    'anthropic.claude-sonnet-5': ('us', 'global'),
+    'anthropic.claude-opus-5': ('us', 'eu', 'au', 'global'),
+    'anthropic.claude-sonnet-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-fable-5': ('us', 'global'),
 }
+
+# AWS regions served by the 'au' geographic inference profile
+_AU_REGIONS = {'ap-southeast-2', 'ap-southeast-4'}
 
 CLAUDE5_REFUSAL_FALLBACK_BASE_ID = 'anthropic.claude-opus-4-8'
 
@@ -200,6 +213,10 @@ def resolve_claude5_profile_id(model_id, cross_region, region_name):
         # The US geo profile serves Canadian source regions (per model card)
         if area is None and region_name.startswith('ca-'):
             area = 'us'
+        # Australian regions are served by the 'au' geo profile (there is no
+        # apac. profile for Claude 5 models)
+        if area == 'apac' and region_name in _AU_REGIONS and 'au' in allowed:
+            area = 'au'
         if area in allowed:
             return f"{area}.{model_id}"
         raise ValueError(

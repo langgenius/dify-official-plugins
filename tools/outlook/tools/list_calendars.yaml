@@ -1,0 +1,40 @@
+identity:
+  name: list_calendars
+  display_name: List Calendars
+  author: Dify
+  label:
+    en_US: List Calendars
+    zh_Hans: 列出日历
+    pt_BR: Listar Calendários
+    ja_JP: カレンダー一覧
+    zh_Hant: 列出行事曆
+description:
+  human:
+    en_US: List the calendars in your Outlook account
+    zh_Hans: 列出您的 Outlook 账户中的日历
+    pt_BR: Listar os calendários da sua conta do Outlook
+    ja_JP: Outlook アカウントのカレンダーを一覧表示
+    zh_Hant: 列出您的 Outlook 帳戶中的行事曆
+  llm: List the users Outlook calendars using Microsoft Graph API
+parameters:
+  - name: top
+    type: number
+    required: false
+    default: 50
+    label:
+      en_US: Top
+      zh_Hans: 数量
+      pt_BR: Quantidade
+      ja_JP: 件数
+      zh_Hant: 數量
+    human_description:
+      en_US: Maximum number of calendars to return
+      zh_Hans: 要返回的最大日历数
+      pt_BR: Número máximo de calendários a retornar
+      ja_JP: 返すカレンダーの最大数
+      zh_Hant: 要返回的最大行事曆數
+    llm_description: Maximum number of calendars to return, default is 50
+    form: llm
+extra:
+  python:
+    source: tools/list_calendars.py

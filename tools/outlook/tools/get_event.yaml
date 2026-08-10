@@ -1,0 +1,39 @@
+identity:
+  name: get_event
+  display_name: Get Event
+  author: Dify
+  label:
+    en_US: Get Event
+    zh_Hans: 获取事件
+    pt_BR: Obter Evento
+    ja_JP: イベント取得
+    zh_Hant: 取得事件
+description:
+  human:
+    en_US: Get the details of a calendar event from your Outlook account
+    zh_Hans: 获取您的 Outlook 账户中日历事件的详细信息
+    pt_BR: Obter os detalhes de um evento de calendário da sua conta do Outlook
+    ja_JP: Outlook アカウントのカレンダーイベントの詳細を取得
+    zh_Hant: 取得您的 Outlook 帳戶中行事曆事件的詳細資訊
+  llm: Get the details of a single calendar event from the users Outlook account using Microsoft Graph API
+parameters:
+  - name: event_id
+    type: string
+    required: true
+    label:
+      en_US: Event ID
+      zh_Hans: 事件 ID
+      pt_BR: ID do Evento
+      ja_JP: イベント ID
+      zh_Hant: 事件 ID
+    human_description:
+      en_US: The ID of the event to retrieve
+      zh_Hans: 要检索的事件的 ID
+      pt_BR: O ID do evento a recuperar
+      ja_JP: 取得するイベントの ID
+      zh_Hant: 要檢索的事件的 ID
+    llm_description: The ID of the event to retrieve
+    form: llm
+extra:
+  python:
+    source: tools/get_event.py

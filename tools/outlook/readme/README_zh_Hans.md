@@ -137,6 +137,9 @@ The plugin requires the following Microsoft Graph API permissions:
 - Mail.Read: For reading emails
 - Mail.Send: For sending emails
 - Mail.ReadWrite: For updating email properties (flags, priority)
+- Calendars.ReadWrite: For calendar events (list/create/get/update/delete) — added in 0.3.0
+
+> Calendar tools (0.3.0): `list_calendars`, `list_events`, `create_event`, `get_event`, `update_event`, `delete_event`. Existing installs will be asked to re-authorize once to grant the new `Calendars.ReadWrite` scope.
 
 ### Security Benefits
 - **No shared credentials**: Users authenticate directly with Microsoft
@@ -299,6 +302,9 @@ ID draft123のドラフトを送信
 - Mail.Read：用于读取邮件
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
+- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+
+> 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
 
 ### セキュリティの利点
 - **无共享凭据**：用户直接通过Microsoft认证
@@ -461,6 +467,9 @@ ID draft123のドラフトを送信
 - Mail.Read：用于读取邮件
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
+- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+
+> 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
 
 ### 安全优势
 - **无共享凭据**：用户直接通过Microsoft认证

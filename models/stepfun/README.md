@@ -1,10 +1,11 @@
 # Stepfun
 
-Models provided by stepfun, such as step-1-8k, step-1-32k、step-1v-8k、step-1v-32k, step-1-128k and step-1-256k.
+Official StepFun model provider plugin for Dify.
 
 ## Features
 - Provides llm models in Dify.
-- Includes predefined llm models such as step-1-flash, step-1v-32k, step-1-8k.
+- Adds predefined support for `step-3.7-flash`.
+- Supports tool calling, reasoning controls, structured output, and multimodal input for Step 3.7 Flash.
 - Supports predefined model and customizable model configuration.
 
 ## Setup

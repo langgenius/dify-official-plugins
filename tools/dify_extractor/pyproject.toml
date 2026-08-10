@@ -1,19 +1,17 @@
 [project]
 name = "dify_extractor"
 version = "0.1.0"
-description = "Add your description here"
+description = "Extract structured Markdown and documents from common file formats for Dify"
 readme = "README.md"
 requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify_plugin>=0.9.0",
-    "pandas[excel,output-formatting,performance]>=3.0.3",
     "chardet>=7.4.3",
     "python-docx>=1.2.0",
     "python-pptx>=1.0.2",
     "openpyxl>=3.1.5",
-    "bs4>=0.0.2",
     "xlrd>=2.0.2",
     "pypdfium2>=5.8.0",
     "requests>=2.34.2",
@@ -22,8 +20,16 @@ dependencies = [
     "beautifulsoup4>=4.14.3",
 ]
 
-# uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "ruff>=0.14.0",
+    "xlwt>=1.3.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

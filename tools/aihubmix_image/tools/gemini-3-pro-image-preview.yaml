@@ -8,8 +8,8 @@ identity:
     ja_JP: "Gemini Nano Banana"
 description:
   human:
-    en_US: "Gemini Nano Banana family. Pro (gemini-3-pro-image-preview) is highest quality with multi-image reference; 2 / Flash (gemini-3.1-flash-image-preview) is faster. Supports text-to-image, image-to-image, and multi-image references."
-    zh_Hans: "Gemini Nano Banana 系列。Pro（gemini-3-pro-image-preview）质量最高，支持多图参考；2 / Flash（gemini-3.1-flash-image-preview）速度更快。覆盖文生图、图生图与多图参考三种模式。"
+    en_US: "Gemini Nano Banana family. Stable Pro and Flash models are preferred; preview IDs remain available for compatibility. Supports text-to-image, image-to-image, and multi-image references."
+    zh_Hans: "Gemini Nano Banana 系列。优先使用稳定版 Pro 与 Flash，同时保留 Preview ID 兼容旧工作流。支持文生图、图生图与多图参考。"
     pt_BR: "Família Gemini Nano Banana. Pro (gemini-3-pro-image-preview) entrega a maior qualidade com referência multi-imagem; 2 / Flash (gemini-3.1-flash-image-preview) é mais rápido. Suporta texto-para-imagem, imagem-para-imagem e referência multi-imagem."
     ja_JP: "Gemini Nano Banana シリーズ。Pro（gemini-3-pro-image-preview）は最高品質で複数画像の参照に対応、2 / Flash（gemini-3.1-flash-image-preview）はより高速。テキストから画像、画像から画像、複数画像参照に対応。"
   llm: "Generate or transform images with Gemini Nano Banana series. Use Pro for highest quality and multi-reference scenes, Flash (Nano Banana 2) for faster output. Image inputs accept URL, base64, or Dify file variables."
@@ -47,6 +47,18 @@ parameters:
     form: form
     default: "gemini-3-pro-image-preview"
     options:
+      - value: "gemini-3-pro-image"
+        label:
+          en_US: "Nano Banana Pro (gemini-3-pro-image)"
+          zh_Hans: "Nano Banana Pro (gemini-3-pro-image)"
+          pt_BR: "Nano Banana Pro (gemini-3-pro-image)"
+          ja_JP: "Nano Banana Pro (gemini-3-pro-image)"
+      - value: "gemini-3.1-flash-image"
+        label:
+          en_US: "Nano Banana 2 (gemini-3.1-flash-image)"
+          zh_Hans: "Nano Banana 2 (gemini-3.1-flash-image)"
+          pt_BR: "Nano Banana 2 (gemini-3.1-flash-image)"
+          ja_JP: "Nano Banana 2 (gemini-3.1-flash-image)"
       - value: "gemini-3-pro-image-preview"
         label:
           en_US: "Nano Banana Pro (gemini-3-pro-image-preview)"
@@ -169,18 +181,6 @@ parameters:
           zh_Hans: "4:3 (横版)"
           pt_BR: "4:3 (Paisagem)"
           ja_JP: "4:3 (横長)"
-      - value: "4:5"
-        label:
-          en_US: "4:5 (Portrait)"
-          zh_Hans: "4:5 (竖版)"
-          pt_BR: "4:5 (Retrato)"
-          ja_JP: "4:5 (縦長)"
-      - value: "5:4"
-        label:
-          en_US: "5:4 (Landscape)"
-          zh_Hans: "5:4 (横版)"
-          pt_BR: "5:4 (Paisagem)"
-          ja_JP: "5:4 (横長)"
       - value: "9:16"
         label:
           en_US: "9:16 (Portrait)"
@@ -235,42 +235,6 @@ parameters:
           zh_Hans: "4K (超高)"
           pt_BR: "4K (Ultra Alto)"
           ja_JP: "4K (超高)"
-
-  - name: image_format
-    type: select
-    required: false
-    label:
-      en_US: "Image Format"
-      zh_Hans: "图片格式"
-      pt_BR: "Formato de Imagem"
-      ja_JP: "画像フォーマット"
-    human_description:
-      en_US: "Output image format"
-      zh_Hans: "输出图片格式"
-      pt_BR: "Formato de saída da imagem"
-      ja_JP: "出力画像フォーマット"
-    llm_description: "Image format for Gemini 3 Pro Image Preview generation"
-    form: form
-    default: "png"
-    options:
-      - value: "png"
-        label:
-          en_US: "PNG"
-          zh_Hans: "PNG"
-          pt_BR: "PNG"
-          ja_JP: "PNG"
-      - value: "jpeg"
-        label:
-          en_US: "JPEG"
-          zh_Hans: "JPEG"
-          pt_BR: "JPEG"
-          ja_JP: "JPEG"
-      - value: "webp"
-        label:
-          en_US: "WebP"
-          zh_Hans: "WebP"
-          pt_BR: "WebP"
-          ja_JP: "WebP"
 
   - name: use_google_search
     type: boolean

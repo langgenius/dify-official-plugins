@@ -1,73 +1,43 @@
-"""YAML document extractor implementation."""
+"""YAML document extractor."""
 
 import yaml
-from typing import Optional
 
-from tools.extractor_base import BaseExtractor
-from tools.helpers import detect_file_encodings
 from tools.document import Document, ExtractorResult
+from tools.errors import ExtractionError
+from tools.extractor_base import BaseExtractor
+from tools.helpers import decode_text
 
 
 class YAMLExtractor(BaseExtractor):
-    """Load YAML files.
-
-    Args:
-        file_bytes: file bytes.
-        file_name: file name.
-        encoding: encoding.
-        autodetect_encoding: autodetect encoding.
-    """
-
-    def __init__(
-        self,
-        file_bytes: bytes,
-        file_name: str,
-        encoding: Optional[str] = None,
-        autodetect_encoding: bool = False,
-    ):
-        """Initialize with file bytes."""
-        self._file_bytes = file_bytes
-        self._file_name = file_name
-        self._encoding = encoding
-        self._autodetect_encoding = autodetect_encoding
-
     def extract(self) -> ExtractorResult:
-        """Extract YAML content and format as markdown."""
-        text = ""
-        try:
-            # Decode bytes to text
-            text = self._file_bytes.decode(self._encoding if self._encoding else "utf-8")
-        except UnicodeDecodeError as e:
-            if self._autodetect_encoding:
-                detected_encodings = detect_file_encodings(self._file_bytes)
-                for encoding in detected_encodings:
-                    try:
-                        text = self._file_bytes.decode(encoding.encoding if encoding.encoding else "utf-8")
-                        break
-                    except UnicodeDecodeError:
-                        continue
-            else:
-                raise RuntimeError(f"Error decoding {self._file_name}") from e
-        except Exception as e:
-            raise RuntimeError(f"Error loading {self._file_name}") from e
-
-        # Parse YAML and format as markdown
+        text = decode_text(self.context.file_bytes, self.context.file_name)
+        if not text.strip() or all(
+            not line.strip() or line.lstrip().startswith("#") for line in text.splitlines()
+        ):
+            raise ExtractionError(f"File '{self.context.file_name}' contains no YAML content.")
         try:
             yaml_data = yaml.safe_load(text)
-            # Convert back to YAML with proper formatting
-            formatted_yaml = yaml.dump(yaml_data, default_flow_style=False, allow_unicode=True, indent=2)
-            
-            # Format as markdown code block
-            md_content = f"```yaml\n{formatted_yaml}```"
-            
-        except yaml.YAMLError as e:
-            # If YAML parsing fails, return the raw text with error info
-            md_content = f"# YAML Parse Error\n\nError: {str(e)}\n\n## Raw Content\n\n```\n{text}\n```"
-        except Exception as e:
-            raise RuntimeError(f"Error parsing YAML in {self._file_name}") from e
+        except yaml.YAMLError as exc:
+            mark = getattr(exc, "problem_mark", None)
+            location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
+            raise ExtractionError(
+                f"File '{self.context.file_name}' contains invalid YAML{location}."
+            ) from exc
 
-        metadata = {"source": self._file_name, "type": "yaml"}
+        formatted_yaml = yaml.safe_dump(
+            yaml_data,
+            allow_unicode=True,
+            default_flow_style=False,
+            indent=2,
+            sort_keys=False,
+        )
+        md_content = f"```yaml\n{formatted_yaml}```"
         return ExtractorResult(
-            md_content=md_content, 
-            documents=[Document(page_content=md_content, metadata=metadata)]
+            md_content=md_content,
+            documents=[
+                Document(
+                    page_content=md_content,
+                    metadata={"source": self.context.file_name, "type": "yaml"},
+                )
+            ],
         )

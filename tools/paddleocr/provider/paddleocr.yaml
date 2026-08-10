@@ -33,7 +33,7 @@ credentials_for_provider:
         help:
             en_US: Get your AI Studio access token
             zh_Hans: 获取星河社区访问令牌
-        url: https://aistudio.baidu.com/index/accessToken
+        url: https://aistudio.baidu.com/account/accessToken
     base_url:
         type: text-input
         required: false

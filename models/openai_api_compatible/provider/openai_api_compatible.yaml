@@ -270,6 +270,44 @@ model_credential_schema:
       help:
         en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
         zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
+    - variable: web_search_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Web Search Support
+        zh_Hans: 联网搜索支持
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: not_supported
+          label:
+            en_US: Not Supported
+            zh_Hans: 不支持
+        - value: tool_standard
+          label:
+            en_US: Standard Tools Format
+            zh_Hans: 标准 Tools 格式
+        - value: tool_simple
+          label:
+            en_US: Simple Tools Format
+            zh_Hans: 简单 Tools 格式
+        - value: parameter
+          label:
+            en_US: Parameter Format
+            zh_Hans: 参数格式
+      help:
+        en_US: >
+          Configure web search support and format. 
+          Standard Tools: {"type": "web_search", "web_search": {"enable": true}} (ZhipuAI, Baichuan). 
+          Simple Tools: {"type": "web_search"} (Volcengine). 
+          Parameter: {"web_search": true} as a top-level parameter.
+        zh_Hans: >
+          配置联网搜索支持和格式。
+          标准 Tools 格式: {"type": "web_search", "web_search": {"enable": true}} (智谱AI、百川)。
+          简单 Tools 格式: {"type": "web_search"} (火山引擎)。
+          参数格式: {"web_search": true} 作为顶层参数。
     - variable: compatibility_mode
       show_on:
         - variable: __model_type
@@ -318,6 +356,34 @@ model_credential_schema:
       help:
         en_US: Some OpenAI-compatible endpoints require max_completion_tokens (Responses API). Choose explicitly if auto-detection is wrong.
         zh_Hans: 一些兼容端要求使用 max_completion_tokens（Responses API）。若自动判断不准确，可在此显式指定。
+    - variable: user_identity_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: User Identity Support
+        zh_Hans: 用户标识支持
+      type: select
+      required: false
+      default: support
+      help:
+        en_US: >
+          Whether the endpoint accepts the optional top-level user parameter.
+          Some OpenAI-compatible gateways reject it as an unsupported parameter.
+          Choose Not Support to omit it from the request body.
+        zh_Hans: >
+          端点是否接受可选的顶层 user 参数。
+          部分 OpenAI 兼容网关会将其视为不支持的参数而拒绝请求。
+          选择「不支持」可将其从请求体中省略。
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
     - variable: function_calling_type
       show_on:
         - variable: __model_type
@@ -519,6 +585,69 @@ model_credential_schema:
       help:
         en_US: "List voice names separated by commas. First voice will be used as default."
         zh_Hans: "用英文逗号分隔的声音列表。第一个声音将作为默认值。"
+    - variable: tts_api_format
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: TTS API Format
+        zh_Hans: TTS API 格式
+      type: select
+      required: false
+      default: openai
+      options:
+        - value: openai
+          label:
+            en_US: OpenAI Compatible
+            zh_Hans: OpenAI 兼容
+        - value: byteplus
+          label:
+            en_US: BytePlus TTS
+            zh_Hans: BytePlus TTS
+      help:
+        en_US: "Select the TTS API format. Use 'BytePlus TTS' for BytePlus/Volcengine TTS services."
+        zh_Hans: "选择 TTS API 格式。使用 'BytePlus TTS' 适配 BytePlus/火山引擎 TTS 服务。"
+    - variable: tts_resource_id
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Resource ID (BytePlus)
+        zh_Hans: Resource ID (BytePlus)
+      type: text-input
+      required: false
+      placeholder:
+        en_US: "e.g. seed-tts-2.0 (optional, defaults to model name)"
+        zh_Hans: "例如 seed-tts-2.0（可选，默认使用模型名称）"
+      help:
+        en_US: "BytePlus TTS Resource ID. If empty, the model name will be used."
+        zh_Hans: "BytePlus TTS 的 Resource ID。留空则使用模型名称。"
+    - variable: tts_sample_rate
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Sample Rate (BytePlus)
+        zh_Hans: 采样率 (BytePlus)
+      type: select
+      required: false
+      default: "24000"
+      options:
+        - value: "24000"
+          label:
+            en_US: "24000 Hz"
+            zh_Hans: "24000 Hz"
+        - value: "16000"
+          label:
+            en_US: "16000 Hz"
+            zh_Hans: "16000 Hz"
+        - value: "8000"
+          label:
+            en_US: "8000 Hz"
+            zh_Hans: "8000 Hz"
+      help:
+        en_US: "Audio sample rate for BytePlus TTS output."
+        zh_Hans: "BytePlus TTS 输出的音频采样率。"
     - variable: document_prefix
       label:
         zh_Hans: 文档前缀

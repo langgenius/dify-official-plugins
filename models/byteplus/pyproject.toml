@@ -1,7 +1,7 @@
 [project]
 name = "byteplus"
 version = "0.0.1"
-description = "BytePlus ModelArk multimodal model invocation"
+description = "SOTA video and image generation model provided by BytePlus"
 readme = "README.md"
 requires-python = ">=3.12"
 

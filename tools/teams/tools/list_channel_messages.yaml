@@ -1,0 +1,73 @@
+identity:
+  name: list_channel_messages
+  author: langgenius
+  label:
+    en_US: List Channel Messages
+    zh_Hans: 列出频道消息
+    pt_BR: Listar Mensagens do Canal
+    ja_JP: チャネルメッセージ一覧
+    zh_Hant: 列出頻道訊息
+description:
+  human:
+    en_US: List messages from a Microsoft Teams channel
+    zh_Hans: 列出 Microsoft Teams 频道中的消息
+    pt_BR: Listar mensagens de um canal do Microsoft Teams
+    ja_JP: Microsoft Teams のチャネルのメッセージを一覧表示
+    zh_Hant: 列出 Microsoft Teams 頻道中的訊息
+  llm: List messages from a Microsoft Teams channel using the Microsoft Graph API, returns message id, from, body content and createdDateTime
+parameters:
+  - name: team_id
+    type: string
+    required: true
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チーム ID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: The ID of the team that owns the channel
+      zh_Hans: 拥有该频道的团队 ID
+      pt_BR: O ID da equipe que possui o canal
+      ja_JP: チャネルを所有するチームの ID
+      zh_Hant: 擁有該頻道的團隊 ID
+    llm_description: The ID of the Microsoft Teams team that owns the target channel
+    form: llm
+  - name: channel_id
+    type: string
+    required: true
+    label:
+      en_US: Channel ID
+      zh_Hans: 频道 ID
+      pt_BR: ID do Canal
+      ja_JP: チャネル ID
+      zh_Hant: 頻道 ID
+    human_description:
+      en_US: The ID of the channel to list messages from
+      zh_Hans: 要列出消息的频道 ID
+      pt_BR: O ID do canal para listar as mensagens
+      ja_JP: メッセージを一覧表示するチャネルの ID
+      zh_Hant: 要列出訊息的頻道 ID
+    llm_description: The ID of the Microsoft Teams channel to list messages from
+    form: llm
+  - name: top
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Top
+      zh_Hans: 数量
+      pt_BR: Quantidade
+      ja_JP: 件数
+      zh_Hant: 數量
+    human_description:
+      en_US: The maximum number of messages to return
+      zh_Hans: 要返回的最大消息数
+      pt_BR: O número máximo de mensagens a retornar
+      ja_JP: 返すメッセージの最大数
+      zh_Hant: 要返回的最大訊息數
+    llm_description: The maximum number of messages to return, default is 20
+    form: llm
+extra:
+  python:
+    source: tools/list_channel_messages.py

@@ -106,12 +106,15 @@ credentials_schema:
 
 tools:
   - tools/gemini-3-pro-image-preview.yaml
+  - tools/gemini-3-1-flash-lite-image.yaml
+  - tools/mai-image.yaml
   - tools/gpt-image.yaml
   - tools/gpt-image-edit.yaml
   - tools/imagen.yaml
   - tools/flux-kontext.yaml
   - tools/qwen-image.yaml
   - tools/qwen-image-edit.yaml
+  - tools/doubao-seedream-5-pro.yaml
   - tools/doubao.yaml
   - tools/ernie-irag.yaml
   - tools/ernie-irag-edit.yaml

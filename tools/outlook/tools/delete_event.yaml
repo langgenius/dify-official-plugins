@@ -1,0 +1,39 @@
+identity:
+  name: delete_event
+  display_name: Delete Event
+  author: Dify
+  label:
+    en_US: Delete Event
+    zh_Hans: 删除事件
+    pt_BR: Excluir Evento
+    ja_JP: イベント削除
+    zh_Hant: 刪除事件
+description:
+  human:
+    en_US: Delete a calendar event from your Outlook account
+    zh_Hans: 从您的 Outlook 账户中删除日历事件
+    pt_BR: Excluir um evento de calendário da sua conta do Outlook
+    ja_JP: Outlook アカウントからカレンダーイベントを削除
+    zh_Hant: 從您的 Outlook 帳戶中刪除行事曆事件
+  llm: Delete a calendar event from the users Outlook account using Microsoft Graph API
+parameters:
+  - name: event_id
+    type: string
+    required: true
+    label:
+      en_US: Event ID
+      zh_Hans: 事件 ID
+      pt_BR: ID do Evento
+      ja_JP: イベント ID
+      zh_Hant: 事件 ID
+    human_description:
+      en_US: The ID of the event to delete
+      zh_Hans: 要删除的事件的 ID
+      pt_BR: O ID do evento a excluir
+      ja_JP: 削除するイベントの ID
+      zh_Hant: 要刪除的事件的 ID
+    llm_description: The ID of the event to delete
+    form: llm
+extra:
+  python:
+    source: tools/delete_event.py
