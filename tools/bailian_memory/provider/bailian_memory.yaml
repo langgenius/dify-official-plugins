@@ -29,6 +29,29 @@ credentials_for_provider:
       zh_Hans: 从阿里云百炼控制台获取 API Key
       ja_Jp: Alibaba Cloud百炼コンソールからAPIキーを取得してください
     url: https://bailian.console.aliyun.com/
+  use_international_endpoint:
+    type: select
+    required: false
+    default: "false"
+    label:
+      en_US: Use International Endpoint
+      zh_Hans: 使用国际端点
+      ja_Jp: 国際エンドポイントを使用
+    help:
+      en_US: Model Studio API keys are region-specific; select "True" for keys from the International (Singapore) console.
+      zh_Hans: 百炼 API Key 区分地域，国际站（新加坡）创建的 Key 请选择“是”。
+      ja_Jp: Model StudioのAPIキーはリージョン固有です。国際版（シンガポール）のキーは「True」を選択してください。
+    options:
+      - value: "true"
+        label:
+          en_US: "True"
+          zh_Hans: "是"
+          ja_Jp: "True"
+      - value: "false"
+        label:
+          en_US: "False"
+          zh_Hans: "否"
+          ja_Jp: "False"
 extra:
   python:
     source: provider/bailian_memory.py
