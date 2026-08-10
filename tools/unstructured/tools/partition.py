@@ -31,6 +31,10 @@ class PartitionTool(Tool):
         api_url = self.runtime.credentials.get("api_url")
         server_type = self.runtime.credentials.get("server_type")
         api_key = self.runtime.credentials.get("api_key")
+        if server_type == "transform":
+            raise ToolProviderCredentialValidationError(
+                "Select Local Deployment or Unstructured Official API to use Partition"
+            )
         if not api_url:
             logger.exception("Missing api_url in credentials")
             raise ToolProviderCredentialValidationError("Please input api_url")

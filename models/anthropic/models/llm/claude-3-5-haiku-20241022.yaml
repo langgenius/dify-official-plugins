@@ -92,7 +92,7 @@ parameter_rules:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
 pricing:
-  input: '1.00'
-  output: '5.00'
+  input: '0.80'
+  output: '4.00'
   unit: '0.000001'
   currency: USD

@@ -93,6 +93,19 @@ parameter_rules:
     help:
       zh_Hans: 当用户或助手消息的单词数超过此阈值时，自动为该消息添加缓存控制。0 表示禁用。
       en_US: If a user or assistant message exceeds this word count, add cache_control automatically. 0 disables the feature.
+  - name: prompt_caching_ttl
+    label:
+      zh_Hans: 缓存有效期
+      en_US: Cache TTL
+    type: string
+    default: 5m
+    required: true
+    options:
+      - 5m
+      - 1h
+    help:
+      zh_Hans: 控制 prompt caching 的 cache_control.ttl。5m 为默认有效期；1h 可延长缓存有效期，但缓存写入成本更高。
+      en_US: Controls prompt caching cache_control.ttl. 5m is the default duration; 1h extends cache lifetime but has a higher cache write cost.
   - name: prompt_caching_system_message
     label:
       zh_Hans: 缓存系统消息

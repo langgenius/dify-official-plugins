@@ -18,9 +18,9 @@ class VoyageProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.TEXT_EMBEDDING)
 
-            # Use `voyage-3` model for validate,
-            # no matter what model you pass in, text completion model or chat model
-            model_instance.validate_credentials(model="voyage-3", credentials=credentials)
+            # Any embedding model will do; use a current one so provider setup does
+            # not fail the day Voyage retires an older generation.
+            model_instance.validate_credentials(model="voyage-3.5", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

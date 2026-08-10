@@ -7,9 +7,9 @@ requires-python = ">=3.12"
 
 # Refresh the plugin lockfile with: uv lock
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "flask>=3.0.3,<3.1.dev0",
-    "requests>=2.32.0",
+    "dify_plugin>=0.9.0",
+    "flask>=3.1.3",
+    "requests>=2.34.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

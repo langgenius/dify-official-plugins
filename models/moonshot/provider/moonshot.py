@@ -5,6 +5,9 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
+# Callers can override the credential validation model with `validate_model`.
+DEFAULT_VALIDATE_MODEL = "kimi-k3"
+
 
 class MoonshotProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -16,7 +19,10 @@ class MoonshotProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="moonshot-v1-8k", credentials=credentials)
+            validate_model = credentials.get("validate_model") or DEFAULT_VALIDATE_MODEL
+            model_instance.validate_credentials(
+                model=validate_model, credentials=credentials
+            )
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

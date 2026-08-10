@@ -15,11 +15,14 @@ class QwenImageTool(Tool):
     Uses qianfan/qwen-image model optimized for Chinese prompts
     """
     
-    BASE_URL = "https://aihubmix.com/v1"
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
 
     def get_endpoint(self, model: str) -> str:
         vendor = "qianfan" if model == "qwen-image" else "bailian"
-        return f"{self.BASE_URL}/models/{vendor}/{model}/predictions"
+        return f"{self.get_base_url()}/v1/models/{vendor}/{model}/predictions"
     
     def create_image_info(self, base64_data: str, resolution: str) -> dict:
         mime_type = "image/png"

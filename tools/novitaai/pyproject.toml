@@ -7,11 +7,11 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "novita-client==0.7.1",
-    "pandas==2.3.3",
-    "requests>=2.32.5",
-    "yarl>=1.22.0",
+    "dify_plugin>=0.9.0",
+    "novita-client>=0.7.1",
+    "pandas>=3.0.3",
+    "requests>=2.34.2",
+    "yarl>=1.24.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

@@ -249,26 +249,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
-                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的回复格式。",
+                        en_us="Specifying the format that the model must output.",
+                        zh_hans="指定模型必须输出的回复格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
-                    required=False,
-                )
-            )
-            entity.parameter_rules.append(
-                ParameterRule(
-                    name="reasoning_format",
-                    label=I18nObject(en_US="Reasoning Format", zh_Hans="推理格式"),
-                    help=I18nObject(
-                        en_US="Specifying the format that the model must output reasoning.",
-                        zh_Hans="指定模型必须输出的推理格式。",
-                    ),
-                    type=ParameterType.STRING,
-                    options=["none", "auto", "deepseek", "deepseek-legacy"],
                     required=False,
                 )
             )
@@ -281,26 +268,26 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Configure thinking mode parameter based on model support
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
-        
+
         # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
         if agent_thought_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
             entity.features.append(ModelFeature.AGENT_THOUGHT)
-        
+
         # Only add the enable_thinking parameter if the model supports both modes
         # If only_thinking_supported, the parameter is not needed (forced behavior)
         if agent_thought_support == "supported":
             entity.parameter_rules.append(
                 ParameterRule(
                     name="enable_thinking",
-                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    label=I18nObject(en_us="Thinking mode", zh_hans="思考模式"),
                     help=I18nObject(
-                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                        en_us="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                     ),
                     type=ParameterType.BOOLEAN,
                     required=False,
@@ -310,15 +297,45 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if agent_thought_support in ["supported", "only_thinking_supported"]:
             entity.parameter_rules.append(
                 ParameterRule(
-                    name="reasoning_effort",
-                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    name="reasoning_format",
+                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
                     help=I18nObject(
-                        en_US="Constrains effort on reasoning for reasoning models.",
-                        zh_Hans="限制推理模型的推理工作。",
+                        en_us="Specifies the format in which the model must output reasoning.",
+                        zh_hans="指定模型必须输出的推理格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["none", "auto", "deepseek", "deepseek-legacy"],
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
+                    help=I18nObject(
+                        en_us="Constrains effort on reasoning for reasoning models.",
+                        zh_hans="限制推理模型的推理工作。",
                     ),
                     type=ParameterType.STRING,
                     options=["low", "medium", "high"],
                     required=False,
+                )
+            )
+
+        # Configure web search parameter if supported
+        web_search_support = credentials.get("web_search_support", "not_supported")
+        if web_search_support != "not_supported":
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="web_search",
+                    label=I18nObject(en_us="Web Search", zh_hans="联网搜索"),
+                    help=I18nObject(
+                        en_us="Whether to enable web search. When enabled, the model will search the internet for relevant information to generate responses.",
+                        zh_hans="是否启用联网搜索。启用后，模型将搜索互联网以获取相关信息来生成回复。",
+                    ),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                    default=False,
                 )
             )
 
@@ -497,6 +514,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # This allows compatibility API format: {"enable_thinking": False/True}
             model_parameters["enable_thinking"] = enable_thinking_value
 
+        reasoning_format_value = model_parameters.pop("reasoning_format", None)
+        if reasoning_format_value is not None and strict_compatibility_value is False:
+            model_parameters["reasoning_format"] = reasoning_format_value
+
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
         if enable_thinking_value is True and reasoning_effort_value is not None:
             # Propagate reasoning_effort to both:
@@ -510,6 +531,33 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
                 chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
         
+        # Handle web search based on credential configuration
+        web_search_support = credentials.get("web_search_support", "not_supported")
+        enable_web_search = model_parameters.pop("web_search", False)
+        if enable_web_search and web_search_support != "not_supported":
+            if web_search_support == "tool_standard":
+                # Standard tools format: {"type": "web_search", "web_search": {"enable": true}}
+                # Used by ZhipuAI, Baichuan, etc.
+                web_search_tool = {
+                    "type": "web_search",
+                    "web_search": {"enable": True},
+                }
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_tool)
+                else:
+                    model_parameters["tools"] = [web_search_tool]
+            elif web_search_support == "tool_simple":
+                # Simple tools format: {"type": "web_search"}
+                # Used by Volcengine, etc.
+                web_search_tool = {"type": "web_search"}
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_tool)
+                else:
+                    model_parameters["tools"] = [web_search_tool]
+            elif web_search_support == "parameter":
+                # Parameter format: top-level web_search parameter
+                model_parameters["web_search"] = True
+
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
@@ -529,6 +577,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # Only map if caller didn't already provide max_completion_tokens
             if "max_completion_tokens" not in model_parameters and "max_tokens" in model_parameters:
                 model_parameters["max_completion_tokens"] = model_parameters.pop("max_tokens")
+
+        # The base SDK adds a top-level "user" to the request body whenever user is truthy.
+        # Some OpenAI-compatible gateways reject that optional parameter outright, so allow
+        # the credential to suppress it. Default keeps today's behaviour: user is still sent.
+        if credentials.get("user_identity_support", "support") == "no_support":
+            user = None
 
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user

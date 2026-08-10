@@ -70,9 +70,14 @@ class GoogleSearchTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         as_agent_tool = tool_parameters.get("as_agent_tool", False)
 
+        serpapi_api_key = self.runtime.credentials.get("serpapi_api_key")
+        if not serpapi_api_key:
+            yield self.create_text_message("SerpAPI API key is required.")
+            return
+
         query = tool_parameters.get("query", "")
         params = {
-            "api_key": self.runtime.credentials["serpapi_api_key"],
+            "api_key": serpapi_api_key,
             "q": query,
             "engine": "google",
             "google_domain": "google.com",
@@ -82,7 +87,7 @@ class GoogleSearchTool(Tool):
         self._set_params_language_code(params, tool_parameters)
 
         try:
-            response = requests.get(url=self.SERP_API_URL, params=params)
+            response = requests.get(url=self.SERP_API_URL, params=params, timeout=10)
             response.raise_for_status()
 
             tool_invoke_results = response.json()

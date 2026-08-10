@@ -1,4 +1,5 @@
 import io
+import logging
 from collections.abc import Generator
 from typing import Any
 
@@ -6,6 +7,27 @@ import pandas as pd
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
+
+logger = logging.getLogger(__name__)
+
+
+def _get_cell_by_column(row: pd.Series, column: Any) -> Any:
+    if isinstance(column, str):
+        column = column.strip()
+
+    if column in row.index:
+        return row.loc[column]
+
+    if isinstance(column, int):
+        return row.iloc[column]
+
+    if isinstance(column, float) and column.is_integer():
+        return row.iloc[int(column)]
+
+    if isinstance(column, str) and column.isdigit():
+        return row.iloc[int(column)]
+
+    return row.loc[column]
 
 
 class QAChunkTool(Tool):
@@ -39,13 +61,20 @@ class QAChunkTool(Tool):
                 file_stream.seek(0)
                 df = pd.read_csv(file_stream, encoding='latin-1')
         except Exception as e:
+            logger.error(f"Get CSV file failed: {e}", exc_info=True)
             yield self.create_text_message(f"Get CSV file failed: {e}")
             return
         qa_chunks = []
-        for index, row in df.iterrows():
-            question = str(row[question_column])
-            answer = str(row[answer_column])
-            qa_chunks.append({"question": question, "answer": answer})
+        try:
+            for _, row in df.iterrows():
+                question = str(_get_cell_by_column(row, question_column))
+                answer = str(_get_cell_by_column(row, answer_column))
+                qa_chunks.append({"question": question, "answer": answer})
+        except (IndexError, KeyError) as e:
+            yield self.create_text_message(
+                f"Column not found: {e}. Available columns: {list(df.columns)}"
+            )
+            return
         
         result = {
             "qa_chunks": qa_chunks,

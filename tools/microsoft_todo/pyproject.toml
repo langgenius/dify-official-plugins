@@ -6,18 +6,20 @@ authors = [
     {name = "jingfelix", email = "jingfelix@outlook.com"},
 ]
 dependencies = [
-    "pymstodo>=0.2.0",
-    "dify_plugin>=0.5.0",
+    "pymstodo>=0.2.1",
+    "dify_plugin>=0.9.0",
     "dify-easy>=0.1.0",
-    "pydantic>=2.8.2",
+    "pydantic>=2.13.4",
     "requests-oauthlib>=2.0.0",
-    "structlog>=25.4.0",
-    "werkzeug>=3.1.0",
+    "structlog>=25.5.0",
+    "werkzeug>=3.1.8",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "MIT"}
 
+[dependency-groups]
+dev = []
 
 [tool.pdm]
 distribution = false

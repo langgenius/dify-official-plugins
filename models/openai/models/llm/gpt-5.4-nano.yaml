@@ -9,6 +9,7 @@ features:
   - agent-thought
   - stream-tool-call
   - vision
+  - structured-output
 model_properties:
   mode: chat
   context_size: 400000
@@ -68,8 +69,8 @@ parameter_rules:
       en_US: Streaming
     type: boolean
     help:
-      zh_Hans: GPT-5 系列模型流式输出需要 KYC 验证，若想跳过这个限制使用模型，请关闭流式响应。
-      en_US: GPT-5 series models require KYC validation for streaming output, if you want to use the models without this limitation, please turn off streaming responses.
+      zh_Hans: 是否启用流式响应。
+      en_US: Whether to enable streaming responses.
     required: true
     default: true
   - name: service_tier
@@ -78,11 +79,12 @@ parameter_rules:
       en_US: Service tier
     type: string
     help:
-      zh_Hans: 默认使用标准处理。选择 Flex 时请求会携带 service_tier=flex（[OpenAI Flex 处理](https://developers.openai.com/api/docs/guides/flex-processing)）：与 Batch 同档 token 价格，响应更慢，可能遇到 429（不计费），请提高客户端超时。
-      en_US: Default is standard processing. Flex sends service_tier=flex ([Flex processing](https://developers.openai.com/api/docs/guides/flex-processing)) for Batch-tier token pricing, with slower responses and possible unbilled 429; increase client timeouts.
+      zh_Hans: Auto 跟随项目设置；Default 使用标准处理；Flex 使用成本更低但可能更慢的处理。
+      en_US: Auto follows the project setting; Default selects standard processing; Flex selects lower-cost processing that may be slower.
     required: false
-    default: default
+    default: auto
     options:
+      - auto
       - default
       - flex
 pricing:

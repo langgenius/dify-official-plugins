@@ -7,8 +7,8 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify-plugin~=0.7.1",
-    "plivo==4.59.5",
+    "dify-plugin>=0.9.0",
+    "plivo>=4.60.1",
 ]
 
 [dependency-groups]

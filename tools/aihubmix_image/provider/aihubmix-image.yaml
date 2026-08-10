@@ -33,6 +33,34 @@ credentials_schema:
       pt_BR: "A chave API é usada para autenticar solicitações à API AIHubMix. Obtenha sua chave em https://docs.aihubmix.com/token"
       ja_JP: "APIキーはAIHubMix APIへのリクエスト認証に使用されます。https://docs.aihubmix.com/token からAPIキーを取得してください"
 
+  - name: "base_url"
+    type: "select"
+    required: false
+    default: "https://api.inferera.com"
+    label:
+      en_US: "API Base URL"
+      zh_Hans: "API 接口地址"
+      pt_BR: "URL Base da API"
+      ja_JP: "API ベース URL"
+    options:
+      - value: "https://api.inferera.com"
+        label:
+          en_US: "https://api.inferera.com"
+          zh_Hans: "https://api.inferera.com"
+          pt_BR: "https://api.inferera.com"
+          ja_JP: "https://api.inferera.com"
+      - value: "https://aihubmix.com"
+        label:
+          en_US: "https://aihubmix.com"
+          zh_Hans: "https://aihubmix.com"
+          pt_BR: "https://aihubmix.com"
+          ja_JP: "https://aihubmix.com"
+    help:
+      en_US: "The API gateway base URL. Defaults to Inferera."
+      zh_Hans: "API 网关的基础地址，默认使用 Inferera。"
+      pt_BR: "A URL base do gateway da API. Padrão: Inferera."
+      ja_JP: "API ゲートウェイのベース URL。デフォルトは Inferera です。"
+
 #########################################################################################
 # OAuth configuration can be enabled by uncommenting the section below
 # This provides alternative authentication method using OAuth 2.0 flow
@@ -78,12 +106,15 @@ credentials_schema:
 
 tools:
   - tools/gemini-3-pro-image-preview.yaml
+  - tools/gemini-3-1-flash-lite-image.yaml
+  - tools/mai-image.yaml
   - tools/gpt-image.yaml
   - tools/gpt-image-edit.yaml
   - tools/imagen.yaml
   - tools/flux-kontext.yaml
   - tools/qwen-image.yaml
   - tools/qwen-image-edit.yaml
+  - tools/doubao-seedream-5-pro.yaml
   - tools/doubao.yaml
   - tools/ernie-irag.yaml
   - tools/ernie-irag-edit.yaml

@@ -1,0 +1,50 @@
+identity:
+  name: create_channel
+  author: langgenius
+  label:
+    en_US: Create Channel
+    zh_Hans: 创建频道
+    ja_JP: チャンネルの作成
+    ko_KR: 채널 생성
+description:
+  human:
+    en_US: Create a new public or private channel.
+    zh_Hans: 创建一个新的公开或私有频道。
+    ja_JP: 新しいパブリックまたはプライベートチャンネルを作成します。
+    ko_KR: 새로운 공개 또는 비공개 채널을 생성합니다.
+  llm: Creates a new channel using conversations.create. Requires a channel name (lowercase, no spaces or periods, up to 80 characters). Set is_private to true to create a private channel.
+parameters:
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: Channel Name
+      zh_Hans: 频道名称
+      ja_JP: チャンネル名
+      ko_KR: 채널 이름
+    human_description:
+      en_US: The name of the channel to create. Must be lowercase, without spaces or periods, and up to 80 characters.
+      zh_Hans: 要创建的频道名称。必须为小写，不含空格或句点，最多 80 个字符。
+      ja_JP: 作成するチャンネルの名前。小文字で、スペースやピリオドを含まず、最大 80 文字までにする必要があります。
+      ko_KR: 생성할 채널의 이름입니다. 소문자여야 하며 공백이나 마침표를 포함할 수 없고 최대 80자까지 가능합니다.
+    llm_description: The new channel name. Must be lowercase, contain no spaces or periods, and be at most 80 characters.
+    form: llm
+  - name: is_private
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Private Channel
+      zh_Hans: 私有频道
+      ja_JP: プライベートチャンネル
+      ko_KR: 비공개 채널
+    human_description:
+      en_US: Whether to create a private channel. Defaults to false (public).
+      zh_Hans: 是否创建私有频道。默认为 false（公开）。
+      ja_JP: プライベートチャンネルを作成するかどうか。デフォルトは false（パブリック）です。
+      ko_KR: 비공개 채널을 생성할지 여부입니다. 기본값은 false（공개）입니다.
+    llm_description: Set to true to create a private channel; false creates a public channel.
+    form: llm
+extra:
+  python:
+    source: tools/create_channel.py

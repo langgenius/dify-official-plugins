@@ -1,6 +1,6 @@
 import base64
-import logging
 import json
+import logging
 import os
 import tempfile
 import uuid
@@ -9,7 +9,10 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Optional, Union, cast
 
-import requests
+# isort: off
+import dify_plugin  # noqa: F401 - patches gevent before HTTP SDK imports
+# isort: on
+import openai
 from dashscope import Generation, MultiModalConversation, get_tokenizer
 from dashscope.api_entities.dashscope_response import GenerationResponse
 from dashscope.common.error import (
@@ -38,6 +41,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
@@ -49,7 +53,6 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
     VideoPromptMessageContent,
-    AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -61,9 +64,11 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from openai import OpenAI
+
 from models._common import get_http_base_address
+
 from ..constant import BURY_POINT_HEADER
+from .qwen_long import MAX_DOCUMENT_INPUT_BASE64_BYTES, QwenLongFiles
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +199,25 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
 
         response_format = model_parameters.get("response_format")
-        if response_format:
+        json_schema = model_parameters.pop("json_schema", None)
+        if response_format == "json_schema":
+            if not json_schema:
+                raise ValueError(
+                    "json_schema is required when response_format is json_schema"
+                )
+            if isinstance(json_schema, str):
+                try:
+                    json_schema = json.loads(json_schema)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"Invalid json_schema: {exc}") from exc
+            json_schema = dict(json_schema)
+            strict = json_schema.pop("strict", True)
+            model_parameters["response_format"] = {
+                "type": "json_schema",
+                "json_schema": json_schema,
+                "strict": strict,
+            }
+        elif response_format and not isinstance(response_format, dict):
             model_parameters["response_format"] = {"type": response_format}
 
         if model.startswith("qwen-mt"):
@@ -214,17 +237,21 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(
                     "There is one and only one User Message in the messages array."
                 )
-        # For models that support enable_thinking parameter, explicitly set it to False if not provided
-        # This overrides API-level defaults where some models default to thinking mode enabled
+        # For models that support enable_thinking, set a stable default when omitted.
         # Reference: https://help.aliyun.com/zh/model-studio/deep-thinking
         thinking_capable_models = {
             # Qwen Plus/Turbo series (default: thinking disabled, but explicit False ensures consistency)
             "qwen-plus-latest", "qwen-plus-2025-04-28",
             "qwen-turbo-latest", "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
-            # Qwen3 Max series (default: thinking disabled)
+            # Qwen3 Max, VL Plus/Flash, and Omni Flash series (default: thinking disabled, but explicit False ensures consistency)
             "qwen3-max-2026-01-23", "qwen3-max-preview",
-            # Qwen3.5/3.6 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
+            "qwen3-omni-flash-2025-12-01",
+            # Qwen3.5/3.6/3.7/3.8 series
+            "qwen3.8-max",
+            "qwen3.7-max",
+            "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.6-flash", "qwen3.6-flash-2026-04-16",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
@@ -235,7 +262,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
-            model_parameters["enable_thinking"] = False
+            model_parameters["enable_thinking"] = model == "qwen3.8-max"
+        if model == "qwen3.8-max":
+            if not model_parameters["enable_thinking"]:
+                model_parameters.pop("reasoning_effort", None)
+            # Dify stores reasoning in content, which preserved thinking rejects.
+            model_parameters["preserve_thinking"] = False
 
         extra_headers_str = ''
         if model_parameters.get('extra_headers',''):
@@ -258,6 +290,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
             "qwen3-max-2026-01-23", "qwen3-max-preview",
+            "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
+            "qwen3-omni-flash-2025-12-01",
+            "qwen3.8-max",
+            "qwen3.7-max",
+            "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
@@ -278,10 +315,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
         # Thinking-mode models that need streamed responses so reasoning_content is preserved.
-        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
-        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
+        # Note: qwen3-coder-xx, qwen3-max-xx, qwen3-vl-plus/flash, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
-            ("qwen3-coder", "qwen3-max", "qwen3.5-")
+            ("qwen3-coder", "qwen3-max", "qwen3-vl-plus", "qwen3-vl-flash", "qwen3.5-")
         )
         common_force_condition = (
             thinking_business_qwen3
@@ -292,50 +328,95 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and VL Plus/Flash variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
         base_address = get_http_base_address(credentials)
 
-        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
-        if model.startswith("qwen3-omni-") and not stream:
-            params["enable_omni_output_audio_url"] = True
+        qwen_long_files = None
+        try:
+            if ModelFeature.VISION in (model_schema.features or []):
+                params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
+                    prompt_messages, rich_content=True
+                )
+                response = MultiModalConversation.call(
+                    **params,
+                    stream=stream,
+                    headers=self._get_market_bury_point_header(
+                        params["messages"], extra_headers_str
+                    ),
+                    incremental_output=incremental_output,
+                    base_address=base_address,
+                )
+            else:
+                if model.startswith("qwen-long"):
+                    if credentials.get("use_international_endpoint", "false") == "true":
+                        raise InvokeBadRequestError(
+                            "Qwen-Long is only available in the Beijing region."
+                        )
+                    if tools:
+                        raise InvokeBadRequestError("Qwen-Long does not support tools.")
+                    qwen_long_files = QwenLongFiles(
+                        openai.OpenAI(
+                            api_key=credentials["dashscope_api_key"],
+                            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            max_retries=0,
+                            timeout=120,
+                        )
+                    )
+                    params["messages"] = self._convert_qwen_long_prompt_messages(
+                        qwen_long_files, prompt_messages
+                    )
+                else:
+                    params["messages"] = (
+                        self._convert_prompt_messages_to_tongyi_messages(
+                            prompt_messages
+                        )
+                    )
+                response = Generation.call(
+                    **params,
+                    headers=self._get_market_bury_point_header(
+                        params["messages"], extra_headers_str
+                    ),
+                    result_format="message",
+                    stream=stream,
+                    incremental_output=incremental_output,
+                    base_address=base_address,
+                )
+        except BaseException:
+            if qwen_long_files:
+                qwen_long_files.cleanup()
+            raise
 
-        if ModelFeature.VISION in (model_schema.features or []):
-            params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                credentials, prompt_messages, rich_content=True
-            )
-            response = MultiModalConversation.call(
-                **params,
-                stream=stream,
-                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
-                incremental_output=incremental_output,
-                base_address=base_address,
-            )
-        else:
-            params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                credentials, prompt_messages
-            )
-            response = Generation.call(
-                **params,
-                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
-                result_format="message",
-                stream=stream,
-                incremental_output=incremental_output,
-                base_address=base_address,
-            )
         if stream:
-            return self._handle_generate_stream_response(
+            result = self._handle_generate_stream_response(
                 model,
                 credentials,
                 response,
                 prompt_messages,
                 incremental_output,
             )
-        return self._handle_generate_response(
-            model, credentials, response, prompt_messages
-        )
+            if qwen_long_files:
+                result = self._cleanup_qwen_long_stream(result, qwen_long_files)
+            return result
+        try:
+            return self._handle_generate_response(
+                model, credentials, response, prompt_messages
+            )
+        finally:
+            if qwen_long_files:
+                qwen_long_files.cleanup()
+
+    @staticmethod
+    def _cleanup_qwen_long_stream(
+        result: Generator,
+        files: QwenLongFiles,
+    ) -> Generator:
+        try:
+            yield from result
+        finally:
+            files.cleanup()
 
     def _handle_generate_response(
         self,
@@ -586,9 +667,122 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         return text.rstrip()
 
+    def _convert_qwen_long_prompt_messages(
+        self,
+        files: QwenLongFiles,
+        prompt_messages: list[PromptMessage],
+    ) -> list[dict]:
+        normalized_messages: list[
+            tuple[str, str, list[DocumentPromptMessageContent]]
+        ] = []
+        document_count = 0
+        document_base64_bytes = 0
+        index = 0
+
+        while index < len(prompt_messages):
+            prompt_message = prompt_messages[index]
+            if isinstance(prompt_message, SystemPromptMessage):
+                if isinstance(prompt_message.content, list) and any(
+                    not isinstance(content, TextPromptMessageContent)
+                    for content in prompt_message.content
+                ):
+                    raise InvokeBadRequestError(
+                        "Qwen-Long only supports text system messages."
+                    )
+                text = prompt_message.get_text_content().strip()
+                if text:
+                    normalized_messages.append(("system", text, []))
+                index += 1
+                continue
+
+            if isinstance(prompt_message, UserPromptMessage):
+                user_run = []
+                while index < len(prompt_messages) and isinstance(
+                    prompt_messages[index], UserPromptMessage
+                ):
+                    user_run.append(prompt_messages[index])
+                    index += 1
+
+                texts = []
+                documents = []
+                for user_message in user_run:
+                    if isinstance(user_message.content, list):
+                        for content in user_message.content:
+                            if isinstance(content, DocumentPromptMessageContent):
+                                documents.append(content)
+                            elif not isinstance(content, TextPromptMessageContent):
+                                raise InvokeBadRequestError(
+                                    f"Qwen-Long does not support {content.type.value} input."
+                                )
+                    texts.append(user_message.get_text_content().strip())
+
+                question = "\n".join(text for text in texts if text)
+                if not question:
+                    raise InvokeBadRequestError(
+                        "Qwen-Long requires a non-empty text question."
+                    )
+                normalized_messages.append(("user", question, documents))
+                document_count += len(documents)
+                document_base64_bytes += sum(
+                    len(document.base64_data) for document in documents
+                )
+                continue
+
+            if isinstance(prompt_message, AssistantPromptMessage):
+                if isinstance(prompt_message.content, list) and any(
+                    not isinstance(content, TextPromptMessageContent)
+                    for content in prompt_message.content
+                ):
+                    raise InvokeBadRequestError(
+                        "Qwen-Long only supports text assistant messages."
+                    )
+                normalized_messages.append(
+                    ("assistant", prompt_message.get_text_content() or " ", [])
+                )
+                index += 1
+                continue
+
+            if isinstance(prompt_message, ToolPromptMessage):
+                raise InvokeBadRequestError("Qwen-Long does not support tool messages.")
+
+            raise ValueError(f"Got unknown type {prompt_message}")
+
+        if document_count > 100:
+            raise InvokeBadRequestError(
+                "Qwen-Long supports at most 100 documents per request."
+            )
+        if document_base64_bytes > MAX_DOCUMENT_INPUT_BASE64_BYTES:
+            raise InvokeBadRequestError(
+                "Qwen-Long document input exceeds this plugin's aggregate size limit."
+            )
+
+        has_role_definition = bool(
+            normalized_messages
+            and normalized_messages[0][0] == "system"
+            and normalized_messages[0][1]
+        )
+        if document_count and not has_role_definition:
+            normalized_messages.insert(
+                0, ("system", "You are a helpful assistant.", [])
+            )
+
+        messages = []
+        for role, text, documents in normalized_messages:
+            if role == "system" and text:
+                messages.append({"role": "system", "content": text})
+            if documents:
+                file_ids = [
+                    f"fileid://{files.upload(document)}" for document in documents
+                ]
+                messages.append({"role": "system", "content": ",".join(file_ids)})
+            if role != "system":
+                messages.append({"role": role, "content": text})
+
+        files.wait_until_processed()
+        return messages
+
     def _convert_prompt_messages_to_tongyi_messages(
         self,
-        credentials: dict,
         prompt_messages: list[PromptMessage],
         rich_content: bool = False,
     ) -> list[dict]:
@@ -625,7 +819,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     )
                 else:
                     user_messages = []
-                    file_id_list = []
                     for message_content in prompt_message.content:
                         if message_content.type == PromptMessageContentType.TEXT:
                             message_content = cast(
@@ -666,19 +859,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                 audio_data = self._save_base64_to_file(audio_data)
                             sub_message_dict = {"audio": audio_data}
                             user_messages.append(sub_message_dict)
-                        elif message_content.type == PromptMessageContentType.DOCUMENT:
-                            message_content = cast(
-                                DocumentPromptMessageContent, message_content
-                            )
-                            file_id = self._upload_file_to_tongyi(
-                                credentials, message_content
-                            )
-                            file_id_url = f"fileid://{file_id}"
-                            file_id_list.append(file_id_url)
-                    if len(file_id_list) > 0:
-                        tongyi_messages.append(
-                            {"role": "system", "content": ",".join(file_id_list)}
-                        )
                     user_messages = sorted(user_messages, key=lambda x: "text" in x)
                     tongyi_messages.append({"role": "user", "content": user_messages})
             elif isinstance(prompt_message, AssistantPromptMessage):
@@ -735,56 +915,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 logger.warning(f"Failed to remove temporary file {file_path}: {e}")
         self._temp_files.clear()
 
-    def _upload_file_to_tongyi(
-        self, credentials: dict, message_content: DocumentPromptMessageContent
-    ) -> str:
-        """
-        Upload file to Tongyi
-
-        :param credentials: credentials for Tongyi
-        :param message_content: message content to upload
-        :return: file ID in Tongyi
-        """
-        client = OpenAI(
-            api_key=credentials["dashscope_api_key"],
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        if credentials.get("use_international_endpoint", "false") == "true":
-            client = OpenAI(
-                api_key=credentials["dashscope_api_key"],
-                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-            )
-        temp_file_path = None
-        try:
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                temp_file_path = temp_file.name
-                if message_content.base64_data:
-                    file_content = base64.b64decode(message_content.base64_data)
-                    temp_file.write(file_content)
-                else:
-                    try:
-                        response = requests.get(message_content.url, timeout=60)
-                        response.raise_for_status()
-                        temp_file.write(response.content)
-                    except Exception as ex:
-                        raise ValueError(
-                            f"Failed to fetch data from url {message_content.url}, {ex}"
-                        ) from ex
-                temp_file.flush()
-            # Close temp file first, then reopen with open() for OpenAI SDK compatibility
-            with open(temp_file_path, "rb") as f:
-                response = client.files.create(file=f, purpose="file-extract")
-            return response.id
-        finally:
-            # Clean up temporary file after upload
-            if temp_file_path and os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to remove temporary file {temp_file_path}: {e}"
-                    )
-
     def _convert_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
         """
         Convert tools
@@ -830,30 +960,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             content = content[0].get("text") if isinstance(content[0], dict) else ""
         else:
             content = str(content)
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or ""
         try:
-            if reasoning_content:
-                try:
-                    if isinstance(reasoning_content, list):
-                        reasoning_content = "\n".join(map(str, reasoning_content))
-                    elif not isinstance(reasoning_content, str):
-                        reasoning_content = str(reasoning_content)
+            if isinstance(reasoning_content, list):
+                reasoning_content = "\n".join(map(str, reasoning_content))
+            elif not isinstance(reasoning_content, str):
+                reasoning_content = str(reasoning_content)
 
-                    if not is_reasoning:
-                        content = "<think>\n" + reasoning_content
-                        is_reasoning = True
-                    else:
-                        content = reasoning_content
-                except Exception as ex:
-                    raise ValueError(
-                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
-                    ) from ex
-            elif is_reasoning and content:
-                content = "\n</think>" + content
-                is_reasoning = False
+            output = ""
+            if reasoning_content:
+                if not is_reasoning:
+                    # Open a think block on first reasoning token
+                    output += f"<think>\n{reasoning_content}"
+                    is_reasoning = True
+                else:
+                    # Continue streaming inside the think block
+                    output += reasoning_content
+
+            if is_reasoning:
+                if not reasoning_content and not content:
+                    # No reasoning or content token, close the think block
+                    is_reasoning = False
+                    output += "\n</think>"
+                # Handle edge case: both reasoning_content and content are non-empty
+                # in the same chunk (DashScope/Bailian API occasionally does this at
+                # the transition boundary between reasoning and content phases)
+                if content:
+                    is_reasoning = False
+                    output += f"\n</think>{content}"
+            elif content:
+                # No reasoning token and not in a reasoning block
+                output += content
         except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
-        return content, is_reasoning
+            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
+        return output, is_reasoning
 
     def _handle_error_response(
         self, status_code: int, message: str, model: str = None, request_id: str = None
@@ -895,6 +1035,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             else:
                 raise InvokeServerUnavailableError(error_msg)
 
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InvokeError):
+            return error
+        return super()._transform_invoke_error(error)
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -906,14 +1051,29 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: Invoke error mapping
         """
         return {
-            InvokeConnectionError: [RequestFailure],
-            InvokeServerUnavailableError: [ServiceUnavailableError],
-            InvokeRateLimitError: [],
-            InvokeAuthorizationError: [AuthenticationError],
+            InvokeServerUnavailableError: [
+                ServiceUnavailableError,
+                openai.InternalServerError,
+            ],
+            InvokeConnectionError: [
+                RequestFailure,
+                openai.APIConnectionError,
+                openai.APITimeoutError,
+            ],
+            InvokeRateLimitError: [openai.RateLimitError],
+            InvokeAuthorizationError: [
+                AuthenticationError,
+                openai.AuthenticationError,
+                openai.PermissionDeniedError,
+            ],
             InvokeBadRequestError: [
                 InvalidParameter,
                 UnsupportedModel,
                 UnsupportedHTTPMethod,
+                openai.BadRequestError,
+                openai.NotFoundError,
+                openai.UnprocessableEntityError,
+                openai.APIError,
             ],
         }
 
@@ -929,7 +1089,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
             features=(
                 [
@@ -951,7 +1111,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -960,25 +1120,25 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 1024)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_k",
                     use_template="top_k",
-                    label=I18nObject(en_US="Top K", zh_Hans="Top K"),
+                    label=I18nObject(en_us="Top K", zh_hans="Top K"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="frequency_penalty",
                     use_template="frequency_penalty",
-                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="重复惩罚"),
+                    label=I18nObject(en_us="Frequency Penalty", zh_hans="重复惩罚"),
                     type=ParameterType.FLOAT,
                 ),
             ],

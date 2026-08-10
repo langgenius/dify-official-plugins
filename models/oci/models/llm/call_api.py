@@ -15,6 +15,7 @@ def patched_call_api(self, resource_path, method,
                      response_type=None,
                      enforce_content_headers=True,
                      allow_control_chars=None,
+                     enable_strict_url_encoding=None,
                      operation_name=None,
                      api_reference_link=None,
                      required_arguments=[]):
@@ -44,10 +45,16 @@ def patched_call_api(self, resource_path, method,
     if opc_host_serial:
         header_params['opc-host-serial'] = opc_host_serial
 
+    should_enable_strict_url_encoding = self.should_enable_strict_url_encoding(enable_strict_url_encoding)
     if path_params:
         path_params = self.sanitize_for_serialization(path_params)
         for k, v in path_params.items():
-            replacement = six.moves.urllib.parse.quote(str(self.to_path_value(v)))
+            if should_enable_strict_url_encoding:
+                replacement = six.moves.urllib.parse.quote(str(self.to_path_value(v)), safe='')
+                if self.service == "object_storage" and replacement in {".", ".."}:
+                    replacement = replacement.replace(".", "%2E")
+            else:
+                replacement = six.moves.urllib.parse.quote(str(self.to_path_value(v)))
             resource_path = resource_path.replace('{' + k + '}', replacement)
 
     if query_params:

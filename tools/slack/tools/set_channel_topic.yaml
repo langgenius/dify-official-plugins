@@ -1,0 +1,49 @@
+identity:
+  name: set_channel_topic
+  author: langgenius
+  label:
+    en_US: Set Channel Topic
+    zh_Hans: 设置频道话题
+    ja_JP: チャンネルのトピックを設定
+    ko_KR: 채널 주제 설정
+description:
+  human:
+    en_US: Set the topic for a channel.
+    zh_Hans: 设置频道的话题。
+    ja_JP: チャンネルのトピックを設定します。
+    ko_KR: 채널의 주제를 설정합니다.
+  llm: Sets a channel's topic using conversations.setTopic. Requires the channel ID and the new topic text.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID whose topic will be set (e.g. C0123456789).
+      zh_Hans: 要设置话题的频道 ID（如 C0123456789）。
+      ja_JP: "トピックを設定するチャンネルID（例: C0123456789）。"
+      ko_KR: "주제를 설정할 채널 ID(예: C0123456789)."
+    llm_description: The channel ID (e.g. C0123456789) whose topic should be set.
+    form: llm
+  - name: topic
+    type: string
+    required: true
+    label:
+      en_US: Topic
+      zh_Hans: 话题
+      ja_JP: トピック
+      ko_KR: 주제
+    human_description:
+      en_US: The new topic text (up to 250 characters).
+      zh_Hans: 新的话题文本（最多 250 个字符）。
+      ja_JP: 新しいトピックのテキスト（最大250文字）。
+      ko_KR: 새 주제 텍스트(최대 250자).
+    llm_description: The new channel topic text, up to 250 characters.
+    form: llm
+extra:
+  python:
+    source: tools/set_channel_topic.py

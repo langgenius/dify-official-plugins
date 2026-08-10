@@ -297,9 +297,9 @@ class TwilioSubscriptionConstructor(TriggerSubscriptionConstructor):
                         ParameterOption(
                             value=sid,
                             label=I18nObject(
-                                en_US=label,
-                                zh_Hans=label,
-                                ja_JP=label,
+                                en_us=label,
+                                zh_hans=label,
+                                ja_jp=label,
                             ),
                         )
                     )

@@ -25,13 +25,8 @@ plugins:
     - provider/slack.yaml
 resource:
   memory: 1048576
-  permission:
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
+  permission: {}
 tags:
   - utilities
 type: plugin
-version: 0.2.3
+version: 0.3.0

@@ -1,4 +1,4 @@
-version: 0.1.8
+version: 0.1.10
 type: plugin
 author: langgenius
 name: tavily_datasource

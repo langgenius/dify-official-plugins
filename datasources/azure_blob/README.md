@@ -30,6 +30,7 @@ Access Azure Blob Storage containers and blobs as a datasource for Dify with mul
 
 ### 4. Azure AD OAuth (Recommended for Enterprise)
 - Use Azure Active Directory authentication
+- Enter the actual Microsoft Entra tenant ID for OAuth configuration
 - Support automatic access token refresh
 - Multi-cloud environment support (Global, China, Government clouds)
 - Principle of least privilege: only requires Storage user impersonation permissions

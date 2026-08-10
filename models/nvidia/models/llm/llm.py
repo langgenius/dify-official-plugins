@@ -1,7 +1,6 @@
 import json
 from collections.abc import Generator
 from typing import Optional, Union
-import pydantic
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
@@ -192,7 +191,7 @@ class NVIDIALargeLanguageModel(OAICompatLargeLanguageModel):
             elif function_calling_type == "tool_call":
                 data["tool_choice"] = "auto"
                 for tool in tools:
-                    formatted_tools.append(pydantic.model_dump(PromptMessageFunction(function=tool)))
+                    formatted_tools.append(PromptMessageFunction(function=tool).model_dump())
                 data["tools"] = formatted_tools
         if stop:
             data["stop"] = stop

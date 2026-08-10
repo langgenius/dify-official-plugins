@@ -1,0 +1,160 @@
+identity:
+  name: create_event
+  display_name: Create Event
+  author: Dify
+  label:
+    en_US: Create Event
+    zh_Hans: 创建事件
+    pt_BR: Criar Evento
+    ja_JP: イベント作成
+    zh_Hant: 建立事件
+description:
+  human:
+    en_US: Create a calendar event in your Outlook account
+    zh_Hans: 在您的 Outlook 账户中创建日历事件
+    pt_BR: Criar um evento de calendário na sua conta do Outlook
+    ja_JP: Outlook アカウントにカレンダーイベントを作成
+    zh_Hant: 在您的 Outlook 帳戶中建立行事曆事件
+  llm: Create a calendar event in the users Outlook account using Microsoft Graph API, with optional attendees, location and online meeting
+parameters:
+  - name: subject
+    type: string
+    required: true
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+      zh_Hant: 主題
+    human_description:
+      en_US: The subject or title of the event
+      zh_Hans: 事件的主题或标题
+      pt_BR: O assunto ou título do evento
+      ja_JP: イベントの件名またはタイトル
+      zh_Hant: 事件的主題或標題
+    llm_description: The subject or title of the event
+    form: llm
+  - name: start_datetime
+    type: string
+    required: true
+    label:
+      en_US: Start Datetime
+      zh_Hans: 开始时间
+      pt_BR: Data e Hora de Início
+      ja_JP: 開始日時
+      zh_Hant: 開始時間
+    human_description:
+      en_US: The start date and time in ISO 8601 format, e.g. 2026-08-10T14:00:00
+      zh_Hans: ISO 8601 格式的开始日期和时间，例如 2026-08-10T14:00:00
+      pt_BR: A data e hora de início no formato ISO 8601, por exemplo 2026-08-10T14:00:00
+      ja_JP: ISO 8601 形式の開始日時、例 2026-08-10T14:00:00
+      zh_Hant: ISO 8601 格式的開始日期和時間，例如 2026-08-10T14:00:00
+    llm_description: The start date and time in ISO 8601 format, e.g. 2026-08-10T14:00:00
+    form: llm
+  - name: end_datetime
+    type: string
+    required: true
+    label:
+      en_US: End Datetime
+      zh_Hans: 结束时间
+      pt_BR: Data e Hora de Término
+      ja_JP: 終了日時
+      zh_Hant: 結束時間
+    human_description:
+      en_US: The end date and time in ISO 8601 format, e.g. 2026-08-10T15:00:00
+      zh_Hans: ISO 8601 格式的结束日期和时间，例如 2026-08-10T15:00:00
+      pt_BR: A data e hora de término no formato ISO 8601, por exemplo 2026-08-10T15:00:00
+      ja_JP: ISO 8601 形式の終了日時、例 2026-08-10T15:00:00
+      zh_Hant: ISO 8601 格式的結束日期和時間，例如 2026-08-10T15:00:00
+    llm_description: The end date and time in ISO 8601 format, e.g. 2026-08-10T15:00:00
+    form: llm
+  - name: time_zone
+    type: string
+    required: false
+    default: UTC
+    label:
+      en_US: Time Zone
+      zh_Hans: 时区
+      pt_BR: Fuso Horário
+      ja_JP: タイムゾーン
+      zh_Hant: 時區
+    human_description:
+      en_US: The time zone for the start and end times, e.g. UTC or Asia/Tokyo
+      zh_Hans: 开始和结束时间的时区，例如 UTC 或 Asia/Tokyo
+      pt_BR: O fuso horário para os horários de início e término, por exemplo UTC ou Asia/Tokyo
+      ja_JP: 開始と終了時刻のタイムゾーン、例 UTC または Asia/Tokyo
+      zh_Hant: 開始和結束時間的時區，例如 UTC 或 Asia/Tokyo
+    llm_description: The time zone for the start and end times, default is UTC, e.g. UTC or Asia/Tokyo
+    form: llm
+  - name: body
+    type: string
+    required: false
+    label:
+      en_US: Body
+      zh_Hans: 正文
+      pt_BR: Corpo
+      ja_JP: 本文
+      zh_Hant: 內文
+    human_description:
+      en_US: The description or body content of the event
+      zh_Hans: 事件的描述或正文内容
+      pt_BR: A descrição ou conteúdo do corpo do evento
+      ja_JP: イベントの説明または本文内容
+      zh_Hant: 事件的描述或內文內容
+    llm_description: The description or body content of the event
+    form: llm
+  - name: attendees
+    type: string
+    required: false
+    label:
+      en_US: Attendees
+      zh_Hans: 参与者
+      pt_BR: Participantes
+      ja_JP: 出席者
+      zh_Hant: 與會者
+    human_description:
+      en_US: Comma-separated list of attendee email addresses
+      zh_Hans: 以逗号分隔的参与者电子邮件地址列表
+      pt_BR: Lista de endereços de e-mail dos participantes separados por vírgula
+      ja_JP: カンマ区切りの出席者メールアドレスのリスト
+      zh_Hant: 以逗號分隔的與會者電子郵件地址列表
+    llm_description: Comma-separated list of attendee email addresses
+    form: llm
+  - name: location
+    type: string
+    required: false
+    label:
+      en_US: Location
+      zh_Hans: 地点
+      pt_BR: Local
+      ja_JP: 場所
+      zh_Hant: 地點
+    human_description:
+      en_US: The location of the event
+      zh_Hans: 事件的地点
+      pt_BR: O local do evento
+      ja_JP: イベントの場所
+      zh_Hant: 事件的地點
+    llm_description: The location of the event
+    form: llm
+  - name: is_online_meeting
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Is Online Meeting
+      zh_Hans: 是否为在线会议
+      pt_BR: É Reunião Online
+      ja_JP: オンライン会議
+      zh_Hant: 是否為線上會議
+    human_description:
+      en_US: Whether to create a Teams online meeting for the event
+      zh_Hans: 是否为该事件创建 Teams 在线会议
+      pt_BR: Se deve criar uma reunião online do Teams para o evento
+      ja_JP: イベントに Teams オンライン会議を作成するかどうか
+      zh_Hant: 是否為該事件建立 Teams 線上會議
+    llm_description: Whether to create a Teams online meeting for the event, default is false
+    form: llm
+extra:
+  python:
+    source: tools/create_event.py

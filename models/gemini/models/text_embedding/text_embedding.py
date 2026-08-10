@@ -1,9 +1,3 @@
-"""
-FutureWarning:
-All support for the `google.generativeai` package has ended. It will no longer be receiving
-updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-"""
-
 import base64
 import binascii
 import logging
@@ -16,7 +10,6 @@ from collections.abc import Mapping
 from google import genai
 from google.genai import types
 from google.genai.types import EmbedContentConfig
-from google.generativeai.embedding import to_task_type
 
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
@@ -35,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 # Embedding and number of tokens used
 EmbeddingTokenPair = tuple[list[float], Optional[int]]
+
+TASK_TYPE_BY_INPUT_TYPE = {
+    EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
+    EmbeddingInputType.QUERY: "RETRIEVAL_QUERY",
+}
 
 
 class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
@@ -118,7 +116,11 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if len(embeddings) == 1:
                 embedding = embeddings[0]
             else:
-                average = np.average(embeddings, axis=0, weights=num_tokens)
+                # `num_tokens` may contain ``None`` when the Gemini API omits token
+                # usage for a chunk. ``np.average`` cannot use ``None`` weights, so
+                # fall back to an unweighted average in that case.
+                weights = num_tokens if all(t is not None for t in num_tokens) else None
+                average = np.average(embeddings, axis=0, weights=weights)
                 embedding = (average / np.linalg.norm(average)).tolist()
                 if np.isnan(embedding).any():
                     raise ValueError("Normalized embedding is nan please try again")
@@ -156,13 +158,24 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         splitted_text = []
         for text in texts:
             num_tokens = self._count_tokens(client, model, text)
-            if num_tokens >= context_size:
-                cutoff = context_size
-                # split text by the closest punctuation mark or then by comma or space
+            if num_tokens >= context_size and len(text) > 1:
+                # `context_size` is a token budget, not a character index. Estimate a
+                # character cutoff from the token-to-character ratio so the head is
+                # likely to fit, then clamp it to ``[1, len(text) - 1]`` so both the
+                # head and the tail are strictly shorter than ``text``. This guarantees
+                # progress and terminates the recursion even for token-dense content
+                # (e.g. CJK, code, base64) where ``len(text)`` may be <= ``context_size``.
+                cutoff = max(1, len(text) * context_size // max(1, num_tokens))
+                cutoff = min(cutoff, len(text) - 1)
+                # prefer to split on the closest punctuation mark, then comma, then
+                # whitespace, searching forward from the estimated cutoff. Never let the
+                # boundary reach the end of the text, which would empty the tail.
                 for pattern in [r"[.!?]", r",", r"\s"]:
-                    match = re.search(pattern, text[context_size:])
+                    match = re.search(pattern, text[cutoff:])
                     if match:
-                        cutoff = context_size + match.start() + 1
+                        boundary = cutoff + match.start() + 1
+                        if boundary < len(text):
+                            cutoff = boundary
                         break
                 splitted_text.extend(
                     self._split_texts_to_fit_model_specs(
@@ -249,8 +262,8 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
 
         # call embedding model
-        task_type = to_task_type(input_type.value)
-        config = EmbedContentConfig(task_type=task_type.name) if task_type else None
+        task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+        config = EmbedContentConfig(task_type=task_type) if task_type else None
         logical_texts = texts if isinstance(texts, list) else [texts]
         contents = [self._as_user_content(text) for text in logical_texts]
         response = client.models.embed_content(
@@ -308,7 +321,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
 
         return usage
 
-    def _detect_image_mime_type(self, base64_str: str, validate_format: bool = False) -> str:
+    def _detect_image_mime_type(
+        self, base64_str: str, validate_format: bool = False
+    ) -> str:
         """
         Detect image MIME type from base64 string
 
@@ -324,7 +339,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             data = base64.b64decode(base64_str, validate=True)
 
             # Check file signatures
-            if data.startswith(b"\xFF\xD8\xFF"):
+            if data.startswith(b"\xff\xd8\xff"):
                 return "image/jpeg"
             elif data.startswith(b"\x89PNG\r\n\x1a\n"):
                 return "image/png"
@@ -345,7 +360,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         except ValueError:
             raise
         except binascii.Error:
-            logger.warning("Failed to decode base64 image data, defaulting to image/jpeg", exc_info=True)
+            logger.warning(
+                "Failed to decode base64 image data, defaulting to image/jpeg",
+                exc_info=True,
+            )
             return "image/jpeg"
 
     def _get_output_dimension(self, model: str, credentials: dict) -> Optional[int]:
@@ -361,7 +379,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if model_schema and model_schema.model_properties:
                 return model_schema.model_properties.get("output_dimension")
         except Exception:
-            logger.warning("Failed to get output_dimension from model schema", exc_info=True)
+            logger.warning(
+                "Failed to get output_dimension from model schema", exc_info=True
+            )
         return None
 
     def _invoke_multimodal(
@@ -386,9 +406,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         client = genai.Client(api_key=credentials["google_api_key"])
 
         # Convert MultiModalContent to Google Genai format, tracking content types
-        contents = []        # converted content for API call
+        contents = []  # converted content for API call
         content_is_image = []  # parallel list: True if image, False if text
-        original_texts = []   # parallel list: original text string (or None for images)
+        original_texts = []  # parallel list: original text string (or None for images)
         for document in documents:
             if document.content_type == MultiModalContentType.TEXT:
                 contents.append(self._as_user_content(document.content))
@@ -396,7 +416,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 original_texts.append(document.content)
             elif document.content_type == MultiModalContentType.IMAGE:
                 # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
-                mime_type = self._detect_image_mime_type(document.content, validate_format=True)
+                mime_type = self._detect_image_mime_type(
+                    document.content, validate_format=True
+                )
                 # Decode base64 and create Part object
                 base64_str = document.content
                 if "," in base64_str:
@@ -432,12 +454,12 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 )
 
             # Prepare config with optional output_dimension (MRL support)
-            task_type = to_task_type(input_type.value)
+            task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
             output_dimension = self._get_output_dimension(model, credentials)
 
             config_kwargs = {}
             if task_type:
-                config_kwargs["task_type"] = task_type.name
+                config_kwargs["task_type"] = task_type
             if output_dimension:
                 config_kwargs["output_dimensionality"] = output_dimension
 
@@ -449,9 +471,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             )
 
             if response.embeddings is None:
-                raise InvokeError(
-                    f"Unable to get embeddings from '{model}' model"
-                )
+                raise InvokeError(f"Unable to get embeddings from '{model}' model")
 
             if len(response.embeddings) != len(batch_contents):
                 raise InvokeError(

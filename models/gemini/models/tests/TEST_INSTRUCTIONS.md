@@ -1,131 +1,71 @@
-# Gemini Document Filtering Tests
+# Gemini tests
 
-This directory contains comprehensive tests for the Gemini API document filtering functionality.
+The Gemini plugin has offline unit tests and opt-in live tests that call the real Google API.
 
-## Test Structure
+## Offline tests
 
-### `test_document_filtering.py`
-- **Unit Tests** (`TestDocumentFilteringUnit`): No API key required
-- **Integration Tests** (`TestDocumentFilteringIntegration`): Requires valid API key
+Offline tests do not require credentials or make billable requests.
 
-## Test Configuration
-
-### Environment Setup
-
-1. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Set your Gemini API key in `.env`:
-   ```bash
-   GEMINI_API_KEY=your_actual_api_key_here
-   ```
-
-3. Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
-
-### Test Configuration
-
-The tests use minimal cost configuration:
-- **Model**: `gemini-2.5-flash-lite`
-- **Max Output Tokens**: 5 (to minimize costs)
-- **Temperature**: 0.1
-
-You can modify these settings in the `GEMINI_TEST_CONFIG` dictionary in the test file.
-
-## Running Tests
-
-### All Tests
 ```bash
-# Run all tests
-uv run pytest
-
-# Run with detailed output
-uv run pytest models/tests/test_document_filtering.py -v -s
+uv run --frozen python -m pytest -m "not live"
 ```
 
-### Unit Tests Only (No API Key Required)
+They cover request construction, message conversion, model schemas, parameter validation, file handling, structured output, and tool-call ID preservation.
+
+## Live-test setup
+
+Copy the example environment file and provide a Google AI Studio API key.
+
 ```bash
-uv run pytest models/tests/test_document_filtering.py::TestDocumentFilteringUnit -v
+cp .env.example .env
 ```
 
-### Integration Tests Only (API Key Required)
-```bash
-uv run pytest models/tests/test_document_filtering.py::TestDocumentFilteringIntegration -v -m integration
+Set this value in `.env`.
+
+```dotenv
+GEMINI_API_KEY=your-google-api-key
 ```
 
-### Skip Integration Tests
+Pytest automatically loads `.env` and skips live tests when `GEMINI_API_KEY` is empty or missing.
+
+If a configured key is rejected by Google, the live test fails instead of hiding the authentication error as a skip.
+
+## Run live tests
+
+Run the complete live suite.
+
 ```bash
-uv run pytest models/tests/test_document_filtering.py -v -m "not integration"
+uv run --frozen python -m pytest -m live -v -s
 ```
 
-## Test Features
+Run only the new Gemini LLM coverage.
 
-### Unit Tests Cover:
-- ✅ Supported document types (PDF, TXT, HTML, Markdown)
-- ✅ Unsupported document types (DOCX, XLSX, PPT, etc.)
-- ✅ MIME type filtering
-- ✅ File extension filtering
-- ✅ Case-insensitive extension filtering
-- ✅ Mixed supported/unsupported content
-- ✅ Empty content after filtering
-- ✅ File caching mechanism
-- ✅ Error handling
+```bash
+uv run --frozen python -m pytest models/tests/test_llm_live.py -v -s
+```
 
-### Integration Tests Cover:
-- ✅ Real PDF upload and processing
-- ✅ Real text document upload
-- ✅ Real Markdown document upload
-- ✅ Real filtering with mixed documents
-- ✅ Real unsupported document rejection
+Run embedding live tests.
 
-## Memory Management
+```bash
+uv run --frozen python -m pytest models/tests/test_embedding_live.py -v -s
+```
 
-- Tests use `MemoryFileCache` instead of persistent file cache
-- No files are written to disk during testing
-- Cache is cleared after each test
+Run document filtering integration tests.
 
-## Test Data
+```bash
+uv run --frozen python -m pytest models/tests/test_document_filtering.py -m live -v -s
+```
 
-The `DocumentGenerator` class creates minimal valid documents:
-- **PDF**: Minimal valid PDF structure
-- **Text**: Plain text content
-- **HTML**: Basic HTML structure
-- **Markdown**: Simple Markdown content
-- **DOCX**: Minimal ZIP structure (for negative testing)
+## New-model live coverage
 
-## Cost Optimization
+Both `gemini-3.6-flash` and `gemini-3.5-flash-lite` are tested through the plugin LLM interface.
 
-Integration tests are designed to minimize API costs:
-- Very short responses (5 tokens max)
-- Simple test documents
-- Efficient test cases
+The live suite covers streaming text generation, non-streaming structured output, inline image input, forced function calling, call ID preservation, function responses, and multi-turn replay.
 
-## Extensibility
-
-The test architecture supports easy extension for:
-- Additional document types
-- Image/video/audio testing (framework ready)
-- Different Gemini models
-- Custom test configurations
+Responses are intentionally short to limit API cost.
 
 ## Troubleshooting
 
-### Common Issues
+Live tests skip only when the API key is empty or missing.
 
-1. **"GEMINI_API_KEY not found"**
-   - Set up your `.env` file with valid API key
-
-2. **"Invalid GEMINI_API_KEY"**
-   - Verify your API key at Google AI Studio
-   - Check API key permissions
-
-3. **Integration tests skipped**
-   - This is normal behavior when no API key is provided
-   - Only unit tests will run
-
-### Debug Mode
-```bash
-# Run with debug logging
-uv run pytest models/tests/test_document_filtering.py -v -s --log-cli-level=DEBUG
-```
+Authentication and model-access failures are test failures when an API key is configured.

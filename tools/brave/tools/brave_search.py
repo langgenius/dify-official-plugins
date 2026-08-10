@@ -47,7 +47,7 @@ class BraveSearchWrapper(BaseModel):
         req.prepare_url(self.base_url, params)
         if req.url is None:
             raise ValueError("prepared url is None, this should not happen")
-        response = requests.get(req.url, headers=headers)
+        response = requests.get(req.url, headers=headers, timeout=10)
         if not response.ok:
             raise Exception(f"HTTP error {response.status_code}")
         return response.json().get("web", {}).get("results", [])
@@ -112,7 +112,10 @@ class BraveSearchTool(Tool):
         """
         query = tool_parameters.get("query", "")
         count = tool_parameters.get("count", 3)
-        api_key = self.runtime.credentials["brave_search_api_key"]
+        api_key = self.runtime.credentials.get("brave_search_api_key")
+        if not api_key:
+            yield self.create_text_message("Brave Search API key is required.")
+            return
         base_url = self.runtime.credentials.get("base_url")
         if not base_url:
             base_url = BRAVE_BASE_URL
@@ -121,14 +124,21 @@ class BraveSearchTool(Tool):
             base_url = BRAVE_BASE_URL
         if not query:
             yield self.create_text_message("Please input query")
+            return
         tool = BraveSearch.from_api_key(
             api_key=api_key,
             base_url=base_url,
             search_kwargs={"count": count},
             ensure_ascii=ensure_ascii,
         )
-        results = tool._run(query)
+        try:
+            results = tool._run(query)
+        except requests.exceptions.RequestException as exc:
+            yield self.create_text_message(
+                f"An error occurred while invoking the tool: {exc}."
+            )
+            return
         if not results:
-            yield self.create_text_message(f"No results found for '{query}' in Tavily")
+            yield self.create_text_message(f"No results found for '{query}' in Brave")
         else:
             yield self.create_text_message(text=results)

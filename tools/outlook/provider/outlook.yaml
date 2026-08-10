@@ -113,6 +113,12 @@ tools:
   - tools/add_attachment_to_draft.yaml
   - tools/prioritize_message_tool.yaml
   - tools/flag_message.yaml
+  - tools/list_calendars.yaml
+  - tools/list_events.yaml
+  - tools/create_event.yaml
+  - tools/get_event.yaml
+  - tools/update_event.yaml
+  - tools/delete_event.yaml
 extra:
   python:
     source: provider/outlook.py
