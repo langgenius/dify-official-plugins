@@ -1,6 +1,8 @@
 import base64
 import binascii
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from typing import Optional
 from dify_plugin import TextEmbeddingModel
@@ -50,6 +52,10 @@ from legacy.errors import (
     ServerUnavailableErrors,
 )
 from models.text_embedding.models import get_model_config
+
+
+DEFAULT_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY = 4
+MAX_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY = 16
 
 
 class VolcengineMaaSTextEmbeddingModel(TextEmbeddingModel):
@@ -110,14 +116,8 @@ class VolcengineMaaSTextEmbeddingModel(TextEmbeddingModel):
         client = ArkClientV3.from_credentials(credentials)
 
         if self._is_multimodal_model(model, credentials):
-            resp = client.multimodal_embeddings(input=self._transform_input_text(texts))
-            usage = self._calc_response_usage(
-                model=model,
-                credentials=credentials,
-                tokens=getattr(resp.usage, "total_tokens", 0),
-            )
-            result = TextEmbeddingResult(
-                model=model, embeddings=[resp.data.embedding], usage=usage
+            return self._generate_multimodal_text_embeddings(
+                model=model, credentials=credentials, client=client, texts=texts
             )
         else:
             resp = client.embeddings(texts)
@@ -128,6 +128,58 @@ class VolcengineMaaSTextEmbeddingModel(TextEmbeddingModel):
                 model=model, embeddings=[v.embedding for v in resp.data], usage=usage
             )
         return result
+
+    def _generate_multimodal_text_embeddings(
+        self,
+        model: str,
+        credentials: dict,
+        client: ArkClientV3,
+        texts: list[str],
+    ) -> TextEmbeddingResult:
+        if not texts:
+            usage = self._calc_response_usage(
+                model=model, credentials=credentials, tokens=0
+            )
+            return TextEmbeddingResult(model=model, embeddings=[], usage=usage)
+
+        concurrency = self._get_multimodal_text_embedding_concurrency(len(texts))
+
+        def invoke_one(text: str):
+            resp = client.multimodal_embeddings(input=self._transform_input_text([text]))
+            return resp.data.embedding, getattr(resp.usage, "total_tokens", 0)
+
+        if concurrency == 1 or len(texts) == 1:
+            results = [invoke_one(text) for text in texts]
+        else:
+            with ThreadPoolExecutor(max_workers=concurrency) as executor:
+                results = list(executor.map(invoke_one, texts))
+
+        embeddings = [embedding for embedding, _tokens in results]
+        if len(embeddings) != len(texts):
+            raise InvokeBadRequestError(
+                f"Multimodal embedding count mismatch: expected {len(texts)}, "
+                f"got {len(embeddings)}"
+            )
+
+        total_tokens = sum(tokens for _embedding, tokens in results)
+        usage = self._calc_response_usage(
+            model=model, credentials=credentials, tokens=total_tokens
+        )
+        return TextEmbeddingResult(model=model, embeddings=embeddings, usage=usage)
+
+    def _get_multimodal_text_embedding_concurrency(self, text_count: int) -> int:
+        raw_value = os.getenv(
+            "VOLCENGINE_MAAS_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY",
+            str(DEFAULT_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY),
+        )
+        try:
+            configured = int(raw_value)
+        except ValueError:
+            configured = DEFAULT_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY
+
+        concurrency = max(1, configured)
+        concurrency = min(concurrency, MAX_MULTIMODAL_TEXT_EMBEDDING_CONCURRENCY)
+        return min(concurrency, text_count)
 
     def get_num_tokens(
         self, model: str, credentials: dict, texts: list[str]
