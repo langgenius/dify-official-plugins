@@ -49,3 +49,30 @@ def test_radio_offered_in_both_credential_schemas():
         "the endpoint radio must exist in BOTH provider_credential_schema and "
         "model_credential_schema, or customizable models stay .com-only"
     )
+
+
+def test_validation_401_names_the_endpoint_it_hit():
+    """Unmocked, real-network: proves validate_credentials itself flows through
+    the endpoint switch, and that the failure names the host that rejected the
+    key. Both StepFun hosts return byte-identical 401 bodies for a bad key, so
+    without the endpoint in the message a wrong-region 401 is undiagnosable
+    (2026-08-10 lesson: a monkeypatched dependency is an untested dependency)."""
+    import dify_plugin  # noqa: F401  (gevent-patches ssl; must precede requests)
+    import pytest
+
+    sys.path.insert(0, str(_PLUGIN_ROOT))
+    from dify_plugin.errors.model import CredentialsValidateFailedError
+    from models.llm.llm import StepfunLargeLanguageModel
+
+    model = StepfunLargeLanguageModel([])
+    for flag, host in (("true", "api.stepfun.ai"), ("false", "api.stepfun.com")):
+        credentials = {
+            "api_key": "sk-invalid-on-purpose",
+            "use_international_endpoint": flag,
+        }
+        with pytest.raises(CredentialsValidateFailedError) as excinfo:
+            model.validate_credentials("step-3.7-flash", credentials)
+        assert host in str(excinfo.value), (
+            f"validation error must name {host}: {excinfo.value}"
+        )
+        assert credentials["endpoint_url"] == f"https://{host}/v1"
