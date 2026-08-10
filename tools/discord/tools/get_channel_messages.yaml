@@ -1,0 +1,71 @@
+description:
+  human:
+    en_US: Fetch messages from a Discord channel using Bot API
+    pt_BR: Buscar mensagens de um canal do Discord usando a API do Bot
+    zh_Hans: 使用Bot API从Discord频道获取消息
+  llm: A tool for fetching messages from a Discord channel.
+extra:
+  python:
+    source: tools/get_channel_messages.py
+identity:
+  author: lezhiliu
+  icon: icon.svg
+  label:
+    en_US: Get Channel Messages
+    pt_BR: Obter Mensagens do Canal
+    zh_Hans: 获取频道消息
+  name: get_channel_messages
+parameters:
+- form: llm
+  human_description:
+    en_US: The Discord channel ID to fetch messages from
+    pt_BR: O ID do canal do Discord para buscar mensagens
+    zh_Hans: 要获取消息的Discord频道ID
+  label:
+    en_US: Channel ID
+    pt_BR: ID do Canal
+    zh_Hans: 频道ID
+  llm_description: The Discord channel ID
+  name: channel_id
+  required: true
+  type: string
+- default: 50
+  form: llm
+  human_description:
+    en_US: Number of messages to retrieve (1-100, default 50)
+    pt_BR: Número de mensagens a recuperar (1-100, padrão 50)
+    zh_Hans: 要获取的消息数量（1-100，默认50）
+  label:
+    en_US: Limit
+    pt_BR: Limite
+    zh_Hans: 数量限制
+  llm_description: Number of messages to retrieve (1-100)
+  name: limit
+  required: false
+  type: number
+- form: llm
+  human_description:
+    en_US: Get messages before this message ID
+    pt_BR: Obter mensagens anteriores a este ID de mensagem
+    zh_Hans: 获取此消息ID之前的消息
+  label:
+    en_US: Before Message ID
+    pt_BR: Antes do ID da Mensagem
+    zh_Hans: 此消息ID之前
+  llm_description: Get messages before this message ID
+  name: before
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Get messages after this message ID
+    pt_BR: Obter mensagens posteriores a este ID de mensagem
+    zh_Hans: 获取此消息ID之后的消息
+  label:
+    en_US: After Message ID
+    pt_BR: Depois do ID da Mensagem
+    zh_Hans: 此消息ID之后
+  llm_description: Get messages after this message ID
+  name: after
+  required: false
+  type: string

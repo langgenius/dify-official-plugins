@@ -54,6 +54,101 @@ parameters:
   name: username
   required: false
   type: string
+- form: llm
+  human_description:
+    en_US: Whether Discord should read the message aloud with text-to-speech.
+  label:
+    en_US: Text to speech
+  llm_description: Set true to send the webhook message as TTS.
+  name: tts
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Wait for Discord to return the created message object.
+  label:
+    en_US: Wait for response
+  name: wait
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Thread ID to send the webhook message into.
+  label:
+    en_US: Thread ID
+  name: thread_id
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Name of a thread to create in a forum or media channel.
+  label:
+    en_US: Thread name
+  llm_description: Optional thread name for forum or media channels.
+  name: thread_name
+  required: false
+  type: string
+- form: form
+  human_description:
+    en_US: Discord message flags as an integer.
+  label:
+    en_US: Message flags
+  name: flags
+  required: false
+  type: number
+- form: form
+  human_description:
+    en_US: Allow sending components with application-owned webhooks.
+  label:
+    en_US: With components
+  name: with_components
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: JSON array of Discord embed objects. Discord allows up to 10 embeds.
+  label:
+    en_US: Embeds JSON
+  llm_description: Optional JSON array of Discord embed objects, up to 10 items.
+  name: embeds_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON object controlling which mentions Discord should parse.
+  label:
+    en_US: Allowed mentions JSON
+  llm_description: 'Optional Discord allowed_mentions JSON object, for example {"parse": []}.'
+  name: allowed_mentions_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON array of Discord message component objects.
+  label:
+    en_US: Components JSON
+  llm_description: Optional JSON array of Discord message components.
+  name: components_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON object for a Discord poll.
+  label:
+    en_US: Poll JSON
+  llm_description: Optional Discord poll JSON object.
+  name: poll_json
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: JSON array of tag IDs to apply when creating a forum or media channel thread.
+  label:
+    en_US: Applied tags JSON
+  llm_description: Optional JSON array of Discord snowflake tag IDs.
+  name: applied_tags_json
+  required: false
+  type: string
 - form: form
   human_description:
     en_US: Discord Webhook Avatar URL
