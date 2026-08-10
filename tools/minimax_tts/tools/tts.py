@@ -7,6 +7,8 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from utils.endpoint import get_base_url
+
 logger = logging.getLogger(__name__)
 
 class MinimaxTTS(Tool):
@@ -41,7 +43,7 @@ class MinimaxTTS(Tool):
         if emotion:
             voice_setting["emotion"] = emotion
 
-        url = f"https://api.minimax.chat/v1/t2a_v2?GroupId={group_id}"
+        url = f"{get_base_url(self.runtime.credentials)}/v1/t2a_v2?GroupId={group_id}"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
@@ -81,7 +83,7 @@ class MinimaxTTS(Tool):
 
     def tts(self, text: str, group_id: str, api_key: str) -> bytes:
         """调用 MiniMax TTS API 进行文本转语音"""
-        url = f"https://api.minimax.chat/v1/t2a_v2?GroupId={group_id}"
+        url = f"{get_base_url(self.runtime.credentials)}/v1/t2a_v2?GroupId={group_id}"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"

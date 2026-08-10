@@ -38,6 +38,29 @@ credentials_for_provider:
       en_US: Get your api key from Minimax
       zh_Hans: 获取您的 Minimax api key
     url: https://api.minimax.chat/user-center/basic-information/interface-key
+  api_endpoint:
+    type: select
+    required: false
+    default: legacy
+    label:
+      en_US: API Endpoint
+      zh_Hans: API 端点
+    help:
+      en_US: MiniMax runs separate account systems; pick the platform your key was created on.
+      zh_Hans: MiniMax 国内与国际平台账号体系相互独立，请选择创建密钥的平台。
+    options:
+      - value: legacy
+        label:
+          en_US: api.minimax.chat (legacy, current default)
+          zh_Hans: api.minimax.chat（旧域名，当前默认）
+      - value: china
+        label:
+          en_US: api.minimaxi.com (China)
+          zh_Hans: api.minimaxi.com（中国大陆）
+      - value: international
+        label:
+          en_US: api.minimax.io (International)
+          zh_Hans: api.minimax.io（国际站）
 tools:
   - tools/tts.yaml
 extra:
