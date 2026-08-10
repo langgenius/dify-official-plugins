@@ -100,7 +100,10 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = "https://api.stepfun.com/v1"
+        if credentials.get("use_international_endpoint", "false") == "true":
+            credentials["endpoint_url"] = "https://api.stepfun.ai/v1"
+        else:
+            credentials["endpoint_url"] = "https://api.stepfun.com/v1"
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
