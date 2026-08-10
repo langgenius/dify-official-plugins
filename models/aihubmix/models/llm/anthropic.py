@@ -50,6 +50,7 @@ from httpx import Timeout
 from PIL import Image
 
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
+logger = logging.getLogger(__name__)
 
 
 class PromptCachingHandler:
@@ -147,6 +148,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     VALID_PROMPT_CACHING_TTLS = {"5m", "1h"}
 
     ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-opus-5",
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-sonnet-5",
@@ -156,12 +158,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-fable-5",
     )
     TASK_BUDGET_SUPPORTED_MODELS: tuple[str, ...] = (
+        "claude-opus-5",
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-fable-5",
     )
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
+        "claude-opus-5",
         "claude-sonnet-5",
+    )
+    DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
+        "claude-opus-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -228,6 +235,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
 
+    def _enforces_disabled_thinking_effort_cap(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.DISABLED_THINKING_EFFORT_CAP_MODELS
+        )
+
     def _invoke(
         self,
         model: str,
@@ -281,6 +295,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Model-aware default: use each model's native max output limit
             # See: https://platform.claude.com/docs/en/about-claude/models/overview
             _MAX_TOKENS_128K = {
+                "claude-opus-5",
                 "claude-opus-4-7", "claude-opus-4-7-think",
                 "claude-opus-4-6", "claude-opus-4-6-think",
             }
@@ -323,11 +338,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         )
         effort = model_parameters.pop("effort", None)
         task_budget = int(model_parameters.pop("task_budget", 0) or 0)
+        response_format = model_parameters.pop("response_format", None)
+        json_schema = model_parameters.pop("json_schema", None)
 
         if uses_adaptive_thinking:
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
+            disabling_thinking = False
             if always_on_adaptive_thinking:
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
@@ -340,6 +358,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 }
             elif adaptive_thinking_default_on and thinking_was_set:
                 extra_model_kwargs["thinking"] = {"type": "disabled"}
+                disabling_thinking = True
+
+            if (
+                disabling_thinking
+                and self._enforces_disabled_thinking_effort_cap(model)
+                and effort in ("xhigh", "max")
+            ):
+                logger.warning(
+                    "Model %s rejects thinking=disabled with effort=%s; "
+                    "clamping effort to 'high' to avoid a 400.",
+                    model,
+                    effort,
+                )
+                effort = "high"
 
             output_config: dict[str, Any] = {}
             if effort:
@@ -354,6 +386,23 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     if "anthropic-beta" in extra_headers
                     else "task-budgets-2026-03-13"
                 )
+            if response_format == "json_schema":
+                if not json_schema:
+                    raise ValueError("json_schema is required when response_format is json_schema")
+                if isinstance(json_schema, str):
+                    try:
+                        json_schema = json.loads(json_schema)
+                    except json.JSONDecodeError as exc:
+                        raise ValueError("json_schema must be valid JSON") from exc
+                if not isinstance(json_schema, Mapping):
+                    raise ValueError("json_schema must be a JSON object")
+                schema = json_schema.get("schema", json_schema)
+                if not isinstance(schema, Mapping) or not schema:
+                    raise ValueError("json_schema must contain a non-empty schema object")
+                output_config["format"] = {
+                    "type": "json_schema",
+                    "schema": dict(schema),
+                }
             if output_config:
                 extra_model_kwargs["output_config"] = output_config
         else:
@@ -559,7 +608,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         Code block mode wrapper for invoking large language model
         """
-        if model_parameters.get("response_format"):
+        response_format = model_parameters.get("response_format")
+        if response_format == "json_schema" and self._uses_adaptive_thinking(model):
+            if not model_parameters.get("json_schema"):
+                raise ValueError("json_schema is required when response_format is json_schema")
+        elif response_format:
             stop = stop or []
             self._transform_chat_json_prompts(
                 model=model,
@@ -570,9 +623,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 stop=stop,
                 stream=stream,
                 user=user,
-                response_format=model_parameters["response_format"],
+                response_format=response_format,
             )
             model_parameters.pop("response_format")
+            model_parameters.pop("json_schema", None)
+        else:
+            model_parameters.pop("json_schema", None)
         return self._invoke(
             model,
             credentials,
