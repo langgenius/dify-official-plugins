@@ -51,8 +51,10 @@ class BailianMemoryBaseTool:
                 error_detail = response.json()
             except Exception:
                 error_detail = response.text
+            # Both DashScope hosts return byte-identical InvalidApiKey bodies,
+            # so the URL is the only way to tell which region rejected the key.
             raise Exception(
-                f"API request failed ({response.status_code}): "
+                f"API request failed ({response.status_code}) at {url}: "
                 f"{json.dumps(error_detail, ensure_ascii=False) if isinstance(error_detail, dict) else error_detail}"
             )
         return response.json()
