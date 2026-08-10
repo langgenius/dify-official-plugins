@@ -1,0 +1,49 @@
+identity:
+  name: delete_message
+  author: langgenius
+  label:
+    en_US: Delete Message
+    zh_Hans: 删除消息
+    ja_JP: メッセージを削除
+    ko_KR: 메시지 삭제
+description:
+  human:
+    en_US: Delete a message from a Slack channel.
+    zh_Hans: 从 Slack 频道删除一条消息。
+    ja_JP: Slack チャンネルからメッセージを削除します。
+    ko_KR: Slack 채널에서 메시지를 삭제합니다.
+  llm: Deletes a message using chat.delete. Requires the channel ID and the ts (timestamp) of the message to delete. A bot token can only delete messages it posted.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID that contains the message to delete.
+      zh_Hans: 包含要删除消息的频道 ID。
+      ja_JP: 削除するメッセージが含まれるチャンネル ID。
+      ko_KR: 삭제할 메시지가 있는 채널 ID입니다.
+    llm_description: The channel ID (e.g. C0123456789) that contains the message to delete.
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: Message Timestamp
+      zh_Hans: 消息时间戳
+      ja_JP: メッセージのタイムスタンプ
+      ko_KR: 메시지 타임스탬프
+    human_description:
+      en_US: The ts (timestamp) of the message to delete.
+      zh_Hans: 要删除消息的 ts（时间戳）。
+      ja_JP: 削除するメッセージの ts（タイムスタンプ）。
+      ko_KR: 삭제할 메시지의 ts(타임스탬프)입니다.
+    llm_description: The timestamp (ts) identifying the message to delete, e.g. 1405894322.002768.
+    form: llm
+extra:
+  python:
+    source: tools/delete_message.py

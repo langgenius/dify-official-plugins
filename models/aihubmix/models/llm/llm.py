@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
-RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "o3-pro")
+RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "gpt-5.6", "o3-pro")
 
 
 class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -111,6 +111,8 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
                     model_parameters=model_parameters,
                     compute_usage=compute_usage,
                     user=user,
+                    tools=tools,
+                    stop=stop,
                 )
 
             return resp_handler.create_llm_result(
@@ -119,6 +121,8 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
                 model_parameters=model_parameters,
                 compute_usage=compute_usage,
                 user=user,
+                tools=tools,
+                stop=stop,
             )
         
         # 默认使用父类的生成方法

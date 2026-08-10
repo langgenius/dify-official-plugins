@@ -2,7 +2,8 @@ model: voyage-3.5
 model_type: text-embedding
 model_properties:
   context_size: 32000
+  max_chunks: 128
 pricing:
-  input: '0.06'
-  unit: '1000000'
+  input: '0.00006'
+  unit: '0.001'
   currency: USD

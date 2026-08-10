@@ -14,6 +14,7 @@ from dify_plugin.entities.model.llm import (
     LLMUsage,
 )
 from dify_plugin.entities.model.message import AssistantPromptMessage
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 
 from strategies.function_calling import FunctionCallingAgentStrategy
 
@@ -134,6 +135,83 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
             self.strategy.extract_blocking_tool_calls(result)
 
         self.assertIn("Failed to parse tool-call arguments as JSON", str(ctx.exception))
+
+    def test_only_thinking_end_streams_after_tool_call(self):
+        thinking_started = False
+        streamed_content = []
+
+        for function_call_state, content in [
+            (False, "<think>\n"),
+            (False, "Analyzing the request."),
+            (True, "Hidden intermediate content"),
+            (True, "\n</think>"),
+        ]:
+            should_stream, thinking_started = (
+                self.strategy._get_streaming_content_state(
+                    content=content,
+                    function_call_state=function_call_state,
+                    thinking_started=thinking_started,
+                    iteration_step=1,
+                    max_iteration_steps=3,
+                )
+            )
+            if should_stream:
+                streamed_content.append(content)
+
+        response = "".join(streamed_content)
+        self.assertEqual(
+            response,
+            "<think>\nAnalyzing the request.\n</think>",
+        )
+        self.assertFalse(thinking_started)
+
+
+class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
+    def test_workflow_keeps_text_and_omits_json_and_variable(self):
+        responses = [
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.TEXT,
+                message=ToolInvokeMessage.TextMessage(text='{"answer": "ok"}'),
+            ),
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.JSON,
+                message=ToolInvokeMessage.JsonMessage(
+                    json_object={"answer": "ok"},
+                ),
+            ),
+            ToolInvokeMessage(
+                type=ToolInvokeMessage.MessageType.VARIABLE,
+                message=ToolInvokeMessage.VariableMessage(
+                    variable_name="answer",
+                    variable_value="ok",
+                ),
+            ),
+        ]
+
+        result = "".join(
+            FunctionCallingAgentStrategy._format_tool_response(
+                response=response,
+                provider_type=ToolProviderType.WORKFLOW,
+            )
+            for response in responses
+        )
+
+        self.assertEqual(result, '{"answer": "ok"}')
+
+    def test_non_workflow_json_remains_visible(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.JSON,
+            message=ToolInvokeMessage.JsonMessage(
+                json_object={"answer": "ok"},
+            ),
+        )
+
+        result = FunctionCallingAgentStrategy._format_tool_response(
+            response=response,
+            provider_type=ToolProviderType.BUILT_IN,
+        )
+
+        self.assertEqual(result, 'tool response: {"answer": "ok"}.')
 
 
 if __name__ == "__main__":

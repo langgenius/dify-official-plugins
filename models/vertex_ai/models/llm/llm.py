@@ -59,6 +59,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
     "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
 ]
 IMAGE_GENERATION_MODELS = {
     "gemini-3.1-flash-image-preview",

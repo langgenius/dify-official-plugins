@@ -98,6 +98,25 @@ model_credential_schema:
       variable: __model_type
     type: radio
     variable: vision_support
+  - default: no_support
+    label:
+      en_US: Reasoning Support
+      zh_Hans: 是否支持推理
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: support
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: reasoning_support
   - default: no_call
     label:
       en_US: Function calling

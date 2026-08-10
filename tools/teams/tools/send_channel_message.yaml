@@ -1,0 +1,90 @@
+identity:
+  name: send_channel_message
+  author: langgenius
+  label:
+    en_US: Send Channel Message
+    zh_Hans: 发送频道消息
+    pt_BR: Enviar Mensagem de Canal
+    ja_JP: チャネルメッセージ送信
+    zh_Hant: 發送頻道訊息
+description:
+  human:
+    en_US: Post a message to a Microsoft Teams channel
+    zh_Hans: 向 Microsoft Teams 频道发布消息
+    pt_BR: Publicar uma mensagem em um canal do Microsoft Teams
+    ja_JP: Microsoft Teams のチャネルにメッセージを投稿
+    zh_Hant: 向 Microsoft Teams 頻道發佈訊息
+  llm: Post a message to a Microsoft Teams channel using the Microsoft Graph API, returns the created message id and webUrl
+parameters:
+  - name: team_id
+    type: string
+    required: true
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チーム ID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: The ID of the team that owns the channel
+      zh_Hans: 拥有该频道的团队 ID
+      pt_BR: O ID da equipe que possui o canal
+      ja_JP: チャネルを所有するチームの ID
+      zh_Hant: 擁有該頻道的團隊 ID
+    llm_description: The ID of the Microsoft Teams team that owns the target channel
+    form: llm
+  - name: channel_id
+    type: string
+    required: true
+    label:
+      en_US: Channel ID
+      zh_Hans: 频道 ID
+      pt_BR: ID do Canal
+      ja_JP: チャネル ID
+      zh_Hant: 頻道 ID
+    human_description:
+      en_US: The ID of the channel to send the message to
+      zh_Hans: 要发送消息的频道 ID
+      pt_BR: O ID do canal para enviar a mensagem
+      ja_JP: メッセージを送信するチャネルの ID
+      zh_Hant: 要發送訊息的頻道 ID
+    llm_description: The ID of the Microsoft Teams channel to post the message to
+    form: llm
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: Message
+      zh_Hans: 消息
+      pt_BR: Mensagem
+      ja_JP: メッセージ
+      zh_Hant: 訊息
+    human_description:
+      en_US: The message content to post to the channel
+      zh_Hans: 要发布到频道的消息内容
+      pt_BR: O conteúdo da mensagem a publicar no canal
+      ja_JP: チャネルに投稿するメッセージの内容
+      zh_Hant: 要發佈到頻道的訊息內容
+    llm_description: The text content of the message to post to the channel
+    form: llm
+  - name: content_type
+    type: string
+    required: false
+    default: html
+    label:
+      en_US: Content Type
+      zh_Hans: 内容类型
+      pt_BR: Tipo de Conteúdo
+      ja_JP: コンテンツタイプ
+      zh_Hant: 內容類型
+    human_description:
+      en_US: The content type of the message, either html or text
+      zh_Hans: 消息的内容类型，html 或 text
+      pt_BR: O tipo de conteúdo da mensagem, html ou text
+      ja_JP: メッセージのコンテンツタイプ、html または text
+      zh_Hant: 訊息的內容類型，html 或 text
+    llm_description: The content type of the message body, either html or text, default is html
+    form: llm
+extra:
+  python:
+    source: tools/send_channel_message.py

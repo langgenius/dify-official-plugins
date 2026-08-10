@@ -1,0 +1,64 @@
+identity:
+  name: send_message
+  author: langgenius
+  label:
+    en_US: Send Message
+    zh_Hans: 发送消息
+    ja_JP: メッセージを送信
+    ko_KR: 메시지 보내기
+description:
+  human:
+    en_US: Send a message to a Slack channel, private group, or direct message.
+    zh_Hans: 向 Slack 频道、私有群组或私信发送消息。
+    ja_JP: Slack のチャンネル、プライベートグループ、またはダイレクトメッセージにメッセージを送信します。
+    ko_KR: Slack 채널, 비공개 그룹 또는 다이렉트 메시지로 메시지를 보냅니다.
+  llm: Sends a message to a Slack conversation using chat.postMessage. Requires the target channel (channel ID like C0123456789, or a #channel-name) and the message text. Optionally reply inside a thread by passing thread_ts.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel, private group, or user (DM) to send the message to. Accepts a channel ID (e.g. C0123456789) or a channel name (e.g. #general).
+      zh_Hans: 发送消息的频道、私有群组或用户（私信）。接受频道 ID（如 C0123456789）或频道名称（如 #general）。
+      ja_JP: "メッセージを送信するチャンネル、プライベートグループ、またはユーザー（DM）。チャンネル ID（例: C0123456789）またはチャンネル名（例: #general）を指定できます。"
+      ko_KR: "메시지를 보낼 채널, 비공개 그룹 또는 사용자(DM)입니다. 채널 ID(예: C0123456789) 또는 채널 이름(예: #general)을 사용할 수 있습니다."
+    llm_description: The target channel to post to. Prefer a channel ID such as C0123456789; a channel name like #general is also accepted.
+    form: llm
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: Message Text
+      zh_Hans: 消息内容
+      ja_JP: メッセージ本文
+      ko_KR: 메시지 내용
+    human_description:
+      en_US: The text of the message to send. Supports Slack mrkdwn formatting.
+      zh_Hans: 要发送的消息文本，支持 Slack mrkdwn 格式。
+      ja_JP: 送信するメッセージのテキスト。Slack の mrkdwn 形式に対応しています。
+      ko_KR: 보낼 메시지의 텍스트입니다. Slack mrkdwn 서식을 지원합니다.
+    llm_description: The message body to post. Supports Slack mrkdwn formatting.
+    form: llm
+  - name: thread_ts
+    type: string
+    required: false
+    label:
+      en_US: Thread Timestamp
+      zh_Hans: 线程时间戳
+      ja_JP: スレッドのタイムスタンプ
+      ko_KR: 스레드 타임스탬프
+    human_description:
+      en_US: Optional. The ts of a parent message to reply to it in a thread.
+      zh_Hans: 可选。要回复的父消息的 ts，用于在线程中回复。
+      ja_JP: 任意。スレッド内で返信する対象となる親メッセージの ts。
+      ko_KR: 선택 사항. 스레드에서 답글을 달 상위 메시지의 ts입니다.
+    llm_description: Optional parent message timestamp (ts). Provide it to post this message as a threaded reply.
+    form: llm
+extra:
+  python:
+    source: tools/send_message.py

@@ -561,8 +561,9 @@ class ReActAgentStrategy(AgentStrategy):
         tool_call_args = cast(dict[str, Any], tool_call_args)
         tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
         try:
+            provider_type = ToolProviderType(tool_instance.provider_type)
             tool_invoke_responses = self.session.tool.invoke(
-                provider_type=ToolProviderType(tool_instance.provider_type),
+                provider_type=provider_type,
                 provider=tool_instance.identity.provider,
                 tool_name=tool_instance.identity.name,
                 parameters=tool_invoke_parameters,
@@ -593,13 +594,21 @@ class ReActAgentStrategy(AgentStrategy):
                         + "Please inform the user that the image has been created successfully."
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
+                    json_message = cast(
+                        ToolInvokeMessage.JsonMessage, response.message
+                    )
+                    if (
+                        provider_type == ToolProviderType.WORKFLOW
+                        or getattr(json_message, "suppress_output", False)
+                    ):
+                        continue
                     text = json.dumps(
-                        cast(
-                            ToolInvokeMessage.JsonMessage, response.message
-                        ).json_object,
+                        json_message.json_object,
                         ensure_ascii=False,
                     )
                     result += f"tool response: {text}."
+                elif response.type == ToolInvokeMessage.MessageType.VARIABLE:
+                    continue
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
                     result += "Generated file with ... "
                     additional_messages.append(response)

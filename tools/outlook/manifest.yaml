@@ -1,4 +1,4 @@
-version: 0.2.6
+version: 0.4.0
 type: plugin
 author: langgenius
 name: outlook
@@ -8,10 +8,10 @@ label:
   zh_Hans: outlook
   pt_BR: outlook
 description:
-  en_US: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
-  ja_JP: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
-  zh_Hans: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
-  pt_BR: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
+  en_US: Integrate Microsoft Outlook with Dify - read, send and organize email, and manage calendar events.
+  ja_JP: Microsoft Outlook を Dify と連携 - メールの読み取り・送信・整理、カレンダーの予定管理ができます。
+  zh_Hans: 将 Microsoft Outlook 集成到 Dify - 读取、发送和整理邮件，并管理日历事件。
+  pt_BR: Integre o Microsoft Outlook ao Dify - leia, envie e organize e-mails e gerencie eventos de calendário.
 icon: icon.svg
 resource:
   memory: 268435456

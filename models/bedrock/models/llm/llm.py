@@ -85,6 +85,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "jp.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "au.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
@@ -1552,9 +1554,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # need workaround for ai21 models which doesn't support streaming
         if stream and model_prefix != "ai21":
-            invoke = runtime_client.invoke_model_with_response_stream
+            invoke = bedrock_client.invoke_model_with_response_stream
         else:
-            invoke = runtime_client.invoke_model
+            invoke = bedrock_client.invoke_model
 
         try:
             body_jsonstr = json.dumps(payload)
@@ -1570,8 +1572,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        # Re-raise any other exception (NameError, TypeError, ValueError, etc.) so
+        # real bugs surface instead of being wrapped in a generic InvokeError.
+        # The previous bare `except Exception` swallowed an undefined-name
+        # bug and re-raised as InvokeError, hiding the root cause from the
+        # caller and from any future maintainer reading the call site. See
+        # issue #3564.
 
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
@@ -1866,6 +1872,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
             'Claude 4.8 Opus': 'claude-4-8-opus',

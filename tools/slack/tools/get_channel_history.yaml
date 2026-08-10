@@ -1,0 +1,80 @@
+identity:
+  name: get_channel_history
+  author: langgenius
+  label:
+    en_US: Get Channel History
+    zh_Hans: 获取频道历史消息
+    ja_JP: チャンネル履歴の取得
+    ko_KR: 채널 기록 가져오기
+description:
+  human:
+    en_US: Fetch recent messages from a channel.
+    zh_Hans: 获取频道中的近期消息。
+    ja_JP: チャンネルの最近のメッセージを取得します。
+    ko_KR: 채널의 최근 메시지를 가져옵니다.
+  llm: Retrieves a channel's message history using conversations.history. Requires the channel ID. Supports limit and optional oldest/latest Unix timestamps to bound the range.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID to read history from (e.g. C0123456789).
+      zh_Hans: 要读取历史消息的频道 ID（如 C0123456789）。
+      ja_JP: 履歴を読み取るチャンネル ID（例：C0123456789）。
+      ko_KR: 기록을 읽어올 채널 ID（예：C0123456789）.
+    llm_description: The channel ID (e.g. C0123456789) whose message history should be fetched.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Limit
+      zh_Hans: 数量限制
+      ja_JP: 上限
+      ko_KR: 제한
+    human_description:
+      en_US: Maximum number of messages to return (1-1000). Defaults to 20.
+      zh_Hans: 返回消息的最大数量（1-1000）。默认为 20。
+      ja_JP: 返すメッセージの最大数（1〜1000）。デフォルトは 20 です。
+      ko_KR: 반환할 메시지의 최대 개수（1-1000）. 기본값은 20입니다.
+    llm_description: Maximum number of messages to return, between 1 and 1000. Defaults to 20.
+    form: llm
+  - name: oldest
+    type: string
+    required: false
+    label:
+      en_US: Oldest Timestamp
+      zh_Hans: 最早时间戳
+      ja_JP: 最古のタイムスタンプ
+      ko_KR: 가장 오래된 타임스탬프
+    human_description:
+      en_US: Only include messages after this Unix timestamp (inclusive).
+      zh_Hans: 仅包含此 Unix 时间戳之后（含）的消息。
+      ja_JP: この Unix タイムスタンプ以降（含む）のメッセージのみを含めます。
+      ko_KR: 이 Unix 타임스탬프 이후（포함）의 메시지만 포함합니다.
+    llm_description: Optional. Only return messages at or after this Unix epoch timestamp (e.g. 1405894322.002768).
+    form: llm
+  - name: latest
+    type: string
+    required: false
+    label:
+      en_US: Latest Timestamp
+      zh_Hans: 最晚时间戳
+      ja_JP: 最新のタイムスタンプ
+      ko_KR: 가장 최근 타임스탬프
+    human_description:
+      en_US: Only include messages before this Unix timestamp.
+      zh_Hans: 仅包含此 Unix 时间戳之前的消息。
+      ja_JP: この Unix タイムスタンプより前のメッセージのみを含めます。
+      ko_KR: 이 Unix 타임스탬프 이전의 메시지만 포함합니다.
+    llm_description: Optional. Only return messages at or before this Unix epoch timestamp.
+    form: llm
+extra:
+  python:
+    source: tools/get_channel_history.py

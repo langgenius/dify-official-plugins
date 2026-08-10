@@ -1,0 +1,65 @@
+identity:
+  name: list_channels
+  author: langgenius
+  label:
+    en_US: List Channels
+    zh_Hans: 列出频道
+    ja_JP: チャンネル一覧
+    ko_KR: 채널 목록
+description:
+  human:
+    en_US: List channels in the Slack workspace.
+    zh_Hans: 列出 Slack 工作区中的频道。
+    ja_JP: Slack ワークスペース内のチャンネルを一覧表示します。
+    ko_KR: Slack 워크스페이스의 채널을 나열합니다.
+  llm: Lists conversations (channels) in the workspace using conversations.list. Supports filtering by types and pagination via limit and cursor.
+parameters:
+  - name: types
+    type: string
+    required: false
+    label:
+      en_US: Channel Types
+      zh_Hans: 频道类型
+      ja_JP: チャンネルタイプ
+      ko_KR: 채널 유형
+    human_description:
+      en_US: Comma-separated list of channel types to include. Options - public_channel, private_channel, mpim, im. Defaults to public_channel.
+      zh_Hans: 要包含的频道类型的逗号分隔列表。选项 - public_channel、private_channel、mpim、im。默认为 public_channel。
+      ja_JP: 含めるチャンネルタイプのカンマ区切りリスト。オプション - public_channel、private_channel、mpim、im。デフォルトは public_channel です。
+      ko_KR: 포함할 채널 유형의 쉼표로 구분된 목록입니다. 옵션 - public_channel, private_channel, mpim, im. 기본값은 public_channel입니다.
+    llm_description: Comma-separated channel types to include, chosen from public_channel, private_channel, mpim, im. Defaults to public_channel when omitted.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Limit
+      zh_Hans: 数量限制
+      ja_JP: 上限
+      ko_KR: 제한
+    human_description:
+      en_US: Maximum number of channels to return (1-1000). Defaults to 100.
+      zh_Hans: 返回频道的最大数量（1-1000）。默认为 100。
+      ja_JP: 返すチャンネルの最大数（1〜1000）。デフォルトは 100 です。
+      ko_KR: 반환할 채널의 최대 개수（1-1000）. 기본값은 100입니다.
+    llm_description: Maximum number of channels to return, between 1 and 1000. Defaults to 100.
+    form: llm
+  - name: cursor
+    type: string
+    required: false
+    label:
+      en_US: Cursor
+      zh_Hans: 游标
+      ja_JP: カーソル
+      ko_KR: 커서
+    human_description:
+      en_US: Pagination cursor (next_cursor) returned by a previous call.
+      zh_Hans: 上一次调用返回的分页游标（next_cursor）。
+      ja_JP: 前回の呼び出しで返されたページネーションカーソル（next_cursor）。
+      ko_KR: 이전 호출에서 반환된 페이지네이션 커서（next_cursor）.
+    llm_description: Pagination cursor from a previous response's response_metadata.next_cursor to fetch the next page.
+    form: llm
+extra:
+  python:
+    source: tools/list_channels.py
