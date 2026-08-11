@@ -166,15 +166,13 @@ jobs:
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
 
-      # Staging cannot be tested without receiving uploads: the backend's
-      # latest/recommended rebuilds only run when an upload signals them.
-      # It must never block a release though -- a red merge workflow invites a
-      # re-run, which uploads the package again. -f keeps that re-run idempotent.
+      # Staging only becomes testable once uploads reach it: the backend rebuilds
+      # latest/recommended on an upload signal. Never blocking, though -- a red run
+      # invites a re-run, which re-uploads; -f keeps that idempotent.
       - name: Upload Plugin (staging)
         id: upload-staging
         continue-on-error: true
         env:
-          # The matrix value is not in $GITHUB_ENV; pass it in explicitly.
           PLUGIN_PATH: ${{ matrix.plugin_path }}
           STAGING_BASE_URL: ${{ secrets.MARKETPLACE_STAGING_BASE_URL }}
           STAGING_TOKEN: ${{ secrets.MARKETPLACE_STAGING_TOKEN }}
@@ -188,10 +186,8 @@ jobs:
 
       - name: Report a failed staging upload
         if: steps.upload-staging.outcome == 'failure'
-        # Reporting must not do what it reports about. A 403 from the comment
-        # API or a rate limit would otherwise redden a production publish that
-        # succeeded, which is exactly the re-run this step exists to avoid. The
-        # job summary needs no token, so it is written first and unconditionally.
+        # Summary needs no token; the comment is best-effort. Neither may redden
+        # a production publish that already succeeded.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
