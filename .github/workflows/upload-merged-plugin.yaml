@@ -188,17 +188,21 @@ jobs:
 
       - name: Report a failed staging upload
         if: steps.upload-staging.outcome == 'failure'
+        # Reporting must not do what it reports about. A 403 from the comment
+        # API or a rate limit would otherwise redden a production publish that
+        # succeeded, which is exactly the re-run this step exists to avoid. The
+        # job summary needs no token, so it is written first and unconditionally.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PLUGIN: ${{ matrix.plugin_path }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" \
-            -f body="$(printf '%s\n' \
-              "**Staging upload failed** for \`$PLUGIN\`." \
-              "" \
-              "The plugin **is** published to production -- only <https://marketplace-staging.dify.dev> is missing it, so nothing needs re-merging or re-reviewing." \
-              "" \
-              "Reason: [workflow run]($RUN_URL). The next push of this plugin, or a backfill run, will bring staging back in line." \
-              "" \
-              "_This comment exists because the staging leg is deliberately non-blocking._")"
+          report=$(printf '%s\n' \
+            "**Staging upload failed** for \`$PLUGIN\`." \
+            "" \
+            "The plugin **is** published to production -- only <https://marketplace-staging.dify.dev> is missing it, so nothing needs re-merging or re-reviewing." \
+            "" \
+            "Reason: [workflow run]($RUN_URL). The next push of this plugin, or a backfill run, will bring staging back in line.")
+          printf '%s\n' "$report" >> "$GITHUB_STEP_SUMMARY"
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" -f body="$report"
