@@ -166,30 +166,15 @@ jobs:
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
 
-      # Staging exists to exercise the publish pipeline -- several backend
-      # scheduler tasks (sync_latest_plugins and the rest of the
-      # upload-signal-driven set) only run when an upload signals them, so a
-      # staging deployment that never receives one cannot be tested at all.
-      #
-      # It must never decide whether a plugin reaches production, so this step
-      # is allowed to fail and reports itself through a commit comment instead
-      # of a red workflow. It also runs after production, so a package
-      # production rejects never lands on staging either.
-      #
-      # -f keeps a re-run idempotent: staging is not the record of truth, and a
-      # 409 from a version some backfill already put there would hide whether
-      # the pipeline reached it.
-      #
-      # Packaging repeats here (the uploader packages what -d points at). The
-      # requirements.txt export above is not redone, and a full security scan
-      # measures 16s, so the second leg costs seconds -- not worth passing the
-      # package between steps for.
+      # Staging cannot be tested without receiving uploads: the backend's
+      # latest/recommended rebuilds only run when an upload signals them.
+      # It must never block a release though -- a red merge workflow invites a
+      # re-run, which uploads the package again. -f keeps that re-run idempotent.
       - name: Upload Plugin (staging)
         id: upload-staging
         continue-on-error: true
         env:
-          # matrix.plugin_path, unlike the community repository's PLUGIN_PATH,
-          # is not in $GITHUB_ENV -- it has to be passed in explicitly.
+          # The matrix value is not in $GITHUB_ENV; pass it in explicitly.
           PLUGIN_PATH: ${{ matrix.plugin_path }}
           STAGING_BASE_URL: ${{ secrets.MARKETPLACE_STAGING_BASE_URL }}
           STAGING_TOKEN: ${{ secrets.MARKETPLACE_STAGING_TOKEN }}
