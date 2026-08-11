@@ -188,6 +188,9 @@ jobs:
         id: upload-staging
         continue-on-error: true
         env:
+          # matrix.plugin_path, unlike the community repository's PLUGIN_PATH,
+          # is not in $GITHUB_ENV -- it has to be passed in explicitly.
+          PLUGIN_PATH: ${{ matrix.plugin_path }}
           STAGING_BASE_URL: ${{ secrets.MARKETPLACE_STAGING_BASE_URL }}
           STAGING_TOKEN: ${{ secrets.MARKETPLACE_STAGING_TOKEN }}
         run: |
