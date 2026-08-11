@@ -8,6 +8,7 @@ features:
   - tool-call
   - multi-tool-call
   - stream-tool-call
+  - vision
 model_properties:
   mode: chat
   context_size: 1048576
@@ -36,6 +37,29 @@ parameter_rules:
     options:
       - text
       - json_object
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 指定模型推理的难度
+      en_US: specifying the difficulty of the model's reasoning
+    required: false
+    options:
+      - low
+      - medium
+      - high
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: true
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
 pricing:
   input: '0.3'
   output: '1.2'

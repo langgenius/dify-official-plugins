@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.message import (
@@ -35,6 +36,18 @@ def test_set_reasoning_params_supports_requested_effort_levels(effort: str) -> N
         "reasoning": {"effort": effort, "exclude": True},
         "temperature": 0.2,
     }
+
+
+def test_minimax_m3_exposes_reasoning_and_vision_controls() -> None:
+    schema_path = (
+        Path(__file__).resolve().parent.parent / "models" / "llm" / "minimax-m3.yaml"
+    )
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+
+    assert "vision" in schema["features"]
+    assert rules["reasoning_effort"]["options"] == ["low", "medium", "high"]
+    assert rules["exclude_reasoning_tokens"]["default"] is True
 
 
 def test_custom_reasoning_model_exposes_effort_and_hide_controls(
