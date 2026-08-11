@@ -9,7 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
     "dify_plugin>=0.9.0",
     "numpy>=2.4.6",
-    "dashscope>=1.25.18",
+    "dashscope>=1.25.18,<1.26.0",
     "openai>=2.38.0",
     "pydub>=0.25.1",
     "pyyaml>=6.0.3",
