@@ -11,7 +11,12 @@ Official StepFun model provider plugin for Dify.
 ## Setup
 1. Install this plugin from the Dify Marketplace.
 2. Get the required credentials from [Stepfun](https://platform.stepfun.com/interface-key).
+   - **Note:** StepFun operates two separate platforms:
+     - **Standard platform** at [platform.stepfun.com](https://platform.stepfun.com) (uses `api.stepfun.com` endpoint - default)
+     - **International platform** at [platform.stepfun.ai](https://platform.stepfun.ai) (uses `api.stepfun.ai` endpoint)
+   - These are separate account systems. An API key from one platform will not work with the other endpoint.
 3. Add the credentials in the plugin settings.
+   - If your API key is from the international platform (platform.stepfun.ai), enable the **Use International Endpoint** option.
 4. Save the configuration.
 
 ## Usage
