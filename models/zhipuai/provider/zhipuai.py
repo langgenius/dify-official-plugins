@@ -5,6 +5,13 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
+# Sentinel model used for credential validation. Kept as the value the plugin
+# has always used, so default behaviour is unchanged for existing users.
+# Callers can override the sentinel by passing `validate_model` in the
+# credentials dict — needed when `base_url` points at a private or internal
+# ZhipuAI-compatible endpoint that hosts different model names.
+DEFAULT_VALIDATE_MODEL = "glm-4.5-flash"
+
 
 class ZhipuaiProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -17,7 +24,10 @@ class ZhipuaiProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="glm-4.5-flash", credentials=credentials)
+            validate_model = credentials.get("validate_model") or DEFAULT_VALIDATE_MODEL
+            model_instance.validate_credentials(
+                model=validate_model, credentials=credentials
+            )
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

@@ -53,6 +53,17 @@ provider_credential_schema:
       type: text-input
       variable: base_url
 
+    - default: glm-4.5-flash
+      label:
+        en_US: Validate Model Name
+        zh_Hans: 验证模型名称
+      placeholder:
+        en_US: Model name used to test credentials (default glm-4.5-flash)
+        zh_Hans: 用于连通性测试的模型名称（默认 glm-4.5-flash）
+      required: false
+      type: text-input
+      variable: validate_model
+
 supported_model_types:
   - llm
   - text-embedding
