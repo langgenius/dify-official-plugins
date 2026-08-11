@@ -62,6 +62,11 @@ jobs:
         run: .github/scripts/detect-changed-plugins.sh
 
   upload-merged-plugin:
+    permissions:
+      # contents: write is only what lets the failure report post a commit
+      # comment. The toolkit and the CLI are cloned with
+      # ORG_SCOPE_GITHUB_TOKEN, not with this token.
+      contents: write
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: depot-ubuntu-24.04-4
@@ -157,6 +162,43 @@ jobs:
         run: |
           bash .github/scripts/export-legacy-requirements.sh "${{ matrix.plugin_path }}"
 
-      - name: Upload Plugin
+      - name: Upload Plugin (production)
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
+
+      # Staging only becomes testable once uploads reach it: the backend rebuilds
+      # latest/recommended on an upload signal. Never blocking, though -- a red run
+      # invites a re-run, which re-uploads; -f keeps that idempotent.
+      - name: Upload Plugin (staging)
+        id: upload-staging
+        continue-on-error: true
+        env:
+          PLUGIN_PATH: ${{ matrix.plugin_path }}
+          STAGING_BASE_URL: ${{ secrets.MARKETPLACE_STAGING_BASE_URL }}
+          STAGING_TOKEN: ${{ secrets.MARKETPLACE_STAGING_TOKEN }}
+        run: |
+          if [ -z "$STAGING_BASE_URL" ] || [ -z "$STAGING_TOKEN" ]; then
+            echo "MARKETPLACE_STAGING_BASE_URL / _TOKEN are not set; skipping the staging upload"
+            exit 0
+          fi
+          uv run --with requests --with dify_plugin python .scripts/uploader -d "$PLUGIN_PATH" -t "$STAGING_TOKEN" \
+            --plugin-daemon-path .scripts/dify -u "$STAGING_BASE_URL" -f
+
+      - name: Report a failed staging upload
+        if: steps.upload-staging.outcome == 'failure'
+        # Summary needs no token; the comment is best-effort. Neither may redden
+        # a production publish that already succeeded.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PLUGIN: ${{ matrix.plugin_path }}
+        run: |
+          report=$(printf '%s\n' \
+            "**Staging upload failed** for \`$PLUGIN\`." \
+            "" \
+            "The plugin **is** published to production -- only <https://marketplace-staging.dify.dev> is missing it, so nothing needs re-merging or re-reviewing." \
+            "" \
+            "Reason: [workflow run]($RUN_URL). The next push of this plugin, or a backfill run, will bring staging back in line.")
+          printf '%s\n' "$report" >> "$GITHUB_STEP_SUMMARY"
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/comments" -f body="$report"
