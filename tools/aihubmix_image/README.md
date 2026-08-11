@@ -2,7 +2,7 @@
 
 **Author:** AIHubMix
 
-**Version:** 0.1.4
+**Version:** 0.1.5
 
 **Type:** Dify Plugin
 
@@ -20,7 +20,7 @@ The AIHubMix Image Generation Plugin provides access to a variety of advanced im
 * **Gemini Nano Banana** (`gemini-3-pro-image`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, plus preview IDs)
 * **Google Imagen** (Imagen 4.0 series)
 * **Flux** (`FLUX.1-Kontext-pro`, `FLUX-1.1-pro`)
-* **Qwen Image** (`qwen-image`, `qwen-image-3.0`, `qwen-image-3.0-pro`, `qwen-image-2.0`, `qwen-image-2.0-pro`, Max, and Plus)
+* **Qwen Image** (`qwen-image`, `qwen-image-2.0`, `qwen-image-2.0-pro`, `qwen-image-3.0`, `qwen-image-3.0-pro`, Max, and Plus)
 * **Wan** (`wan2.7-image`, `wan2.7-image-pro`)
 * **Doubao Seedream** (`doubao-seedream-5.0-pro`, `doubao-seedream-5.0-lite`, `doubao-seedream-4-5`)
 * **GLM Image**, **Ideogram V3**, and **ERNIE iRAG**
