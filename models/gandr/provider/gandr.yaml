@@ -32,8 +32,8 @@ provider_credential_schema:
         en_US: Enter your Gandr API key
         zh_Hans: 在此输入您的 Gandr API Key
       help:
-        en_US: Your Gandr API key (GANDRA_KEY or a gnd_ key from tts.gandr.ai).
-        zh_Hans: 您的 Gandr API Key（来自 tts.gandr.ai 的 GANDRA_KEY 或 gnd_ 开头的密钥）。
+        en_US: Your Gandr API key (GANDR_API_KEY or a gnd_ key from tts.gandr.ai).
+        zh_Hans: 您的 Gandr API Key（来自 tts.gandr.ai 的 GANDR_API_KEY 或 gnd_ 开头的密钥）。
     - variable: api_base
       label:
         en_US: API Base URL

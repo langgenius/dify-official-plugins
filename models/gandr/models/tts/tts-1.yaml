@@ -57,7 +57,7 @@ model_properties:
   word_limit: 500
   audio_type: 'wav'
 pricing:
-  input: '25'
+  input: '10'
   output: '0'
   unit: '0.000001'
   currency: USD
