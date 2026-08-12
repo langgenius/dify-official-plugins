@@ -1,10 +1,12 @@
 import base64
+import logging
 import time
 import os
 import yaml
 from typing import Optional
 import dashscope
 import numpy as np
+import requests
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModalContent, MultiModalContentType, MultiModalEmbeddingResult, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
@@ -13,6 +15,40 @@ from models._common import _CommonTongyi, get_http_base_address
 from ..constant import BURY_POINT_HEADER
 
 vision_models = dict()
+
+logger = logging.getLogger(__name__)
+
+# Connection-level failures the DashScope SDK raises straight through (it does not
+# wrap them): the remote end closing the connection surfaces as a requests
+# ConnectionError, a stalled request as a requests Timeout. Both are transient.
+_RETRYABLE_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+# Backoff before each retry; its length is the number of retries.
+_RETRY_BACKOFFS = (1, 3)
+
+
+def _call_with_retry(call, payload):
+    """Call the embedding endpoint, retrying transient connection failures.
+
+    Once the retries are exhausted the original exception is re-raised unchanged so
+    the provider error mapping can classify it as a connection error.
+    """
+    attempts = len(_RETRY_BACKOFFS) + 1
+    for attempt, backoff in enumerate((*_RETRY_BACKOFFS, None), start=1):
+        try:
+            return call(payload)
+        except _RETRYABLE_EXCEPTIONS as e:
+            if backoff is None:
+                raise
+            logger.warning(
+                "Connection error calling Tongyi embedding endpoint (attempt %d/%d), "
+                "retrying in %ds: %s",
+                attempt,
+                attempts,
+                backoff,
+                e,
+            )
+            time.sleep(backoff)
+
 
 class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
@@ -135,38 +171,32 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         embedding_used_tokens = 0
         
         def call_embedding_api(text):
+            if model in ["multimodal-embedding-v1"]:
+                return dashscope.MultiModalEmbedding.call(
+                    api_key=credentials_kwargs["dashscope_api_key"],
+                    model=model,
+                    input=[{"text": text}],
+                    base_address=base_address,
+                )
+            else:
+                return dashscope.TextEmbedding.call(
+                    api_key=credentials_kwargs["dashscope_api_key"],
+                    model=model,
+                    input=text,
+                    headers=BURY_POINT_HEADER,
+                    text_type="document",
+                    base_address=base_address,
+                )
 
-            try:
-                if model in ["multimodal-embedding-v1"]:
-                    return dashscope.MultiModalEmbedding.call(
-                        api_key=credentials_kwargs["dashscope_api_key"],
-                        model=model,
-                        input=[{"text": text}],
-                        base_address=base_address,
-                    )
-                else:
-                    return dashscope.TextEmbedding.call(
-                        api_key=credentials_kwargs["dashscope_api_key"],
-                        model=model,
-                        input=text,
-                        headers=BURY_POINT_HEADER,
-                        text_type="document",
-                        base_address=base_address,
-                    )
-            except Exception as e:
-                # Return the exception to be handled by the caller
-                return e
-            
         for text in texts:
             # First attempt
-            response = call_embedding_api(text)
-            # Handle rate limit error (429)
-            # Check if response is an exception with rate limit info
+            response = _call_with_retry(call_embedding_api, text)
+            # Handle rate limit error (429), which arrives as a response object
             if hasattr(response, 'status_code') and response.status_code == 429:
-                print(f"Rate limit exceeded (429). Response: {response}")
+                logger.warning("Rate limit exceeded (429). Response: %s", response)
                 time.sleep(10)
                 # Retry once after sleeping
-                response = call_embedding_api(text)
+                response = _call_with_retry(call_embedding_api, text)
             
             # Process response
             if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
@@ -315,17 +345,13 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         embedding_used_tokens = 0
         
         def call_embedding_api(input):
-            try:
-                return dashscope.MultiModalEmbedding.call(
-                    api_key=credentials_kwargs["dashscope_api_key"], 
-                    model=model, 
-                    input=[input],
-                    base_address=base_address,
-                )
-            except Exception as e:
-                # Return the exception to be handled by the caller
-                return e
-            
+            return dashscope.MultiModalEmbedding.call(
+                api_key=credentials_kwargs["dashscope_api_key"],
+                model=model,
+                input=[input],
+                base_address=base_address,
+            )
+
         for document in documents:
             # First attempt
             if document.content_type == MultiModalContentType.TEXT:
@@ -341,15 +367,14 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 }
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
-            response = call_embedding_api(input)
-            
-            # Handle rate limit error (429)
-            # Check if response is an exception with rate limit info
+            response = _call_with_retry(call_embedding_api, input)
+
+            # Handle rate limit error (429), which arrives as a response object
             if hasattr(response, 'status_code') and response.status_code == 429:
-                print(f"Rate limit exceeded (429). Response: {response}")
+                logger.warning("Rate limit exceeded (429). Response: %s", response)
                 time.sleep(10)
                 # Retry once after sleeping
-                response = call_embedding_api(input)
+                response = _call_with_retry(call_embedding_api, input)
             
             # Process response
             if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
