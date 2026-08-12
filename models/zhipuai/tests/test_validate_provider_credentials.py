@@ -46,7 +46,7 @@ def test_default_validate_model_is_unchanged() -> None:
     """The default sentinel keeps the value the plugin already shipped, so
     this change is behaviour-preserving for existing users.
     """
-    assert DEFAULT_VALIDATE_MODEL == "glm-4.5-flash"
+    assert DEFAULT_VALIDATE_MODEL == "glm-5-turbo"
 
 
 def test_default_validate_model_is_in_plugin_catalog() -> None:
