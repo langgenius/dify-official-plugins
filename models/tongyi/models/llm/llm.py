@@ -922,7 +922,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         tool_definitions = []
         for tool in tools:
             properties = tool.parameters["properties"]
-            required_properties = tool.parameters["required"]
+            required_properties = tool.parameters.get("required", [])
             properties_definitions = {}
             for p_key, p_val in properties.items():
                 desc = p_val.get("description") or ""
