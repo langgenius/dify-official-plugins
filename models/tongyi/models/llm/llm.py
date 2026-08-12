@@ -310,7 +310,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         ) or model == "kimi-k2-thinking"
 
         thinking_deepseek_v4 = (
-            model in ("deepseek-v4-pro", "deepseek-v4-flash")
+            model in ("deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v4-flash-0731")
             and model_parameters.get("enable_thinking", True)
         )
 
