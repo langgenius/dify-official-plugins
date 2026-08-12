@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 # Callers can override the sentinel by passing `validate_model` in the
 # credentials dict — needed when `base_url` points at a private or internal
 # ZhipuAI-compatible endpoint that hosts different model names.
-DEFAULT_VALIDATE_MODEL = "glm-4.5-flash"
+DEFAULT_VALIDATE_MODEL = "glm-5-turbo"
 
 
 class ZhipuaiProvider(ModelProvider):
