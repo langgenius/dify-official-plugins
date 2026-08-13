@@ -75,7 +75,7 @@ class MinimaxTextEmbeddingModel(TextEmbeddingModel):
         group_id = credentials["minimax_group_id"]
 
         # Get endpoint_url from credentials, use default if not provided
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat/")
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimaxi.com")
         base_url = endpoint_url.rstrip('/')
 
         if model != "embo-01":

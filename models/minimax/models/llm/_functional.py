@@ -242,7 +242,7 @@ def render_assistant_text(
 
 
 def normalize_anthropic_endpoint(endpoint_url: Any) -> str:
-    endpoint = str(endpoint_url or "https://api.minimax.io").strip()
+    endpoint = str(endpoint_url or "https://api.minimaxi.com").strip()
     if not endpoint.startswith(("http://", "https://")):
         endpoint = f"https://{endpoint}"
     endpoint = endpoint.rstrip("/")
