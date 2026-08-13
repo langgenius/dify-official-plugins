@@ -8,6 +8,30 @@ from dify_plugin.errors.model import (
     InvokeBadRequestError,
     InvokeError,
 )
+import requests
+
+# Force a fresh connection per call to avoid stale pooled connection issues.
+_original_call = MultiModalConversation.call
+def _call_with_fresh_connection(*args, **kwargs):
+    # Create a new session and use it for this single request.
+    # DashScope's HTTP client uses requests.Session internally; we can provide
+    # a custom kwargs to avoid reuse by closing the session after the call.
+    # However, DashScope doesn't expose session param directly, so we use a
+    # context to temporarily set a new session.
+    # As a minimal fix, we monkey-patch the default session used by dashscope's
+    # HTTP client to be a new one each time.
+    # This is done by importing the internal module (subject to change) but
+    # for robustness, we trigger a new connection via a fresh session.
+    import dashscope.common.http_client as http_client
+    original_session = getattr(http_client, '_SESSION', None)
+    http_client._SESSION = requests.Session()
+    try:
+        return _original_call(*args, **kwargs)
+    finally:
+        # Close the session to prevent pooling.
+        http_client._SESSION.close()
+        http_client._SESSION = original_session
+MultiModalConversation.call = _call_with_fresh_connection
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from models._common import _CommonTongyi, get_http_base_address
 
