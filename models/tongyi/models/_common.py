@@ -1,5 +1,7 @@
 from typing import Mapping
 
+import requests
+
 from dashscope.common.error import (
     AuthenticationError,
     InvalidParameter,
@@ -58,6 +60,9 @@ class _CommonTongyi:
         return {
             InvokeConnectionError: [
                 RequestFailure,
+                # The DashScope SDK lets transport-level failures propagate unwrapped.
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
             ],
             InvokeServerUnavailableError: [
                 ServiceUnavailableError,
