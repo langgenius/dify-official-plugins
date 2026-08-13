@@ -1,5 +1,6 @@
 import re
 from collections.abc import Generator
+from html import escape, unescape
 
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
@@ -16,7 +17,11 @@ from requests import Response
 
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
-    _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
+    _THINK_MARKER = "<!--dify-deepseek-reasoning-->"
+    _THINK_PATTERN = re.compile(
+        rf"<think>\n{re.escape(_THINK_MARKER)}(.*?)\n</think>",
+        re.DOTALL | re.IGNORECASE,
+    )
     _V4_MODELS = ("deepseek-v4-flash", "deepseek-v4-pro")
     _THINKING_UNSUPPORTED_PARAMETERS = (
         "temperature",
@@ -175,9 +180,28 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         }
         if reasoning_content:
             result.message.content = (
-                f"<think>{reasoning_content}</think>{result.message.content or ''}"
+                f"<think>\n{self._THINK_MARKER}"
+                f"{escape(reasoning_content, quote=False)}\n</think>"
+                f"{result.message.content or ''}"
             )
         return result
+
+    def _wrap_thinking_by_reasoning_content(
+        self,
+        delta: dict,
+        is_reasoning: bool,
+    ) -> tuple[str, bool]:
+        content = delta.get("content") or ""
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
+        if not reasoning_content:
+            return ("\n</think>" if is_reasoning else "") + content, False
+
+        output = escape(str(reasoning_content), quote=False)
+        if not is_reasoning:
+            output = f"<think>\n{self._THINK_MARKER}" + output
+        if content or delta.get("tool_calls") or delta.get("function_call"):
+            return output + "\n</think>" + content, False
+        return output, True
 
     def _convert_prompt_message_to_dict(
         self,
@@ -214,5 +238,5 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             return text, None
 
         matches = self._THINK_PATTERN.findall(text)
-        reasoning_content = "\n\n".join(matches) if matches else None
+        reasoning_content = "\n\n".join(map(unescape, matches)) if matches else None
         return self._THINK_PATTERN.sub("", text), reasoning_content

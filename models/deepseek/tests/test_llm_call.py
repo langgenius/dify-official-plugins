@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -6,14 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 import yaml
 from dify_plugin import OAICompatLargeLanguageModel
-from dify_plugin.config.integration_config import IntegrationConfig
-from dify_plugin.core.entities.plugin.request import (
-    ModelActions,
-    ModelInvokeLLMRequest,
-    PluginInvokeType,
-)
-from dify_plugin.entities.model import AIModelEntity, ModelType
-from dify_plugin.entities.model.llm import LLMResultChunk
+from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessageTool,
@@ -21,7 +13,6 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
-from dify_plugin.integration.run import PluginRunner
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -34,7 +25,7 @@ def _llm() -> DeepseekLargeLanguageModel:
     return DeepseekLargeLanguageModel(model_schemas=[])
 
 
-def test_v4_catalog_and_reasoning_effort_options() -> None:
+def test_v4_catalog_and_parameter_boundaries() -> None:
     directory = ROOT / "models" / "llm"
     position = yaml.safe_load((directory / "_position.yaml").read_text())
 
@@ -47,7 +38,12 @@ def test_v4_catalog_and_reasoning_effort_options() -> None:
         schema = yaml.safe_load((directory / f"{model}.yaml").read_text())
         AIModelEntity.model_validate(schema)
         rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+        assert schema["model_properties"]["context_size"] == 1_000_000
+        assert rules["max_tokens"]["max"] == 384_000
+        assert rules["thinking"]["default"] is True
+        assert rules["reasoning_effort"]["default"] == "high"
         assert rules["reasoning_effort"]["options"] == ["low", "high", "max"]
+        assert rules["response_format"]["options"] == ["text", "json_object"]
         assert "pricing" not in schema
 
 
@@ -85,23 +81,43 @@ def test_thinking_parameters_are_normalized(thinking: bool) -> None:
 
 
 def test_sdk_stream_wrapper_keeps_reasoning_content_and_tools() -> None:
+    reasoning_content = "  reason </think> & &lt;\n"
     output, is_reasoning = _llm()._wrap_thinking_by_reasoning_content(
-        {"reasoning_content": "reason", "content": "answer"},
+        {"reasoning_content": reasoning_content, "content": "answer"},
         False,
     )
-    assert output.replace("\n", "") == "<think>reason</think>answer"
+    assert _llm()._extract_reasoning_content(output) == ("answer", reasoning_content)
+    assert "<!--dify-deepseek-reasoning-->" in output
     assert is_reasoning is False
 
-    output, is_reasoning = _llm()._wrap_thinking_by_reasoning_content(
-        {"reasoning_content": "reason", "tool_calls": [{}]},
+    opening, is_reasoning = _llm()._wrap_thinking_by_reasoning_content(
+        {"reasoning_content": reasoning_content},
         False,
     )
-    assert output.replace("\n", "") == "<think>reason</think>"
+    closing, is_reasoning = _llm()._wrap_thinking_by_reasoning_content(
+        {"content": "answer"},
+        is_reasoning,
+    )
+    assert _llm()._extract_reasoning_content(opening + closing) == (
+        "answer",
+        reasoning_content,
+    )
+    assert is_reasoning is False
+    assert _llm()._extract_reasoning_content(opening + "\n</think>") == (
+        "",
+        reasoning_content,
+    )
+
+    output, is_reasoning = _llm()._wrap_thinking_by_reasoning_content(
+        {"reasoning_content": reasoning_content, "tool_calls": [{}]},
+        False,
+    )
+    assert _llm()._extract_reasoning_content(output) == ("", reasoning_content)
     assert is_reasoning is False
 
 
 def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
-    reasoning_content = "  must survive exactly\n"
+    reasoning_content = "  must preserve </think> & &lt; exactly\n"
     response = Mock()
     response.json.return_value = {
         "id": "chatcmpl-1",
@@ -171,11 +187,14 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     [merged] = llm._clean_messages(
         [
             AssistantPromptMessage(
-                content="<think>r1</think>a",
+                content=(
+                    "<think>\n<!--dify-deepseek-reasoning-->r1\n</think>"
+                    "a <think>literal answer tag</think>"
+                ),
                 opaque_body={"reasoning_content": "r1"},
             ),
             AssistantPromptMessage(
-                content="<think>r2</think>b",
+                content="<think>\n<!--dify-deepseek-reasoning-->r2\n</think>b",
                 opaque_body={"reasoning_content": "r2"},
             ),
         ]
@@ -185,7 +204,7 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
         {"_current_model": "deepseek-v4-pro"},
     ) == {
         "role": "assistant",
-        "content": "a\n\nb",
+        "content": "a <think>literal answer tag</think>\n\nb",
         "reasoning_content": "r1\n\nr2",
     }
 
@@ -273,73 +292,3 @@ def test_provider_validation_does_not_fallback_to_retired_models() -> None:
         model="deepseek-v4-flash",
         credentials=credentials,
     )
-
-
-def get_all_models() -> list[str]:
-    models_dir = Path(__file__).parent.parent / "models" / "llm"
-    position_file = models_dir / "_position.yaml"
-    if not position_file.exists():
-        raise FileNotFoundError(f"Missing model position file: {position_file}")
-
-    try:
-        data = yaml.safe_load(position_file.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
-        raise ValueError(f"Invalid YAML in {position_file}") from exc
-
-    if data is None:
-        return []
-    if not isinstance(data, list):
-        raise TypeError(f"Expected a YAML list in {position_file}")
-
-    models: list[str] = []
-    for item in data:
-        if isinstance(item, str) and item.strip():
-            models.append(item.strip())
-    return models
-
-
-@pytest.mark.parametrize("model_name", get_all_models())
-def test_llm_invoke(model_name: str) -> None:
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        pytest.skip("DEEPSEEK_API_KEY is not set")
-
-    plugin_path = os.getenv("PLUGIN_FILE_PATH")
-    if not plugin_path:
-        if os.getenv("CI"):
-            raise ValueError(
-                "PLUGIN_FILE_PATH environment variable is required in CI when provider API key is set"
-            )
-        plugin_path = str(Path(__file__).parent.parent)
-
-    payload = ModelInvokeLLMRequest(
-        user_id="test_user",
-        provider="deepseek",
-        model_type=ModelType.LLM,
-        model=model_name,
-        credentials={"api_key": api_key},
-        prompt_messages=[{"role": "user", "content": "Say hello in one word."}],
-        model_parameters={"max_tokens": 100},
-        stop=None,
-        tools=None,
-        stream=True,
-    )
-
-    with PluginRunner(
-        config=IntegrationConfig(), plugin_package_path=plugin_path
-    ) as runner:
-        results: list[LLMResultChunk] = list(
-            runner.invoke(
-                access_type=PluginInvokeType.Model,
-                access_action=ModelActions.InvokeLLM,
-                payload=payload,
-                response_type=LLMResultChunk,
-            )
-        )
-
-        assert len(results) > 0, f"No results received for model {model_name}"
-
-        full_content = "".join(
-            r.delta.message.content for r in results if r.delta.message.content
-        )
-        assert len(full_content) > 0, f"Empty content for model {model_name}"

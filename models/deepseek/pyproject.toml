@@ -16,3 +16,8 @@ dev = [
     "pyrefly>=1.2.0",
     "pytest>=9.1.1",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: sends billable requests to the real DeepSeek API",
+]
