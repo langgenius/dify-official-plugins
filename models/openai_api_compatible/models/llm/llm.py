@@ -338,6 +338,43 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     default=False,
                 )
             )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="web_search_allowed_domains",
+                    label=I18nObject(en_us="Allowed Domains", zh_hans="允许的搜索域名"),
+                    help=I18nObject(
+                        en_us="Comma-separated list of allowed domains for web search results. Omit HTTP/HTTPS prefix. Example: openai.com,github.com. Max 100 domains. Only works with OpenAI Responses API web_search tool.",
+                        zh_hans="允许的搜索域名列表，用英文逗号分隔。省略 HTTP/HTTPS 前缀。示例: openai.com,github.com。最多 100 个域名。仅适用于 OpenAI Responses API 的 web_search 工具。",
+                    ),
+                    type=ParameterType.STRING,
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="web_search_blocked_domains",
+                    label=I18nObject(en_us="Blocked Domains", zh_hans="屏蔽的搜索域名"),
+                    help=I18nObject(
+                        en_us="Comma-separated list of blocked domains for web search results. Omit HTTP/HTTPS prefix. Example: reddit.com,quora.com. Max 100 domains. Only works with OpenAI Responses API web_search tool.",
+                        zh_hans="屏蔽的搜索域名列表，用英文逗号分隔。省略 HTTP/HTTPS 前缀。示例: reddit.com,quora.com。最多 100 个域名。仅适用于 OpenAI Responses API 的 web_search 工具。",
+                    ),
+                    type=ParameterType.STRING,
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="web_search_context_size",
+                    label=I18nObject(en_us="Search Context Size", zh_hans="搜索上下文大小"),
+                    help=I18nObject(
+                        en_us="Controls how much context from web search results is provided to the model. 'low' for simple lookups, 'medium' for balanced default, 'high' for detailed answers. Only works with OpenAI Responses API web_search tool.",
+                        zh_hans="控制提供给模型的网络搜索结果上下文量。'low' 适用于简单查询，'medium' 为平衡默认值，'high' 适用于需要详细答案的场景。仅适用于 OpenAI Responses API 的 web_search 工具。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["medium", "low", "high"],
+                    required=False,
+                )
+            )
 
         # Register VIDEO/AUDIO/DOCUMENT features when the corresponding credential is enabled.
         # Without these on entity.features, Dify host filters out non-image attachments
@@ -534,11 +571,26 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Handle web search based on credential configuration
         web_search_support = credentials.get("web_search_support", "not_supported")
         enable_web_search = model_parameters.pop("web_search", False)
+        web_search_allowed_domains = model_parameters.pop("web_search_allowed_domains", None)
+        web_search_blocked_domains = model_parameters.pop("web_search_blocked_domains", None)
+        web_search_context_size = model_parameters.pop("web_search_context_size", None)
+
         if enable_web_search and web_search_support != "not_supported":
+            # Build domain filters dict if configured
+            filters: dict = {}
+            if web_search_allowed_domains:
+                domains = [d.strip() for d in web_search_allowed_domains.split(",") if d.strip()]
+                if domains:
+                    filters["allowed_domains"] = domains[:100]
+            if web_search_blocked_domains:
+                domains = [d.strip() for d in web_search_blocked_domains.split(",") if d.strip()]
+                if domains:
+                    filters["blocked_domains"] = domains[:100]
+
             if web_search_support == "tool_standard":
                 # Standard tools format: {"type": "web_search", "web_search": {"enable": true}}
                 # Used by ZhipuAI, Baichuan, etc.
-                web_search_tool = {
+                web_search_tool: dict = {
                     "type": "web_search",
                     "web_search": {"enable": True},
                 }
@@ -548,8 +600,14 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     model_parameters["tools"] = [web_search_tool]
             elif web_search_support == "tool_simple":
                 # Simple tools format: {"type": "web_search"}
-                # Used by Volcengine, etc.
-                web_search_tool = {"type": "web_search"}
+                # Used by OpenAI Responses API, Volcengine, etc.
+                web_search_tool: dict = {"type": "web_search"}
+                # Attach domain filters (OpenAI Responses API)
+                if filters:
+                    web_search_tool["filters"] = filters
+                # Attach search context size (OpenAI Responses API)
+                if web_search_context_size:
+                    web_search_tool["search_context_size"] = web_search_context_size
                 if "tools" in model_parameters:
                     model_parameters["tools"].append(web_search_tool)
                 else:
@@ -557,6 +615,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             elif web_search_support == "parameter":
                 # Parameter format: top-level web_search parameter
                 model_parameters["web_search"] = True
+            elif web_search_support == "google_search":
+                # Google Gemini format: {"googleSearch": {"exclude_domains": [...]}}
+                google_search_config: dict = {}
+                if filters.get("blocked_domains"):
+                    google_search_config["exclude_domains"] = filters["blocked_domains"]
+                web_search_tool: dict = {"googleSearch": google_search_config}
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_tool)
+                else:
+                    model_parameters["tools"] = [web_search_tool]
 
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
