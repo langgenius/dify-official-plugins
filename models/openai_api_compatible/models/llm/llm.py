@@ -236,6 +236,42 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 f"An error occurred during credentials validation: {ex!s}"
             ) from ex
 
+    def remote_models(self, credentials: dict) -> list[AIModelEntity]:
+        """Discover models advertised by the configured OpenAI-compatible endpoint.
+
+        Calls ``GET /v1/models`` via the OpenAI SDK and returns an
+        ``AIModelEntity`` for every model ID the endpoint advertises.
+        This mirrors the shape of ``models/openai``'s ``remote_models``
+        but, because this plugin has no predefined model catalog, every
+        remote model is surfaced — the user picks which one to add.
+
+        If the endpoint does not support ``/v1/models`` (some custom
+        gateways don't), the call raises and the empty list is
+        returned so the user can still add models manually.
+        """
+        endpoint_url = credentials.get("endpoint_url")
+        if not endpoint_url:
+            return []
+
+        api_key = credentials.get("api_key")
+        extra_headers = credentials.get("extra_headers") or {}
+
+        try:
+            client = OpenAI(
+                api_key=api_key,
+                base_url=endpoint_url,
+                default_headers=extra_headers,
+            )
+            result: list[AIModelEntity] = []
+            for remote in client.models.list():
+                model_id = getattr(remote, "id", None)
+                if not model_id:
+                    continue
+                result.append(self.get_customizable_model_schema(model_id, credentials))
+            return result
+        except Exception:  # noqa: BLE001 - discovery is best-effort
+            return []
+
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
