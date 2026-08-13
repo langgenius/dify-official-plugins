@@ -2,7 +2,12 @@ import time
 from json import dumps
 from typing import Optional
 from dify_plugin import TextEmbeddingModel
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    EmbeddingInputType,
+    ModelPropertyKey,
+    PriceType,
+)
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -22,12 +27,31 @@ from models.llm.errors import (
     InvalidAuthenticationError,
     RateLimitReachedError,
 )
+from models.text_embedding._functional import batch_texts, resolve_batch_size
 
 
 class MinimaxTextEmbeddingModel(TextEmbeddingModel):
     """
     Model class for Minimax text embedding model.
     """
+
+    def get_model_schema(self, model: str, credentials: dict | None = None) -> AIModelEntity | None:
+        """Return the model schema, driving the caller's batch size from the ``batch_size`` credential.
+
+        ``embo-01`` declares ``max_chunks: 1`` so the default behavior is unchanged. When users
+        raise ``batch_size``, Dify delivers more texts per invoke call, and ``_invoke`` splits
+        them by token budget. Fewer, larger requests stay below MiniMax's per-minute rate limit
+        without overflowing the 4096-token context window.
+        """
+        schema = super().get_model_schema(model, credentials)
+        if schema is None or ModelPropertyKey.MAX_CHUNKS not in schema.model_properties:
+            return schema
+        batch_size = resolve_batch_size(credentials)
+        if batch_size == 1:
+            return schema
+        schema = schema.model_copy(deep=True)
+        schema.model_properties[ModelPropertyKey.MAX_CHUNKS] = batch_size
+        return schema
 
     def _invoke(
         self,
@@ -61,25 +85,35 @@ class MinimaxTextEmbeddingModel(TextEmbeddingModel):
         url = f"{base_url}/v1/embeddings?GroupId={group_id}"
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         embedding_type = "db" if input_type == EmbeddingInputType.DOCUMENT else "query"
-        data = {"model": "embo-01", "texts": texts, "type": embedding_type}
-        try:
-            response = post(url, headers=headers, data=dumps(data))
-        except Exception as e:
-            raise InvokeConnectionError(str(e))
-        if response.status_code != 200:
-            raise InvokeServerUnavailableError(response.text)
-        try:
-            resp = response.json()
-            if resp["base_resp"]["status_code"] != 0:
-                code = resp["base_resp"]["status_code"]
-                msg = resp["base_resp"]["status_msg"]
-                self._handle_error(code, msg)
-            embeddings = resp["vectors"]
-            total_tokens = resp["total_tokens"]
-        except InvalidAuthenticationError:
-            raise InvalidAPIKeyError("Invalid api key")
-        except KeyError as e:
-            raise InternalServerError(f"Failed to convert response to json: {e} with text: {response.text}")
+
+        # Batch texts into multiple requests: one request per text can hit the API
+        # rate limit, while a single oversized request can exceed the context window.
+        # Batch size is user-configurable via the batch_size credential.
+        batch_size = resolve_batch_size(credentials)
+        batches = batch_texts(texts, batch_size, self._get_num_tokens_by_gpt2)
+
+        embeddings: list[list[float]] = []
+        total_tokens = 0
+        for batch in batches:
+            data = {"model": "embo-01", "texts": batch, "type": embedding_type}
+            try:
+                response = post(url, headers=headers, data=dumps(data))
+            except Exception as e:
+                raise InvokeConnectionError(str(e))
+            if response.status_code != 200:
+                raise InvokeServerUnavailableError(response.text)
+            try:
+                resp = response.json()
+                if resp["base_resp"]["status_code"] != 0:
+                    code = resp["base_resp"]["status_code"]
+                    msg = resp["base_resp"]["status_msg"]
+                    self._handle_error(code, msg)
+                embeddings.extend(resp["vectors"])
+                total_tokens += resp["total_tokens"]
+            except InvalidAuthenticationError:
+                raise InvalidAPIKeyError("Invalid api key")
+            except KeyError as e:
+                raise InternalServerError(f"Failed to convert response to json: {e} with text: {response.text}")
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=total_tokens)
         result = TextEmbeddingResult(model=model, embeddings=embeddings, usage=usage)
         return result
