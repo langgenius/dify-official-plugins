@@ -47,7 +47,11 @@ from .utils import FileCache
 file_cache = FileCache()
 
 IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
-NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash", "gemini-3.5-flash-lite"}
+NO_SAMPLING_OR_PREFILL_MODELS = {
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+}
 
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
@@ -460,6 +464,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # require a separator right after "gemini-3" so we don't
         # accidentally match "gemini-30", "gemini-3abc", etc.
         return m[8] in frozenset({"-", ".", "/", "_"})
+
+    @staticmethod
+    def _validate_no_assistant_prefill(model: str, final_turn_type: str | None) -> None:
+        if model not in NO_SAMPLING_OR_PREFILL_MODELS:
+            return
+        if final_turn_type is None or final_turn_type in {"model", "model_output"}:
+            raise InvokeBadRequestError(f"{model} requires a non-empty final user turn")
 
     @staticmethod
     def _validate_feature_compatibility(
@@ -1176,6 +1187,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             model_parameters, tools, model=model
         )
 
+        if model in NO_SAMPLING_OR_PREFILL_MODELS:
+            for parameter in ("temperature", "top_p", "top_k", "thinking_budget"):
+                model_parameters.pop(parameter, None)
+
         # == Interactions API Routing == #
         # Gemini 3+ models with json_schema + native tools use the
         # Interactions API, which supports combining structured output with
@@ -1204,9 +1219,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 stream,
             )
 
-        if model in NO_SAMPLING_OR_PREFILL_MODELS:
-            for parameter in ("temperature", "top_p", "top_k"):
-                model_parameters.pop(parameter, None)
         if model == "gemini-2.5-flash-image":
             model_parameters[_DISABLE_SYSTEM_PROMOTION] = True
 
@@ -1300,14 +1312,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     "Please provide at least one user message with content."
                 )
 
-        if model in NO_SAMPLING_OR_PREFILL_MODELS:
-            last_nonempty_content = next(
-                (content for content in reversed(contents) if content.parts), None
-            )
-            if not last_nonempty_content or last_nonempty_content.role == "model":
-                raise InvokeBadRequestError(
-                    f"{model} requires a non-empty final user turn"
-                )
+        last_nonempty_content = next(
+            (content for content in reversed(contents) if content.parts), None
+        )
+        self._validate_no_assistant_prefill(
+            model,
+            last_nonempty_content.role if last_nonempty_content else None,
+        )
 
         if stream:
             response = genai_client.models.generate_content_stream(
@@ -1514,6 +1525,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 _interactions_input.append(
                     {"type": _step_type, "content": _step_content}
                 )
+
+        self._validate_no_assistant_prefill(
+            model,
+            _interactions_input[-1]["type"] if _interactions_input else None,
+        )
 
         # Assemble kwargs for interactions.create()
         kwargs: dict = {
