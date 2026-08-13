@@ -12,9 +12,8 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-class S3Operator(Tool):
-    s3_client: Any = None
 
+class S3Operator(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
@@ -22,14 +21,16 @@ class S3Operator(Tool):
         """
         invoke tools
         """
+        s3_client = None
         try:
-            # Initialize S3 client if not already done
-            if not self.s3_client:
-                aws_region = tool_parameters.get("aws_region")
-                if aws_region:
-                    self.s3_client = boto3.client("s3", region_name=aws_region)
-                else:
-                    self.s3_client = boto3.client("s3")
+            # Build a fresh boto3 client per invocation so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            aws_region = tool_parameters.get("aws_region")
+            if aws_region:
+                s3_client = boto3.Session().client("s3", region_name=aws_region)
+            else:
+                s3_client = boto3.Session().client("s3")
 
             # Parse S3 URI
             s3_uri = tool_parameters.get("s3_uri")
@@ -38,7 +39,9 @@ class S3Operator(Tool):
 
             parsed_uri = urlparse(s3_uri)
             if parsed_uri.scheme != "s3":
-                yield self.create_text_message("Invalid S3 URI format. Must start with 's3://'")
+                yield self.create_text_message(
+                    "Invalid S3 URI format. Must start with 's3://'"
+                )
 
             bucket = parsed_uri.netloc
             # Remove leading slash from key
@@ -46,12 +49,16 @@ class S3Operator(Tool):
 
             operation_type = tool_parameters.get("operation_type", "read")
             generate_presign_url = tool_parameters.get("generate_presign_url", False)
-            presign_expiry = int(tool_parameters.get("presign_expiry", 3600))  # default 1 hour
+            presign_expiry = int(
+                tool_parameters.get("presign_expiry", 3600)
+            )  # default 1 hour
 
             if operation_type == "write":
                 text_content = tool_parameters.get("text_content")
                 if not text_content:
-                    yield self.create_text_message("text_content parameter is required for write operation")
+                    yield self.create_text_message(
+                        "text_content parameter is required for write operation"
+                    )
 
                 # Infer content type from file extension
                 content_type, _ = mimetypes.guess_type(key)
@@ -59,38 +66,44 @@ class S3Operator(Tool):
                     content_type = "text/plain; charset=utf-8"
 
                 # Write content to S3
-                self.s3_client.put_object(
-                    Bucket=bucket, 
-                    Key=key, 
+                s3_client.put_object(
+                    Bucket=bucket,
+                    Key=key,
                     Body=text_content.encode("utf-8"),
-                    ContentType=content_type
+                    ContentType=content_type,
                 )
                 result = f"s3://{bucket}/{key}"
 
                 # Generate presigned URL for the written object if requested
                 if generate_presign_url:
-                    result = self.s3_client.generate_presigned_url(
-                        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=presign_expiry
+                    result = s3_client.generate_presigned_url(
+                        "get_object",
+                        Params={"Bucket": bucket, "Key": key},
+                        ExpiresIn=presign_expiry,
                     )
 
             else:  # read operation
                 # Get object from S3
                 if generate_presign_url:
                     # Generate presigned URL if requested
-                    result = self.s3_client.generate_presigned_url(
-                        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=presign_expiry
+                    result = s3_client.generate_presigned_url(
+                        "get_object",
+                        Params={"Bucket": bucket, "Key": key},
+                        ExpiresIn=presign_expiry,
                     )
-                else: 
+                else:
                     # Only for text
-                    response = self.s3_client.get_object(Bucket=bucket, Key=key)
+                    response = s3_client.get_object(Bucket=bucket, Key=key)
                     result = response["Body"].read().decode("utf-8")
 
                 # Generate presigned URL if requested
             yield self.create_text_message(text=result)
 
-        except self.s3_client.exceptions.NoSuchBucket:
+        except s3_client.exceptions.NoSuchBucket:
             yield self.create_text_message(f"Bucket '{bucket}' does not exist")
-        except self.s3_client.exceptions.NoSuchKey:
-            yield self.create_text_message(f"Object '{key}' does not exist in bucket '{bucket}'")
+        except s3_client.exceptions.NoSuchKey:
+            yield self.create_text_message(
+                f"Object '{key}' does not exist in bucket '{bucket}'"
+            )
         except Exception as e:
             yield self.create_text_message(f"Exception: {str(e)}")

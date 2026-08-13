@@ -43,17 +43,21 @@ def _resolve_aws_credentials(
     tool: Any, tool_parameters: dict[str, Any]
 ) -> dict[str, Optional[str]]:
     """Merge provider-level credentials with per-invocation tool parameters."""
-    runtime_credentials = getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    runtime_credentials = (
+        getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    )
 
-    aws_access_key_id = tool_parameters.get("aws_access_key_id") or runtime_credentials.get(
+    aws_access_key_id = tool_parameters.get(
         "aws_access_key_id"
-    )
-    aws_secret_access_key = tool_parameters.get("aws_secret_access_key") or runtime_credentials.get(
+    ) or runtime_credentials.get("aws_access_key_id")
+    aws_secret_access_key = tool_parameters.get(
         "aws_secret_access_key"
-    )
+    ) or runtime_credentials.get("aws_secret_access_key")
     aws_session_token = tool_parameters.get("aws_session_token")
     aws_region = (
-        tool_parameters.get("aws_region") or runtime_credentials.get("aws_region") or "us-east-1"
+        tool_parameters.get("aws_region")
+        or runtime_credentials.get("aws_region")
+        or "us-east-1"
     )
 
     return {
@@ -69,7 +73,9 @@ def _build_boto3_client_kwargs(credentials: dict[str, Optional[str]]) -> dict[st
     kwargs: dict[str, Any] = {}
     if credentials.get("aws_region"):
         kwargs["region_name"] = credentials["aws_region"]
-    if credentials.get("aws_access_key_id") and credentials.get("aws_secret_access_key"):
+    if credentials.get("aws_access_key_id") and credentials.get(
+        "aws_secret_access_key"
+    ):
         kwargs["aws_access_key_id"] = credentials["aws_access_key_id"]
         kwargs["aws_secret_access_key"] = credentials["aws_secret_access_key"]
         if credentials.get("aws_session_token"):
@@ -243,7 +249,9 @@ def _derive_object_key(input_file: Any, key_prefix: str) -> str:
     requested_key = _attr(input_file, "filename")
     url_value = _attr(input_file, "url") or _attr(input_file, "remote_url")
     fallback_key = (
-        url_value.rstrip("/").split("/")[-1] if isinstance(url_value, str) and url_value else None
+        url_value.rstrip("/").split("/")[-1]
+        if isinstance(url_value, str) and url_value
+        else None
     )
     object_key = requested_key or fallback_key or f"dify-upload-{uuid.uuid4().hex}"
     object_key = object_key.lstrip("/")
@@ -266,14 +274,19 @@ class S3FilesUploader(Tool):
     which is safe because all entries share the same credential bundle.
     """
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """Read all input files, upload them, and emit aggregated results."""
         # Initialize the S3 client up front. A failure here aborts the whole
         # batch because no per-file work can succeed without a client.
         try:
             credentials = _resolve_aws_credentials(self, tool_parameters)
             client_kwargs = _build_boto3_client_kwargs(credentials)
-            s3_client = boto3.client("s3", **client_kwargs)
+            # Use a fresh boto3.Session per call so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            s3_client = boto3.Session().client("s3", **client_kwargs)
         except Exception as exc:  # pragma: no cover - boto3 init errors
             yield self.create_text_message(f"Failed to initialize AWS client: {exc}")
             return
@@ -301,7 +314,9 @@ class S3FilesUploader(Tool):
         try:
             sse_put_kwargs = _build_sse_put_object_kwargs(tool_parameters)
         except ValueError as exc:
-            yield self.create_text_message(f"Server-side encryption misconfigured: {exc}")
+            yield self.create_text_message(
+                f"Server-side encryption misconfigured: {exc}"
+            )
             return
 
         # Track keys we've already used so a duplicate filename in the same
@@ -389,7 +404,9 @@ class S3FilesUploader(Tool):
                     # presign failure as a per-entry warning (`presign_error`)
                     # rather than failing the whole batch.
                     if isinstance(exc, ClientError):
-                        error_message = exc.response.get("Error", {}).get("Message", str(exc))
+                        error_message = exc.response.get("Error", {}).get(
+                            "Message", str(exc)
+                        )
                     else:
                         error_message = str(exc)
                     entry["presign_error"] = error_message
@@ -420,6 +437,8 @@ class S3FilesUploader(Tool):
         yield self.create_json_message(json_payload)
 
         if ok_count == 0:
-            yield self.create_text_message("All uploads failed:\n" + "\n".join(text_lines))
+            yield self.create_text_message(
+                "All uploads failed:\n" + "\n".join(text_lines)
+            )
         else:
             yield self.create_text_message("\n".join(text_lines))
