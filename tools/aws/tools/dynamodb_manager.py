@@ -8,10 +8,22 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 
-class DynamoDBManager(Tool):
-    dynamodb_resource: Any = None
-    dynamodb_client: Any = None
+def _build_dynamodb_resource(credentials: dict) -> Any:
+    """Build a fresh DynamoDB resource from a new ``boto3.Session``.
 
+    Mirrors the per-call ``boto3.Session()`` pattern from
+    ``tools/aws`` PR #3545 (Bedrock family) and the in-progress
+    boto3 batch under issue #3544. boto3's default session caches
+    credentials in-process, so a ``saml2aws login`` /
+    ``aws sso login`` / IMDS refresh after the plugin process
+    started never reaches the cached client. Building a fresh
+    session on every invocation picks up the new credentials.
+    """
+    aws_region = credentials.get("aws_region", "us-east-1")
+    return boto3.Session(region_name=aws_region).resource("dynamodb")
+
+
+class DynamoDBManager(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
@@ -20,24 +32,21 @@ class DynamoDBManager(Tool):
         invoke DynamoDB Manager operations
         """
         try:
-            # Initialize DynamoDB client/resource if not already done
-            if not self.dynamodb_resource or not self.dynamodb_client:
-                aws_region = tool_parameters.get("aws_region", "us-east-1")
-                self.dynamodb_resource = boto3.resource("dynamodb", region_name=aws_region)
-                self.dynamodb_client = boto3.client("dynamodb", region_name=aws_region)
-
+            # Build a fresh resource per invocation so disk-refreshed
+            # credentials are picked up on every call. See issue #3544.
+            dynamodb_resource = _build_dynamodb_resource(tool_parameters)
             operation_type = tool_parameters.get("operation_type")
 
             if operation_type == "create_table":
-                result = self._create_table(tool_parameters)
+                result = self._create_table(tool_parameters, dynamodb_resource)
             elif operation_type == "put_item":
-                result = self._put_item(tool_parameters)
+                result = self._put_item(tool_parameters, dynamodb_resource)
             elif operation_type == "get_item":
-                result = self._get_item(tool_parameters)
+                result = self._get_item(tool_parameters, dynamodb_resource)
             elif operation_type == "delete_item":
-                result = self._delete_item(tool_parameters)
+                result = self._delete_item(tool_parameters, dynamodb_resource)
             elif operation_type == "scan":
-                result = self._scan(tool_parameters)
+                result = self._scan(tool_parameters, dynamodb_resource)
             else:
                 result = f"Unsupported operation: {operation_type}"
 
@@ -49,25 +58,29 @@ class DynamoDBManager(Tool):
         except Exception as e:
             yield self.create_text_message(f"Error: {str(e)}")
 
-    def _create_table(self, params: dict) -> str:
+    def _create_table(self, params: dict, dynamodb_resource: Any) -> str:
         """Create DynamoDB table"""
         table_name = params.get("table_name")
         partition_key_name = params.get("partition_key_name", "id")
         sort_key_name = params.get("sort_key_name")
-        
+
         key_schema = [{"AttributeName": partition_key_name, "KeyType": "HASH"}]
-        attribute_definitions = [{"AttributeName": partition_key_name, "AttributeType": "S"}]
-        
+        attribute_definitions = [
+            {"AttributeName": partition_key_name, "AttributeType": "S"}
+        ]
+
         if sort_key_name:
             key_schema.append({"AttributeName": sort_key_name, "KeyType": "RANGE"})
-            attribute_definitions.append({"AttributeName": sort_key_name, "AttributeType": "S"})
+            attribute_definitions.append(
+                {"AttributeName": sort_key_name, "AttributeType": "S"}
+            )
 
         try:
-            table = self.dynamodb_resource.create_table(
+            table = dynamodb_resource.create_table(
                 TableName=table_name,
                 KeySchema=key_schema,
                 AttributeDefinitions=attribute_definitions,
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
             return f"Table {table_name} created successfully"
@@ -77,7 +90,7 @@ class DynamoDBManager(Tool):
             else:
                 raise e
 
-    def _put_item(self, params: dict) -> str:
+    def _put_item(self, params: dict, dynamodb_resource: Any) -> str:
         """Put item into DynamoDB table"""
         table_name = params.get("table_name")
         partition_key_name = params.get("partition_key_name")
@@ -96,62 +109,60 @@ class DynamoDBManager(Tool):
             item_data = json.loads(item_data)
 
         item.update(item_data)
-        
-        table = self.dynamodb_resource.Table(table_name)
+
+        table = dynamodb_resource.Table(table_name)
         table.put_item(Item=item)
         return f"Item added to {table_name} successfully"
 
-    def _get_item(self, params: dict) -> str:
+    def _get_item(self, params: dict, dynamodb_resource: Any) -> str:
         """Get item from DynamoDB table"""
         table_name = params.get("table_name")
         partition_key_name = params.get("partition_key_name")
         partition_key = params.get("partition_key")
         sort_key = params.get("sort_key")
         sort_key_name = params.get("sort_key_name")
-        
+
         # Build key data
         key_data = {}
         key_data[partition_key_name] = partition_key
 
         if sort_key_name and sort_key:
             key_data[sort_key_name] = sort_key
-        
-        table = self.dynamodb_resource.Table(table_name)
 
-        response = table.get_item(
-            Key=key_data
-        )
-        return response.get('Item')
+        table = dynamodb_resource.Table(table_name)
 
-    def _delete_item(self, params: dict) -> str:
+        response = table.get_item(Key=key_data)
+        return response.get("Item")
+
+    def _delete_item(self, params: dict, dynamodb_resource: Any) -> str:
         """Delete item from DynamoDB table"""
         table_name = params.get("table_name")
         partition_key = params.get("partition_key")
         sort_key = params.get("sort_key")
         partition_key_name = params.get("partition_key_name", "id")
         sort_key_name = params.get("sort_key_name")
-        
+
         # Build key data
         key_data = {}
         key_data[partition_key_name] = partition_key
 
         if sort_key_name and sort_key:
             key_data[sort_key_name] = sort_key
-        
-        table = self.dynamodb_resource.Table(table_name)
+
+        table = dynamodb_resource.Table(table_name)
         table.delete_item(Key=key_data)
         return f"Item deleted from {table_name} successfully"
 
-    def _scan(self, params: dict) -> dict:
+    def _scan(self, params: dict, dynamodb_resource: Any) -> dict:
         """Scan DynamoDB table"""
         table_name = params.get("table_name")
         limit = params.get("limit", 100)
-        
-        table = self.dynamodb_resource.Table(table_name)
+
+        table = dynamodb_resource.Table(table_name)
         response = table.scan(Limit=limit)
-        
+
         return {
             "Items": response.get("Items", []),
             "Count": response.get("Count", 0),
-            "ScannedCount": response.get("ScannedCount", 0)
+            "ScannedCount": response.get("ScannedCount", 0),
         }

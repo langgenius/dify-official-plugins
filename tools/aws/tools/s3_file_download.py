@@ -29,17 +29,21 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 def _resolve_aws_credentials(
     tool: Any, tool_parameters: dict[str, Any]
 ) -> dict[str, Optional[str]]:
-    runtime_credentials = getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    runtime_credentials = (
+        getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    )
 
-    aws_access_key_id = tool_parameters.get("aws_access_key_id") or runtime_credentials.get(
+    aws_access_key_id = tool_parameters.get(
         "aws_access_key_id"
-    )
-    aws_secret_access_key = tool_parameters.get("aws_secret_access_key") or runtime_credentials.get(
+    ) or runtime_credentials.get("aws_access_key_id")
+    aws_secret_access_key = tool_parameters.get(
         "aws_secret_access_key"
-    )
+    ) or runtime_credentials.get("aws_secret_access_key")
     aws_session_token = tool_parameters.get("aws_session_token")
     aws_region = (
-        tool_parameters.get("aws_region") or runtime_credentials.get("aws_region") or "us-east-1"
+        tool_parameters.get("aws_region")
+        or runtime_credentials.get("aws_region")
+        or "us-east-1"
     )
 
     return {
@@ -54,7 +58,9 @@ def _build_boto3_client_kwargs(credentials: dict[str, Optional[str]]) -> dict[st
     kwargs: dict[str, Any] = {}
     if credentials.get("aws_region"):
         kwargs["region_name"] = credentials["aws_region"]
-    if credentials.get("aws_access_key_id") and credentials.get("aws_secret_access_key"):
+    if credentials.get("aws_access_key_id") and credentials.get(
+        "aws_secret_access_key"
+    ):
         kwargs["aws_access_key_id"] = credentials["aws_access_key_id"]
         kwargs["aws_secret_access_key"] = credentials["aws_secret_access_key"]
         if credentials.get("aws_session_token"):
@@ -87,12 +93,17 @@ class S3FileDownload(Tool):
     another invocation.
     """
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """Download an S3 object and emit it as a Dify file plus metadata."""
         try:
             credentials = _resolve_aws_credentials(self, tool_parameters)
             client_kwargs = _build_boto3_client_kwargs(credentials)
-            s3_client = boto3.client("s3", **client_kwargs)
+            # Use a fresh boto3.Session per call so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            s3_client = boto3.Session().client("s3", **client_kwargs)
         except Exception as exc:  # pragma: no cover - boto3 init errors
             yield self.create_text_message(f"Failed to initialize AWS client: {exc}")
             return
@@ -124,7 +135,9 @@ class S3FileDownload(Tool):
                 )
                 return
             error_message = exc.response.get("Error", {}).get("Message", str(exc))
-            yield self.create_text_message(f"Failed to download S3 object: {error_message}")
+            yield self.create_text_message(
+                f"Failed to download S3 object: {error_message}"
+            )
             return
         except Exception as exc:
             yield self.create_text_message(f"Failed to download S3 object: {exc}")
@@ -143,7 +156,9 @@ class S3FileDownload(Tool):
             "content_length": response.get("ContentLength"),
             "etag": response.get("ETag"),
             "last_modified": (
-                response.get("LastModified").isoformat() if response.get("LastModified") else None
+                response.get("LastModified").isoformat()
+                if response.get("LastModified")
+                else None
             ),
             "s3_uri": s3_uri,
         }

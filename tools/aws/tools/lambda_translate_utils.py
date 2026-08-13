@@ -7,10 +7,19 @@ import boto3  # type: ignore
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-class LambdaTranslateUtilsTool(Tool):
-    lambda_client: Any = None
 
-    def _invoke_lambda(self, text_content, src_lang, dest_lang, model_id, dictionary_name, request_type, lambda_name):
+class LambdaTranslateUtilsTool(Tool):
+    def _invoke_lambda(
+        self,
+        text_content,
+        src_lang,
+        dest_lang,
+        model_id,
+        dictionary_name,
+        request_type,
+        lambda_name,
+        lambda_client,
+    ):
         msg = {
             "src_contents": [text_content],
             "src_lang": src_lang,
@@ -20,8 +29,10 @@ class LambdaTranslateUtilsTool(Tool):
             "model_id": model_id,
         }
 
-        invoke_response = self.lambda_client.invoke(
-            FunctionName=lambda_name, InvocationType="RequestResponse", Payload=json.dumps(msg)
+        invoke_response = lambda_client.invoke(
+            FunctionName=lambda_name,
+            InvocationType="RequestResponse",
+            Payload=json.dumps(msg),
         )
         response_body = invoke_response["Payload"]
 
@@ -37,13 +48,16 @@ class LambdaTranslateUtilsTool(Tool):
         invoke tools
         """
         line = 0
+        lambda_client = None
         try:
-            if not self.lambda_client:
-                aws_region = tool_parameters.get("aws_region")
-                if aws_region:
-                    self.lambda_client = boto3.client("lambda", region_name=aws_region)
-                else:
-                    self.lambda_client = boto3.client("lambda")
+            # Build a fresh boto3 client per invocation so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            aws_region = tool_parameters.get("aws_region")
+            if aws_region:
+                lambda_client = boto3.Session().client("lambda", region_name=aws_region)
+            else:
+                lambda_client = boto3.Session().client("lambda")
 
             line = 1
             text_content = tool_parameters.get("text_content", "")
@@ -81,7 +95,14 @@ class LambdaTranslateUtilsTool(Tool):
                 yield self.create_text_message("Please input dictionary_name")
 
             result = self._invoke_lambda(
-                text_content, src_lang, dest_lang, model_id, dictionary_name, request_type, lambda_name
+                text_content,
+                src_lang,
+                dest_lang,
+                model_id,
+                dictionary_name,
+                request_type,
+                lambda_name,
+                lambda_client,
             )
 
             yield self.create_text_message(text=result)
