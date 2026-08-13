@@ -69,6 +69,23 @@ parameters:
       zh_Hant: 訊息的內容
     llm_description: The content of the message
     form: llm
+  - name: attachments
+    type: files
+    required: false
+    label:
+      en_US: Attachments
+      zh_Hans: 附件
+      pt_BR: Anexos
+      ja_JP: 添付ファイル
+      zh_Hant: 附件
+    human_description:
+      en_US: Optional files to attach to the email (kept small; a few MB total)
+      zh_Hans: 可选，要附加到邮件的文件（保持较小，总计几 MB）
+      pt_BR: Arquivos opcionais para anexar ao e-mail (mantenha pequenos, alguns MB no total)
+      ja_JP: メールに添付する任意のファイル（合計数 MB 程度に抑えてください）
+      zh_Hant: 可選，要附加到郵件的檔案（保持較小，總計幾 MB）
+    llm_description: Optional files to attach to the email. Sent inline via sendMail, so keep the total size small (a few MB); for larger files use the draft flow.
+    form: llm
 extra:
   python:
-    source: tools/send_message.py 
+    source: tools/send_message.py
