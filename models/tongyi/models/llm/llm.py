@@ -921,8 +921,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         tool_definitions = []
         for tool in tools:
-            properties = tool.parameters["properties"]
-            required_properties = tool.parameters["required"]
+            properties = tool.parameters.get("properties", {})
+            required_properties = tool.parameters.get("required", [])
             properties_definitions = {}
             for p_key, p_val in properties.items():
                 desc = p_val.get("description") or ""
@@ -930,7 +930,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     desc += f"; Only accepts one of the following predefined options: [{', '.join(p_val['enum'])}]"
                 properties_definitions[p_key] = {
                     "description": desc,
-                    "type": p_val["type"],
+                    # A property may legally declare no type (anyOf/oneOf/$ref/const);
+                    # omit the key rather than inventing one.
+                    **({"type": p_val["type"]} if "type" in p_val else {}),
                 }
             tool_definition = {
                 "type": "function",
