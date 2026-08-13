@@ -297,23 +297,17 @@ model_credential_schema:
           label:
             en_US: Parameter Format
             zh_Hans: 参数格式
-        - value: google_search
-          label:
-            en_US: Google Search (Gemini)
-            zh_Hans: Google 搜索 (Gemini)
       help:
         en_US: >
           Configure web search support and format. 
           Standard Tools: {"type": "web_search", "web_search": {"enable": true}} (ZhipuAI, Baichuan). 
-          Simple Tools: {"type": "web_search"} (OpenAI Responses API, Volcengine). 
-          Parameter: {"web_search": true} as a top-level parameter. 
-          Google Search: {"googleSearch": {"exclude_domains": [...]}} (Gemini API).
+          Simple Tools: {"type": "web_search"} (Volcengine). 
+          Parameter: {"web_search": true} as a top-level parameter.
         zh_Hans: >
           配置联网搜索支持和格式。
           标准 Tools 格式: {"type": "web_search", "web_search": {"enable": true}} (智谱AI、百川)。
-          简单 Tools 格式: {"type": "web_search"} (OpenAI Responses API、火山引擎)。
+          简单 Tools 格式: {"type": "web_search"} (火山引擎)。
           参数格式: {"web_search": true} 作为顶层参数。
-          Google 搜索: {"googleSearch": {"exclude_domains": [...]}} (Gemini API)。
     - variable: compatibility_mode
       show_on:
         - variable: __model_type
