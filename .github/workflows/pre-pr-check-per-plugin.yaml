@@ -123,6 +123,7 @@ jobs:
 
       - name: Check If Version Exists
         env:
+          GH_TOKEN: ${{ github.token }}
           MARKETPLACE_BASE_URL: ${{ secrets.MARKETPLACE_BASE_URL }}
         run: |
           if [ -z "$MARKETPLACE_BASE_URL" ]; then
@@ -140,6 +141,11 @@ jobs:
           if [ "$RESPONSE_CODE" = "200" ]; then
             RESPONSE=$(curl -s "$MARKETPLACE_BASE_URL/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
             if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
+              if [ "$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" --jq '.merged')" = "true" ]; then
+                echo "Pull request already merged; skipping stale marketplace version check."
+                exit 0
+              fi
+
               echo "!!! Plugin version $VERSION already exists, please update the version number in manifest.yaml"
               exit 1
             fi
