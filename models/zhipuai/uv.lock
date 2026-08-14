@@ -1181,7 +1181,7 @@ wheels = [
 
 [[package]]
 name = "zai-sdk"
-version = "0.2.2"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -1191,9 +1191,9 @@ dependencies = [
     { name = "pyjwt" },
     { name = "sniffio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/64/a1/0f392da4afd53977383c03ad5c4cc4079b958fb4acd9f8bdeb8fa1e2e5e5/zai_sdk-0.2.2.tar.gz", hash = "sha256:841af188586c41f0f98abcad17b162dc97461c3ab8b3d09f93b0333ebdfe72c3", size = 76605, upload-time = "2026-02-02T16:10:28.502Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/e6/f4954be9a8c70260a5de7a83035d5fbe7ec74799d7dd58857a82141c9a2f/zai_sdk-0.2.3.tar.gz", hash = "sha256:1481f6db746e64fe9e7e0da9a3727fd083890613f9eb8e1d14139ff76ef68a57", size = 76968, upload-time = "2026-06-16T03:07:25.43Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/02/d586e861e711f8449c567b01b004d7c5f65ee07c75709992a84e3ef9c40e/zai_sdk-0.2.2-py3-none-any.whl", hash = "sha256:675e9ff3fc2a86e38631331469b935589ae60492127f2c2822c7555214f2dd25", size = 125579, upload-time = "2026-02-02T16:10:26.975Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/18/2b2c012421936ed370436d844e250e9dbdefa20e845d6aeea7152c26a403/zai_sdk-0.2.3-py3-none-any.whl", hash = "sha256:f8d6417f8cff58d5b6cba5c27577ee55aa817ae825c6c88fe883f6f6f9265d90", size = 125632, upload-time = "2026-06-16T03:07:24.381Z" },
 ]
 
 [[package]]
@@ -1217,7 +1217,7 @@ requires-dist = [
     { name = "dify-plugin", specifier = ">=0.9.0" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "sniffio", specifier = ">=1.3.1" },
-    { name = "zai-sdk", specifier = ">=0.2.2" },
+    { name = "zai-sdk", specifier = ">=0.2.3" },
 ]
 
 [package.metadata.requires-dev]
