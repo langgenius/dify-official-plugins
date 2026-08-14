@@ -60,3 +60,7 @@ filterwarnings = [
 line-length = 100
 skip-string-normalization = true
 include = '(^|/)llm\.py$'
+
+[tool.ruff.lint]
+# Ruff 0.16 expanded its defaults; keep the existing lint contract explicit.
+select = ["E4", "E7", "E9", "F"]

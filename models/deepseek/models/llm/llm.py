@@ -1,30 +1,34 @@
+import re
 from collections.abc import Generator
-from typing import Optional, Union
-from dify_plugin.config.logger_format import plugin_logger_handler
+from html import escape, unescape
+
+from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
+    PromptMessageFunction,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
-    UserPromptMessage,
 )
-from yarl import URL
-from dify_plugin import OAICompatLargeLanguageModel
-import re
+from requests import Response
+
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
-    # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
-    _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
-
-    _V4_MODELS = {"deepseek-v4-flash", "deepseek-v4-pro"}
-    _THINKING_UNSUPPORTED_PARAMETERS = {
+    _THINK_MARKER = "<!--dify-deepseek-reasoning-->"
+    _THINK_PATTERN = re.compile(
+        rf"<think>\n{re.escape(_THINK_MARKER)}(.*?)\n</think>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    _V4_MODELS = ("deepseek-v4-flash", "deepseek-v4-pro")
+    _THINKING_UNSUPPORTED_PARAMETERS = (
         "temperature",
         "top_p",
         "presence_penalty",
         "frequency_penalty",
-    }
+    )
 
     def _invoke(
         self,
@@ -32,113 +36,88 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+        user: str | None = None,
+    ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
+        credentials["_current_model"] = model
         self._normalize_model_parameters(model, model_parameters)
-        # Merge consecutive messages with the same role to strictly follow API specs
-        prompt_messages = self._clean_messages(prompt_messages)
-        response = super()._invoke(
-            model, credentials, prompt_messages, model_parameters, tools, stop, stream
+        if user:
+            model_parameters["user_id"] = user
+        if tools:
+            model_parameters["tools"] = [
+                PromptMessageFunction(function=tool).model_dump() for tool in tools
+            ]
+            tools = None
+
+        return super()._invoke(
+            model,
+            credentials,
+            self._clean_messages(prompt_messages),
+            model_parameters,
+            tools,
+            stop,
+            stream,
         )
-        return response
 
     def _clean_messages(self, messages: list[PromptMessage]) -> list[PromptMessage]:
         cleaned: list[PromptMessage] = []
-        for m in messages:
-            # Tool and system messages should NEVER be filtered or merged
-            # - ToolPromptMessage may have empty content (e.g. command succeeded with no output)
-            #   but must be kept to match its tool_call_id
-            # - SystemPromptMessage should always be preserved as-is
-            if isinstance(m, (ToolPromptMessage, SystemPromptMessage)):
-                cleaned.append(m.model_copy())
+        for original in messages:
+            message = original.model_copy(deep=True)
+
+            if isinstance(message, (ToolPromptMessage, SystemPromptMessage)):
+                cleaned.append(message)
                 continue
 
-            # Filter out empty messages (no content and no tool calls)
-            has_tool_calls = isinstance(m, AssistantPromptMessage) and m.tool_calls
-            if not m.content and not has_tool_calls:
+            has_tool_calls = (
+                isinstance(message, AssistantPromptMessage) and message.tool_calls
+            )
+            if not message.content and not has_tool_calls:
                 continue
-            
-            if cleaned and cleaned[-1].role == m.role:
-                prev = cleaned[-1]
-                # Merge content if both are strings
-                if isinstance(prev.content, str) and isinstance(m.content, str):
-                    if prev.content and m.content:
-                        prev.content += "\n\n" + m.content
-                    else:
-                        prev.content = prev.content or m.content
-                
-                # Merge tool_calls if both are assistants
-                if isinstance(prev, AssistantPromptMessage) and isinstance(m, AssistantPromptMessage):
-                    if m.tool_calls:
-                        if not prev.tool_calls:
-                            prev.tool_calls = []
-                        prev.tool_calls.extend(m.tool_calls)
-            else:
-                cleaned.append(m.model_copy())
-        return cleaned
 
-    def _log_helper_convert_message(self, prompt_message: PromptMessage) -> dict:
-        # Helper method for logging
-        message_dict: dict[str, object] = {"role": "", "content": ""}
-        if isinstance(prompt_message, UserPromptMessage):
-            message_dict["role"] = "user"
-            message_dict["content"] = prompt_message.content
-        elif isinstance(prompt_message, AssistantPromptMessage):
-            message_dict["role"] = "assistant"
-            message_dict["content"] = prompt_message.content or ""
-            if prompt_message.tool_calls:
-                message_dict["tool_calls"] = [
-                    {
-                        "id": tool_call.id,
-                        "type": "function",
-                        "function": {
-                            "name": tool_call.function.name,
-                            "arguments": tool_call.function.arguments,
-                        },
-                    }
-                    for tool_call in prompt_message.tool_calls
+            if not cleaned or cleaned[-1].role != message.role:
+                cleaned.append(message)
+                continue
+
+            previous = cleaned[-1]
+            if isinstance(previous.content, str) and isinstance(message.content, str):
+                previous.content = (
+                    f"{previous.content}\n\n{message.content}"
+                    if previous.content and message.content
+                    else previous.content or message.content
+                )
+            elif isinstance(previous.content, list) and isinstance(
+                message.content, list
+            ):
+                previous.content.extend(message.content)
+            elif isinstance(previous.content, str) and isinstance(
+                message.content, list
+            ):
+                previous.content = [
+                    TextPromptMessageContent(data=previous.content),
+                    *message.content,
                 ]
-        elif isinstance(prompt_message, ToolPromptMessage):
-            message_dict["role"] = "tool"
-            message_dict["content"] = prompt_message.content
-            message_dict["tool_call_id"] = prompt_message.tool_call_id
-        elif isinstance(prompt_message, SystemPromptMessage):
-             message_dict["role"] = "system"
-             message_dict["content"] = prompt_message.content
-        return message_dict
+            elif isinstance(previous.content, list) and isinstance(
+                message.content, str
+            ):
+                previous.content.append(TextPromptMessageContent(data=message.content))
 
-    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
+            if isinstance(previous, AssistantPromptMessage) and isinstance(
+                message, AssistantPromptMessage
+            ):
+                if isinstance(previous.content, str) and self._THINK_PATTERN.search(
+                    previous.content
+                ):
+                    previous.opaque_body = None
+                if message.tool_calls:
+                    previous.tool_calls = [
+                        *(previous.tool_calls or []),
+                        *message.tool_calls,
+                    ]
 
-        :param delta: delta dictionary from LLM streaming response
-        :param is_reasoning: is reasoning
-        :return: tuple of (processed_content, is_reasoning)
-        """
-
-        content = delta.get("content") or ""
-        reasoning_content = delta.get("reasoning_content")
-        output = content
-        if reasoning_content:
-            if not is_reasoning:
-                output = "<think>\n" + reasoning_content
-                is_reasoning = True
-            else:
-                output = reasoning_content
-        else:
-            if is_reasoning:
-                is_reasoning = False
-                if not reasoning_content:
-                    output = "\n</think>"
-                if content:
-                    output += content
-            
-        return output, is_reasoning
+        return cleaned
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
@@ -149,63 +128,115 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         if model not in cls._V4_MODELS:
             return
 
-        thinking = model_parameters.get("thinking")
+        thinking = model_parameters.get("thinking", True)
         if isinstance(thinking, bool):
-            model_parameters["thinking"] = {
-                "type": "enabled" if thinking else "disabled"
-            }
+            thinking = {"type": "enabled" if thinking else "disabled"}
+            model_parameters["thinking"] = thinking
 
-        normalized_thinking = model_parameters.get("thinking")
-        if isinstance(normalized_thinking, dict) and normalized_thinking.get("type") == "enabled":
-            for parameter_name in cls._THINKING_UNSUPPORTED_PARAMETERS:
-                model_parameters.pop(parameter_name, None)
+        if not isinstance(thinking, dict):
+            return
+        if thinking.get("type") == "disabled":
+            model_parameters.pop("reasoning_effort", None)
+            return
+        if thinking.get("type") == "enabled":
+            for parameter in cls._THINKING_UNSUPPORTED_PARAMETERS:
+                model_parameters.pop(parameter, None)
 
     @staticmethod
-    def _add_custom_parameters(credentials) -> None:
-        credentials["endpoint_url"] = str(URL(credentials.get("endpoint_url", "https://api.deepseek.com")))
+    def _add_custom_parameters(credentials: dict) -> None:
+        credentials["endpoint_url"] = (
+            credentials.get("endpoint_url") or ""
+        ).strip() or "https://api.deepseek.com"
         credentials["mode"] = LLMMode.CHAT.value
         credentials["function_calling_type"] = "tool_call"
         credentials["stream_function_calling"] = "supported"
 
-    def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: dict | None = None) -> dict:
-        """
-        Custom conversion for DeepSeek to handle reasoning_content.
-        """
+    def _handle_generate_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        result = super()._handle_generate_response(
+            model,
+            credentials,
+            response,
+            prompt_messages,
+        )
+        response_message = response.json()["choices"][0].get("message", {})
+        reasoning_content = response_message.get("reasoning_content")
+        if not isinstance(reasoning_content, str):
+            return result
+
+        opaque_body = (
+            result.message.opaque_body
+            if isinstance(result.message.opaque_body, dict)
+            else {}
+        )
+        result.message.opaque_body = {
+            **opaque_body,
+            "reasoning_content": reasoning_content,
+        }
+        if reasoning_content:
+            result.message.content = (
+                f"<think>\n{self._THINK_MARKER}"
+                f"{escape(reasoning_content, quote=False)}\n</think>"
+                f"{result.message.content or ''}"
+            )
+        return result
+
+    def _wrap_thinking_by_reasoning_content(
+        self,
+        delta: dict,
+        is_reasoning: bool,
+    ) -> tuple[str, bool]:
+        content = delta.get("content") or ""
+        reasoning_content = delta.get("reasoning_content") or delta.get("reasoning")
+        if not reasoning_content:
+            return ("\n</think>" if is_reasoning else "") + content, False
+
+        output = escape(str(reasoning_content), quote=False)
+        if not is_reasoning:
+            output = f"<think>\n{self._THINK_MARKER}" + output
+        if content or delta.get("tool_calls") or delta.get("function_call"):
+            return output + "\n</think>" + content, False
+        return output, True
+
+    def _convert_prompt_message_to_dict(
+        self,
+        message: PromptMessage,
+        credentials: dict | None = None,
+    ) -> dict:
         credentials = credentials or {}
-        model_name = credentials.get("_current_model", "").lower()
-        
-        # Call base logic to get standard role/content/tool_calls
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
-        
-        if isinstance(message, AssistantPromptMessage):
-            content = message.content or ""
-            reasoning_content = None
-            
-            if isinstance(content, str):
-                # Extract <think> content from text
-                clean_content, extracted_reasoning = self._extract_reasoning_content(content)
-                if extracted_reasoning:
-                    reasoning_content = extracted_reasoning
-                    content = clean_content
-            
-            # For DeepSeek Reasoner/R1, or if we have extracted reasoning, provide fields.
-            # Official doc: assistant messages in history MUST split reasoning_content and content.
-            # If reasoning_content is present, it must be a string.
-            if "reasoner" in model_name or reasoning_content:
-                message_dict["reasoning_content"] = reasoning_content or ""
-                message_dict["content"] = content
-                
+        if not isinstance(message, AssistantPromptMessage):
+            return message_dict
+
+        content = message.content or ""
+        reasoning_content = None
+        if isinstance(message.opaque_body, dict):
+            raw_reasoning_content = message.opaque_body.get("reasoning_content")
+            if isinstance(raw_reasoning_content, str):
+                reasoning_content = raw_reasoning_content
+
+        if isinstance(content, str):
+            content, extracted_reasoning = self._extract_reasoning_content(content)
+            if reasoning_content is None:
+                reasoning_content = extracted_reasoning
+
+        if (
+            credentials.get("_current_model", "").lower() in self._V4_MODELS
+            or reasoning_content is not None
+        ):
+            message_dict["reasoning_content"] = reasoning_content or ""
+            message_dict["content"] = content
         return message_dict
 
-    def _extract_reasoning_content(self, text: str) -> tuple[str, Optional[str]]:
+    def _extract_reasoning_content(self, text: str) -> tuple[str, str | None]:
         if not text:
             return text, None
-        
+
         matches = self._THINK_PATTERN.findall(text)
-        reasoning_content = "\n".join(match.strip() for match in matches) if matches else None
-        
-        # Remove all <think> blocks
-        clean_text = self._THINK_PATTERN.sub("", text)
-        clean_text = re.sub(r"\n\s*\n", "\n\n", clean_text).strip()
-        
-        return clean_text, reasoning_content
+        reasoning_content = "\n\n".join(map(unescape, matches)) if matches else None
+        return self._THINK_PATTERN.sub("", text), reasoning_content

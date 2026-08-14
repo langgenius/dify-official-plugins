@@ -13,6 +13,7 @@ from models.llm.model_schema import (
 
 LLM_SCHEMA_DIR = Path(__file__).parents[1] / "llm"
 LATEST_FLASH_MODELS = (
+    ("gemini-3.7-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
     ("gemini-3.6-flash", "Medium", Decimal("1.50"), Decimal("7.50")),
     ("gemini-3.5-flash-lite", "Minimal", Decimal("0.30"), Decimal("2.50")),
 )
@@ -90,7 +91,12 @@ def test_latest_flash_model_contract(
     assert rules["include_thoughts"].default is False
     assert rules["media_resolution"].options == ["Default", "Low", "Medium", "High"]
     assert rules["thinking_level"].default == thinking_level
-    assert rules["thinking_level"].options == ["Minimal", "Low", "Medium", "High"]
+    expected_thinking_levels = (
+        ["Low", "Medium", "High"]
+        if model == "gemini-3.7-flash"
+        else ["Minimal", "Low", "Medium", "High"]
+    )
+    assert rules["thinking_level"].options == expected_thinking_levels
     assert rules["max_output_tokens"].default == 65_536
     assert rules["max_output_tokens"].max == 65_536
     assert rules["service_tier"].default == "standard"
@@ -104,7 +110,8 @@ def test_latest_flash_model_contract(
 
 def test_latest_flash_models_are_first_in_display_order():
     position = yaml.safe_load((LLM_SCHEMA_DIR / "_position.yaml").read_text())
-    assert position[:3] == [
+    assert position[:4] == [
+        "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-3.5-flash",
         "gemini-3.5-flash-lite",

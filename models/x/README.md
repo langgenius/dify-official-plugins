@@ -1,6 +1,6 @@
 ## Overview
 
-xAI develops the **Grok** family of large language models. The current xAI lineup includes flagship and fast variants such as `grok-4`, `grok-4-fast`, `grok-4.20-beta-latest`, `grok-code-fast-1`, `grok-3`, and `grok-3-mini`. Depending on the model specifications, users can interact with Grok models for reasoning, tool use, structured outputs, live search, code generation, and image understanding.
+xAI develops the **Grok** family of large language models. The current xAI lineup includes flagship and fast variants such as `grok-4.6`, `grok-4`, `grok-4-fast`, `grok-4.20-beta-latest`, `grok-code-fast-1`, `grok-3`, and `grok-3-mini`. Depending on the model specifications, users can interact with Grok models for reasoning, tool use, structured outputs, live search, code generation, and image understanding.
 
 ## Configuration
 

@@ -20,7 +20,7 @@ from models.llm.llm import GoogleLargeLanguageModel
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MODELS = ("gemini-3.6-flash", "gemini-3.5-flash-lite")
+MODELS = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite")
 RED_IMAGE = (
     "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKElEQVR4nO3NsQ0A"
     "AAzCMP5/un0CNkuZ41wybXsHAAAAAAAAAAAAxR4yw/wuPL6QkAAAAABJRU5ErkJggg=="
@@ -54,7 +54,7 @@ def _invoke(
                 credentials={"google_api_key": os.environ["GEMINI_API_KEY"]},
                 prompt_messages=messages,
                 model_parameters=parameters
-                or {"max_output_tokens": 128, "thinking_level": "Minimal"},
+                or {"max_output_tokens": 128, "thinking_level": "Low"},
                 tools=tools,
                 stream=stream,
                 user="gemini-live-test",
@@ -127,7 +127,7 @@ def test_structured_output(model: str) -> None:
         [UserPromptMessage(content="Return the required structured answer.")],
         parameters={
             "max_output_tokens": 128,
-            "thinking_level": "Minimal",
+            "thinking_level": "Low",
             "json_schema": json.dumps(schema),
         },
         stream=False,
@@ -158,7 +158,7 @@ def test_inline_image_input(model: str) -> None:
         ],
         parameters={
             "max_output_tokens": 128,
-            "thinking_level": "Minimal",
+            "thinking_level": "Low",
             "use_inline_file": True,
         },
         stream=False,
