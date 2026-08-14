@@ -572,9 +572,18 @@ class TestBuildGeminiContents:
             "Draw a red fox.",
         ]
 
-    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    @pytest.mark.parametrize(
+        "model",
+        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+    )
     def test_new_models_drop_deprecated_sampling_parameters(self, model):
         mock_client = Mock()
+        parameters = {
+            "temperature": 0,
+            "top_p": 0.9,
+            "top_k": 40,
+            "thinking_budget": 128,
+        }
 
         with (
             patch("models.llm.llm.genai.Client", return_value=mock_client),
@@ -584,7 +593,7 @@ class TestBuildGeminiContents:
                 model=model,
                 credentials={"google_api_key": "test-key"},
                 prompt_messages=[UserPromptMessage(content="Hello")],
-                model_parameters={"temperature": 0, "top_p": 0.9, "top_k": 40},
+                model_parameters=parameters,
                 stream=False,
             )
 
@@ -592,6 +601,36 @@ class TestBuildGeminiContents:
         assert config.temperature is None
         assert config.top_p is None
         assert config.top_k is None
+        assert config.thinking_config.thinking_budget is None
+
+    def test_gemini_3_7_drops_legacy_parameters_on_interactions_api(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_interactions_response"),
+        ):
+            self.llm._generate(
+                model="gemini-3.7-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={
+                    "json_schema": '{"type":"object"}',
+                    "grounding": True,
+                    "temperature": 0,
+                    "top_p": 0.9,
+                    "top_k": 40,
+                    "thinking_budget": 128,
+                },
+                stream=False,
+            )
+
+        generation_config = mock_client.interactions.create.call_args.kwargs.get(
+            "generation_config", {}
+        )
+        assert not {"temperature", "top_p", "top_k", "thinking_budget"} & (
+            generation_config.keys()
+        )
 
     def test_new_model_credentials_validation_omits_sampling_parameters(self):
         mock_client = Mock()
@@ -608,7 +647,10 @@ class TestBuildGeminiContents:
         assert config.top_p is None
         assert config.top_k is None
 
-    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    @pytest.mark.parametrize(
+        "model",
+        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+    )
     def test_new_models_reject_assistant_prefill(self, model):
         mock_client = Mock()
 
@@ -630,6 +672,57 @@ class TestBuildGeminiContents:
             )
 
         mock_client.models.generate_content.assert_not_called()
+
+    def test_gemini_3_7_rejects_assistant_prefill_on_interactions_api(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            pytest.raises(
+                InvokeBadRequestError, match="requires a non-empty final user turn"
+            ),
+        ):
+            self.llm._generate(
+                model="gemini-3.7-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[AssistantPromptMessage(content="Prefill")],
+                model_parameters={
+                    "json_schema": '{"type":"object"}',
+                    "grounding": True,
+                },
+                stream=False,
+            )
+
+        mock_client.interactions.create.assert_not_called()
+
+    def test_gemini_3_7_validates_converted_interactions_input(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            pytest.raises(
+                InvokeBadRequestError, match="requires a non-empty final user turn"
+            ),
+        ):
+            self.llm._generate(
+                model="gemini-3.7-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    AssistantPromptMessage(content="Calling a tool"),
+                    ToolPromptMessage(
+                        content="42",
+                        name="lookup",
+                        tool_call_id="call-1",
+                    ),
+                ],
+                model_parameters={
+                    "json_schema": '{"type":"object"}',
+                    "grounding": True,
+                },
+                stream=False,
+            )
+
+        mock_client.interactions.create.assert_not_called()
 
     def test_multiple_text_system_messages_keep_last_scalar(self):
         messages = [
@@ -743,7 +836,10 @@ class TestBuildGeminiContents:
             is None
         )
 
-    @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.5-flash-lite"])
+    @pytest.mark.parametrize(
+        "model",
+        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+    )
     def test_new_models_accept_scalar_system_only_prompt(self, model):
         mock_client = Mock()
 
