@@ -21,7 +21,7 @@ def test_glm_5_2_schema_and_request_parameters() -> None:
     position = yaml.safe_load(
         (model_file.parent / "_position.yaml").read_text(encoding="utf-8")
     )
-    assert position[:2] == ["glm-5.3", "glm-5.2"]
+    assert position[:2] == ["glm-5.2", "glm-5.3"]
 
     rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
     assert schema["model_properties"]["context_size"] == 1_000_000
@@ -82,7 +82,7 @@ def test_glm_5_3_schema_and_request_parameters() -> None:
     position = yaml.safe_load(
         (model_file.parent / "_position.yaml").read_text(encoding="utf-8")
     )
-    assert position[0] == "glm-5.3"
+    assert position[1] == "glm-5.3"
 
     rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
     assert schema["model_properties"]["context_size"] == 1_000_000
