@@ -384,6 +384,42 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: stream_include_usage
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Include Usage in Stream
+        zh_Hans: 流式中包含用量
+      type: select
+      required: false
+      default: enabled
+      help:
+        en_US: >
+          Whether to send `stream_options: {include_usage: true}` so the endpoint
+          returns prompt/completion token counts in the final stream chunk.
+          OpenAI-compatible servers (vLLM, SGLang, llama.cpp, ...) only emit
+          `usage` when this is requested; without it, Dify falls back to local
+          token estimation that counts only the first prompt message, which
+          undercounts multi-message prompts (e.g. a long user prompt after a
+          system prompt). Choose Disabled only if the endpoint rejects the
+          field.
+        zh_Hans: >
+          是否发送 `stream_options: {include_usage: true}`，让端点在流式最后一片
+          中返回 prompt / completion token 数量。OpenAI 兼容服务端（vLLM、SGLang、
+          llama.cpp 等）只有在请求中显式要求时才会返回 `usage`；否则 Dify 会
+          回退到本地估算，仅对第一条 prompt 消息计 token，导致多消息 prompt
+          （例如系统提示后跟很长的用户消息）被少算。仅在端点拒绝该字段时
+          选择「禁用」。
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 禁用
     - variable: function_calling_type
       show_on:
         - variable: __model_type
