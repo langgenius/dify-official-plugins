@@ -241,7 +241,9 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
-        if "thinking" in model_parameters:
+        if model == "glm-5.3":
+            model_parameters["thinking"] = {"type": "enabled"}
+        elif "thinking" in model_parameters:
             thinking = model_parameters.pop("thinking")
             if thinking:
                 model_parameters["thinking"] = {"type": "enabled"}
