@@ -1097,8 +1097,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             "signature": ""
                         })
                     elif getattr(content_block, 'type', None) == "redacted_thinking":
+                        # the opaque `data` payload must be preserved unchanged and
+                        # echoed back on the tool-result turn, or the follow-up
+                        # request is rejected by the API
                         current_redacted_thinking_blocks.append({
-                            "type": "redacted_thinking"
+                            "type": "redacted_thinking",
+                            "data": content_block.data,
                         })
             elif isinstance(chunk, ContentBlockDeltaEvent):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
