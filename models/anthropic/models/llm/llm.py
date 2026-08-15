@@ -1,10 +1,14 @@
 import base64
 import io
+import ipaddress
 import json
 import re
 import copy
+import socket
+import time
 from collections.abc import Generator, Sequence
 from typing import Any, Mapping, Optional, Union, cast
+from urllib.parse import urljoin, urlparse
 import logging
 
 import anthropic
@@ -167,6 +171,12 @@ class PromptCachingHandler:
             adjusted += int(cache_read_input_tokens * cls.CACHE_READ_MULTIPLIER)
 
         return adjusted
+
+
+_IMAGE_FETCH_MAX_BYTES = 20 * 1024 * 1024  # cap on downloaded / decoded image bytes
+_IMAGE_FETCH_ENCODED_MAX_BYTES = 28 * 1024 * 1024  # cap on data-URI base64 input (pre-decode)
+_IMAGE_FETCH_DEADLINE_S = 30.0  # total wall-clock budget per image fetch (all hops + download)
+_IMAGE_FETCH_MAX_REDIRECTS = 3
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
@@ -1428,29 +1438,119 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         return result
     
-    def _process_image_data(self, data: str) -> tuple[str, str]:
-        """Process image data from URL or data URI."""
-        if data.startswith("data:"):
-            # Extract from data URI
-            header, encoded = data.split(";base64,", 1)
-            mime_type = header.replace("data:", "")
-            return mime_type, encoded
-        
-        # Fetch from URL
+    def _assert_public_http_url(self, url: str) -> None:
+        """Validate that url is http(s) and does not target a private/internal address."""
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Unsupported image URL scheme")
+        hostname = (parsed.hostname or "").lower()
+        if not hostname:
+            raise ValueError("Invalid image URL")
         try:
-            response = requests.get(data)
-            response.raise_for_status()
-            
-            with Image.open(io.BytesIO(response.content)) as img:
-                img_format = img.format or "jpeg"  # Default to jpeg if format is None
-                mime_type = f"image/{img_format.lower()}"
-            
-            base64_data = base64.b64encode(response.content).decode("utf-8")
-            return mime_type, base64_data
-            
+            addr_infos = socket.getaddrinfo(hostname, None)
+        except socket.gaierror as ex:
+            raise ValueError("Invalid or inaccessible image URL") from ex
+        for ai in addr_infos:
+            # strip IPv6 zone index before parsing
+            addr = ai[4][0].split("%", 1)[0]
+            try:
+                ip = ipaddress.ip_address(addr)
+            except ValueError:
+                continue
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError("Invalid or inaccessible image URL")
+
+    def _normalize_image_bytes(self, content: bytes) -> tuple[bytes, str]:
+        """Sniff the real image format and convert unsupported formats to PNG."""
+        try:
+            with Image.open(io.BytesIO(content)) as img:
+                img_format = (img.format or "JPEG").upper()
+                if img_format in ("JPEG", "PNG", "GIF", "WEBP"):
+                    return content, f"image/{img_format.lower()}"
+            # BMP, TIFF, ... are rejected by the Messages API; re-encode as PNG
+            with Image.open(io.BytesIO(content)) as img:
+                buffer = io.BytesIO()
+                img.convert("RGB").save(buffer, format="PNG")
+                return buffer.getvalue(), "image/png"
+        except ValueError:
+            raise
         except Exception as ex:
-            raise ValueError(f"Failed to fetch image from {data}: {ex}") from ex
-    
+            raise ValueError("Unsupported image data") from ex
+
+    def _process_image_data(self, data: str) -> tuple[str, str]:
+        """Process image data from URL or data URI.
+
+        Hardened fetch: SSRF guards (scheme + private/link-local/reserved IP blocking,
+        re-validated on every redirect hop), streaming download with a size cap, a total
+        wall-clock deadline, strict base64 validation for data URIs, format sniffing via
+        Pillow, and error messages that never echo URLs or query strings.
+        """
+        if data.startswith("data:"):
+            # data URI: strict base64, cap input BEFORE decoding, sniff actual format
+            try:
+                header, encoded = data.split(";base64,", 1)
+            except ValueError as ex:
+                raise ValueError("Malformed base64 data URI") from ex
+            if len(encoded) > _IMAGE_FETCH_ENCODED_MAX_BYTES:
+                raise ValueError("Encoded image data exceeds maximum allowed size")
+            try:
+                content = base64.b64decode(encoded, validate=True)
+            except Exception as ex:
+                raise ValueError("Malformed base64 data URI payload") from ex
+            if len(content) > _IMAGE_FETCH_MAX_BYTES:
+                raise ValueError("Image exceeds maximum allowed size")
+            content, mime_type = self._normalize_image_bytes(content)
+            return mime_type, base64.b64encode(content).decode("utf-8")
+
+        self._assert_public_http_url(data)
+
+        deadline = time.monotonic() + _IMAGE_FETCH_DEADLINE_S
+        current = data
+        content = None
+        try:
+            for _hop in range(_IMAGE_FETCH_MAX_REDIRECTS + 1):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError("Image fetch exceeded total time limit")
+                # read timeout shrinks to the remaining budget so a blocked read
+                # cannot overshoot the deadline (requests timeouts are not totals)
+                buf = bytearray()
+                with requests.get(
+                    current,
+                    timeout=(min(5.0, remaining), max(0.1, min(10.0, remaining))),
+                    stream=True,
+                    allow_redirects=False,
+                ) as response:
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        location = response.headers.get("Location")
+                        if not location:
+                            raise ValueError("Redirect without Location header")
+                        current = urljoin(current, location)
+                        # re-validate every hop: a redirect must not bypass the guard
+                        self._assert_public_http_url(current)
+                        continue
+                    response.raise_for_status()
+                    for chunk in response.iter_content(chunk_size=65536):
+                        buf.extend(chunk)
+                        if len(buf) > _IMAGE_FETCH_MAX_BYTES:
+                            raise ValueError("Image exceeds maximum allowed size")
+                        if time.monotonic() > deadline:
+                            raise ValueError("Image fetch exceeded total time limit")
+                    content = bytes(buf)
+                    break
+            if content is None:
+                raise ValueError("Too many redirects")
+            content, mime_type = self._normalize_image_bytes(content)
+            return mime_type, base64.b64encode(content).decode("utf-8")
+        except ValueError:
+            raise
+        except requests.exceptions.HTTPError as ex:
+            status = ex.response.status_code if ex.response is not None else 0
+            # never echo the URL or query string (may contain SAS tokens)
+            raise ValueError(f"Failed to fetch image (HTTP {status})") from None
+        except Exception as ex:
+            raise ValueError(f"Failed to fetch image ({ex.__class__.__name__})") from None
+
     def _create_document_content(self, content: DocumentPromptMessageContent, is_last_user_message: bool = False) -> dict:
         """Create document content dict."""
         if content.mime_type != "application/pdf":
