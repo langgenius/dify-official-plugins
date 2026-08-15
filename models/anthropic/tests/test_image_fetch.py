@@ -270,8 +270,8 @@ def test_wall_clock_deadline(monkeypatch, model):
         _FakeResponse(),
     ]
     _install_responses(monkeypatch, responses)
-    # exhaust the deadline before the second hop (first call computes the
-    # deadline, every later call reports "way past it")
+    # replace the time MODULE REFERENCE inside llm.py only (not the global stdlib
+    # module), so the fake clock cannot affect other libraries
     import models.llm.llm as llm_module
 
     real_monotonic = llm_module.time.monotonic
@@ -282,9 +282,73 @@ def test_wall_clock_deadline(monkeypatch, model):
         calls["n"] += 1
         return t0 if calls["n"] == 1 else t0 + 60.0
 
-    monkeypatch.setattr(llm_module.time, "monotonic", _fake_monotonic)
+    monkeypatch.setattr(
+        "models.llm.llm.time", types.SimpleNamespace(monotonic=_fake_monotonic)
+    )
     with pytest.raises(ValueError, match="total time limit"):
         model._process_image_data("https://pub.example.com/a.png")
+
+
+def test_read_timeout_shrinks_with_remaining_budget(monkeypatch, model):
+    _expect_public(monkeypatch)
+    seen_kwargs = {}
+
+    def _fake_get(url, **kwargs):
+        seen_kwargs.update(kwargs)
+        return _FakeResponse(302, headers={"Location": "https://pub2.example.com/b.png"}) if not seen_kwargs else _FakeResponse()
+
+    monkeypatch.setattr("models.llm.llm.requests.get", _fake_get)
+    # clock: t0 at deadline computation, then t0+29.5 on every later call,
+    # so the second hop sees only 0.5s of remaining budget
+    t0 = 1_000_000.0
+    calls = {"n": 0}
+
+    def _fake_monotonic():
+        calls["n"] += 1
+        return t0 if calls["n"] == 1 else t0 + 29.5
+
+    monkeypatch.setattr(
+        "models.llm.llm.time", types.SimpleNamespace(monotonic=_fake_monotonic)
+    )
+    model._process_image_data("https://pub.example.com/a.png")
+    timeouts = seen_kwargs["timeout"]
+    assert timeouts[0] <= 0.5 and timeouts[1] <= 0.5, (
+        "read/connect timeouts must shrink to the remaining wall-clock budget"
+    )
+
+
+@pytest.mark.parametrize(
+    "location",
+    ["file:///etc/passwd", "ftp://pub.example.com/x", "data:image/png;base64,AAAA"],
+)
+def test_redirect_to_non_http_scheme_rejected(model, monkeypatch, location):
+    _expect_public(monkeypatch)
+    responses = [_FakeResponse(302, headers={"Location": location})]
+    _install_responses(monkeypatch, responses)
+    with pytest.raises(ValueError):
+        model._process_image_data("https://pub.example.com/a.png")
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["::ffff:127.0.0.1", "::ffff:169.254.169.254", "::ffff:10.0.0.5"],
+)
+def test_ipv4_mapped_ipv6_targets_rejected(model, monkeypatch, host):
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda h, p: [(socket.AF_INET6, socket.SOCK_STREAM, 6, "", (host, 0))],
+    )
+    with pytest.raises(ValueError, match="Invalid or inaccessible image URL"):
+        model._process_image_data("https://metadata-alias.example.com/a.png")
+
+
+def test_single_oversized_chunk_rejected(model, monkeypatch):
+    _expect_public(monkeypatch)
+    responses = [_FakeResponse(chunks=[b"x" * (25 * 1024 * 1024)])]
+    _install_responses(monkeypatch, responses)
+    with pytest.raises(ValueError, match="maximum allowed size"):
+        model._process_image_data("https://pub.example.com/big.png")
 
 
 # ---------------------------------------------------------------------------
@@ -330,3 +394,61 @@ def test_generic_error_never_leaks_userinfo(model, monkeypatch):
     with pytest.raises(ValueError, match=r"Failed to fetch image \(ConnectionError\)") as excinfo:
         model._process_image_data("https://user:SECRETPW@pub.example.com/a.png")
     assert "SECRETPW" not in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# real Pillow paths (in-memory generated images, no Image.open mocking)
+# ---------------------------------------------------------------------------
+
+
+def _real_image_bytes(fmt):
+    from PIL import Image as RealImage
+
+    img = RealImage.new("RGB", (4, 4), color=(120, 30, 200))
+    buf = io.BytesIO()
+    img.save(buf, format=fmt)
+    return buf.getvalue()
+
+
+def _use_real_pillow(monkeypatch):
+    from PIL import Image as RealImage
+
+    monkeypatch.setattr("models.llm.llm.Image", RealImage)
+
+
+def test_real_png_url_passes_through_unconverted(model, monkeypatch):
+    _use_real_pillow(monkeypatch)
+    png_bytes = _real_image_bytes("PNG")
+    responses = [_FakeResponse(chunks=[png_bytes])]
+    _install_responses(monkeypatch, responses)
+    mime, b64 = model._process_image_data("https://pub.example.com/a.png")
+    assert mime == "image/png"
+    assert base64.b64decode(b64) == png_bytes
+
+
+def test_real_bmp_url_converted_to_png(model, monkeypatch):
+    _use_real_pillow(monkeypatch)
+    bmp_bytes = _real_image_bytes("BMP")
+    responses = [_FakeResponse(chunks=[bmp_bytes])]
+    _install_responses(monkeypatch, responses)
+    mime, b64 = model._process_image_data("https://pub.example.com/a.bmp")
+    assert mime == "image/png"
+    converted = base64.b64decode(b64)
+    assert converted[:8] == b"\x89PNG\r\n\x1a\n"
+    assert converted != bmp_bytes
+
+
+def test_real_data_uri_bmp_converted_to_png(model, monkeypatch):
+    _use_real_pillow(monkeypatch)
+    bmp_b64 = base64.b64encode(_real_image_bytes("BMP")).decode()
+    mime, b64 = model._process_image_data("data:image/bmp;base64," + bmp_b64)
+    assert mime == "image/png"
+    assert base64.b64decode(b64)[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_real_non_image_bytes_rejected(model, monkeypatch):
+    _use_real_pillow(monkeypatch)
+    responses = [_FakeResponse(chunks=[b"this is not an image at all"])]
+    _install_responses(monkeypatch, responses)
+    with pytest.raises(ValueError, match="Unsupported image data"):
+        model._process_image_data("https://pub.example.com/text.png")

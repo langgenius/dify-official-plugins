@@ -1457,6 +1457,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 ip = ipaddress.ip_address(addr)
             except ValueError:
                 continue
+            if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+                # evaluate IPv4-mapped addresses by their embedded IPv4 value
+                ip = ip.ipv4_mapped
             if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                 raise ValueError("Invalid or inaccessible image URL")
 
