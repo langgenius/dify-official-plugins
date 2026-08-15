@@ -367,9 +367,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     )
                 else:
                     raise InvokeError(f"Could not get model information for inference profile {inference_profile_id}")
-            except Exception as e:
-                logger.error(f"Failed to invoke inference profile: {str(e)}")
-                raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
+            except InvokeError:
+                raise
+            except Exception:
+                # Real bug — log the full traceback at ERROR level and let
+                # the original exception type propagate so the caller sees
+                # the root cause instead of a generic InvokeError wrapper.
+                # The previous bare `except Exception as e: raise InvokeError(...)`
+                # hid undefined-name and similar bugs (same anti-pattern that
+                # PR #3565 / issue #3564 fixed in `_generate`).
+                logger.exception(f"Failed to invoke inference profile {inference_profile_id}")
+                raise
         else:
             # Check for bedrock-mantle models (GPT-5.5, GPT-5.4) before attempting Converse API.
             # These models use a different endpoint and the OpenAI Responses API.
