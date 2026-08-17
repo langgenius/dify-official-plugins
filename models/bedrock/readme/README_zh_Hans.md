@@ -52,6 +52,15 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 - **Fable 5 前置条件：数据保留 opt-in。** 调用 Fable 5 前，AWS 账户必须通过 Bedrock Data Retention API 将数据保留模式设置为 `provider_data_share`（上线初期无控制台入口）。详见 [Fable 5 模型卡](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html)。插件不会修改账户设置。
 - **价格说明。** 展示价格为 Global 跨区域费率（Opus 5 每百万 token $5/$25，Sonnet 5 $3/$15，Fable 5 $10/$50）。Geo/区域内调用约贵 10%。Prompt 缓存读写费率无法体现在 Dify 费用统计中，请以 AWS 账单为准。
 
+## Claude 4.5 代模型（Sonnet 4.5/4.6、Haiku 4.5、Opus 4.5–4.8）
+
+Claude 4.5 代模型（Sonnet 4.5/4.6、Haiku 4.5 和 Opus 4.5–4.8）在 Bedrock 上**仅支持通过推理配置文件（INFERENCE_PROFILE）调用**，不支持裸模型 ID 的按需调用。尝试以裸模型 ID 调用会返回 `ValidationException`。
+
+- **推理配置文件要求。** 这些模型只能通过推理配置文件调用（`us.`/`eu.`/`jp.`/`global.` 前缀）。任何 4.5+ Anthropic 模型都没有 `apac.` 配置文件（`apac.` 覆盖范围仅到 Sonnet 4）。
+- **跨区域推理设置。** 在大多数区域，用户应将"跨区域推理"设置为 `global` 或 `geographic`。日本区域（`ap-northeast-1`、`ap-northeast-3`）在选择 `geographic` 时使用 `jp.` 配置文件。对于没有地理配置文件的区域（如新加坡 / `ap-southeast-1`），用户必须使用 `global`。
+- **禁用跨区域推理会导致错误。** 将"跨区域推理"设置为 `disabled` 时尝试使用这些模型会导致 `ValidationException` 错误。插件的帮助文本已更新，提醒用户这些模型的仅配置文件要求。
+- **GovCloud 不支持。** 商业配置文件在 AWS GovCloud 区域无效，这些模型在 GovCloud 中无法使用。
+
 ## Issue Feedback | 问题反馈
 
 For more detailed information, please refer to [aws-sample/dify-aws-tool](https://github.com/aws-samples/dify-aws-tool/), which contains multiple workflows for reference.

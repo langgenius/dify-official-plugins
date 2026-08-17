@@ -34,5 +34,15 @@ The "Anthropic Claude 5" entry provides Claude Opus 5 (`anthropic.claude-opus-5`
 - **Fable 5 prerequisite: data retention opt-in.** Your AWS account must set data retention mode to `provider_data_share` via the Bedrock Data Retention API before invoking Fable 5 (no console UI at launch). See the [Fable 5 model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html). The plugin never changes account settings.
 - **Pricing note.** Displayed prices are the Global cross-region rates (Opus 5 $5/$25, Sonnet 5 $3/$15, Fable 5 $10/$50 per 1M tokens). Geo/in-region invocation is ~10% higher. Prompt-cache read/write rates are not representable in Dify's cost tracking — refer to your AWS bill.
 
+## Claude 4.5-Generation Models (Sonnet 4.5/4.6, Haiku 4.5, Opus 4.5–4.8)
+
+Claude 4.5-generation models (Sonnet 4.5/4.6, Haiku 4.5, and Opus 4.5–4.8) are INFERENCE_PROFILE-only on Bedrock — these models can only be invoked through inference profiles. Bare-ID on-demand invocation fails with `ValidationException` (see [issue #3664](https://github.com/langgenius/dify-official-plugins/issues/3664)).
+
+- **Profile prefixes.** All 4.5+ Anthropic models support `us.`, `eu.`, `jp.`, and `global.` profiles. There is no `apac.` profile for any 4.5-generation Anthropic model (`apac.` coverage stops at Sonnet 4).
+- **From most regions, use Global or Geographic.** Set *Cross-Region Inference* to `global` (recommended for worldwide routing) or `geographic` (for region-local data residency). Do not use `disabled`; the bare model ID is not invocable for these models.
+- **Japan regions.** From `ap-northeast-1` or `ap-northeast-3`, the plugin resolves `geographic` to the `jp.` profile (the Japan-specific data-residency profile).
+- **Regions without a geo profile.** From regions like `ap-southeast-1` (Singapore), the `apac.` profile is not available for 4.5+ models. You must set *Cross-Region Inference* to `global`.
+- **GovCloud regions.** These models are not available in AWS GovCloud. Commercial inference profiles are not valid in the GovCloud partition.
+
 ## Privacy
 This plugin sends the inputs required by the selected operation to the upstream service. See [PRIVACY.md](PRIVACY.md) for details.
