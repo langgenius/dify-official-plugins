@@ -3,6 +3,7 @@ label:
   zh_Hans: longcat-flash-chat
   en_US: longcat-flash-chat
 model_type: llm
+deprecated: true
 features:
   - agent-thought
 model_properties:

@@ -3,6 +3,7 @@ label:
   zh_Hans: longcat-flash-thinking
   en_US: longcat-flash-thinking
 model_type: llm
+deprecated: true
 features:
   - agent-thought
 model_properties:
