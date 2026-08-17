@@ -746,8 +746,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        except InvokeError:
+            raise
+        except Exception:
+            # Real bug — log the full traceback at ERROR level and let
+            # the original exception type propagate so the caller sees
+            # the root cause instead of a generic InvokeError wrapper.
+            # The previous bare `except Exception as ex: raise InvokeError(...)`
+            # hid undefined-name and similar bugs (same anti-pattern that
+            # PRs #3565 / #3654 fixed in `_generate` and `_invoke`).
+            logger.exception(f"Failed to invoke converse model {model_info['model']}")
+            raise
 
     def _handle_converse_response(
         self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
