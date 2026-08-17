@@ -401,7 +401,7 @@ wheels = [
 
 [[package]]
 name = "dashscope"
-version = "1.26.6"
+version = "1.26.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -414,9 +414,8 @@ dependencies = [
     { name = "typer" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/81/15ebc18d75e2d35cb00dfc4c0c0c5ea664d8ea6810fa186b67f8af15bee9/dashscope-1.26.6.tar.gz", hash = "sha256:dd862d525e3c9880e97df8ed4ad2e95f91ed91cb5035dc434580385fcab1e64e", size = 1431205, upload-time = "2026-08-07T07:42:46.173Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/9d/d46e56fd96253d34a3bf7140b7abf3cc4e34cf9042f7dcbd57d729fd9f5d/dashscope-1.26.6-py3-none-any.whl", hash = "sha256:55a333c7b7465831b43b700d41a1209d38f2d952dfe24ca5ff44a3efe8271a87", size = 1536044, upload-time = "2026-08-07T07:42:43.156Z" },
+    { url = "https://files.pythonhosted.org/packages/55/af/6f65d1d46f67206c80a0d24a236b0930cdffc540badba3d9d57fa4fce34b/dashscope-1.26.7-py3-none-any.whl", hash = "sha256:e7797ff99c5335589ecd0b97391611dd68dc3da6a28681dab5c522759b22922d", size = 1537542, upload-time = "2026-08-12T13:03:59.002Z" },
 ]
 
 [[package]]
@@ -1604,7 +1603,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dashscope", specifier = ">=1.25.18,<1.26.0" },
+    { name = "dashscope", specifier = ">=1.26.7,<1.27.0" },
     { name = "dify-plugin", specifier = ">=0.9.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openai", specifier = ">=2.38.0" },
