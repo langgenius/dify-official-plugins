@@ -19,7 +19,7 @@ class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
-        if model == "LongCat-2.0" and "enable_thinking" in model_parameters:
+        if "enable_thinking" in model_parameters:
             enable_thinking = model_parameters.pop("enable_thinking")
             model_parameters["thinking"] = {
                 "type": "enabled" if enable_thinking else "disabled"
