@@ -584,6 +584,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if credentials.get("user_identity_support", "support") == "no_support":
             user = None
 
+        # Request usage in streaming responses so Dify reports the real
+        # prompt/completion token counts. OpenAI-compatible servers (vLLM,
+        # SGLang, llama.cpp, ...) only emit `usage` in the final stream chunk
+        # when the client sends `stream_options: {include_usage: true}`.
+        # Without it, the base SDK falls back to `_num_tokens_from_string`
+        # against the first message only, which undercounts multi-message
+        # prompts (e.g. a long user prompt after a system prompt).
+        # Allow opt-out via a credential for gateways that reject the field.
+        include_usage = credentials.get("stream_include_usage", "enabled") != "disabled"
+        if stream and include_usage and "stream_options" not in model_parameters:
+            model_parameters["stream_options"] = {"include_usage": True}
+
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
