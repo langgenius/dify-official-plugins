@@ -204,6 +204,30 @@ _AU_REGIONS = {'ap-southeast-2', 'ap-southeast-4'}
 
 CLAUDE5_REFUSAL_FALLBACK_BASE_ID = 'anthropic.claude-opus-4-8'
 
+# Claude 4.5-generation models (Sonnet 4.5+, Haiku 4.5+, Opus 4.5-4.8) are
+# invocable ONLY through inference profiles
+# (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified via
+# `aws bedrock list-inference-profiles --region ap-northeast-1` 2026-08-17 —
+# bare-ID converse returns ValidationException). Geo profile coverage is
+# us./eu./jp./global.; there is no apac. profile for any 4.5+ Anthropic
+# model (apac. stops at Sonnet 4). See issue #3664 and the model cards:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-4-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-4-6.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-4-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-4-6.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-4-7.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-4-8.html
+CLAUDE45_PROFILE_PREFIXES = {
+    'anthropic.claude-sonnet-4-5-20250929-v1:0': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-haiku-4-5-20251001-v1:0': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-opus-4-5-20251101-v1:0': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-sonnet-4-6': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-opus-4-6-v1': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-opus-4-7': ('us', 'eu', 'jp', 'global'),
+    'anthropic.claude-opus-4-8': ('us', 'eu', 'jp', 'global'),
+}
+
 # All cross-region inference profile geo prefixes in use on Bedrock
 # (jp./au. exist for Opus 4.7/4.8-era models).
 _PROFILE_PREFIXES = ('global.', 'us.', 'eu.', 'apac.', 'jp.', 'au.')
@@ -280,3 +304,62 @@ def get_claude5_fallback_model_id(profile_model_id):
     base = strip_profile_prefix(profile_model_id)
     prefix = profile_model_id[: len(profile_model_id) - len(base)]
     return f"{prefix}{CLAUDE5_REFUSAL_FALLBACK_BASE_ID}"
+
+
+def is_claude45_model(model_id):
+    """True if model_id is a bare Claude 4.5-generation base model ID."""
+    return model_id in CLAUDE45_PROFILE_PREFIXES
+
+
+def is_claude45_profile_id(model_id):
+    """True if model_id is a Claude 4.5+ base ID, optionally profile-prefixed."""
+    return strip_profile_prefix(model_id) in CLAUDE45_PROFILE_PREFIXES
+
+
+def resolve_claude45_profile_id(model_id, cross_region, region_name):
+    """
+    Resolve the inference profile ID for a Claude 4.5-generation model.
+
+    :param model_id: bare base model ID (e.g. 'anthropic.claude-sonnet-4-6')
+    :param cross_region: 'disabled' / 'geographic' / 'global'
+    :param region_name: AWS region of the caller (e.g. 'ap-northeast-1')
+    :return: profile-prefixed model ID
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message
+    """
+    # GovCloud is a separate AWS partition — commercial us./eu./jp./global.
+    # profile IDs are not valid there.
+    if region_name.startswith('us-gov-'):
+        raise ValueError(
+            f"{model_id} is not available in AWS GovCloud ({region_name}). "
+            f"Claude 4.5+ inference profiles exist only in commercial regions."
+        )
+    allowed = CLAUDE45_PROFILE_PREFIXES[model_id]
+    if cross_region == 'global':
+        return f"global.{model_id}"
+    if cross_region == 'geographic':
+        area = get_region_area(region_name)
+        # 'jp' is a special case — it only applies to ap-northeast-1 and
+        # ap-northeast-3 and is not derivable from the standard area
+        # mapping. Resolve it explicitly here.
+        if region_name in ('ap-northeast-1', 'ap-northeast-3'):
+            area = 'jp'
+        if area in allowed:
+            return f"{area}.{model_id}"
+        raise ValueError(
+            f"{model_id} has no '{area or region_name}' geographic inference profile. "
+            f"From {region_name} this model supports only Global cross-region inference — "
+            f"set Cross-Region Inference to 'global'."
+        )
+    if cross_region == 'disabled':
+        # Claude 4.5+ models are INFERENCE_PROFILE-only on Bedrock; bare-ID
+        # on-demand invocation returns ValidationException. See issue #3664.
+        raise ValueError(
+            f"{model_id} is not available with on-demand throughput. "
+            f"It can only be invoked through an inference profile — "
+            f"set Cross-Region Inference to 'global' (recommended) or 'geographic'."
+        )
+    raise ValueError(
+        f"{model_id} can only be invoked through an inference profile. "
+        f"Set Cross-Region Inference to 'global' (recommended) or 'geographic'."
+    )
