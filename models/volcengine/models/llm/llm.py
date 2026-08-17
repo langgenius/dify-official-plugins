@@ -204,6 +204,11 @@ class ChatThinking(RequestModel):
     type: str = Field(min_length=1)
 
 
+class ChatResponseFormat(RequestModel):
+    type: str = Field(min_length=1)
+    json_schema: dict[str, Any] | None = None
+
+
 class ChatStreamOptions(RequestModel):
     include_usage: bool | None = None
 
@@ -236,6 +241,7 @@ class ChatCompletionRequest(RequestModel):
     tool_choice: ChatToolChoice | None = None
     parallel_tool_calls: bool | None = None
     stream_options: ChatStreamOptions | None = None
+    response_format: ChatResponseFormat | None = None
 
 
 class SeedanceTextContent(RequestModel):
@@ -705,6 +711,50 @@ def chat_stream_options_from_parameters(
     return parse_model(ChatStreamOptions, stream_options, "Invalid chat stream options")
 
 
+RESPONSE_FORMAT_TYPES = ("text", "json_object", "json_schema")
+DEFAULT_RESPONSE_SCHEMA_NAME = "response"
+
+
+def build_response_format(
+    model_parameters: Mapping[str, Any],
+) -> ChatResponseFormat | None:
+    response_format_type = model_parameters.get("response_format")
+    if not response_format_type or response_format_type == "text":
+        return None
+    if response_format_type not in RESPONSE_FORMAT_TYPES:
+        raise InvokeError(
+            f"Invalid response_format: {response_format_type}. "
+            f"Supported values: {', '.join(RESPONSE_FORMAT_TYPES)}."
+        )
+    if response_format_type == "json_object":
+        return build_model(
+            ChatResponseFormat, "Invalid response format", type="json_object"
+        )
+
+    json_schema_value = model_parameters.get("json_schema")
+    if isinstance(json_schema_value, str):
+        try:
+            json_schema_value = json.loads(json_schema_value)
+        except json.JSONDecodeError as error:
+            raise InvokeError(
+                f"Invalid json_schema: not valid JSON: {error}"
+            ) from error
+    if not isinstance(json_schema_value, dict) or not json_schema_value:
+        raise InvokeError(
+            "json_schema must be a non-empty JSON object when "
+            "response_format is json_schema."
+        )
+    return build_model(
+        ChatResponseFormat,
+        "Invalid response format",
+        type="json_schema",
+        json_schema={
+            "name": DEFAULT_RESPONSE_SCHEMA_NAME,
+            "schema": json_schema_value,
+        },
+    )
+
+
 def build_chat_completion_request(
     *,
     model: str,
@@ -751,6 +801,7 @@ def build_chat_completion_request(
         if "parallel_tool_calls" in model_parameters
         else None,
         stream_options=stream_options,
+        response_format=build_response_format(model_parameters),
     )
 
 

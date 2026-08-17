@@ -1,14 +1,13 @@
-model: deepseek-v4-flash-ga-260731
+model: deepseek-v4-pro-ga-260813
 label:
-  en_US: deepseek-v4-flash-ga-260731
-  zh_Hans: deepseek-v4-flash-ga-260731
+  en_US: deepseek-v4-pro-ga-260813
+  zh_Hans: deepseek-v4-pro-ga-260813
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
   - multi-tool-call
-  - structured-output
 model_properties:
   mode: chat
   context_size: 1048576
@@ -29,24 +28,8 @@ parameter_rules:
     help:
       zh_Hans: 控制思维链长度，平衡效果、时延与成本。minimal 关闭思考直接回答；low 轻量思考侧重快速响应；medium 均衡模式；high 深度分析处理复杂问题；max 最高程度思考适配高难度推理任务。
       en_US: Controls chain-of-thought length to balance quality, latency, and cost. minimal answers directly without thinking; low favors fast response; medium is balanced; high enables deep analysis; max maximizes reasoning for hardest tasks.
-  - name: response_format
-    label:
-      zh_Hans: 回复格式
-      en_US: Response Format
-    type: string
-    required: false
-    default: text
-    options:
-      - text
-      - json_object
-      - json_schema
-    help:
-      zh_Hans: 指定模型必须输出的回复格式。选择 json_schema 时需在下方提供 JSON Schema。
-      en_US: Specify the format that the model must output. When json_schema is selected, provide the JSON Schema below.
-  - name: json_schema
-    use_template: json_schema
 pricing:
-  input: "1"
-  output: "2"
+  input: "9"
+  output: "27"
   unit: "0.000001"
   currency: RMB
