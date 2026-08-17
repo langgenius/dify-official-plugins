@@ -464,6 +464,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_id = model_ids.resolve_claude5_profile_id(model_id, cross_region, region_name)
                 except ValueError as e:
                     raise InvokeError(str(e))
+            elif cross_region == 'japan':
+                # Japan-only geographic profile (jp.) — keeps inference inside
+                # Japan for data-residency requirements. Resolved separately so
+                # the geographic mapping (Tokyo -> apac) stays untouched.
+                try:
+                    model_id = model_ids.resolve_japan_profile_id(model_id, region_name)
+                except ValueError as e:
+                    raise InvokeError(str(e))
             elif cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
                 prefer_global = (cross_region == 'global')

@@ -52,10 +52,11 @@ parameter_rules:
     options:
       - disabled
       - geographic
+      - japan
       - global
     help:
-      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域，全球跨区域可跨所有区域。
-      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography, Global spans all regions.
+      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域（东京会解析为 apac）；Japan 仅在日本境内（东京/大阪）处理，需要该模型存在 jp. 推理配置文件；全球跨区域可跨所有区域。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography (Tokyo resolves to apac), Japan keeps processing inside Japan only (Tokyo/Osaka; requires a jp. profile for the model), Global spans all regions.
   - name: system_cache_checkpoint
     label:
       zh_Hans: 缓存系统提示词
