@@ -9,6 +9,14 @@ For community contributions, submit to https://github.com/langgenius/dify-plugin
 
 
 
+## Release Notes
+
+<!--
+User-facing summary of what this version changes. Published verbatim on the
+plugin's Marketplace page (Version History → Change Log). English, Markdown.
+Skip only for documentation / non-plugin changes.
+-->
+
 ## Change Type
 
 - [ ] Documentation / non-plugin change
