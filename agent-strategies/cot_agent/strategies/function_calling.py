@@ -33,6 +33,8 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel, field_validator
 
+from strategies.tool_response import should_forward_file_message
+
 THINK_START = "<think>"
 THINK_END = "</think>"
 
@@ -555,6 +557,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                         + "."
                                         + " please tell user to check it."
                                     )
+                                    if should_forward_file_message(tool_invoke_response):
+                                        yield tool_invoke_response
                                 elif tool_invoke_response.type in {
                                     ToolInvokeMessage.MessageType.IMAGE_LINK,
                                     ToolInvokeMessage.MessageType.IMAGE,
@@ -617,6 +621,12 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 ):
                                     tool_result += "Generated file ... "
                                     # TODO: convert to agent invoke message
+                                    yield tool_invoke_response
+                                elif (
+                                    tool_invoke_response.type
+                                    == ToolInvokeMessage.MessageType.FILE
+                                ):
+                                    tool_result += "Generated file ... "
                                     yield tool_invoke_response
                                 else:
                                     tool_result += (

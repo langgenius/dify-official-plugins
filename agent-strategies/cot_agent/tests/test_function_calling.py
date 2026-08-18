@@ -21,11 +21,13 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 from dify_plugin.file.file import File, FileType
+from dify_plugin.interfaces.agent import AgentModelConfig, ToolEntity
 
 from strategies.function_calling import (
     FunctionCallingAgentStrategy,
     FunctionCallingParams,
 )
+from strategies.tool_response import should_forward_file_message
 
 
 def _make_tool_call(
@@ -305,6 +307,83 @@ class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
         )
 
         self.assertEqual(result, 'tool response: {"answer": "ok"}.')
+
+
+class TestFunctionCallingFileForwarding(unittest.TestCase):
+    @staticmethod
+    def _tool() -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": "getfile",
+                    "label": {"en_US": "getfile"},
+                    "provider": "workflow-provider",
+                },
+                "provider_type": "workflow",
+                "runtime_parameters": {},
+            }
+        )
+
+    def _invoke_with_tool_response(self, response: ToolInvokeMessage) -> list[ToolInvokeMessage]:
+        call = _make_tool_call("call-1", "getfile", '{"a":"get"}')
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=[call]),
+                usage=LLMUsage.empty_usage(),
+            ),
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="done", tool_calls=[]),
+                usage=LLMUsage.empty_usage(),
+            ),
+        ]
+        session.tool.invoke.return_value = iter([response])
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+
+        return list(
+            strategy._invoke(
+                {
+                    "query": "get a file",
+                    "instruction": "Use the tool",
+                    "model": AgentModelConfig(provider="test", model="test-model", mode="chat"),
+                    "tools": [self._tool()],
+                    "maximum_iterations": 3,
+                }
+            )
+        )
+
+    def test_forwards_tool_file_link(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.LINK,
+            message=ToolInvokeMessage.TextMessage(text="/files/tools/file-1.docx"),
+            meta={"tool_file_id": "file-1", "mime_type": "application/octet-stream"},
+        )
+
+        messages = self._invoke_with_tool_response(response)
+
+        self.assertIn(response, messages)
+
+    def test_does_not_forward_plain_link(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.LINK,
+            message=ToolInvokeMessage.TextMessage(text="https://dify.ai"),
+        )
+
+        messages = self._invoke_with_tool_response(response)
+
+        self.assertNotIn(response, messages)
+
+    def test_file_message_is_forwardable(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.FILE,
+            message=None,
+            meta={"file": {"transfer_method": "remote_url", "url": "https://example.test/report.pdf"}},
+        )
+
+        self.assertTrue(should_forward_file_message(response))
 
 
 if __name__ == "__main__":
