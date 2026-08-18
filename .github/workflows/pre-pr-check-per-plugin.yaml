@@ -81,6 +81,17 @@ jobs:
         with:
           python-version: 3.12.7
 
+      - name: Check Release Notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr view ${{ github.event.pull_request.number }} -R ${{ github.repository }} --json body --jq .body > /tmp/pr_body.md
+          NOTES=$(python3 .scripts/tools/extract-changelog.py --pr-body-file /tmp/pr_body.md --section "Release Notes")
+          if [ -z "$(echo "$NOTES" | tr -d '[:space:]')" ]; then
+            echo "!!! PR body must include a non-empty '## Release Notes' section: it is published on the plugin's Marketplace page."
+            exit 1
+          fi
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
         with:
