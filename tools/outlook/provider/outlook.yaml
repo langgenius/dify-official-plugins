@@ -2,12 +2,14 @@ identity:
   author: langgenius
   name: outlook
   label:
-    en_US: Outlook 
-    zh_Hans: Outlook 
+    en_US: Outlook
+    ko_KR: Outlook
+    zh_Hans: Outlook
     pt_BR: Outlook 
     zh_Hant: Outlook
   description:
     en_US: Interact with Outlook emails
+    ko_KR: Outlook 이메일과 상호작용
     zh_Hans: 与 Outlook 邮件交互
     pt_BR: Interagir com e-mails do Outlook
     ja_JP: Outlook メールと連携する
@@ -20,18 +22,21 @@ oauth_schema:
       required: true
       label:
         en_US: "Client ID"
+        ko_KR: "클라이언트 ID"
         zh_Hans: "客户端 ID"
         pt_BR: "ID do Cliente"
         ja_JP: "クライアント ID"
         zh_Hant: "客戶端 ID"
       placeholder:
         en_US: "Please input your Azure AD application client ID"
+        ko_KR: "Azure AD 애플리케이션 클라이언트 ID를 입력하세요"
         zh_Hans: "请输入您的 Azure AD 应用程序客户端 ID"
         pt_BR: "Por favor, insira o ID do cliente do seu aplicativo Azure AD"
         ja_JP: "Azure AD アプリケーションのクライアント ID を入力してください"
         zh_Hant: "請輸入您的 Azure AD 應用程式客戶端 ID"
       help:
         en_US: "Get your client ID from Azure Portal > App Registrations"
+        ko_KR: "Azure Portal > 앱 등록에서 클라이언트 ID를 가져오세요"
         zh_Hans: "从 Azure 门户 > 应用注册获取您的客户端 ID"
         pt_BR: "Obtenha seu ID de cliente no Portal do Azure > Registros de Aplicativos"
         ja_JP: "Azure ポータル > アプリの登録からクライアント ID を取得してください"
@@ -42,18 +47,21 @@ oauth_schema:
       required: true
       label:
         en_US: "Client Secret"
+        ko_KR: "클라이언트 시크릿"
         zh_Hans: "客户端密钥"
         pt_BR: "Segredo do Cliente"
         ja_JP: "クライアントシークレット"
         zh_Hant: "客戶端密鑰"
       placeholder:
         en_US: "Please input your Azure AD application client secret"
+        ko_KR: "Azure AD 애플리케이션 클라이언트 시크릿을 입력하세요"
         zh_Hans: "请输入您的 Azure AD 应用程序客户端密钥"
         pt_BR: "Por favor, insira o segredo do cliente do seu aplicativo Azure AD"
         ja_JP: "Azure AD アプリケーションのクライアントシークレットを入力してください"
         zh_Hant: "請輸入您的 Azure AD 應用程式客戶端密鑰"
       help:
         en_US: "Get your client secret from Azure Portal > App Registrations > Your App > Certificates & secrets"
+        ko_KR: "Azure Portal > 앱 등록 > 내 앱 > 인증서 및 비밀에서 클라이언트 시크릿을 가져오세요"
         zh_Hans: "从 Azure 门户 > 应用注册 > 您的应用 > 证书和密码获取您的客户端密钥"
         pt_BR: "Obtenha seu segredo de cliente no Portal do Azure > Registros de Aplicativos > Seu Aplicativo > Certificados e segredos"
         ja_JP: "Azure ポータル > アプリの登録 > あなたのアプリ > 証明書とシークレットからクライアントシークレットを取得してください"
@@ -65,18 +73,21 @@ oauth_schema:
       default: common
       label:
         en_US: "Tenant ID"
+        ko_KR: "테넌트 ID"
         zh_Hans: "租户 ID"
         pt_BR: "ID do Locatário"
         ja_JP: "テナント ID"
         zh_Hant: "租戶 ID"
       placeholder:
         en_US: "Please input your Azure AD tenant ID; If you are not an enterprise user, leave it blank"
+        ko_KR: "Azure AD 테넌트 ID를 입력하세요; 기업 사용자가 아닌 경우 비워 두세요"
         zh_Hans: "请输入您的 Azure AD 租户 ID；如果您不是企业版用户，请留空"
         pt_BR: "Por favor, insira o ID do locatário do seu Azure AD; Se você não for um usuário corporativo, deixe em branco"
         ja_JP: "Azure AD テナント ID を入力してください; 企業ユーザーでない場合は空白のままにしてください"
         zh_Hant: "請輸入您的 Azure AD 租戶 ID；如果您不是企業用戶，請留空"
       help:
         en_US: "Get your tenant ID from Azure Portal > Azure Active Directory > Properties"
+        ko_KR: "Azure Portal > Azure Active Directory > 속성에서 테넌트 ID를 가져오세요"
         zh_Hans: "从 Azure 门户 > Azure Active Directory > 属性获取您的租户 ID"
         pt_BR: "Obtenha seu ID de locatário no Portal do Azure > Azure Active Directory > Propriedades"
         ja_JP: "Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください"
@@ -87,18 +98,21 @@ oauth_schema:
       type: "secret-input"
       label:
         en_US: "Access Token"
+        ko_KR: "액세스 토큰"
         zh_Hans: "访问令牌"
         pt_BR: "Token de Acesso"
         ja_JP: "アクセストークン"
         zh_Hant: "存取權杖"
       placeholder:
         en_US: "Please input your Microsoft Graph access token"
+        ko_KR: "Microsoft Graph 액세스 토큰을 입력하세요"
         zh_Hans: "请输入您的 Microsoft Graph 访问令牌"
         pt_BR: "Por favor, insira seu token de acesso do Microsoft Graph"
         ja_JP: "Microsoft Graph アクセストークンを入力してください"
         zh_Hant: "請輸入您的 Microsoft Graph 存取權杖"
       help:
         en_US: "Get your access token from Microsoft Graph API"
+        ko_KR: "Microsoft Graph API에서 액세스 토큰을 가져오세요"
         zh_Hans: "从 Microsoft Graph API 获取您的访问令牌"
         pt_BR: "Obtenha seu token de acesso da API do Microsoft Graph"
         ja_JP: "Microsoft Graph API からアクセストークンを取得してください"

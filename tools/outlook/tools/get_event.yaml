@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Get Event
+    ko_KR: 이벤트 가져오기
     zh_Hans: 获取事件
     pt_BR: Obter Evento
     ja_JP: イベント取得
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Get the details of a calendar event from your Outlook account
+    ko_KR: Outlook 계정에서 캘린더 이벤트의 세부 정보를 가져옵니다
     zh_Hans: 获取您的 Outlook 账户中日历事件的详细信息
     pt_BR: Obter os detalhes de um evento de calendário da sua conta do Outlook
     ja_JP: Outlook アカウントのカレンダーイベントの詳細を取得
@@ -22,12 +24,14 @@ parameters:
     required: true
     label:
       en_US: Event ID
+      ko_KR: 이벤트 ID
       zh_Hans: 事件 ID
       pt_BR: ID do Evento
       ja_JP: イベント ID
       zh_Hant: 事件 ID
     human_description:
       en_US: The ID of the event to retrieve
+      ko_KR: 가져올 이벤트의 ID
       zh_Hans: 要检索的事件的 ID
       pt_BR: O ID do evento a recuperar
       ja_JP: 取得するイベントの ID

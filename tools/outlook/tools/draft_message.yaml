@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Draft Email
+    ko_KR: 이메일 초안 작성
     zh_Hans: 创建草稿邮件
     pt_BR: Rascunhar E-mail
     ja_JP: メールの下書き作成
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Create a draft email in Outlook
+    ko_KR: Outlook에서 이메일 초안을 작성합니다
     zh_Hans: 在 Outlook 中创建草稿邮件
     pt_BR: Criar um rascunho de e-mail no Outlook
     ja_JP: Outlook でメールの下書きを作成
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: To Recipients
+      ko_KR: 받는 사람
       zh_Hans: 收件人
       pt_BR: Destinatários
       ja_JP: 宛先
       zh_Hant: 收件人
     human_description:
       en_US: Email addresses of the recipients
+      ko_KR: 받는 사람의 이메일 주소
       zh_Hans: 收件人的电子邮件地址
       pt_BR: Endereços de e-mail dos destinatários
       ja_JP: 受信者のメールアドレス
@@ -41,12 +45,14 @@ parameters:
     required: false
     label:
       en_US: CC Recipients
+      ko_KR: 참조 수신자
       zh_Hans: 抄送收件人
       pt_BR: Destinatários em Cópia
       ja_JP: CC 宛先
       zh_Hant: 副本收件人
     human_description:
       en_US: Email addresses of CC recipients
+      ko_KR: 참조 수신자의 이메일 주소
       zh_Hans: 抄送收件人的电子邮件地址
       pt_BR: Endereços de e-mail dos destinatários em cópia
       ja_JP: CC 受信者のメールアドレス
@@ -59,12 +65,14 @@ parameters:
     required: false
     label:
       en_US: BCC Recipients
+      ko_KR: 숨은 참조 수신자
       zh_Hans: 密送收件人
       pt_BR: Destinatários em Cópia Oculta
       ja_JP: BCC 宛先
       zh_Hant: 密件副本收件人
     human_description:
       en_US: Email addresses of BCC recipients
+      ko_KR: 숨은 참조 수신자의 이메일 주소
       zh_Hans: 密送收件人的电子邮件地址
       pt_BR: Endereços de e-mail dos destinatários em cópia oculta
       ja_JP: BCC 受信者のメールアドレス
@@ -77,12 +85,14 @@ parameters:
     required: true
     label:
       en_US: Subject
+      ko_KR: 제목
       zh_Hans: 主题
       pt_BR: Assunto
       ja_JP: 件名
       zh_Hant: 主旨
     human_description:
       en_US: Subject line of the email
+      ko_KR: 이메일의 제목 줄
       zh_Hans: 邮件的主题行
       pt_BR: Linha de assunto do e-mail
       ja_JP: メールの件名
@@ -95,12 +105,14 @@ parameters:
     required: true
     label:
       en_US: Body
+      ko_KR: 본문
       zh_Hans: 正文
       pt_BR: Corpo
       ja_JP: 本文
       zh_Hant: 內文
     human_description:
       en_US: Content of the email message
+      ko_KR: 이메일 메시지의 내용
       zh_Hans: 邮件的内容
       pt_BR: Conteúdo da mensagem de e-mail
       ja_JP: メールの本文
@@ -114,12 +126,14 @@ parameters:
     default: text
     label:
       en_US: Body Type
+      ko_KR: 본문 유형
       zh_Hans: 正文类型
       pt_BR: Tipo de Corpo
       ja_JP: 本文タイプ
       zh_Hant: 內文類型
     human_description:
       en_US: Type of the email body content
+      ko_KR: 이메일 본문 내용의 유형
       zh_Hans: 邮件正文内容的类型
       pt_BR: Tipo do conteúdo do corpo do e-mail
       ja_JP: メール本文のタイプ
@@ -133,12 +147,14 @@ parameters:
     default: normal
     label:
       en_US: Importance
+      ko_KR: 중요도
       zh_Hans: 重要性
       pt_BR: Importância
       ja_JP: 重要度
       zh_Hant: 重要性
     human_description:
       en_US: Importance level of the email
+      ko_KR: 이메일의 중요도 수준
       zh_Hans: 邮件的重要性级别
       pt_BR: Nível de importância do e-mail
       ja_JP: メールの重要度
