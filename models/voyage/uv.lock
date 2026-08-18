@@ -161,7 +161,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.9.0"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dpkt" },
@@ -178,9 +178,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/52/86c042b72d42eb40460563bacf2ed46ff6a2e02dbec299892fef0ed2f70f/dify_plugin-0.9.0.tar.gz", hash = "sha256:c32dc99d4122d960bd447ee65a17e1e93bf942bbad8f7b4d53a2841416ecd3e0", size = 318993, upload-time = "2026-05-20T08:10:40.445Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/fd/1ba9d6dda0363ade4c1aab87e8188550db2ccce204071bc5fcf64d97fef6/dify_plugin-0.10.0.tar.gz", hash = "sha256:1d66f06647b16bc16ba3989fec09808d955a6c7a297f5a572c27288e717fa1aa", size = 319288, upload-time = "2026-07-20T09:34:54.712Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/dc/df1d6d1a8c604880702dd792226f175523f890bfca89f828f58b58661edc/dify_plugin-0.9.0-py3-none-any.whl", hash = "sha256:3299a8c77549a43f68705796eed4c9ca494664810fb8d10eb7ecce2e545f3d2d", size = 377064, upload-time = "2026-05-20T08:10:38.848Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/5b/ac14980502c31aaed011259c5fe698da83af1d384a2d59577d68ca34316a/dify_plugin-0.10.0-py3-none-any.whl", hash = "sha256:b7a4d8acbad153720cac50e3f38a428178f50079fd2599e24db3403cc1a0c8f4", size = 377626, upload-time = "2026-07-20T09:34:53.437Z" },
 ]
 
 [[package]]
@@ -759,16 +759,16 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings"
-version = "2.14.1"
+version = "2.14.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/60/1d1e59c9c90d54591469ada7d268251f71c24bdb765f1a8a832cee8c6653/pydantic_settings-2.14.1.tar.gz", hash = "sha256:e874d3bec7e787b0c9958277956ed9b4dd5de6a80e162188fdaff7c5e26fd5fa", size = 235551, upload-time = "2026-05-08T13:40:06.542Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/b5/8f48e906c3e0205276e8bd8cb7512217a87b2685304d64be27cad5b3019f/pydantic_settings-2.14.2.tar.gz", hash = "sha256:c19dd64b19097f1de80184f0cc7b0272a13ae6e170cbf240a3e27e381ed14a5f", size = 237700, upload-time = "2026-06-19T13:44:56.324Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/8d/f1af3832f5e6eb13ba94ee809e72b8ecb5eef226d27ee0bef7d963d943c7/pydantic_settings-2.14.1-py3-none-any.whl", hash = "sha256:6e3c7edfd8277687cdc598f56e5cff0e9bfff0910a3749deaa8d4401c3a2b9de", size = 60964, upload-time = "2026-05-08T13:40:04.958Z" },
+    { url = "https://files.pythonhosted.org/packages/77/c1/6e422f34e569cf8e18df68d1939c81c099d2b61e4f7d9621c8a77560799c/pydantic_settings-2.14.2-py3-none-any.whl", hash = "sha256:a20c97b37910b6550d5ea50fbcc2d4187defe58cd57070b73863d069419c9440", size = 61715, upload-time = "2026-06-19T13:44:55.02Z" },
 ]
 
 [[package]]
@@ -1027,7 +1027,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "requests", specifier = ">=2.34.2" },
 ]

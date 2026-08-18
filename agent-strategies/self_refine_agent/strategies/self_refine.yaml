@@ -1,0 +1,69 @@
+identity:
+  name: self_refine
+  author: KERVIN-FARMER
+  label:
+    en_US: Self-Refine
+    zh_Hans: 自我优化
+description:
+  en_US: "Self-refining agent strategy that automatically critiques and improves its output through iterative refinement. Based on Self-Refine (NeurIPS 2023)."
+  zh_Hans: "自我优化 Agent 策略，通过迭代式自我批判和改进自动提升输出质量。基于 Self-Refine (NeurIPS 2023)。"
+features:
+  - history-messages
+parameters:
+  - name: model
+    type: model-selector
+    scope: tool-call&llm
+    required: true
+    label:
+      en_US: Model
+      zh_Hans: 模型
+  - name: tools
+    type: array[tools]
+    required: true
+    label:
+      en_US: Tool list
+      zh_Hans: 工具列表
+  - name: instruction
+    type: string
+    required: true
+    label:
+      en_US: Instruction
+      zh_Hans: 指令
+    auto_generate:
+      type: prompt_instruction
+    template:
+      enabled: true
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+      zh_Hans: 查询
+  - name: context
+    type: any
+    scope: array[object]
+    required: false
+    label:
+      en_US: Context
+      zh_Hans: 上下文
+  - name: maximum_iterations
+    type: number
+    required: true
+    default: 5
+    min: 1
+    max: 500
+    label:
+      en_US: Maximum Iterations
+      zh_Hans: 最大迭代次数
+  - name: max_refinements
+    type: number
+    required: true
+    default: 2
+    min: 0
+    max: 5
+    label:
+      en_US: Maximum Refinements
+      zh_Hans: 最大优化次数
+extra:
+  python:
+    source: strategies/self_refine.py

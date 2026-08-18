@@ -26,6 +26,48 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
 
     api_base: str = "https://api.voyageai.com/v1"
 
+    # Voyage accepts at most 1,000 texts per request, but the binding constraint is the
+    # total token count, which differs by model. Anything not listed gets the tightest
+    # published limit, since guessing high turns into a 400 mid-ingestion.
+    max_texts_per_request: int = 1000
+    default_token_limit: int = 120_000
+    token_limits: dict[str, int] = {
+        "voyage-4": 320_000,
+        "voyage-4-lite": 1_000_000,
+        "voyage-3.5": 320_000,
+        "voyage-3.5-lite": 1_000_000,
+        # voyage-4-large and voyage-context-4 are both 120K, i.e. the default.
+    }
+    # The gpt2 estimator is not Voyage's tokenizer, so leave headroom for it to
+    # under-count. Splitting one extra request is much cheaper than a failed ingest.
+    token_budget_margin: float = 0.8
+
+    def _split_batches(self, model: str, texts: list[str]) -> list[list[str]]:
+        """Split a batch into sub-batches that fit Voyage's per-request limits.
+
+        Dify caps a batch at the model's `max_chunks`, but it has no idea how large
+        those chunks are -- a knowledge base configured with 2,000-token segments can
+        blow past the token limit well before the chunk count matters. Splitting here
+        means `max_chunks` can be set for throughput without any risk of a 400.
+        """
+        budget = int(self.token_limits.get(model, self.default_token_limit) * self.token_budget_margin)
+
+        batches: list[list[str]] = []
+        current: list[str] = []
+        current_tokens = 0
+        for text in texts:
+            tokens = self._get_num_tokens_by_gpt2(text)
+            # A single text over budget still goes on its own; the API will reject it
+            # with a clearer message than anything invented here.
+            if current and (current_tokens + tokens > budget or len(current) >= self.max_texts_per_request):
+                batches.append(current)
+                current, current_tokens = [], 0
+            current.append(text)
+            current_tokens += tokens
+        if current:
+            batches.append(current)
+        return batches
+
     def _invoke(
         self,
         model: str,
@@ -51,42 +93,79 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
         base_url = credentials.get("base_url", self.api_base)
         base_url = base_url.removesuffix("/")
 
-        url = base_url + "/embeddings"
+        # The contextualised models take chunks grouped by document on a separate
+        # endpoint; everything else uses the flat one.
+        is_contextual = model.startswith("voyage-context-")
+        url = base_url + ("/contextualizedembeddings" if is_contextual else "/embeddings")
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
-
-        # Use framework's input type (automatic detection)
-        voyage_input_type = "null"
-        if input_type is not None:
-            voyage_input_type = input_type.value
 
         # Check if this is a multimodal model
         is_multimodal = model.startswith("voyage-multimodal")
+        image_url = credentials.get("image_url", "") if is_multimodal else ""
+        image_base64 = credentials.get("image_base64", "") if is_multimodal else ""
 
-        # Prepare input data
-        if is_multimodal:
-            # Check for image_url or image_base64 in credentials
-            image_url = credentials.get("image_url", "")
-            image_base64 = credentials.get("image_base64", "")
+        # Contextualising a batch is only meaningful when the texts are chunks of one
+        # document. Dify does not tell the plugin where document boundaries fall, so
+        # this stays opt-in -- and it never applies to a query, which has no siblings.
+        contextualize_batch = (
+            is_contextual
+            and str(credentials.get("contextualize_batch", "")).lower() in ("true", "1", "yes")
+            and input_type == EmbeddingInputType.DOCUMENT
+        )
 
-            # Format input for multimodal model
-            if image_url or image_base64:
+        embeddings: list[list[float]] = []
+        total_tokens = 0
+
+        for batch in self._split_batches(model, texts):
+            # Prepare input data
+            if is_contextual:
+                # Each text is its own context group unless the batch is opted in.
+                payload = {"inputs": [batch] if contextualize_batch else [[t] for t in batch]}
+            elif is_multimodal and (image_url or image_base64):
                 # Multimodal input format
-                input_list = []
-                for text in texts:
+                entries = []
+                for text in batch:
                     entry = {"text": text}
                     if image_url:
                         entry["image_url"] = image_url
                     elif image_base64:
                         entry["image_base64"] = image_base64
-                    input_list.append([entry])
-                data = {"model": model, "input": input_list, "input_type": voyage_input_type}
+                    entries.append([entry])
+                payload = {"input": entries}
             else:
-                # Text-only for multimodal model
-                data = {"model": model, "input": texts, "input_type": voyage_input_type}
-        else:
-            # Standard text embedding model
-            data = {"model": model, "input": texts, "input_type": voyage_input_type}
+                # Standard text embedding model, or text-only for a multimodal one
+                payload = {"input": batch}
 
+            data = {"model": model, **payload}
+            # Omit the key rather than sending the string "null", which the API rejects.
+            if input_type is not None:
+                data["input_type"] = input_type.value
+            if credentials.get("output_dimension"):
+                data["output_dimension"] = int(credentials["output_dimension"])
+            if credentials.get("output_dtype"):
+                data["output_dtype"] = credentials["output_dtype"]
+
+            resp = self._post(url, headers, data)
+            # The contextualised response nests one result object per input group.
+            # Sort by index at both levels: embeddings must come back in input order
+            # or every chunk in the batch is stored against the wrong segment.
+            if is_contextual:
+                rows = [
+                    x
+                    for group in sorted(resp["data"], key=lambda g: g["index"])
+                    for x in sorted(group["data"], key=lambda x: x["index"])
+                ]
+            else:
+                rows = sorted(resp["data"], key=lambda x: x["index"])
+            embeddings.extend([float(v) for v in x["embedding"]] for x in rows)
+            total_tokens += resp["usage"]["total_tokens"]
+
+        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=total_tokens)
+
+        return TextEmbeddingResult(model=model, embeddings=embeddings, usage=usage)
+
+    def _post(self, url: str, headers: dict, data: dict) -> dict:
+        """POST to Voyage and map transport and HTTP failures onto Dify's error types."""
         try:
             response = requests.post(url, headers=headers, data=dumps(data))
         except Exception as e:
@@ -94,8 +173,7 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
 
         if response.status_code != 200:
             try:
-                resp = response.json()
-                msg = resp["detail"]
+                msg = response.json()["detail"]
                 if response.status_code == 401:
                     raise InvokeAuthorizationError(msg)
                 elif response.status_code == 429:
@@ -110,19 +188,9 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
                 )
 
         try:
-            resp = response.json()
-            embeddings = resp["data"]
-            usage = resp["usage"]
+            return response.json()
         except Exception as e:
             raise InvokeServerUnavailableError(f"Failed to convert response to json: {e} with text: {response.text}")
-
-        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=usage["total_tokens"])
-
-        result = TextEmbeddingResult(
-            model=model, embeddings=[[float(data) for data in x["embedding"]] for x in embeddings], usage=usage
-        )
-
-        return result
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """

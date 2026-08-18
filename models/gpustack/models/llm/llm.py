@@ -196,6 +196,10 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             # Support top-level `enable_thinking` parameter
             model_parameters["enable_thinking"] = enable_thinking_value
 
+        reasoning_format_value = model_parameters.pop("reasoning_format", None)
+        if reasoning_format_value is not None and strict_compatibility_value is False:
+            model_parameters["reasoning_format"] = reasoning_format_value
+
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
         if enable_thinking_value is True and reasoning_effort_value is not None:
             # Propagate reasoning_effort to both:
@@ -449,19 +453,6 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             )
             entity.parameter_rules.append(
                 ParameterRule(
-                    name="reasoning_format",
-                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
-                    help=I18nObject(
-                        en_us="Specifying the format that the model must output reasoning.",
-                        zh_hans="指定模型必须输出的推理格式。",
-                    ),
-                    type=ParameterType.STRING,
-                    options=["none", "auto", "deepseek", "deepseek-legacy"],
-                    required=False,
-                )
-            )
-            entity.parameter_rules.append(
-                ParameterRule(
                     name=DefaultParameterName.JSON_SCHEMA.value,
                     use_template=DefaultParameterName.JSON_SCHEMA.value,
                 )
@@ -494,6 +485,19 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             )
 
         if agent_thought_support in ["supported", "only_thinking_supported"]:
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_format",
+                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
+                    help=I18nObject(
+                        en_us="Specifies the format in which the model must output reasoning.",
+                        zh_hans="指定模型必须输出的推理格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["none", "auto", "deepseek", "deepseek-legacy"],
+                    required=False,
+                )
+            )
             entity.parameter_rules.append(
                 ParameterRule(
                     name="reasoning_effort",

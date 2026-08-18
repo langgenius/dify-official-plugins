@@ -1,0 +1,65 @@
+identity:
+  name: get_thread_replies
+  author: langgenius
+  label:
+    en_US: Get Thread Replies
+    zh_Hans: 获取线程回复
+    ja_JP: スレッド返信の取得
+    ko_KR: 스레드 답글 가져오기
+description:
+  human:
+    en_US: Fetch all replies in a message thread.
+    zh_Hans: 获取某条消息线程中的所有回复。
+    ja_JP: メッセージスレッド内のすべての返信を取得します。
+    ko_KR: 메시지 스레드의 모든 답글을 가져옵니다.
+  llm: Retrieves the replies of a threaded conversation using conversations.replies. Requires the channel ID and the parent message ts (timestamp).
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID that contains the thread.
+      zh_Hans: 包含该线程的频道 ID。
+      ja_JP: スレッドを含むチャンネル ID。
+      ko_KR: 스레드가 포함된 채널 ID입니다.
+    llm_description: The channel ID (e.g. C0123456789) that contains the thread.
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: Parent Message Timestamp
+      zh_Hans: 父消息时间戳
+      ja_JP: 親メッセージのタイムスタンプ
+      ko_KR: 상위 메시지 타임스탬프
+    human_description:
+      en_US: The ts (timestamp) of the thread's parent message.
+      zh_Hans: 线程父消息的 ts（时间戳）。
+      ja_JP: スレッドの親メッセージの ts（タイムスタンプ）。
+      ko_KR: 스레드 상위 메시지의 ts（타임스탬프）입니다.
+    llm_description: The parent message timestamp (ts) identifying the thread, e.g. 1405894322.002768.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Limit
+      zh_Hans: 数量限制
+      ja_JP: 上限
+      ko_KR: 제한
+    human_description:
+      en_US: Maximum number of replies to return (1-1000). Defaults to 100.
+      zh_Hans: 返回回复的最大数量（1-1000）。默认为 100。
+      ja_JP: 返す返信の最大数（1〜1000）。デフォルトは 100 です。
+      ko_KR: 반환할 답글의 최대 개수（1-1000）. 기본값은 100입니다.
+    llm_description: Maximum number of messages to return, between 1 and 1000. Defaults to 100.
+    form: llm
+extra:
+  python:
+    source: tools/get_thread_replies.py

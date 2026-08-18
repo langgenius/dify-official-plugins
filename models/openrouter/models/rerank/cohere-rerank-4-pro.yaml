@@ -1,0 +1,6 @@
+model: cohere/rerank-4-pro
+label:
+  en_US: Cohere Rerank 4 Pro
+model_type: rerank
+model_properties:
+  context_size: 32768

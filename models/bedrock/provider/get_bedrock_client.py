@@ -67,5 +67,14 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
         if 'AWS_BEARER_TOKEN_BEDROCK' in os.environ:
             os.environ.pop('AWS_BEARER_TOKEN_BEDROCK')
 
+    if auth_method == "IAM_Role":
+        # Build the client from a fresh boto3.Session so disk-refreshed
+        # credentials (saml2aws login, aws sso login, etc.) are picked up
+        # on every invocation. boto3's default session caches credentials
+        # in-process, which would otherwise keep a stale ExpiredTokenException
+        # in flight until the plugin process restarts.
+        session = boto3.Session()
+        return session.client(**client_kwargs)
+
     client = boto3.client(**client_kwargs)
     return client

@@ -93,38 +93,39 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                             self._split_text_into_sentences(org_text=content, max_length=wl)
                         )
                     for sentence in sentences:
-                        response = MultiModalConversation.call(
+                        response_stream = MultiModalConversation.call(
                             model=m,
                             api_key=api_key,
                             text=sentence.strip(),
                             voice=voice,
-                            stream=False,
+                            stream=True,
                             base_address=base_address,
                         )
-                        if response.status_code != 200:
-                            error_msg = response.message or f"API error: {response.status_code}"
-                            error_queue.put(InvokeBadRequestError(error_msg))
-                            audio_queue.put(None)
-                            return
-                        if not response.output or not response.output.audio:
-                            error_queue.put(InvokeBadRequestError("No audio in response"))
-                            audio_queue.put(None)
-                            return
-                        audio_url = response.output.audio.get("url")
-                        if not audio_url:
-                            error_queue.put(InvokeBadRequestError("No audio URL in response"))
-                            audio_queue.put(None)
-                            return
-                        try:
-                            with urlopen(audio_url, timeout=30) as response:
-                                audio_data = response.read()
-                            audio_queue.put(audio_data)
-                        except Exception as e:
-                            error_queue.put(
-                                InvokeBadRequestError(f"Failed to download audio: {str(e)}")
-                            )
-                            audio_queue.put(None)
-                            return
+                        for chunk in response_stream:
+                            if chunk.status_code != 200:
+                                error_msg = chunk.message or f"API error: {chunk.status_code}"
+                                error_queue.put(InvokeBadRequestError(error_msg))
+                                audio_queue.put(None)
+                                return
+                            if not chunk.output or not chunk.output.audio:
+                                error_queue.put(InvokeBadRequestError("No audio in response"))
+                                audio_queue.put(None)
+                                return
+                            audio_url = chunk.output.audio.get("url")
+                            if not audio_url:
+                                error_queue.put(InvokeBadRequestError("No audio URL in response"))
+                                audio_queue.put(None)
+                                return
+                            try:
+                                with urlopen(audio_url, timeout=30) as response:
+                                    audio_data = response.read()
+                                audio_queue.put(audio_data)
+                            except Exception as e:
+                                error_queue.put(
+                                    InvokeBadRequestError(f"Failed to download audio: {str(e)}")
+                                )
+                                audio_queue.put(None)
+                                return
                     audio_queue.put(None)
                 except Exception as e:
                     error_queue.put(self._map_invoke_error(e))

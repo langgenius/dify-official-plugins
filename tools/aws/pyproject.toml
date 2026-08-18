@@ -7,13 +7,13 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "bedrock-agentcore>=1.10.0",
+    "bedrock-agentcore>=1.18.1",
     "boto3>=1.43.13",
     "botocore>=1.43.13",
     "dify_plugin>=0.9.0",
     "jieba>=0.42.1",
     "nest-asyncio>=1.6.0",
-    "nltk>=3.9.4",
+    "nltk>=3.10.0",
     "opensearch-py>=3.2.0",
     "Pillow>=12.2.0",
     "playwright>=1.60.0",
@@ -24,4 +24,6 @@ dependencies = [
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=9.0.3",
+]

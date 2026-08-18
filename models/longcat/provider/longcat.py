@@ -17,7 +17,7 @@ class LongCatProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
-                model="longcat-flash-chat", credentials=credentials
+                model="LongCat-2.0", credentials=credentials
             )
         except CredentialsValidateFailedError as ex:
             raise ex

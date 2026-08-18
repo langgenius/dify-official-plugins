@@ -13,23 +13,8 @@ from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
 
 
 class OneDriveDataSource(OnlineDriveDatasource):
-    
-    def _refresh_token_if_needed(self):
-        """Refresh token and update runtime credentials"""
-        import requests
-        
-        credentials = self.runtime.credentials
-        refresh_token = credentials.get("refresh_token")
-        
-        if not refresh_token:
-            raise ValueError("Missing refresh_token for token refresh")
-
-        # Note: In this implementation, client_secret should be obtained from system configuration
-        # For now, we'll require re-authorization when token expires
-        raise ValueError("Token refresh requires system configuration access. Please re-authorize through OneDrive OAuth.")
-    
     def _browse_files(
-        self,  request: OnlineDriveBrowseFilesRequest
+        self, request: OnlineDriveBrowseFilesRequest
     ) -> OnlineDriveBrowseFilesResponse:
         credentials = self.runtime.credentials
         bucket_name = (request.bucket or "onedrive")
@@ -51,14 +36,8 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         resp = requests.get(url, headers=headers, params=params, timeout=10)
         if resp.status_code == 401:
-            # Token may have expired, try to refresh
-            try:
-                updated_credentials = self._refresh_token_if_needed()
-                headers["Authorization"] = f"Bearer {updated_credentials['access_token']}"
-                resp = requests.get(url, headers=headers, params=params, timeout=10)
-            except Exception as e:
-                raise ValueError(f"Token refresh failed: {str(e)}")
-        
+            raise ValueError("OneDrive access token expired or was revoked. Please re-authorize the datasource.")
+
         if resp.status_code >= 400:
             raise ValueError(f"Microsoft Graph list error: {resp.status_code} {resp.text}")
         data = resp.json() if resp.content else {}
@@ -72,17 +51,28 @@ class OneDriveDataSource(OnlineDriveDatasource):
                 size = 0 if is_folder else int(size_raw)
             except Exception:
                 size = 0
-            files.append(OnlineDriveFile(
-                id=str(item.get("id", "")),
-                name=str(item.get("name", "")),
-                size=size,
-                type="folder" if is_folder else "file",
-            ))
+            files.append(
+                OnlineDriveFile(
+                    id=str(item.get("id", "")),
+                    name=str(item.get("name", "")),
+                    size=size,
+                    type="folder" if is_folder else "file",
+                )
+            )
 
         next_link = data.get("@odata.nextLink") or ""
         next_page_parameters = {"next_link": next_link} if next_link else {}
         is_truncated = bool(next_link)
-        return OnlineDriveBrowseFilesResponse(result=[OnlineDriveFileBucket(bucket=bucket_name, files=files, is_truncated=is_truncated, next_page_parameters=next_page_parameters)])
+        return OnlineDriveBrowseFilesResponse(
+            result=[
+                OnlineDriveFileBucket(
+                    bucket=bucket_name,
+                    files=files,
+                    is_truncated=is_truncated,
+                    next_page_parameters=next_page_parameters,
+                )
+            ]
+        )
 
     def _download_file(self, request: OnlineDriveDownloadFileRequest) -> Generator[DatasourceMessage, None, None]:
         credentials = self.runtime.credentials
@@ -100,19 +90,15 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         content_resp = requests.get(f"{base_url}/{file_id}/content", headers=headers, timeout=30)
         if content_resp.status_code == 401:
-            # Token may have expired, try to refresh
-            try:
-                updated_credentials = self._refresh_token_if_needed()
-                headers["Authorization"] = f"Bearer {updated_credentials['access_token']}"
-                content_resp = requests.get(f"{base_url}/{file_id}/content", headers=headers, timeout=30)
-            except Exception as e:
-                raise ValueError(f"Token refresh failed: {str(e)}")
-        
+            raise ValueError("OneDrive access token expired or was revoked. Please re-authorize the datasource.")
+
         content_resp.raise_for_status()
         file_bytes = content_resp.content
 
-        yield self.create_blob_message(file_bytes, meta={
-            "file_name": meta.get("name"),
-            "mime_type": meta.get("file", {}).get("mimeType", "application/octet-stream"),
-        })
-
+        yield self.create_blob_message(
+            file_bytes,
+            meta={
+                "file_name": meta.get("name"),
+                "mime_type": meta.get("file", {}).get("mimeType", "application/octet-stream"),
+            },
+        )

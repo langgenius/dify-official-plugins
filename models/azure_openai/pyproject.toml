@@ -9,11 +9,13 @@ requires-python = ">=3.12"
 dependencies = [
     "azure-core>=1.41.0",
     "azure-identity>=1.25.3",
-    "dify_plugin @ git+https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git@feat/pass-session-to-model-plugins",
+    # 0.10.0 introduces get_current_session(), required to resolve the
+    # current Dify app_id for Azure OpenAI request metadata.
+    "dify_plugin>=0.10.0",
     "httpx>=0.28.1",
     "numpy>=2.4.6",
     "openai>=2.38.0",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
     "pydantic>=2.13.4",
     "tiktoken>=0.13.0",
 ]
@@ -21,7 +23,7 @@ dependencies = [
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
-    "pytest>=8.0.0",
+    "pytest>=9.1.1",
 ]
 
 [tool.pytest.ini_options]

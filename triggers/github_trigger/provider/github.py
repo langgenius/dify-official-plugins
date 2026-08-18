@@ -176,6 +176,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     _TOKEN_URL = "https://github.com/login/oauth/access_token"
     _API_USER_URL = "https://api.github.com/user"
     _WEBHOOK_TTL = 30 * 24 * 60 * 60
+    _DEFAULT_SCOPE = "read:user admin:repo_hook"
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         access_token = credentials.get("access_tokens")
@@ -196,11 +197,16 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise TriggerProviderCredentialValidationError(str(exc)) from exc
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("GitHub OAuth client_id is missing.")
+
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
-            "client_id": system_credentials["client_id"],
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
-            "scope": system_credentials.get("scope", "read:user admin:repo_hook"),
+            "scope": system_credentials.get("scope", self._DEFAULT_SCOPE),
             "state": state,
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
@@ -208,6 +214,13 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"GitHub OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
@@ -222,11 +235,21 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             "redirect_uri": redirect_uri,
         }
         headers = {"Accept": "application/json"}
-        response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        response_json = response.json()
+        try:
+            response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during GitHub OAuth token exchange: {exc}") from exc
+
+        response_json = self._safe_json(response)
+        if response.status_code >= 400:
+            raise TriggerProviderOAuthError(f"GitHub OAuth token exchange failed: {self._extract_error(response)}")
+
         access_tokens = response_json.get("access_token")
         if not access_tokens:
-            raise TriggerProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
+            error_msg = response_json.get("error_description") or response_json.get("error")
+            if error_msg:
+                raise TriggerProviderOAuthError(f"GitHub OAuth failed: {error_msg}")
+            raise TriggerProviderOAuthError("GitHub OAuth response missing access_token")
 
         return TriggerOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
 
@@ -433,3 +456,41 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             page += 1
 
         return options
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        import hashlib
+
+        digest = hashlib.sha256(f"github:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"github:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist GitHub OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("GitHub OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("GitHub OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate GitHub OAuth state.") from exc
+
+    @staticmethod
+    def _safe_json(response: requests.Response) -> dict[str, Any]:
+        try:
+            payload = response.json()
+            return payload if isinstance(payload, dict) else {}
+        except Exception:
+            return {}
+
+    def _extract_error(self, response: requests.Response) -> str:
+        payload = self._safe_json(response)
+        message = payload.get("error_description") or payload.get("message") or payload.get("error")
+        return str(message or response.text or f"HTTP {response.status_code}")[:500]

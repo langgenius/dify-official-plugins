@@ -1,9 +1,9 @@
 author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
-  en_US: Discord Webhook
-  pt_BR: Discord Webhook
-  zh_Hans: Discord Webhook
+  en_US: Discord Webhook and Bot API
+  pt_BR: Discord Webhook e API do Bot
+  zh_Hans: Discord Webhook和机器人API
 icon: icon.svg
 label:
   en_US: Discord
@@ -34,4 +34,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

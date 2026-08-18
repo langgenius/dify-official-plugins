@@ -7,6 +7,22 @@ credentials_for_provider:
     required: true
     type: secret-input
     url: https://cloud.siliconflow.cn/account/ak
+  use_international_endpoint:
+    label:
+      en_US: Use International Endpoint
+      zh_CN: 使用国际站端点
+    required: false
+    type: select
+    default: "false"
+    options:
+      - label:
+          en_US: "True"
+          zh_CN: "是"
+        value: "true"
+      - label:
+          en_US: "False"
+          zh_CN: "否"
+        value: "false"
 extra:
   python:
     source: provider/siliconflow.py

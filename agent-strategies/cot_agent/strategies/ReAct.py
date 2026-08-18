@@ -28,6 +28,8 @@ from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutp
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
 
+from strategies.tool_response import should_forward_file_message
+
 class LogMetadata:
     """Metadata keys for logging"""
     STARTED_AT = "started_at"
@@ -561,8 +563,9 @@ class ReActAgentStrategy(AgentStrategy):
         tool_call_args = cast(dict[str, Any], tool_call_args)
         tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
         try:
+            provider_type = ToolProviderType(tool_instance.provider_type)
             tool_invoke_responses = self.session.tool.invoke(
-                provider_type=ToolProviderType(tool_instance.provider_type),
+                provider_type=provider_type,
                 provider=tool_instance.identity.provider,
                 tool_name=tool_instance.identity.name,
                 parameters=tool_invoke_parameters,
@@ -577,6 +580,8 @@ class ReActAgentStrategy(AgentStrategy):
                         f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
                         + " please tell user to check it."
                     )
+                    if should_forward_file_message(response):
+                        additional_messages.append(response)
                 elif response.type in {
                     ToolInvokeMessage.MessageType.IMAGE_LINK,
                     ToolInvokeMessage.MessageType.IMAGE,
@@ -593,14 +598,25 @@ class ReActAgentStrategy(AgentStrategy):
                         + "Please inform the user that the image has been created successfully."
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
+                    json_message = cast(
+                        ToolInvokeMessage.JsonMessage, response.message
+                    )
+                    if (
+                        provider_type == ToolProviderType.WORKFLOW
+                        or getattr(json_message, "suppress_output", False)
+                    ):
+                        continue
                     text = json.dumps(
-                        cast(
-                            ToolInvokeMessage.JsonMessage, response.message
-                        ).json_object,
+                        json_message.json_object,
                         ensure_ascii=False,
                     )
                     result += f"tool response: {text}."
+                elif response.type == ToolInvokeMessage.MessageType.VARIABLE:
+                    continue
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
+                    result += "Generated file with ... "
+                    additional_messages.append(response)
+                elif response.type == ToolInvokeMessage.MessageType.FILE:
                     result += "Generated file with ... "
                     additional_messages.append(response)
                 else:

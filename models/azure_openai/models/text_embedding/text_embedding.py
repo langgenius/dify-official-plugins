@@ -131,7 +131,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
                 f"Base Model Name {credentials['base_model_name']} is invalid"
             )
         try:
-            client = self._create_client(credentials)
+            client = self._create_client(credentials, use_cache=False)
             self._embedding_invoke(
                 model=model, client=client, texts=["ping"], extra_model_kwargs={}
             )

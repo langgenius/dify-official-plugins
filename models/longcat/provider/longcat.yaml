@@ -2,8 +2,8 @@ background: '#c0cdff'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by LongCat, such as longcat-flash-chat.
-  zh_Hans: LongCat 提供的模型，例如 longcat-flash-chat 。
+  en_US: Models provided by LongCat, such as LongCat-2.0.
+  zh_Hans: LongCat 提供的模型，例如 LongCat-2.0 。
 extra:
   python:
     model_sources:
@@ -39,14 +39,14 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
-      en_US: Base URL, e.g. https://api.longcat.chat/openai
-      zh_Hans: Base URL, e.g. https://api.longcat.chat/openai
+      en_US: Base URL, e.g. https://api.longcat.chat/openai/v1
+      zh_Hans: Base URL, e.g. https://api.longcat.chat/openai/v1
     required: false
     type: text-input
-    default: "https://api.longcat.chat/openai"
+    default: "https://api.longcat.chat/openai/v1"
     variable: endpoint_url
 supported_model_types:
 - llm

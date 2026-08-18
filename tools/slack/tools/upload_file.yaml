@@ -1,0 +1,79 @@
+identity:
+  name: upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    ja_JP: ファイルをアップロード
+    ko_KR: 파일 업로드
+description:
+  human:
+    en_US: Upload a file to Slack and optionally share it to a channel.
+    zh_Hans: 上传文件到 Slack，并可选择分享到某个频道。
+    ja_JP: Slack にファイルをアップロードし、必要に応じてチャンネルに共有します。
+    ko_KR: Slack에 파일을 업로드하고 선택적으로 채널에 공유합니다.
+  llm: Uploads a file to Slack using the external upload flow (files.getUploadURLExternal and files.completeUploadExternal). Requires a file. Optionally share it to a channel with a title and an initial comment.
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+      ja_JP: ファイル
+      ko_KR: 파일
+    human_description:
+      en_US: The file to upload to Slack.
+      zh_Hans: 要上传到 Slack 的文件。
+      ja_JP: Slack にアップロードするファイル。
+      ko_KR: Slack에 업로드할 파일.
+    llm_description: The file to upload to Slack. Accepts documents, images, and other file types.
+    form: llm
+  - name: channel
+    type: string
+    required: false
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: Optional channel ID to share the uploaded file to (e.g. C0123456789).
+      zh_Hans: 可选，分享上传文件的频道 ID（如 C0123456789）。
+      ja_JP: "アップロードしたファイルを共有するチャンネル ID（任意、例: C0123456789）。"
+      ko_KR: "업로드한 파일을 공유할 채널 ID(선택 사항, 예: C0123456789)."
+    llm_description: Optional channel ID (e.g. C0123456789) to share the uploaded file to.
+    form: llm
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: Title
+      zh_Hans: 标题
+      ja_JP: タイトル
+      ko_KR: 제목
+    human_description:
+      en_US: Optional title for the uploaded file.
+      zh_Hans: 上传文件的可选标题。
+      ja_JP: アップロードするファイルのタイトル（任意）。
+      ko_KR: 업로드한 파일의 제목(선택 사항).
+    llm_description: Optional display title for the uploaded file.
+    form: llm
+  - name: initial_comment
+    type: string
+    required: false
+    label:
+      en_US: Initial Comment
+      zh_Hans: 初始评论
+      ja_JP: 初期コメント
+      ko_KR: 초기 댓글
+    human_description:
+      en_US: Optional message text to post along with the file.
+      zh_Hans: 与文件一起发布的可选消息文本。
+      ja_JP: ファイルと一緒に投稿するメッセージテキスト（任意）。
+      ko_KR: 파일과 함께 게시할 메시지 텍스트(선택 사항).
+    llm_description: Optional comment text posted together with the shared file.
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py

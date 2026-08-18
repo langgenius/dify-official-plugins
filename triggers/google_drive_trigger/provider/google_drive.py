@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import secrets
 import time
@@ -29,7 +30,7 @@ class GoogleDriveTrigger(Trigger):
     """Validate Google Drive webhook headers and dispatch change events."""
 
     _EVENT_NAME = "drive_change_detected"
-    _STORAGE_KEY = "google-drive-trigger:last-page-token"
+    _STORAGE_KEY_PREFIX = "google-drive-trigger:last-page-token"
     _CHANGES_ENDPOINT = "https://www.googleapis.com/drive/v3/changes"
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
@@ -57,13 +58,13 @@ class GoogleDriveTrigger(Trigger):
         expected_resource = subscription.properties.get("resource_id")
         expected_token = subscription.properties.get("channel_token")
 
-        if expected_channel and channel_id and expected_channel != channel_id:
+        if expected_channel and channel_id != expected_channel:
             raise TriggerValidationError("Mismatched channel ID in Google Drive notification")
 
-        if expected_resource and resource_id and expected_resource != resource_id:
+        if expected_resource and resource_id != expected_resource:
             raise TriggerValidationError("Mismatched resource ID in Google Drive notification")
 
-        if expected_token and channel_token and expected_token != channel_token:
+        if expected_token and channel_token != expected_token:
             raise TriggerValidationError("Invalid channel token for Google Drive notification")
 
         body = request.get_json(silent=True)
@@ -88,7 +89,7 @@ class GoogleDriveTrigger(Trigger):
 
         # fetch changes
         changes = self._fetch_changes(
-            access_token=self.runtime.credentials.get("access_token") or "",
+            access_token=GoogleDriveSubscriptionConstructor._get_access_token(self.runtime.credentials) or "",
             spaces=subscription.properties.get("spaces") or [],
             include_removed=subscription.parameters.get("include_removed", False),
             restrict_to_my_drive=subscription.parameters.get("restrict_to_my_drive", False),
@@ -167,22 +168,22 @@ class GoogleDriveTrigger(Trigger):
                         changes.append(dict(change))
 
             if next_page_token:
-                self._set_max_page_token(next_page_token)
+                self._set_max_page_token(subscription, next_page_token)
 
             if new_start_page_token:
-                self._set_max_page_token(new_start_page_token)
+                self._set_max_page_token(subscription, new_start_page_token)
                 break
 
         return changes
 
-    def _set_max_page_token(self, token: str) -> None:
+    def _set_max_page_token(self, subscription: Subscription, token: str) -> None:
         """
         Set the maximum page token to the storage.
 
         If the storage is not found, do nothing.
         """
         try:
-            self.runtime.session.storage.set(self._STORAGE_KEY, token.encode())
+            self.runtime.session.storage.set(self._page_token_storage_key(subscription), token.encode())
         except Exception:
             pass
 
@@ -193,9 +194,23 @@ class GoogleDriveTrigger(Trigger):
         If the storage is not found, return 0.
         """
         try:
-            return self.runtime.session.storage.get(self._STORAGE_KEY).decode() or "0"
+            return self.runtime.session.storage.get(self._page_token_storage_key(subscription)).decode() or "0"
         except Exception:
             return subscription.properties.get("start_page_token") or "0"
+
+    @staticmethod
+    def _page_token_storage_key_from_key(subscription_key: str) -> str:
+        return f"{GoogleDriveTrigger._STORAGE_KEY_PREFIX}:{subscription_key}"
+
+    @staticmethod
+    def _page_token_storage_key(subscription: Subscription) -> str:
+        properties = subscription.properties or {}
+        subscription_key = properties.get("subscription_key")
+        if subscription_key:
+            return GoogleDriveTrigger._page_token_storage_key_from_key(str(subscription_key))
+        fallback = properties.get("channel_id") or properties.get("resource_id") or "legacy"
+        digest = hashlib.sha256(str(fallback).encode("utf-8")).hexdigest()
+        return f"{GoogleDriveTrigger._STORAGE_KEY_PREFIX}:legacy:{digest}"
 
     @staticmethod
     def _ok_response() -> Response:
@@ -223,6 +238,8 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not client_id:
             raise TriggerProviderOAuthError("Client ID is required to start Google Drive OAuth flow")
 
+        state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         scope = system_credentials.get("scope", self._DEFAULT_SCOPE)
         params = {
             "response_type": "code",
@@ -232,12 +249,20 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "access_type": "offline",
             "prompt": "consent",
             "include_granted_scopes": "true",
+            "state": state,
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params, quote_via=urllib.parse.quote)}"
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"Google Drive OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("Missing authorization code in callback request")
@@ -260,10 +285,13 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         except requests.RequestException as exc:
             raise TriggerProviderOAuthError(f"Failed to exchange authorization code: {exc}") from exc
 
-        payload = response.json() if response.content else {}
+        try:
+            payload = response.json() if response.content else {}
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Google Drive OAuth token response was not valid JSON") from exc
         if response.status_code != 200:
             raise TriggerProviderOAuthError(
-                f"Failed to obtain Google Drive OAuth tokens: {payload.get('error_description') or payload}"
+                f"Failed to obtain Google Drive OAuth tokens: {self._extract_google_error(response, payload)}"
             )
 
         access_token = payload.get("access_token")
@@ -272,7 +300,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token or not refresh_token:
             raise TriggerProviderOAuthError("OAuth response does not contain access_token or refresh_token")
 
-        expires_at = int(time.time()) + int(expires_in) if expires_in else -1
+        expires_at = int(time.time()) + max(int(expires_in) - 60, 0) if expires_in else -1
         profile = self._fetch_about(access_token)
 
         credentials = {
@@ -309,10 +337,13 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         except requests.RequestException as exc:
             raise TriggerProviderOAuthError(f"Failed to refresh Google Drive OAuth token: {exc}") from exc
 
-        payload = response.json() if response.content else {}
+        try:
+            payload = response.json() if response.content else {}
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Google Drive OAuth refresh response was not valid JSON") from exc
         if response.status_code != 200:
             raise TriggerProviderOAuthError(
-                f"Unable to refresh Google Drive OAuth token: {payload.get('error_description') or payload}"
+                f"Unable to refresh Google Drive OAuth token: {self._extract_google_error(response, payload)}"
             )
 
         access_token = payload.get("access_token")
@@ -320,7 +351,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token:
             raise TriggerProviderOAuthError("Refresh response does not contain access_token")
 
-        expires_at = int(time.time()) + int(expires_in) if expires_in else -1
+        expires_at = int(time.time()) + max(int(expires_in) - 60, 0) if expires_in else -1
         refreshed_credentials = {
             **credentials,
             "access_token": access_token,
@@ -340,7 +371,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if credential_type != CredentialType.OAUTH:
             raise SubscriptionError("Google Drive trigger requires OAuth credentials", error_code="OAUTH_REQUIRED")
 
-        access_token = credentials.get("access_token")
+        access_token = self._get_access_token(credentials)
         if not access_token:
             raise SubscriptionError("Missing Google Drive OAuth access token", error_code="MISSING_ACCESS_TOKEN")
 
@@ -348,10 +379,14 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not spaces:
             raise SubscriptionError("At least one Drive space must be selected", error_code="SPACES_REQUIRED")
 
+        subscription_key = uuid.uuid4().hex
         start_page_token = self._fetch_start_page_token(access_token, spaces)
 
         # set the start_page_token to the storage
-        self.runtime.session.storage.set(GoogleDriveTrigger._STORAGE_KEY, str(start_page_token).encode("utf-8"))
+        self.runtime.session.storage.set(
+            GoogleDriveTrigger._page_token_storage_key_from_key(subscription_key),
+            str(start_page_token).encode("utf-8"),
+        )
 
         channel_id = str(uuid.uuid4())
         channel_token = secrets.token_urlsafe(24)
@@ -400,6 +435,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
             "channel_id": channel_id,
             "resource_id": resource_id,
             "channel_token": channel_token,
+            "subscription_key": subscription_key,
             "watch_expiration": expiration,
             "start_page_token": start_page_token,
             "spaces": spaces,
@@ -422,7 +458,7 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "Google Drive trigger requires OAuth credentials to unsubscribe", error_code="OAUTH_REQUIRED"
             )
 
-        access_token = credentials.get("access_token")
+        access_token = self._get_access_token(credentials)
         if not access_token:
             raise UnsubscribeError("Missing Google Drive OAuth access token", error_code="MISSING_ACCESS_TOKEN")
 
@@ -506,6 +542,21 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
         return str(token)
 
     @staticmethod
+    def _get_access_token(credentials: Mapping[str, Any]) -> str | None:
+        token = credentials.get("access_token") or credentials.get("access_tokens")
+        return str(token) if token else None
+
+    @staticmethod
+    def _extract_google_error(response: requests.Response, payload: Mapping[str, Any]) -> str:
+        error = payload.get("error")
+        if isinstance(error, Mapping):
+            message = error.get("message") or error.get("status")
+            if message:
+                return str(message)
+        message = payload.get("error_description") or payload.get("error")
+        return str(message or response.text or f"HTTP {response.status_code}")[:500]
+
+    @staticmethod
     def _normalize_spaces(raw: Any) -> list[str]:
         if not raw:
             return []
@@ -518,3 +569,28 @@ class GoogleDriveSubscriptionConstructor(TriggerSubscriptionConstructor):
                     normalized.append(item.strip())
             return normalized
         raise SubscriptionError("spaces must be a string or list of strings", error_code="INVALID_SPACES")
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"google_drive:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"google_drive:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError(
+                "Unable to persist Google Drive OAuth state; storage permission is required."
+            ) from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Google Drive OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Google Drive OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Google Drive OAuth state.") from exc

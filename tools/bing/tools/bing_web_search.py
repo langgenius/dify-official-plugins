@@ -114,7 +114,8 @@ class BingWebSearchTool(Tool):
 
             if related_searches:
                 result["related searches"] = [
-                    {"displayText": item.get("displayText", ""), "url": item.get("webSearchUrl", "")} for item in news
+                    {"displayText": item.get("displayText", ""), "url": item.get("webSearchUrl", "")}
+                    for item in related_searches
                 ]
 
             yield self.create_json_message(result)

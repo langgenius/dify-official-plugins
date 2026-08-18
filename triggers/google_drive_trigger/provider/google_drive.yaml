@@ -65,7 +65,7 @@ subscription_constructor:
           ja_JP: "スコープを入力してください"
         url: https://console.cloud.google.com/apis/credentials
     credentials_schema:
-      - name: access_tokens
+      - name: access_token
         type: secret-input
         label:
           en_US: Access Token

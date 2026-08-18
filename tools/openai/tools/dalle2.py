@@ -1,10 +1,12 @@
 from base64 import b64decode
 from collections.abc import Generator
 from typing import Literal
-from openai import OpenAI
-from yarl import URL
+
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from openai import OpenAI
+
+from openai_client import normalize_openai_base_url
 
 
 class DallE2Tool(Tool):
@@ -19,14 +21,9 @@ class DallE2Tool(Tool):
         )
         if not openai_organization:
             openai_organization = None
-        openai_base_url = self.runtime.credentials.get("openai_base_url", None)
-        if not openai_base_url:
-            openai_base_url = None
-        else:
-            openai_base_url = str(URL(openai_base_url) / "v1")
         client = OpenAI(
             api_key=self.runtime.credentials["openai_api_key"],
-            base_url=openai_base_url,
+            base_url=normalize_openai_base_url(self.runtime.credentials.get("openai_base_url")),
             organization=openai_organization,
         )
         SIZE_MAPPING = {"small": "256x256", "medium": "512x512", "large": "1024x1024"}

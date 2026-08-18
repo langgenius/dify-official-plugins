@@ -1,14 +1,16 @@
 author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
-  en_US: Slack Webhook
-  pt_BR: Slack Webhook
-  zh_Hans: Slack Webhook
+  en_US: Interact with Slack - send and manage messages, channels, users, reactions and files via the Slack Web API, or post via an Incoming Webhook.
+  zh_Hans: 与 Slack 交互 - 通过 Slack Web API 发送和管理消息、频道、用户、表情回应和文件，或通过 Incoming Webhook 发送消息。
+  ja_JP: Slack と連携 - Slack Web API を通じてメッセージ、チャンネル、ユーザー、リアクション、ファイルを送信・管理したり、Incoming Webhook を通じて投稿したりできます。
+  ko_KR: Slack과 연동 - Slack Web API를 통해 메시지, 채널, 사용자, 반응, 파일을 전송 및 관리하거나 Incoming Webhook을 통해 게시합니다.
 icon: icon.svg
 label:
   en_US: Slack
-  pt_BR: Slack
   zh_Hans: Slack
+  ja_JP: Slack
+  ko_KR: Slack
 meta:
   arch:
     - amd64
@@ -34,4 +36,5 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.9
+privacy: PRIVACY.md
+version: 0.4.0

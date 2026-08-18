@@ -59,6 +59,32 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: image_base64
+  - label:
+      en_US: Output Dimension
+    placeholder:
+      en_US: 'Matryoshka dimension for voyage-4 and voyage-3.5 models: 256, 512, 1024
+        or 2048. Leave blank for the model default of 1024. Changing this after a
+        knowledge base has been indexed requires a full re-index.'
+    required: false
+    type: text-input
+    variable: output_dimension
+  - label:
+      en_US: Output Data Type
+    placeholder:
+      en_US: 'float (default), int8, uint8, binary or ubinary. Quantised types trade
+        retrieval quality for storage.'
+    required: false
+    type: text-input
+    variable: output_dtype
+  - label:
+      en_US: Contextualise Batches
+    placeholder:
+      en_US: 'voyage-context-* only. Set to true to embed each batch as one document,
+        so chunks gain context from their neighbours. Only correct when a batch holds
+        chunks of a single document; off by default. Never applied to queries.'
+    required: false
+    type: text-input
+    variable: contextualize_batch
 supported_model_types:
 - text-embedding
 - rerank

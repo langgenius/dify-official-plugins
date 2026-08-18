@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dify_plugin.entities.model import ModelFeature
+from dify_plugin.entities.model import AIModelEntity, ModelFeature
 from dify_plugin.entities.model.message import UserPromptMessage
 
 from models.llm.llm import TongyiLargeLanguageModel
@@ -71,3 +72,72 @@ def test_qwen3_vl_hybrid_models_force_streaming_when_thinking_is_enabled() -> No
         assert kwargs["incremental_output"] is True
         assert kwargs["enable_thinking"] is True
         assert list(result) == ["stream-result"]
+
+
+def test_qwen38_schema_and_dashscope_parameters() -> None:
+    models_dir = Path(__file__).parent.parent / "models" / "llm"
+    data = yaml.safe_load((models_dir / "qwen3.8-max.yaml").read_text())
+    schema = AIModelEntity.model_validate(data)
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+
+    assert {
+        ModelFeature.VISION,
+        ModelFeature.VIDEO,
+        ModelFeature.STRUCTURED_OUTPUT,
+    }.issubset(schema.features or [])
+    assert rules["temperature"].default == 0.6
+    assert (rules["temperature"].min, rules["temperature"].max) == (0.6, 1.99)
+    assert rules["max_completion_tokens"].default == 131072
+    assert rules["top_p"].default is None
+    assert (rules["top_p"].min, rules["top_p"].max) == (0.01, 1.0)
+    assert rules["top_k"].default == 20
+    assert rules["seed"].max == 2147483647
+    assert rules["repetition_penalty"].default == 1.05
+    assert rules["enable_thinking"].default is True
+    assert rules["reasoning_effort"].default == "xhigh"
+    assert "thinking_budget" not in rules
+    assert "json_schema" in rules["response_format"].options
+
+    model = _model()
+    model.get_model_schema.return_value = schema
+    assert model._validate_and_filter_model_parameters(
+        "qwen3.8-max",
+        {"max_tokens": 128},
+        {},
+    ) == {"max_completion_tokens": 128}
+
+    output_schema = {
+        "name": "answer",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {"answer": {"type": "string"}},
+            "required": ["answer"],
+        },
+    }
+    kwargs, result = _invoke(
+        "qwen3.8-max",
+        {
+            "response_format": "json_schema",
+            "json_schema": json.dumps(output_schema),
+        },
+    )
+    assert kwargs["enable_thinking"] is True
+    assert kwargs["preserve_thinking"] is False
+    assert kwargs["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "answer",
+            "schema": output_schema["schema"],
+        },
+        "strict": True,
+    }
+    assert kwargs["stream"] is True
+    assert kwargs["incremental_output"] is True
+    assert list(result) == ["stream-result"]
+
+    kwargs, _ = _invoke(
+        "qwen3.8-max",
+        {"enable_thinking": False, "reasoning_effort": "xhigh"},
+    )
+    assert "reasoning_effort" not in kwargs
