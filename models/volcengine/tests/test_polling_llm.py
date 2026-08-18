@@ -150,6 +150,50 @@ def test_chat_completion_request_is_pydantic_modeled() -> None:
     }
 
 
+def test_chat_completion_request_supports_json_schema_response_format() -> None:
+    request = build_chat_completion_request(
+        model="doubao-seed-2-1-pro-260628",
+        prompt_messages=[UserPromptMessage(content="list cities")],
+        model_parameters={
+            "response_format": "json_schema",
+            "json_schema": '{"name": "cities", "schema": {"type": "object"}}',
+        },
+        tools=None,
+        stop=None,
+        user=None,
+    )
+
+    assert request.to_payload()["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "cities", "schema": {"type": "object"}},
+    }
+
+
+def test_chat_completion_request_supports_json_object_response_format() -> None:
+    request = build_chat_completion_request(
+        model="doubao-seed-2-1-pro-260628",
+        prompt_messages=[UserPromptMessage(content="list cities")],
+        model_parameters={"response_format": "json_object"},
+        tools=None,
+        stop=None,
+        user=None,
+    )
+
+    assert request.to_payload()["response_format"] == {"type": "json_object"}
+
+
+def test_chat_completion_request_requires_json_schema_payload() -> None:
+    with pytest.raises(InvokeError):
+        build_chat_completion_request(
+            model="doubao-seed-2-1-pro-260628",
+            prompt_messages=[UserPromptMessage(content="list cities")],
+            model_parameters={"response_format": "json_schema"},
+            tools=None,
+            stop=None,
+            user=None,
+        )
+
+
 class FakeResponse:
     def __enter__(self) -> "FakeResponse":
         return self
