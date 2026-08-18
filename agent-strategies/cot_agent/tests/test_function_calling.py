@@ -1,3 +1,4 @@
+import base64
 import json
 import sys
 import unittest
@@ -13,10 +14,18 @@ from dify_plugin.entities.model.llm import (
     LLMResultChunkDelta,
     LLMUsage,
 )
-from dify_plugin.entities.model.message import AssistantPromptMessage
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    ImagePromptMessageContent,
+    TextPromptMessageContent,
+)
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from dify_plugin.file.file import File, FileType
 
-from strategies.function_calling import FunctionCallingAgentStrategy
+from strategies.function_calling import (
+    FunctionCallingAgentStrategy,
+    FunctionCallingParams,
+)
 
 
 def _make_tool_call(
@@ -164,6 +173,90 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
             "<think>\nAnalyzing the request.\n</think>",
         )
         self.assertFalse(thinking_started)
+
+
+class TestFunctionCallingMultimodalPrompt(unittest.TestCase):
+    def setUp(self):
+        self.strategy = FunctionCallingAgentStrategy(
+            runtime=Mock(), session=Mock()
+        )
+        self.strategy.query = "Describe the current image"
+
+    @staticmethod
+    def _file(file_type: FileType = FileType.IMAGE) -> File:
+        file = File(
+            url="https://example.invalid/test.png",
+            mime_type="image/png" if file_type == FileType.IMAGE else "application/pdf",
+            filename="test.png" if file_type == FileType.IMAGE else "test.pdf",
+            extension=".png" if file_type == FileType.IMAGE else ".pdf",
+            size=7,
+            type=file_type,
+        )
+        file._blob = b"pngdata"
+        return file
+
+    def test_text_only_query_remains_string(self):
+        self.strategy.files = []
+
+        message = self.strategy._user_prompt_message
+
+        self.assertEqual(message.content, "Describe the current image")
+
+    def test_current_image_is_added_before_query_text(self):
+        self.strategy.files = [self._file()]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertIsInstance(message.content, list)
+        self.assertEqual(len(message.content), 2)
+        self.assertIsInstance(message.content[0], ImagePromptMessageContent)
+        self.assertEqual(
+            message.content[0].base64_data,
+            base64.b64encode(b"pngdata").decode("ascii"),
+        )
+        self.assertEqual(message.content[0].detail, ImagePromptMessageContent.DETAIL.LOW)
+        self.assertIsInstance(message.content[1], TextPromptMessageContent)
+        self.assertEqual(message.content[1].data, "Describe the current image")
+
+    def test_multiple_images_preserve_order(self):
+        first = self._file()
+        first.filename = "first.png"
+        second = self._file()
+        second.filename = "second.png"
+        self.strategy.files = [first, second]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertIsInstance(message.content, list)
+        self.assertEqual(
+            [content.filename for content in message.content[:-1]],
+            ["first.png", "second.png"],
+        )
+
+    def test_non_image_files_are_not_added(self):
+        self.strategy.files = [self._file(FileType.DOCUMENT)]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertEqual(message.content, "Describe the current image")
+
+    def test_empty_file_entries_from_dify_are_discarded(self):
+        image = self._file()
+
+        params = FunctionCallingParams(
+            query="Describe the current image",
+            instruction=None,
+            model={
+                "provider": "test/provider",
+                "model": "test-model",
+                "mode": "chat",
+                "completion_params": {},
+            },
+            tools=None,
+            files=[None, image],
+        )
+
+        self.assertEqual(params.files, [image])
 
 
 class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
