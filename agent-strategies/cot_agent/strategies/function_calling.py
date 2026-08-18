@@ -33,6 +33,7 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel, field_validator
 
+from strategies.tool_allowlist import coerce_allowed_tools, filter_allowed_tools
 from strategies.tool_response import should_forward_file_message
 
 THINK_START = "<think>"
@@ -97,6 +98,7 @@ class FunctionCallingParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     files: list[File] | None = None
+    allowed_tools: list[str] | None = None
     maximum_iterations: int = 3
     context: list[ContextItem] | None = None
 
@@ -106,6 +108,11 @@ class FunctionCallingParams(BaseModel):
         if isinstance(value, list):
             return [item for item in value if item is not None]
         return value
+
+    @field_validator("allowed_tools", mode="before")
+    @classmethod
+    def normalize_allowed_tools(cls, value: Any) -> list[str] | None:
+        return coerce_allowed_tools(value)
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
@@ -211,7 +218,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         history_prompt_messages.append(self._user_prompt_message)
 
         # convert tool messages
-        tools = fc_params.tools
+        tools = filter_allowed_tools(fc_params.tools, fc_params.allowed_tools)
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
         prompt_messages_tools = self._init_prompt_tools(tools)
 
@@ -499,14 +506,16 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     )
             else:
                 for tool_call_id, tool_call_name, tool_call_args in tool_calls:
-                    tool_instance = tool_instances[tool_call_name]
+                    tool_instance = tool_instances.get(tool_call_name)
                     tool_call_started_at = time.perf_counter()
                     tool_call_log = self.create_log_message(
                         label=f"CALL {tool_call_name}",
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider
+                            if tool_instance
+                            else "",
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -651,7 +660,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         },
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider
+                            if tool_instance
+                            else "",
                             LogMetadata.FINISHED_AT: time.perf_counter(),
                             LogMetadata.ELAPSED_TIME: time.perf_counter()
                             - tool_call_started_at,
