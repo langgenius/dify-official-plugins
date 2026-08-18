@@ -52,6 +52,12 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 - **Fable 5 前置条件：数据保留 opt-in。** 调用 Fable 5 前，AWS 账户必须通过 Bedrock Data Retention API 将数据保留模式设置为 `provider_data_share`（上线初期无控制台入口）。详见 [Fable 5 模型卡](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html)。插件不会修改账户设置。
 - **价格说明。** 展示价格为 Global 跨区域费率（Opus 5 每百万 token $5/$25，Sonnet 5 $3/$15，Fable 5 $10/$50）。Geo/区域内调用约贵 10%。Prompt 缓存读写费率无法体现在 Dify 费用统计中，请以 AWS 账单为准。
 
+## 日本数据驻留（`japan` 跨区域推理）
+
+在"跨区域推理"选项中选择 `japan` 将使用 `jp.` 地理配置文件，仅路由到 `ap-northeast-3` 和 `ap-northeast-1` — 推理请求不会离开日本。此选项要求配置的区域必须是这两个之一，且模型必须具有 `jp.` 配置文件（撰写时支持 Sonnet 4.5 / 4.6、Haiku 4.5、Opus 4.7 / 4.8 以及 Nova Lite V2）。否则调用将失败并显示说明性错误，而不会静默路由到其他区域。
+
+`geographic` 选项**并不等同**：从东京发起时它解析为 `apac.`，会路由到韩国、印度、新加坡和澳大利亚 — 而且 4.5 代及更新模型都没有 `apac.` 配置文件。上述价格说明在这里同样适用：展示价格为 Global 跨区域费率，geo/区域内调用约贵 10%。
+
 ## Issue Feedback | 问题反馈
 
 For more detailed information, please refer to [aws-sample/dify-aws-tool](https://github.com/aws-samples/dify-aws-tool/), which contains multiple workflows for reference.
