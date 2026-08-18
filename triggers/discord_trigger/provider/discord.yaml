@@ -1,0 +1,113 @@
+subscription_constructor:
+  parameters:
+    - name: application_public_key
+      type: secret-input
+      required: true
+      label:
+        en_US: Application Public Key
+        ja_JP: Application Public Key
+        zh_Hans: 应用公钥
+      placeholder:
+        en_US: Paste the Discord application public key
+        ja_JP: Discord アプリケーションの公開鍵を貼り付けてください
+        zh_Hans: 粘贴 Discord 应用公钥
+      help:
+        en_US: Find this in Discord Developer Portal, under your application's General Information page.
+        ja_JP: Discord Developer Portal のアプリケーション General Information ページで確認できます。
+        zh_Hans: 可在 Discord Developer Portal 中应用的 General Information 页面找到。
+      url: https://discord.com/developers/applications
+    - name: event_types
+      type: checkbox
+      required: false
+      multiple: true
+      label:
+        en_US: Event Types
+        ja_JP: Event Types
+        zh_Hans: 事件类型
+      description:
+        en_US: Limit this trigger to selected Discord Webhook Event types. Leave empty to accept all Discord Webhook Events.
+        ja_JP: 選択した Discord Webhook Event タイプのみに制限します。空の場合はすべて受信します。
+        zh_Hans: 将触发器限制为选定的 Discord Webhook Event 类型。留空则接收全部。
+      options:
+        - value: APPLICATION_AUTHORIZED
+          label:
+            en_US: Application Authorized
+            ja_JP: Application Authorized
+            zh_Hans: 应用授权
+        - value: APPLICATION_DEAUTHORIZED
+          label:
+            en_US: Application Deauthorized
+            ja_JP: Application Deauthorized
+            zh_Hans: 应用取消授权
+        - value: ENTITLEMENT_CREATE
+          label:
+            en_US: Entitlement Create
+            ja_JP: Entitlement Create
+            zh_Hans: 权益创建
+        - value: ENTITLEMENT_UPDATE
+          label:
+            en_US: Entitlement Update
+            ja_JP: Entitlement Update
+            zh_Hans: 权益更新
+        - value: ENTITLEMENT_DELETE
+          label:
+            en_US: Entitlement Delete
+            ja_JP: Entitlement Delete
+            zh_Hans: 权益删除
+        - value: QUEST_USER_ENROLLMENT
+          label:
+            en_US: Quest User Enrollment
+            ja_JP: Quest User Enrollment
+            zh_Hans: Quest 用户加入
+        - value: LOBBY_MESSAGE_CREATE
+          label:
+            en_US: Lobby Message Create
+            ja_JP: Lobby Message Create
+            zh_Hans: Lobby 消息创建
+        - value: LOBBY_MESSAGE_UPDATE
+          label:
+            en_US: Lobby Message Update
+            ja_JP: Lobby Message Update
+            zh_Hans: Lobby 消息更新
+        - value: LOBBY_MESSAGE_DELETE
+          label:
+            en_US: Lobby Message Delete
+            ja_JP: Lobby Message Delete
+            zh_Hans: Lobby 消息删除
+        - value: GAME_DIRECT_MESSAGE_CREATE
+          label:
+            en_US: Game Direct Message Create
+            ja_JP: Game Direct Message Create
+            zh_Hans: 游戏私信创建
+        - value: GAME_DIRECT_MESSAGE_UPDATE
+          label:
+            en_US: Game Direct Message Update
+            ja_JP: Game Direct Message Update
+            zh_Hans: 游戏私信更新
+        - value: GAME_DIRECT_MESSAGE_DELETE
+          label:
+            en_US: Game Direct Message Delete
+            ja_JP: Game Direct Message Delete
+            zh_Hans: 游戏私信删除
+  credentials_schema: {}
+  oauth_schema: {}
+
+identity:
+  author: langgenius
+  description:
+    en_US: Receive signed Discord Webhook Events and start Dify workflows.
+    ja_JP: 署名済み Discord Webhook Events を受信して Dify ワークフローを起動します。
+    zh_Hans: 接收已签名的 Discord Webhook Events 并触发 Dify 工作流。
+  icon: icon.svg
+  label:
+    en_US: Discord Triggers
+    ja_JP: Discord トリガー
+    zh_Hans: Discord 触发器
+  name: discord_trigger
+
+extra:
+  python:
+    source: provider/discord.py
+
+events:
+  - events/webhook_event.yaml

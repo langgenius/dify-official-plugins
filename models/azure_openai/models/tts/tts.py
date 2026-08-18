@@ -59,12 +59,13 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
                 credentials=credentials,
                 content_text="Hello Dify!",
                 voice=self._get_model_default_voice(model, credentials),
+                use_cache=False,
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     def _tts_invoke_streaming(
-        self, model: str, credentials: dict, content_text: str, voice: str
+        self, model: str, credentials: dict, content_text: str, voice: str, *, use_cache: bool = True
     ) -> Any:
         """
         _tts_invoke_streaming text2speech model
@@ -75,7 +76,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
         :return: text translated to audio file
         """
         try:
-            client = self._create_client(credentials)
+            client = self._create_client(credentials, use_cache=use_cache)
             audio_type = self._get_model_audio_type(model, credentials)
             max_length = 3500
             if len(content_text) > max_length:
@@ -139,7 +140,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
             if ai_model_entity.base_model_name == base_model_name:
                 ai_model_entity_copy = copy.deepcopy(ai_model_entity)
                 ai_model_entity_copy.entity.model = model
-                ai_model_entity_copy.entity.label.en_US = model
-                ai_model_entity_copy.entity.label.zh_Hans = model
+                ai_model_entity_copy.entity.label.en_us = model
+                ai_model_entity_copy.entity.label.zh_hans = model
                 return ai_model_entity_copy
         return None

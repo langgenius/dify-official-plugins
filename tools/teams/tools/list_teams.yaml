@@ -1,0 +1,21 @@
+identity:
+  name: list_teams
+  author: langgenius
+  label:
+    en_US: List Teams
+    zh_Hans: 列出团队
+    pt_BR: Listar Equipes
+    ja_JP: チーム一覧
+    zh_Hant: 列出團隊
+description:
+  human:
+    en_US: List the Microsoft Teams you have joined
+    zh_Hans: 列出您已加入的 Microsoft Teams 团队
+    pt_BR: Listar as equipes do Microsoft Teams que você participa
+    ja_JP: 参加している Microsoft Teams のチームを一覧表示
+    zh_Hant: 列出您已加入的 Microsoft Teams 團隊
+  llm: List the Microsoft Teams the user has joined using the Microsoft Graph API, returns team id, displayName and description
+parameters: []
+extra:
+  python:
+    source: tools/list_teams.py

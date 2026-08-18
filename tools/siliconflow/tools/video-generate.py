@@ -8,10 +8,12 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from utils.endpoint import get_base_url
+
 IMAGE_TO_VIDEO_MODEL = "Wan-AI/Wan2.2-I2V-A14B"
 TEXT_TO_VIDEO_MODEL = "Wan-AI/Wan2.2-T2V-A14B"
-SILICONFLOW_VIDEO_SUBMIT_ENDPOINT = "https://api.siliconflow.cn/v1/video/submit"
-SILICONFLOW_VIDEO_STATUS_ENDPOINT = "https://api.siliconflow.cn/v1/video/status"
+SILICONFLOW_VIDEO_SUBMIT_PATH = "/v1/video/submit"
+SILICONFLOW_VIDEO_STATUS_PATH = "/v1/video/status"
 REQUEST_TIMEOUT = 60
 POLL_INTERVAL_SECONDS = 5
 MAX_WAIT_SECONDS = 300
@@ -70,7 +72,7 @@ class VideoGenerateTool(Tool):
         while waited_seconds < MAX_WAIT_SECONDS:
             try:
                 response = requests.post(
-                    SILICONFLOW_VIDEO_STATUS_ENDPOINT,
+                    get_base_url(self.runtime.credentials) + SILICONFLOW_VIDEO_STATUS_PATH,
                     json={"requestId": request_id},
                     headers=headers,
                     timeout=REQUEST_TIMEOUT,
@@ -176,7 +178,7 @@ class VideoGenerateTool(Tool):
 
         try:
             response = requests.post(
-                SILICONFLOW_VIDEO_SUBMIT_ENDPOINT,
+                get_base_url(self.runtime.credentials) + SILICONFLOW_VIDEO_SUBMIT_PATH,
                 json=payload,
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,

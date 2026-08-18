@@ -142,7 +142,8 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
         """
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Client-Name": "dify",
         }
         
         # Prepare search parameters
@@ -188,7 +189,8 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
         """
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Client-Name": "dify",
         }
         
         extract_params = {

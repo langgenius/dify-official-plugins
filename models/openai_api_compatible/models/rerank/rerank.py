@@ -61,7 +61,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Add vision feature if vision support is enabled
@@ -95,10 +95,12 @@ class OpenAIRerankModel(OAICompatRerankModel):
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}" if api_key else "",
-        }
+        # Build JSON header first, then attach Authorization only when the
+        # API key is truthy. Unauthenticated gateways reject an empty
+        # Bearer header (issue #1724).
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         # Simple string format for text-only mode
         # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
@@ -218,10 +220,12 @@ class OpenAIRerankModel(OAICompatRerankModel):
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}" if api_key else "",
-        }
+        # Build JSON header first, then attach Authorization only when the
+        # API key is truthy. Unauthenticated gateways reject an empty
+        # Bearer header (issue #1724).
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         # Convert documents to ScoreMultiModalParam format
         documents_params = []

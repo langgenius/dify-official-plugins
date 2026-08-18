@@ -72,3 +72,4 @@ pricing:
   output: '150.00'
   unit: '0.000001'
   currency: USD
+deprecated: true

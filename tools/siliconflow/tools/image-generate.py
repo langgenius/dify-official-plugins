@@ -5,7 +5,9 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-SILICONFLOW_IMAGE_API_URL = "https://api.siliconflow.cn/v1/images/generations"
+from utils.endpoint import get_base_url
+
+SILICONFLOW_IMAGE_API_PATH = "/v1/images/generations"
 REQUEST_TIMEOUT = 120
 IMAGE_GENERATION_MODELS = {
     "kolors": "Kwai-Kolors/Kolors",
@@ -57,7 +59,7 @@ class ImageGenerateTool(Tool):
 
         try:
             response = requests.post(
-                SILICONFLOW_IMAGE_API_URL,
+                get_base_url(self.runtime.credentials) + SILICONFLOW_IMAGE_API_PATH,
                 json=payload,
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,

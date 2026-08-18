@@ -1,0 +1,6 @@
+model: qwen/qwen3-reranker-8b
+label:
+  en_US: Qwen3 Reranker 8B
+model_type: rerank
+model_properties:
+  context_size: 40960

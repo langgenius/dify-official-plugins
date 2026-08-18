@@ -1,12 +1,28 @@
+credentials_for_provider:
+  bot_token:
+    type: secret-input
+    required: false
+    label:
+      en_US: Discord Bot Token
+      pt_BR: Token do Bot do Discord
+      zh_Hans: Discord机器人令牌
+    placeholder:
+      en_US: Enter your Discord Bot Token
+      pt_BR: Insira seu token do bot do Discord
+      zh_Hans: 输入您的Discord机器人令牌
+    help:
+      en_US: Required for Get Channel Messages tool. Create a bot at discord.com/developers/applications
+      pt_BR: Necessário para a ferramenta Obter Mensagens do Canal. Crie um bot em discord.com/developers/applications
+      zh_Hans: 获取频道消息工具需要。在discord.com/developers/applications创建机器人
 extra:
   python:
     source: provider/discord.py
 identity:
   author: Ice Yao
   description:
-    en_US: Discord Webhook
-    pt_BR: Discord Webhook
-    zh_Hans: Discord Webhook
+    en_US: Discord Webhook and Bot API
+    pt_BR: Discord Webhook e API do Bot
+    zh_Hans: Discord Webhook和机器人API
   icon: icon.svg
   label:
     en_US: Discord
@@ -18,3 +34,4 @@ identity:
     - productivity
 tools:
   - tools/discord_webhook.yaml
+  - tools/get_channel_messages.yaml

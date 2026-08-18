@@ -57,11 +57,12 @@ parameter_rules:
     default: high
     required: false
     options:
+      - low
       - high
       - max
     help:
-      zh_Hans: 控制思考模式下的推理强度。官方文档当前支持 high 和 max。
-      en_US: Controls reasoning effort in thinking mode. The official docs currently support high and max.
+      zh_Hans: 控制思考模式下的推理强度。官方文档支持 low、high 和 max。
+      en_US: Controls reasoning effort in thinking mode. The official docs support low, high, and max.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -74,8 +75,3 @@ parameter_rules:
     options:
       - text
       - json_object
-pricing:
-  input: "1"
-  output: "2"
-  unit: "0.000001"
-  currency: RMB

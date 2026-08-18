@@ -1,0 +1,113 @@
+provider: ant_ling
+label:
+  en_US: Ant Ling
+  zh_Hans: 蚂蚁百灵
+description:
+  en_US: Models provided by Ant Group, including Ling-3.0-flash, Ling-2.6-1T, and Ring-2.6-1T.
+  zh_Hans: 蚂蚁集团百灵系列大模型，涵盖 Ling-3.0-flash、Ling-2.6-1T 和 Ring-2.6-1T。
+icon_small:
+  en_US: icon_s_en.svg
+  zh_Hans: icon_s_zh.svg
+icon_large:
+  en_US: icon_l_en.svg
+  zh_Hans: icon_l_zh.svg
+background: "#F2F4F7"
+help:
+  title:
+    en_US: Get your API Key from Ant Ling Platform
+    zh_Hans: 获取蚂蚁百灵 API Key
+  url:
+    en_US: https://chat.ant-ling.com/open
+    zh_Hans: https://chat.ant-ling.com/open
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Ant Ling API Key
+        zh_Hans: 在此输入您的蚂蚁百灵 API Key
+    - variable: validate_model
+      label:
+        en_US: Validate Model Name
+        zh_Hans: 验证模型名称
+      type: text-input
+      required: false
+      default: Ling-3.0-flash
+      placeholder:
+        en_US: Model name for testing credentials (default Ling-3.0-flash)
+        zh_Hans: 用于连通性测试的模型名称（默认 Ling-3.0-flash）
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL (选填)
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Leave empty for default (https://api.ant-ling.com/v1) or enter custom proxy/gateway
+        zh_Hans: 若无特殊需求请留空（默认使用 https://api.ant-ling.com/v1）
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Ant Ling API Key
+        zh_Hans: 在此输入您的蚂蚁百灵 API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL (选填)
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Leave empty for default (https://api.ant-ling.com/v1) or enter custom proxy/gateway
+        zh_Hans: 若无特殊需求请留空（默认使用 https://api.ant-ling.com/v1）
+    - variable: context_size
+      label:
+        en_US: Model Context Size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: '256000'
+      placeholder:
+        en_US: Enter your model context size
+        zh_Hans: 输入模型上下文长度
+    - variable: max_tokens
+      label:
+        en_US: Upper Bound for Max Tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      required: true
+      default: '32768'
+      placeholder:
+        en_US: Enter max tokens limit
+        zh_Hans: 输入最大 token 上限
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+extra:
+  python:
+    provider_source: provider/ant_ling.py
+    model_sources:
+      - models/llm/llm.py

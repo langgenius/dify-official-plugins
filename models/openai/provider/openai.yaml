@@ -2,8 +2,8 @@ provider: openai
 label:
   en_US: OpenAI
 description:
-  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo and GPT-4.
-  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo 和 GPT-4。
+  en_US: Current language, embedding, moderation, and audio models from OpenAI.
+  zh_Hans: OpenAI 当前的语言、嵌入、内容审核与音频模型。
 icon_small:
   en_US: icon_s_en.svg
 icon_large:
@@ -52,32 +52,32 @@ model_credential_schema:
         en_US: Enter your Organization ID
     - variable: openai_api_base
       label:
-        zh_Hans: API Base
-        en_US: API Base
+        zh_Hans: API Base URL
+        en_US: API Base URL
       type: text-input
       required: false
       placeholder:
-        zh_Hans: 在此输入您的 API Base
-        en_US: Enter your API Base
+        zh_Hans: 在此输入您的 API Base URL
+        en_US: Enter your API Base URL
     - variable: api_protocol
       label:
         zh_Hans: API 协议
         en_US: API Protocol
       type: select
       required: false
-      default: chat
+      default: responses
       options:
-        - value: chat
-          label:
-            zh_Hans: Chat Completions
-            en_US: Chat Completions
         - value: responses
           label:
             zh_Hans: Responses API
             en_US: Responses API
+        - value: chat
+          label:
+            zh_Hans: Chat Completions
+            en_US: Chat Completions
       help:
-        zh_Hans: 选择该模型使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5.4 等模型。
-        en_US: Select the API protocol for this model. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.4.
+        zh_Hans: 默认使用 Responses API。仅在旧模型或兼容端点需要时选择 Chat Completions。
+        en_US: Responses API is the default. Select Chat Completions only when required by a legacy model or compatible endpoint.
 provider_credential_schema:
   credential_form_schemas:
     - variable: openai_api_key
@@ -99,13 +99,13 @@ provider_credential_schema:
         en_US: Enter your Organization ID
     - variable: openai_api_base
       label:
-        zh_Hans: API Base
-        en_US: API Base
+        zh_Hans: API Base URL
+        en_US: API Base URL
       type: text-input
       required: false
       placeholder:
-        zh_Hans: 在此输入您的 API Base, 如：https://api.openai.com
-        en_US: Enter your API Base, e.g. https://api.openai.com
+        zh_Hans: 在此输入您的 API Base URL, 如：https://api.openai.com
+        en_US: Enter your API Base URL, e.g. https://api.openai.com
     - variable: validate_model
       label:
         zh_Hans: 验证模型
@@ -121,19 +121,19 @@ provider_credential_schema:
         en_US: API Protocol
       type: select
       required: false
-      default: chat
+      default: responses
       options:
-        - value: chat
-          label:
-            zh_Hans: Chat Completions
-            en_US: Chat Completions
         - value: responses
           label:
             zh_Hans: Responses API
             en_US: Responses API
+        - value: chat
+          label:
+            zh_Hans: Chat Completions
+            en_US: Chat Completions
       help:
-        zh_Hans: 选择该 Provider 使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5 等模型。
-        en_US: Select the API protocol for this provider. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.
+        zh_Hans: 默认使用 Responses API。仅在旧模型或兼容端点需要时选择 Chat Completions。
+        en_US: Responses API is the default. Select Chat Completions only when required by a legacy model or compatible endpoint.
 models:
   llm:
     predefined:

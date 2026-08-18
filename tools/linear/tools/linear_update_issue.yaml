@@ -99,7 +99,7 @@ parameters:
       pt_BR: "Novo status para o problema (ex: \"A fazer\", \"Em andamento\", \"Concluído\")"
       ja_JP: "課題の新しいステータス（例：「未着手」、「進行中」、「完了」）"
       zh_Hant: "問題的新狀態（例如，\"待辦\"，\"進行中\"，\"已完成\"）"
-    llm_description: New workflow state ID of the issue
+    llm_description: 'New workflow state for the issue, given as the status name (e.g., "Todo", "In Progress", "Done"). A workflow state ID is also accepted.'
     form: llm
 extra:
   python:

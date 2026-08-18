@@ -6,6 +6,7 @@ extra:
   python:
     model_sources:
     - models/llm/llm.py
+    - models/rerank/rerank.py
     - models/text_embedding/text_embedding.py
     provider_source: provider/openrouter.py
 help:
@@ -31,8 +32,8 @@ model_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: Base URL, e.g. https://openrouter.ai/api/v1
       zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
@@ -98,6 +99,25 @@ model_credential_schema:
       variable: __model_type
     type: radio
     variable: vision_support
+  - default: no_support
+    label:
+      en_US: Reasoning Support
+      zh_Hans: 是否支持推理
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: support
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: reasoning_support
   - default: no_call
     label:
       en_US: Function calling
@@ -128,6 +148,10 @@ models:
     position: models/llm/_position.yaml
     predefined:
     - models/llm/*.yaml
+  rerank:
+    position: models/rerank/_position.yaml
+    predefined:
+    - models/rerank/*.yaml
   text_embedding:
     position: models/text_embedding/_position.yaml
     predefined:
@@ -144,8 +168,8 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: Base URL, e.g. https://openrouter.ai/api/v1
       zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
@@ -154,4 +178,5 @@ provider_credential_schema:
     variable: endpoint_url
 supported_model_types:
 - llm
+- rerank
 - text-embedding

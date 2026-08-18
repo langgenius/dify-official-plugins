@@ -18,6 +18,7 @@ from anthropic.types import (
     MessageStopEvent,
     MessageStreamEvent,
 )
+from mistralai.gcp.client import MistralGCP
 from dify_plugin.entities.model import PriceType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
@@ -58,6 +59,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
     "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
 ]
 IMAGE_GENERATION_MODELS = {
     "gemini-3.1-flash-image-preview",
@@ -74,6 +76,9 @@ DEFAULT_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
 # Separator used to encode thought_signature into ToolCall.id field
 # Format: "{function_name}::sig::{base64_encoded_signature}"
 SIGNATURE_SEPARATOR = "::sig::"
+
+# Regions where Vertex AI Model Garden currently serves Mistral AI models.
+MISTRAL_SUPPORTED_REGIONS = {"europe-west4", "us-central1"}
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +108,17 @@ def _decode_tool_call_id(tool_call_id: str) -> tuple[str, Optional[str]]:
             except Exception:
                 pass
     return tool_call_id, None
+
+
+def _normalize_mistral_tool_call_id(tool_call_id: Optional[str], fallback: str) -> str:
+    """
+    The mistralai-gcp SDK defaults an omitted ToolCall.id to the literal
+    string "null" rather than None, so that sentinel must not be treated
+    as a real id (it isn't unique and can't be matched back to a response).
+    """
+    if tool_call_id and tool_call_id != "null":
+        return tool_call_id
+    return fallback
 
 
 def _extract_thought_signature(part) -> Optional[str]:
@@ -159,6 +175,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         if "claude" in model:
             return self._generate_anthropic(model, credentials, prompt_messages, model_parameters, stop, stream, user)
+        if "mistral" in model or "codestral" in model:
+            return self._generate_mistral(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _generate_anthropic(
@@ -206,7 +224,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         elif any(m in model for m in
                  ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4", "claude-haiku-4-5",
                   "claude-sonnet-4-5", "claude-opus-4-5", "claude-sonnet-4-6", "claude-opus-4-6",
-                  "claude-opus-4-7"]):
+                  "claude-opus-4-7", "claude-sonnet-5"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -407,6 +425,274 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_dict
 
+    def _generate_mistral(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Invoke Mistral AI large language model, served through Vertex AI Model Garden
+
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_messages: prompt messages
+        :param model_parameters: model parameters
+        :param tools: tools for tool calling
+        :param stop: stop words
+        :param stream: is stream response
+        :param user: unique user id
+        :return: full response or stream response chunk generator result
+        """
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
+        project_id = credentials["vertex_project_id"]
+        SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+        token = None
+        if service_account_info:
+            gcp_credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+            gcp_credentials.refresh(google.auth.transport.requests.Request())
+            token = gcp_credentials.token
+        vertex_mistral_location = credentials.get("vertex_mistral_location")
+        vertex_location = credentials.get("vertex_location")
+        if vertex_mistral_location:
+            location = vertex_mistral_location
+        elif vertex_location in MISTRAL_SUPPORTED_REGIONS:
+            location = vertex_location
+        else:
+            location = "us-central1"
+        client = MistralGCP(project_id=project_id, region=location, access_token=token)
+
+        request_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": self._convert_mistral_prompt_messages(prompt_messages),
+        }
+        if tools:
+            request_kwargs["tools"] = self._convert_mistral_tools(tools)
+        if stop:
+            request_kwargs["stop"] = stop
+        for key, value in model_parameters.items():
+            if value is not None:
+                request_kwargs[key] = value
+
+        if stream:
+            response = client.chat.stream(**request_kwargs)
+            return self._handle_mistral_stream_response(model, credentials, response, prompt_messages)
+        response = client.chat.complete(**request_kwargs)
+        return self._handle_mistral_response(model, credentials, response, prompt_messages)
+
+    def _convert_mistral_prompt_messages(self, prompt_messages: list[PromptMessage]) -> list[dict]:
+        """
+        Convert PromptMessage list to Mistral chat completion message dicts
+        """
+        return [self._convert_mistral_prompt_message_to_dict(message) for message in prompt_messages]
+
+    def _convert_mistral_prompt_message_to_dict(self, message: PromptMessage) -> dict:
+        """
+        Convert a single PromptMessage to a Mistral chat completion message dict
+        """
+        if isinstance(message, UserPromptMessage):
+            message = cast(UserPromptMessage, message)
+            if isinstance(message.content, str):
+                return {"role": "user", "content": message.content}
+            sub_messages = []
+            for message_content in message.content:
+                if message_content.type == PromptMessageContentType.TEXT:
+                    message_content = cast(TextPromptMessageContent, message_content)
+                    sub_messages.append({"type": "text", "text": message_content.data})
+                elif message_content.type == PromptMessageContentType.IMAGE:
+                    message_content = cast(ImagePromptMessageContent, message_content)
+                    sub_messages.append({"type": "image_url", "image_url": {"url": message_content.data}})
+            return {"role": "user", "content": sub_messages}
+        elif isinstance(message, AssistantPromptMessage):
+            message = cast(AssistantPromptMessage, message)
+            message_dict: dict[str, Any] = {"role": "assistant", "content": message.content or ""}
+            if message.tool_calls:
+                message_dict["tool_calls"] = [
+                    {
+                        "id": tool_call.id,
+                        "type": "function",
+                        "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments},
+                    }
+                    for tool_call in message.tool_calls
+                ]
+            return message_dict
+        elif isinstance(message, SystemPromptMessage):
+            message = cast(SystemPromptMessage, message)
+            return {"role": "system", "content": message.content}
+        elif isinstance(message, ToolPromptMessage):
+            message = cast(ToolPromptMessage, message)
+            return {"role": "tool", "content": message.content, "tool_call_id": message.tool_call_id, "name": message.name}
+        else:
+            raise ValueError(f"Got unknown type {message}")
+
+    def _convert_mistral_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
+        """
+        Convert PromptMessageTool list to Mistral tool dicts
+        """
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in tools
+        ]
+
+    def _handle_mistral_response(
+        self, model: str, credentials: dict, response: Any, prompt_messages: list[PromptMessage]
+    ) -> LLMResult:
+        """
+        Handle Mistral chat completion response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response
+        :param prompt_messages: prompt messages
+        :return: full response chunk generator result
+        """
+        choice = response.choices[0]
+        assistant_message = choice.message
+        content = assistant_message.content
+        if isinstance(content, list):
+            content = "".join(chunk.text for chunk in content if getattr(chunk, "type", None) == "text")
+
+        tool_calls = []
+        if assistant_message.tool_calls:
+            for tool_call in assistant_message.tool_calls:
+                arguments = tool_call.function.arguments
+                if isinstance(arguments, dict):
+                    arguments = json.dumps(arguments)
+                tool_calls.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=_normalize_mistral_tool_call_id(tool_call.id, tool_call.function.name),
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call.function.name,
+                            arguments=arguments,
+                        ),
+                    )
+                )
+
+        assistant_prompt_message = AssistantPromptMessage(content=content or "", tool_calls=tool_calls)
+
+        usage_info = response.usage
+        if usage_info:
+            prompt_tokens = usage_info.prompt_tokens or 0
+            completion_tokens = usage_info.completion_tokens or 0
+        else:
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        return LLMResult(
+            model=response.model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage
+        )
+
+    def _handle_mistral_stream_response(
+        self, model: str, credentials: dict, response: Any, prompt_messages: list[PromptMessage]
+    ) -> Generator:
+        """
+        Handle Mistral chat completion stream response
+
+        Tool call argument fragments are buffered across chunks and only surfaced
+        as complete ToolCall objects in the terminating chunk, since downstream
+        consumers expect `function.arguments` to already be a full JSON string.
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response stream
+        :param prompt_messages: prompt messages
+        :return: full response or stream response chunk generator result
+        """
+        try:
+            return_model = model
+            input_tokens = 0
+            output_tokens = 0
+            finish_reason = None
+            index = 0
+            tool_call_accumulator: dict[int, dict] = {}
+
+            for event in response:
+                chunk = event.data
+                return_model = chunk.model or return_model
+                if chunk.usage:
+                    input_tokens = chunk.usage.prompt_tokens or input_tokens
+                    output_tokens = chunk.usage.completion_tokens or output_tokens
+                if not chunk.choices:
+                    continue
+
+                choice = chunk.choices[0]
+                delta = choice.delta
+                index = choice.index if choice.index is not None else index
+                if choice.finish_reason:
+                    finish_reason = choice.finish_reason
+
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        slot = tool_call_accumulator.setdefault(
+                            tool_call.index or 0, {"id": "", "name": "", "arguments": ""}
+                        )
+                        slot["id"] = _normalize_mistral_tool_call_id(tool_call.id, slot["id"])
+                        if tool_call.function:
+                            if tool_call.function.name:
+                                slot["name"] = tool_call.function.name
+                            arguments = tool_call.function.arguments
+                            if isinstance(arguments, dict):
+                                arguments = json.dumps(arguments)
+                            if arguments:
+                                slot["arguments"] += arguments
+                    continue
+
+                delta_content = delta.content
+                if isinstance(delta_content, list):
+                    delta_content = "".join(c.text for c in delta_content if getattr(c, "type", None) == "text")
+                if delta_content:
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index, message=AssistantPromptMessage(content=delta_content)
+                        ),
+                    )
+
+            tool_calls = [
+                AssistantPromptMessage.ToolCall(
+                    id=slot["id"] or slot["name"],
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=slot["name"],
+                        arguments=slot["arguments"] or "{}",
+                    ),
+                )
+                for slot in tool_call_accumulator.values()
+            ]
+            usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
+            yield LLMResultChunk(
+                model=return_model,
+                prompt_messages=prompt_messages,
+                delta=LLMResultChunkDelta(
+                    index=index + 1,
+                    message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                    finish_reason=finish_reason,
+                    usage=usage,
+                ),
+            )
+        except Exception as ex:
+            raise InvokeError(str(ex))
+
     def get_num_tokens(
         self,
         model: str,
@@ -557,7 +843,10 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         try:
             ping_message = SystemPromptMessage(content="ping")
-            self._generate(model, credentials, [ping_message], {"max_tokens_to_sample": 5})
+            if "mistral" in model or "codestral" in model:
+                self._generate_mistral(model, credentials, [ping_message], {"max_tokens": 5}, stream=False)
+            else:
+                self._generate(model, credentials, [ping_message], {"max_tokens_to_sample": 5})
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
@@ -817,6 +1106,42 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             )
             return self._handle_generate_response(model, credentials, response, prompt_messages)
 
+    @staticmethod
+    def _calculate_tokens_from_usage_metadata(
+        usage_metadata: types.GenerateContentResponseUsageMetadata | None,
+    ) -> tuple[int, int]:
+        """
+        Extract prompt and completion token counts from Google's response
+        ``usage_metadata`` so we report what Google actually billed instead of
+        a local GPT-2 estimate.
+
+        Uses ``prompt_token_count`` directly: on a cache hit this includes
+        cached tokens while a per-modality sum over ``prompt_tokens_details``
+        would silently miss them. ``prompt_token_count`` is also already
+        forward-compatible with new modalities Google may add.
+
+        ``completion_tokens`` is ``candidates_token_count + thoughts_token_count``
+        because Vertex bills these as two separate SKUs (e.g.
+        ``Gemini 2.5 Flash Lite Text Output`` vs
+        ``Gemini 2.5 Flash Lite Thinking Text Output``); dropping
+        ``thoughts_token_count`` would under-report by ~50% on thinking-enabled
+        requests. ``tool_use_prompt_token_count`` is intentionally not summed
+        here, matching the sibling ``langgenius/gemini`` helper.
+
+        Returns ``(0, 0)`` if the metadata is missing; callers should branch on
+        ``usage_metadata is None`` (not on a zero return) before deciding
+        whether to fall back to ``get_num_tokens``.
+        """
+        if not usage_metadata:
+            return 0, 0
+
+        prompt_tokens = getattr(usage_metadata, "prompt_token_count", 0) or 0
+        candidates_token_count = getattr(usage_metadata, "candidates_token_count", 0) or 0
+        thoughts_token_count = getattr(usage_metadata, "thoughts_token_count", 0) or 0
+        completion_tokens = candidates_token_count + thoughts_token_count
+
+        return prompt_tokens, completion_tokens
+
     def _handle_generate_response(
         self, model: str, credentials: dict, response: types.GenerateContentResponse,
         prompt_messages: list[PromptMessage]
@@ -896,8 +1221,26 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                                 is_thinking = False
                             assistant_prompt_message.content += part.text
 
-        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        # Prefer Google's reported usage so we don't recompute prompt_tokens
+        # locally on a base64-inlined PDF/audio/video and over-report by orders
+        # of magnitude. Branch on usage_metadata presence (not on token=0) so a
+        # legitimate zero-token reply doesn't silently fall back to the broken
+        # local path.
+        response_usage_metadata = getattr(response, "usage_metadata", None)
+        if response_usage_metadata is not None:
+            prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                response_usage_metadata
+            )
+        else:
+            # Defensive only — the GenAI SDK always populates usage_metadata on
+            # successful responses, so in practice this branch only fires on
+            # SDK regressions or hand-rolled test fixtures. The local
+            # get_num_tokens path here is itself a known source of inflated
+            # counts on multimodal inputs (see commit message); we preserve it
+            # only because deleting it would be a behaviour regression for
+            # unknown-shape responses.
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
         return result
@@ -995,8 +1338,20 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                     )
                 else:
-                    prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-                    completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+                    # Prefer Google's reported usage (see non-stream handler above
+                    # for rationale). The GenAI SDK only populates
+                    # usage_metadata on the terminal chunk, so we only consult
+                    # it inside this finish-reason branch — no risk of reading
+                    # partial usage from intermediate chunks.
+                    chunk_usage_metadata = getattr(chunk, "usage_metadata", None)
+                    if chunk_usage_metadata is not None:
+                        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                            chunk_usage_metadata
+                        )
+                    else:
+                        # Defensive only; same caveat as the non-stream handler.
+                        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+                        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
                     # For image responses (list content), skip grounding/reference processing

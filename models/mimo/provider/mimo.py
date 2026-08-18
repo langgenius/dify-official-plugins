@@ -17,7 +17,7 @@ class MimoProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
-                model="mimo-v2-flash", credentials=credentials
+                model="mimo-v2.5", credentials=credentials
             )
         except CredentialsValidateFailedError:
             raise

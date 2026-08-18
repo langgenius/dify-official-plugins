@@ -1,0 +1,49 @@
+identity:
+  name: invite_to_channel
+  author: langgenius
+  label:
+    en_US: Invite Users to Channel
+    zh_Hans: 邀请用户加入频道
+    ja_JP: ユーザーをチャンネルに招待
+    ko_KR: 사용자를 채널에 초대
+description:
+  human:
+    en_US: Invite one or more users to a channel.
+    zh_Hans: 邀请一个或多个用户加入频道。
+    ja_JP: 1人以上のユーザーをチャンネルに招待します。
+    ko_KR: 한 명 이상의 사용자를 채널에 초대합니다.
+  llm: Invites users to a channel using conversations.invite. Requires the channel ID and one or more user IDs (comma-separated).
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID to invite users to (e.g. C0123456789).
+      zh_Hans: 要邀请用户加入的频道 ID（如 C0123456789）。
+      ja_JP: "ユーザーを招待するチャンネルID（例: C0123456789）。"
+      ko_KR: "사용자를 초대할 채널 ID(예: C0123456789)."
+    llm_description: The channel ID (e.g. C0123456789) to invite users into.
+    form: llm
+  - name: users
+    type: string
+    required: true
+    label:
+      en_US: User IDs
+      zh_Hans: 用户 ID
+      ja_JP: ユーザーID
+      ko_KR: 사용자 ID
+    human_description:
+      en_US: Comma-separated list of user IDs to invite (e.g. U0123,U0456). Up to 1000 users.
+      zh_Hans: 要邀请的用户 ID 的逗号分隔列表（如 U0123,U0456）。最多 1000 个用户。
+      ja_JP: "招待するユーザーIDのカンマ区切りリスト（例: U0123,U0456）。最大1000人まで。"
+      ko_KR: "초대할 사용자 ID의 쉼표로 구분된 목록(예: U0123,U0456). 최대 1000명."
+    llm_description: A comma-separated list of Slack user IDs (e.g. U0123456789) to invite into the channel.
+    form: llm
+extra:
+  python:
+    source: tools/invite_to_channel.py

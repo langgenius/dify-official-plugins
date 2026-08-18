@@ -65,8 +65,73 @@ parameters:
       pt_BR: Valor para filtrar (opcional)
       ja_JP: フィルタリングする値（オプション）
       zh_Hant: 要篩選的值（選填）
-    llm_description: Optional value to filter by. Works with filter_property to create a simple equals filter.
+    llm_description: Optional value to filter by. Works with filter_property and filter_condition. Can be omitted when filter_condition is is_empty, is_not_empty, or a relative date condition (past_week, past_month, past_year, next_week, next_month, next_year, this_week).
     form: llm
+  - name: filter_condition
+    type: select
+    required: false
+    default: equals
+    label:
+      en_US: Filter Condition
+      zh_Hans: 筛选条件
+      pt_BR: Condição de Filtro
+      ja_JP: フィルター条件
+      zh_Hant: 篩選條件
+    human_description:
+      en_US: "Condition for filtering (default: equals). Only conditions valid for the property's actual type are accepted; an invalid combination (e.g. contains on a select property) returns a clear error instead of querying Notion. Text/select/status: equals, contains, starts_with, ends_with. Date/timestamp: equals, before, after, on_or_before, on_or_after (plus relative ranges like past_week). Number: equals, greater_than, less_than, greater_than_or_equal_to, less_than_or_equal_to. People/relation: contains, does_not_contain. Most types also support is_empty/is_not_empty (no filter_value needed)."
+      zh_Hans: "筛选条件（默认：equals）。仅接受与属性实际类型匹配的条件（例如对 select 属性使用 contains 会在查询前返回明确的错误提示）。文本/选择/状态：equals、contains、starts_with、ends_with。日期/时间戳：equals、before、after、on_or_before、on_or_after（以及 past_week 等相对区间）。数字：equals、greater_than、less_than 等。人员/关联：contains、does_not_contain。大多数类型也支持 is_empty/is_not_empty（无需 filter_value）。"
+      pt_BR: "Condição de filtro (padrão: equals). Apenas condições válidas para o tipo real da propriedade são aceitas; uma combinação inválida (ex: contains em uma propriedade select) retorna um erro claro antes de consultar o Notion. Texto/seleção/status: equals, contains, starts_with, ends_with. Data/timestamp: equals, before, after, on_or_before, on_or_after (além de intervalos relativos como past_week). Número: equals, greater_than, less_than. Pessoas/relação: contains, does_not_contain. A maioria dos tipos também suporta is_empty/is_not_empty (sem necessidade de filter_value)."
+      ja_JP: "フィルター条件（デフォルト: equals）。プロパティの実際の型に対して有効な条件のみ受け付けます（例: selectプロパティにcontainsを指定すると、Notionへ問い合わせる前に分かりやすいエラーを返します）。テキスト/セレクト/ステータス: equals, contains, starts_with, ends_with。日付/タイムスタンプ: equals, before, after, on_or_before, on_or_after（past_weekなどの相対条件も可）。数値: equals, greater_than, less_than, greater_than_or_equal_to, less_than_or_equal_to。人物(people/作成者/更新者)・リレーション: contains, does_not_contain。ほとんどの型で is_empty/is_not_empty も使用可能（filter_value不要）。"
+      zh_Hant: "篩選條件（預設：equals）。僅接受與屬性實際類型相符的條件（例如對 select 屬性使用 contains 會在查詢前傳回明確的錯誤訊息）。文字/選擇/狀態：equals、contains、starts_with、ends_with。日期/時間戳：equals、before、after、on_or_before、on_or_after（以及 past_week 等相對區間）。數字：equals、greater_than、less_than 等。人員/關聯：contains、does_not_contain。大多數類型也支援 is_empty/is_not_empty（不需要 filter_value）。"
+    llm_description: "Filter condition, applied based on the actual property type of filter_property. An invalid combination (e.g. contains on a select property) returns a clear error message instead of querying Notion, so pick the condition that matches the property's type. Text/title/rich_text/url/email/phone_number: equals, does_not_equal, contains, does_not_contain, starts_with, ends_with, is_empty, is_not_empty. Select/status: equals, does_not_equal, is_empty, is_not_empty (contains is NOT valid for select/status). Multi_select: contains, does_not_contain, is_empty, is_not_empty. Date/created_time/last_edited_time: equals, before, after, on_or_before, on_or_after, is_empty, is_not_empty, past_week, past_month, past_year, next_week, next_month, next_year, this_week (relative conditions need no filter_value). Number/unique_id: equals, does_not_equal, greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, is_empty, is_not_empty. Checkbox: equals, does_not_equal (filter_value: true or false). People/created_by/last_edited_by: contains, does_not_contain (filter_value: a user UUID or \"me\"), is_empty, is_not_empty. Relation: contains, does_not_contain (filter_value: a page UUID), is_empty, is_not_empty. Files: is_empty, is_not_empty only. Verification: filter_value must be one of verified/expired/none (condition is ignored). Formula/rollup: best-effort — the underlying result type (text/number/date/checkbox) is inferred from filter_value since Notion's schema API doesn't expose it. For is_empty/is_not_empty/relative-date conditions, filter_value can be omitted. Default is equals."
+    form: llm
+    options:
+      - value: equals
+        label: {en_US: "equals", zh_Hans: "equals", pt_BR: "equals", ja_JP: "equals", zh_Hant: "equals"}
+      - value: does_not_equal
+        label: {en_US: "does_not_equal", zh_Hans: "does_not_equal", pt_BR: "does_not_equal", ja_JP: "does_not_equal", zh_Hant: "does_not_equal"}
+      - value: contains
+        label: {en_US: "contains", zh_Hans: "contains", pt_BR: "contains", ja_JP: "contains", zh_Hant: "contains"}
+      - value: does_not_contain
+        label: {en_US: "does_not_contain", zh_Hans: "does_not_contain", pt_BR: "does_not_contain", ja_JP: "does_not_contain", zh_Hant: "does_not_contain"}
+      - value: starts_with
+        label: {en_US: "starts_with", zh_Hans: "starts_with", pt_BR: "starts_with", ja_JP: "starts_with", zh_Hant: "starts_with"}
+      - value: ends_with
+        label: {en_US: "ends_with", zh_Hans: "ends_with", pt_BR: "ends_with", ja_JP: "ends_with", zh_Hant: "ends_with"}
+      - value: is_empty
+        label: {en_US: "is_empty", zh_Hans: "is_empty", pt_BR: "is_empty", ja_JP: "is_empty", zh_Hant: "is_empty"}
+      - value: is_not_empty
+        label: {en_US: "is_not_empty", zh_Hans: "is_not_empty", pt_BR: "is_not_empty", ja_JP: "is_not_empty", zh_Hant: "is_not_empty"}
+      - value: before
+        label: {en_US: "before", zh_Hans: "before", pt_BR: "before", ja_JP: "before", zh_Hant: "before"}
+      - value: after
+        label: {en_US: "after", zh_Hans: "after", pt_BR: "after", ja_JP: "after", zh_Hant: "after"}
+      - value: on_or_before
+        label: {en_US: "on_or_before", zh_Hans: "on_or_before", pt_BR: "on_or_before", ja_JP: "on_or_before", zh_Hant: "on_or_before"}
+      - value: on_or_after
+        label: {en_US: "on_or_after", zh_Hans: "on_or_after", pt_BR: "on_or_after", ja_JP: "on_or_after", zh_Hant: "on_or_after"}
+      - value: past_week
+        label: {en_US: "past_week", zh_Hans: "past_week", pt_BR: "past_week", ja_JP: "past_week", zh_Hant: "past_week"}
+      - value: past_month
+        label: {en_US: "past_month", zh_Hans: "past_month", pt_BR: "past_month", ja_JP: "past_month", zh_Hant: "past_month"}
+      - value: past_year
+        label: {en_US: "past_year", zh_Hans: "past_year", pt_BR: "past_year", ja_JP: "past_year", zh_Hant: "past_year"}
+      - value: next_week
+        label: {en_US: "next_week", zh_Hans: "next_week", pt_BR: "next_week", ja_JP: "next_week", zh_Hant: "next_week"}
+      - value: next_month
+        label: {en_US: "next_month", zh_Hans: "next_month", pt_BR: "next_month", ja_JP: "next_month", zh_Hant: "next_month"}
+      - value: next_year
+        label: {en_US: "next_year", zh_Hans: "next_year", pt_BR: "next_year", ja_JP: "next_year", zh_Hant: "next_year"}
+      - value: this_week
+        label: {en_US: "this_week", zh_Hans: "this_week", pt_BR: "this_week", ja_JP: "this_week", zh_Hant: "this_week"}
+      - value: greater_than
+        label: {en_US: "greater_than", zh_Hans: "greater_than", pt_BR: "greater_than", ja_JP: "greater_than", zh_Hant: "greater_than"}
+      - value: greater_than_or_equal_to
+        label: {en_US: "greater_than_or_equal_to", zh_Hans: "greater_than_or_equal_to", pt_BR: "greater_than_or_equal_to", ja_JP: "greater_than_or_equal_to", zh_Hant: "greater_than_or_equal_to"}
+      - value: less_than
+        label: {en_US: "less_than", zh_Hans: "less_than", pt_BR: "less_than", ja_JP: "less_than", zh_Hant: "less_than"}
+      - value: less_than_or_equal_to
+        label: {en_US: "less_than_or_equal_to", zh_Hans: "less_than_or_equal_to", pt_BR: "less_than_or_equal_to", ja_JP: "less_than_or_equal_to", zh_Hant: "less_than_or_equal_to"}
   - name: limit
     type: number
     required: false

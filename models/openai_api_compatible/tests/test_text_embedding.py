@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from models.text_embedding.text_embedding import OpenAITextEmbeddingModel
 
 
@@ -63,3 +65,55 @@ def test_text_embedding_validate_credentials_uses_runtime_payload_shape(mock_pos
 
     payload = mock_post.call_args.kwargs["json"]
     assert payload == {"model": "Qwen3-Embedding-8B", "input": ["ping"], "encoding_format": "float"}
+
+
+@pytest.mark.parametrize("vision_support", ["no_support", "support"])
+@patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.requests.post")
+def test_plain_text_containing_image_marker_uses_text_embedding(
+    mock_post, mock_openai, vision_support
+):
+    mock_post.return_value = _successful_embedding_response()
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+    text = "Docker Image: langgenius/dify-api:latest"
+
+    result = model._invoke(
+        model="display-name",
+        credentials=_credentials(api_key="", vision_support=vision_support),
+        texts=[text],
+    )
+
+    mock_openai.assert_not_called()
+    assert mock_post.call_args.kwargs["json"] == {
+        "model": "Qwen3-Embedding-8B",
+        "input": [text],
+    }
+    assert result.embeddings == [[0.1, 0.2, 0.3]]
+
+
+def _chat_embedding_response() -> MagicMock:
+    response = MagicMock()
+    response.data = [MagicMock(embedding=[0.4, 0.5, 0.6])]
+    response.model_dump.return_value = {"usage": {"total_tokens": 5}}
+    return response
+
+
+@patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.create_chat_embeddings")
+def test_multimodal_embedding_sends_endpoint_model_name(mock_create, _mock_openai):
+    # Regression test for #3191: the multimodal (vision) path must send the
+    # configured endpoint_model_name upstream, not the Dify display/registration
+    # name, otherwise the upstream server returns 404.
+    mock_create.return_value = _chat_embedding_response()
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+
+    result = model._invoke(
+        model="Qwen3-VL-Embedding",
+        credentials=_credentials(
+            endpoint_model_name="qwen3-vl-embedding-8b-awq", vision_support="support"
+        ),
+        texts=["https://example.com/image.png"],
+    )
+
+    assert mock_create.call_args.kwargs["model"] == "qwen3-vl-embedding-8b-awq"
+    assert result.embeddings == [[0.4, 0.5, 0.6]]

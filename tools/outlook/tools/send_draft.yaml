@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Send Draft
+    ko_KR: 초안 보내기
     zh_Hans: 发送草稿
     pt_BR: Enviar Rascunho
     ja_JP: 下書きを送信
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Send a draft email message through Outlook using Microsoft Graph API, requires a draft ID from the draft_message tool
+    ko_KR: Microsoft Graph API를 사용하여 Outlook을 통해 초안 이메일을 보냅니다. draft_message 도구에서 얻은 초안 ID가 필요합니다
     zh_Hans: 通过Outlook使用Microsoft Graph API发送草稿电子邮件，需要从draft_message工具中获取草稿ID
     pt_BR: Envia uma mensagem de e-mail rascunho através do Outlook usando a API do Microsoft Graph, requer um ID de rascunho do tool draft_message
     ja_JP: Outlookを使用してMicrosoft Graph API経由で下書きメールを送信する。draft_messageツールから下書きIDが必要です。
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: Draft ID
+      ko_KR: 초안 ID
       zh_Hans: 草稿ID
       pt_BR: ID do Rascunho
       ja_JP: 下書きID
       zh_Hant: 草稿ID
     human_description:
       en_US: The unique identifier of the draft message to send
+      ko_KR: 보낼 초안 메시지의 고유 식별자
       zh_Hans: 要发送的草稿消息的唯一标识符
       pt_BR: O identificador único do rascunho para enviar
       ja_JP: 送信する下書きの一意の識別子

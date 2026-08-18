@@ -44,13 +44,25 @@ provider_credential_schema:
 
     - default: https://open.bigmodel.cn/api/paas/v4/
       label:
-        en_US: API Endpoint Host
+        en_US: API Base URL
+        zh_Hans: API Base URL
       placeholder:
-        en_US: Enter your API Endpoint Host
-        zh_Hans: 输入您的 API Endpoint Host
+        en_US: Enter your API Base URL
+        zh_Hans: 输入您的 API Base URL
       required: false
       type: text-input
       variable: base_url
+
+    - default: glm-5-turbo
+      label:
+        en_US: Validate Model Name
+        zh_Hans: 验证模型名称
+      placeholder:
+        en_US: Model name used to test credentials (default glm-5-turbo)
+        zh_Hans: 用于连通性测试的模型名称（默认 glm-5-turbo）
+      required: false
+      type: text-input
+      variable: validate_model
 
 supported_model_types:
   - llm
