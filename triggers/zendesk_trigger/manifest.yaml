@@ -26,12 +26,10 @@ plugins:
 resource:
   memory: 1048576
   permission:
-    model:
+    storage:
       enabled: true
-      llm: true
-    tool:
-      enabled: true
+      size: 1048576
 tags:
 - utilities
 type: plugin
-version: 1.0.5
+version: 1.1.0

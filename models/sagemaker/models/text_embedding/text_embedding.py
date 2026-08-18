@@ -2,9 +2,8 @@ import itertools
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import Optional
 
-import boto3  # type: ignore
 from dify_plugin.entities.model import (
     AIModelEntity,
     EmbeddingInputType,
@@ -14,7 +13,10 @@ from dify_plugin.entities.model import (
     ModelType,
     PriceType,
 )
-from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import (
+    EmbeddingUsage,
+    TextEmbeddingResult,
+)
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeAuthorizationError,
@@ -25,6 +27,8 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
+
+from provider.sagemaker import get_sagemaker_client
 
 BATCH_SIZE = 20
 CONTEXT_SIZE = 8192
@@ -45,12 +49,17 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
     Model class for Cohere text embedding model.
     """
 
-    sagemaker_client: Any = None
-
     def _sagemaker_embedding(self, sm_client, endpoint_name, content_list: list[str]):
         response_model = sm_client.invoke_endpoint(
             EndpointName=endpoint_name,
-            Body=json.dumps({"inputs": content_list, "parameters": {}, "is_query": False, "instruction": ""}),
+            Body=json.dumps(
+                {
+                    "inputs": content_list,
+                    "parameters": {},
+                    "is_query": False,
+                    "instruction": "",
+                }
+            ),
             ContentType="application/json",
         )
         json_str = response_model["Body"].read().decode("utf8")
@@ -78,54 +87,39 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         """
         # get model properties
         try:
-            line = 1
-            if not self.sagemaker_client:
-                access_key = credentials.get("aws_access_key_id")
-                secret_key = credentials.get("aws_secret_access_key")
-                aws_region = credentials.get("aws_region")
-                if aws_region:
-                    if access_key and secret_key:
-                        self.sagemaker_client = boto3.client(
-                            "sagemaker-runtime",
-                            aws_access_key_id=access_key,
-                            aws_secret_access_key=secret_key,
-                            region_name=aws_region,
-                        )
-                    else:
-                        self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
-                else:
-                    self.sagemaker_client = boto3.client("sagemaker-runtime")
-
-            line = 2
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
-
-            line = 3
+            sagemaker_client = get_sagemaker_client("sagemaker-runtime", credentials)
             truncated_texts = [item[:CONTEXT_SIZE] for item in texts]
 
-            batches = batch_generator((text for text in truncated_texts), batch_size=BATCH_SIZE)
+            batches = batch_generator(
+                (text for text in truncated_texts), batch_size=BATCH_SIZE
+            )
             all_embeddings = []
 
-            line = 4
             for batch in batches:
-                embeddings = self._sagemaker_embedding(self.sagemaker_client, sagemaker_endpoint, batch)
+                embeddings = self._sagemaker_embedding(
+                    sagemaker_client, sagemaker_endpoint, batch
+                )
                 all_embeddings.extend(embeddings)
 
-            line = 5
             # calc usage
             usage = self._calc_response_usage(
                 model=model,
                 credentials=credentials,
                 tokens=0,  # It's not SAAS API, usage is meaningless
             )
-            line = 6
 
-            return TextEmbeddingResult(embeddings=all_embeddings, usage=usage, model=model)
+            return TextEmbeddingResult(
+                embeddings=all_embeddings, usage=usage, model=model
+            )
 
         except Exception as e:
-            logger.exception(f"Failed to invoke text embedding model, model: {model}, line: {line}")
+            logger.exception(f"Failed to invoke text embedding model, model: {model}")
             raise InvokeError(str(e))
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -149,7 +143,9 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
+    def _calc_response_usage(
+        self, model: str, credentials: dict, tokens: int
+    ) -> EmbeddingUsage:
         """
         Calculate response usage
 
@@ -160,7 +156,10 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         """
         # get input price info
         input_price_info = self.get_price(
-            model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
+            model=model,
+            credentials=credentials,
+            price_type=PriceType.INPUT,
+            tokens=tokens,
         )
 
         # transform usage
@@ -186,7 +185,9 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
             InvokeBadRequestError: [KeyError],
         }
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
         """

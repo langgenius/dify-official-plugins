@@ -111,8 +111,6 @@ def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
         
         # Check if the requested model is available
         if model not in available_models:
-            base_url = credentials.get("endpoint_url", "").rstrip("/")
-            management_url = f"{base_url}:8000/#model-management"
             raise CredentialsValidateFailedError(
                 f"Model '{model}' is not available on the Lemonade server. "
                 "Please pull the model first. You can find more information about it at "

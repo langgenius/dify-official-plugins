@@ -1,0 +1,64 @@
+identity:
+  name: add_reaction
+  author: langgenius
+  label:
+    en_US: Add Reaction
+    zh_Hans: 添加表情回应
+    ja_JP: リアクションを追加
+    ko_KR: 리액션 추가
+description:
+  human:
+    en_US: Add an emoji reaction to a message.
+    zh_Hans: 为一条消息添加表情回应。
+    ja_JP: メッセージに絵文字リアクションを追加します。
+    ko_KR: 메시지에 이모지 리액션을 추가합니다.
+  llm: Adds an emoji reaction to a message using reactions.add. Requires the channel ID, the message timestamp, and the emoji name (without surrounding colons, e.g. thumbsup).
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID that contains the message.
+      zh_Hans: 包含该消息的频道 ID。
+      ja_JP: メッセージが含まれるチャンネルID。
+      ko_KR: 메시지가 포함된 채널 ID.
+    llm_description: The channel ID (e.g. C0123456789) that contains the message to react to.
+    form: llm
+  - name: timestamp
+    type: string
+    required: true
+    label:
+      en_US: Message Timestamp
+      zh_Hans: 消息时间戳
+      ja_JP: メッセージのタイムスタンプ
+      ko_KR: 메시지 타임스탬프
+    human_description:
+      en_US: The ts (timestamp) of the message to react to.
+      zh_Hans: 要回应的消息 ts（时间戳）。
+      ja_JP: リアクションを付けるメッセージのts（タイムスタンプ）。
+      ko_KR: 리액션을 추가할 메시지의 ts(타임스탬프).
+    llm_description: The timestamp (ts) identifying the message, e.g. 1405894322.002768.
+    form: llm
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: Emoji Name
+      zh_Hans: 表情名称
+      ja_JP: 絵文字名
+      ko_KR: 이모지 이름
+    human_description:
+      en_US: The emoji name without colons (e.g. thumbsup, white_check_mark).
+      zh_Hans: 不带冒号的表情名称（如 thumbsup、white_check_mark）。
+      ja_JP: "コロンを付けない絵文字名（例: thumbsup、white_check_mark）。"
+      ko_KR: "콜론 없는 이모지 이름(예: thumbsup, white_check_mark)."
+    llm_description: The emoji name without surrounding colons, e.g. thumbsup or white_check_mark.
+    form: llm
+extra:
+  python:
+    source: tools/add_reaction.py

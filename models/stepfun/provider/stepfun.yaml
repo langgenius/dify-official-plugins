@@ -3,10 +3,8 @@ configurate_methods:
 - predefined-model
 - customizable-model
 description:
-  en_US: Models provided by stepfun, such as step-1-8k, step-1-32k、step-1v-8k、step-1v-32k,
-    step-1-128k and step-1-256k
-  zh_Hans: 阶跃星辰提供的模型，例如 step-1-8k、step-1-32k、step-1v-8k、step-1v-32k、step-1-128k 和
-    step-1-256k。
+  en_US: Models provided by StepFun, including Step 3.7 Flash.
+  zh_Hans: 阶跃星辰提供的模型，包括 Step 3.7 Flash。
 extra:
   python:
     model_sources:
@@ -14,8 +12,8 @@ extra:
     provider_source: provider/stepfun.py
 help:
   title:
-    en_US: Get your API Key from stepfun
-    zh_Hans: 从 stepfun 获取 API Key
+    en_US: Get your API Key from StepFun
+    zh_Hans: 从阶跃星辰获取 API Key
   url:
     en_US: https://platform.stepfun.com/interface-key
 icon_large:

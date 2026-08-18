@@ -186,7 +186,7 @@ parameters:
     required: false
     type: boolean
   - name: include_answer
-    default: false
+    default: "false"
     form: form
     human_description:
       en_US: Include a short answer to the original query in the response. Use 'basic' or 'true' for a quick answer or 'advanced' for a more detailed, comprehensive answer.
@@ -215,7 +215,7 @@ parameters:
     required: false
     type: select
   - name: include_raw_content
-    default: false
+    default: "false"
     form: form
     human_description:
       en_US: Include the cleaned and parsed HTML content of each search result. Use 'markdown' for markdown format or 'text' for plain text.

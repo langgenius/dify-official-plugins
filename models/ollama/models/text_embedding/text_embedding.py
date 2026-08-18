@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from decimal import Decimal
@@ -75,9 +74,14 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
                 inputs.append(text[0:cutoff])
             else:
                 inputs.append(text)
-        payload = {"input": inputs, "model": model, "options": {"use_mmap": True}}
+        payload = {
+            "input": inputs,
+            "model": model,
+            "truncate": True,
+            "options": {"use_mmap": True},
+        }
         response = requests.post(
-            endpoint_url, headers=headers, data=json.dumps(payload), timeout=(10, 300)
+            endpoint_url, headers=headers, json=payload, timeout=(10, 300)
         )
         response.raise_for_status()
         response_data = response.json()

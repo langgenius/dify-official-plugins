@@ -1,0 +1,7 @@
+# Git ignore for ant_ling plugin
+.env
+tests/.env
+tests/logs/
+.venv/
+__pycache__/
+*.pyc

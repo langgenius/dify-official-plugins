@@ -6,7 +6,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.document_parsing import DocumentParsingTool
 from tools.document_parsing_vl import DocumentParsingVlTool
 from tools.text_recognition import TextRecognitionTool
-from tools.utils import call_paddleocr_api, get_sdk_client
+from tools.utils import call_paddleocr_api, get_api_client_config
 
 
 class PaddleocrProvider(ToolProvider):
@@ -23,7 +23,7 @@ class PaddleocrProvider(ToolProvider):
         test_file = "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"
 
         try:
-            client_config = get_sdk_client(
+            client_config = get_api_client_config(
                 access_token=credentials["aistudio_access_token"],
                 base_url=base_url,
             )

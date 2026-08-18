@@ -1,0 +1,64 @@
+identity:
+  name: update_message
+  author: langgenius
+  label:
+    en_US: Update Message
+    zh_Hans: 更新消息
+    ja_JP: メッセージを更新
+    ko_KR: 메시지 업데이트
+description:
+  human:
+    en_US: Edit an existing message that was posted by the bot.
+    zh_Hans: 编辑机器人已发送的现有消息。
+    ja_JP: ボットが投稿した既存のメッセージを編集します。
+    ko_KR: 봇이 게시한 기존 메시지를 편집합니다.
+  llm: Updates the text of an existing Slack message using chat.update. Requires the channel ID and the ts (timestamp) of the message to edit, plus the new text.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID that contains the message to update.
+      zh_Hans: 包含要更新消息的频道 ID。
+      ja_JP: 更新するメッセージが含まれるチャンネル ID。
+      ko_KR: 업데이트할 메시지가 있는 채널 ID입니다.
+    llm_description: The channel ID (e.g. C0123456789) that contains the message to edit.
+    form: llm
+  - name: ts
+    type: string
+    required: true
+    label:
+      en_US: Message Timestamp
+      zh_Hans: 消息时间戳
+      ja_JP: メッセージのタイムスタンプ
+      ko_KR: 메시지 타임스탬프
+    human_description:
+      en_US: The ts (timestamp) of the message to update.
+      zh_Hans: 要更新消息的 ts（时间戳）。
+      ja_JP: 更新するメッセージの ts（タイムスタンプ）。
+      ko_KR: 업데이트할 메시지의 ts(타임스탬프)입니다.
+    llm_description: The timestamp (ts) identifying the message to edit, e.g. 1405894322.002768.
+    form: llm
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: New Message Text
+      zh_Hans: 新消息内容
+      ja_JP: 新しいメッセージ本文
+      ko_KR: 새 메시지 내용
+    human_description:
+      en_US: The new text that will replace the current message content.
+      zh_Hans: 用于替换当前消息内容的新文本。
+      ja_JP: 現在のメッセージ内容を置き換える新しいテキスト。
+      ko_KR: 현재 메시지 내용을 대체할 새 텍스트입니다.
+    llm_description: The new message body. Supports Slack mrkdwn formatting.
+    form: llm
+extra:
+  python:
+    source: tools/update_message.py

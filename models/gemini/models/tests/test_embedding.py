@@ -9,6 +9,7 @@ import base64
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pytest
 from google.genai import types
 from dify_plugin.entities.model import EmbeddingInputType
@@ -31,7 +32,7 @@ except ImportError:
 # ---- Test Data ----
 
 # Minimal valid JPEG: FF D8 FF
-JPEG_BYTES = b"\xFF\xD8\xFF\xE0" + b"\x00" * 20
+JPEG_BYTES = b"\xff\xd8\xff\xe0" + b"\x00" * 20
 JPEG_BASE64 = base64.b64encode(JPEG_BYTES).decode()
 
 # Minimal valid PNG: 89 50 4E 47 0D 0A 1A 0A
@@ -132,9 +133,11 @@ class TestEmbedContentRequestShape:
         mock_client.models.embed_content.return_value = mock_response
 
         usage = _make_usage()
-        with patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
+        with (
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             self.model._invoke_multimodal(
                 model="gemini-embedding-2-preview",
                 credentials=self.credentials,
@@ -204,7 +207,9 @@ class TestDetectImageMimeType:
     def test_detect_invalid_base64_raises_when_validate(self):
         """Invalid base64 input with validate_format=True should raise ValueError"""
         with pytest.raises(ValueError):
-            self.model._detect_image_mime_type("not-valid-base64!!!", validate_format=True)
+            self.model._detect_image_mime_type(
+                "not-valid-base64!!!", validate_format=True
+            )
 
     def test_detect_invalid_base64_raises_without_validate(self):
         """Invalid base64 input raises ValueError (binascii.Error is a subclass of ValueError)"""
@@ -285,9 +290,7 @@ class TestGetOutputDimension:
 
     def test_returns_none_on_exception(self):
         """Should return None when get_model_schema throws"""
-        with patch.object(
-            self.model, "get_model_schema", side_effect=Exception("err")
-        ):
+        with patch.object(self.model, "get_model_schema", side_effect=Exception("err")):
             result = self.model._get_output_dimension("test-model", {})
             assert result is None
 
@@ -330,11 +333,12 @@ class TestMultimodalImageCountLimit:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.IMAGE,
@@ -356,10 +360,11 @@ class TestMultimodalImageCountLimit:
         mock_client = Mock()
         mock_genai.Client.return_value = mock_client
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.IMAGE,
@@ -397,11 +402,12 @@ class TestMultimodalImageCountLimit:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=5), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=5),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             # 8 images, max_chunks=5 → batch1: 5 images, batch2: 3 images, both <=6
             documents = [
                 MultiModalContent(
@@ -435,26 +441,31 @@ class TestMultimodalImageCountLimit:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
-            documents = [
-                MultiModalContent(
-                    content_type=MultiModalContentType.TEXT, content="text1"
-                ),
-            ] + [
-                MultiModalContent(
-                    content_type=MultiModalContentType.IMAGE,
-                    content=JPEG_BASE64,
-                )
-                for _ in range(6)
-            ] + [
-                MultiModalContent(
-                    content_type=MultiModalContentType.TEXT, content="text2"
-                ),
-            ]
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
+            documents = (
+                [
+                    MultiModalContent(
+                        content_type=MultiModalContentType.TEXT, content="text1"
+                    ),
+                ]
+                + [
+                    MultiModalContent(
+                        content_type=MultiModalContentType.IMAGE,
+                        content=JPEG_BASE64,
+                    )
+                    for _ in range(6)
+                ]
+                + [
+                    MultiModalContent(
+                        content_type=MultiModalContentType.TEXT, content="text2"
+                    ),
+                ]
+            )
 
             result = self.model._invoke_multimodal(
                 model="gemini-embedding-2-preview",
@@ -527,11 +538,12 @@ class TestMultimodalImageFormatValidation:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             doc = MultiModalContent(
                 content_type=MultiModalContentType.IMAGE, content=JPEG_BASE64
             )
@@ -559,11 +571,12 @@ class TestMultimodalImageFormatValidation:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             doc = MultiModalContent(
                 content_type=MultiModalContentType.IMAGE, content=PNG_BASE64
             )
@@ -605,11 +618,12 @@ class TestMultimodalMixedContent:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="Hello world"
@@ -646,11 +660,12 @@ class TestMultimodalMixedContent:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="Hello"
@@ -696,11 +711,12 @@ class TestMultimodalOutputDimension:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=768), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=768),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="test"
@@ -735,11 +751,12 @@ class TestMultimodalOutputDimension:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="test"
@@ -791,11 +808,14 @@ class TestMultimodalTokenCounting:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage) as mock_calc:
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(
+                self.model, "_calc_response_usage", return_value=usage
+            ) as mock_calc,
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="test"
@@ -831,11 +851,14 @@ class TestMultimodalTokenCounting:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage) as mock_calc:
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(
+                self.model, "_calc_response_usage", return_value=usage
+            ) as mock_calc,
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.IMAGE, content=JPEG_BASE64
@@ -872,12 +895,17 @@ class TestMultimodalTokenCounting:
         usage = _make_usage()
         test_text = "Hello, this is a test sentence for token estimation."
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage) as mock_calc, \
-             patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=12) as mock_gpt2:
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(
+                self.model, "_calc_response_usage", return_value=usage
+            ) as mock_calc,
+            patch.object(
+                self.model, "_get_num_tokens_by_gpt2", return_value=12
+            ) as mock_gpt2,
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content=test_text
@@ -917,16 +945,27 @@ class TestMultimodalTokenCounting:
         text1 = "First text"
         text2 = "Second text"
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage) as mock_calc, \
-             patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=5) as mock_gpt2:
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(
+                self.model, "_calc_response_usage", return_value=usage
+            ) as mock_calc,
+            patch.object(
+                self.model, "_get_num_tokens_by_gpt2", return_value=5
+            ) as mock_gpt2,
+        ):
             documents = [
-                MultiModalContent(content_type=MultiModalContentType.TEXT, content=text1),
-                MultiModalContent(content_type=MultiModalContentType.IMAGE, content=JPEG_BASE64),
-                MultiModalContent(content_type=MultiModalContentType.TEXT, content=text2),
+                MultiModalContent(
+                    content_type=MultiModalContentType.TEXT, content=text1
+                ),
+                MultiModalContent(
+                    content_type=MultiModalContentType.IMAGE, content=JPEG_BASE64
+                ),
+                MultiModalContent(
+                    content_type=MultiModalContentType.TEXT, content=text2
+                ),
             ]
 
             self.model._invoke_multimodal(
@@ -968,15 +1007,22 @@ class TestMultimodalTokenCounting:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage) as mock_calc, \
-             patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=7):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(
+                self.model, "_calc_response_usage", return_value=usage
+            ) as mock_calc,
+            patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=7),
+        ):
             documents = [
-                MultiModalContent(content_type=MultiModalContentType.TEXT, content="has stats"),
-                MultiModalContent(content_type=MultiModalContentType.TEXT, content="no stats"),
+                MultiModalContent(
+                    content_type=MultiModalContentType.TEXT, content="has stats"
+                ),
+                MultiModalContent(
+                    content_type=MultiModalContentType.TEXT, content="no stats"
+                ),
             ]
 
             self.model._invoke_multimodal(
@@ -1017,10 +1063,11 @@ class TestMultimodalEmptyEmbeddings:
         mock_response.embeddings = None
         mock_client.models.embed_content.return_value = mock_response
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+        ):
             documents = [
                 MultiModalContent(
                     content_type=MultiModalContentType.TEXT, content="test"
@@ -1063,11 +1110,12 @@ class TestMultimodalDataURIHandling:
 
         usage = _make_usage()
 
-        with patch.object(self.model, "_get_context_size", return_value=8192), \
-             patch.object(self.model, "_get_max_chunks", return_value=100), \
-             patch.object(self.model, "_get_output_dimension", return_value=None), \
-             patch.object(self.model, "_calc_response_usage", return_value=usage):
-
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8192),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(self.model, "_get_output_dimension", return_value=None),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
             # Image content with data URI prefix
             data_uri_content = f"data:image/jpeg;base64,{JPEG_BASE64}"
 
@@ -1082,6 +1130,182 @@ class TestMultimodalDataURIHandling:
                 documents=[doc],
             )
             assert len(result.embeddings) == 1
+
+
+# ================================================================
+# Test: _split_texts_to_fit_model_specs — termination (issue #3323 Bug A)
+# ================================================================
+
+
+class TestSplitTextsTermination:
+    """Tests that the recursive splitter always terminates.
+
+    Regression for https://github.com/langgenius/dify-official-plugins/issues/3323
+    Bug A: ``context_size`` (a token count) was used as a character index, so when
+    a text counted as ``>= context_size`` tokens while being <= ``context_size``
+    characters (token-dense content like CJK / code / base64), the head slice was
+    the unchanged text and the recursion never terminated.
+    """
+
+    def setup_method(self):
+        self.model = GeminiTextEmbeddingModel([])
+
+    def _patch_count_tokens(self, chars_per_token: float):
+        """Patch _count_tokens with a deterministic char-based token estimate."""
+
+        def fake_count_tokens(_client, _model, text):
+            # at least 1 token for any non-empty text
+            return max(1, int(len(text) / chars_per_token) + (1 if text else 0))
+
+        return patch.object(self.model, "_count_tokens", side_effect=fake_count_tokens)
+
+    def test_token_dense_text_terminates(self):
+        """Token-dense text (more tokens than chars) must not recurse forever."""
+        context_size = 64
+        # The dangerous case: len(text) (50) < context_size (64), but the text counts
+        # as ~200 tokens (>> context_size). The original code sliced at the token
+        # count as a char index, leaving the head unchanged -> infinite recursion.
+        text = "字" * 50  # 50 chars
+        with self._patch_count_tokens(
+            chars_per_token=0.25
+        ):  # ~4 tokens/char => ~200 tokens
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        # Reassembled chunks must equal the original text, and every chunk must fit.
+        assert "".join(chunk for chunk, _ in result) == text
+        assert len(result) >= 1
+        for chunk, _ in result:
+            assert chunk != ""
+
+    def test_long_text_terminates_and_chunks_fit(self):
+        """A long text splits into multiple chunks that each fit the context size."""
+        context_size = 32
+        text = ("The quick brown fox jumps over the lazy dog. " * 40).strip()
+        with self._patch_count_tokens(chars_per_token=4.0):  # ~1 token / 4 chars
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        assert "".join(chunk for chunk, _ in result) == text
+        assert len(result) > 1
+        for _, num_tokens in result:
+            assert num_tokens < context_size
+
+    def test_short_text_not_split(self):
+        """Text already within the context size is returned unchanged."""
+        context_size = 1000
+        text = "hello world"
+        with self._patch_count_tokens(chars_per_token=4.0):
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        assert len(result) == 1
+        assert result[0][0] == text
+
+    def test_zero_token_count_does_not_crash(self):
+        """A zero token count must not raise ``ZeroDivisionError``.
+
+        Review feedback on PR #3329: the character cutoff divides by the token
+        count. If token counting ever returns 0 while the split branch is
+        entered (e.g. a degenerate ``context_size``), the denominator would be
+        zero. It is guarded with ``max(1, num_tokens)`` so this can never raise.
+        """
+        context_size = 0
+        text = "字字字字字"  # 5 chars, > 1 -> enters the split branch
+        with patch.object(self.model, "_count_tokens", return_value=0):
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        # No crash, the recursion terminated, and the text is preserved.
+        assert "".join(chunk for chunk, _ in result) == text
+
+
+# ================================================================
+# Test: _invoke — averaging with missing token counts (issue #3323 Bug B)
+# ================================================================
+
+
+class TestInvokeAveragingWithNoneTokens:
+    """Tests that averaging split-chunk embeddings tolerates missing token usage.
+
+    Regression for https://github.com/langgenius/dify-official-plugins/issues/3323
+    Bug B: when the Gemini API omits token usage, ``num_tokens`` is a tuple of
+    ``None`` and ``np.average(..., weights=num_tokens)`` raised
+    ``unsupported operand type(s) for +: 'NoneType' and 'NoneType'``.
+    """
+
+    def setup_method(self):
+        self.model = GeminiTextEmbeddingModel([])
+        self.credentials = {"google_api_key": "fake-key"}
+
+    @patch("models.text_embedding.text_embedding.genai")
+    def test_none_token_counts_use_unweighted_average(self, mock_genai):
+        """A single input split into multiple chunks with no token usage averages cleanly."""
+        mock_genai.Client.return_value = Mock()
+
+        usage = _make_usage()
+        # One input text that the splitter breaks into two chunks; the API returns
+        # embeddings but no per-chunk token statistics (token_count -> None).
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(
+                self.model,
+                "_split_texts_to_fit_model_specs",
+                return_value=[("chunk one", 5), ("chunk two", 5)],
+            ),
+            patch.object(
+                self.model,
+                "_embedding_invoke",
+                return_value=[([1.0, 0.0, 0.0], None), ([0.0, 1.0, 0.0], None)],
+            ),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
+            result = self.model._invoke(
+                model="gemini-embedding-2-preview",
+                credentials=self.credentials,
+                texts=["a long token-dense input"],
+            )
+
+        # One merged embedding for the one input; finite, normalized, no crash.
+        assert len(result.embeddings) == 1
+        merged = result.embeddings[0]
+        assert len(merged) == 3
+        assert all(np.isfinite(v) for v in merged)
+        # Unweighted average of the two unit vectors, normalized -> equal components.
+        assert merged[0] == pytest.approx(merged[1])
+        assert merged[2] == pytest.approx(0.0)
+
+    @patch("models.text_embedding.text_embedding.genai")
+    def test_present_token_counts_use_weighted_average(self, mock_genai):
+        """When token counts are present they are honored as weights."""
+        mock_genai.Client.return_value = Mock()
+
+        usage = _make_usage()
+        with (
+            patch.object(self.model, "_get_context_size", return_value=8),
+            patch.object(self.model, "_get_max_chunks", return_value=100),
+            patch.object(
+                self.model,
+                "_split_texts_to_fit_model_specs",
+                return_value=[("chunk one", 1), ("chunk two", 3)],
+            ),
+            patch.object(
+                self.model,
+                "_embedding_invoke",
+                return_value=[([1.0, 0.0], 1), ([0.0, 1.0], 3)],
+            ),
+            patch.object(self.model, "_calc_response_usage", return_value=usage),
+        ):
+            result = self.model._invoke(
+                model="gemini-embedding-2-preview",
+                credentials=self.credentials,
+                texts=["a long token-dense input"],
+            )
+
+        merged = result.embeddings[0]
+        # Weighted average (weights 1 and 3) => second component dominates.
+        assert merged[1] > merged[0]
 
 
 # ================================================================

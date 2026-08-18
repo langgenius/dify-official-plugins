@@ -610,18 +610,21 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         """
         cohere_tools = []
         for tool in tools:
-            properties = tool.parameters["properties"]
-            required_properties = tool.parameters["required"]
+            properties = tool.parameters.get("properties", {})
+            required_properties = tool.parameters.get("required", [])
             parameter_definitions = {}
             for p_key, p_val in properties.items():
                 required = False
                 if p_key in required_properties:
                     required = True
-                desc = p_val["description"]
+                desc = p_val.get("description") or ""
                 if "enum" in p_val:
                     desc += f"; Only accepts one of the following predefined options: [{', '.join(p_val['enum'])}]"
                 parameter_definitions[p_key] = ToolParameterDefinitionsValue(
-                    description=desc, type=p_val["type"], required=required
+                    # ToolParameterDefinitionsValue.type is a required, non-Optional str:
+                    # omitting it or passing None both raise. Fall back to the most
+                    # permissive type; the description still carries any enum options.
+                    description=desc, type=p_val.get("type", "string"), required=required
                 )
             cohere_tool = Tool(
                 name=tool.name,

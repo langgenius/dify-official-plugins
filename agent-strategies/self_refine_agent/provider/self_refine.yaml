@@ -1,0 +1,15 @@
+identity:
+  author: KERVIN-FARMER
+  name: self_refine
+  label:
+    en_US: Self-Refine Agent
+    zh_Hans: 自我优化 Agent
+  description:
+    en_US: Self-refining agent with automatic critique and iterative improvement
+    zh_Hans: 支持自动批判和迭代改进的自我优化 Agent
+  icon: icon.svg
+strategies:
+  - strategies/self_refine.yaml
+extra:
+  python:
+    source: provider/self_refine.py

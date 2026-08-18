@@ -4,6 +4,12 @@ from pydantic import BaseModel, Field
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
+# 10 seconds matches the timeout used in the brave / judge0ce / alphavantage /
+# searchapi / serper / tianditu fix (PRs #3476, #3477, #3478, #3466, #3468,
+# #3469). Keeps a slow upstream from hanging the plugin worker for the full
+# outer MAX_REQUEST_TIMEOUT.
+_REQUEST_TIMEOUT = 10
+
 
 class SearchDevDocsInput(BaseModel):
     doc: str = Field(..., description="The name of the documentation.")
@@ -29,16 +35,20 @@ class SearchDevDocsTool(Tool):
         topic = tool_parameters.get("topic", "")
         if not doc:
             yield self.create_text_message("Please provide the documentation name.")
+            return
         if not topic:
             yield self.create_text_message("Please provide the topic path.")
+            return
         url = f"https://documents.devdocs.io/{doc}/{topic}.html"
-        response = requests.get(url)
-        if response.status_code == 200:
-            content = response.text
+        try:
+            response = requests.get(url, timeout=_REQUEST_TIMEOUT)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as exc:
             yield self.create_text_message(
-                self.session.model.summary.invoke(text=content, instruction="")
+                f"Failed to retrieve the documentation: {exc}"
             )
-        else:
-            yield self.create_text_message(
-                f"Failed to retrieve the documentation. Status code: {response.status_code}"
-            )
+            return
+        content = response.text
+        yield self.create_text_message(
+            self.session.model.summary.invoke(text=content, instruction="")
+        )

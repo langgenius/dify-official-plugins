@@ -1,0 +1,49 @@
+identity:
+  name: get_permalink
+  author: langgenius
+  label:
+    en_US: Get Message Permalink
+    zh_Hans: 获取消息永久链接
+    ja_JP: メッセージのパーマリンクを取得
+    ko_KR: 메시지 고정 링크 가져오기
+description:
+  human:
+    en_US: Retrieve a permalink URL for a specific message.
+    zh_Hans: 获取特定消息的永久链接 URL。
+    ja_JP: 特定のメッセージのパーマリンク URL を取得します。
+    ko_KR: 특정 메시지의 고정 링크 URL을 가져옵니다.
+  llm: Returns a permalink URL for a specific message using chat.getPermalink. Requires the channel ID and the message ts (timestamp).
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID that contains the message.
+      zh_Hans: 包含该消息的频道 ID。
+      ja_JP: メッセージが含まれるチャンネル ID。
+      ko_KR: 메시지가 있는 채널 ID입니다.
+    llm_description: The channel ID (e.g. C0123456789) that contains the message.
+    form: llm
+  - name: message_ts
+    type: string
+    required: true
+    label:
+      en_US: Message Timestamp
+      zh_Hans: 消息时间戳
+      ja_JP: メッセージのタイムスタンプ
+      ko_KR: 메시지 타임스탬프
+    human_description:
+      en_US: The ts (timestamp) of the message to get a permalink for.
+      zh_Hans: 要获取永久链接的消息 ts（时间戳）。
+      ja_JP: パーマリンクを取得するメッセージの ts（タイムスタンプ）。
+      ko_KR: 고정 링크를 가져올 메시지의 ts(타임스탬프)입니다.
+    llm_description: The timestamp (ts) identifying the message, e.g. 1405894322.002768.
+    form: llm
+extra:
+  python:
+    source: tools/get_permalink.py
