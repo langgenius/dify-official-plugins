@@ -386,5 +386,77 @@ class TestFunctionCallingFileForwarding(unittest.TestCase):
         self.assertTrue(should_forward_file_message(response))
 
 
+class TestFunctionCallingAllowedTools(unittest.TestCase):
+    @staticmethod
+    def _tool(name: str) -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": name,
+                    "label": {"en_US": name},
+                    "provider": "test",
+                },
+                "provider_type": "mcp",
+                "runtime_parameters": {},
+            }
+        )
+
+    def _invoke(self, allowed_tools):
+        lookup = self._tool("lookup")
+        create_ticket = self._tool("create_ticket")
+        call = _make_tool_call(
+            "call-1", "create_ticket", '{"id":"000"}'
+        )
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=[call]),
+                usage=LLMUsage.empty_usage(),
+            ),
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="done", tool_calls=[]),
+                usage=LLMUsage.empty_usage(),
+            ),
+        ]
+        session.tool.invoke.return_value = iter(
+            [
+                ToolInvokeMessage(
+                    type=ToolInvokeMessage.MessageType.TEXT,
+                    message=ToolInvokeMessage.TextMessage(text="registered"),
+                )
+            ]
+        )
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+        list(
+            strategy._invoke(
+                {
+                    "query": "create a ticket",
+                    "instruction": "Use the tools",
+                    "model": AgentModelConfig(
+                        provider="test", model="test-model", mode="chat"
+                    ),
+                    "tools": [lookup, create_ticket],
+                    "allowed_tools": allowed_tools,
+                    "maximum_iterations": 3,
+                }
+            )
+        )
+        return session.tool.invoke
+
+    def test_unrestricted_invokes_the_requested_tool(self):
+        invoke = self._invoke(None)
+        invoke.assert_called()
+        self.assertEqual(
+            invoke.call_args.kwargs["tool_name"], "create_ticket"
+        )
+
+    def test_allowlist_blocks_tools_outside_the_list(self):
+        invoke = self._invoke(["lookup"])
+        invoke.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

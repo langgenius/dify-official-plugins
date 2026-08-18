@@ -20,6 +20,18 @@ parameters:
       en_US: Model
       zh_Hans: 模型
       pt_BR: Model
+  - name: allowed_tools
+    type: any
+    scope: array[string]
+    required: false
+    label:
+      en_US: Allowed tools
+      zh_Hans: 允许的工具
+      pt_BR: Ferramentas permitidas
+    help:
+      en_US: Optional. If this list has tool names, only those tools are sent to the model and allowed to run. Leave unset or empty to use the full tool list.
+      zh_Hans: 可选。若填写工具名称，则仅这些工具会暴露给模型并允许调用。留空则使用完整工具列表。
+      pt_BR: Opcional. Se esta lista tiver nomes, somente essas ferramentas são enviadas ao modelo e podem ser executadas. Vazio usa a lista completa.
   - name: tools
     type: array[tools]
     required: true
