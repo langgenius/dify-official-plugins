@@ -77,9 +77,24 @@ def test_apply_no_op_when_credential_disabled():
     assert config_kwargs == {}
 
 
-def test_apply_silent_on_session_lookup_failure():
-    # Without a Dify session context, get_current_session raises; the
-    # helper must swallow that and leave config_kwargs unchanged.
+def test_apply_noop_without_session_context():
+    # Outside a Dify session, get_current_session() returns None rather than
+    # raising, so no app_id resolves and config_kwargs is left untouched.
+    config_kwargs: dict = {}
+    apply_dify_labels_if_enabled(config_kwargs, {"enable_request_metadata": "enabled"})
+    assert "labels" not in config_kwargs
+
+
+def test_apply_silent_when_session_lookup_raises(monkeypatch):
+    # Telemetry must never break generation, so a raising session lookup is
+    # swallowed. Exercises the except branch directly, which the None-returning
+    # path above cannot reach.
+    import dify_plugin
+
+    def _boom():
+        raise RuntimeError("session backend unavailable")
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", _boom)
     config_kwargs: dict = {}
     apply_dify_labels_if_enabled(config_kwargs, {"enable_request_metadata": "enabled"})
     assert "labels" not in config_kwargs

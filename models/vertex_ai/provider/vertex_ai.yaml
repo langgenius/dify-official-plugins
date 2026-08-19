@@ -88,8 +88,8 @@ provider_credential_schema:
         en_US: Disabled
         zh_Hans: 已禁用
     help:
-      en_US: When enabled, attaches dify_app_id and dify_source labels to Vertex AI requests, enabling per-app cost breakdown in Cloud Billing. Default disabled.
-      zh_Hans: 启用后，将 dify_app_id 和 dify_source 作为标签附加到 Vertex AI 请求中，从而支持在 Cloud Billing 中按应用进行成本细分。默认禁用。
+      en_US: When enabled, attaches dify_app_id and dify_source labels to Gemini requests, enabling per-app cost breakdown in Cloud Billing. Claude and Mistral models on Vertex AI use different request paths and are not labelled. Default disabled.
+      zh_Hans: 启用后，将 dify_app_id 和 dify_source 作为标签附加到 Gemini 请求中，从而支持在 Cloud Billing 中按应用进行成本细分。Vertex AI 上的 Claude 与 Mistral 模型使用不同的请求路径，不会附加标签。默认禁用。
     variable: enable_request_metadata
 supported_model_types:
 - llm
