@@ -15,6 +15,15 @@ The models of Amazon Bedrock.
 3. Add the credentials in the plugin settings.
 4. Save the configuration.
 
+## CloudWatch Request Metadata (Optional)
+When enabled, attaches `dify_app_id` and `dify_source` as `requestMetadata` on Bedrock Converse API calls. This allows attributing individual invocations to a Dify app when querying CloudWatch model invocation logs.
+
+- **Purpose**: Log attribution for per-request analysis. `requestMetadata` does not appear in Cost Explorer or on the bill.
+- **Requirements**: Model invocation logging must be enabled on the AWS account.
+- **Scope**: Only applies to Converse API calls (not other API types).
+- **Default**: Disabled by default, opt-in via the credential setting.
+- **How to enable**: Set the "Enable CloudWatch request metadata" option to "Enabled" in the provider or model credentials.
+
 ### Temporary Credentials
 The plugin supports AWS temporary credentials from SSO/SAML authentication (e.g., `aws sso login` or `saml2aws login`):
 

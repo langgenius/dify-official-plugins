@@ -31,6 +31,20 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 
 ![](../_assets/configure.png)
 
+## CloudWatch 请求元数据（可选）| CloudWatch Request Metadata (Optional)
+
+启用后，将在 Bedrock Converse API 调用中将 `dify_app_id` 和 `dify_source` 作为 requestMetadata 附加，从而在查询 CloudWatch 模型调用日志时可将单个调用归属到具体的 Dify 应用。
+
+需要在 AWS 账户上启用模型调用日志记录才能记录此字段。仅适用于 Converse API 调用（不适用于其他 API 类型）。默认禁用，通过凭证设置选择加入。
+
+**启用方法：** 在提供商或模型凭证中将"启用 CloudWatch 请求元数据"选项设置为"已启用"。
+
+When enabled, attaches `dify_app_id` and `dify_source` as requestMetadata on Bedrock Converse API calls, letting you attribute individual invocations to a Dify app when querying CloudWatch model invocation logs.
+
+Requires model invocation logging to be enabled on the account for the field to be recorded. Converse API only. Default disabled; opt in via credential settings.
+
+**How to enable:** Set the "Enable CloudWatch request metadata" option to "Enabled" in provider or model credentials.
+
 ### 临时凭证支持
 
 插件现在支持来自 SSO/SAML 认证的 AWS 临时凭证（例如 `aws sso login` 或 `saml2aws login`）：
