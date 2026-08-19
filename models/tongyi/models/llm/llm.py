@@ -13,6 +13,7 @@ from typing import Optional, Union, cast
 import dify_plugin  # noqa: F401 - patches gevent before HTTP SDK imports
 # isort: on
 import openai
+import requests
 from dashscope import Generation, MultiModalConversation, get_tokenizer
 from dashscope.api_entities.dashscope_response import GenerationResponse
 from dashscope.common.error import (
@@ -335,6 +336,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         base_address = get_http_base_address(credentials)
 
         qwen_long_files = None
+        session = requests.Session()
         try:
             if ModelFeature.VISION in (model_schema.features or []):
                 params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
@@ -348,6 +350,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     ),
                     incremental_output=incremental_output,
                     base_address=base_address,
+                    session=session,
                 )
             else:
                 if model.startswith("qwen-long"):
@@ -383,10 +386,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     stream=stream,
                     incremental_output=incremental_output,
                     base_address=base_address,
+                    session=session,
                 )
         except BaseException:
             if qwen_long_files:
                 qwen_long_files.cleanup()
+            session.close()
             raise
 
         if stream:
@@ -399,7 +404,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
             if qwen_long_files:
                 result = self._cleanup_qwen_long_stream(result, qwen_long_files)
-            return result
+            return self._cleanup_session_stream(result, session)
         try:
             return self._handle_generate_response(
                 model, credentials, response, prompt_messages
@@ -407,6 +412,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         finally:
             if qwen_long_files:
                 qwen_long_files.cleanup()
+            session.close()
+
+    @staticmethod
+    def _cleanup_session_stream(result: Generator, session: requests.Session) -> Generator:
+        try:
+            yield from result
+        finally:
+            session.close()
 
     @staticmethod
     def _cleanup_qwen_long_stream(
@@ -1061,6 +1074,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 RequestFailure,
                 openai.APIConnectionError,
                 openai.APITimeoutError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
             ],
             InvokeRateLimitError: [openai.RateLimitError],
             InvokeAuthorizationError: [

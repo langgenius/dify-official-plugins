@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Delete Event
+    ko_KR: 이벤트 삭제
     zh_Hans: 删除事件
     pt_BR: Excluir Evento
     ja_JP: イベント削除
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Delete a calendar event from your Outlook account
+    ko_KR: Outlook 계정에서 캘린더 이벤트를 삭제합니다
     zh_Hans: 从您的 Outlook 账户中删除日历事件
     pt_BR: Excluir um evento de calendário da sua conta do Outlook
     ja_JP: Outlook アカウントからカレンダーイベントを削除
@@ -22,12 +24,14 @@ parameters:
     required: true
     label:
       en_US: Event ID
+      ko_KR: 이벤트 ID
       zh_Hans: 事件 ID
       pt_BR: ID do Evento
       ja_JP: イベント ID
       zh_Hant: 事件 ID
     human_description:
       en_US: The ID of the event to delete
+      ko_KR: 삭제할 이벤트의 ID
       zh_Hans: 要删除的事件的 ID
       pt_BR: O ID do evento a excluir
       ja_JP: 削除するイベントの ID

@@ -33,3 +33,17 @@ parameter_rules:
     help:
       zh_Hans: 启用后模型会在回答前进行系统性分析和多步骤规划，适用于复杂推理任务。
       en_US: When enabled, the model performs systematic analysis and multi-step planning before answering, suitable for complex reasoning tasks.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema

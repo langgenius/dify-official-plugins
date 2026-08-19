@@ -359,12 +359,31 @@ class RetrievePageTool(Tool):
                         }
                     )
             elif block_type == "table_row":
-                cells = block.get("table_row", {}).get("cells", [])
-                cell_texts = [client.extract_plain_text(cell) for cell in cells]
-                formatted_block["cells"] = cell_texts
-                formatted_block["text"] = " | ".join(cell_texts)
+                # Render the row's cells as a list of plain-text strings so
+                # callers see actual cell content instead of the generic
+                # `<table_row block>` placeholder. Notion's raw API exposes
+                # the cells as `table_row.cells`, an array of rich_text
+                # arrays per column. (#3378)
+                row_block = block.get("table_row", {})
+                cells = row_block.get("cells", [])
+                formatted_block["cells"] = [
+                    "".join(rt.get("plain_text", "") for rt in cell)
+                    for cell in cells
+                ]
+                formatted_block["text"] = " | ".join(formatted_block["cells"])
             elif block_type == "table":
+                # Tables have no text of their own; emit a header so the
+                # caller sees the table is present without us inventing
+                # synthetic content. The actual cell data lives in the
+                # `table_row` children, which the recursion below formats.
+                formatted_block["has_column_header"] = (
+                    block.get("table", {}).get("has_column_header", False)
+                )
+                formatted_block["has_row_header"] = (
+                    block.get("table", {}).get("has_row_header", False)
+                )
                 formatted_block["text"] = ""
+
             else:
                 # For unsupported block types, just include the type
                 formatted_block["text"] = f"<{block_type} block>"

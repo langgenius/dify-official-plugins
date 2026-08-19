@@ -1,14 +1,16 @@
-version: 0.4.0
+version: 0.5.0
 type: plugin
 author: langgenius
 name: outlook
 label:
   en_US: outlook
+  ko_KR: outlook
   ja_JP: outlook
   zh_Hans: outlook
   pt_BR: outlook
 description:
   en_US: Integrate Microsoft Outlook with Dify - read, send and organize email, and manage calendar events.
+  ko_KR: Microsoft Outlook을 Dify와 연동 - 이메일 읽기, 보내기, 정리 및 캘린더 일정 관리를 할 수 있습니다.
   ja_JP: Microsoft Outlook を Dify と連携 - メールの読み取り・送信・整理、カレンダーの予定管理ができます。
   zh_Hans: 将 Microsoft Outlook 集成到 Dify - 读取、发送和整理邮件，并管理日历事件。
   pt_BR: Integre o Microsoft Outlook ao Dify - leia, envie e organize e-mails e gerencie eventos de calendário.

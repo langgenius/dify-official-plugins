@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Create Event
+    ko_KR: 이벤트 생성
     zh_Hans: 创建事件
     pt_BR: Criar Evento
     ja_JP: イベント作成
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Create a calendar event in your Outlook account
+    ko_KR: Outlook 계정에 캘린더 이벤트를 생성합니다
     zh_Hans: 在您的 Outlook 账户中创建日历事件
     pt_BR: Criar um evento de calendário na sua conta do Outlook
     ja_JP: Outlook アカウントにカレンダーイベントを作成
@@ -22,12 +24,14 @@ parameters:
     required: true
     label:
       en_US: Subject
+      ko_KR: 제목
       zh_Hans: 主题
       pt_BR: Assunto
       ja_JP: 件名
       zh_Hant: 主題
     human_description:
       en_US: The subject or title of the event
+      ko_KR: 이벤트의 제목 또는 표제
       zh_Hans: 事件的主题或标题
       pt_BR: O assunto ou título do evento
       ja_JP: イベントの件名またはタイトル
@@ -39,12 +43,14 @@ parameters:
     required: true
     label:
       en_US: Start Datetime
+      ko_KR: 시작 일시
       zh_Hans: 开始时间
       pt_BR: Data e Hora de Início
       ja_JP: 開始日時
       zh_Hant: 開始時間
     human_description:
       en_US: The start date and time in ISO 8601 format, e.g. 2026-08-10T14:00:00
+      ko_KR: ISO 8601 형식의 시작 날짜 및 시간, 예 2026-08-10T14:00:00
       zh_Hans: ISO 8601 格式的开始日期和时间，例如 2026-08-10T14:00:00
       pt_BR: A data e hora de início no formato ISO 8601, por exemplo 2026-08-10T14:00:00
       ja_JP: ISO 8601 形式の開始日時、例 2026-08-10T14:00:00
@@ -56,12 +62,14 @@ parameters:
     required: true
     label:
       en_US: End Datetime
+      ko_KR: 종료 일시
       zh_Hans: 结束时间
       pt_BR: Data e Hora de Término
       ja_JP: 終了日時
       zh_Hant: 結束時間
     human_description:
       en_US: The end date and time in ISO 8601 format, e.g. 2026-08-10T15:00:00
+      ko_KR: ISO 8601 형식의 종료 날짜 및 시간, 예 2026-08-10T15:00:00
       zh_Hans: ISO 8601 格式的结束日期和时间，例如 2026-08-10T15:00:00
       pt_BR: A data e hora de término no formato ISO 8601, por exemplo 2026-08-10T15:00:00
       ja_JP: ISO 8601 形式の終了日時、例 2026-08-10T15:00:00
@@ -74,12 +82,14 @@ parameters:
     default: UTC
     label:
       en_US: Time Zone
+      ko_KR: 시간대
       zh_Hans: 时区
       pt_BR: Fuso Horário
       ja_JP: タイムゾーン
       zh_Hant: 時區
     human_description:
       en_US: The time zone for the start and end times, e.g. UTC or Asia/Tokyo
+      ko_KR: 시작 및 종료 시간의 시간대, 예 UTC 또는 Asia/Tokyo
       zh_Hans: 开始和结束时间的时区，例如 UTC 或 Asia/Tokyo
       pt_BR: O fuso horário para os horários de início e término, por exemplo UTC ou Asia/Tokyo
       ja_JP: 開始と終了時刻のタイムゾーン、例 UTC または Asia/Tokyo
@@ -91,12 +101,14 @@ parameters:
     required: false
     label:
       en_US: Body
+      ko_KR: 본문
       zh_Hans: 正文
       pt_BR: Corpo
       ja_JP: 本文
       zh_Hant: 內文
     human_description:
       en_US: The description or body content of the event
+      ko_KR: 이벤트의 설명 또는 본문 내용
       zh_Hans: 事件的描述或正文内容
       pt_BR: A descrição ou conteúdo do corpo do evento
       ja_JP: イベントの説明または本文内容
@@ -108,12 +120,14 @@ parameters:
     required: false
     label:
       en_US: Attendees
+      ko_KR: 참석자
       zh_Hans: 参与者
       pt_BR: Participantes
       ja_JP: 出席者
       zh_Hant: 與會者
     human_description:
       en_US: Comma-separated list of attendee email addresses
+      ko_KR: 쉼표로 구분된 참석자 이메일 주소 목록
       zh_Hans: 以逗号分隔的参与者电子邮件地址列表
       pt_BR: Lista de endereços de e-mail dos participantes separados por vírgula
       ja_JP: カンマ区切りの出席者メールアドレスのリスト
@@ -125,12 +139,14 @@ parameters:
     required: false
     label:
       en_US: Location
+      ko_KR: 장소
       zh_Hans: 地点
       pt_BR: Local
       ja_JP: 場所
       zh_Hant: 地點
     human_description:
       en_US: The location of the event
+      ko_KR: 이벤트의 장소
       zh_Hans: 事件的地点
       pt_BR: O local do evento
       ja_JP: イベントの場所
@@ -143,12 +159,14 @@ parameters:
     default: false
     label:
       en_US: Is Online Meeting
+      ko_KR: 온라인 회의 여부
       zh_Hans: 是否为在线会议
       pt_BR: É Reunião Online
       ja_JP: オンライン会議
       zh_Hant: 是否為線上會議
     human_description:
       en_US: Whether to create a Teams online meeting for the event
+      ko_KR: 이벤트에 Teams 온라인 회의를 생성할지 여부
       zh_Hans: 是否为该事件创建 Teams 在线会议
       pt_BR: Se deve criar uma reunião online do Teams para o evento
       ja_JP: イベントに Teams オンライン会議を作成するかどうか

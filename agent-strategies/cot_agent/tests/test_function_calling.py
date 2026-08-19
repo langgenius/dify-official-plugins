@@ -1,3 +1,4 @@
+import base64
 import json
 import sys
 import unittest
@@ -13,10 +14,20 @@ from dify_plugin.entities.model.llm import (
     LLMResultChunkDelta,
     LLMUsage,
 )
-from dify_plugin.entities.model.message import AssistantPromptMessage
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    ImagePromptMessageContent,
+    TextPromptMessageContent,
+)
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from dify_plugin.file.file import File, FileType
+from dify_plugin.interfaces.agent import AgentModelConfig, ToolEntity
 
-from strategies.function_calling import FunctionCallingAgentStrategy
+from strategies.function_calling import (
+    FunctionCallingAgentStrategy,
+    FunctionCallingParams,
+)
+from strategies.tool_response import should_forward_file_message
 
 
 def _make_tool_call(
@@ -166,6 +177,90 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
         self.assertFalse(thinking_started)
 
 
+class TestFunctionCallingMultimodalPrompt(unittest.TestCase):
+    def setUp(self):
+        self.strategy = FunctionCallingAgentStrategy(
+            runtime=Mock(), session=Mock()
+        )
+        self.strategy.query = "Describe the current image"
+
+    @staticmethod
+    def _file(file_type: FileType = FileType.IMAGE) -> File:
+        file = File(
+            url="https://example.invalid/test.png",
+            mime_type="image/png" if file_type == FileType.IMAGE else "application/pdf",
+            filename="test.png" if file_type == FileType.IMAGE else "test.pdf",
+            extension=".png" if file_type == FileType.IMAGE else ".pdf",
+            size=7,
+            type=file_type,
+        )
+        file._blob = b"pngdata"
+        return file
+
+    def test_text_only_query_remains_string(self):
+        self.strategy.files = []
+
+        message = self.strategy._user_prompt_message
+
+        self.assertEqual(message.content, "Describe the current image")
+
+    def test_current_image_is_added_before_query_text(self):
+        self.strategy.files = [self._file()]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertIsInstance(message.content, list)
+        self.assertEqual(len(message.content), 2)
+        self.assertIsInstance(message.content[0], ImagePromptMessageContent)
+        self.assertEqual(
+            message.content[0].base64_data,
+            base64.b64encode(b"pngdata").decode("ascii"),
+        )
+        self.assertEqual(message.content[0].detail, ImagePromptMessageContent.DETAIL.LOW)
+        self.assertIsInstance(message.content[1], TextPromptMessageContent)
+        self.assertEqual(message.content[1].data, "Describe the current image")
+
+    def test_multiple_images_preserve_order(self):
+        first = self._file()
+        first.filename = "first.png"
+        second = self._file()
+        second.filename = "second.png"
+        self.strategy.files = [first, second]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertIsInstance(message.content, list)
+        self.assertEqual(
+            [content.filename for content in message.content[:-1]],
+            ["first.png", "second.png"],
+        )
+
+    def test_non_image_files_are_not_added(self):
+        self.strategy.files = [self._file(FileType.DOCUMENT)]
+
+        message = self.strategy._user_prompt_message
+
+        self.assertEqual(message.content, "Describe the current image")
+
+    def test_empty_file_entries_from_dify_are_discarded(self):
+        image = self._file()
+
+        params = FunctionCallingParams(
+            query="Describe the current image",
+            instruction=None,
+            model={
+                "provider": "test/provider",
+                "model": "test-model",
+                "mode": "chat",
+                "completion_params": {},
+            },
+            tools=None,
+            files=[None, image],
+        )
+
+        self.assertEqual(params.files, [image])
+
+
 class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
     def test_workflow_keeps_text_and_omits_json_and_variable(self):
         responses = [
@@ -212,6 +307,83 @@ class TestFunctionCallingToolResponseFormatting(unittest.TestCase):
         )
 
         self.assertEqual(result, 'tool response: {"answer": "ok"}.')
+
+
+class TestFunctionCallingFileForwarding(unittest.TestCase):
+    @staticmethod
+    def _tool() -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": "getfile",
+                    "label": {"en_US": "getfile"},
+                    "provider": "workflow-provider",
+                },
+                "provider_type": "workflow",
+                "runtime_parameters": {},
+            }
+        )
+
+    def _invoke_with_tool_response(self, response: ToolInvokeMessage) -> list[ToolInvokeMessage]:
+        call = _make_tool_call("call-1", "getfile", '{"a":"get"}')
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=[call]),
+                usage=LLMUsage.empty_usage(),
+            ),
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="done", tool_calls=[]),
+                usage=LLMUsage.empty_usage(),
+            ),
+        ]
+        session.tool.invoke.return_value = iter([response])
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+
+        return list(
+            strategy._invoke(
+                {
+                    "query": "get a file",
+                    "instruction": "Use the tool",
+                    "model": AgentModelConfig(provider="test", model="test-model", mode="chat"),
+                    "tools": [self._tool()],
+                    "maximum_iterations": 3,
+                }
+            )
+        )
+
+    def test_forwards_tool_file_link(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.LINK,
+            message=ToolInvokeMessage.TextMessage(text="/files/tools/file-1.docx"),
+            meta={"tool_file_id": "file-1", "mime_type": "application/octet-stream"},
+        )
+
+        messages = self._invoke_with_tool_response(response)
+
+        self.assertIn(response, messages)
+
+    def test_does_not_forward_plain_link(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.LINK,
+            message=ToolInvokeMessage.TextMessage(text="https://dify.ai"),
+        )
+
+        messages = self._invoke_with_tool_response(response)
+
+        self.assertNotIn(response, messages)
+
+    def test_file_message_is_forwardable(self):
+        response = ToolInvokeMessage(
+            type=ToolInvokeMessage.MessageType.FILE,
+            message=None,
+            meta={"file": {"transfer_method": "remote_url", "url": "https://example.test/report.pdf"}},
+        )
+
+        self.assertTrue(should_forward_file_message(response))
 
 
 if __name__ == "__main__":

@@ -34,5 +34,11 @@ The "Anthropic Claude 5" entry provides Claude Opus 5 (`anthropic.claude-opus-5`
 - **Fable 5 prerequisite: data retention opt-in.** Your AWS account must set data retention mode to `provider_data_share` via the Bedrock Data Retention API before invoking Fable 5 (no console UI at launch). See the [Fable 5 model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html). The plugin never changes account settings.
 - **Pricing note.** Displayed prices are the Global cross-region rates (Opus 5 $5/$25, Sonnet 5 $3/$15, Fable 5 $10/$50 per 1M tokens). Geo/in-region invocation is ~10% higher. Prompt-cache read/write rates are not representable in Dify's cost tracking — refer to your AWS bill.
 
+## Japan data residency (`japan` cross-region inference)
+
+Selecting `japan` for *Cross-Region Inference* uses the `jp.` geographic profile, which routes only to `ap-northeast-3` and `ap-northeast-1` — inference never leaves Japan. It requires the configured region to be one of those two, and the model to have a `jp.` profile (Sonnet 4.5 / 4.6, Haiku 4.5, Opus 4.7 / 4.8 and Nova Lite V2 at the time of writing). Otherwise the call fails with an explanatory error instead of silently routing elsewhere.
+
+`geographic` is **not** equivalent: from Tokyo it resolves to `apac.`, which also routes to Korea, India, Singapore and Australia — and no `apac.` profile exists for 4.5-generation models or later. The pricing note above applies here too: displayed prices are the Global cross-region rates, and geo/in-region invocation is ~10% higher.
+
 ## Privacy
 This plugin sends the inputs required by the selected operation to the upstream service. See [PRIVACY.md](PRIVACY.md) for details.

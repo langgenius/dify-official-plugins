@@ -117,13 +117,13 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         parameters, which are removed from the dictionary.
 
         https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#controlling-reasoning-tokens
-        ```date: 2025-11-26
+        ```date: 2026-08-14
         {
           "model": "your-model",
           "messages": [],
           "reasoning": {
             // One of the following (not both):
-            "effort": "high", // Can be "high", "medium", "low", "minimal" or "none" (OpenAI-style)
+            "effort": "high", // Can be "max", "xhigh", "high", "medium", "low", "minimal" or "none" (OpenAI-style)
             "max_tokens": 2000, // Specific token limit (Anthropic-style)
 
             // Optional: Default is false. All models support this.
@@ -155,7 +155,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         if isinstance(reasoning_budget, int):
             reasoning_params["max_tokens"] = reasoning_budget
 
-        if reasoning_effort in ["high", "medium", "low", "minimal", "none"]:
+        if reasoning_effort in ["max", "xhigh", "high", "medium", "low", "minimal", "none"]:
             reasoning_params["effort"] = reasoning_effort
 
         if reasoning_params:

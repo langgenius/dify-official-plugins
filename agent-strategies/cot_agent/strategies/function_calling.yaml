@@ -53,6 +53,14 @@ parameters:
       en_US: Query
       zh_Hans: 查询
       pt_BR: Query
+  - name: files
+    type: any
+    scope: array[file]
+    required: false
+    label:
+      en_US: Current-turn files
+      zh_Hans: 当前轮文件
+      pt_BR: Arquivos da rodada atual
   - name: maximum_iterations
     type: number
     required: true
