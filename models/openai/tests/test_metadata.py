@@ -86,12 +86,29 @@ def test_apply_no_op_when_credential_disabled():
     assert target == {}
 
 
-def test_apply_silent_on_session_lookup_failure():
-    # Without a Dify session context, get_current_session raises; the
-    # helper must swallow that and leave target unchanged.
+def test_apply_noop_without_session_context():
+    # Outside a Dify session, get_current_session() returns None rather than
+    # raising, so no app_id resolves and target is left untouched.
     target: dict = {}
     apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
     assert "metadata" not in target
+    assert "store" not in target
+
+
+def test_apply_silent_when_session_lookup_raises(monkeypatch):
+    # Telemetry must never break generation, so a raising session lookup is
+    # swallowed. Exercises the except branch directly, which the None-returning
+    # path above cannot reach.
+    import dify_plugin
+
+    def _boom():
+        raise RuntimeError("session backend unavailable")
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", _boom)
+    target: dict = {}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    assert "metadata" not in target
+    assert "store" not in target
 
 
 class _FakeSession:
@@ -151,7 +168,7 @@ def test_apply_sets_store_true(monkeypatch):
     assert target["store"] is True
 
 
-def test_apply_preserves_explicit_store(monkeypatch):
+def test_apply_skips_metadata_when_store_is_explicitly_false(monkeypatch):
     # An explicit store value set by the caller must be respected, not
     # overwritten. Because the API rejects metadata unless store is true,
     # respecting store=False also means skipping the metadata entirely rather

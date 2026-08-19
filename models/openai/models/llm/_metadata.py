@@ -84,6 +84,13 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     if credentials.get("enable_request_metadata") != "enabled":
         return
 
+    # An explicit store=False cannot carry metadata: the API rejects the
+    # request outright. Respect the caller's choice and skip telemetry rather
+    # than sending a request that is guaranteed to fail. Checked before the
+    # session lookup so we don't pay for an app_id we would discard.
+    if target.get("store") is False:
+        return
+
     app_id: Optional[str] = None
     try:
         from dify_plugin import get_current_session
@@ -99,11 +106,6 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     if metadata is None:
         return
 
-    # An explicit store=False cannot carry metadata: the API rejects the
-    # request outright. Respect the caller's choice and skip telemetry rather
-    # than sending a request that is guaranteed to fail.
-    if target.get("store") is False:
-        return
     existing = target.get("metadata")
     if isinstance(existing, dict):
         # Preserve any caller-supplied metadata; only fill in Dify keys.

@@ -171,10 +171,12 @@ def parameters(
     telemetry_store = not explicit_store and params.get("store") is True
 
     params.setdefault("store", False)
-    # Encrypted reasoning passthrough is only required when the response is
-    # not persisted server-side. When store=true was set solely to carry Dify
-    # telemetry metadata, keep requesting it so multi-turn reasoning behaviour
-    # is unchanged by opting in.
+    # This plugin replays reasoning items from the previous turn rather than
+    # referencing a stored response, so it needs the encrypted payload
+    # regardless of whether the response was persisted. Upstream only requests
+    # it when store is false; keep that untouched, and additionally request it
+    # when store=true came from telemetry alone, so enabling the credential
+    # cannot degrade multi-turn reasoning.
     if (params["store"] is False or telemetry_store) and _supports_encrypted_reasoning(
         model
     ):
