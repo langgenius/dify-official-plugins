@@ -40,12 +40,39 @@ class FirecrawlApp:
         for i in range(retries):
             try:
                 response = requests.request(method, url, json=data, headers=headers)
-                return response.json()
             except requests.exceptions.RequestException:
                 if i < retries - 1:
                     time.sleep(backoff_factor * (2**i))
-                else:
-                    raise
+                    continue
+                raise
+
+            try:
+                response_data = response.json()
+            except requests.exceptions.JSONDecodeError:
+                response_data = {}
+
+            if response.ok:
+                if not isinstance(response_data, Mapping):
+                    raise HTTPError(
+                        "Firecrawl returned an invalid JSON response", response=response
+                    )
+                return response_data
+
+            error = (
+                response_data.get("error")
+                or response_data.get("message")
+                or response.text
+            )
+            http_error = HTTPError(
+                f"Firecrawl API request failed ({response.status_code}): {error or 'Unknown error'}",
+                response=response,
+            )
+            if (
+                response.status_code in {408, 429} or response.status_code >= 500
+            ) and i < retries - 1:
+                time.sleep(backoff_factor * (2**i))
+                continue
+            raise http_error
         return None
 
     def scrape_url(self, url: str, **kwargs):
@@ -74,7 +101,7 @@ class FirecrawlApp:
         idempotency_key: str | None = None,
         **kwargs,
     ):
-        endpoint = f"{self.base_url}/v1/crawl"
+        endpoint = f"{self.base_url.rstrip('/')}/v2/crawl"
         headers = self._prepare_headers(idempotency_key)
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
@@ -89,7 +116,7 @@ class FirecrawlApp:
         return response
 
     def check_crawl_status(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url.rstrip('/')}/v2/crawl/{job_id}"
         response = self._request("GET", endpoint)
         if response is None:
             raise HTTPError(
@@ -98,7 +125,7 @@ class FirecrawlApp:
         return response
 
     def cancel_crawl_job(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url.rstrip('/')}/v2/crawl/{job_id}"
         response = self._request("DELETE", endpoint)
         if response is None:
             raise HTTPError(f"Failed to cancel job {job_id} after multiple retries")
@@ -109,12 +136,18 @@ class FirecrawlApp:
             status = self.check_crawl_status(job_id)
             if status["status"] == "completed":
                 url_data_list = self._collect_all_crawl_pages(status)
-                return self.format_crawl_status_response(status["status"], status, url_data_list)
+                return self.format_crawl_status_response(
+                    status["status"], status, url_data_list
+                )
             elif status["status"] == "failed":
-                raise HTTPError(f"Job {job_id} failed: {status['error']}")
+                raise HTTPError(
+                    f"Job {job_id} failed: {status.get('error', 'Unknown error')}"
+                )
             time.sleep(poll_interval)
 
-    def _collect_all_crawl_pages(self, first_page: dict[str, Any]) -> list[dict[str, Any]]:
+    def _collect_all_crawl_pages(
+        self, first_page: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Collect all crawl result pages by following pagination links.
 
         Raises an exception if any paginated request fails, to avoid returning
@@ -139,12 +172,17 @@ class FirecrawlApp:
                 break
             next_response = self._request("GET", next_url)
             if next_response is None:
-                raise HTTPError(f"Failed to fetch next crawl page after multiple retries")
+                raise HTTPError(
+                    "Failed to fetch next crawl page after multiple retries"
+                )
             current_page = next_response
         return url_data_list
 
     def format_crawl_status_response(
-        self, status: str, crawl_status_response: dict[str, Any], url_data_list: list[dict[str, Any]]
+        self,
+        status: str,
+        crawl_status_response: dict[str, Any],
+        url_data_list: list[dict[str, Any]],
     ) -> dict[str, Any]:
         return {
             "status": status,
