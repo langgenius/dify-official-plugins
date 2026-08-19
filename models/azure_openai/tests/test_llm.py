@@ -16,6 +16,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from dify_plugin.entities.model import ModelFeature, ModelPropertyKey
+from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
@@ -24,9 +26,9 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     UserPromptMessage,
 )
-from dify_plugin.entities.model.llm import LLMUsage
-from models.llm.llm import AzureOpenAILargeLanguageModel
+
 from models.constants import LLM_BASE_MODELS, uses_responses_api
+from models.llm.llm import AzureOpenAILargeLanguageModel
 
 
 def make_llm() -> AzureOpenAILargeLanguageModel:
@@ -46,6 +48,35 @@ class TestUsesResponsesApi(unittest.TestCase):
 
     def test_gpt51_uses_responses_api(self):
         self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.1"))
+
+    def test_gpt55_metadata(self):
+        model = next(
+            model for model in LLM_BASE_MODELS if model.base_model_name == "gpt-5.5"
+        )
+        rules = {rule.name: rule for rule in model.entity.parameter_rules or []}
+
+        self.assertEqual(
+            model.entity.model_properties[ModelPropertyKey.CONTEXT_SIZE], 1050000
+        )
+        self.assertEqual(
+            set(model.entity.features or []),
+            {
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            },
+        )
+        self.assertEqual(
+            rules["reasoning_effort"].options,
+            ["none", "low", "medium", "high", "xhigh"],
+        )
+        self.assertEqual(rules["reasoning_effort"].default, "medium")
+        self.assertEqual(rules["verbosity"].default, "medium")
+        self.assertEqual(rules["max_completion_tokens"].max, 128000)
+        self.assertEqual(model.entity.pricing.input, 5)
+        self.assertEqual(model.entity.pricing.output, 30)
 
     def test_gpt56_series_uses_responses_api(self):
         self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-sol"))
