@@ -13,7 +13,7 @@ from dify_plugin.entities.model import (
     ParameterRule,
     ParameterType,
 )
-from dify_plugin.entities.model.llm import LLMMode, LLMResult
+from dify_plugin.entities.model.llm import LLMMode, LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
     DocumentPromptMessageContent,
@@ -732,4 +732,60 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model=response_json.get("model", model),
             message=assistant_message,
             usage=usage,
+        )
+
+    def _create_final_llm_result_chunk(
+        self,
+        index: int,
+        message: AssistantPromptMessage,
+        finish_reason: str,
+        usage: dict,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        credentials: dict,
+        full_content: str,
+    ) -> LLMResultChunk:
+        """Override the SDK default so the streaming fallback counts every
+        message in the conversation, not just the first one.
+
+        The base ``OAICompatLargeLanguageModel._create_final_llm_result_chunk``
+        falls back to ``self._num_tokens_from_string(text=prompt_messages[0].content)``
+        when the upstream omits ``usage`` from the final streaming chunk (or
+        sends it as a usage object without ``prompt_tokens``). That fallback
+        only tokenises the system prompt — every user / assistant turn
+        contributes 0 tokens — so callers see ``prompt_tokens`` matching the
+        system prompt alone, which is what #40752 reports (56593 actual vs.
+        ~298 visible).
+
+        Counting the full message list via ``_num_tokens_from_messages`` brings
+        the fallback in line with the non-streaming path
+        (``_handle_generate_response``), which already uses
+        ``_num_tokens_from_messages`` in its own no-usage branch.
+        """
+        prompt_tokens = usage and usage.get("prompt_tokens")
+        if prompt_tokens is None:
+            prompt_tokens = self._num_tokens_from_messages(
+                prompt_messages,
+                credentials=credentials,
+            )
+        completion_tokens = usage and usage.get("completion_tokens")
+        if completion_tokens is None:
+            completion_tokens = self._num_tokens_from_string(text=full_content)
+
+        # transform usage
+        usage = self._calc_response_usage(
+            model,
+            credentials,
+            prompt_tokens,
+            completion_tokens,
+        )
+
+        return LLMResultChunk(
+            model=model,
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=message,
+                finish_reason=finish_reason,
+                usage=usage,
+            ),
         )
