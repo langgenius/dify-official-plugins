@@ -62,6 +62,12 @@ class ImageModelCatalogTests(unittest.TestCase):
         data = read_yaml("tools/doubao.yaml")
         self.assertNotIn("doubao-seedream-5.0-pro", option_values(parameter(data, "model")))
 
+    def test_qwen_tool_contains_image_3_models(self) -> None:
+        data = read_yaml("tools/qwen-image.yaml")
+        models = option_values(parameter(data, "model"))
+        self.assertIn("qwen-image-3.0", models)
+        self.assertIn("qwen-image-3.0-pro", models)
+
     def test_doubao_pro_tool_exposes_only_verified_parameters(self) -> None:
         relative = "tools/doubao-seedream-5-pro.yaml"
         self.assertTrue((PLUGIN_ROOT / relative).is_file())

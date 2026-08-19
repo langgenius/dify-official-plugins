@@ -29,6 +29,20 @@ parameter_rules:
     help:
       zh_Hans: 控制思维链长度，平衡效果、时延与成本。minimal 关闭思考直接回答；low 轻量思考侧重快速响应；medium 均衡模式；high 深度分析处理复杂问题。
       en_US: Controls chain-of-thought length to balance quality, latency, and cost. minimal answers directly without thinking; low favors fast response; medium is balanced; high enables deep analysis for complex problems.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
 pricing:
   input: "6"
   output: "30"

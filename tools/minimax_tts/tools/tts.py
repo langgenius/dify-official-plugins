@@ -7,6 +7,8 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from utils.endpoint import get_base_url
+
 logger = logging.getLogger(__name__)
 
 class MinimaxTTS(Tool):
@@ -41,7 +43,7 @@ class MinimaxTTS(Tool):
         if emotion:
             voice_setting["emotion"] = emotion
 
-        url = f"https://api.minimax.chat/v1/t2a_v2?GroupId={group_id}"
+        url = f"{get_base_url(self.runtime.credentials)}/v1/t2a_v2?GroupId={group_id}"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
@@ -59,6 +61,7 @@ class MinimaxTTS(Tool):
             response = requests.post(url, headers=headers, json=payload, timeout=(10, 30))
             response.raise_for_status()
             parsed_json = response.json()
+            self._raise_on_base_resp_error(parsed_json, url)
             audio_hex = parsed_json.get("data", {}).get("audio")
             if not audio_hex:
                 yield self.create_text_message("API 未返回音频数据")
@@ -79,9 +82,24 @@ class MinimaxTTS(Tool):
                 pass
             yield self.create_text_message(f"{error_msg}: {str(e)}")
 
+    @staticmethod
+    def _raise_on_base_resp_error(parsed_json: dict, url: str) -> None:
+        """MiniMax returns HTTP 200 with a base_resp error (e.g. status_code
+        1004 for a bad key) on ALL its hosts, so without this check a wrong or
+        wrong-platform key sails through credential validation."""
+        base_resp = parsed_json.get("base_resp") or {}
+        if base_resp.get("status_code", 0) != 0:
+            endpoint = url.split("?")[0]
+            raise Exception(
+                f"MiniMax API error {base_resp.get('status_code')} from {endpoint}: "
+                f"{base_resp.get('status_msg')} (MiniMax keys only work on the "
+                f"platform where they were minted; check the 'API Endpoint' "
+                f"credential setting)"
+            )
+
     def tts(self, text: str, group_id: str, api_key: str) -> bytes:
         """调用 MiniMax TTS API 进行文本转语音"""
-        url = f"https://api.minimax.chat/v1/t2a_v2?GroupId={group_id}"
+        url = f"{get_base_url(self.runtime.credentials)}/v1/t2a_v2?GroupId={group_id}"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
@@ -97,6 +115,11 @@ class MinimaxTTS(Tool):
         try:
             response = requests.post(url, headers=headers, data=payload, timeout=(10, 30))
             response.raise_for_status()
+            try:
+                parsed_json = response.json()
+            except ValueError:
+                return response.content
+            self._raise_on_base_resp_error(parsed_json, url)
             return response.content
         except requests.exceptions.ReadTimeout:
             raise Exception("请求超时，请稍后重试")

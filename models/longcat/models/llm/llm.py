@@ -19,6 +19,11 @@ class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        if "enable_thinking" in model_parameters:
+            enable_thinking = model_parameters.pop("enable_thinking")
+            model_parameters["thinking"] = {
+                "type": "enabled" if enable_thinking else "disabled"
+            }
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
@@ -30,6 +35,8 @@ class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
     @staticmethod
     def _add_custom_parameters(credentials) -> None:
         credentials["endpoint_url"] = str(
-            URL(credentials.get("endpoint_url", "https://api.longcat.chat/openai"))
+            URL(credentials.get("endpoint_url") or "https://api.longcat.chat/openai/v1")
         )
         credentials["mode"] = LLMMode.CHAT.value
+        credentials["function_calling_type"] = "tool_call"
+        credentials["stream_function_calling"] = "supported"

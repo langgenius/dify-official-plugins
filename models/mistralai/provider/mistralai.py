@@ -5,6 +5,15 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
+# Sentinel model used for credential validation. Picked as a small, current-generation
+# Mistral chat model so it has broad availability across all Mistral key tiers — a key
+# valid for any current Mistral model will pass validation against it. The previous
+# default (`open-mistral-7b`) is from Mistral's 2023 naming convention and is not in
+# the plugin's current predefined catalog; current keys return a 404 on it.
+# Callers can override the sentinel by passing `validate_model` in the
+# credentials dict (e.g. when the key only covers a different model).
+DEFAULT_VALIDATE_MODEL = "mistral-small-latest"
+
 
 class MistralAIProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -16,9 +25,14 @@ class MistralAIProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="open-mistral-7b", credentials=credentials)
+            validate_model = credentials.get("validate_model") or DEFAULT_VALIDATE_MODEL
+            model_instance.validate_credentials(
+                model=validate_model, credentials=credentials
+            )
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
-            logger.exception(f"{self.get_provider_schema().provider} credentials validate failed")
+            logger.exception(
+                f"{self.get_provider_schema().provider} credentials validate failed"
+            )
             raise ex

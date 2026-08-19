@@ -8,6 +8,7 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude 5': {
+        'Opus 5': 'anthropic.claude-opus-5',
         'Sonnet 5': 'anthropic.claude-sonnet-5',
         'Fable 5': 'anthropic.claude-fable-5',
     },
@@ -141,17 +142,65 @@ def get_region_area(region_name, prefer_global=False):
     return area_mapping.get(prefix, None)
 
 
+# AWS regions served by the 'jp' geographic inference profile
+_JP_REGIONS = {'ap-northeast-1', 'ap-northeast-3'}
+
+# Base model IDs that have a jp. geographic inference profile. Live-verified
+# with `aws bedrock list-inference-profiles --region ap-northeast-1`; re-run
+# that command when adding models.
+JP_PROFILE_MODELS = frozenset({
+    'anthropic.claude-sonnet-4-6',
+    'anthropic.claude-sonnet-4-5-20250929-v1:0',
+    'anthropic.claude-haiku-4-5-20251001-v1:0',
+    'anthropic.claude-opus-4-7',
+    'anthropic.claude-opus-4-8',
+    'amazon.nova-2-lite-v1:0',
+})
+
+
+def resolve_japan_profile_id(model_id, region_name):
+    """
+    Resolve the Japan-only ('jp.') inference profile ID for a model.
+
+    :param model_id: bare base model ID, e.g. 'anthropic.claude-sonnet-4-6'
+    :param region_name: AWS region of the caller
+    :return: 'jp.'-prefixed model ID
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message. This never falls back to another geography:
+        'apac.' routes outside Japan and would silently break the data
+        residency the caller asked for.
+    """
+    if region_name not in _JP_REGIONS:
+        raise ValueError(
+            f"Japan cross-region inference is only available from "
+            f"{', '.join(sorted(_JP_REGIONS))}; the configured region is {region_name}."
+        )
+    if model_id not in JP_PROFILE_MODELS:
+        raise ValueError(
+            f"{model_id} has no 'jp.' geographic inference profile. Set "
+            f"Cross-Region Inference to 'global' instead — note that global "
+            f"routes across all AWS regions."
+        )
+    return f"jp.{model_id}"
+
+
 # Claude 5 generation models are invocable ONLY through inference profiles
 # (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
-# converse returns ValidationException) and, unlike earlier Claude models,
-# only 'us' and 'global' profiles exist — there are no eu./apac. geo
-# profiles. See the model cards:
+# converse returns ValidationException). Geo profile coverage varies per
+# model (live-verified via list-inference-profiles): Opus 5 and Sonnet 5
+# have us./eu./au. geo profiles, Fable 5 only us. — there is no apac. geo
+# profile for any of them. See the model cards:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
 CLAUDE5_PROFILE_PREFIXES = {
-    'anthropic.claude-sonnet-5': ('us', 'global'),
+    'anthropic.claude-opus-5': ('us', 'eu', 'au', 'global'),
+    'anthropic.claude-sonnet-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-fable-5': ('us', 'global'),
 }
+
+# AWS regions served by the 'au' geographic inference profile
+_AU_REGIONS = {'ap-southeast-2', 'ap-southeast-4'}
 
 CLAUDE5_REFUSAL_FALLBACK_BASE_ID = 'anthropic.claude-opus-4-8'
 
@@ -206,6 +255,10 @@ def resolve_claude5_profile_id(model_id, cross_region, region_name):
         # The US geo profile serves Canadian source regions (per model card)
         if area is None and region_name.startswith('ca-'):
             area = 'us'
+        # Australian regions are served by the 'au' geo profile (there is no
+        # apac. profile for Claude 5 models)
+        if area == 'apac' and region_name in _AU_REGIONS and 'au' in allowed:
+            area = 'au'
         if area in allowed:
             return f"{area}.{model_id}"
         raise ValueError(

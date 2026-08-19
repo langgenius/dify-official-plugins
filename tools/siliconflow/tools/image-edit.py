@@ -5,7 +5,9 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-SILICONFLOW_IMAGE_API_URL = "https://api.siliconflow.cn/v1/images/generations"
+from utils.endpoint import get_base_url
+
+SILICONFLOW_IMAGE_API_PATH = "/v1/images/generations"
 QWEN_IMAGE_EDIT_MODELS = {
     "qwen_image_edit_2509": "Qwen/Qwen-Image-Edit-2509",
     "qwen_image_edit": "Qwen/Qwen-Image-Edit",
@@ -66,7 +68,7 @@ class ImageEditTool(Tool):
 
         try:
             response = requests.post(
-                SILICONFLOW_IMAGE_API_URL,
+                get_base_url(self.runtime.credentials) + SILICONFLOW_IMAGE_API_PATH,
                 json=payload,
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,

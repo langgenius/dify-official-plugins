@@ -1519,8 +1519,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             if "title" in parameters:
                 num_tokens += len(encoding.encode("title"))
                 num_tokens += len(encoding.encode(parameters["title"]))
-            num_tokens += len(encoding.encode("type"))
-            num_tokens += len(encoding.encode(parameters["type"]))
+            if "type" in parameters:
+                num_tokens += len(encoding.encode("type"))
+                num_tokens += len(encoding.encode(parameters["type"]))
             if "properties" in parameters:
                 num_tokens += len(encoding.encode("properties"))
                 for key, value in parameters["properties"].items():

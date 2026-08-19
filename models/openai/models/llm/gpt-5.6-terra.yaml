@@ -130,7 +130,7 @@ parameter_rules:
 # Base Standard pricing for direct API requests with up to 272K input tokens.
 # Cached, cache-write, regional, and long-context rates are not representable by PriceConfig.
 pricing:
-  input: '2.50'
-  output: '15.00'
+  input: '2.00'
+  output: '12.00'
   unit: '0.000001'
   currency: USD

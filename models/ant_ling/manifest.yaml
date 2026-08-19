@@ -1,0 +1,30 @@
+type: plugin
+version: 0.1.0
+author: langgenius
+name: ant_ling
+created_at: "2026-07-27T22:05:00.000000+08:00"
+label:
+  en_US: Ant Ling
+  zh_Hans: 蚂蚁百灵
+description:
+  en_US: Models provided by Ant Group, such as Ling-3.0-flash, Ling-2.6-1T, and Ring-2.6-1T.
+  zh_Hans: 蚂蚁集团百灵系列大模型，如 Ling-3.0-flash、Ling-2.6-1T 和 Ring-2.6-1T。
+icon: icon_s_zh.svg
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.1.0
+plugins:
+  models:
+    - provider/ant_ling.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true

@@ -9,6 +9,14 @@ For community contributions, submit to https://github.com/langgenius/dify-plugin
 
 
 
+## Release Notes
+
+<!--
+User-facing summary of what this version changes. Published verbatim on the
+plugin's Marketplace page (Version History → Change Log). English, Markdown.
+Skip only for documentation / non-plugin changes.
+-->
+
 ## Change Type
 
 - [ ] Documentation / non-plugin change
@@ -69,5 +77,5 @@ Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.2
 Python venv aligned with `manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins).
 -->
 
-- [ ] Local deployment — Dify version: <!-- e.g. 1.2.0 -->
+- [ ] Local deployment — Dify version: 1.7.0
 - [ ] SaaS (cloud.dify.ai)

@@ -85,6 +85,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "jp.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "au.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
@@ -462,6 +464,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_id = model_ids.resolve_claude5_profile_id(model_id, cross_region, region_name)
                 except ValueError as e:
                     raise InvokeError(str(e))
+            elif cross_region == 'japan':
+                # Japan-only geographic profile (jp.) — keeps inference inside
+                # Japan for data-residency requirements. Resolved separately so
+                # the geographic mapping (Tokyo -> apac) stays untouched.
+                try:
+                    model_id = model_ids.resolve_japan_profile_id(model_id, region_name)
+                except ValueError as e:
+                    raise InvokeError(str(e))
             elif cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
                 prefer_global = (cross_region == 'global')
@@ -744,8 +754,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        except InvokeError:
+            raise
+        except Exception:
+            # Real bug — log the full traceback at ERROR level and let
+            # the original exception type propagate so the caller sees
+            # the root cause instead of a generic InvokeError wrapper.
+            # The previous bare `except Exception as ex: raise InvokeError(...)`
+            # hid undefined-name and similar bugs (same anti-pattern that
+            # PRs #3565 / #3654 fixed in `_generate` and `_invoke`).
+            logger.exception(f"Failed to invoke converse model {model_info['model']}")
+            raise
 
     def _handle_converse_response(
         self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
@@ -1552,9 +1571,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # need workaround for ai21 models which doesn't support streaming
         if stream and model_prefix != "ai21":
-            invoke = runtime_client.invoke_model_with_response_stream
+            invoke = bedrock_client.invoke_model_with_response_stream
         else:
-            invoke = runtime_client.invoke_model
+            invoke = bedrock_client.invoke_model
 
         try:
             body_jsonstr = json.dumps(payload)
@@ -1570,8 +1589,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
 
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        # Re-raise any other exception (NameError, TypeError, ValueError, etc.) so
+        # real bugs surface instead of being wrapped in a generic InvokeError.
+        # The previous bare `except Exception` swallowed an undefined-name
+        # bug and re-raised as InvokeError, hiding the root cause from the
+        # caller and from any future maintainer reading the call site. See
+        # issue #3564.
 
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
@@ -1866,6 +1889,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
             'Claude 4.8 Opus': 'claude-4-8-opus',

@@ -3,8 +3,6 @@ import logging
 import operator
 from typing import Any, Optional
 
-import boto3  # type: ignore
-
 from dify_plugin import RerankModel
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
@@ -18,6 +16,8 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 
+from provider.sagemaker import get_sagemaker_client
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,11 +26,15 @@ class SageMakerRerankModel(RerankModel):
     Model class for SageMaker rerank model.
     """
 
-    sagemaker_client: Any = None
-
-    def _sagemaker_rerank(self, query_input: str, docs: list[str], rerank_endpoint: str):
+    def _sagemaker_rerank(
+        self,
+        query_input: str,
+        docs: list[str],
+        rerank_endpoint: str,
+        sagemaker_client: Any,
+    ):
         inputs = [query_input] * len(docs)
-        response_model = self.sagemaker_client.invoke_endpoint(
+        response_model = sagemaker_client.invoke_endpoint(
             EndpointName=rerank_endpoint,
             Body=json.dumps({"inputs": inputs, "docs": docs}),
             ContentType="application/json",
@@ -62,45 +66,28 @@ class SageMakerRerankModel(RerankModel):
         :param user: unique user id
         :return: rerank result
         """
-        line = 0
         try:
             if len(docs) == 0:
                 return RerankResult(model=model, docs=docs)
 
-            line = 1
-            if not self.sagemaker_client:
-                access_key = credentials.get("aws_access_key_id")
-                secret_key = credentials.get("aws_secret_access_key")
-                aws_region = credentials.get("aws_region")
-                if aws_region:
-                    if access_key and secret_key:
-                        self.sagemaker_client = boto3.client(
-                            "sagemaker-runtime",
-                            aws_access_key_id=access_key,
-                            aws_secret_access_key=secret_key,
-                            region_name=aws_region,
-                        )
-                    else:
-                        self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
-                else:
-                    self.sagemaker_client = boto3.client("sagemaker-runtime")
-
-            line = 2
-
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
+            sagemaker_client = get_sagemaker_client("sagemaker-runtime", credentials)
             candidate_docs = []
 
-            scores = self._sagemaker_rerank(query, docs, sagemaker_endpoint)
+            scores = self._sagemaker_rerank(
+                query, docs, sagemaker_endpoint, sagemaker_client
+            )
             for idx in range(len(scores)):
                 candidate_docs.append({"content": docs[idx], "score": scores[idx]})
 
             sorted(candidate_docs, key=operator.itemgetter("score"), reverse=True)
 
-            line = 3
             rerank_documents = []
             for idx, result in enumerate(candidate_docs):
                 rerank_document = RerankDocument(
-                    index=idx, text=result.get("content"), score=result.get("score", -100.0)
+                    index=idx,
+                    text=result.get("content"),
+                    score=result.get("score", -100.0),
                 )
 
                 if score_threshold is not None:
@@ -113,7 +100,9 @@ class SageMakerRerankModel(RerankModel):
 
         except Exception as e:
             logger.exception(f"Failed to invoke rerank model, model: {model}")
-            raise InvokeError(f"Failed to invoke rerank model, model: {model}, error: {str(e)}")
+            raise InvokeError(
+                f"Failed to invoke rerank model, model: {model}, error: {str(e)}"
+            )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -157,7 +146,9 @@ class SageMakerRerankModel(RerankModel):
             InvokeBadRequestError: [InvokeBadRequestError, KeyError, ValueError],
         }
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
         """

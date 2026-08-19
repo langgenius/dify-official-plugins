@@ -1,0 +1,6 @@
+- cohere/rerank-4-pro
+- cohere/rerank-4-fast
+- cohere/rerank-v3.5
+- voyageai/rerank-2.5
+- voyageai/rerank-2.5-lite
+- qwen/qwen3-reranker-8b

@@ -2,8 +2,8 @@ import json
 from typing import Any, Generator
 
 import httpx
-from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 DISCORD_WEBHOOK_URL_PREFIXES = (
@@ -38,8 +38,8 @@ def _parse_json_parameter(
         return None, f"Invalid parameter {name}: expected {expected_type.__name__} JSON"
     try:
         parsed = json.loads(value)
-    except json.JSONDecodeError as e:
-        return None, f"Invalid parameter {name}: malformed JSON ({e.msg})"
+    except json.JSONDecodeError as exc:
+        return None, f"Invalid parameter {name}: malformed JSON ({exc.msg})"
     if not isinstance(parsed, expected_type):
         return None, f"Invalid parameter {name}: expected {expected_type.__name__} JSON"
     return parsed, None
@@ -50,20 +50,19 @@ def _build_request(
 ) -> tuple[dict[str, Any], dict[str, Any], str | None]:
     content = tool_parameters.get("content") or ""
     if len(content) > MAX_CONTENT_LENGTH:
-        return (
-            {},
-            {},
-            f"Invalid parameter content: Discord messages must be at most {MAX_CONTENT_LENGTH} characters",
+        return {}, {}, (
+            f"Invalid parameter content: Discord messages must be at most "
+            f"{MAX_CONTENT_LENGTH} characters"
         )
 
-    embeds, error = _parse_json_parameter("embeds_json", tool_parameters.get("embeds_json"), list)
+    embeds, error = _parse_json_parameter(
+        "embeds_json", tool_parameters.get("embeds_json"), list
+    )
     if error:
         return {}, {}, error
     if embeds is not None and len(embeds) > MAX_EMBEDS:
-        return (
-            {},
-            {},
-            f"Invalid parameter embeds_json: Discord supports at most {MAX_EMBEDS} embeds",
+        return {}, {}, (
+            f"Invalid parameter embeds_json: Discord supports at most {MAX_EMBEDS} embeds"
         )
 
     allowed_mentions, error = _parse_json_parameter(
@@ -71,15 +70,16 @@ def _build_request(
     )
     if error:
         return {}, {}, error
-
-    components, error = _parse_json_parameter("components_json", tool_parameters.get("components_json"), list)
+    components, error = _parse_json_parameter(
+        "components_json", tool_parameters.get("components_json"), list
+    )
     if error:
         return {}, {}, error
-
-    poll, error = _parse_json_parameter("poll_json", tool_parameters.get("poll_json"), dict)
+    poll, error = _parse_json_parameter(
+        "poll_json", tool_parameters.get("poll_json"), dict
+    )
     if error:
         return {}, {}, error
-
     applied_tags, error = _parse_json_parameter(
         "applied_tags_json", tool_parameters.get("applied_tags_json"), list
     )
@@ -87,7 +87,10 @@ def _build_request(
         return {}, {}, error
 
     if not any((content, embeds, components, poll)):
-        return {}, {}, "Invalid message: provide at least one of content, embeds_json, components_json, or poll_json"
+        return {}, {}, (
+            "Invalid message: provide at least one of content, embeds_json, "
+            "components_json, or poll_json"
+        )
 
     flags = None
     if _has_value(tool_parameters.get("flags")):
@@ -95,12 +98,10 @@ def _build_request(
             flags = int(tool_parameters["flags"])
         except (TypeError, ValueError):
             return {}, {}, "Invalid parameter flags: expected an integer"
-
     if flags is not None and flags & IS_COMPONENTS_V2 and any((content, embeds, poll)):
-        return (
-            {},
-            {},
-            "Invalid message: IS_COMPONENTS_V2 flags cannot be combined with content, embeds_json, or poll_json",
+        return {}, {}, (
+            "Invalid message: IS_COMPONENTS_V2 flags cannot be combined with "
+            "content, embeds_json, or poll_json"
         )
 
     params: dict[str, Any] = {}
@@ -109,7 +110,9 @@ def _build_request(
     if _has_value(tool_parameters.get("thread_id")):
         params["thread_id"] = tool_parameters["thread_id"]
     if _has_value(tool_parameters.get("with_components")):
-        params["with_components"] = str(_to_bool(tool_parameters["with_components"])).lower()
+        params["with_components"] = str(
+            _to_bool(tool_parameters["with_components"])
+        ).lower()
 
     payload: dict[str, Any] = {
         "username": tool_parameters.get("username") or default_username,
@@ -118,21 +121,19 @@ def _build_request(
     }
     if _has_value(tool_parameters.get("tts")):
         payload["tts"] = _to_bool(tool_parameters["tts"])
-    if embeds is not None:
-        payload["embeds"] = embeds
-    if allowed_mentions is not None:
-        payload["allowed_mentions"] = allowed_mentions
-    if components is not None:
-        payload["components"] = components
+    for key, value in (
+        ("embeds", embeds),
+        ("allowed_mentions", allowed_mentions),
+        ("components", components),
+        ("poll", poll),
+        ("applied_tags", applied_tags),
+    ):
+        if value is not None:
+            payload[key] = value
     if flags is not None:
         payload["flags"] = flags
     if _has_value(tool_parameters.get("thread_name")):
         payload["thread_name"] = tool_parameters["thread_name"]
-    if applied_tags is not None:
-        payload["applied_tags"] = applied_tags
-    if poll is not None:
-        payload["poll"] = poll
-
     return params, payload, None
 
 
@@ -140,36 +141,38 @@ class DiscordWebhookTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        Incoming Webhooks
-        API Document:
-            https://discord.com/developers/docs/resources/webhook#execute-webhook
-        """
         webhook_url = tool_parameters.get("webhook_url", "")
         if not webhook_url.startswith(DISCORD_WEBHOOK_URL_PREFIXES):
             yield self.create_text_message(
                 f"Invalid parameter webhook_url {webhook_url}, not a valid Discord webhook URL"
             )
             return
-
-        default_username = getattr(self.runtime, "user_id", None) or "Dify"
-        params, payload, error = _build_request(tool_parameters, default_username)
+        params, payload, error = _build_request(
+            tool_parameters, getattr(self.runtime, "user_id", None) or "Dify"
+        )
         if error:
             yield self.create_text_message(error)
             return
-
-        headers = {"Content-Type": "application/json"}
         try:
-            res = httpx.post(webhook_url, headers=headers, params=params, json=payload, timeout=20)
-            if res.is_success:
-                yield self.create_text_message("Discord webhook message sent successfully")
-                if _to_bool(tool_parameters.get("wait")) and res.content:
-                    yield self.create_json_message(res.json())
+            response = httpx.post(
+                webhook_url,
+                headers={"Content-Type": "application/json"},
+                params=params,
+                json=payload,
+                timeout=20,
+            )
+            if response.is_success:
+                yield self.create_text_message(
+                    "Discord webhook message sent successfully"
+                )
+                if _to_bool(tool_parameters.get("wait")) and response.content:
+                    yield self.create_json_message(response.json())
             else:
                 yield self.create_text_message(
-                    f"Failed to send Discord webhook message. status code: {res.status_code}, response: {res.text}"
+                    "Failed to send Discord webhook message. "
+                    f"status code: {response.status_code}, response: {response.text}"
                 )
-        except Exception as e:
+        except Exception as exc:
             yield self.create_text_message(
-                "Failed to send message through webhook. {}".format(e)
+                f"Failed to send message through webhook. {exc}"
             )
