@@ -29,6 +29,7 @@ from dify_plugin.entities.model.message import (
     PromptMessageTool,
     SystemPromptMessage,
     AssistantPromptMessage,
+    ToolPromptMessage,
     UserPromptMessage,
     VideoPromptMessageContent,
     TextPromptMessageContent,
