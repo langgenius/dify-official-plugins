@@ -27,8 +27,34 @@ respected rather than overwritten.
 from __future__ import annotations
 
 from typing import Any, Optional
+from urllib.parse import urlparse
+
+from ..constants import AZURE_OPENAI_API_VERSION
 
 _MAX_VALUE_LENGTH = 512
+
+# Stored Completions, and with it the ``metadata`` field, is only available
+# from this api-version onward. Older versions reject the request outright, so
+# telemetry is skipped rather than allowed to break generation. The dropdown in
+# provider/azure_openai.yaml still offers versions as old as 2023-12-01-preview
+# and AZURE_OPENAI_API_VERSION is older than this, so the check is load-bearing
+# rather than theoretical.
+_MIN_METADATA_API_VERSION = "2024-10-01-preview"
+
+
+def _supports_metadata(credentials: dict) -> bool:
+    """Whether the configured Azure endpoint accepts ``metadata``/``store``.
+
+    Endpoints on the ``/openai/v1`` surface are versionless — ``common.py``
+    omits ``api_version`` entirely for them — and always support the field.
+    Otherwise compare the effective api-version, which sorts correctly because
+    the values are ``YYYY-MM-DD``-prefixed.
+    """
+    api_base = str(credentials.get("openai_api_base") or "").strip()
+    if urlparse(api_base).path.rstrip("/").endswith("/openai/v1"):
+        return True
+    api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
+    return str(api_version) >= _MIN_METADATA_API_VERSION
 
 
 def normalize_metadata_value(s: Any) -> str:
@@ -74,13 +100,27 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     ``target['metadata']`` to the built dict (if one is produced), and sets
     ``target['store'] = True`` — the API only accepts ``metadata`` when
     ``store`` is enabled. An explicit ``store`` value already on ``target``
-    is left untouched.
+    is left untouched; when that value is ``False`` no metadata is attached
+    at all, because the API would reject such a request.
 
     Session lookup failures are swallowed silently: metadata attachment is
     telemetry, and must never break generation if the SDK is missing or
     the session context is not initialized.
     """
     if credentials.get("enable_request_metadata") != "enabled":
+        return
+
+    # An explicit store=False cannot carry metadata: the API rejects the
+    # request outright. Respect the caller's choice and skip telemetry rather
+    # than sending a request that is guaranteed to fail. Checked before the
+    # session lookup so we don't pay for an app_id we would discard.
+    if target.get("store") is False:
+        return
+
+    # Likewise for an api-version that predates Stored Completions: sending
+    # metadata there fails every generation, and validate_credentials cannot
+    # catch it because it builds its own probe request.
+    if not _supports_metadata(credentials):
         return
 
     app_id: Optional[str] = None

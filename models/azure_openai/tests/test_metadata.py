@@ -84,16 +84,89 @@ def test_apply_no_op_when_credential_disabled():
     assert target == {}
 
 
-def test_apply_silent_on_session_lookup_failure():
-    # Without a Dify session context, get_current_session raises; the
-    # helper must swallow that and leave target unchanged.
+# Metadata requires an api-version that supports Stored Completions. The
+# plugin's fallback default predates it, so the enabled-path tests have to be
+# explicit about the version, exactly as a working deployment must be.
+ENABLED = {
+    "enable_request_metadata": "enabled",
+    "openai_api_version": "2025-04-01-preview",
+}
+
+
+def test_apply_noop_without_session_context():
+    # Outside a Dify session, get_current_session() returns None rather than
+    # raising, so no app_id resolves and target is left untouched.
+    target: dict = {}
+    apply_dify_metadata_if_enabled(target, ENABLED)
+    assert "metadata" not in target
+    assert "store" not in target
+
+
+def test_apply_silent_when_session_lookup_raises(monkeypatch):
+    # Telemetry must never break generation, so a raising session lookup is
+    # swallowed. Exercises the except branch directly, which the None-returning
+    # path above cannot reach.
+    import dify_plugin
+
+    def _boom():
+        raise RuntimeError("session backend unavailable")
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", _boom)
+    target: dict = {}
+    apply_dify_metadata_if_enabled(target, ENABLED)
+    assert "metadata" not in target
+    assert "store" not in target
+
+
+class _FakeSession:
+    app_id = "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_skipped_when_api_version_predates_stored_completions(monkeypatch):
+    # An api-version older than Stored Completions rejects metadata outright,
+    # which would fail every generation. Telemetry is dropped instead.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {}
+    apply_dify_metadata_if_enabled(
+        target,
+        {
+            "enable_request_metadata": "enabled",
+            "openai_api_version": "2024-02-15-preview",
+        },
+    )
+    assert "metadata" not in target
+    assert "store" not in target
+
+
+def test_apply_skipped_when_api_version_left_empty(monkeypatch):
+    # openai_api_version is optional, and the fallback default also predates
+    # Stored Completions, so an empty value must be treated as unsupported.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {}
     apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
     assert "metadata" not in target
 
 
-class _FakeSession:
-    app_id = "550e8400-e29b-41d4-a716-446655440000"
+def test_apply_allowed_on_versionless_v1_endpoint(monkeypatch):
+    # /openai/v1 endpoints are versionless — common.py omits api_version for
+    # them — and support metadata regardless of the dropdown value.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {}
+    apply_dify_metadata_if_enabled(
+        target,
+        {
+            "enable_request_metadata": "enabled",
+            "openai_api_base": "https://example.openai.azure.com/openai/v1",
+        },
+    )
+    assert target["metadata"]["dify_app_id"] == _FakeSession.app_id
+    assert target["store"] is True
 
 
 def test_apply_merges_with_existing_metadata(monkeypatch):
@@ -103,7 +176,7 @@ def test_apply_merges_with_existing_metadata(monkeypatch):
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {"metadata": {"user_supplied": "value"}}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    apply_dify_metadata_if_enabled(target, ENABLED)
     assert target["metadata"]["user_supplied"] == "value"
     assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
     assert target["metadata"]["dify_source"] == "dify"
@@ -116,7 +189,7 @@ def test_apply_replaces_non_dict_metadata(monkeypatch):
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {"metadata": "unexpected-string"}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    apply_dify_metadata_if_enabled(target, ENABLED)
     assert isinstance(target["metadata"], dict)
     assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
 
@@ -129,7 +202,7 @@ def test_apply_does_not_mutate_existing_metadata(monkeypatch):
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     original = {"existing_key": "existing_value"}
     target: dict = {"metadata": original}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    apply_dify_metadata_if_enabled(target, ENABLED)
     # The original dict is left untouched.
     assert original == {"existing_key": "existing_value"}
     # target carries a new, merged dict.
@@ -145,20 +218,22 @@ def test_apply_sets_store_true(monkeypatch):
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    apply_dify_metadata_if_enabled(target, ENABLED)
     assert target["store"] is True
 
 
-def test_apply_preserves_explicit_store(monkeypatch):
-    # An explicit store value set by the caller must be respected, not
-    # overwritten — even when it is False.
+def test_apply_skips_metadata_when_store_is_explicitly_false(monkeypatch):
+    # An explicit store value set by the caller must be respected. Because the
+    # API rejects metadata unless store is true, respecting store=False also
+    # means skipping the metadata entirely rather than emitting a request that
+    # is guaranteed to fail.
     import dify_plugin
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {"store": False}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    apply_dify_metadata_if_enabled(target, ENABLED)
     assert target["store"] is False
-    assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert "metadata" not in target
 
 
 def test_apply_disabled_does_not_touch_store():
