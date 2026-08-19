@@ -1,9 +1,11 @@
 from unittest.mock import patch
 
 import pytest
+from anthropic.types import Message, ThinkingBlock, ToolUseBlock, Usage
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
+    ToolPromptMessage,
     UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
@@ -126,3 +128,47 @@ def test_model_classification(model: str, expected: tuple[bool, ...]) -> None:
         llm._supports_task_budget(model),
         llm._enforces_disabled_thinking_effort_cap(model),
     ) == expected
+
+
+def test_thinking_blocks_survive_a_fresh_model_instance() -> None:
+    # dify_plugin.core.model_factory.ModelFactory.get_instance() builds a new model
+    # instance per RPC ("generate stateless model instances"), so state kept on
+    # self does not survive from the turn that produced a thinking block to the
+    # turn that must echo it back on a tool-result continuation.
+    response = Message(
+        id="msg_1",
+        model="claude-sonnet-5",
+        role="assistant",
+        stop_reason="tool_use",
+        type="message",
+        usage=Usage(input_tokens=10, output_tokens=5),
+        content=[
+            ThinkingBlock(
+                type="thinking", thinking="working out the weather query", signature="sig-1"
+            ),
+            ToolUseBlock(type="tool_use", id="toolu_1", name="get_weather", input={"city": "Paris"}),
+        ],
+    )
+    user_message = UserPromptMessage(content="what is the weather in Paris?")
+
+    responding_instance = AnthropicLargeLanguageModel()
+    assistant_message = responding_instance._handle_chat_generate_response(
+        model="claude-sonnet-5",
+        credentials={},
+        response=response,
+        prompt_messages=[user_message],
+    ).message
+
+    all_messages = [
+        user_message,
+        assistant_message,
+        ToolPromptMessage(content="18C, sunny", tool_call_id="toolu_1"),
+    ]
+
+    # A separate instance, exactly as ModelFactory.get_instance() would build for
+    # the follow-up RPC that sends the tool result back to Anthropic.
+    followup_instance = AnthropicLargeLanguageModel()
+    processed = followup_instance._process_assistant_message(assistant_message, all_messages)
+
+    block_types = [block["type"] for block in processed["content"]]
+    assert "thinking" in block_types

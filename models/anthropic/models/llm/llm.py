@@ -215,8 +215,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
-        self.previous_thinking_blocks = []
-        self.previous_redacted_thinking_blocks = []
         # Flag to indicate whether tool definitions should include cache_control
         self._tool_cache_enabled = False
         self._system_cache_enabled = False
@@ -659,10 +657,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
 
-        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-            self.previous_thinking_blocks = []
-            self.previous_redacted_thinking_blocks = []
-
         if tools:
             extra_model_kwargs["tools"] = [
                 self._transform_tool_prompt(tool) for tool in tools
@@ -942,16 +936,23 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        self.previous_thinking_blocks = []
-        self.previous_redacted_thinking_blocks = []
-        
+        thinking_blocks: list[dict[str, Any]] = []
+        redacted_thinking_blocks: list[dict[str, Any]] = []
+
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
-        
+
         for content in response.content:
             if content.type == "thinking":
-                self.previous_thinking_blocks.append(content)
+                thinking_blocks.append({
+                    "type": "thinking",
+                    "thinking": content.thinking,
+                    "signature": content.signature,
+                })
             elif content.type == "redacted_thinking":
-                self.previous_redacted_thinking_blocks.append(content)
+                redacted_thinking_blocks.append({
+                    "type": "redacted_thinking",
+                    "data": content.data,
+                })
             elif content.type == "text" and isinstance(
                 assistant_prompt_message.content, str
             ):
@@ -1011,6 +1012,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             completion_tokens=completion_tokens
         )
         
+        # A fresh model instance is created per RPC (ModelFactory.get_instance()), so
+        # thinking blocks must travel with the persisted message, not on self.
+        opaque_body = self._thinking_opaque_body(thinking_blocks, redacted_thinking_blocks)
+        if opaque_body is not None:
+            assistant_prompt_message.opaque_body = opaque_body
+
         result = LLMResult(
             model=response.model,
             prompt_messages=list(prompt_messages),
@@ -1044,11 +1051,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         current_tool_name = None
         current_tool_id = None
         tool_params_by_id: dict[str, str] = {}
-        
-        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-            self.previous_thinking_blocks = []
-            self.previous_redacted_thinking_blocks = []
-            
+
         current_thinking_blocks = []
         current_redacted_thinking_blocks = []
         
@@ -1222,11 +1225,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     )
                     tool_calls.append(fallback_tool_call)
                 
-                if tool_calls and current_thinking_blocks:
-                    self.previous_thinking_blocks = current_thinking_blocks
-                if tool_calls and current_redacted_thinking_blocks:
-                    self.previous_redacted_thinking_blocks = current_redacted_thinking_blocks
-                
+                # A fresh model instance is created per RPC (ModelFactory.get_instance()),
+                # so thinking blocks must travel with the persisted message, not on self.
+                opaque_body = self._thinking_opaque_body(
+                    current_thinking_blocks if tool_calls else [],
+                    current_redacted_thinking_blocks if tool_calls else [],
+                )
+
                 # Adjust prompt tokens for cache operations
                 adjusted_prompt_tokens = PromptCachingHandler.calc_adjusted_prompt_tokens(
                     input_tokens,
@@ -1253,7 +1258,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     delta=LLMResultChunkDelta(
                         index=index + 1,
                         message=AssistantPromptMessage(
-                            content="", tool_calls=tool_calls
+                            content="", tool_calls=tool_calls, opaque_body=opaque_body
                         ),
                         finish_reason=finish_reason,
                         usage=usage,
@@ -1482,23 +1487,52 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             result["cache_control"] = self._cache_control()
         
         return result
-    
+
+    @staticmethod
+    def _thinking_opaque_body(
+        thinking_blocks: list[dict[str, Any]],
+        redacted_thinking_blocks: list[dict[str, Any]],
+    ) -> Optional[dict[str, Any]]:
+        """Bundle thinking/redacted_thinking blocks for storage on opaque_body.
+
+        dify_plugin.ModelFactory.get_instance() builds a fresh model instance per
+        RPC, so state kept on self does not survive to the next invocation; the
+        Anthropic API requires these blocks to be echoed back verbatim on the
+        following tool-result turn, so they are attached to the assistant message
+        that Dify persists instead.
+        """
+        if not thinking_blocks and not redacted_thinking_blocks:
+            return None
+        return {
+            "thinking_blocks": thinking_blocks,
+            "redacted_thinking_blocks": redacted_thinking_blocks,
+        }
+
+    @staticmethod
+    def _thinking_content_blocks(message: AssistantPromptMessage) -> list[dict[str, Any]]:
+        """Recover the thinking/redacted_thinking content blocks stashed on opaque_body."""
+        opaque_body = message.opaque_body
+        if not isinstance(opaque_body, dict):
+            return []
+        thinking_blocks = opaque_body.get("thinking_blocks") or []
+        redacted_thinking_blocks = opaque_body.get("redacted_thinking_blocks") or []
+        return [*thinking_blocks, *redacted_thinking_blocks]
+
     def _process_assistant_message(
-        self, 
+        self,
         message: AssistantPromptMessage,
         all_messages: Sequence[PromptMessage]
     ) -> dict:
         """Process assistant message into API format."""
         content = []
-        
+
         # Check if we need to include thinking blocks
         has_tool_messages = any(
             isinstance(msg, ToolPromptMessage) for msg in all_messages
         )
         
         if has_tool_messages:
-            content.extend(self.previous_thinking_blocks)
-            content.extend(self.previous_redacted_thinking_blocks)
+            content.extend(self._thinking_content_blocks(message))
         
         # Dify stores assistant text and tool calls separately; Anthropic expects the next
         # user tool_result message to immediately follow the assistant tool_use turn.
