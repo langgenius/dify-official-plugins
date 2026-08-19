@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from models.common import _CommonAzureOpenAI, _client_cache
+import openai
+
+from models.common import _client_cache, _CommonAzureOpenAI
 from models.constants import AZURE_OPENAI_API_VERSION
 
 
@@ -23,6 +25,7 @@ class CommonAzureOpenAITestCase(unittest.TestCase):
         )
         self.assertEqual(kwargs["api_version"], AZURE_OPENAI_API_VERSION)
         self.assertNotIn("base_url", kwargs)
+        self.assertIsInstance(kwargs["timeout"], openai.Timeout)
 
     def test_v1_endpoint_omits_api_version(self):
         credentials = {

@@ -1,5 +1,5 @@
-from urllib.parse import urlparse
 import threading
+from urllib.parse import urlparse
 
 import openai
 from dify_plugin.errors.model import (
@@ -10,7 +10,6 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from httpx import Timeout
 
 from .constants import AZURE_OPENAI_API_VERSION
 
@@ -42,7 +41,7 @@ class _CommonAzureOpenAI:
         is_v1_api = cls._is_v1_api_base(api_base)
 
         credentials_kwargs = {
-            "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
+            "timeout": openai.Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
         if is_v1_api:

@@ -1,17 +1,39 @@
 import time
-from collections.abc import Generator
-from typing import Any, Mapping
+from collections.abc import Generator, Mapping
+from typing import Any
 
+from datasources.firecrawl_app import FirecrawlApp, get_array_params
 from dify_plugin.entities.datasource import (
+    WebsiteCrawlMessage,
     WebSiteInfo,
     WebSiteInfoDetail,
-    WebsiteCrawlMessage,
 )
-from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 from requests import HTTPError
 
-from datasources.firecrawl_app import FirecrawlApp, get_array_params, get_json_params
+
+def build_crawl_payload(datasource_parameters: Mapping[str, Any]) -> dict[str, Any]:
+    crawl_sub_pages = datasource_parameters.get("crawl_subpages", True)
+    scrape_options = {
+        "onlyMainContent": datasource_parameters.get("only_main_content", True)
+    }
+    scrape_options = {k: v for k, v in scrape_options.items() if v not in (None, "")}
+
+    payload = {
+        "excludePaths": get_array_params(datasource_parameters, "exclude_paths")
+        if crawl_sub_pages
+        else [],
+        "includePaths": get_array_params(datasource_parameters, "include_paths")
+        if crawl_sub_pages
+        else [],
+        "maxDiscoveryDepth": datasource_parameters.get("max_depth")
+        if crawl_sub_pages
+        else None,
+        "limit": datasource_parameters.get("limit", 5) if crawl_sub_pages else 1,
+        "scrapeOptions": scrape_options or None,
+    }
+    return {k: v for k, v in payload.items() if v not in (None, "")}
 
 
 class CrawlDatasource(WebsiteCrawlDatasource):
@@ -36,31 +58,7 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                 or "https://api.firecrawl.dev",
             )
 
-            crawl_sub_pages = datasource_parameters.get("crawl_subpages", True)
-
-            scrapeOptions = {
-                "onlyMainContent": datasource_parameters.get("only_main_content", True)
-            }
-            scrapeOptions = {
-                k: v for k, v in scrapeOptions.items() if v not in (None, "")
-            }
-
-            payload = {
-                "excludePaths": get_array_params(datasource_parameters, "exclude_paths")
-                if crawl_sub_pages
-                else [],
-                "includePaths": get_array_params(datasource_parameters, "include_paths")
-                if crawl_sub_pages
-                else [],
-                "maxDepth": datasource_parameters.get("max_depth")
-                if crawl_sub_pages
-                else None,
-                "limit": 1
-                if not crawl_sub_pages
-                else datasource_parameters.get("limit", 5),
-                "scrapeOptions": scrapeOptions or None,
-            }
-            payload = {k: v for k, v in payload.items() if v not in (None, "")}
+            payload = build_crawl_payload(datasource_parameters)
 
             crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
 
@@ -81,7 +79,9 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     yield self.create_crawl_message(crawl_res)
                     break
                 elif status["status"] == "failed":
-                    raise HTTPError(f"Job {crawl_res.job_id} failed: {status['error']}")
+                    raise HTTPError(
+                        f"Job {job_id} failed: {status.get('error', 'Unknown error')}"
+                    )
                 else:
                     crawl_res.status = "processing"
                     crawl_res.total = status["total"] or 0
@@ -90,12 +90,14 @@ class CrawlDatasource(WebsiteCrawlDatasource):
                     time.sleep(5)
 
         except Exception as e:
-            raise ValueError(f"An error occurred: {str(e)}")
+            raise ValueError(f"An error occurred: {e!s}")
 
     @staticmethod
     def _process_completed_job(app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo):
         url_data_list = app._collect_all_crawl_pages(status)
-        _format_res = app.format_crawl_status_response(status["status"], status, url_data_list)
+        _format_res = app.format_crawl_status_response(
+            status["status"], status, url_data_list
+        )
 
         crawl_res.web_info_list = [
             WebSiteInfoDetail(
