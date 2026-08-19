@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Flag Email
+    ko_KR: 이메일 플래그 지정
     zh_Hans: 标记邮件
     pt_BR: Marcar E-mail
     ja_JP: メールにフラグ
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Flag an email message for follow-up
+    ko_KR: 후속 조치를 위해 이메일 메시지에 플래그 지정
     zh_Hans: 标记邮件以便跟进
     pt_BR: Marcar um e-mail para acompanhamento
     ja_JP: メールにフォローアップ用のフラグを設定
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: Email ID
+      ko_KR: 이메일 ID
       zh_Hans: 邮件ID
       pt_BR: ID do E-mail
       ja_JP: メールID
       zh_Hant: 郵件ID
     human_description:
       en_US: The unique identifier of the email to flag
+      ko_KR: 플래그를 지정할 이메일의 고유 식별자
       zh_Hans: 要标记的邮件的唯一标识符
       pt_BR: O identificador único do e-mail para marcar
       ja_JP: フラグを付けるメールの一意の識別子
@@ -41,12 +45,14 @@ parameters:
     default: flagged
     label:
       en_US: Flag Status
+      ko_KR: 플래그 상태
       zh_Hans: 标记状态
       pt_BR: Status da Marcação
       ja_JP: フラグ状態
       zh_Hant: 標記狀態
     human_description:
       en_US: The status of the flag
+      ko_KR: 플래그의 상태
       zh_Hans: 标记的状态
       pt_BR: O status da marcação
       ja_JP: フラグの状態
@@ -59,12 +65,14 @@ parameters:
     min: 0
     label:
       en_US: Due Date Days
+      ko_KR: 기한 일수
       zh_Hans: 到期天数
       pt_BR: Dias para Vencimento
       ja_JP: 期限日数
       zh_Hant: 到期天數
     human_description:
       en_US: Number of days from now until the flag is due
+      ko_KR: 지금부터 플래그 기한까지의 일수
       zh_Hans: 从现在到标记到期的天数
       pt_BR: Número de dias a partir de agora até o vencimento da marcação
       ja_JP: フラグの期限までの日数
@@ -76,12 +84,14 @@ parameters:
     required: false
     label:
       en_US: Flag Message
+      ko_KR: 플래그 메시지
       zh_Hans: 标记消息
       pt_BR: Mensagem da Marcação
       ja_JP: フラグメッセージ
       zh_Hant: 標記訊息
     human_description:
       en_US: Optional message to include with the flag
+      ko_KR: 플래그에 포함할 선택적 메시지
       zh_Hans: 可选的标记消息
       pt_BR: Mensagem opcional para incluir com a marcação
       ja_JP: フラグに含めるオプションのメッセージ

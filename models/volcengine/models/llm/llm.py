@@ -208,6 +208,11 @@ class ChatStreamOptions(RequestModel):
     include_usage: bool | None = None
 
 
+class ChatResponseFormat(RequestModel):
+    type: Literal["text", "json_object", "json_schema"] = "json_object"
+    json_schema: dict[str, Any] | None = None
+
+
 class ChatToolChoiceFunction(RequestModel):
     name: str = Field(min_length=1)
 
@@ -236,6 +241,7 @@ class ChatCompletionRequest(RequestModel):
     tool_choice: ChatToolChoice | None = None
     parallel_tool_calls: bool | None = None
     stream_options: ChatStreamOptions | None = None
+    response_format: ChatResponseFormat | None = None
 
 
 class SeedanceTextContent(RequestModel):
@@ -705,6 +711,41 @@ def chat_stream_options_from_parameters(
     return parse_model(ChatStreamOptions, stream_options, "Invalid chat stream options")
 
 
+def chat_response_format_from_parameters(
+    model_parameters: Mapping[str, Any],
+) -> ChatResponseFormat | None:
+    response_format = model_parameters.get("response_format")
+    if not response_format:
+        return None
+    if response_format == "json_schema":
+        json_schema = model_parameters.get("json_schema")
+        if not json_schema:
+            raise InvokeError(
+                "Must define JSON Schema when the response format is json_schema"
+            )
+        try:
+            schema = (
+                JSON_OBJECT_ADAPTER.validate_json(json_schema)
+                if isinstance(json_schema, (str, bytes))
+                else JSON_OBJECT_ADAPTER.validate_python(json_schema)
+            )
+        except ValidationError as error:
+            raise InvokeError(
+                f"not correct json_schema format: {json_schema}"
+            ) from error
+        return build_model(
+            ChatResponseFormat,
+            "Invalid chat response format",
+            type="json_schema",
+            json_schema=schema,
+        )
+    return build_model(
+        ChatResponseFormat,
+        "Invalid chat response format",
+        type=response_format,
+    )
+
+
 def build_chat_completion_request(
     *,
     model: str,
@@ -751,6 +792,7 @@ def build_chat_completion_request(
         if "parallel_tool_calls" in model_parameters
         else None,
         stream_options=stream_options,
+        response_format=chat_response_format_from_parameters(model_parameters),
     )
 
 

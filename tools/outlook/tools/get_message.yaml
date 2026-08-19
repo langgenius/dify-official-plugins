@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Get Message
+    ko_KR: 메시지 가져오기
     zh_Hans: 获取消息
     pt_BR: Obter Mensagem
     ja_JP: メッセージを取得
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Get detailed information about a specific email message by its ID
+    ko_KR: ID로 특정 이메일 메시지의 상세 정보를 가져옵니다
     zh_Hans: 通过ID获取特定电子邮件的详细信息
     pt_BR: Obter informações detalhadas sobre uma mensagem de e-mail específica pelo seu ID
     ja_JP: IDで特定のメールの詳細情報を取得
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: Message ID
+      ko_KR: 메시지 ID
       zh_Hans: 消息ID
       pt_BR: ID da Mensagem
       ja_JP: メッセージID
       zh_Hant: 訊息ID
     human_description:
       en_US: The unique identifier of the message to retrieve (obtained from list_messages tool)
+      ko_KR: 가져올 메시지의 고유 식별자 (list_messages 도구에서 획득)
       zh_Hans: 要检索的消息的唯一标识符（从list_messages工具获得）
       pt_BR: O identificador único da mensagem para recuperar (obtido da ferramenta list_messages)
       ja_JP: 取得するメッセージの一意の識別子（list_messagesツールから取得）

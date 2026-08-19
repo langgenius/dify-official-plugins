@@ -22,7 +22,25 @@ def llm() -> OpenRouterLargeLanguageModel:
     return OpenRouterLargeLanguageModel(model_schemas=[])
 
 
-@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def _llm_schemas() -> list[dict]:
+    llm_dir = Path(__file__).resolve().parent.parent / "models" / "llm"
+    return [
+        yaml.safe_load(path.read_text(encoding="utf-8"))
+        for path in sorted(llm_dir.glob("*.yaml"))
+        if not path.name.startswith("_")
+    ]
+
+
+def _declared_efforts() -> list[str]:
+    efforts = set()
+    for schema in _llm_schemas():
+        for rule in schema["parameter_rules"]:
+            if rule["name"] == "reasoning_effort":
+                efforts.update(rule["options"])
+    return sorted(efforts)
+
+
+@pytest.mark.parametrize("effort", _declared_efforts())
 def test_set_reasoning_params_supports_requested_effort_levels(effort: str) -> None:
     model_parameters = {
         "reasoning_effort": effort,
@@ -36,6 +54,15 @@ def test_set_reasoning_params_supports_requested_effort_levels(effort: str) -> N
         "reasoning": {"effort": effort, "exclude": True},
         "temperature": 0.2,
     }
+
+
+def test_position_list_matches_shipped_model_schemas() -> None:
+    llm_dir = Path(__file__).resolve().parent.parent / "models" / "llm"
+    positions = yaml.safe_load((llm_dir / "_position.yaml").read_text(encoding="utf-8"))
+    schemas = {schema["model"]: schema for schema in _llm_schemas()}
+
+    assert [model for model in positions if model not in schemas] == []
+    assert [model for model in positions if schemas[model].get("deprecated")] == []
 
 
 def test_minimax_m3_exposes_reasoning_and_vision_controls() -> None:

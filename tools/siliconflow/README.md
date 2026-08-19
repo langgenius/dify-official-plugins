@@ -8,7 +8,11 @@ SiliconFlow provides high-quality GenAI services based on excellent open-source 
 
 ### 1. Apply for SiliconCloud API Key
 
-Create a new API Key on the [SiliconCloud API management](https://cloud.siliconflow.cn/account/ak) page and ensure that you have sufficient balance.
+Create a new API Key on the SiliconCloud API management page and ensure that you have sufficient balance. SiliconFlow offers two separate endpoints:
+- **China endpoint**: [cloud.siliconflow.cn](https://cloud.siliconflow.cn/account/ak)
+- **International endpoint**: [cloud.siliconflow.com](https://cloud.siliconflow.com/account/ak)
+
+Note: These are separate account systems. Make sure to select the matching endpoint option when configuring the plugin in Dify.
 
 ### 2. Get SiliconFlow tools from Plugin Marketplace
 
@@ -17,6 +21,9 @@ The SiliconFlow tools could be found at the Plugin Marketplace, please install i
 ### 3. Fill in the configuration in Dify
 
 On the Dify navigation page, click `Tools > SiliconFlow > To Authorize` and fill in the API Key.
+
+- **API Key**: Your SiliconCloud API Key
+- **Use International Endpoint** (optional): Choose whether to use the international endpoint (`api.siliconflow.com`) or China endpoint (`api.siliconflow.cn`, default). Select "True" if you created your account on the international site, "False" for the China site.
 
 ![](./_assets/siliconflow_2.PNG)
 

@@ -1,3 +1,4 @@
+import base64
 import json
 import time
 from collections.abc import Generator
@@ -14,20 +15,25 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
 from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from dify_plugin.file.file import File, FileType
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
     ToolEntity,
     ToolInvokeMeta,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from strategies.tool_response import should_forward_file_message
 
 THINK_START = "<think>"
 THINK_END = "</think>"
@@ -90,13 +96,22 @@ class FunctionCallingParams(BaseModel):
     instruction: str | None
     model: AgentModelConfig
     tools: list[ToolEntity] | None
+    files: list[File] | None = None
     maximum_iterations: int = 3
     context: list[ContextItem] | None = None
+
+    @field_validator("files", mode="before")
+    @classmethod
+    def discard_empty_file_entries(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return [item for item in value if item is not None]
+        return value
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
     query: str = ""
     instruction: str | None = ""
+    files: list[File] | None = None
 
     @staticmethod
     def _format_tool_response(
@@ -145,7 +160,34 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
     @property
     def _user_prompt_message(self) -> UserPromptMessage:
-        return UserPromptMessage(content=self.query)
+        image_contents = [
+            self._to_image_prompt_content(file)
+            for file in self.files or []
+            if file.type == FileType.IMAGE
+        ]
+        if not image_contents:
+            return UserPromptMessage(content=self.query)
+
+        return UserPromptMessage(
+            content=[*image_contents, TextPromptMessageContent(data=self.query)]
+        )
+
+    @staticmethod
+    def _to_image_prompt_content(file: File) -> ImagePromptMessageContent:
+        image_format = (file.extension or "").lstrip(".").lower()
+        if not image_format and file.mime_type and "/" in file.mime_type:
+            image_format = file.mime_type.split("/", maxsplit=1)[1]
+        if image_format == "jpg":
+            image_format = "jpeg"
+        image_format = image_format or "png"
+
+        return ImagePromptMessageContent(
+            format=image_format,
+            base64_data=base64.b64encode(file.blob).decode("ascii"),
+            mime_type=file.mime_type or f"image/{image_format}",
+            filename=file.filename or "",
+            detail=ImagePromptMessageContent.DETAIL.LOW,
+        )
 
     @property
     def _system_prompt_message(self) -> SystemPromptMessage:
@@ -163,6 +205,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         query = fc_params.query
         self.query = query
         self.instruction = fc_params.instruction
+        self.files = fc_params.files or []
         history_prompt_messages = fc_params.model.history_prompt_messages
         history_prompt_messages.insert(0, self._system_prompt_message)
         history_prompt_messages.append(self._user_prompt_message)
@@ -514,6 +557,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                         + "."
                                         + " please tell user to check it."
                                     )
+                                    if should_forward_file_message(tool_invoke_response):
+                                        yield tool_invoke_response
                                 elif tool_invoke_response.type in {
                                     ToolInvokeMessage.MessageType.IMAGE_LINK,
                                     ToolInvokeMessage.MessageType.IMAGE,
@@ -576,6 +621,12 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 ):
                                     tool_result += "Generated file ... "
                                     # TODO: convert to agent invoke message
+                                    yield tool_invoke_response
+                                elif (
+                                    tool_invoke_response.type
+                                    == ToolInvokeMessage.MessageType.FILE
+                                ):
+                                    tool_result += "Generated file ... "
                                     yield tool_invoke_response
                                 else:
                                     tool_result += (

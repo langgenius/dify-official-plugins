@@ -28,6 +28,8 @@ from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutp
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
 
+from strategies.tool_response import should_forward_file_message
+
 class LogMetadata:
     """Metadata keys for logging"""
     STARTED_AT = "started_at"
@@ -578,6 +580,8 @@ class ReActAgentStrategy(AgentStrategy):
                         f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
                         + " please tell user to check it."
                     )
+                    if should_forward_file_message(response):
+                        additional_messages.append(response)
                 elif response.type in {
                     ToolInvokeMessage.MessageType.IMAGE_LINK,
                     ToolInvokeMessage.MessageType.IMAGE,
@@ -610,6 +614,9 @@ class ReActAgentStrategy(AgentStrategy):
                 elif response.type == ToolInvokeMessage.MessageType.VARIABLE:
                     continue
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
+                    result += "Generated file with ... "
+                    additional_messages.append(response)
+                elif response.type == ToolInvokeMessage.MessageType.FILE:
                     result += "Generated file with ... "
                     additional_messages.append(response)
                 else:

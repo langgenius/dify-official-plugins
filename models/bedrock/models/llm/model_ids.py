@@ -142,6 +142,48 @@ def get_region_area(region_name, prefer_global=False):
     return area_mapping.get(prefix, None)
 
 
+# AWS regions served by the 'jp' geographic inference profile
+_JP_REGIONS = {'ap-northeast-1', 'ap-northeast-3'}
+
+# Base model IDs that have a jp. geographic inference profile. Live-verified
+# with `aws bedrock list-inference-profiles --region ap-northeast-1`; re-run
+# that command when adding models.
+JP_PROFILE_MODELS = frozenset({
+    'anthropic.claude-sonnet-4-6',
+    'anthropic.claude-sonnet-4-5-20250929-v1:0',
+    'anthropic.claude-haiku-4-5-20251001-v1:0',
+    'anthropic.claude-opus-4-7',
+    'anthropic.claude-opus-4-8',
+    'amazon.nova-2-lite-v1:0',
+})
+
+
+def resolve_japan_profile_id(model_id, region_name):
+    """
+    Resolve the Japan-only ('jp.') inference profile ID for a model.
+
+    :param model_id: bare base model ID, e.g. 'anthropic.claude-sonnet-4-6'
+    :param region_name: AWS region of the caller
+    :return: 'jp.'-prefixed model ID
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message. This never falls back to another geography:
+        'apac.' routes outside Japan and would silently break the data
+        residency the caller asked for.
+    """
+    if region_name not in _JP_REGIONS:
+        raise ValueError(
+            f"Japan cross-region inference is only available from "
+            f"{', '.join(sorted(_JP_REGIONS))}; the configured region is {region_name}."
+        )
+    if model_id not in JP_PROFILE_MODELS:
+        raise ValueError(
+            f"{model_id} has no 'jp.' geographic inference profile. Set "
+            f"Cross-Region Inference to 'global' instead — note that global "
+            f"routes across all AWS regions."
+        )
+    return f"jp.{model_id}"
+
+
 # Claude 5 generation models are invocable ONLY through inference profiles
 # (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
 # converse returns ValidationException). Geo profile coverage varies per
