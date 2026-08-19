@@ -1,9 +1,11 @@
 """Helpers for attaching Dify metadata to Bedrock Converse API requests.
 
 Amazon Bedrock's Converse / ConverseStream API accepts a ``requestMetadata``
-field (a string-to-string map) that is forwarded to CloudWatch invocation
-logs, enabling per-app cost and usage tracking. Constraints, from the
-Converse API reference:
+field (a string-to-string map) that is forwarded to CloudWatch model
+invocation logs. It lets you attribute individual invocations to a Dify app
+when querying those logs; it does not appear in Cost Explorer or on the bill,
+and model invocation logging must be enabled on the account for the field to
+be recorded anywhere. Constraints, from the Converse API reference:
 
   https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
 
@@ -21,7 +23,11 @@ from __future__ import annotations
 import re
 from typing import Any, Optional
 
-_INVALID_CHAR_RE = re.compile(r"[^a-zA-Z0-9\s:_@$#=/+,\-.]")
+# re.ASCII matters: Bedrock validates against a Java regex where \s is
+# ASCII-only, while Python's default \s also matches U+00A0, U+0085, U+2000,
+# U+2028, U+3000 and friends. Without the flag those characters survive
+# normalization and Bedrock rejects the entire Converse call.
+_INVALID_CHAR_RE = re.compile(r"[^a-zA-Z0-9\s:_@$#=/+,\-.]", re.ASCII)
 _MAX_VALUE_LENGTH = 256
 
 

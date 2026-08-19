@@ -42,6 +42,19 @@ def test_normalize_replaces_non_ascii():
     assert normalize_metadata_value("日本語") == "___"
 
 
+def test_normalize_replaces_non_ascii_whitespace():
+    # Bedrock validates against a Java regex whose \\s is ASCII-only, so
+    # Unicode whitespace must be substituted too. Python's default \\s matches
+    # these, which would let them through and make Bedrock reject the request.
+    for char in ("\u3000", "\u00a0", "\u0085", "\u2000", "\u2028"):
+        assert normalize_metadata_value(char) == "_", f"{char!r} survived"
+
+
+def test_normalize_keeps_ascii_whitespace():
+    # ASCII whitespace is inside Bedrock's allowed pattern and must survive.
+    assert normalize_metadata_value("a b\tc") == "a b\tc"
+
+
 def test_normalize_coerces_non_string_input():
     # Non-string inputs should be stringified before validation, so a
     # numeric 0 (falsy) does not get dropped by the empty-check.
@@ -99,8 +112,23 @@ def test_apply_no_op_when_credential_disabled():
 
 
 def test_apply_silent_on_session_lookup_failure():
-    # Without a Dify session context, get_current_session raises; the
-    # helper must swallow that and leave parameters unchanged.
+    # Outside a Dify session, get_current_session() returns None rather than
+    # raising, so no app_id resolves and parameters are left untouched.
+    parameters: dict = {}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
+    assert "requestMetadata" not in parameters
+
+
+def test_apply_silent_when_session_lookup_raises(monkeypatch):
+    # Telemetry must never break generation, so a raising session lookup is
+    # swallowed. Exercises the except branch directly, which the None-returning
+    # path above cannot reach.
+    import dify_plugin
+
+    def _boom():
+        raise RuntimeError("session backend unavailable")
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", _boom)
     parameters: dict = {}
     apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
     assert "requestMetadata" not in parameters
