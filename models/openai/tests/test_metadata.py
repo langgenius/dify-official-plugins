@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from models.llm._metadata import (
     apply_dify_metadata_if_enabled,
     build_dify_metadata,
@@ -151,14 +153,16 @@ def test_apply_sets_store_true(monkeypatch):
 
 def test_apply_preserves_explicit_store(monkeypatch):
     # An explicit store value set by the caller must be respected, not
-    # overwritten — even when it is False.
+    # overwritten. Because the API rejects metadata unless store is true,
+    # respecting store=False also means skipping the metadata entirely rather
+    # than emitting a request that is guaranteed to fail.
     import dify_plugin
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {"store": False}
     apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
     assert target["store"] is False
-    assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert "metadata" not in target
 
 
 def test_apply_disabled_does_not_touch_store():
@@ -174,3 +178,128 @@ def test_apply_disabled_does_not_touch_store():
 
 def test_normalize_none_returns_empty():
     assert normalize_metadata_value(None) == ""
+
+
+# --- Wiring: the helper must be reached from both request builders. ---
+
+
+def _enable(monkeypatch):
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    return {"enable_request_metadata": "enabled"}
+
+
+def test_responses_parameters_attach_metadata_and_store(monkeypatch):
+    from models.llm import responses
+
+    params = responses.parameters("gpt-5.6", {}, None, None, _enable(monkeypatch))
+    assert params["metadata"]["dify_app_id"] == _FakeSession.app_id
+    assert params["metadata"]["dify_source"] == "dify"
+    # The API only accepts metadata when store is enabled.
+    assert params["store"] is True
+
+
+def test_responses_parameters_keep_encrypted_reasoning_when_store_is_telemetry_only(
+    monkeypatch,
+):
+    # store=true is forced solely to carry telemetry, so encrypted reasoning
+    # passthrough must still be requested: opting in must not silently change
+    # multi-turn reasoning behaviour.
+    from models.llm import responses
+
+    params = responses.parameters("gpt-5.6", {}, None, None, _enable(monkeypatch))
+    assert params["store"] is True
+    assert "reasoning.encrypted_content" in params["include"]
+
+
+def test_responses_parameters_unchanged_when_disabled(monkeypatch):
+    from models.llm import responses
+
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    params = responses.parameters(
+        "gpt-5.6", {}, None, None, {"enable_request_metadata": "disabled"}
+    )
+    assert "metadata" not in params
+    assert params["store"] is False
+    assert "reasoning.encrypted_content" in params["include"]
+
+
+def test_responses_parameters_without_credentials_is_backward_compatible():
+    # Existing call sites pass four positional arguments; credentials is
+    # optional and its absence must behave exactly as before.
+    from models.llm import responses
+
+    params = responses.parameters("gpt-5.6", {}, None, None)
+    assert "metadata" not in params
+    assert params["store"] is False
+
+
+def test_responses_parameters_respects_explicit_store_false(monkeypatch):
+    # A caller-provided store=False cannot carry metadata, so telemetry is
+    # skipped rather than producing a request the API rejects.
+    from models.llm import responses
+
+    params = responses.parameters(
+        "gpt-5.6", {"store": False}, None, None, _enable(monkeypatch)
+    )
+    assert "metadata" not in params
+    assert params["store"] is False
+
+
+def _invoke_chat(mocker, credentials):
+    from dify_plugin.entities.model.llm import LLMUsage
+    from dify_plugin.entities.model.message import UserPromptMessage
+
+    from models.llm import chat
+
+    llm = mocker.Mock()
+    llm._calc_response_usage.return_value = LLMUsage.empty_usage()
+    client = mocker.Mock()
+    client.chat.completions.create.return_value = SimpleNamespace(
+        model="gpt-4o",
+        system_fingerprint="fp",
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+        choices=[
+            SimpleNamespace(
+                finish_reason="stop",
+                message=SimpleNamespace(
+                    content="hi",
+                    refusal=None,
+                    function_call=None,
+                    tool_calls=[],
+                ),
+            )
+        ],
+    )
+    chat.generate_chat(
+        llm,
+        client,
+        "gpt-4o",
+        credentials,
+        [UserPromptMessage(content="hello")],
+        {},
+        None,
+        None,
+        False,
+        None,
+    )
+    return client.chat.completions.create.call_args.kwargs
+
+
+def test_chat_params_attach_metadata_and_store(monkeypatch, mocker):
+    sent = _invoke_chat(mocker, _enable(monkeypatch))
+    assert sent["metadata"]["dify_app_id"] == _FakeSession.app_id
+    assert sent["metadata"]["dify_source"] == "dify"
+    assert sent["store"] is True
+
+
+def test_chat_params_unchanged_when_disabled(monkeypatch, mocker):
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    sent = _invoke_chat(mocker, {"enable_request_metadata": "disabled"})
+    assert "metadata" not in sent
+    assert "store" not in sent

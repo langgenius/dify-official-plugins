@@ -44,21 +44,31 @@ provider_credential_schema:
   - label:
       en_US: Group ID
     placeholder:
-      en_US: Required only for legacy ABAB chat, embedding, and TTS models. Leave empty for MiniMax-M2.x.
-      zh_Hans: 仅在使用 ABAB chat、Embedding、TTS 模型时需要；MiniMax-M2.x 留空即可。
+      en_US: Required only for legacy ABAB chat, embedding, and TTS models. Leave empty for MiniMax-M series.
+      zh_Hans: 仅在使用 ABAB chat、Embedding、TTS 模型时需要；MiniMax-M 系列留空即可。
     required: false
     type: text-input
     variable: minimax_group_id
-  - default: https://api.minimax.io
+  - default: https://api.minimaxi.com
     label:
-      en_US: API Base
-      zh_Hans: API Base
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
-      en_US: Enter your API Base
-      zh_Hans: 在此输入您的 API Base
+      en_US: Enter your API Base URL
+      zh_Hans: 在此输入您的 API Base URL
     required: false
     type: text-input
     variable: endpoint_url
+  - default: '1'
+    label:
+      en_US: Max Embedding Batch Size
+      zh_Hans: 嵌入请求批量大小
+    placeholder:
+      en_US: Number of texts sent per embedding request. Default 1 (unchanged behavior). Raise it (e.g. 10) to batch texts into fewer API calls and avoid per-minute rate limits; each request must stay within the 4096-token context window.
+      zh_Hans: 每次嵌入请求处理的文本数。默认 1（行为不变）。调大（如 10）可把多条文本合并为更少的 API 调用，避免每分钟请求数限制；单次请求不能超过 4096 token 的上下文上限。
+    required: false
+    type: text-input
+    variable: batch_size
 supported_model_types:
 - llm
 - text-embedding

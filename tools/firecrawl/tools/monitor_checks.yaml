@@ -1,0 +1,99 @@
+description:
+  human:
+    en_US: List historical checks for a Firecrawl monitor, or fetch the monitor
+      itself by ID.
+    zh_Hans: 列出某个 Firecrawl 监控器的历史检查记录，或根据 ID 获取该监控器。
+  llm: List the historical checks for a Firecrawl monitor (each check is one run of
+    the monitor), or fetch the monitor configuration itself by its ID.
+extra:
+  python:
+    source: tools/monitor_checks.py
+identity:
+  author: langgenius
+  label:
+    en_US: Monitor Checks
+    zh_Hans: 监控检查
+  name: monitor_checks
+parameters:
+- form: llm
+  human_description:
+    en_US: The ID of the monitor. Returned by the Create Monitor tool.
+    zh_Hans: 监控器的 ID，由“创建监控器”工具返回。
+  label:
+    en_US: Monitor ID
+    zh_Hans: 监控器 ID
+  llm_description: The ID of the monitor, returned by the Create Monitor tool. This
+    is a required parameter.
+  name: monitor_id
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: choose the operation to perform. `checks` lists the monitor's check
+      history, `get` returns the monitor configuration.
+    zh_Hans: 选择要执行的操作。`checks` 列出监控检查历史，`get` 返回监控器配置。
+  label:
+    en_US: operation
+    zh_Hans: 操作
+  llm_description: choose the operation to perform. `checks` lists the monitor's
+    check history, `get` returns the monitor configuration.
+  name: operation
+  options:
+  - label:
+      en_US: list checks
+    value: checks
+  - label:
+      en_US: get monitor
+    value: get
+  required: true
+  type: select
+  default: checks
+- form: form
+  human_description:
+    en_US: Maximum number of checks to return (1-100). Only used for the list checks
+      operation.
+    zh_Hans: 返回检查记录的最大数量（1-100）。仅用于“列出检查”操作。
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+  min: 1
+  name: limit
+  type: number
+- form: form
+  human_description:
+    en_US: Number of checks to skip. Only used for the list checks operation.
+    zh_Hans: 要跳过的检查记录数量。仅用于“列出检查”操作。
+  label:
+    en_US: Offset
+    zh_Hans: 偏移量
+  min: 0
+  name: offset
+  type: number
+- form: form
+  human_description:
+    en_US: Filter checks by status.
+    zh_Hans: 按状态筛选检查记录。
+  label:
+    en_US: Status
+    zh_Hans: 状态
+  name: status
+  options:
+  - label:
+      en_US: queued
+    value: queued
+  - label:
+      en_US: running
+    value: running
+  - label:
+      en_US: completed
+    value: completed
+  - label:
+      en_US: failed
+    value: failed
+  - label:
+      en_US: partial
+    value: partial
+  - label:
+      en_US: skipped (overlap)
+    value: skipped_overlap
+  type: select

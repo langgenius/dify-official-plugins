@@ -74,7 +74,8 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     ``target['metadata']`` to the built dict (if one is produced), and sets
     ``target['store'] = True`` — the API only accepts ``metadata`` when
     ``store`` is enabled. An explicit ``store`` value already on ``target``
-    is left untouched.
+    is left untouched; when that value is ``False`` no metadata is attached
+    at all, because the API would reject such a request.
 
     Session lookup failures are swallowed silently: metadata attachment is
     telemetry, and must never break generation if the SDK is missing or
@@ -96,6 +97,12 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
 
     metadata = build_dify_metadata(app_id)
     if metadata is None:
+        return
+
+    # An explicit store=False cannot carry metadata: the API rejects the
+    # request outright. Respect the caller's choice and skip telemetry rather
+    # than sending a request that is guaranteed to fail.
+    if target.get("store") is False:
         return
     existing = target.get("metadata")
     if isinstance(existing, dict):

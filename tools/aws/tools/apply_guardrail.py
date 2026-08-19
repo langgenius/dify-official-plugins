@@ -13,6 +13,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class GuardrailParameters(BaseModel):
     guardrail_id: str = Field(..., description="The identifier of the guardrail")
     guardrail_version: str = Field(..., description="The version of the guardrail")
@@ -22,9 +23,7 @@ class GuardrailParameters(BaseModel):
 
 
 class ApplyGuardrailTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
         Invoke the ApplyGuardrail tool
         """
@@ -32,8 +31,15 @@ class ApplyGuardrailTool(Tool):
             # Validate and parse input parameters
             params = GuardrailParameters(**tool_parameters)
 
-            # Initialize AWS client
-            bedrock_client = boto3.client("bedrock-runtime", region_name=params.aws_region)
+            # Initialize AWS client. Build from a fresh boto3.Session so
+            # disk-refreshed credentials (saml2aws login, aws sso login, IMDS)
+            # are picked up on every invocation — boto3's default session
+            # caches credentials in-process, which would otherwise keep a
+            # stale ExpiredTokenException in flight until the plugin daemon
+            # restarts. Same fix as bedrock model plugin PR #3535.
+            bedrock_client = boto3.Session().client(
+                "bedrock-runtime", region_name=params.aws_region
+            )
 
             # Apply guardrail
             response = bedrock_client.apply_guardrail(
@@ -47,12 +53,18 @@ class ApplyGuardrailTool(Tool):
 
             # Check for empty response
             if not response:
-                yield self.create_text_message(text="Received empty response from AWS Bedrock.")
+                yield self.create_text_message(
+                    text="Received empty response from AWS Bedrock."
+                )
 
             # Process the result
             action = response.get("action", "No action specified")
             outputs = response.get("outputs", [])
-            output = outputs[0].get("text", "No output received") if outputs else "No output received"
+            output = (
+                outputs[0].get("text", "No output received")
+                if outputs
+                else "No output received"
+            )
             assessments = response.get("assessments", [])
 
             # Format assessments
@@ -66,7 +78,9 @@ class ApplyGuardrailTool(Tool):
                                 f" Action: {topic['action']}"
                             )
                     else:
-                        formatted_assessments.append(f"Policy: {policy_type}, Data: {policy_data}")
+                        formatted_assessments.append(
+                            f"Policy: {policy_type}, Data: {policy_data}"
+                        )
 
             result = f"Action: {action}\n "
             result += f"Output: {output}\n "

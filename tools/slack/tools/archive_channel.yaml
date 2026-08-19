@@ -1,0 +1,34 @@
+identity:
+  name: archive_channel
+  author: langgenius
+  label:
+    en_US: Archive Channel
+    zh_Hans: 归档频道
+    ja_JP: チャンネルをアーカイブ
+    ko_KR: 채널 보관
+description:
+  human:
+    en_US: Archive a channel.
+    zh_Hans: 归档一个频道。
+    ja_JP: チャンネルをアーカイブします。
+    ko_KR: 채널을 보관합니다.
+  llm: Archives a channel using conversations.archive. Requires the channel ID.
+parameters:
+  - name: channel
+    type: string
+    required: true
+    label:
+      en_US: Channel
+      zh_Hans: 频道
+      ja_JP: チャンネル
+      ko_KR: 채널
+    human_description:
+      en_US: The channel ID to archive (e.g. C0123456789).
+      zh_Hans: 要归档的频道 ID（如 C0123456789）。
+      ja_JP: "アーカイブするチャンネルID（例: C0123456789）。"
+      ko_KR: "보관할 채널 ID(예: C0123456789)."
+    llm_description: The channel ID (e.g. C0123456789) to archive.
+    form: llm
+extra:
+  python:
+    source: tools/archive_channel.py

@@ -1,0 +1,125 @@
+model: doubao-seedance-1-5-pro-251215
+label:
+  en_US: Doubao Seedance 1.5 Pro
+  zh_Hans: 豆包 Seedance 1.5 Pro
+model_type: llm
+features:
+  - polling
+  - vision
+model_properties:
+  mode: chat
+  context_size: 4000
+parameter_rules:
+  - name: input_mode
+    label:
+      zh_Hans: 输入图片模式
+      en_US: Image Input Mode
+    type: string
+    required: false
+    default: first_frame
+    options:
+      - first_frame
+      - first_last_frame
+  - name: resolution
+    label:
+      zh_Hans: 视频分辨率
+      en_US: Video Resolution
+    type: string
+    required: false
+    default: 720p
+    options:
+      - 480p
+      - 720p
+      - 1080p
+  - name: ratio
+    label:
+      zh_Hans: 视频比例
+      en_US: Video Ratio
+    type: string
+    required: false
+    default: adaptive
+    options:
+      - adaptive
+      - '16:9'
+      - '4:3'
+      - '1:1'
+      - '3:4'
+      - '9:16'
+      - '21:9'
+  - name: duration
+    label:
+      zh_Hans: 视频时长
+      en_US: Video Duration
+    type: int
+    required: false
+    default: 5
+    min: -1
+    max: 12
+  - name: seed
+    label:
+      zh_Hans: 随机种子
+      en_US: Random Seed
+    type: int
+    required: false
+    default: -1
+    min: -1
+  - name: camera_fixed
+    label:
+      zh_Hans: 固定镜头
+      en_US: Camera Fixed
+    type: boolean
+    required: false
+    default: false
+  - name: generate_audio
+    label:
+      zh_Hans: 生成音频
+      en_US: Generate Audio
+    type: boolean
+    required: false
+    default: false
+  - name: watermark
+    label:
+      zh_Hans: 水印
+      en_US: Watermark
+    type: boolean
+    required: false
+    default: false
+  - name: return_last_frame
+    label:
+      zh_Hans: 返回尾帧
+      en_US: Return Last Frame
+    type: boolean
+    required: false
+    default: false
+  - name: service_tier
+    label:
+      zh_Hans: 服务档位
+      en_US: Service Tier
+    type: string
+    required: false
+    default: default
+  - name: execution_expires_after
+    label:
+      zh_Hans: 任务超时时间
+      en_US: Execution Expires After
+    type: int
+    required: false
+    default: 172800
+    min: 3600
+    max: 259200
+  - name: priority
+    label:
+      zh_Hans: 队列优先级
+      en_US: Queue Priority
+    type: int
+    required: false
+    default: 0
+    min: 0
+    max: 9
+  - name: web_search
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    type: boolean
+    required: false
+    default: false

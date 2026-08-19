@@ -11,7 +11,7 @@ dependencies = [
     "httpx>=0.28.1",
     "openai>=2.38.0",
     "requests>=2.34.2",
-    "setuptools>=82.0.1",
+    "setuptools>=83.0.0",
 ]
 
 # uv run black . -C -l 100

@@ -1,15 +1,20 @@
 # OneDrive Datasource Plugin
 
-Access Microsoft OneDrive files and folders as a datasource for Dify with comprehensive OAuth 2.0 authentication support.
+Access Microsoft OneDrive files and folders as a datasource for Dify with OAuth 2.0 authentication support.
 
 ## Features
 
 - **Secure OAuth Authentication**: Microsoft Azure AD OAuth 2.0 with automatic token refresh
-- **File and Folder Access**: Browse and download files from personal and business OneDrive
-- **Real-time Synchronization**: Access up-to-date file content and metadata
-- **Rate Limit Handling**: Automatic Microsoft Graph API rate limit management
-- **Large File Support**: Efficient handling of large file downloads
-- **Multi-Tenant Support**: Works with personal and business Microsoft accounts
+- **File and Folder Access**: Browse and download files from OneDrive for work or school by default
+- **Folder Pagination**: Browse large folders with Microsoft Graph pagination
+- **Tenant-Aware OAuth**: Supports single-tenant, organization-only multi-tenant, and optional personal-account scenarios
+
+## Upgrade Notes for 1.0.0
+
+- The default Microsoft OAuth tenant changed from `common` to `organizations`.
+- Existing connections created before 1.0.0 may not have `tenant_id` or `expires_at` saved.
+- Re-authorize existing OneDrive connections after upgrading if refresh fails or the token expires.
+- Set `tenant_id` to `common` before authorization only when personal Microsoft accounts are required.
 
 ## Supported Content Types
 
@@ -26,7 +31,8 @@ Access Microsoft OneDrive files and folders as a datasource for Dify with compre
 
 - Dify platform version >= 1.9.0
 - Python 3.12+
-- Valid Microsoft account (personal or business)
+- Valid Microsoft work or school account by default
+- Personal Microsoft accounts require the app registration and plugin tenant to use `common`
 - Azure AD App Registration (for OAuth)
 
 ### Installation Steps
@@ -51,9 +57,14 @@ Access Microsoft OneDrive files and folders as a datasource for Dify with compre
 1. **Create New App Registration**
    ```
    Name: Dify OneDrive Integration
-   Supported account types: Accounts in any organizational directory and personal Microsoft accounts
    Redirect URI: https://your-dify-domain.com/console/api/oauth/callback
    ```
+
+   Choose the supported account type according to your security policy:
+
+   - Enterprise-only access for your company: choose single tenant and enter that tenant ID or domain in the plugin.
+   - Organization-account multi-tenant access: choose organization accounts only and enter `organizations` in the plugin.
+   - Personal Microsoft account access: choose the personal-account option only when required and enter `common` in the plugin.
 
 2. **Configure API Permissions**
    ```
@@ -75,6 +86,7 @@ Access Microsoft OneDrive files and folders as a datasource for Dify with compre
    ```
    Application (client) ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
    Client Secret: your-generated-secret
+   Tenant: organizations or your tenant ID/domain
    ```
 
 ### Dify System Configuration
@@ -85,6 +97,7 @@ Configure the following in your Dify system settings:
 # System OAuth Configuration
 client_id: "your-azure-app-client-id"
 client_secret: "your-azure-app-client-secret"
+tenant_id: "organizations"
 ```
 
 ### User Authentication Flow
@@ -95,86 +108,13 @@ client_secret: "your-azure-app-client-secret"
 4. Automatically redirected back to Dify with access tokens
 5. OneDrive datasource is ready to use
 
-## Usage Examples
+## Microsoft Graph Limits
 
-### Basic Datasource Configuration
-
-```yaml
-# datasources/onedrive_datasource.yaml
-name: onedrive_datasource
-type: online_drive
-provider: onedrive_datasource
-config:
-  max_files_per_request: 50
-  auto_refresh_tokens: true
-```
-
-### Browsing Files
-
-```python
-# Example: Browse root folder
-request = OnlineDriveBrowseFilesRequest(
-    bucket="onedrive",
-    prefix="root",
-    max_keys=20
-)
-
-response = datasource.browse_files(request)
-for bucket in response.result:
-    for file in bucket.files:
-        print(f"File: {file.name}, Size: {file.size}, Type: {file.type}")
-```
-
-### Downloading Files
-
-```python
-# Example: Download a specific file
-request = OnlineDriveDownloadFileRequest(
-    id="file-id-from-browse-response"
-)
-
-for message in datasource.download_file(request):
-    # Process downloaded content
-    if message.type == "blob":
-        file_content = message.content
-        metadata = message.meta
-```
-
-## Environment Variables
-
-### Required System Variables
-```bash
-# Azure AD OAuth Configuration
-ONEDRIVE_CLIENT_ID="your-azure-app-client-id"
-ONEDRIVE_CLIENT_SECRET="your-azure-app-client-secret"
-
-# Optional: Custom Microsoft Graph Endpoints
-GRAPH_API_BASE_URL="https://graph.microsoft.com/v1.0"
-OAUTH_TOKEN_URL="https://login.microsoftonline.com/common/oauth2/v2.0/token"
-```
-
-### Development Environment
-```bash
-# For local development
-export ONEDRIVE_CLIENT_ID="your-development-client-id"
-export ONEDRIVE_CLIENT_SECRET="your-development-client-secret"
-export DIFY_DEBUG=true
-```
-
-## Rate Limits and Performance
-
-### Microsoft Graph API Limits
+Microsoft Graph enforces service limits.
+If a request is throttled, reduce concurrency or retry later according to the Microsoft Graph response.
 
 - **Requests per app per tenant**: 10,000 requests per 10 minutes
 - **Requests per user per app**: 1,000 requests per 10 minutes
-- **Download limits**: 4 GB per file download
-
-### Plugin Optimizations
-
-- Automatic retry with exponential backoff on rate limit hits
-- Intelligent request batching for multiple file operations
-- Efficient pagination handling for large folder listings
-- Smart caching of metadata to reduce API calls
 
 ## Troubleshooting
 
@@ -221,13 +161,14 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 #### Token Refresh Failures
 
-**Problem**: Automatic token refresh not working
+**Problem**: OAuth token refresh is not working
 
 **Solutions**:
 1. Verify refresh_token is present in stored credentials
-2. Check Azure AD app configuration allows refresh tokens
+2. Check that the saved tenant matches the tenant used during authorization
 3. Ensure offline_access scope was granted during authorization
-4. Re-authorize user if refresh_token has been revoked
+4. Re-authorize connections created before 1.0.0 if they do not have tenant or expiry metadata
+5. Re-authorize user if refresh_token has been revoked
 
 ### Debug Mode
 
@@ -258,7 +199,7 @@ curl -X POST "https://your-dify-domain.com/api/datasources/onedrive/test" \
 
 ### Token Management
 - Store tokens securely using Dify's encrypted storage
-- Implement proper token refresh logic
+- Keep the offline_access scope enabled so Dify can refresh expired access tokens
 - Monitor token usage and expiration
 - Revoke compromised tokens immediately
 
@@ -267,40 +208,6 @@ curl -X POST "https://your-dify-domain.com/api/datasources/onedrive/test" \
 - Regularly review and audit access permissions
 - Use conditional access policies where appropriate
 - Monitor access logs for suspicious activity
-
-## Integration Examples
-
-### Knowledge Base Integration
-
-```yaml
-# Example: Document knowledge base from OneDrive
-datasource_config:
-  name: "Company Documentation"
-  type: onedrive_datasource
-  filters:
-    file_types: [".md", ".docx", ".pdf"]
-    folder_paths: ["/Documentation", "/Policies"]
-  processing:
-    chunking_strategy: "semantic"
-    embedding_model: "text-embedding-ada-002"
-```
-
-### Automated Content Processing
-
-```python
-# Example: Process all markdown files
-async def process_documentation():
-    files = await onedrive_datasource.browse_files({
-        "prefix": "Documentation",
-        "file_filter": "*.md"
-    })
-    
-    for file in files:
-        content = await onedrive_datasource.download_file(file.id)
-        # Process with Dify's document processor
-        processed = await dify.process_document(content)
-        await knowledge_base.add_document(processed)
-```
 
 ## Limitations and Considerations
 
@@ -328,7 +235,9 @@ async def process_documentation():
 **A**: Yes, with Files.Read.All permission, you can access files shared with your account.
 
 ### Q: Does this work with OneDrive for Business?
-**A**: Yes, supports both personal OneDrive and OneDrive for Business accounts.
+**A**: Yes, OneDrive for Business is the default safer path.
+
+Personal OneDrive requires `common` as the plugin tenant and a Microsoft app registration that allows personal Microsoft accounts.
 
 ### Q: What happens if my organization has conditional access policies?
 **A**: The plugin respects conditional access policies. Users may need to satisfy additional authentication requirements.
@@ -337,10 +246,11 @@ async def process_documentation():
 **A**: No, this datasource requires internet connectivity to access Microsoft Graph API.
 
 ### Q: Are there file size limits?
-**A**: Microsoft Graph API supports files up to 4 GB. Larger files may require special handling.
+**A**: The plugin downloads each file into memory.
+Very large files may fail depending on runtime memory limits.
 
 ### Q: How often are tokens refreshed?
-**A**: Access tokens are automatically refreshed when they expire (typically every hour).
+**A**: Dify refreshes access tokens through the plugin OAuth provider when the saved token reaches its expiry time.
 
 ## Support and Resources
 
@@ -359,6 +269,6 @@ async def process_documentation():
 - Microsoft Premier Support (for Graph API issues)
 - Custom integration consulting available
 
-## Version: 0.1.3
+## Version: 1.0.0
 
-This plugin implements comprehensive OneDrive integration with enterprise-grade security, OAuth 2.0 authentication, and seamless file access capabilities.
+This plugin implements tenant-aware OneDrive OAuth and Microsoft Graph file access.

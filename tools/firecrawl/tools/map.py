@@ -16,7 +16,8 @@ class MapTool(Tool):
         )
         payload = {}
         payload["search"] = tool_parameters.get("search")
-        payload["ignoreSitemap"] = tool_parameters.get("ignoreSitemap", True)
+        if tool_parameters.get("ignoreSitemap", True):
+            payload["sitemap"] = "skip"
         payload["includeSubdomains"] = tool_parameters.get("includeSubdomains", False)
         payload["limit"] = tool_parameters.get("limit", 5000)
         map_result = app.map(url=tool_parameters["url"], **payload)

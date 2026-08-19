@@ -16,17 +16,20 @@ class GptImageTool(Tool):
     """
     
     # API endpoints
-    BASE_URL = "https://aihubmix.com/v1"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
     def create_image_info(self, base64_data: str, resolution: str) -> dict:
         mime_type = "image/png"
         return {
             "url": f"data:{mime_type};base64,{base64_data}",
             "resolution": resolution
         }
-    
+
     def get_endpoint(self, model: str) -> str:
-        return f"{self.BASE_URL}/models/openai/{model}/predictions"
+        return f"{self.get_base_url()}/v1/models/openai/{model}/predictions"
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """

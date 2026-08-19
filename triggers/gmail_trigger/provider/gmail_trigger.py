@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import secrets
 import time
@@ -225,6 +226,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     _TOKEN_URL = "https://oauth2.googleapis.com/token"
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
 
+    _DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600
     _DEFAULT_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
     _SUBSCRIPTION_PREFIX = "dify-gmail-"
 
@@ -238,9 +240,14 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         )
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("Client ID is required to start Gmail OAuth flow")
+
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
-            "client_id": system_credentials["client_id"],
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": self._DEFAULT_SCOPE,
@@ -254,6 +261,13 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"Gmail OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
@@ -270,21 +284,30 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             "grant_type": "authorization_code",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        payload: dict[str, Any] = resp.json()
+        try:
+            resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Gmail OAuth token exchange: {exc}") from exc
+        try:
+            payload: dict[str, Any] = resp.json()
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Gmail OAuth token response was not valid JSON") from exc
+        if resp.status_code >= 400:
+            raise TriggerProviderOAuthError(f"Gmail OAuth token exchange failed: {self._extract_google_error(resp, payload)}")
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError(f"Error in Google OAuth: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
         refresh_token: str | None = payload.get("refresh_token")
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0)
 
         # 2. Parse and store GCP configuration from system_credentials
         import json as _json
 
         credentials: dict[str, str] = {"access_token": access_token}
         if refresh_token:
+            # Dify core decrypts trigger refresh credentials with the OAuth client schema.
             credentials["refresh_token"] = refresh_token
 
         # Extract GCP info and store in credentials for later use (required)
@@ -345,14 +368,22 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             "grant_type": "refresh_token",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        payload: dict[str, Any] = resp.json()
+        try:
+            resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Gmail OAuth refresh: {exc}") from exc
+        try:
+            payload: dict[str, Any] = resp.json()
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Gmail OAuth refresh response was not valid JSON") from exc
+        if resp.status_code >= 400:
+            raise TriggerProviderOAuthError(f"OAuth refresh failed: {self._extract_google_error(resp, payload)}")
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError(f"OAuth refresh failed: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0)
         refreshed: dict[str, str] = {"access_token": access_token}
         if refresh_token:
             refreshed["refresh_token"] = refresh_token
@@ -483,17 +514,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
 
     def _ensure_topic(self, project_id: str, sa_info: Mapping[str, Any], topic_id: str) -> str:
         """Ensure the shared Pub/Sub topic exists and Gmail can publish to it."""
-        from google.api_core.exceptions import AlreadyExists, Forbidden, PermissionDenied
+        from google.api_core.exceptions import Conflict, Forbidden, PermissionDenied
         from google.cloud import pubsub_v1
         from google.iam.v1 import policy_pb2
         from google.oauth2 import service_account as _sa
 
         creds = _sa.Credentials.from_service_account_info(sa_info)
-        publisher = pubsub_v1.PublisherClient(credentials=creds)
+        publisher = pubsub_v1.PublisherClient(credentials=creds, transport="rest")
         topic_path = publisher.topic_path(project_id, topic_id)
         try:
             publisher.create_topic(name=topic_path)
-        except AlreadyExists:
+        except Conflict:
             pass
         except (Forbidden, PermissionDenied) as exc:  # pragma: no cover - permission errors
             raise TriggerProviderOAuthError(
@@ -535,7 +566,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> dict[str, str]:
         import json as _json
 
-        from google.api_core.exceptions import AlreadyExists, NotFound
+        from google.api_core.exceptions import Conflict, NotFound
         from google.cloud import pubsub_v1
         from google.oauth2 import service_account as _sa
 
@@ -545,7 +576,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         creds = _sa.Credentials.from_service_account_info(info)
         sa_email = info.get("client_email")
 
-        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds, transport="rest")
 
         # Ensure a dedicated push subscription per Dify subscription (endpoint + subscription key)
         sub_id = push_subscription_name
@@ -556,7 +587,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             push.oidc_token.audience = audience
         try:
             subscriber.create_subscription(name=sub_path, topic=topic_path, push_config=push)
-        except AlreadyExists:
+        except Conflict:
             # Verify existing subscription config; if mismatched, recreate
             sub = subscriber.get_subscription(subscription=sub_path)
             need_recreate = False
@@ -630,7 +661,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         creds = _sa.Credentials.from_service_account_info(info)
 
         # Delete Push Subscription
-        subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+        subscriber = pubsub_v1.SubscriberClient(credentials=creds, transport="rest")
         sub_path = subscriber.subscription_path(project_id, subscription_name)
         try:
             subscriber.delete_subscription(subscription=sub_path)
@@ -661,7 +692,7 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
         creds = _sa.Credentials.from_service_account_info(info)
 
-        publisher = pubsub_v1.PublisherClient(credentials=creds)
+        publisher = pubsub_v1.PublisherClient(credentials=creds, transport="rest")
         topic_path = publisher.topic_path(project_id, topic_id)
 
         # List all subscriptions on the topic
@@ -753,5 +784,38 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             lid = lab.get("id")
             name = lab.get("name") or lid
             if lid:
-                options.append(ParameterOption(value=lid, label=I18nObject(en_US=name)))
+                options.append(ParameterOption(value=lid, label=I18nObject(en_us=name)))
         return options
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"gmail:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"gmail:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Gmail OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Gmail OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Gmail OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Gmail OAuth state.") from exc
+
+    @staticmethod
+    def _extract_google_error(response: requests.Response, payload: Mapping[str, Any]) -> str:
+        error = payload.get("error")
+        if isinstance(error, Mapping):
+            message = error.get("message") or error.get("status")
+            if message:
+                return str(message)
+        message = payload.get("error_description") or payload.get("error")
+        return str(message or response.text or f"HTTP {response.status_code}")[:500]

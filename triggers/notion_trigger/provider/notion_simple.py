@@ -204,6 +204,6 @@ class NotionSubscriptionConstructor(TriggerSubscriptionConstructor):
             return []
 
         return [
-            ParameterOption(value=event_type, label=I18nObject(en_US=event_type.replace(".", " → ")))
+            ParameterOption(value=event_type, label=I18nObject(en_us=event_type.replace(".", " → ")))
             for event_type in _SUPPORTED_EVENT_TYPES
         ]

@@ -1,0 +1,71 @@
+model: glm-5.2
+label:
+  en_US: glm-5.2
+model_type: llm
+features:
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 131072
+  - name: web_search
+    type: boolean
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    default: false
+    help:
+      zh_Hans: 控制模型是否在生成文本时参考互联网搜索结果。
+      en_US: Controls whether the model uses Internet search results while generating text.
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。GLM-5.2 默认启用动态思考，也允许关闭。
+      en_US: Controls the model's reasoning. GLM-5.2 uses dynamic thinking by default and allows it to be disabled.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: max
+    required: false
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 控制思考强度。none/minimal 关闭思考，low/medium 映射为 high，xhigh 映射为 max。
+      en_US: Controls reasoning effort. none/minimal disable thinking, low/medium map to high, and xhigh maps to max.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: Specifies the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: "0.008"
+  output: "0.028"
+  unit: "0.001"
+  currency: RMB

@@ -1,0 +1,6 @@
+model: voyageai/rerank-2.5
+label:
+  en_US: VoyageAI Rerank 2.5
+model_type: rerank
+model_properties:
+  context_size: 32000

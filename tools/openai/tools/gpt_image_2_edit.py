@@ -7,8 +7,8 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 from openai import OpenAI
-from yarl import URL
 
+from openai_client import normalize_openai_base_url
 from tools._image_utils import build_usage_metadata, build_usage_output, decode_image
 
 logger = logging.getLogger(__name__)
@@ -30,13 +30,10 @@ class GPTImage2EditTool(Tool):
             tool_parameters.get("n", 1),
         )
         openai_organization = self.runtime.credentials.get("openai_organization_id") or None
-        openai_base_url = self.runtime.credentials.get("openai_base_url") or None
-        if openai_base_url:
-            openai_base_url = str(URL(openai_base_url) / "v1")
 
         client = OpenAI(
             api_key=self.runtime.credentials["openai_api_key"],
-            base_url=openai_base_url,
+            base_url=normalize_openai_base_url(self.runtime.credentials.get("openai_base_url")),
             organization=openai_organization,
         )
 

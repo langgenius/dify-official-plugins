@@ -1,0 +1,73 @@
+model: Ling-3.0-flash
+label:
+  en_US: Ling-3.0-flash
+  zh_Hans: Ling-3.0-flash
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 0.6
+    min: 0.0
+    max: 1.4
+    help:
+      zh_Hans: 控制生成文本的随机性。取值范围 [0.0, 1.4]，默认推荐 0.6。值越小输出越确定，值越大输出越多样。
+      en_US: Controls randomness in generation. Range [0.0, 1.4], recommended default 0.6.
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 1.0
+    help:
+      zh_Hans: 核采样概率阈值。取值范围 (0.0, 1.0]，值越小模型越倾向于高概率词汇。
+      en_US: Nucleus sampling threshold. Range (0.0, 1.0].
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 32768
+    help:
+      zh_Hans: 指定模型单次生成内容的最大 token 数量。
+      en_US: Maximum number of tokens for a single generation.
+  - name: thinking
+    type: string
+    required: false
+    default: enabled
+    label:
+      zh_Hans: 思考 (reasoning)
+      en_US: reasoning
+    options:
+      - enabled
+      - disabled
+    help:
+      zh_Hans: 控制 Ling-3.0-flash 是否开启思考。enabled 开启思考，disabled 不开启思考（速度更快）。
+      en_US: Controls reasoning for Ling-3.0-flash. enabled to enable reasoning, disabled for faster response.
+  - name: enable_search
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 开启联网搜索
+      en_US: Enable Web Search
+    help:
+      zh_Hans: 是否允许模型调用联网搜索能力。开启会增加 token 消耗。
+      en_US: Allow model to use web search.
+  - name: forced_search
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 强制联网搜索
+      en_US: Forced Web Search
+    help:
+      zh_Hans: 仅在开启联网搜索时生效。设为 true 时强制每次请求都发起搜索。
+      en_US: Force web search on every request.

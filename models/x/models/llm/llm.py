@@ -7,6 +7,21 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 
+REASONING_MODELS = {
+    "grok-3-mini",
+    "grok-3-mini-fast",
+}
+REASONING_MODEL_PREFIXES = ("grok-4", "grok-code", "grok-build")
+REASONING_UNSUPPORTED_PARAMETERS = (
+    "presence_penalty",
+    "frequency_penalty",
+    "presencePenalty",
+    "frequencyPenalty",
+    "stop",
+    "stop_sequences",
+    "stopSequences",
+)
+
 
 class XAILargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -22,6 +37,9 @@ class XAILargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
         self._validate_search_parameters(model_parameters)
+        if self._is_reasoning_model(model):
+            stop = None
+            self._remove_reasoning_unsupported_parameters(model_parameters)
         return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -46,3 +64,18 @@ class XAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["search_parameters"] = json.loads(search_parameters)
         except json.JSONDecodeError:
             raise ValueError("search_parameters must be a valid JSON string")
+
+    @staticmethod
+    def _is_reasoning_model(model: str) -> bool:
+        if "-non-reasoning" in model:
+            return False
+        return (
+            model in REASONING_MODELS
+            or model.startswith(REASONING_MODEL_PREFIXES)
+            or model.endswith("-reasoning")
+        )
+
+    @staticmethod
+    def _remove_reasoning_unsupported_parameters(model_parameters: dict) -> None:
+        for parameter in REASONING_UNSUPPORTED_PARAMETERS:
+            model_parameters.pop(parameter, None)

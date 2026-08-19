@@ -188,10 +188,10 @@ class ComfyuiTxt2Img(Tool):
         parameters = [
             ToolParameter(
                 name="prompt",
-                label=I18nObject(en_US="Prompt", zh_Hans="Prompt"),
+                label=I18nObject(en_us="Prompt", zh_hans="Prompt"),
                 human_description=I18nObject(
-                    en_US="Image prompt, you can check the official documentation of Stable Diffusion",
-                    zh_Hans="图像提示词，您可以查看 Stable Diffusion 的官方文档",
+                    en_us="Image prompt, you can check the official documentation of Stable Diffusion",
+                    zh_hans="图像提示词，您可以查看 Stable Diffusion 的官方文档",
                 ),
                 type=ToolParameter.ToolParameterType.STRING,
                 form=ToolParameter.ToolParameterForm.LLM,
@@ -207,11 +207,11 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="model",
-                            label=I18nObject(en_US="Model", zh_Hans="Model"),
+                            label=I18nObject(en_us="Model", zh_hans="Model"),
                             human_description=I18nObject(
-                                en_US="Model of Stable Diffusion or FLUX,"
+                                en_us="Model of Stable Diffusion or FLUX,"
                                 + " you can check the official documentation of Stable Diffusion or FLUX",
-                                zh_Hans="Stable Diffusion 或者 FLUX 的模型，您可以查看 Stable Diffusion 的官方文档",
+                                zh_hans="Stable Diffusion 或者 FLUX 的模型，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
@@ -220,7 +220,7 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=models[0],
                             options=[
-                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in models
+                                ToolParameterOption(value=i, label=I18nObject(en_us=i, zh_hans=i)) for i in models
                             ],
                         )
                     )
@@ -230,11 +230,11 @@ class ComfyuiTxt2Img(Tool):
                         parameters.append(
                             ToolParameter(
                                 name=f"lora_{n}",
-                                label=I18nObject(en_US=f"Lora {n}", zh_Hans=f"Lora {n}"),
+                                label=I18nObject(en_us=f"Lora {n}", zh_hans=f"Lora {n}"),
                                 human_description=I18nObject(
-                                    en_US="Lora of Stable Diffusion,"
+                                    en_us="Lora of Stable Diffusion,"
                                     + " you can check the official documentation of Stable Diffusion",
-                                    zh_Hans="Stable Diffusion 的 Lora 模型，您可以查看 Stable Diffusion 的官方文档",
+                                    zh_hans="Stable Diffusion 的 Lora 模型，您可以查看 Stable Diffusion 的官方文档",
                                 ),
                                 type=ToolParameter.ToolParameterType.SELECT,
                                 form=ToolParameter.ToolParameterForm.FORM,
@@ -242,7 +242,7 @@ class ComfyuiTxt2Img(Tool):
                                 + " you can check the official documentation of Stable Diffusion",
                                 required=False,
                                 options=[
-                                    ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in loras
+                                    ToolParameterOption(value=i, label=I18nObject(en_us=i, zh_hans=i)) for i in loras
                                 ],
                             )
                         )
@@ -252,11 +252,11 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="sampler_name",
-                            label=I18nObject(en_US="Sampling method", zh_Hans="Sampling method"),
+                            label=I18nObject(en_us="Sampling method", zh_hans="Sampling method"),
                             human_description=I18nObject(
-                                en_US="Sampling method of Stable Diffusion,"
+                                en_us="Sampling method of Stable Diffusion,"
                                 + " you can check the official documentation of Stable Diffusion",
-                                zh_Hans="Stable Diffusion 的Sampling method，您可以查看 Stable Diffusion 的官方文档",
+                                zh_hans="Stable Diffusion 的Sampling method，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
@@ -265,7 +265,7 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=sample_methods[0],
                             options=[
-                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i))
+                                ToolParameterOption(value=i, label=I18nObject(en_us=i, zh_hans=i))
                                 for i in sample_methods
                             ],
                         )
@@ -274,11 +274,11 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(en_us="Scheduler", zh_hans="Scheduler"),
                             human_description=I18nObject(
-                                en_US="Scheduler of Stable Diffusion,"
+                                en_us="Scheduler of Stable Diffusion,"
                                 + " you can check the official documentation of Stable Diffusion",
-                                zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
+                                zh_hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
@@ -287,18 +287,18 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=schedulers[0],
                             options=[
-                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in schedulers
+                                ToolParameterOption(value=i, label=I18nObject(en_us=i, zh_hans=i)) for i in schedulers
                             ],
                         )
                     )
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
+                        label=I18nObject(en_us="Model Type", zh_hans="Model Type"),
                         human_description=I18nObject(
-                            en_US="Model Type of Stable Diffusion or Flux,"
+                            en_us="Model Type of Stable Diffusion or Flux,"
                             + " you can check the official documentation of Stable Diffusion or Flux",
-                            zh_Hans="Stable Diffusion 或 FLUX 的模型类型，"
+                            zh_hans="Stable Diffusion 或 FLUX 的模型类型，"
                             + "您可以查看 Stable Diffusion 或 Flux 的官方文档",
                         ),
                         type=ToolParameter.ToolParameterType.SELECT,
@@ -308,7 +308,7 @@ class ComfyuiTxt2Img(Tool):
                         required=True,
                         default=ModelType.SD15.name,
                         options=[
-                            ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i))
+                            ToolParameterOption(value=i, label=I18nObject(en_us=i, zh_hans=i))
                             for i in ModelType.__members__
                         ],
                     )

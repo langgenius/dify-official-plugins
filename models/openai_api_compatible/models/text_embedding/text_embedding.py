@@ -83,7 +83,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Add vision feature if vision support is enabled
@@ -130,9 +130,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         # Process inputs - convert to multimodal format if needed
         processed_inputs = []
+        multimodal_flags = []
         for text in texts:
             processed = self._process_input(text, vision_support == "support")
             processed_inputs.append(processed)
+            multimodal_flags.append(self._is_multimodal_input(processed))
 
         # Apply prefix
         prefix = self._get_prefix(credentials, input_type)
@@ -169,13 +171,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             inputs.append(text)
 
         # Call API in batches
-        return self._embed_in_batches(model, credentials, inputs, user, input_type)
+        return self._embed_in_batches(
+            model, credentials, inputs, multimodal_flags, user, input_type
+        )
 
     def _embed_in_batches(
         self,
         model: str,
         credentials: dict,
         inputs: list[str],
+        multimodal_flags: list[bool],
         user: Optional[str] = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
@@ -203,8 +208,10 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             text_inputs = []
             multimodal_indices = []
             multimodal_inputs = []
-            for idx, inp in enumerate(inputs):
-                if "Image:" in inp:
+            for idx, (inp, is_multimodal) in enumerate(
+                zip(inputs, multimodal_flags, strict=True)
+            ):
+                if is_multimodal:
                     multimodal_indices.append(idx)
                     multimodal_inputs.append(inp)
                 else:
@@ -324,6 +331,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         Embed inputs containing multimodal content using vLLM chat embeddings API.
         Returns (embeddings, used_tokens, total_price, unit_price, price_unit, currency).
         """
+        # Resolve the upstream model id the same way the text-only path does, so a
+        # configured endpoint_model_name override reaches the API instead of the
+        # Dify display/registration name (which would 404 upstream).
+        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
+
         client = OpenAI(api_key=api_key, base_url=endpoint_url)
 
         batched_embeddings = []
@@ -351,7 +363,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         {"role": "user", "content": [{"type": "text", "text": prompt}]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,
@@ -368,7 +380,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         ]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,
@@ -392,7 +404,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         ]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
-                    model=model,
+                    model=endpoint_model_name,
                     encoding_format="float",
                     continue_final_message=True,
                     add_special_tokens=True,
@@ -442,6 +454,12 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             return [{"type": "image_url", "image_url": {"url": text}}]
 
         return text
+
+    def _is_multimodal_input(self, input_data: object) -> bool:
+        return isinstance(input_data, list) and any(
+            isinstance(content, dict) and content.get("type") == "image_url"
+            for content in input_data
+        )
 
     def _format_multimodal_content(self, data: dict) -> Union[str, list]:
         """

@@ -1,0 +1,34 @@
+identity:
+  name: lookup_user_by_email
+  author: langgenius
+  label:
+    en_US: Look Up User by Email
+    zh_Hans: 通过邮箱查找用户
+    ja_JP: メールアドレスでユーザーを検索
+    ko_KR: 이메일로 사용자 찾기
+description:
+  human:
+    en_US: Find a Slack user by their email address.
+    zh_Hans: 通过电子邮箱地址查找 Slack 用户。
+    ja_JP: メールアドレスで Slack ユーザーを検索します。
+    ko_KR: 이메일 주소로 Slack 사용자를 찾습니다.
+  llm: Finds a workspace user by email address using users.lookupByEmail. Requires the email. Returns the matching user's profile including their user ID.
+parameters:
+  - name: email
+    type: string
+    required: true
+    label:
+      en_US: Email
+      zh_Hans: 邮箱
+      ja_JP: メールアドレス
+      ko_KR: 이메일
+    human_description:
+      en_US: The email address of the user to find.
+      zh_Hans: 要查找用户的电子邮箱地址。
+      ja_JP: 検索するユーザーのメールアドレス。
+      ko_KR: 찾을 사용자의 이메일 주소.
+    llm_description: The email address to look up, e.g. user@example.com.
+    form: llm
+extra:
+  python:
+    source: tools/lookup_user_by_email.py

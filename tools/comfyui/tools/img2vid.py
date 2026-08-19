@@ -321,10 +321,10 @@ class ComfyuiImg2Vid(Tool):
             workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
             self.model_manager.download_from_json(workflow.json_original_str())
 
-        workflow.set_prompt("6", config.prompt)
-        workflow.set_prompt("7", config.negative_prompt)
+        workflow.set_prompt("93", config.prompt)
+        workflow.set_prompt("89", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type("WanImageToVideo")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)

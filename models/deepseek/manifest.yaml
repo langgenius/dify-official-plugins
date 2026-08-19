@@ -1,8 +1,8 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Models provided by DeepSeek, such as deepseek-v4-flash, deepseek-v4-pro, deepseek-chat and deepseek-reasoner.
-  zh_Hans: DeepSeek 提供的模型，例如 deepseek-v4-flash、deepseek-v4-pro、deepseek-chat 和 deepseek-reasoner。
+  en_US: Official DeepSeek models, including deepseek-v4-flash and deepseek-v4-pro.
+  zh_Hans: DeepSeek 官方模型，包括 deepseek-v4-flash 和 deepseek-v4-pro。
 icon: icon_s_en.svg
 label:
   en_US: DeepSeek
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.16
+version: 0.0.20

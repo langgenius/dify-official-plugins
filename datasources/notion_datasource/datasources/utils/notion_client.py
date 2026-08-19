@@ -3,7 +3,11 @@ Notion API Client for Dify plugins
 This module provides a unified interface for interacting with the Notion API
 """
 
+import os
+import threading
 import time
+from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import requests
@@ -11,6 +15,8 @@ import requests
 from dify_plugin.entities.datasource import OnlineDocumentPage
 
 __TIMEOUT_SECONDS__ = 60 * 10
+_DEFAULT_PARENT_RESOLVE_WORKERS = 8
+_MAX_PARENT_RESOLVE_WORKERS = 32
 
 
 class NotionClient:
@@ -40,6 +46,14 @@ class NotionClient:
             "Notion-Version": self._API_VERSION,
             "Content-Type": "application/json",
         }
+        # Memoize parent_id lookups so the threaded resolution in
+        # get_authorized_pages doesn't re-fetch the same ancestor block twice.
+        # `_parent_inflight` tracks lookups currently being resolved so that
+        # concurrent workers asking for the same block coalesce onto a single
+        # HTTP request instead of all racing past the cache miss.
+        self._parent_cache: dict[str, str] = {}
+        self._parent_inflight: dict[str, threading.Event] = {}
+        self._parent_cache_lock = threading.Lock()
 
     def _make_request(
         self,
@@ -48,7 +62,8 @@ class NotionClient:
         params: dict[str, Any] | None = None,
         json_data: dict[str, Any] | None = None,
         max_retries: int = 3,
-    ) -> dict[str, Any]:
+        allow_status: Iterable[int] = (),
+    ) -> dict[str, Any] | None:
         """
         Make an API request to Notion with retry logic for rate limits.
 
@@ -58,12 +73,15 @@ class NotionClient:
             params: URL parameters for GET requests
             json_data: JSON data for POST/PATCH requests
             max_retries: Maximum number of retries for rate limiting
+            allow_status: HTTP status codes that should resolve to None
+                instead of raising (e.g. {404} for optional resources).
 
         Returns:
-            Response data as dictionary
+            Response data as dictionary, or None if the response status was in allow_status.
         """
         url = f"{self._API_BASE_URL}{endpoint}"
         retries = 0
+        allow_status_set = set(allow_status)
 
         while retries <= max_retries:
             try:
@@ -82,6 +100,9 @@ class NotionClient:
                     time.sleep(retry_after)
                     retries += 1
                     continue
+
+                if response.status_code in allow_status_set:
+                    return None
 
                 response.raise_for_status()
                 return response.json()
@@ -439,145 +460,179 @@ class NotionClient:
         """
         return self.create_rich_text(content)
 
-    def get_authorized_pages(self):
-        pages = []
-        access_token = self.integration_token
-        page_results = self.notion_page_search(access_token)
-        database_results = self.notion_database_search(access_token)
-        # get page detail
-        for page_result in page_results:
-            page_id = page_result["id"]
-            page_name = "Untitled"
-            for key in page_result["properties"]:
-                if "title" in page_result["properties"][key] and page_result["properties"][key]["title"]:
-                    title_list = page_result["properties"][key]["title"]
-                    if len(title_list) > 0 and "plain_text" in title_list[0]:
-                        page_name = title_list[0]["plain_text"]
-            icon = None
-            parent = page_result["parent"]
-            parent_type = parent["type"]
-            try:
-                if parent_type == "block_id":
-                    parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
-                elif parent_type == "workspace":
-                    parent_id = "root"
-                else:
-                    parent_id = parent[parent_type]
-            except ValueError:
-                continue
-            page = OnlineDocumentPage(
-                page_id=page_id,
-                page_name=page_name,
-                page_icon=icon,
-                parent_id=parent_id,
-                type="page",
-                last_edited_time=page_result["last_edited_time"],
-            )
-            pages.append(page)
-            # get database detail
-        for database_result in database_results:
-            page_id = database_result["id"]
-            page_name = database_result["title"][0]["plain_text"] if len(database_result["title"]) > 0 else "Untitled"
+    def get_authorized_pages(self) -> list[OnlineDocumentPage]:
+        items = self._search_all()
+        worker_count = self._resolve_worker_count()
 
-            icon = None
-            parent = database_result["parent"]
-            parent_type = parent["type"]
-            try:
-                if parent_type == "block_id":
-                    parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
-                elif parent_type == "workspace":
-                    parent_id = "root"
-                else:
-                    parent_id = parent[parent_type]
-            except ValueError:
-                continue
-            page = OnlineDocumentPage(
-                page_id=page_id,
-                page_name=page_name,
-                page_icon=icon,
-                parent_id=parent_id,
-                type="database",
-                last_edited_time=database_result["last_edited_time"],
-            )
-            pages.append(page)
+        pages: list[OnlineDocumentPage] = []
+        if worker_count <= 1:
+            for item in items:
+                entry = self._build_page_entry(item)
+                if entry is not None:
+                    pages.append(entry)
+            return pages
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            for entry in executor.map(self._build_page_entry, items):
+                if entry is not None:
+                    pages.append(entry)
         return pages
 
-    def notion_page_search(self, access_token: str):
-        results = []
-        next_cursor = None
+    def _search_all(self) -> list[dict[str, Any]]:
+        """Fetch every page and database shared with the integration in one pass.
+
+        Notion's /v1/search returns both pages and databases when no object filter
+        is supplied, so combining the previous two filtered loops halves the number
+        of search round-trips required to enumerate the workspace.
+        """
+        results: list[dict[str, Any]] = []
+        next_cursor: str | None = None
         has_more = True
-
         while has_more:
-            data: dict[str, Any] = {
-                "filter": {"value": "page", "property": "object"},
-                **({"start_cursor": next_cursor} if next_cursor else {}),
-            }
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {access_token}",
-                "Notion-Version": self._API_VERSION,
-            }
-
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__
-            )
-            response_json = response.json()
-
-            results.extend(response_json.get("results", []))
-
-            has_more = response_json.get("has_more", False)
-            next_cursor = response_json.get("next_cursor", None)
-
+            payload: dict[str, Any] = {}
+            if next_cursor:
+                payload["start_cursor"] = next_cursor
+            data = self._make_request("post", "/search", json_data=payload) or {}
+            results.extend(data.get("results", []))
+            has_more = data.get("has_more", False)
+            next_cursor = data.get("next_cursor")
         return results
 
+    def _build_page_entry(self, item: dict[str, Any]) -> OnlineDocumentPage | None:
+        obj = item.get("object")
+        if obj == "page":
+            page_name = "Untitled"
+            for key in item.get("properties", {}):
+                prop = item["properties"][key]
+                if "title" in prop and prop["title"]:
+                    title_list = prop["title"]
+                    if len(title_list) > 0 and "plain_text" in title_list[0]:
+                        page_name = title_list[0]["plain_text"]
+            page_type = "page"
+        elif obj == "database":
+            title = item.get("title", [])
+            page_name = title[0]["plain_text"] if len(title) > 0 else "Untitled"
+            page_type = "database"
+        else:
+            return None
+
+        parent = item.get("parent", {})
+        parent_type = parent.get("type")
+        try:
+            if parent_type == "block_id":
+                parent_id = self._resolve_block_parent_page_id(parent[parent_type])
+            elif parent_type == "workspace":
+                parent_id = "root"
+            elif parent_type and parent_type in parent:
+                parent_id = parent[parent_type]
+            else:
+                parent_id = "root"
+        except (ValueError, requests.exceptions.RequestException):
+            # One unresolvable item (HTTP error, malformed parent, etc.) must not
+            # abort the whole enumeration — preserve the original "skip and
+            # continue" behavior established by PR #2891.
+            return None
+
+        return OnlineDocumentPage(
+            page_id=item["id"],
+            page_name=page_name,
+            page_icon=None,
+            parent_id=parent_id,
+            type=page_type,
+            last_edited_time=item["last_edited_time"],
+        )
+
+    @staticmethod
+    def _resolve_worker_count() -> int:
+        raw = os.environ.get("NOTION_PARENT_RESOLVE_WORKERS")
+        if not raw:
+            return _DEFAULT_PARENT_RESOLVE_WORKERS
+        try:
+            value = int(raw)
+        except ValueError:
+            return _DEFAULT_PARENT_RESOLVE_WORKERS
+        return max(1, min(value, _MAX_PARENT_RESOLVE_WORKERS))
+
+    def notion_page_search(self, access_token: str):
+        return self._search_filtered("page")
+
     def notion_database_search(self, access_token: str):
-        results = []
-        next_cursor = None
+        return self._search_filtered("database")
+
+    def _search_filtered(self, object_type: str) -> list[dict[str, Any]]:
+        """Fetch only pages or only databases using the API-side object filter.
+
+        Used by the public ``notion_page_search`` / ``notion_database_search``
+        wrappers when callers ask for just one type. ``get_authorized_pages``
+        deliberately uses ``_search_all`` instead to collapse both kinds into a
+        single pass.
+        """
+        results: list[dict[str, Any]] = []
+        next_cursor: str | None = None
         has_more = True
-
         while has_more:
-            data: dict[str, Any] = {
-                "filter": {"value": "database", "property": "object"},
-                **({"start_cursor": next_cursor} if next_cursor else {}),
+            payload: dict[str, Any] = {
+                "filter": {"value": object_type, "property": "object"},
             }
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {access_token}",
-                "Notion-Version": self._API_VERSION,
-            }
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__
-            )
-            response_json = response.json()
-
-            results.extend(response_json.get("results", []))
-
-            has_more = response_json.get("has_more", False)
-            next_cursor = response_json.get("next_cursor", None)
-
+            if next_cursor:
+                payload["start_cursor"] = next_cursor
+            data = self._make_request("post", "/search", json_data=payload) or {}
+            results.extend(data.get("results", []))
+            has_more = data.get("has_more", False)
+            next_cursor = data.get("next_cursor")
         return results
 
     def notion_block_parent_page_id(self, access_token: str, block_id: str):
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Notion-Version": self._API_VERSION,
-        }
-        response = requests.get(
-            url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=__TIMEOUT_SECONDS__
-        )
-        if response.status_code == 404:
-            # Treat inaccessible parent as a root-level item.
-            return "root"
-        if response.status_code != 200:
-            try:
-                response_json = response.json()
-                message = response_json.get("message", "unknown error")
-            except requests.exceptions.JSONDecodeError:
-                message = response.text or "unknown error"
-            raise ValueError(f"Error fetching block parent page ID: {message}")
-        response_json = response.json()
-        parent = response_json["parent"]
-        parent_type = parent["type"]
-        if parent_type == "block_id":
-            return self.notion_block_parent_page_id(access_token, parent[parent_type])
-        return parent[parent_type]
+        return self._resolve_block_parent_page_id(block_id)
+
+    def _resolve_block_parent_page_id(self, block_id: str) -> str:
+        clean_id = block_id.replace("-", "")
+
+        # Coordinate cache and in-flight lookups under the same lock so two
+        # workers can never both miss the cache for the same block and race to
+        # fetch it — under Notion's ~3 req/s limit those redundant requests
+        # would just amplify 429 backoff.
+        while True:
+            with self._parent_cache_lock:
+                cached = self._parent_cache.get(clean_id)
+                if cached is not None:
+                    return cached
+                event = self._parent_inflight.get(clean_id)
+                if event is None:
+                    # This thread is now responsible for fetching this id;
+                    # other threads asking for the same id will wait on `event`.
+                    event = threading.Event()
+                    self._parent_inflight[clean_id] = event
+                    break
+            # Another worker is already fetching; wait for it to finish, then
+            # re-check the cache on the next iteration.
+            event.wait()
+
+        try:
+            data = self._make_request("get", f"/blocks/{clean_id}", allow_status=(404,))
+            if data is None:
+                result = "root"
+            else:
+                parent = data.get("parent", {})
+                parent_type = parent.get("type")
+                if parent_type == "block_id":
+                    result = self._resolve_block_parent_page_id(parent[parent_type])
+                elif parent_type == "workspace":
+                    result = "root"
+                elif parent_type and parent_type in parent:
+                    result = parent[parent_type]
+                else:
+                    result = "root"
+        except Exception:
+            # Release waiters so they don't block forever; they will re-enter
+            # the lock above, see no cache entry, and retry on their own.
+            with self._parent_cache_lock:
+                self._parent_inflight.pop(clean_id, None)
+            event.set()
+            raise
+
+        with self._parent_cache_lock:
+            self._parent_cache[clean_id] = result
+            self._parent_inflight.pop(clean_id, None)
+        event.set()
+        return result

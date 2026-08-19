@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Prioritize Email
+    ko_KR: 이메일 우선순위 설정
     zh_Hans: 设置邮件优先级
     pt_BR: Priorizar E-mail
     ja_JP: メールの優先度設定
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Set the priority level of an email message
+    ko_KR: 이메일 메시지의 우선순위 수준 설정
     zh_Hans: 设置邮件的优先级级别
     pt_BR: Definir o nível de prioridade de um e-mail
     ja_JP: メールの優先度を設定
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: Email ID
+      ko_KR: 이메일 ID
       zh_Hans: 邮件ID
       pt_BR: ID do E-mail
       ja_JP: メールID
       zh_Hant: 郵件ID
     human_description:
       en_US: The unique identifier of the email to prioritize
+      ko_KR: 우선순위를 설정할 이메일의 고유 식별자
       zh_Hans: 要设置优先级的邮件的唯一标识符
       pt_BR: O identificador único do e-mail para priorizar
       ja_JP: 優先度を設定するメールの一意の識別子
@@ -42,12 +46,14 @@ parameters:
     default: high
     label:
       en_US: Priority Level
+      ko_KR: 우선순위 수준
       zh_Hans: 优先级
       pt_BR: Nível de Prioridade
       ja_JP: 優先度
       zh_Hant: 優先級
     human_description:
       en_US: The priority level to set for the email
+      ko_KR: 이메일에 설정할 우선순위 수준
       zh_Hans: 要为邮件设置的优先级
       pt_BR: O nível de prioridade a ser definido para o e-mail
       ja_JP: メールに設定する優先度

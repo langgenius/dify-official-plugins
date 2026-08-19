@@ -1,44 +1,44 @@
-## Amazon Bedrock
+# Amazon Bedrock
 
-**Author:** aws  
-**Type:** Model Provider
+The models of Amazon Bedrock.
 
+## Features
+- Provides llm, text-embedding, rerank models in Dify.
+- Includes predefined llm models such as openai, mistral, ai21.
+- Includes predefined rerank models such as amazon.rerank-v1, cohere.rerank-v3-5.
+- Includes predefined text embedding models such as cohere.embed-multilingual-v3, cohere.embed-english-v3, amazon.titan-embed-text-v2.
+- Supports predefined model and customizable model configuration.
 
+## Setup
+1. Install this plugin from the Dify Marketplace.
+2. Get the required credentials from [Amazon Bedrock](https://console.aws.amazon.com/).
+3. Add the credentials in the plugin settings.
+4. Save the configuration.
 
-## Overview | 概述
+### Temporary Credentials
+The plugin supports AWS temporary credentials from SSO/SAML authentication (e.g., `aws sso login` or `saml2aws login`):
 
-The [Amazon Bedrock](https://aws.amazon.com/bedrock/) is a fully managed service that offers a choice of high-performing foundation models (FMs) from leading AI companies like AI21 Labs, Anthropic, Cohere, Meta, Stability AI, and Amazon with a single API. With Amazon Bedrock, you can easily experiment with and evaluate top FMs for your use case, privately customize them with your data using techniques such as Retrieval Augmented Generation (RAG) and Fine-tuning, and build agents that execute tasks using your enterprise systems and data sources.
+- **Access Key authentication**: optionally provide an AWS Session Token for temporary credentials. The plugin will use the session token alongside your access key and secret key.
+- **IAM Role authentication**: credentials are automatically refreshed on every invocation. The plugin creates a fresh boto3 session for each IAM Role authentication call, which picks up the latest credentials from disk (via `saml2aws login`, `aws sso login`, IMDS, etc.). This proactive approach eliminates `ExpiredTokenException` errors and makes credential rotation transparent without requiring plugin daemon restarts.
 
-Amazon Bedrock supports various model types:
-- LLM (Large Language Models)
-- Text Embedding
-- Rerank
+## Usage
+Select **Amazon Bedrock** as the model provider in Dify, choose an available model, and use it in applications, agents, or workflows.
 
-[Amazon Bedrock](https://aws.amazon.com/bedrock/) 是一项完全托管的服务，通过单一 API 提供来自 AI21 Labs、Anthropic、Cohere、Meta、Stability AI 和亚马逊等领先 AI 公司的高性能基础模型 (FMs)。使用 Amazon Bedrock，您可以轻松地为您的用例试验和评估顶级基础模型，使用检索增强生成 (RAG) 和微调等技术私密地用您的数据进行定制，并构建能够使用您的企业系统和数据源执行任务的代理。
+## Claude 5 Models (Opus 5 / Sonnet 5 / Fable 5)
 
-Amazon Bedrock 支持多种模型类型：
-- LLM（大型语言模型）
-- 文本嵌入
-- 重排序
+The "Anthropic Claude 5" entry provides Claude Opus 5 (`anthropic.claude-opus-5`), Claude Sonnet 5 (`anthropic.claude-sonnet-5`), and Claude Fable 5 (`anthropic.claude-fable-5`). These models differ from earlier Claude generations:
 
+- **Inference profiles only.** Invocable exclusively via cross-region inference profiles — there is no on-demand bare-ID invocation. Geographic profile coverage varies per model: Opus 5 and Sonnet 5 offer `us.` (also serves Canada regions), `eu.`, and `au.` profiles; Fable 5 offers `us.` only. `global.` works from virtually all commercial regions. The plugin resolves this from your *Cross-Region Inference* selection; when your region has no geo profile, choose `global`.
+- **Adaptive thinking is on by default.** Thinking depth is controlled by the *Effort* parameter (`low`/`medium`/`high`/`xhigh`/`max`) instead of a thinking budget. Sampling parameters (temperature / top_p / top_k) are not configurable on these models and are not exposed.
+- **Refusals & fallback.** Requests can be declined by safety classifiers (`stop_reason: refusal`; materially more frequent on Fable 5). With *Refusal Fallback* enabled (default), the plugin automatically retries the identical request with Claude 4.8 Opus. Mid-stream refusals that occur after output has been produced cannot fall back and raise an error instead.
+- **Fable 5 prerequisite: data retention opt-in.** Your AWS account must set data retention mode to `provider_data_share` via the Bedrock Data Retention API before invoking Fable 5 (no console UI at launch). See the [Fable 5 model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html). The plugin never changes account settings.
+- **Pricing note.** Displayed prices are the Global cross-region rates (Opus 5 $5/$25, Sonnet 5 $3/$15, Fable 5 $10/$50 per 1M tokens). Geo/in-region invocation is ~10% higher. Prompt-cache read/write rates are not representable in Dify's cost tracking — refer to your AWS bill.
 
+## Japan data residency (`japan` cross-region inference)
 
-## Configure | 配置
+Selecting `japan` for *Cross-Region Inference* uses the `jp.` geographic profile, which routes only to `ap-northeast-3` and `ap-northeast-1` — inference never leaves Japan. It requires the configured region to be one of those two, and the model to have a `jp.` profile (Sonnet 4.5 / 4.6, Haiku 4.5, Opus 4.7 / 4.8 and Nova Lite V2 at the time of writing). Otherwise the call fails with an explanatory error instead of silently routing elsewhere.
 
-After installing the plugin, configure the Amazon Bedrock credentials within the Model Provider settings. You'll need to provide your AWS Access Key, Secret Access Key, and select the appropriate AWS Region. You can also specify a Bedrock Endpoint URL if needed. For validation purposes, you can provide an available model name that you have access to (e.g., amazon.titan-text-lite-v1).
+`geographic` is **not** equivalent: from Tokyo it resolves to `apac.`, which also routes to Korea, India, Singapore and Australia — and no `apac.` profile exists for 4.5-generation models or later. The pricing note above applies here too: displayed prices are the Global cross-region rates, and geo/in-region invocation is ~10% higher.
 
-安装插件后，在模型提供商设置中配置 Amazon Bedrock 凭证。您需要提供 AWS Access Key、Secret Access Key 并选择适当的 AWS 区域。如果需要，您还可以指定 Bedrock 端点 URL。为了进行验证，您可以提供一个您有权访问的可用模型名称（例如：amazon.titan-text-lite-v1）。
-
-![](./_assets/configure.png)
-
-
-
-## Issue Feedback | 问题反馈
-
-For more detailed information, please refer to [aws-sample/dify-aws-tool](https://github.com/aws-samples/dify-aws-tool/), which contains multiple workflows for reference.
-
-更多详细信息可以参考 [aws-sample/dify-aws-tool](https://github.com/aws-samples/dify-aws-tool/)，其中包含多个 workflow 供参考。
-
-If you have issues that need feedback, feel free to raise questions or look for answers in the [Issue](https://github.com/aws-samples/dify-aws-tool/issues) section.
-
-如果存在问题需要反馈，欢迎到 [Issue](https://github.com/aws-samples/dify-aws-tool/issues) 去提出问题或者寻找答案。
+## Privacy
+This plugin sends the inputs required by the selected operation to the upstream service. See [PRIVACY.md](PRIVACY.md) for details.

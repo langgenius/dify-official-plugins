@@ -17,9 +17,14 @@ class FluxKontextTool(Tool):
     """
     
     # API endpoints configuration
-    BASE_URL = "https://aihubmix.com/v1"
-    SYNC_ENDPOINT = f"{BASE_URL}/images/generations"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
+    def get_sync_endpoint(self) -> str:
+        return f"{self.get_base_url()}/v1/images/generations"
+
     def create_image_info(self, base64_data: str, resolution: str) -> dict:
         mime_type = "image/png"
         return {
@@ -85,7 +90,7 @@ class FluxKontextTool(Tool):
         
         # Make API request
         response = requests.post(
-            self.SYNC_ENDPOINT,
+            self.get_sync_endpoint(),
             headers=headers,
             json=payload,
             timeout=60

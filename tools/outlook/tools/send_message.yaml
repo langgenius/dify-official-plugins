@@ -4,6 +4,7 @@ identity:
   author: Dify
   label:
     en_US: Send Message
+    ko_KR: 메시지 보내기
     zh_Hans: 发送消息
     pt_BR: Enviar Mensagem
     ja_JP: メッセージを送信
@@ -11,6 +12,7 @@ identity:
 description:
   human:
     en_US: Send a message through Outlook using Microsoft Graph API
+    ko_KR: Microsoft Graph API를 사용하여 Outlook을 통해 메시지를 보냅니다
     zh_Hans: 通过Outlook使用Microsoft Graph API发送消息
     pt_BR: Envia uma mensagem através do Outlook usando a API do Microsoft Graph
     ja_JP: Outlookを使用してMicrosoft Graph API経由でメッセージを送信する
@@ -23,12 +25,14 @@ parameters:
     required: true
     label:
       en_US: To
+      ko_KR: 받는 사람
       zh_Hans: 收件人
       pt_BR: Para
       ja_JP: 宛先
       zh_Hant: 收件人
     human_description:
       en_US: The email address of the recipient
+      ko_KR: 받는 사람의 이메일 주소
       zh_Hans: 收件人的电子邮件地址
       pt_BR: O endereço de e-mail do destinatário
       ja_JP: 宛先の電子メールアドレス
@@ -40,12 +44,14 @@ parameters:
     required: true
     label:
       en_US: Subject
+      ko_KR: 제목
       zh_Hans: 主题
       pt_BR: Assunto
       ja_JP: 件名
       zh_Hant: 主題
     human_description:
       en_US: The subject of the message
+      ko_KR: 메시지의 제목
       zh_Hans: 消息的主题
       pt_BR: O assunto da mensagem
       ja_JP: 件名
@@ -57,17 +63,38 @@ parameters:
     required: true
     label:
       en_US: Message
+      ko_KR: 메시지
       zh_Hans: 消息
       pt_BR: Mensagem
       ja_JP: メッセージ
       zh_Hant: 訊息
     human_description:
       en_US: The content of the message
+      ko_KR: 메시지의 내용
       zh_Hans: 消息的内容
       pt_BR: O conteúdo da mensagem
       ja_JP: メッセージの内容
       zh_Hant: 訊息的內容
     llm_description: The content of the message
+    form: llm
+  - name: attachments
+    type: files
+    required: false
+    label:
+      en_US: Attachments
+      ko_KR: 첨부 파일
+      zh_Hans: 附件
+      pt_BR: Anexos
+      ja_JP: 添付ファイル
+      zh_Hant: 附件
+    human_description:
+      en_US: Optional files to attach to the email (kept small; a few MB total)
+      ko_KR: 이메일에 첨부할 파일(선택 사항, 총 몇 MB 이내로 유지)
+      zh_Hans: 可选，要附加到邮件的文件（保持较小，总计几 MB）
+      pt_BR: Arquivos opcionais para anexar ao e-mail (mantenha pequenos, alguns MB no total)
+      ja_JP: メールに添付する任意のファイル（合計数 MB 程度に抑えてください）
+      zh_Hant: 可選，要附加到郵件的檔案（保持較小，總計幾 MB）
+    llm_description: Optional files to attach to the email. Sent inline via sendMail, so keep the total size small (a few MB); for larger files use the draft flow.
     form: llm
 extra:
   python:

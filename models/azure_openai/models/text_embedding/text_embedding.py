@@ -131,7 +131,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
                 f"Base Model Name {credentials['base_model_name']} is invalid"
             )
         try:
-            client = self._create_client(credentials)
+            client = self._create_client(credentials, use_cache=False)
             self._embedding_invoke(
                 model=model, client=client, texts=["ping"], extra_model_kwargs={}
             )
@@ -196,7 +196,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
             if ai_model_entity.base_model_name == base_model_name:
                 ai_model_entity_copy = copy.deepcopy(ai_model_entity)
                 ai_model_entity_copy.entity.model = model
-                ai_model_entity_copy.entity.label.en_US = model
-                ai_model_entity_copy.entity.label.zh_Hans = model
+                ai_model_entity_copy.entity.label.en_us = model
+                ai_model_entity_copy.entity.label.zh_hans = model
                 return ai_model_entity_copy
         return None
