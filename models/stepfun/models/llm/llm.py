@@ -25,6 +25,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin import OAICompatLargeLanguageModel
+from dify_plugin.errors.model import CredentialsValidateFailedError
 
 
 class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -50,7 +51,14 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        try:
+            super().validate_credentials(model, credentials)
+        except CredentialsValidateFailedError as ex:
+            # api.stepfun.com and api.stepfun.ai return byte-identical 401
+            # bodies, so the error must say which endpoint rejected the key.
+            raise CredentialsValidateFailedError(
+                f"{ex} (endpoint validated: {credentials.get('endpoint_url', 'unknown')})"
+            ) from ex
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
@@ -100,7 +108,10 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = "https://api.stepfun.com/v1"
+        if credentials.get("use_international_endpoint", "false") == "true":
+            credentials["endpoint_url"] = "https://api.stepfun.ai/v1"
+        else:
+            credentials["endpoint_url"] = "https://api.stepfun.com/v1"
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
