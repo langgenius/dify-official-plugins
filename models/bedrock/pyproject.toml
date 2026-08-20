@@ -4,12 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "boto3>=1.43.13",
     "botocore>=1.43.13",
-    "dify_plugin>=0.9.0",
+    # 0.10.0 introduces get_current_session(), required to resolve the
+    # current Dify app_id for Bedrock requestMetadata.
+    "dify_plugin>=0.10.0",
     "tiktoken>=0.13.0",
     "openai>=1.0.0",
     "aws-bedrock-token-generator>=1.1.0",
@@ -20,3 +21,7 @@ dependencies = [
 dev = [
     "pytest>=9.0.3",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
