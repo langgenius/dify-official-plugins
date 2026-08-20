@@ -4,11 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "azure-core>=1.41.0",
     "azure-identity>=1.25.3",
+    # get_current_session(), used to resolve the current Dify app_id for
+    # request metadata, needs >=0.10.0. main already requires a newer pin.
     "dify_plugin>=0.10.2",
     "numpy>=2.5.2",
     "openai>=3.3.0",
@@ -22,3 +23,7 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
