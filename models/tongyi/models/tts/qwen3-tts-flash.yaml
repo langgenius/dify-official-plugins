@@ -34,7 +34,7 @@ model_properties:
       name: "不吃鱼"
       language: [ "zh-Hans", "en-US", "fr-FR", "de-DE", "ru-RU", "it-IT", "es-ES", "pt-PT", "ja-JP", "ko-KR" ]
   word_limit: 512
-  audio_type: 'mp3'
+  audio_type: 'wav'
   max_workers: 5
 pricing:
   input: '1'

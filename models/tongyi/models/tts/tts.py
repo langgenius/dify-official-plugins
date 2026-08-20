@@ -1,7 +1,10 @@
+import io
 import threading
-from urllib.request import urlopen
+import wave
 from queue import Queue
-from typing import Any, Optional
+from typing import Any
+from urllib.request import urlopen
+
 from dashscope import MultiModalConversation
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -9,7 +12,53 @@ from dify_plugin.errors.model import (
     InvokeError,
 )
 from dify_plugin.interfaces.model.tts_model import TTSModel
+
 from models._common import _CommonTongyi, get_http_base_address
+
+
+def merge_wav_segments(segments: list[bytes]) -> bytes:
+    """Join compatible PCM WAVE files into one valid WAVE container.
+
+    DashScope returns one standalone WAVE file for each sentence when input is
+    split at the provider word limit. Concatenating those containers produces a
+    corrupt file; rebuilding one header around the combined PCM frames keeps
+    long TTS output playable by browsers and API consumers.
+    """
+    if not segments:
+        raise InvokeBadRequestError("No audio data returned by DashScope")
+
+    output = io.BytesIO()
+    expected_format: tuple[int, int, int, str] | None = None
+    try:
+        with wave.open(output, "wb") as writer:
+            for index, segment in enumerate(segments, start=1):
+                with wave.open(io.BytesIO(segment), "rb") as reader:
+                    format_ = (
+                        reader.getnchannels(),
+                        reader.getsampwidth(),
+                        reader.getframerate(),
+                        reader.getcomptype(),
+                    )
+                    if format_[3] != "NONE":
+                        raise InvokeBadRequestError(
+                            f"DashScope returned unsupported compressed WAVE segment {index}"
+                        )
+                    if expected_format is None:
+                        expected_format = format_
+                        writer.setnchannels(format_[0])
+                        writer.setsampwidth(format_[1])
+                        writer.setframerate(format_[2])
+                        writer.setcomptype(format_[3], "not compressed")
+                    elif format_ != expected_format:
+                        raise InvokeBadRequestError(
+                            "DashScope returned WAVE segments with incompatible audio formats"
+                        )
+
+                    writer.writeframes(reader.readframes(reader.getnframes()))
+    except wave.Error as ex:
+        raise InvokeBadRequestError(f"DashScope returned an invalid WAVE segment: {ex}") from ex
+
+    return output.getvalue()
 
 
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
@@ -24,7 +73,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         credentials: dict,
         content_text: str,
         voice: str,
-        user: Optional[str] = None,
+        user: str | None = None,
     ) -> Any:
         """
         _invoke text2speech model
@@ -46,7 +95,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         )
 
     def validate_credentials(
-        self, model: str, credentials: dict, user: Optional[str] = None
+        self, model: str, credentials: dict, user: str | None = None
     ) -> None:
         """
         validate credentials text2speech model
@@ -86,6 +135,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
 
             def invoke_remote(content, m, api_key, wl, base_address):
                 try:
+                    audio_segments: list[bytes] = []
                     if len(content) < wl:
                         sentences = [content]
                     else:
@@ -101,31 +151,29 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                             stream=True,
                             base_address=base_address,
                         )
+                        audio_url: str | None = None
                         for chunk in response_stream:
                             if chunk.status_code != 200:
                                 error_msg = chunk.message or f"API error: {chunk.status_code}"
                                 error_queue.put(InvokeBadRequestError(error_msg))
                                 audio_queue.put(None)
                                 return
-                            if not chunk.output or not chunk.output.audio:
-                                error_queue.put(InvokeBadRequestError("No audio in response"))
-                                audio_queue.put(None)
-                                return
-                            audio_url = chunk.output.audio.get("url")
-                            if not audio_url:
-                                error_queue.put(InvokeBadRequestError("No audio URL in response"))
-                                audio_queue.put(None)
-                                return
-                            try:
-                                with urlopen(audio_url, timeout=30) as response:
-                                    audio_data = response.read()
-                                audio_queue.put(audio_data)
-                            except Exception as e:
-                                error_queue.put(
-                                    InvokeBadRequestError(f"Failed to download audio: {str(e)}")
-                                )
-                                audio_queue.put(None)
-                                return
+                            audio = getattr(getattr(chunk, "output", None), "audio", None)
+                            if audio:
+                                audio_url = audio.get("url") or audio_url
+                        if not audio_url:
+                            error_queue.put(InvokeBadRequestError("No audio URL in response"))
+                            audio_queue.put(None)
+                            return
+                        try:
+                            with urlopen(audio_url, timeout=30) as response:
+                                audio_data = response.read()
+                            audio_segments.append(audio_data)
+                        except Exception as e:
+                            error_queue.put(InvokeBadRequestError(f"Failed to download audio: {e!s}"))
+                            audio_queue.put(None)
+                            return
+                    audio_queue.put(merge_wav_segments(audio_segments))
                     audio_queue.put(None)
                 except Exception as e:
                     error_queue.put(self._map_invoke_error(e))
