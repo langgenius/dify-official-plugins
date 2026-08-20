@@ -29,6 +29,7 @@ from dify_plugin.errors.model import (
 
 from ..common_openai import _user_digest
 from . import tokens
+from ._metadata import apply_dify_metadata_if_enabled
 
 if TYPE_CHECKING:
     from .llm import OpenAILargeLanguageModel
@@ -50,7 +51,7 @@ def generate(
     response = client.responses.create(
         model=model,
         input=cast(Any, input_items(prompt_messages)),
-        **parameters(model, model_parameters, tools, user),
+        **parameters(model, model_parameters, tools, user, credentials),
     )
     raise_for_status(response, allow_incomplete=True)
     raw_content = content(response)
@@ -86,6 +87,7 @@ def parameters(
     model_parameters: dict,
     tools: list[PromptMessageTool] | None,
     user: str | None,
+    credentials: dict | None = None,
 ) -> dict[str, Any]:
     params = model_parameters.copy()
     for name in ("presence_penalty", "frequency_penalty"):
@@ -159,8 +161,25 @@ def parameters(
         params.setdefault("safety_identifier", digest)
         params.setdefault("prompt_cache_key", digest)
 
+    # Optional: attach Dify app_id as request metadata. Default disabled;
+    # opt-in via the enable_request_metadata credential. Applied before the
+    # store/include handling below because the OpenAI API only accepts
+    # metadata when store is true, so the helper needs to set it.
+    explicit_store = "store" in params
+    if credentials is not None:
+        apply_dify_metadata_if_enabled(params, credentials)
+    telemetry_store = not explicit_store and params.get("store") is True
+
     params.setdefault("store", False)
-    if params["store"] is False and _supports_encrypted_reasoning(model):
+    # This plugin replays reasoning items from the previous turn rather than
+    # referencing a stored response, so it needs the encrypted payload
+    # regardless of whether the response was persisted. Upstream only requests
+    # it when store is false; keep that untouched, and additionally request it
+    # when store=true came from telemetry alone, so enabling the credential
+    # cannot degrade multi-turn reasoning.
+    if (params["store"] is False or telemetry_store) and _supports_encrypted_reasoning(
+        model
+    ):
         include = list(params.get("include") or [])
         if "reasoning.encrypted_content" not in include:
             include.append("reasoning.encrypted_content")

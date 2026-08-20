@@ -157,8 +157,8 @@ def test_version_one_is_consistent_and_documented() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert manifest["version"] == "1.0.3"
-    assert project["project"]["version"] == "1.0.3"
+    assert manifest["version"] == "1.0.4"
+    assert project["project"]["version"] == "1.0.4"
     assert "Version 1.0 is a major rewrite" in readme
     permissions = manifest["resource"]["permission"]["model"]
     assert permissions["enabled"] is True
