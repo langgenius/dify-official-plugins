@@ -3,13 +3,19 @@ from typing import Optional, Union
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity, ModelFeature
 from dify_plugin.entities.model.llm import LLMResult
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+import re
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    PromptMessage,
+    PromptMessageTool,
+)
 
 
 class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     _BASE_URL_V2 = "https://api.modelarts-maas.com/v2"
     _THINKING_PATH_XDS = "thinking.type.enabled"
     _THINKING_PATH_VLLM = "chat_template_kwargs.enable_thinking.true"
+    _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
     thinking_mapping = {
         "deepseek-v3.2": _THINKING_PATH_XDS,
@@ -54,6 +60,10 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
                 value = bool(enable_thinking)
             model_parameters[path[0]] = {path[1]: value}
 
+        # DeepSeek models require reasoning content split in the tool use context
+        if model.lower().startswith("deepseek"):
+            self.insert_cot_tool_call(prompt_messages)
+
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
@@ -80,3 +90,41 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         entity = super().get_customizable_model_schema(model, credentials)
 
         return entity
+
+    def insert_cot_tool_call(self, messages: list[PromptMessage]) -> None:
+        for message in messages:
+            if isinstance(message, AssistantPromptMessage) and message.tool_calls:
+                content, reasoning_content = (
+                    HuaweiCloudMaasLargeLanguageModel._extract_reasoning_content(message.content)
+                )
+                message.content = content
+                opaque_body = message.opaque_body if isinstance(message.opaque_body, dict) else {}
+                message.opaque_body = {
+                    **opaque_body,
+                    "reasoning_content": reasoning_content,
+                }
+
+    @staticmethod
+    def _extract_reasoning_content(text: str) -> tuple[str, Optional[str]]:
+        if not text:
+            return text, None
+
+        # Find all <think>...</think> blocks
+        matches = HuaweiCloudMaasLargeLanguageModel._THINK_PATTERN.findall(text)
+        reasoning_content = "\n".join(match.strip() for match in matches) if matches else None
+
+        # Remove all <think>...</think> blocks from original text
+        clean_text = HuaweiCloudMaasLargeLanguageModel._THINK_PATTERN.sub("", text)
+
+        # Clean up extra whitespace
+        clean_text = re.sub(r"\n\s*\n", "\n\n", clean_text).strip()
+
+        return clean_text, reasoning_content
+
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: dict | None = None
+    ) -> dict:
+        message_dict = super()._convert_prompt_message_to_dict(message, credentials)
+        if isinstance(message, AssistantPromptMessage) and message.opaque_body:
+            message_dict["reasoning_content"] = message.opaque_body.get("reasoning_content")
+        return message_dict
