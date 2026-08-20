@@ -41,11 +41,15 @@ Responses is the recommended protocol and the default for official models that s
 
 Choose Chat Completions only for a compatible endpoint or a model whose documented API surface requires it.
 
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `dify_app_id` and `dify_source` to each request as `metadata`, so usage can be attributed to a specific Dify app.
+
+The API only accepts metadata when storage is enabled, so enabling it also sends `store=true`, which persists requests and responses to Stored Completions on your OpenAI account. Leave it disabled if your organization forbids storage, or if you route through a proxy that rejects `store` or `metadata`.
+
 <img src="./_assets/openai-01.png" width="400" alt="OpenAI provider configuration" />
 
 ## Reasoning state
 
-The plugin sends `store=false` by default and requests encrypted reasoning content when it uses the Responses API.
+The plugin sends `store=false` by default and requests encrypted reasoning content when it uses the Responses API. Enabling `Enable request metadata` switches `store` to `true`, but encrypted reasoning content is still requested, so reasoning replay behaves the same either way.
 
 Complete response output items are stored in the assistant message's opaque payload and replayed in original order on the next turn.
 

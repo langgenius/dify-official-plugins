@@ -274,12 +274,12 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.9.0"
+version = "0.10.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dpkt" },
     { name = "flask" },
     { name = "gevent" },
+    { name = "h11" },
     { name = "httpx" },
     { name = "packaging" },
     { name = "pydantic" },
@@ -291,9 +291,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/52/86c042b72d42eb40460563bacf2ed46ff6a2e02dbec299892fef0ed2f70f/dify_plugin-0.9.0.tar.gz", hash = "sha256:c32dc99d4122d960bd447ee65a17e1e93bf942bbad8f7b4d53a2841416ecd3e0", size = 318993, upload-time = "2026-05-20T08:10:40.445Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/5a/885909338df3e32604f45c579457c5dcfe982d35857994805735e5487d4b/dify_plugin-0.10.2.tar.gz", hash = "sha256:e37e707b3903c439cd09924b2125ba794ffdc886bfdbcb8f75db28ba64cb795b", size = 320685, upload-time = "2026-08-10T07:04:08.454Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/dc/df1d6d1a8c604880702dd792226f175523f890bfca89f828f58b58661edc/dify_plugin-0.9.0-py3-none-any.whl", hash = "sha256:3299a8c77549a43f68705796eed4c9ca494664810fb8d10eb7ecce2e545f3d2d", size = 377064, upload-time = "2026-05-20T08:10:38.848Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/26/5897c50381eb23a10fd7ab770288d8656f3325d3407e4ee4f6fb7e70f76a/dify_plugin-0.10.2-py3-none-any.whl", hash = "sha256:5a30db98cc4c3f36bdcc70ecd217b6bb37279c39fc0a843a985b05581dc461d3", size = 379282, upload-time = "2026-08-10T07:04:07.068Z" },
 ]
 
 [[package]]
@@ -312,15 +312,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz", hash = "sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015", size = 29341, upload-time = "2026-04-14T04:09:19.867Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/5f/ed01f9a3cdffbd5a008556fc7b2a08ddb1cc6ace7effa7340604b1d16699/docstring_parser-0.18.0-py3-none-any.whl", hash = "sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b", size = 22484, upload-time = "2026-04-14T04:09:18.638Z" },
-]
-
-[[package]]
-name = "dpkt"
-version = "1.9.8"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c9/7d/52f17a794db52a66e46ebb0c7549bf2f035ed61d5a920ba4aaa127dd038e/dpkt-1.9.8.tar.gz", hash = "sha256:43f8686e455da5052835fd1eda2689d51de3670aac9799b1b00cfd203927ee45", size = 180073, upload-time = "2022-08-18T05:54:13.582Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/79/479e2194c9096b92aecdf33634ae948d2be306c6011673e98ee1917f32c2/dpkt-1.9.8-py3-none-any.whl", hash = "sha256:4da4d111d7bf67575b571f5c678c71bddd2d8a01a3d57d489faf0a92c748fbfd", size = 194973, upload-time = "2022-08-18T05:54:10.793Z" },
 ]
 
 [[package]]
@@ -795,6 +786,15 @@ wheels = [
 ]
 
 [[package]]
+name = "iniconfig"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
+]
+
+[[package]]
 name = "itsdangerous"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1190,6 +1190,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pluggy"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
 name = "propcache"
 version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1442,6 +1451,31 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5c/b5/8f48e906c3e0205276e8bd8cb7512217a87b2685304d64be27cad5b3019f/pydantic_settings-2.14.2.tar.gz", hash = "sha256:c19dd64b19097f1de80184f0cc7b0272a13ae6e170cbf240a3e27e381ed14a5f", size = 237700, upload-time = "2026-06-19T13:44:56.324Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/c1/6e422f34e569cf8e18df68d1939c81c099d2b61e4f7d9621c8a77560799c/pydantic_settings-2.14.2-py3-none-any.whl", hash = "sha256:a20c97b37910b6550d5ea50fbcc2d4187defe58cd57070b73863d069419c9440", size = 61715, upload-time = "2026-06-19T13:44:55.02Z" },
+]
+
+[[package]]
+name = "pygments"
+version = "2.21.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pytest"
+version = "9.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "iniconfig" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
 ]
 
 [[package]]
@@ -1793,10 +1827,15 @@ dependencies = [
     { name = "tiktoken" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anthropic", extras = ["vertex"], specifier = ">=0.104.0" },
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "google-api-core", specifier = ">=2.30.3" },
     { name = "google-auth", specifier = ">=2.53.0" },
     { name = "google-cloud-aiplatform", specifier = ">=1.153.1" },
@@ -1809,7 +1848,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = []
+dev = [{ name = "pytest", specifier = ">=9.0.3" }]
 
 [[package]]
 name = "websockets"

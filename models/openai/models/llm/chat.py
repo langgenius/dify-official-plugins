@@ -30,6 +30,7 @@ from dify_plugin.errors.model import InvokeBadRequestError, InvokeConnectionErro
 
 from ..common_openai import _user_digest
 from . import tokens
+from ._metadata import apply_dify_metadata_if_enabled
 
 if TYPE_CHECKING:
     from .llm import OpenAILargeLanguageModel
@@ -58,6 +59,10 @@ def generate_chat(
     if stop:
         params["stop"] = stop
     _add_identity(params, user, credentials)
+    # Optional: attach Dify app_id as request metadata. Default disabled;
+    # opt-in via the enable_request_metadata credential. Also sets store=true,
+    # which the OpenAI API requires before it accepts metadata.
+    apply_dify_metadata_if_enabled(params, credentials)
     if stream:
         params["stream_options"] = {"include_usage": True}
 
