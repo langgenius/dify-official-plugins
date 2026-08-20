@@ -1,9 +1,32 @@
 from unittest.mock import Mock, patch
 
+import pytest
+
 from dify_plugin.errors.model import InvokeError
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 from models.llm.llm import OpenAILargeLanguageModel
+
+
+def _chat_response(message: dict) -> Mock:
+    response = Mock()
+    response.json.return_value = {
+        "id": "chatcmpl-test",
+        "model": "Qwen3.5-27B",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": message,
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 11,
+            "completion_tokens": 31,
+            "total_tokens": 42,
+        },
+    }
+    return response
 
 
 def test_handle_generate_response_accepts_tool_calls_without_content_key():
@@ -94,6 +117,108 @@ def test_handle_generate_response_normalizes_null_content():
     assert result.message.content == ""
     assert result.message.tool_calls
     assert result.message.tool_calls[0].function.name == "lookup"
+
+
+@pytest.mark.parametrize(
+    ("reasoning_key", "reasoning_value"),
+    [
+        ("reasoning", "vLLM reasoning trace"),
+        ("reasoning_content", "legacy reasoning trace"),
+    ],
+)
+def test_handle_generate_response_wraps_non_stream_reasoning_fields(
+    reasoning_key: str, reasoning_value: str
+):
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    result = model._handle_generate_response(
+        model="Qwen3.5-27B",
+        credentials={"mode": "chat"},
+        response=_chat_response(
+            {
+                "role": "assistant",
+                "content": "final answer",
+                reasoning_key: reasoning_value,
+            }
+        ),
+        prompt_messages=[UserPromptMessage(content="test")],
+    )
+
+    assert result.message.content == f"<think>\n{reasoning_value}\n</think>final answer"
+    assert result.usage.prompt_tokens == 11
+    assert result.usage.completion_tokens == 31
+
+
+def test_handle_generate_response_keeps_existing_think_content_when_reasoning_field_is_present():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    result = model._handle_generate_response(
+        model="Qwen3.5-27B",
+        credentials={"mode": "chat"},
+        response=_chat_response(
+            {
+                "role": "assistant",
+                "content": "<think>\ninline reasoning\n</think>\nfinal answer",
+                "reasoning": "separate reasoning",
+            }
+        ),
+        prompt_messages=[UserPromptMessage(content="test")],
+    )
+
+    assert result.message.content == "<think>\ninline reasoning\n</think>\nfinal answer"
+
+
+def test_handle_generate_response_preserves_tool_calls_with_non_stream_reasoning():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    result = model._handle_generate_response(
+        model="Qwen3.5-27B",
+        credentials={"mode": "chat", "function_calling_type": "tool_call"},
+        response=_chat_response(
+            {
+                "role": "assistant",
+                "content": None,
+                "reasoning": "need to call a tool",
+                "tool_calls": [
+                    {
+                        "id": "call_123",
+                        "type": "function",
+                        "function": {
+                            "name": "search_docs",
+                            "arguments": "{\"query\":\"Qwen reasoning\"}",
+                        },
+                    }
+                ],
+            }
+        ),
+        prompt_messages=[UserPromptMessage(content="test")],
+    )
+
+    assert result.message.content == "<think>\nneed to call a tool\n</think>"
+    assert result.message.tool_calls
+    assert result.message.tool_calls[0].function.name == "search_docs"
+    assert result.message.tool_calls[0].function.arguments == "{\"query\":\"Qwen reasoning\"}"
+
+
+def test_filter_thinking_result_removes_wrapped_non_stream_reasoning():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    result = model._handle_generate_response(
+        model="Qwen3.5-27B",
+        credentials={"mode": "chat"},
+        response=_chat_response(
+            {
+                "role": "assistant",
+                "content": "final answer",
+                "reasoning": "hidden reasoning",
+            }
+        ),
+        prompt_messages=[UserPromptMessage(content="test")],
+    )
+
+    filtered_result = model._filter_thinking_result(result)
+
+    assert filtered_result.message.content == "final answer"
 
 
 def test_handle_generate_response_counts_all_prompt_messages_when_usage_missing():
