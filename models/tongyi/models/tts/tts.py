@@ -12,7 +12,6 @@ from dify_plugin.errors.model import (
     InvokeError,
 )
 from dify_plugin.interfaces.model.tts_model import TTSModel
-
 from models._common import _CommonTongyi, get_http_base_address
 
 
@@ -54,8 +53,13 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
                             "DashScope returned WAVE segments with incompatible audio formats"
                         )
 
-                    writer.writeframes(reader.readframes(reader.getnframes()))
-    except wave.Error as ex:
+                    frame_count = reader.getnframes()
+                    frames = reader.readframes(frame_count)
+                    expected_frame_bytes = frame_count * reader.getnchannels() * reader.getsampwidth()
+                    if len(frames) != expected_frame_bytes:
+                        raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+                    writer.writeframes(frames)
+    except (EOFError, wave.Error) as ex:
         raise InvokeBadRequestError(f"DashScope returned an invalid WAVE segment: {ex}") from ex
 
     return output.getvalue()

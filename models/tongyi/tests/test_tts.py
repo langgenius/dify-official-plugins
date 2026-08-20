@@ -1,5 +1,6 @@
 import io
 import os
+import struct
 import sys
 import wave
 from types import SimpleNamespace
@@ -42,6 +43,27 @@ def test_merge_wav_segments_builds_one_valid_container() -> None:
 def test_merge_wav_segments_rejects_incompatible_formats() -> None:
     with pytest.raises(InvokeBadRequestError, match="incompatible audio formats"):
         merge_wav_segments([_wav(b"\x00\x00"), _wav(b"\x00\x00", sample_rate=24_000)])
+
+
+def test_merge_wav_segments_rejects_truncated_header() -> None:
+    with pytest.raises(InvokeBadRequestError, match="invalid WAVE segment"):
+        merge_wav_segments([b"RIFF"])
+
+
+def test_merge_wav_segments_rejects_truncated_frame_data() -> None:
+    truncated_segment = (
+        b"RIFF"
+        + struct.pack("<I", 40)
+        + b"WAVE"
+        + b"fmt "
+        + struct.pack("<IHHIIHH", 16, 1, 1, 8_000, 16_000, 2, 16)
+        + b"data"
+        + struct.pack("<I", 4)
+        + b"\x00\x00"
+    )
+
+    with pytest.raises(InvokeBadRequestError, match="truncated WAVE segment 1"):
+        merge_wav_segments([truncated_segment])
 
 
 def test_long_tts_output_is_merged_before_it_is_emitted() -> None:
