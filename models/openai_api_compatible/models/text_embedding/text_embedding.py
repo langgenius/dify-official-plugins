@@ -24,6 +24,7 @@ from dify_plugin.entities.model import (
 from dify_plugin.entities.model.text_embedding import (
     TextEmbeddingResult,
     EmbeddingUsage,
+    MultiModalEmbeddingResult,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -113,66 +114,25 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
         """
-        Invoke text embedding model with multimodal support
-
-        Supports both text-only and multimodal (text + image) inputs.
-        When vision_support is enabled, texts can contain JSON with "text" and "image" fields.
+        Invoke text embedding model.
 
         :param model: model name
         :param credentials: model credentials
-        :param texts: texts to embed (can be JSON strings for multimodal)
+        :param texts: texts to embed
         :param user: unique user id
         :param input_type: input type
         :return: embeddings result
         """
-        # Check if vision support is enabled
-        vision_support = credentials.get("vision_support", "no_support")
-
-        # Process inputs - convert to multimodal format if needed
-        processed_inputs = []
-        multimodal_flags = []
-        for text in texts:
-            processed = self._process_input(text, vision_support == "support")
-            processed_inputs.append(processed)
-            multimodal_flags.append(self._is_multimodal_input(processed))
-
-        # Apply prefix
         prefix = self._get_prefix(credentials, input_type)
-        if prefix:
-            processed_inputs = self._add_prefix_to_inputs(processed_inputs, prefix)
+        inputs = [f"{prefix} {text}" if prefix else text for text in texts]
 
-        # Get context size and max chunks from credentials or model properties
-        context_size = self._get_context_size(model, credentials)
-        max_chunks = self._get_max_chunks(model, credentials)
-
-        # Truncate long texts (similar to Tongyi's approach)
-        inputs = []
-        for input_data in processed_inputs:
-            if isinstance(input_data, list):
-                # Multimodal - convert to text first
-                text_parts = []
-                for content in input_data:
-                    if content.get("type") == "text":
-                        text_parts.append(content.get("text", ""))
-                    elif content.get("type") == "image_url":
-                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
-                        text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
-                text = " ".join(text_parts) if text_parts else ""
-            else:
-                text = input_data if isinstance(input_data, str) else str(input_data)
-
-            # Check token count and truncate if necessary
-            #num_tokens = self._get_num_tokens_by_gpt2(text)
-            #if num_tokens >= context_size:
-                # Truncate to fit within context size
-            #    cutoff = int(len(text) * (context_size / num_tokens))
-            #    text = text[0:cutoff]
-
-            inputs.append(text)
-
-        # Call API in batches
         return self._embed_in_batches(
-            model, credentials, inputs, multimodal_flags, user, input_type
+            model,
+            credentials,
+            inputs,
+            [False] * len(inputs),
+            user,
+            input_type,
         )
 
     def _embed_in_batches(
@@ -759,48 +719,36 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         self,
         model: str,
         credentials: dict,
-        inputs: list,
+        documents: list[MultiModalContent],
         user: Optional[str] = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
-    ) -> TextEmbeddingResult:
-        """
-        Invoke embedding model with potentially multimodal inputs.
-        This method delegates to _invoke for processing.
-        """
-        # Convert inputs back to texts format and use _invoke
-        texts = []
-        for input_data in inputs:
-            if isinstance(input_data, list):
-                # Multimodal - convert to text
-                text_parts = []
-                for content in input_data:
-                    if content.get("type") == "text":
-                        text_parts.append(content.get("text", ""))
-                    elif content.get("type") == "image_url":
-                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
-                        text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
-                texts.append(" ".join(text_parts) if text_parts else "")
-            elif input_data.content_type == MultiModalContentType.TEXT:
-                input = {
-                    "text": input_data.content
-                }
-                input_str = json.dumps(input, ensure_ascii=False)
-                texts.append(input_str)
-            elif input_data.content_type == MultiModalContentType.IMAGE:
-                image_format = self._detect_image_format_from_base64(input_data.content)
-                if len(image_format)>0:
-                    input = {
-                        "image": "data:image/" + image_format + ";base64," + input_data.content
-                    }
-                else:
-                    input = {
-                        "image": "data:image" + ";base64," + input_data.content
-                    }
-                input_str = json.dumps(input, ensure_ascii=False)
-                texts.append(input_str)
+    ) -> MultiModalEmbeddingResult:
+        """Invoke explicitly typed text and base64 image embedding inputs."""
+        inputs: list[str] = []
+        multimodal_flags: list[bool] = []
+        prefix = self._get_prefix(credentials, input_type)
+
+        for document in documents:
+            if document.content_type == MultiModalContentType.TEXT:
+                text = f"{prefix} {document.content}" if prefix else document.content
+                inputs.append(text)
+                multimodal_flags.append(False)
+            elif document.content_type == MultiModalContentType.IMAGE:
+                image_format = self._detect_image_format_from_base64(document.content)
+                mime_type = f"image/{image_format}" if image_format else "image"
+                inputs.append(f"Image:data:{mime_type};base64,{document.content}")
+                multimodal_flags.append(True)
             else:
-                texts.append(
-                    input_data if isinstance(input_data, str) else str(input_data)
+                raise InvokeError(
+                    f"Unsupported multimodal content type: {document.content_type}"
                 )
 
-        return self._invoke(model, credentials, texts, user, input_type)
+        result = self._embed_in_batches(
+            model,
+            credentials,
+            inputs,
+            multimodal_flags,
+            user,
+            input_type,
+        )
+        return MultiModalEmbeddingResult(**result.model_dump())
