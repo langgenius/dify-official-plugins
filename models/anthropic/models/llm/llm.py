@@ -526,6 +526,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for key in ("temperature", "top_p", "top_k"):
                     model_parameters.pop(key, None)
 
+        # Native structured output: when Dify provides a JSON schema, send it via
+        # output_config.format (API constrained decoding) instead of the code-fence
+        # prompt hack. Merges with effort/task_budget set above for adaptive models.
+        json_schema = self._parse_json_schema(model_parameters.pop("json_schema", None))
+        if json_schema is not None:
+            output_config = extra_model_kwargs.setdefault("output_config", {})
+            output_config["format"] = {
+                "type": "json_schema",
+                "schema": json_schema,
+            }
+
         # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
         if context_1m and not uses_adaptive_thinking:
@@ -711,6 +722,34 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             model, credentials, response, prompt_messages
         )
 
+    @staticmethod
+    def _parse_json_schema(raw: Any) -> Optional[dict[str, Any]]:
+        """Parse the Dify-provided ``json_schema`` parameter into a schema dict.
+
+        Dify passes the schema as a JSON string (ParameterType.TEXT). Returns
+        ``None`` when no usable schema was provided.
+
+        Raises:
+            ValueError: if the value is not a valid non-empty JSON object.
+        """
+        if raw is None:
+            return None
+        if isinstance(raw, str):
+            raw = raw.strip()
+            if not raw:
+                return None
+            try:
+                schema = json.loads(raw)
+            except json.JSONDecodeError as ex:
+                raise ValueError(f"Invalid json_schema: not valid JSON ({ex})") from ex
+        elif isinstance(raw, dict):
+            schema = raw
+        else:
+            raise ValueError(f"Unsupported json_schema type: {type(raw).__name__}")
+        if not isinstance(schema, dict) or not schema:
+            raise ValueError("Invalid json_schema: must be a non-empty JSON object")
+        return schema
+
     def _code_block_mode_wrapper(
         self,
         model: str,
@@ -726,18 +765,39 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         Code block mode wrapper for invoking large language model
         """
         if model_parameters.get("response_format"):
-            stop = stop or []
-            self._transform_chat_json_prompts(
-                model=model,
-                credentials=credentials,
-                prompt_messages=prompt_messages,
-                model_parameters=model_parameters,
-                tools=tools,
-                stop=stop,
-                stream=stream,
-                user=user,
-                response_format=model_parameters["response_format"],
+            response_format = model_parameters["response_format"]
+            # JSON mode with a user-provided schema uses the API's native structured
+            # output (output_config.format, consumed in _chat_generate); the code-fence
+            # prompt hack is unnecessary and would wrap the constrained JSON in fences.
+            # Only None / blank strings count as "no schema", so that invalid values
+            # still reach _parse_json_schema validation in _chat_generate.
+            raw_json_schema = model_parameters.get("json_schema")
+            # Any non-string value counts as provided (only blank strings mean
+            # "no schema"), so invalid values always reach _parse_json_schema.
+            has_json_schema = (
+                raw_json_schema is not None
+                and (
+                    not isinstance(raw_json_schema, str)
+                    or bool(raw_json_schema.strip())
+                )
             )
+            if not (response_format == "JSON" and has_json_schema):
+                stop = stop or []
+                self._transform_chat_json_prompts(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                    response_format=response_format,
+                )
+                if "json_schema" in model_parameters:
+                    # Only JSON mode consumes json_schema (natively); drop it for other
+                    # formats so it never reaches the API call.
+                    model_parameters.pop("json_schema")
             model_parameters.pop("response_format")
         return self._invoke(
             model,
