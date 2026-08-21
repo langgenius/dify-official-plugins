@@ -114,3 +114,71 @@ def test_invoke_routes_to_responses_api():
     assert call_kwargs["model"] == "gpt-5"
     assert any(t.get("type") == "web_search" for t in call_kwargs["tools"])
     assert result.message.content == "Hello! How can I help you today?"
+
+
+def test_adapt_schema_for_structured_outputs():
+    raw_schema = {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "tags": {
+                "type": "array",
+                "items": {"type": "object", "properties": {"tag_name": {"type": "string"}}},
+            },
+        },
+        "required": ["title"],
+    }
+
+    adapted = OpenAILargeLanguageModel._adapt_schema_for_structured_outputs(raw_schema)
+
+    assert adapted["additionalProperties"] is False
+    assert set(adapted["required"]) == {"title", "summary", "tags"}
+    assert adapted["properties"]["summary"]["type"] == ["string", "null"]
+    # Check nested item
+    assert adapted["properties"]["tags"]["items"]["additionalProperties"] is False
+    assert adapted["properties"]["tags"]["items"]["required"] == ["tag_name"]
+
+
+def test_invoke_responses_api_with_json_schema():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    prompt_messages = [
+        UserPromptMessage(content="Summarize this"),
+    ]
+    creds = {
+        "api_type": "responses",
+        "endpoint_url": "https://api.openai.com/v1",
+        "api_key": "sk-test",
+        "mode": "chat",
+    }
+    params = {
+        "response_format": "json_schema",
+        "json_schema": {
+            "name": "llm_response",
+            "schema": {"type": "object", "properties": {"summary": {"type": "string"}}},
+        },
+    }
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.output = [MagicMock(type="message", content='{"summary": "test"}')]
+    mock_response.usage = MagicMock(input_tokens=10, output_tokens=12)
+    mock_client.responses.create.return_value = mock_response
+
+    with patch.object(model, "_create_openai_client", return_value=mock_client):
+        result = model._invoke(
+            model="gpt-5.4-mini",
+            credentials=creds,
+            prompt_messages=prompt_messages,
+            model_parameters=params,
+            stream=False,
+        )
+
+    assert result.message.content == '{"summary": "test"}'
+    call_kwargs = mock_client.responses.create.call_args[1]
+    assert "text" in call_kwargs
+    text_format = call_kwargs["text"]["format"]
+    assert text_format["type"] == "json_schema"
+    assert text_format["name"] == "llm_response"
+    assert text_format["schema"]["additionalProperties"] is False
+    assert text_format["schema"]["required"] == ["summary"]

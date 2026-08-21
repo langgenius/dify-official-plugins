@@ -821,6 +821,66 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             usage=usage,
         )
 
+    @staticmethod
+    def _adapt_schema_for_structured_outputs(schema: dict) -> dict:
+        """
+        Adapt a JSON Schema for OpenAI Structured Outputs (Responses API).
+        Requirements:
+        1. All object schemas must specify 'additionalProperties': False
+        2. All properties defined in an object must be listed in 'required'
+        3. Optional properties have their type expanded to include 'null' (e.g. ['string', 'null'])
+        """
+        if not isinstance(schema, dict):
+            return schema
+        schema = dict(schema)
+        schema_type = schema.get("type")
+
+        # Handle arrays of objects by recursing into `items`
+        is_array = schema_type == "array" or (
+            isinstance(schema_type, list) and "array" in schema_type
+        )
+        if is_array and "items" in schema and isinstance(schema.get("items"), dict):
+            schema["items"] = OpenAILargeLanguageModel._adapt_schema_for_structured_outputs(
+                schema["items"]
+            )
+
+        # Handle objects
+        is_object = (
+            schema_type == "object"
+            or (isinstance(schema_type, list) and "object" in schema_type)
+            or "properties" in schema
+        )
+        if is_object:
+            # Enforce additionalProperties: False as required by OpenAI Structured Outputs
+            if "additionalProperties" not in schema or schema["additionalProperties"] is not False:
+                schema["additionalProperties"] = False
+
+            if "properties" in schema and isinstance(schema["properties"], dict):
+                required = list(schema.get("required", []))
+                new_properties = {}
+                for key, prop in schema["properties"].items():
+                    prop = dict(prop) if isinstance(prop, dict) else prop
+                    if isinstance(prop, dict):
+                        if key not in required:
+                            # Convert fields not in 'required' to null union type to emulate optional
+                            original_type = prop.get("type")
+                            if original_type is None:
+                                pass
+                            elif isinstance(original_type, list):
+                                if "null" not in original_type:
+                                    prop["type"] = original_type + ["null"]
+                            else:
+                                prop["type"] = [original_type, "null"]
+                            required.append(key)
+                        new_properties[key] = (
+                            OpenAILargeLanguageModel._adapt_schema_for_structured_outputs(prop)
+                        )
+                    else:
+                        new_properties[key] = prop
+                schema["properties"] = new_properties
+                schema["required"] = required
+        return schema
+
     def _create_openai_client(self, credentials: dict) -> OpenAI:
         api_key = credentials.get("api_key") or "dummy"
         endpoint_url = credentials.get("endpoint_url")
@@ -1052,11 +1112,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                         json_schema_data = json.loads(json_schema_data)
                     except json.JSONDecodeError:
                         json_schema_data = {}
+
+                schema_name = json_schema_data.get("name", "response")
+                raw_schema = json_schema_data.get("schema")
+                if raw_schema is None or not isinstance(raw_schema, dict):
+                    raw_schema = json_schema_data if isinstance(json_schema_data, dict) else {}
+
+                adapted_schema = self._adapt_schema_for_structured_outputs(raw_schema)
                 responses_params["text"] = {
                     "format": {
                         "type": "json_schema",
-                        "name": json_schema_data.get("name", "response"),
-                        "schema": json_schema_data.get("schema", {}),
+                        "name": schema_name,
+                        "schema": adapted_schema,
                     }
                 }
             else:
