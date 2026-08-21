@@ -2,14 +2,21 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from dify_plugin.entities.model.text_embedding import (
+    MultiModalContent,
+    MultiModalContentType,
+)
 from models.text_embedding.text_embedding import OpenAITextEmbeddingModel
 
 
-def _successful_embedding_response() -> MagicMock:
+def _successful_embedding_response(
+    embeddings: list[list[float]] | None = None,
+) -> MagicMock:
+    embeddings = embeddings or [[0.1, 0.2, 0.3]]
     response = MagicMock()
     response.status_code = 200
     response.json.return_value = {
-        "data": [{"embedding": [0.1, 0.2, 0.3]}],
+        "data": [{"embedding": embedding} for embedding in embeddings],
         "usage": {"total_tokens": 3},
     }
     return response
@@ -91,6 +98,27 @@ def test_plain_text_containing_image_marker_uses_text_embedding(
     assert result.embeddings == [[0.1, 0.2, 0.3]]
 
 
+@patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.requests.post")
+def test_markdown_image_in_text_is_not_promoted_to_multimodal(mock_post, mock_openai):
+    mock_post.return_value = _successful_embedding_response()
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+    text = "before ![image](http://192.168.1.100/files/id/file-preview) after"
+
+    result = model._invoke(
+        model="display-name",
+        credentials=_credentials(vision_support="support"),
+        texts=[text],
+    )
+
+    mock_openai.assert_not_called()
+    assert mock_post.call_args.kwargs["json"] == {
+        "model": "Qwen3-Embedding-8B",
+        "input": [text],
+    }
+    assert result.embeddings == [[0.1, 0.2, 0.3]]
+
+
 def _chat_embedding_response() -> MagicMock:
     response = MagicMock()
     response.data = [MagicMock(embedding=[0.4, 0.5, 0.6])]
@@ -107,13 +135,62 @@ def test_multimodal_embedding_sends_endpoint_model_name(mock_create, _mock_opena
     mock_create.return_value = _chat_embedding_response()
     model = OpenAITextEmbeddingModel(model_schemas=[])
 
-    result = model._invoke(
+    result = model._invoke_multimodal(
         model="Qwen3-VL-Embedding",
         credentials=_credentials(
             endpoint_model_name="qwen3-vl-embedding-8b-awq", vision_support="support"
         ),
-        texts=["https://example.com/image.png"],
+        documents=[
+            MultiModalContent(
+                content_type=MultiModalContentType.IMAGE,
+                content="iVBORw0KGgo=",
+            )
+        ],
     )
 
     assert mock_create.call_args.kwargs["model"] == "qwen3-vl-embedding-8b-awq"
+    user_content = mock_create.call_args.kwargs["messages"][1]["content"]
+    assert user_content[0] == {
+        "type": "image_url",
+        "image_url": {"url": "data:image/png;base64,iVBORw0KGgo="},
+    }
     assert result.embeddings == [[0.4, 0.5, 0.6]]
+
+
+@patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.create_chat_embeddings")
+@patch("models.text_embedding.text_embedding.requests.post")
+def test_multimodal_embedding_preserves_mixed_input_order(
+    mock_post, mock_create, _mock_openai
+):
+    mock_post.side_effect = [
+        _successful_embedding_response([[0.1, 0.0]]),
+        _successful_embedding_response([[0.3, 0.0]]),
+    ]
+    mock_create.return_value = _chat_embedding_response()
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+
+    result = model._invoke_multimodal(
+        model="Qwen3-VL-Embedding",
+        credentials=_credentials(vision_support="support"),
+        documents=[
+            MultiModalContent(
+                content_type=MultiModalContentType.TEXT,
+                content="first text",
+            ),
+            MultiModalContent(
+                content_type=MultiModalContentType.IMAGE,
+                content="iVBORw0KGgo=",
+            ),
+            MultiModalContent(
+                content_type=MultiModalContentType.TEXT,
+                content="second text",
+            ),
+        ],
+    )
+
+    assert [call.kwargs["json"]["input"] for call in mock_post.call_args_list] == [
+        ["first text"],
+        ["second text"],
+    ]
+    assert result.embeddings == [[0.1, 0.0], [0.4, 0.5, 0.6], [0.3, 0.0]]
