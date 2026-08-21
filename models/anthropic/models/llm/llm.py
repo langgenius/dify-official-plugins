@@ -1136,6 +1136,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                     elif hasattr(chunk.delta, "text"):
                         current_block_type = "text"
+                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
+                        # Tool-use block: mark as non-thinking so the closing
+                        # think tag (already emitted at the block transition
+                        # above) is not emitted a second time at stream end.
+                        current_block_type = "tool_use"
                     elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
                         current_block_type = "redacted_thinking"
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
@@ -1428,6 +1433,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         return result
     
+    # Cap for URL-fetched images: fail early with a clear error instead of
+    # bloating the request payload (base64 inflates size ~33%).
+    MAX_IMAGE_FETCH_BYTES = 10 * 1024 * 1024
+
     def _process_image_data(self, data: str) -> tuple[str, str]:
         """Process image data from URL or data URI."""
         if data.startswith("data:"):
@@ -1435,19 +1444,53 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             header, encoded = data.split(";base64,", 1)
             mime_type = header.replace("data:", "")
             return mime_type, encoded
-        
+
         # Fetch from URL
+        url = data.strip()
+        if not url.lower().startswith(("http://", "https://")):
+            raise ValueError(
+                f"Unsupported image URL scheme: only http(s) URLs are allowed ({data})"
+            )
         try:
-            response = requests.get(data)
+            # Bounded timeout (a hung URL must not block the worker indefinitely)
+            # and no redirect following (the fetched host is exactly the one given).
+            # stream=True + iter_content keeps memory bounded: a hostile server
+            # cannot push more than ~MAX_IMAGE_FETCH_BYTES into the process.
+            response = requests.get(
+                url,
+                timeout=(5.0, 15.0),
+                allow_redirects=False,
+                stream=True,
+            )
             response.raise_for_status()
-            
-            with Image.open(io.BytesIO(response.content)) as img:
+            # raise_for_status only raises for >= 400: reject 3xx explicitly.
+            if 300 <= response.status_code < 400:
+                raise ValueError("Redirect responses are not allowed")
+
+            length = int(response.headers.get("Content-Length") or 0)
+            if length > self.MAX_IMAGE_FETCH_BYTES:
+                raise ValueError(
+                    f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
+                )
+
+            chunks: list[bytes] = []
+            received = 0
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                received += len(chunk)
+                if received > self.MAX_IMAGE_FETCH_BYTES:
+                    raise ValueError(
+                        f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
+                    )
+                chunks.append(chunk)
+            content = b"".join(chunks)
+
+            with Image.open(io.BytesIO(content)) as img:
                 img_format = img.format or "jpeg"  # Default to jpeg if format is None
                 mime_type = f"image/{img_format.lower()}"
-            
-            base64_data = base64.b64encode(response.content).decode("utf-8")
+
+            base64_data = base64.b64encode(content).decode("utf-8")
             return mime_type, base64_data
-            
+
         except Exception as ex:
             raise ValueError(f"Failed to fetch image from {data}: {ex}") from ex
     
@@ -1668,7 +1711,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 anthropic.APIConnectionError,
                 anthropic.APITimeoutError,
             ],
-            InvokeServerUnavailableError: [anthropic.InternalServerError],
+            InvokeServerUnavailableError: [
+                anthropic.InternalServerError,
+                # 529 Overloaded is a server-side capacity error, not a client error.
+                anthropic.OverloadedError,
+            ],
             InvokeRateLimitError: [anthropic.RateLimitError],
             InvokeAuthorizationError: [
                 anthropic.AuthenticationError,
