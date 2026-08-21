@@ -132,7 +132,6 @@ class SelfRefineStrategy(AgentStrategy):
             try:
                 execution_result = yield from self._execute_agent(
                     params=params,
-                    previous_output=final_output if refinement_count > 0 else None,
                     previous_critique=previous_critique,
                     attempt_number=attempt_number
                 )
@@ -148,7 +147,7 @@ class SelfRefineStrategy(AgentStrategy):
                 yield self.create_log_message(
                     label=f"Attempt {attempt_number} Complete",
                     data={"output_length": len(final_output)},
-                    status=ToolInvokeMessage.LogMessage.LogStatus.FINISH
+                    status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
                 )
 
             except Exception as e:
@@ -187,7 +186,7 @@ class SelfRefineStrategy(AgentStrategy):
                     yield self.create_log_message(
                         label="Quality Check: PASS",
                         data={"score": evaluation.score},
-                        status=ToolInvokeMessage.LogMessage.LogStatus.FINISH
+                        status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
                     )
                     logger.info(f"Output satisfactory (score: {evaluation.score})")
                     break
@@ -198,7 +197,7 @@ class SelfRefineStrategy(AgentStrategy):
                             "score": evaluation.score,
                             "issues": evaluation.issues
                         },
-                        status=ToolInvokeMessage.LogMessage.LogStatus.FINISH
+                        status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
                     )
                     logger.info(f"Output needs improvement: {evaluation.issues}")
                     previous_critique = evaluation.issues
@@ -308,7 +307,7 @@ class SelfRefineStrategy(AgentStrategy):
             if stream and isinstance(chunks, Generator):
                 for chunk in chunks:
                     if chunk.delta and chunk.delta.message and chunk.delta.message.content:
-                        response_text += chunk.delta.message.content
+                        response_text += chunk.delta.message.get_text_content()
 
                     if chunk.delta and chunk.delta.message and chunk.delta.message.tool_calls:
                         for tool_call in chunk.delta.message.tool_calls:
@@ -324,7 +323,7 @@ class SelfRefineStrategy(AgentStrategy):
             else:
                 result = chunks if isinstance(chunks, LLMResult) else next(chunks)
                 if result.message and result.message.content:
-                    response_text = result.message.content
+                    response_text = result.message.get_text_content()
 
                 if result.message and result.message.tool_calls:
                     for tool_call in result.message.tool_calls:
@@ -347,7 +346,7 @@ class SelfRefineStrategy(AgentStrategy):
                     "response": response_text[:200] + "..." if len(response_text) > 200 else response_text,
                     "tool_calls": len(tool_calls)
                 },
-                status=ToolInvokeMessage.LogMessage.LogStatus.FINISH
+                status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
             )
 
             # Execute tool calls if any
@@ -415,7 +414,7 @@ class SelfRefineStrategy(AgentStrategy):
                 yield self.create_log_message(
                     label=f"Tool {tool_name} Complete",
                     data={"result": result_text[:100] + "..." if len(result_text) > 100 else result_text},
-                    status=ToolInvokeMessage.LogMessage.LogStatus.FINISH
+                    status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
                 )
 
             except Exception as e:
@@ -461,7 +460,7 @@ class SelfRefineStrategy(AgentStrategy):
             if isinstance(result, Generator):
                 result = next(result)
 
-            eval_text = result.message.content if result.message and result.message.content else ""
+            eval_text = result.message.get_text_content() if result.message and result.message.content else ""
 
             # Parse JSON response
             try:
