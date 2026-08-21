@@ -1017,6 +1017,18 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             message=assistant_prompt_message,
             usage=usage,
         )
+
+        # Round-trip the thinking blocks through the persisted message so
+        # the follow-up request (built in a fresh model instance) can
+        # echo them back to Anthropic. See issue #3658. Without this,
+        # the next request is built with self.previous_thinking_blocks
+        # already reset to [] in the new instance, so tool-result turns
+        # drop the thinking blocks and Anthropic rejects with 400.
+        if self.previous_thinking_blocks or self.previous_redacted_thinking_blocks:
+            assistant_prompt_message.opaque_body = {
+                "anthropic_thinking_blocks": self.previous_thinking_blocks,
+                "anthropic_redacted_thinking_blocks": self.previous_redacted_thinking_blocks,
+            }
         return result
 
 
@@ -1247,14 +1259,25 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for tool_call in tool_calls:
                     if not tool_call.function.arguments:
                         tool_call.function.arguments = "{}"
+
+                # Build the final assistant message with the thinking
+                # blocks stored in opaque_body. The follow-up request
+                # (built in a fresh model instance) reads them back via
+                # _process_assistant_message. See issue #3658.
+                final_message = AssistantPromptMessage(
+                    content="", tool_calls=tool_calls
+                )
+                if current_thinking_blocks or current_redacted_thinking_blocks:
+                    final_message.opaque_body = {
+                        "anthropic_thinking_blocks": current_thinking_blocks,
+                        "anthropic_redacted_thinking_blocks": current_redacted_thinking_blocks,
+                    }
                 yield LLMResultChunk(
                     model=return_model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=index + 1,
-                        message=AssistantPromptMessage(
-                            content="", tool_calls=tool_calls
-                        ),
+                        message=final_message,
                         finish_reason=finish_reason,
                         usage=usage,
                     ),
@@ -1484,21 +1507,40 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         return result
     
     def _process_assistant_message(
-        self, 
+        self,
         message: AssistantPromptMessage,
         all_messages: Sequence[PromptMessage]
     ) -> dict:
         """Process assistant message into API format."""
         content = []
-        
+
         # Check if we need to include thinking blocks
         has_tool_messages = any(
             isinstance(msg, ToolPromptMessage) for msg in all_messages
         )
-        
+
         if has_tool_messages:
-            content.extend(self.previous_thinking_blocks)
-            content.extend(self.previous_redacted_thinking_blocks)
+            # Prefer the thinking blocks round-tripped through the
+            # assistant message's opaque_body (set by the previous
+            # invocation's response handler). This survives across
+            # dify_plugin's per-RPC model-instance reset, unlike
+            # self.previous_thinking_blocks. Fall back to the
+            # in-memory instance state for the rare case where the
+            # caller hands us an AssistantPromptMessage without
+            # opaque_body (e.g. tests). See issue #3658.
+            thinking_blocks: list = []
+            redacted_thinking_blocks: list = []
+            opaque_body = message.opaque_body
+            if isinstance(opaque_body, dict):
+                thinking_blocks = list(opaque_body.get("anthropic_thinking_blocks") or [])
+                redacted_thinking_blocks = list(
+                    opaque_body.get("anthropic_redacted_thinking_blocks") or []
+                )
+            if not thinking_blocks and not redacted_thinking_blocks:
+                thinking_blocks = self.previous_thinking_blocks
+                redacted_thinking_blocks = self.previous_redacted_thinking_blocks
+            content.extend(thinking_blocks)
+            content.extend(redacted_thinking_blocks)
         
         # Dify stores assistant text and tool calls separately; Anthropic expects the next
         # user tool_result message to immediately follow the assistant tool_use turn.
