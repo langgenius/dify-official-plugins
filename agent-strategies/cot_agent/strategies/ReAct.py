@@ -26,8 +26,9 @@ from dify_plugin.interfaces.agent import (
 )
 from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from strategies.tool_allowlist import coerce_allowed_tools, filter_allowed_tools
 from strategies.tool_response import should_forward_file_message
 
 class LogMetadata:
@@ -54,8 +55,14 @@ class ReActParams(BaseModel):
     instruction: str
     model: AgentModelConfig
     tools: list[ToolEntity] | None
+    allowed_tools: list[str] | None = None
     maximum_iterations: int = 3
     context: list[ContextItem] | None = None
+
+    @field_validator("allowed_tools", mode="before")
+    @classmethod
+    def normalize_allowed_tools(cls, value: Any) -> list[str] | None:
+        return coerce_allowed_tools(value)
 
 
 class AgentPromptEntity(BaseModel):
@@ -143,7 +150,7 @@ class ReActAgentStrategy(AgentStrategy):
         self.history_prompt_messages = model.history_prompt_messages
 
         # convert tools into ModelRuntime Tool format
-        tools = react_params.tools
+        tools = filter_allowed_tools(react_params.tools, react_params.allowed_tools)
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
         react_params.model.completion_params = (
             react_params.model.completion_params or {}

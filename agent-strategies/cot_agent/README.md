@@ -1,6 +1,8 @@
 # Overview
 The Agent node in Dify Chatflow/Workflow lets LLMs autonomously use tools. This plugin features two official Dify Agent reasoning strategies, enabling LLMs to dynamically select and run tools during runtime for multi-step problem-solving.
 
+The Agent node also accepts an optional **Allowed tools** list (`array[string]`). If the list has names, only those tools from the node’s tool list are sent to the model and allowed to run. Leave it unset or empty to keep the full tool list.
+
 ## Strategies
 
 ### 1. Function Calling
