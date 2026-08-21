@@ -43,6 +43,54 @@ class CotAgentOutputParser:
                 if isinstance(action, list) and len(action) == 1:
                     action = action[0]
 
+                # Unwrap OpenAI-style tool_call / tool_calls envelopes
+                # (e.g. {"tool_call": {"function": {"name": ..., "arguments": ...}}})
+                # so the for-loop below sees the inner function dict directly.
+                # Without this, "tool_call" becomes action_name and the inner
+                # function dict is rejected as not-a-string, so the action
+                # degrades to the parse-failure path. See issue #3705.
+                if isinstance(action, dict):
+                    if (
+                        "tool_call" in action
+                        and isinstance(action["tool_call"], dict)
+                    ):
+                        action = action["tool_call"]
+                    elif (
+                        "tool_calls" in action
+                        and isinstance(action["tool_calls"], list)
+                        and len(action["tool_calls"]) == 1
+                        and isinstance(action["tool_calls"][0], dict)
+                    ):
+                        action = action["tool_calls"][0]
+
+                    # Unwrap the OpenAI function envelope inside the
+                    # (now unwrapped) action dict. After the previous step,
+                    # `action` is the inner function-call dict; strip one
+                    # more `function` layer so the OpenAI-shape check below
+                    # sees {"name": ..., "arguments": ...} directly.
+                    if (
+                        isinstance(action, dict)
+                        and "function" in action
+                        and isinstance(action["function"], dict)
+                    ):
+                        action = action["function"]
+
+                # OpenAI function-call shape: {"name": "...", "arguments": ...}.
+                # The for-loop below would set action_name = "webSearch" (from
+                # "name") and then overwrite action_name with the arguments
+                # dict (from "arguments"), leaving action_input unset. Detect
+                # this shape explicitly before the generic loop runs.
+                if (
+                    isinstance(action, dict)
+                    and "name" in action
+                    and "arguments" in action
+                    and isinstance(action["name"], str)
+                ):
+                    return AgentScratchpadUnit.Action(
+                        action_name=action["name"],
+                        action_input=action["arguments"],
+                    )
+
                 for key, value in action.items():
                     if "input" in key.lower():
                         action_input = value
@@ -142,7 +190,24 @@ class CotAgentOutputParser:
             # When include_thoughts=True, Gemini injects <think>...</think>; strip across chunks so
             # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply.
             # Nested <think> tags are supported via a depth counter.
-            if THINK_START in response_content or THINK_END in response_content or _in_think:
+            #
+            # Also enter the if-block when the chunk is a partial prefix of
+            # either tag (e.g. "<th" or "</thin") so the trailing partial
+            # prefix is buffered in _think_buf and reassembled with the
+            # next chunk. Without this, a tag split across chunks leaks
+            # the partial prefix as raw content. See issue #3705.
+            _chunk_with_buf = _think_buf + response_content
+            _is_partial_prefix = any(
+                _chunk_with_buf.endswith(THINK_START[:n])
+                or _chunk_with_buf.endswith(THINK_END[:n])
+                for n in range(1, max(len(THINK_START), len(THINK_END)))
+            )
+            if (
+                THINK_START in response_content
+                or THINK_END in response_content
+                or _in_think
+                or _is_partial_prefix
+            ):
                 buf = _think_buf + response_content
                 _think_buf = ""
                 out = []
@@ -167,7 +232,28 @@ class CotAgentOutputParser:
                     else:
                         j = buf.find(THINK_START, i)
                         if j == -1:
-                            out.append(buf[i:])
+                            # Buffer the trailing partial-prefix of <think>
+                            # (or </think>) so that a tag split across stream
+                            # chunks (e.g. chunk 1 = "<th", chunk 2 =
+                            # "ink>inner</think>") is reassembled instead of
+                            # leaked as raw text. Only buffer when the tail
+                            # is short enough to be a partial prefix AND
+                            # actually matches one; otherwise emit normally.
+                            # See issue #3705.
+                            tail = buf[i:]
+                            partial_max = max(len(THINK_START), len(THINK_END)) - 1
+                            is_partial_prefix = (
+                                len(tail) <= partial_max
+                                and any(
+                                    tail.endswith(THINK_START[:n])
+                                    or tail.endswith(THINK_END[:n])
+                                    for n in range(1, len(tail) + 1)
+                                )
+                            )
+                            if is_partial_prefix:
+                                _think_buf = tail
+                            else:
+                                out.append(tail)
                             break
                         out.append(buf[i:j])
                         _in_think = True
@@ -183,6 +269,28 @@ class CotAgentOutputParser:
                 steps = 1
                 delta = response_content[index: index + steps]
                 yield_delta = False
+
+                # Process a completed JSON blob before matching a new one. Without
+                # this, when the model emits two adjacent JSON roots with no
+                # delimiter (e.g. {}{}), the first blob is dropped because the
+                # 'start new JSON' branch below resets got_json=False and
+                # overwrites json_cache before the first blob is ever parsed.
+                # See issue #3705.
+                if not in_json and got_json:
+                    got_json = False
+                    last_character = delta
+                    parsed_result = parse_action(json_cache)
+                    if isinstance(parsed_result, AgentScratchpadUnit.Action):
+                        yield parsed_result
+                    else:
+                        yield ReactChunk(cur_state, json_cache)
+                    json_cache = ""
+                    json_in_string = False
+                    json_escape = False
+                    json_stack = []
+                    # Note: we intentionally do NOT `continue` here so the
+                    # current delta (which may be the next JSON root's `{`)
+                    # also flows through the loop and starts the next JSON.
 
                 if not in_json:
                     yield_raw_delta, emitted_chunk, delta_consumed, matched_action_prefix = action_matcher.step(delta)
