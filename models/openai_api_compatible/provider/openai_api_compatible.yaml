@@ -1,4 +1,24 @@
 provider: openai_api_compatible
+provider_credential_schema:
+  credential_form_schemas:
+  - variable: api_key
+    label:
+      en_US: API Key
+      zh_Hans: API Key
+    type: secret-input
+    required: true
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+  - variable: endpoint_url
+    label:
+      en_US: API Base URL
+      zh_Hans: API 基础地址
+    type: text-input
+    required: false
+    placeholder:
+      en_US: 'Optional — leave blank to use the default OpenAI endpoint, or set to your OpenAI-compatible server URL.'
+      zh_Hans: 选填 — 留空使用默认 OpenAI 端点，或填写您的 OpenAI 兼容服务器地址。
 label:
   en_US: OpenAI-API-compatible
 description:
