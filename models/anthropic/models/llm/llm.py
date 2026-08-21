@@ -772,8 +772,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Only None / blank strings count as "no schema", so that invalid values
             # still reach _parse_json_schema validation in _chat_generate.
             raw_json_schema = model_parameters.get("json_schema")
+            # Any non-string value counts as provided (only blank strings mean
+            # "no schema"), so invalid values always reach _parse_json_schema.
             has_json_schema = (
-                raw_json_schema is not None and bool(str(raw_json_schema).strip())
+                raw_json_schema is not None
+                and (
+                    not isinstance(raw_json_schema, str)
+                    or bool(raw_json_schema.strip())
+                )
             )
             if not (response_format == "JSON" and has_json_schema):
                 stop = stop or []

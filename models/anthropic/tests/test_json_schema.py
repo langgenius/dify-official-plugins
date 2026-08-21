@@ -140,7 +140,7 @@ def test_parse_json_schema_rejects_non_objects(raw: str) -> None:
         AnthropicLargeLanguageModel._parse_json_schema(raw)
 
 
-@pytest.mark.parametrize("raw", [0, 1.5, ["a"], (1,)])
+@pytest.mark.parametrize("raw", [0, 1.5, False, ["a"], (1,)])
 def test_parse_json_schema_rejects_unsupported_types(raw: object) -> None:
     with pytest.raises(ValueError, match="Unsupported json_schema type"):
         AnthropicLargeLanguageModel._parse_json_schema(raw)
@@ -240,6 +240,37 @@ def test_wrapper_falsy_non_string_schema_not_dropped(monkeypatch) -> None:
     )
 
     assert captured["model_parameters"]["json_schema"] == {}
+    assert "response_format" not in captured["model_parameters"]
+    assert prompt_messages[0].content == "original system"
+    assert len(prompt_messages) == 2
+
+
+def test_wrapper_empty_str_object_not_treated_as_absent(monkeypatch) -> None:
+    class _BlankStr:
+        def __str__(self) -> str:
+            return ""
+
+    llm, captured = _capture_invoke(monkeypatch, {})
+    prompt_messages = [
+        SystemPromptMessage(content="original system"),
+        UserPromptMessage(content="hi"),
+    ]
+
+    llm._code_block_mode_wrapper(
+        model="claude-sonnet-4-5",
+        credentials={"anthropic_api_key": "test-key"},
+        prompt_messages=prompt_messages,
+        model_parameters={
+            "max_tokens": 1024,
+            "response_format": "JSON",
+            "json_schema": _BlankStr(),
+        },
+        stream=True,
+    )
+
+    # Non-string values are always treated as provided, never silently dropped
+    # as "blank".
+    assert "json_schema" in captured["model_parameters"]
     assert "response_format" not in captured["model_parameters"]
     assert prompt_messages[0].content == "original system"
     assert len(prompt_messages) == 2
