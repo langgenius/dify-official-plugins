@@ -534,6 +534,54 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: video_transfer_format
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 视频传输格式
+        en_US: Video Transfer Format
+        ja_JP: 動画転送フォーマット
+      type: select
+      required: false
+      default: image_url_data_uri
+      help:
+        en_US: How VIDEO content is sent to the model. `image_url_data_uri` (default) packs the video as a data URI under an `image_url` part, which LiteLLM dispatches into Vertex Gemini's `inline_data`. `video_url` sends it under a `video_url` part, which OpenAI-compatible servers that implement the OpenAI multimodal spec (vLLM, LiteLLM `hosted_vllm`) accept. Only change this if your server rejects VIDEO attachments with a 400 `Failed to load image` error.
+        zh_Hans: 视频内容的发送方式。`image_url_data_uri`（默认）将视频打包为 `image_url` 部分的 data URI，LiteLLM 会将其分发到 Vertex Gemini 的 `inline_data`。`video_url` 使用 `video_url` 部分发送，实现 OpenAI 多模态规范的 OpenAI 兼容服务器（vLLM、LiteLLM `hosted_vllm`）接受此格式。仅当服务器返回 400 `Failed to load image` 错误时再调整此项。
+        ja_JP: VIDEO コンテンツの送信方法。`image_url_data_uri`（デフォルト）は video を `image_url` パートのデータ URI として送信し、LiteLLM が Vertex Gemini の `inline_data` に振り分けます。`video_url` は `video_url` パートで送信し、OpenAI マルチモーダル仕様を実装する OpenAI 互換サーバー（vLLM、LiteLLM `hosted_vllm`）がこれを受理します。サーバーが 400 `Failed to load image` を返す場合にのみ変更してください。
+      options:
+        - value: image_url_data_uri
+          label:
+            en_US: image_url (data URI) — default
+            zh_Hans: image_url（data URI）— 默认
+        - value: video_url
+          label:
+            en_US: video_url — for OpenAI multimodal spec servers
+            zh_Hans: video_url — 用于 OpenAI 多模态规范服务器
+    - variable: audio_transfer_format
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 音频传输格式
+        en_US: Audio Transfer Format
+        ja_JP: 音声転送フォーマット
+      type: select
+      required: false
+      default: image_url_data_uri
+      help:
+        en_US: How AUDIO content is sent to the model. `image_url_data_uri` (default) packs the audio as a data URI under an `image_url` part, which LiteLLM dispatches into Vertex Gemini's `inline_data`. `input_audio` sends it under an `input_audio` part with a base64 data URL, which OpenAI's native audio input spec uses.
+        zh_Hans: 音频内容的发送方式。`image_url_data_uri`（默认）将音频打包为 `image_url` 部分的 data URI，LiteLLM 会将其分发到 Vertex Gemini 的 `inline_data`。`input_audio` 使用 `input_audio` 部分和 base64 data URL 发送，OpenAI 原生音频输入规范使用此格式。
+        ja_JP: AUDIO コンテンツの送信方法。`image_url_data_uri`（デフォルト）は audio を `image_url` パートのデータ URI として送信し、LiteLLM が Vertex Gemini の `inline_data` に振り分けます。`input_audio` は base64 data URL を持つ `input_audio` パートで送信し、OpenAI ネイティブ音声入力仕様が使用します。
+      options:
+        - value: image_url_data_uri
+          label:
+            en_US: image_url (data URI) — default
+            zh_Hans: image_url（data URI）— 默认
+        - value: input_audio
+          label:
+            en_US: input_audio — for OpenAI native audio spec
+            zh_Hans: input_audio — 用于 OpenAI 原生音频规范
     - variable: document_support
       show_on:
         - variable: __model_type

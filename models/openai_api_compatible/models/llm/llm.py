@@ -395,10 +395,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
         # OpenAI-compatible request shape carries the additional modalities. The
         # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
-        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
-        #     which providers like Vertex Gemini convert into inline_data.
+        #   - VIDEO/AUDIO (default): image_url with a data URI (mime_type carried in
+        #     the URI), which providers like Vertex Gemini convert into inline_data.
+        #   - VIDEO via `video_url` and AUDIO via `input_audio`: per the OpenAI
+        #     multimodal spec; required by vLLM and similar OpenAI-compatible
+        #     servers that don't accept `image_url` data URIs for non-image content.
         #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
         #     to the data URI.
+        video_transfer_format = (credentials or {}).get(
+            "video_transfer_format", "image_url_data_uri"
+        )
+        audio_transfer_format = (credentials or {}).get(
+            "audio_transfer_format", "image_url_data_uri"
+        )
         if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
             sub_messages: list[dict] = []
             for c in message.content:
@@ -417,20 +426,45 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 elif c.type == PromptMessageContentType.VIDEO:
                     video_c: VideoPromptMessageContent = c
-                    sub_messages.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": video_c.data},
-                        }
-                    )
+                    if video_transfer_format == "video_url":
+                        # OpenAI multimodal spec: video_url part with the data URI.
+                        sub_messages.append(
+                            {
+                                "type": "video_url",
+                                "video_url": {"url": video_c.data},
+                            }
+                        )
+                    else:
+                        # Default: image_url with a data URI (LiteLLM dispatches
+                        # to Vertex Gemini's inline_data).
+                        sub_messages.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": video_c.data},
+                            }
+                        )
                 elif c.type == PromptMessageContentType.AUDIO:
                     audio_c: AudioPromptMessageContent = c
-                    sub_messages.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": audio_c.data},
-                        }
-                    )
+                    if audio_transfer_format == "input_audio":
+                        # OpenAI native audio input spec: input_audio part with
+                        # a base64 data URL. The data URI from
+                        # AudioPromptMessageContent is already a data URL, so
+                        # we forward it as-is under the input_audio key.
+                        sub_messages.append(
+                            {
+                                "type": "input_audio",
+                                "input_audio": {"data": audio_c.data, "format": "wav"},
+                            }
+                        )
+                    else:
+                        # Default: image_url with a data URI (LiteLLM dispatches
+                        # to Vertex Gemini's inline_data).
+                        sub_messages.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": audio_c.data},
+                            }
+                        )
                 elif c.type == PromptMessageContentType.DOCUMENT:
                     doc_c: DocumentPromptMessageContent = c
                     sub_messages.append(
