@@ -1,6 +1,8 @@
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -9,6 +11,13 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
 from models.llm.llm import AnthropicLargeLanguageModel, PromptCachingHandler
+
+
+def test_sonnet46_schema_does_not_advertise_structured_output() -> None:
+    schema_path = Path(__file__).parents[1] / "models" / "llm" / "claude-sonnet-4-6.yaml"
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+
+    assert "structured-output" not in schema["features"]
 
 
 def test_get_cache_control_defaults_overrides_and_copies() -> None:
