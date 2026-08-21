@@ -8,13 +8,15 @@ import boto3
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+
 class SageMakerReRankTool(Tool):
-    sagemaker_client: Any = None
     sagemaker_endpoint: str = None
 
-    def _sagemaker_rerank(self, query_input: str, docs: list[str], rerank_endpoint: str):
+    def _sagemaker_rerank(
+        self, query_input: str, docs: list[str], rerank_endpoint: str, sagemaker_client
+    ):
         inputs = [query_input] * len(docs)
-        response_model = self.sagemaker_client.invoke_endpoint(
+        response_model = sagemaker_client.invoke_endpoint(
             EndpointName=rerank_endpoint,
             Body=json.dumps({"inputs": inputs, "docs": docs}),
             ContentType="application/json",
@@ -32,13 +34,18 @@ class SageMakerReRankTool(Tool):
         invoke tools
         """
         line = 0
+        sagemaker_client = None
         try:
-            if not self.sagemaker_client:
-                aws_region = tool_parameters.get("aws_region")
-                if aws_region:
-                    self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
-                else:
-                    self.sagemaker_client = boto3.client("sagemaker-runtime")
+            # Build a fresh boto3 client per invocation so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            aws_region = tool_parameters.get("aws_region")
+            if aws_region:
+                sagemaker_client = boto3.Session().client(
+                    "sagemaker-runtime", region_name=aws_region
+                )
+            else:
+                sagemaker_client = boto3.Session().client("sagemaker-runtime")
 
             line = 1
             if not self.sagemaker_endpoint:
@@ -62,19 +69,24 @@ class SageMakerReRankTool(Tool):
             docs = [item.get("content") for item in candidate_docs]
 
             line = 6
-            scores = self._sagemaker_rerank(query_input=query, docs=docs, rerank_endpoint=self.sagemaker_endpoint)
+            scores = self._sagemaker_rerank(
+                query_input=query,
+                docs=docs,
+                rerank_endpoint=self.sagemaker_endpoint,
+                sagemaker_client=sagemaker_client,
+            )
 
             line = 7
             for idx in range(len(candidate_docs)):
                 candidate_docs[idx]["score"] = scores[idx]
 
             line = 8
-            sorted_candidate_docs = sorted(candidate_docs, key=operator.itemgetter("score"), reverse=True)
+            sorted_candidate_docs = sorted(
+                candidate_docs, key=operator.itemgetter("score"), reverse=True
+            )
 
             line = 9
-            json_result = {
-                "results" : sorted_candidate_docs[:topk]
-            }
+            json_result = {"results": sorted_candidate_docs[:topk]}
             yield self.create_json_message(json_result)
 
         except Exception as e:

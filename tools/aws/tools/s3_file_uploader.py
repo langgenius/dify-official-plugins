@@ -35,17 +35,21 @@ def _resolve_aws_credentials(
     only sourced from tool parameters because the provider schema does not
     expose it (STS-issued temporary credentials are passed inline).
     """
-    runtime_credentials = getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    runtime_credentials = (
+        getattr(getattr(tool, "runtime", None), "credentials", {}) or {}
+    )
 
-    aws_access_key_id = tool_parameters.get("aws_access_key_id") or runtime_credentials.get(
+    aws_access_key_id = tool_parameters.get(
         "aws_access_key_id"
-    )
-    aws_secret_access_key = tool_parameters.get("aws_secret_access_key") or runtime_credentials.get(
+    ) or runtime_credentials.get("aws_access_key_id")
+    aws_secret_access_key = tool_parameters.get(
         "aws_secret_access_key"
-    )
+    ) or runtime_credentials.get("aws_secret_access_key")
     aws_session_token = tool_parameters.get("aws_session_token")
     aws_region = (
-        tool_parameters.get("aws_region") or runtime_credentials.get("aws_region") or "us-east-1"
+        tool_parameters.get("aws_region")
+        or runtime_credentials.get("aws_region")
+        or "us-east-1"
     )
 
     return {
@@ -61,7 +65,9 @@ def _build_boto3_client_kwargs(credentials: dict[str, Optional[str]]) -> dict[st
     kwargs: dict[str, Any] = {}
     if credentials.get("aws_region"):
         kwargs["region_name"] = credentials["aws_region"]
-    if credentials.get("aws_access_key_id") and credentials.get("aws_secret_access_key"):
+    if credentials.get("aws_access_key_id") and credentials.get(
+        "aws_secret_access_key"
+    ):
         kwargs["aws_access_key_id"] = credentials["aws_access_key_id"]
         kwargs["aws_secret_access_key"] = credentials["aws_secret_access_key"]
         if credentials.get("aws_session_token"):
@@ -107,12 +113,17 @@ class S3FileUploader(Tool):
     another invocation.
     """
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """Read the input file and upload it to S3, returning the resulting URI as JSON."""
         try:
             credentials = _resolve_aws_credentials(self, tool_parameters)
             client_kwargs = _build_boto3_client_kwargs(credentials)
-            s3_client = boto3.client("s3", **client_kwargs)
+            # Use a fresh boto3.Session per call so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            s3_client = boto3.Session().client("s3", **client_kwargs)
         except Exception as exc:  # pragma: no cover - boto3 init errors
             yield self.create_text_message(f"Failed to initialize AWS client: {exc}")
             return
@@ -134,7 +145,9 @@ class S3FileUploader(Tool):
             return
 
         key_prefix = _sanitize_prefix(tool_parameters.get("key_prefix"))
-        requested_key = tool_parameters.get("object_key") or getattr(input_file, "filename", None)
+        requested_key = tool_parameters.get("object_key") or getattr(
+            input_file, "filename", None
+        )
         fallback_key = (
             getattr(input_file, "url", "").rstrip("/").split("/")[-1]
             if getattr(input_file, "url", None)
@@ -145,7 +158,9 @@ class S3FileUploader(Tool):
         if key_prefix:
             object_key = f"{key_prefix}/{object_key}"
 
-        content_type = getattr(input_file, "mime_type", None) or "application/octet-stream"
+        content_type = (
+            getattr(input_file, "mime_type", None) or "application/octet-stream"
+        )
 
         try:
             s3_client.put_object(
@@ -156,7 +171,9 @@ class S3FileUploader(Tool):
             )
         except ClientError as exc:
             error_message = exc.response.get("Error", {}).get("Message", str(exc))
-            yield self.create_text_message(f"Failed to upload file to S3: {error_message}")
+            yield self.create_text_message(
+                f"Failed to upload file to S3: {error_message}"
+            )
             return
 
         s3_uri = f"s3://{bucket_name}/{object_key}"
@@ -168,7 +185,9 @@ class S3FileUploader(Tool):
 
         text_message = None
         if tool_parameters.get("generate_presign_url"):
-            expiry_seconds = _parse_presign_expiry(tool_parameters.get("presign_expiry"))
+            expiry_seconds = _parse_presign_expiry(
+                tool_parameters.get("presign_expiry")
+            )
             try:
                 presigned_url = s3_client.generate_presigned_url(
                     "get_object",

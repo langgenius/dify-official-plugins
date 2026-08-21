@@ -22,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class NovaCanvasTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
         Invoke AWS Bedrock Nova Canvas model for image generation
         """
@@ -32,9 +30,13 @@ class NovaCanvasTool(Tool):
         prompt = tool_parameters.get("prompt", "")
         image_output_s3uri = tool_parameters.get("image_output_s3uri", "").strip()
         if not prompt:
-            yield self.create_text_message("Please provide a text prompt for image generation.")
+            yield self.create_text_message(
+                "Please provide a text prompt for image generation."
+            )
         if not image_output_s3uri or urlparse(image_output_s3uri).scheme != "s3":
-            yield self.create_text_message("Please provide an valid S3 URI for image output.")
+            yield self.create_text_message(
+                "Please provide an valid S3 URI for image output."
+            )
 
         task_type = tool_parameters.get("task_type", "TEXT_IMAGE")
         aws_region = tool_parameters.get("aws_region", "us-east-1")
@@ -51,15 +53,19 @@ class NovaCanvasTool(Tool):
         image_input_s3uri = tool_parameters.get("image_input_s3uri", "")
         if task_type != "TEXT_IMAGE":
             if not image_input_s3uri or urlparse(image_input_s3uri).scheme != "s3":
-                yield self.create_text_message("Please provide a valid S3 URI for image to image generation.")
+                yield self.create_text_message(
+                    "Please provide a valid S3 URI for image to image generation."
+                )
 
             # Parse S3 URI
             parsed_uri = urlparse(image_input_s3uri)
             bucket = parsed_uri.netloc
             key = parsed_uri.path.lstrip("/")
 
-            # Initialize S3 client and download image
-            s3_client = boto3.client("s3")
+            # Initialize S3 client and download image. Use a fresh
+            # boto3.Session per call so disk-refreshed credentials are
+            # picked up without a plugin restart. Same fix as #3535 / #3545.
+            s3_client = boto3.Session().client("s3")
             response = s3_client.get_object(Bucket=bucket, Key=key)
             image_data = response["Body"].read()
 
@@ -67,8 +73,11 @@ class NovaCanvasTool(Tool):
             input_image = base64.b64encode(image_data).decode("utf-8")
 
         try:
-            # Initialize Bedrock client
-            bedrock = boto3.client(service_name="bedrock-runtime", region_name=aws_region)
+            # Initialize Bedrock client. Fresh boto3.Session per call —
+            # see #3535 / #3545.
+            bedrock = boto3.Session().client(
+                service_name="bedrock-runtime", region_name=aws_region
+            )
 
             # Base image generation config
             image_generation_config = {
@@ -90,9 +99,13 @@ class NovaCanvasTool(Tool):
                     body["textToImageParams"]["negativeText"] = negative_prompt
 
             elif task_type == "COLOR_GUIDED_GENERATION":
-                colors = tool_parameters.get("colors", "#ff8080-#ffb280-#ffe680-#ffe680")
+                colors = tool_parameters.get(
+                    "colors", "#ff8080-#ffb280-#ffe680-#ffe680"
+                )
                 if not self._validate_color_string(colors):
-                    yield self.create_text_message("Please provide valid colors in hexadecimal format.")
+                    yield self.create_text_message(
+                        "Please provide valid colors in hexadecimal format."
+                    )
 
                 body["taskType"] = "COLOR_GUIDED_GENERATION"
                 body["colorGuidedGenerationParams"] = {
@@ -101,7 +114,9 @@ class NovaCanvasTool(Tool):
                     "text": prompt,
                 }
                 if negative_prompt:
-                    body["colorGuidedGenerationParams"]["negativeText"] = negative_prompt
+                    body["colorGuidedGenerationParams"]["negativeText"] = (
+                        negative_prompt
+                    )
 
             elif task_type == "IMAGE_VARIATION":
                 similarity_strength = tool_parameters.get("similarity_strength", 0.5)
@@ -118,17 +133,25 @@ class NovaCanvasTool(Tool):
             elif task_type == "INPAINTING":
                 mask_prompt = tool_parameters.get("mask_prompt")
                 if not mask_prompt:
-                    yield self.create_text_message("Please provide a mask prompt for image inpainting.")
+                    yield self.create_text_message(
+                        "Please provide a mask prompt for image inpainting."
+                    )
 
                 body["taskType"] = "INPAINTING"
-                body["inPaintingParams"] = {"image": input_image, "maskPrompt": mask_prompt, "text": prompt}
+                body["inPaintingParams"] = {
+                    "image": input_image,
+                    "maskPrompt": mask_prompt,
+                    "text": prompt,
+                }
                 if negative_prompt:
                     body["inPaintingParams"]["negativeText"] = negative_prompt
 
             elif task_type == "OUTPAINTING":
                 mask_prompt = tool_parameters.get("mask_prompt")
                 if not mask_prompt:
-                    yield self.create_text_message("Please provide a mask prompt for image outpainting.")
+                    yield self.create_text_message(
+                        "Please provide a mask prompt for image outpainting."
+                    )
                 outpainting_mode = tool_parameters.get("outpainting_mode", "DEFAULT")
 
                 body["taskType"] = "OUTPAINTING"
@@ -159,7 +182,9 @@ class NovaCanvasTool(Tool):
             # Process response
             response_body = json.loads(response.get("body").read())
             if response_body.get("error"):
-                raise Exception(f"Error in model response: {response_body.get('error')}")
+                raise Exception(
+                    f"Error in model response: {response_body.get('error')}"
+                )
             base64_image = response_body.get("images")[0]
 
             # Upload to S3 if image_output_s3uri is provided
@@ -173,19 +198,26 @@ class NovaCanvasTool(Tool):
                 output_key = f"{output_base_path}/canvas-output-{timestamp}.png"
 
                 # Initialize S3 client if not already done
-                s3_client = boto3.client("s3", region_name=aws_region)
+                s3_client = boto3.Session().client("s3", region_name=aws_region)
 
                 # Decode base64 image and upload to S3
                 image_data = base64.b64decode(base64_image)
-                s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=image_data, ContentType="image/png")
+                s3_client.put_object(
+                    Bucket=output_bucket,
+                    Key=output_key,
+                    Body=image_data,
+                    ContentType="image/png",
+                )
                 logger.info(f"Image uploaded to s3://{output_bucket}/{output_key}")
             except Exception as e:
                 logger.exception("Failed to upload image to S3")
             # return image
-            yield self.create_text_message(f"Image is available at: s3://{output_bucket}/{output_key}")
+            yield self.create_text_message(
+                f"Image is available at: s3://{output_bucket}/{output_key}"
+            )
             yield self.create_blob_message(
-                    blob=base64.b64decode(base64_image),
-                    meta={"mime_type": "image/png"},
+                blob=base64.b64decode(base64_image),
+                meta={"mime_type": "image/png"},
             )
 
         except Exception as e:
@@ -214,20 +246,27 @@ class NovaCanvasTool(Tool):
             ),
             ToolParameter(
                 name="image_input_s3uri",
-                label=I18nObject(en_us="Input image s3 uri", zh_hans="输入图片的s3 uri"),
+                label=I18nObject(
+                    en_us="Input image s3 uri", zh_hans="输入图片的s3 uri"
+                ),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=False,
                 form=ToolParameter.ToolParameterForm.LLM,
-                human_description=I18nObject(en_us="Image to be modified", zh_hans="想要修改的图片"),
+                human_description=I18nObject(
+                    en_us="Image to be modified", zh_hans="想要修改的图片"
+                ),
             ),
             ToolParameter(
                 name="image_output_s3uri",
-                label=I18nObject(en_us="Output Image S3 URI", zh_hans="输出图片的S3 URI目录"),
+                label=I18nObject(
+                    en_us="Output Image S3 URI", zh_hans="输出图片的S3 URI目录"
+                ),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=True,
                 form=ToolParameter.ToolParameterForm.FORM,
                 human_description=I18nObject(
-                    en_us="S3 URI where the generated image should be uploaded", zh_hans="生成的图像应该上传到的S3 URI"
+                    en_us="S3 URI where the generated image should be uploaded",
+                    zh_hans="生成的图像应该上传到的S3 URI",
                 ),
             ),
             ToolParameter(
@@ -237,7 +276,9 @@ class NovaCanvasTool(Tool):
                 required=False,
                 default=1024,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_us="Width of the generated image", zh_hans="生成图像的宽度"),
+                human_description=I18nObject(
+                    en_us="Width of the generated image", zh_hans="生成图像的宽度"
+                ),
             ),
             ToolParameter(
                 name="height",
@@ -246,7 +287,9 @@ class NovaCanvasTool(Tool):
                 required=False,
                 default=1024,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_us="Height of the generated image", zh_hans="生成图像的高度"),
+                human_description=I18nObject(
+                    en_us="Height of the generated image", zh_hans="生成图像的高度"
+                ),
             ),
             ToolParameter(
                 name="cfg_scale",
@@ -256,7 +299,8 @@ class NovaCanvasTool(Tool):
                 default=8.0,
                 form=ToolParameter.ToolParameterForm.FORM,
                 human_description=I18nObject(
-                    en_us="How strongly the image should conform to the prompt", zh_hans="图像应该多大程度上符合提示词"
+                    en_us="How strongly the image should conform to the prompt",
+                    zh_hans="图像应该多大程度上符合提示词",
                 ),
             ),
             ToolParameter(
@@ -267,7 +311,8 @@ class NovaCanvasTool(Tool):
                 default="",
                 form=ToolParameter.ToolParameterForm.LLM,
                 human_description=I18nObject(
-                    en_us="Things you don't want in the generated image", zh_hans="您不想在生成的图像中出现的内容"
+                    en_us="Things you don't want in the generated image",
+                    zh_hans="您不想在生成的图像中出现的内容",
                 ),
             ),
             ToolParameter(
@@ -277,7 +322,10 @@ class NovaCanvasTool(Tool):
                 required=False,
                 default=0,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_us="Random seed for image generation", zh_hans="图像生成的随机种子"),
+                human_description=I18nObject(
+                    en_us="Random seed for image generation",
+                    zh_hans="图像生成的随机种子",
+                ),
             ),
             ToolParameter(
                 name="aws_region",
@@ -286,7 +334,10 @@ class NovaCanvasTool(Tool):
                 required=False,
                 default="us-east-1",
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_us="AWS region for Bedrock service", zh_hans="Bedrock 服务的 AWS 区域"),
+                human_description=I18nObject(
+                    en_us="AWS region for Bedrock service",
+                    zh_hans="Bedrock 服务的 AWS 区域",
+                ),
             ),
             ToolParameter(
                 name="task_type",
@@ -295,7 +346,9 @@ class NovaCanvasTool(Tool):
                 required=False,
                 default="TEXT_IMAGE",
                 form=ToolParameter.ToolParameterForm.LLM,
-                human_description=I18nObject(en_us="Type of image generation task", zh_hans="图像生成任务的类型"),
+                human_description=I18nObject(
+                    en_us="Type of image generation task", zh_hans="图像生成任务的类型"
+                ),
             ),
             ToolParameter(
                 name="quality",
@@ -305,7 +358,8 @@ class NovaCanvasTool(Tool):
                 default="standard",
                 form=ToolParameter.ToolParameterForm.FORM,
                 human_description=I18nObject(
-                    en_us="Quality of the generated image (standard or premium)", zh_hans="生成图像的质量（标准或高级）"
+                    en_us="Quality of the generated image (standard or premium)",
+                    zh_hans="生成图像的质量（标准或高级）",
                 ),
             ),
             ToolParameter(

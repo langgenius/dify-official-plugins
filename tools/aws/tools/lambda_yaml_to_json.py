@@ -16,14 +16,14 @@ logger.addHandler(console_handler)
 
 
 class LambdaYamlToJsonTool(Tool):
-    lambda_client: Any = None
-
-    def _invoke_lambda(self, lambda_name: str, yaml_content: str) -> str:
+    def _invoke_lambda(self, lambda_name: str, yaml_content: str, lambda_client) -> str:
         msg = {"body": yaml_content}
         logger.info(json.dumps(msg))
 
-        invoke_response = self.lambda_client.invoke(
-            FunctionName=lambda_name, InvocationType="RequestResponse", Payload=json.dumps(msg)
+        invoke_response = lambda_client.invoke(
+            FunctionName=lambda_name,
+            InvocationType="RequestResponse",
+            Payload=json.dumps(msg),
         )
         response_body = invoke_response["Payload"]
 
@@ -43,13 +43,18 @@ class LambdaYamlToJsonTool(Tool):
         """
         invoke tools
         """
+        lambda_client = None
         try:
-            if not self.lambda_client:
-                aws_region = tool_parameters.get("aws_region")  # todo: move aws_region out, and update client region
-                if aws_region:
-                    self.lambda_client = boto3.client("lambda", region_name=aws_region)
-                else:
-                    self.lambda_client = boto3.client("lambda")
+            # Build a fresh boto3 client per invocation so disk-refreshed
+            # credentials (saml2aws login, aws sso login, IMDS) are picked
+            # up without a plugin restart. Same fix as #3535 / #3545.
+            aws_region = tool_parameters.get(
+                "aws_region"
+            )  # todo: move aws_region out, and update client region
+            if aws_region:
+                lambda_client = boto3.Session().client("lambda", region_name=aws_region)
+            else:
+                lambda_client = boto3.Session().client("lambda")
 
             yaml_content = tool_parameters.get("yaml_content", "")
             if not yaml_content:
@@ -60,7 +65,7 @@ class LambdaYamlToJsonTool(Tool):
                 return self.create_text_message("Please input lambda_name")
             logger.debug(f"{json.dumps(tool_parameters, indent=2, ensure_ascii=False)}")
 
-            result = self._invoke_lambda(lambda_name, yaml_content)
+            result = self._invoke_lambda(lambda_name, yaml_content, lambda_client)
             logger.debug(result)
 
             return self.create_text_message(result)
