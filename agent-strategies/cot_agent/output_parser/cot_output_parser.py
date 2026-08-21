@@ -12,6 +12,125 @@ THINK_START = "<think>"
 THINK_END = "</think>"
 
 
+# Keys that may carry the tool name, checked in priority order.
+ACTION_NAME_KEYS = ("action", "tool", "tool_name", "name", "function")
+# Keys that may carry the tool input, checked in priority order.
+ACTION_INPUT_KEYS = ("action_input", "tool_input", "input", "arguments", "parameters", "args")
+# Keys that are never the tool name or input (metadata the model may include).
+IGNORED_KEYS = frozenset({"thought", "reasoning", "id", "type"})
+# Single-key wrappers some models use around the whole payload, e.g. {"tool_call": {...}}.
+WRAPPER_KEYS = frozenset({"tool_call", "tool_calling", "tool_calls", "function"})
+
+
+def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
+    """Extract a canonical Action from a flat dict, or None when it is not one."""
+    lowered = {key.lower(): value for key, value in payload.items()}
+    action_name = None
+    for key in ACTION_NAME_KEYS:
+        # non-string values (e.g. an OpenAI-style nested "function" dict) are
+        # skipped so a following known key can still provide the name
+        if isinstance(lowered.get(key), str):
+            action_name = lowered[key]
+            break
+    if action_name is None and any("input" in key for key in lowered):
+        # Legacy fallback: when no known name key is present, a remaining
+        # string-valued key may carry the tool name - but only if the payload
+        # also carries an input-like key, so arbitrary JSON blobs inside a
+        # thought are not misread as tool calls.
+        for key, value in payload.items():
+            lowered_key = key.lower()
+            if "input" in lowered_key or lowered_key in IGNORED_KEYS:
+                continue
+            if isinstance(value, str) and value.strip():
+                action_name = value
+                break
+    if not isinstance(action_name, str) or not action_name.strip():
+        return None
+
+    action_input = None
+    for key in ACTION_INPUT_KEYS:
+        if key in lowered:
+            action_input = lowered[key]
+            break
+    if action_input is None:
+        for key, value in payload.items():
+            if "input" in key.lower():
+                action_input = value
+                break
+    if action_input is None:
+        # Tools without parameters may legitimately omit the input.
+        action_input = {}
+    return AgentScratchpadUnit.Action(action_name=action_name.strip(), action_input=action_input)
+
+
+def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
+    """Parse a JSON blob into an Action, or return None when it is not one.
+
+    Returns None (instead of the raw string, as the previous in-place
+    heuristic did) so the caller can distinguish a parse failure from a
+    valid action and surface it instead of silently ending the round.
+    """
+    try:
+        payload = json.loads(json_str, strict=False)
+    except (TypeError, ValueError):
+        return None
+    # cohere always returns a list
+    if isinstance(payload, list):
+        if len(payload) != 1:
+            return None
+        payload = payload[0]
+    if not isinstance(payload, dict):
+        return None
+    # Unwrap recognized single-key wrappers, e.g. {"tool_call": {...}}.
+    if len(payload) == 1:
+        key, value = next(iter(payload.items()))
+        if key.lower() in WRAPPER_KEYS and isinstance(value, (dict, list)):
+            if isinstance(value, list):
+                if len(value) != 1:
+                    return None
+                value = value[0]
+            if not isinstance(value, dict):
+                return None
+            payload = value
+    # Unwrap OpenAI-style function envelopes, e.g.
+    # {"function": {"name": "tool", "arguments": {...}}} (optionally alongside
+    # a "type": "function" key). Explicit canonical name keys (action, tool,
+    # tool_name, name) take precedence over the envelope, and a "function"
+    # value that is not a dict with a string "name" leaves the payload
+    # untouched.
+    lowered = {key.lower(): value for key, value in payload.items()}
+    has_explicit_name = any(isinstance(lowered.get(key), str) for key in ACTION_NAME_KEYS)
+    if not has_explicit_name:
+        function = lowered.get("function")
+        if isinstance(function, dict) and isinstance(function.get("name"), str):
+            arguments = function.get("arguments")
+            if arguments is None:
+                arguments = function.get("input")
+            if arguments is None:
+                arguments = {}
+            payload = {"action": function["name"], "action_input": arguments}
+    return _extract_action(payload)
+
+
+# Maximum number of trailing characters that could still be the start of a
+# (split) think tag at a chunk boundary: longest tag length minus one.
+_MAX_PARTIAL_TAG = max(len(THINK_START), len(THINK_END)) - 1
+
+
+def _partial_tag_suffix(text: str) -> int:
+    """Length of the longest suffix of text that is a prefix of a think tag.
+
+    Used to hold back a chunk tail that may complete into a think tag on the
+    next chunk, so tags split across stream chunks are still stripped.
+    """
+    limit = min(_MAX_PARTIAL_TAG, len(text))
+    for length in range(limit, 0, -1):
+        suffix = text[-length:]
+        if THINK_START.startswith(suffix) or THINK_END.startswith(suffix):
+            return length
+    return 0
+
+
 class ReactState(Enum):
     THINKING = ("Thought:", "THINKING")
     ANSWER = ("FinalAnswer:", "ANSWER")
@@ -23,9 +142,13 @@ class ReactState(Enum):
 
 
 class ReactChunk:
-    def __init__(self, state: ReactState, content: str):
+    def __init__(self, state: ReactState, content: str, parse_failed: bool = False):
         self.state = state
         self.content = content
+        # True when a JSON blob was captured but could not be parsed as an
+        # Action, so the strategy can surface the failure instead of ending
+        # the round silently (see issue #3699).
+        self.parse_failed = parse_failed
 
 
 class CotAgentOutputParser:
@@ -33,32 +156,6 @@ class CotAgentOutputParser:
     def handle_react_stream_output(
         cls, llm_response: Generator[LLMResultChunk, None, None], usage_dict: dict
     ) -> Generator[Union[ReactChunk, AgentScratchpadUnit.Action], None, None]:
-        def parse_action(json_str):
-            try:
-                action = json.loads(json_str, strict=False)
-                action_name = None
-                action_input = None
-
-                # cohere always returns a list
-                if isinstance(action, list) and len(action) == 1:
-                    action = action[0]
-
-                for key, value in action.items():
-                    if "input" in key.lower():
-                        action_input = value
-                    else:
-                        action_name = value
-
-                if action_name is not None and action_input is not None:
-                    return AgentScratchpadUnit.Action(
-                        action_name=action_name,
-                        action_input=action_input,
-                    )
-                else:
-                    return json_str or ""
-            except Exception:
-                return json_str or ""
-
         json_cache = ""
         in_json = False
         got_json = False
@@ -70,6 +167,21 @@ class CotAgentOutputParser:
 
         cur_state = ReactState.THINKING
         last_character = ""
+
+        def emit_json_blob(blob: str):
+            """Yield a completed JSON blob as an Action or as (flagged) text."""
+            action = parse_action(blob)
+            if action is not None and cur_state is ReactState.THINKING:
+                yield action
+            elif action is None and cur_state is ReactState.THINKING:
+                # JSON that is not a valid action: keep it as thought text
+                # but flag the parse failure so the strategy can surface it
+                # instead of ending the round silently.
+                yield ReactChunk(cur_state, blob, parse_failed=True)
+            else:
+                # In the answer state a JSON blob is part of the final answer
+                # and can never become a tool call.
+                yield ReactChunk(cur_state, blob)
 
         class PrefixMatcher:
             __slots__ = ("prefix", "state_on_full_match", "cache", "idx")
@@ -139,41 +251,46 @@ class CotAgentOutputParser:
                 continue
             if not response_content:
                 continue
-            # When include_thoughts=True, Gemini injects <think>...</think>; strip across chunks so
-            # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply.
-            # Nested <think> tags are supported via a depth counter.
-            if THINK_START in response_content or THINK_END in response_content or _in_think:
-                buf = _think_buf + response_content
-                _think_buf = ""
-                out = []
-                i = 0
-                while i < len(buf):
-                    if _in_think:
-                        end_j = buf.find(THINK_END, i)
-                        start_j = buf.find(THINK_START, i)
-                        if end_j == -1 and start_j == -1:
-                            _think_buf = buf[i:]
-                            break
-                        if start_j != -1 and (end_j == -1 or start_j < end_j):
-                            _think_depth += 1
-                            i = start_j + len(THINK_START)
-                        else:
-                            j = end_j
-                            _think_depth -= 1
-                            if _think_depth <= 0:
-                                _in_think = False
-                                _think_depth = 0
-                            i = j + len(THINK_END)
+            # When include_thoughts=True, Gemini injects think tags around
+            # model reasoning; strip them across chunks so the ReAct parser
+            # only sees Thought:/Action:/FinalAnswer: from the model reply.
+            # Nested tags are supported via a depth counter, and a chunk tail
+            # that could still be the start of a tag is held back in
+            # _think_buf until the next chunk, so tags split across chunks
+            # are stripped as well.
+            buf = _think_buf + response_content
+            _think_buf = ""
+            out = []
+            i = 0
+            while i < len(buf):
+                if _in_think:
+                    end_j = buf.find(THINK_END, i)
+                    start_j = buf.find(THINK_START, i)
+                    if end_j == -1 and start_j == -1:
+                        _think_buf = buf[i:]
+                        break
+                    if start_j != -1 and (end_j == -1 or start_j < end_j):
+                        _think_depth += 1
+                        i = start_j + len(THINK_START)
                     else:
-                        j = buf.find(THINK_START, i)
-                        if j == -1:
-                            out.append(buf[i:])
-                            break
-                        out.append(buf[i:j])
-                        _in_think = True
-                        _think_depth = 1
-                        i = j + len(THINK_START)
-                response_content = "".join(out)
+                        j = end_j
+                        _think_depth -= 1
+                        if _think_depth <= 0:
+                            _in_think = False
+                            _think_depth = 0
+                        i = j + len(THINK_END)
+                else:
+                    j = buf.find(THINK_START, i)
+                    if j == -1:
+                        hold = _partial_tag_suffix(buf[i:])
+                        out.append(buf[i : len(buf) - hold])
+                        _think_buf = buf[len(buf) - hold :]
+                        break
+                    out.append(buf[i:j])
+                    _in_think = True
+                    _think_depth = 1
+                    i = j + len(THINK_START)
+            response_content = "".join(out)
             if not response_content:
                 continue
 
@@ -183,6 +300,18 @@ class CotAgentOutputParser:
                 steps = 1
                 delta = response_content[index: index + steps]
                 yield_delta = False
+
+                # Flush a completed JSON blob before processing the next
+                # character, so that adjacent roots like {...}{...} cannot
+                # overwrite an unprocessed blob in json_cache.
+                if got_json:
+                    got_json = False
+                    yield from emit_json_blob(json_cache)
+                    json_cache = ""
+                    in_json = False
+                    json_in_string = False
+                    json_escape = False
+                    json_stack = []
 
                 if not in_json:
                     yield_raw_delta, emitted_chunk, delta_consumed, matched_action_prefix = action_matcher.step(delta)
@@ -203,13 +332,18 @@ class CotAgentOutputParser:
                         index += steps
                         continue
 
-                    yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
-                    if emitted_chunk is not None:
-                        yield emitted_chunk
-                    yield_delta = yield_delta or yield_raw_delta
-                    if delta_consumed:
-                        index += steps
-                        continue
+                    if cur_state is not ReactState.ANSWER:
+                        yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
+                        if emitted_chunk is not None:
+                            yield emitted_chunk
+                        yield_delta = yield_delta or yield_raw_delta
+                        if delta_consumed:
+                            index += steps
+                            continue
+                    # In the answer state a later "Thought:" must not switch
+                    # the parser back to thinking mode: the final answer is
+                    # terminal, so JSON emitted after "FinalAnswer:" can never
+                    # become a tool call.
 
                     if yield_delta:
                         index += steps
@@ -257,20 +391,6 @@ class CotAgentOutputParser:
                                 index += steps
                                 continue
 
-                if got_json:
-                    got_json = False
-                    last_character = delta
-                    parsed_result = parse_action(json_cache)
-                    if isinstance(parsed_result, AgentScratchpadUnit.Action):
-                        yield parsed_result
-                    else:
-                        yield ReactChunk(cur_state, json_cache)
-                    json_cache = ""
-                    in_json = False
-                    json_in_string = False
-                    json_escape = False
-                    json_stack = []
-
                 if not in_json:
                     last_character = delta
                     yield ReactChunk(cur_state, delta)
@@ -278,8 +398,11 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            parsed_result = parse_action(json_cache)
-            if isinstance(parsed_result, AgentScratchpadUnit.Action):
-                yield parsed_result
-            else:
-                yield ReactChunk(cur_state, json_cache)
+            yield from emit_json_blob(json_cache)
+
+        # Flush the chunk tail held back as a possible partial think tag.
+        # (If the stream ended inside an unclosed think block, the buffered
+        # content is still dropped, as before.)
+        if _think_buf and not _in_think:
+            yield ReactChunk(cur_state, _think_buf)
+            _think_buf = ""
