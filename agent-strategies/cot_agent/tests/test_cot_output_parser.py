@@ -120,11 +120,66 @@ class TestParseAction(unittest.TestCase):
         self.assertEqual(action.action_name, "get_time")
         self.assertEqual(action.action_input, {})
 
-    def test_non_string_name_key_value_is_skipped(self):
-        # an OpenAI-style nested "function" dict must not shadow a real name key
-        action = parse_action('{"function": {"name": "x"}, "tool_name": "t", "input": {}}')
+    def test_function_dict_without_name_is_not_unwrapped(self):
+        # a "function" dict without a string "name" is not an OpenAI-style
+        # envelope, so it must not shadow a real name key
+        action = parse_action('{"function": {"other": 1}, "tool_name": "t", "input": {}}')
         self.assertIsNotNone(action)
         self.assertEqual(action.action_name, "t")
+        self.assertIsNone(parse_action('{"function": {"other": 1}, "input": {}}'))
+
+    def test_openai_style_function_envelope(self):
+        # {"function": {"name": ..., "arguments": ...}} is unwrapped (issue #3705)
+        action = parse_action('{"function": {"name": "t", "arguments": {"q": 1}}}')
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_name, "t")
+        self.assertEqual(action.action_input, {"q": 1})
+
+    def test_openai_style_function_envelope_wrapped(self):
+        action = parse_action(
+            '{"tool_call": {"function": {"name": "webSearch", "arguments": {"query": "x"}}}}'
+        )
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_name, "webSearch")
+        self.assertEqual(action.action_input, {"query": "x"})
+
+    def test_openai_style_function_envelope_with_type_key(self):
+        # arguments may arrive as a JSON string (OpenAI format) and is kept as-is
+        action = parse_action('{"type": "function", "function": {"name": "t", "arguments": "{}"}}')
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_input, "{}")
+
+    def test_openai_style_function_envelope_without_arguments(self):
+        action = parse_action('{"function": {"name": "t"}}')
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_input, {})
+
+    def test_openai_style_function_envelope_null_arguments(self):
+        # null arguments (and null input) still yield an empty dict input
+        action = parse_action('{"function": {"name": "t", "arguments": null, "input": null}}')
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_name, "t")
+        self.assertEqual(action.action_input, {})
+
+    def test_openai_style_function_envelope_empty_name(self):
+        # an empty envelope name is not a usable tool name
+        self.assertIsNone(parse_action('{"function": {"name": "", "arguments": {}}}'))
+
+    def test_explicit_name_key_takes_precedence_over_envelope(self):
+        # an explicit canonical name key wins over a nested function envelope
+        action = parse_action(
+            '{"action": "explicit", "action_input": {"a": 1}, '
+            '"function": {"name": "nested", "arguments": {}}}'
+        )
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_name, "explicit")
+        self.assertEqual(action.action_input, {"a": 1})
+
+    def test_wrapper_keys_are_case_insensitive(self):
+        action = parse_action('{"Tool_call": {"action": "webSearch", "action_input": {"q": 1}}}')
+        self.assertIsNotNone(action)
+        self.assertEqual(action.action_name, "webSearch")
+        self.assertEqual(action.action_input, {"q": 1})
 
 
 class TestReActStreamParsing(unittest.TestCase):
@@ -192,6 +247,29 @@ class TestReActStreamParsing(unittest.TestCase):
         failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
         self.assertEqual(len(failed), 1)
 
+    def test_adjacent_json_roots_in_same_chunk(self):
+        # issue #3705: the first blob used to be dropped when a second
+        # JSON root started immediately after the first closed
+        results = _parse('{"action": "first", "action_input": {}}{"action": "second", "action_input": {}}')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["first", "second"])
+
+    def test_adjacent_json_roots_across_chunks(self):
+        results = _parse(
+            '{"action": "first", "action_input": {}}',
+            '{"action": "second", "action_input": {}}',
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["first", "second"])
+
+    def test_adjacent_non_action_blobs_are_both_flagged(self):
+        results = _parse('{"foo": 1}{"bar": 2}')
+        self.assertEqual(
+            [r for r in results if isinstance(r, AgentScratchpadUnit.Action)], []
+        )
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(len(failed), 2)
+
     def test_think_tags_are_stripped(self):
         # The tags are built via chr() to keep this test file free of raw tag
         # literals (see the constants in output_parser.cot_output_parser).
@@ -206,6 +284,40 @@ class TestReActStreamParsing(unittest.TestCase):
         text = "".join(r.content for r in results if isinstance(r, ReactChunk))
         self.assertNotIn(open_tag, text)
         self.assertNotIn(close_tag, text)
+
+    def test_think_tags_split_across_chunks(self):
+        # issue #3705: tags split across stream chunks used to leak as text
+        open_tag = chr(60) + "think" + chr(62)
+        close_tag = chr(60) + "/think" + chr(62)
+        results = _parse(
+            "pre" + open_tag[:4],
+            open_tag[4:] + "inner" + close_tag[:5],
+            close_tag[5:] + "post",
+        )
+        text = "".join(r.content for r in results if isinstance(r, ReactChunk))
+        self.assertEqual(text, "prepost")
+
+    def test_closing_think_tag_split_across_chunks(self):
+        open_tag = chr(60) + "think" + chr(62)
+        close_tag = chr(60) + "/think" + chr(62)
+        results = _parse("a" + open_tag + "x" + close_tag[:4], close_tag[4:] + "b")
+        text = "".join(r.content for r in results if isinstance(r, ReactChunk))
+        self.assertEqual(text, "ab")
+
+    def test_trailing_partial_tag_flushed_at_stream_end(self):
+        # a chunk tail that looks like the start of a tag but never completes
+        # must be flushed as content at stream end, not lost
+        close_tag = chr(60) + "/think" + chr(62)
+        results = _parse("hello" + close_tag[:6])
+        text = "".join(r.content for r in results if isinstance(r, ReactChunk))
+        self.assertEqual(text, "hello" + close_tag[:6])
+
+    def test_unclosed_think_at_stream_end_drops_content(self):
+        # pre-existing policy: an unclosed think block is discarded
+        open_tag = chr(60) + "think" + chr(62)
+        results = _parse("keep" + open_tag[:1], open_tag[1:] + "secret")
+        text = "".join(r.content for r in results if isinstance(r, ReactChunk))
+        self.assertNotIn("secret", text)
 
     def test_parse_failed_defaults_to_false(self):
         self.assertFalse(ReactChunk(ReactState.THINKING, "x").parse_failed)
