@@ -352,6 +352,12 @@ class _FakeResponse:
     def close(self) -> None:
         pass
 
+    def __enter__(self) -> "_FakeResponse":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
 
 def test_image_fetch_uses_timeout_and_no_redirects(monkeypatch) -> None:
     captured: dict = {}
@@ -406,12 +412,14 @@ def test_image_fetch_rejects_redirects(monkeypatch) -> None:
 
 
 def test_image_fetch_rejects_redirect_even_with_valid_body(monkeypatch) -> None:
-    # A 3xx with an image-like body must still be rejected, not consumed.
-    monkeypatch.setattr(
-        llm_module.requests,
-        "get",
-        lambda url, **kw: _FakeResponse(_png_bytes(), status_code=302),
-    )
+    # A 3xx with an image-like body must still be rejected before any body read.
+    response = _FakeResponse(_png_bytes(), status_code=302)
+
+    def no_iter(*args, **kwargs):
+        raise AssertionError("iter_content must not be called for a 3xx response")
+
+    response.iter_content = no_iter
+    monkeypatch.setattr(llm_module.requests, "get", lambda url, **kw: response)
 
     with pytest.raises(ValueError, match="Redirect responses are not allowed"):
         AnthropicLargeLanguageModel()._process_image_data("http://x/img.png")
@@ -433,6 +441,31 @@ def test_image_fetch_rejects_oversized_content_length_header(monkeypatch) -> Non
 
     with pytest.raises(ValueError, match="exceeds the 10 MB limit"):
         AnthropicLargeLanguageModel()._process_image_data("http://x/img.png")
+
+
+def test_image_fetch_rejects_chunked_body_over_cap(monkeypatch) -> None:
+    # No Content-Length (chunked transfer): the cap must trip on the bounded
+    # iter_content accumulation, and iteration must stop right after the cap.
+    too_big = b"x" * (AnthropicLargeLanguageModel.MAX_IMAGE_FETCH_BYTES + 1)
+    response = _FakeResponse(too_big)
+    response.headers = {}
+    read_count = {"n": 0}
+    original_iter = response.iter_content
+
+    def counting_iter(chunk_size: int = 65536):
+        for chunk in original_iter(chunk_size):
+            read_count["n"] += 1
+            yield chunk
+
+    response.iter_content = counting_iter
+    monkeypatch.setattr(llm_module.requests, "get", lambda url, **kw: response)
+
+    with pytest.raises(ValueError, match="exceeds the 10 MB limit"):
+        AnthropicLargeLanguageModel()._process_image_data("http://x/img.png")
+
+    # 10 MB / 64 KB = 160 full chunks; the 161st trips the cap. It must not
+    # drain the rest of the body.
+    assert read_count["n"] <= 162
 
 
 def test_image_fetch_rejects_non_image_content(monkeypatch) -> None:

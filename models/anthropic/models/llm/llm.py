@@ -1456,37 +1456,39 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # and no redirect following (the fetched host is exactly the one given).
             # stream=True + iter_content keeps memory bounded: a hostile server
             # cannot push more than ~MAX_IMAGE_FETCH_BYTES into the process.
-            response = requests.get(
+            # The context manager guarantees the connection is released on every
+            # exit path (early rejection, mid-stream cap, success).
+            with requests.get(
                 url,
                 timeout=(5.0, 15.0),
                 allow_redirects=False,
                 stream=True,
-            )
-            response.raise_for_status()
-            # raise_for_status only raises for >= 400: reject 3xx explicitly.
-            if 300 <= response.status_code < 400:
-                raise ValueError("Redirect responses are not allowed")
+            ) as response:
+                response.raise_for_status()
+                # raise_for_status only raises for >= 400: reject 3xx explicitly.
+                if 300 <= response.status_code < 400:
+                    raise ValueError("Redirect responses are not allowed")
 
-            length = int(response.headers.get("Content-Length") or 0)
-            if length > self.MAX_IMAGE_FETCH_BYTES:
-                raise ValueError(
-                    f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
-                )
-
-            chunks: list[bytes] = []
-            received = 0
-            for chunk in response.iter_content(chunk_size=64 * 1024):
-                received += len(chunk)
-                if received > self.MAX_IMAGE_FETCH_BYTES:
+                length = int(response.headers.get("Content-Length") or 0)
+                if length > self.MAX_IMAGE_FETCH_BYTES:
                     raise ValueError(
                         f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
                     )
-                chunks.append(chunk)
-            content = b"".join(chunks)
 
-            with Image.open(io.BytesIO(content)) as img:
-                img_format = img.format or "jpeg"  # Default to jpeg if format is None
-                mime_type = f"image/{img_format.lower()}"
+                chunks: list[bytes] = []
+                received = 0
+                for chunk in response.iter_content(chunk_size=64 * 1024):
+                    received += len(chunk)
+                    if received > self.MAX_IMAGE_FETCH_BYTES:
+                        raise ValueError(
+                            f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
+                        )
+                    chunks.append(chunk)
+                content = b"".join(chunks)
+
+                with Image.open(io.BytesIO(content)) as img:
+                    img_format = img.format or "jpeg"  # Default to jpeg if format is None
+                    mime_type = f"image/{img_format.lower()}"
 
             base64_data = base64.b64encode(content).decode("utf-8")
             return mime_type, base64_data
