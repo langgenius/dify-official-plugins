@@ -2,6 +2,7 @@ import base64
 import binascii
 import logging
 import re
+import threading
 import time
 import numpy as np
 from typing import Optional, Union
@@ -25,6 +26,24 @@ from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from ..common_gemini import _CommonGemini
 
 logger = logging.getLogger(__name__)
+
+_genai_emb_client_cache: dict[str, genai.Client] = {}
+_genai_emb_client_cache_lock = threading.Lock()
+
+
+def _get_genai_client(api_key: str) -> genai.Client:
+    """Return a cached genai.Client for the given API key, creating one if needed.
+
+    Distinct cache/name from the LLM module's client cache to avoid collisions
+    if both modules are loaded in the same process.
+    """
+    with _genai_emb_client_cache_lock:
+        client = _genai_emb_client_cache.get(api_key)
+        if client is None:
+            client = genai.Client(api_key=api_key)
+            _genai_emb_client_cache[api_key] = client
+        return client
+
 
 # Embedding and number of tokens used
 EmbeddingTokenPair = tuple[list[float], Optional[int]]
@@ -74,7 +93,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :param user: unique user id
         :return: embeddings result
         """
-        client = genai.Client(api_key=credentials["google_api_key"])
+        client = _get_genai_client(credentials["google_api_key"])
 
         # get model properties
         context_size = self._get_context_size(model, credentials)
@@ -150,14 +169,22 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         Split text to fit model specs based on the model context size
 
-        :param client: model client
-        :param model: model name
+        Token counting is local (GPT-2 estimate), so ``client`` and ``model``
+        are no longer used here; they are kept for signature compatibility.
+
+        :param client: model client (unused, kept for signature compatibility)
+        :param model: model name (unused, kept for signature compatibility)
         :param text: text to truncate
         :return: list of tuples (text, estimated chunk size)
         """
         splitted_text = []
         for text in texts:
-            num_tokens = self._count_tokens(client, model, text)
+            # Local GPT-2 estimate instead of an API round-trip (_count_tokens).
+            # Heuristic: GPT-2 typically overestimates vs Gemini's tokenizer so
+            # chunks tend conservatively smaller; NOT a formal upper bound for
+            # CJK/emoji/code-heavy text (an accepted trade-off for the ~150-400ms per-level saving),
+            # it just avoids a ~150-400ms HTTP call per recursion level.
+            num_tokens = self._get_num_tokens_by_gpt2(text)
             if num_tokens >= context_size and len(text) > 1:
                 # `context_size` is a token budget, not a character index. Estimate a
                 # character cutoff from the token-to-character ratio so the head is
@@ -403,7 +430,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :return: embeddings result
         """
         self.started_at = time.perf_counter()
-        client = genai.Client(api_key=credentials["google_api_key"])
+        client = _get_genai_client(credentials["google_api_key"])
 
         # Convert MultiModalContent to Google Genai format, tracking content types
         contents = []  # converted content for API call
