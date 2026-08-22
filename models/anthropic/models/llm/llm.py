@@ -609,7 +609,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Sort by priority (lower number = higher priority), then by length descending
             blocks.sort(key=lambda x: (x[0], x[1]))
 
-            logging.info(f"Blocks: {blocks}")
+            logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
             for idx, (_, _, block_dict) in enumerate(blocks):
@@ -646,18 +646,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if model == "claude-3-5-sonnet-20240620":
             if model_parameters.get("max_tokens", 0) > 4096:
                 extra_headers["anthropic-beta"] = "max-tokens-3-5-sonnet-2024-07-15"
-        if any(
-            (
-                isinstance(content, DocumentPromptMessageContent)
-                for prompt_message in prompt_messages
-                if isinstance(prompt_message.content, list)
-                for content in prompt_message.content
-            )
-        ):
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
-            else:
-                extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+        # Note: PDF (document) support is GA and no longer requires the
+        # `pdfs-2024-09-25` beta header (https://platform.claude.com/docs/en/build-with-claude/pdf-support).
 
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -669,7 +659,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             ]
             
             # Log the transformed tools to verify cache_control is added
-            logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+            logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
             
             request_payload["tools"] = extra_model_kwargs["tools"]
 
@@ -677,7 +667,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -691,7 +681,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -706,7 +696,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        logging.info(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+        logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -1059,7 +1049,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_creation_1h_input_tokens = 0
         
         for chunk in response:
-            logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+            logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
@@ -1113,7 +1103,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    if current_block_type == "thinking" and current_block_index is not None:
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1136,16 +1126,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                     elif hasattr(chunk.delta, "text"):
                         current_block_type = "text"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                        current_block_type = "redacted_thinking"
-                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
-                        yield LLMResultChunk(
-                            model=return_model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=chunk.index, message=assistant_prompt_message
-                            ),
-                        )
                 
                 if hasattr(chunk.delta, "thinking"):
                     thinking_text = chunk.delta.thinking or ""
@@ -1166,18 +1146,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 elif hasattr(chunk.delta, "signature"):
                     if current_thinking_blocks:
                         current_thinking_blocks[-1]["signature"] = chunk.delta.signature
-                elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                    redacted_msg = "[Some of Claude's thinking was automatically encrypted for safety reasons]"
-                    full_assistant_content += redacted_msg
-                    assistant_prompt_message = AssistantPromptMessage(content=redacted_msg)
-                    index = chunk.index
-                    yield LLMResultChunk(
-                        model=return_model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=chunk.index, message=assistant_prompt_message
-                        ),
-                    )
                 elif hasattr(chunk.delta, "text"):
                     chunk_text = chunk.delta.text or ""
                     full_assistant_content += chunk_text
@@ -1201,7 +1169,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
                 )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                if current_block_type == "thinking" and current_block_index is not None:
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
