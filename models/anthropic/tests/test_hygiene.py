@@ -79,12 +79,15 @@ def _capture_payload(
 # ---------------------------------------------------------------------------
 
 
+_PDF_B64 = base64.b64encode(b"%PDF-1.4 fake").decode()
+
+
 def _pdf_message() -> UserPromptMessage:
-    pdf_b64 = base64.b64encode(b"%PDF-1.4 fake").decode()
+    # base64_data is the SDK field (data is a computed data-URI property).
     return UserPromptMessage(
         content=[
             DocumentPromptMessageContent(
-                data=pdf_b64, mime_type="application/pdf", format="pdf"
+                base64_data=_PDF_B64, mime_type="application/pdf", format="pdf"
             ),
             TextPromptMessageContent(data="Summarize"),
         ]
@@ -104,6 +107,7 @@ def test_pdf_document_does_not_send_beta_header(monkeypatch) -> None:
     ]
     assert len(document_blocks) == 1
     assert document_blocks[0]["source"]["media_type"] == "application/pdf"
+    assert document_blocks[0]["source"]["data"] == _PDF_B64
 
     # The obsolete `pdfs-2024-09-25` beta header must not be sent.
     headers = payload.get("extra_headers") or {}
