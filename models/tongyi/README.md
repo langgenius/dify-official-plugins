@@ -12,4 +12,3 @@ Tongyi speech-to-text patches DashScope's async-to-sync websocket bridge when it
 
 If you need stronger isolation for STT recognition, set `TONGYI_STT_SUBPROCESS=1` in the plugin daemon environment.
 `TONGYI_STT_RECOGNITION_TIMEOUT` can be used to tune the subprocess timeout.
-`TONGYI_STT_TRANSCRIPTION_TIMEOUT` caps the Fun-ASR asynchronous task wait and defaults to 10,800 seconds.

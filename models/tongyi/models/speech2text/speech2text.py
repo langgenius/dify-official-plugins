@@ -55,8 +55,6 @@ _SUBPROCESS_ENV = "TONGYI_STT_SUBPROCESS"
 _SUBPROCESS_TRUE_VALUES = {"1", "true", "yes", "on"}
 _RECOGNITION_TIMEOUT_ENV = "TONGYI_STT_RECOGNITION_TIMEOUT"
 _DEFAULT_RECOGNITION_TIMEOUT = 120
-_TRANSCRIPTION_TIMEOUT_ENV = "TONGYI_STT_TRANSCRIPTION_TIMEOUT"
-_DEFAULT_TRANSCRIPTION_TIMEOUT = 10_800
 _DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
 _FUN_ASR_MODEL = "fun-asr"
 _FUN_ASR_FLASH_MODEL = "fun-asr-flash-2026-06-15"
@@ -170,23 +168,15 @@ def _patch_dashscope_async_bridge_for_gevent() -> None:
     _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
 
 
-def _get_timeout(env_name: str, default: int) -> int:
-    value = os.getenv(env_name)
+def _get_recognition_timeout() -> int:
+    value = os.getenv(_RECOGNITION_TIMEOUT_ENV)
     if not value:
-        return default
+        return _DEFAULT_RECOGNITION_TIMEOUT
     try:
         seconds = int(value)
     except (TypeError, ValueError):
-        return default
-    return seconds if seconds > 0 else default
-
-
-def _get_recognition_timeout() -> int:
-    return _get_timeout(_RECOGNITION_TIMEOUT_ENV, _DEFAULT_RECOGNITION_TIMEOUT)
-
-
-def _get_transcription_timeout() -> int:
-    return _get_timeout(_TRANSCRIPTION_TIMEOUT_ENV, _DEFAULT_TRANSCRIPTION_TIMEOUT)
+        return _DEFAULT_RECOGNITION_TIMEOUT
+    return seconds if seconds > 0 else _DEFAULT_RECOGNITION_TIMEOUT
 
 
 def _parse_json_response(response) -> dict:
@@ -210,15 +200,11 @@ def _parse_json_response(response) -> dict:
 
 
 def _raise_for_dashscope_error(response) -> None:
-    status_code = getattr(response, "status_code", 200)
-    if status_code == 200:
-        return
-    message = getattr(response, "message", None) or "Unknown DashScope error"
-    code = getattr(response, "code", None)
-    request_id = getattr(response, "request_id", None)
-    code_suffix = f", code: {code}" if code else ""
-    request_suffix = f", request_id: {request_id}" if request_id else ""
-    raise ValueError(f"DashScope error: {message} ({status_code}{code_suffix}{request_suffix})")
+    if response.status_code != 200:
+        raise ValueError(
+            f"DashScope error: {response.message or 'Unknown DashScope error'} "
+            f"({response.status_code}, code: {response.code}, request_id: {response.request_id})"
+        )
 
 
 def _run_recognition_in_subprocess(
@@ -443,7 +429,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
             api_key=api_key,
             base_address=base_address,
             headers=BURY_POINT_HEADER,
-            wait_timeout=_get_transcription_timeout(),
+            wait_timeout=10_800,
         )
         _raise_for_dashscope_error(task_response)
         output = task_response.output or {}

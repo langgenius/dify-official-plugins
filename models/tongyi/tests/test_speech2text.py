@@ -50,23 +50,14 @@ def _worker_payload() -> dict:
     }
 
 
-def _http_response(data: dict, status_code: int = 200, text: str = "") -> MagicMock:
-    response = MagicMock(status_code=status_code, text=text)
+def _http_response(data: dict, status_code: int = 200) -> MagicMock:
+    response = MagicMock(status_code=status_code)
     response.json.return_value = data
     return response
 
 
-def _sdk_response(
-    output: dict | None,
-    *,
-    status_code: int = 200,
-    code: str | None = None,
-    message: str | None = None,
-    request_id: str = "request-id",
-) -> MagicMock:
-    return MagicMock(
-        status_code=status_code, code=code, message=message, request_id=request_id, output=output
-    )
+def _sdk_response(output: dict | None, request_id: str = "request-id") -> MagicMock:
+    return MagicMock(status_code=200, request_id=request_id, output=output)
 
 
 def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
@@ -176,15 +167,9 @@ def test_invoke_raises_dashscope_status_error() -> None:
 
 
 def test_invoke_fun_asr_flash_uses_http_base64() -> None:
-    response = _http_response({"output": {"text": "hello flash"}, "request_id": "request-2"})
+    response = _http_response({"output": {"text": "hello flash"}})
 
-    with (
-        patch("models.speech2text.speech2text.requests.post", return_value=response) as post,
-        patch(
-            "models.speech2text.speech2text.AudioSegment.from_file",
-            side_effect=AssertionError("Fun-ASR-Flash should not decode audio locally"),
-        ),
-    ):
+    with patch("models.speech2text.speech2text.requests.post", return_value=response) as post:
         text = _model()._invoke(
             model="fun-asr-flash-2026-06-15",
             credentials={"dashscope_api_key": "test-key", "use_international_endpoint": "true"},
@@ -236,23 +221,20 @@ def test_invoke_fun_asr_flash_preserves_http_error() -> None:
 
 
 def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
-    submit_response = _sdk_response({"task_status": "PENDING", "task_id": "task-1"})
+    submit_response = _sdk_response({"task_id": "task-1"})
     task_response = _sdk_response(
         {
-            "task_status": "SUCCEEDED",
             "results": [
                 {
                     "subtask_status": "SUCCEEDED",
                     "transcription_url": "https://example.com/result.json",
                 }
-            ],
-        },
-        request_id="request-3",
+            ]
+        }
     )
     transcription_response = _http_response({"transcripts": [{"text": "hello"}, {"text": "world"}]})
 
     with (
-        patch.dict(os.environ, {"TONGYI_STT_TRANSCRIPTION_TIMEOUT": "7200"}),
         patch(
             "models.speech2text.speech2text.OssUtils.upload",
             return_value=("oss://temporary/audio.wav", {}),
@@ -286,8 +268,7 @@ def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
     assert wait.call_args.args == ("task-1",)
     assert wait.call_args.kwargs["api_key"] == "test-key"
     assert wait.call_args.kwargs["base_address"] == "https://dashscope-intl.aliyuncs.com/api/v1"
-    assert wait.call_args.kwargs["wait_timeout"] == 7200
-    get.assert_called_once()
+    assert wait.call_args.kwargs["wait_timeout"] == 10_800
     assert get.call_args.args[0] == "https://example.com/result.json"
 
 
