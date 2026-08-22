@@ -1,9 +1,11 @@
 import json
 import os
 import sys
-from io import BytesIO, StringIO
 from collections.abc import AsyncIterator
+from io import BytesIO, StringIO
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -48,6 +50,25 @@ def _worker_payload() -> dict:
     }
 
 
+def _http_response(data: dict, status_code: int = 200, text: str = "") -> MagicMock:
+    response = MagicMock(status_code=status_code, text=text)
+    response.json.return_value = data
+    return response
+
+
+def _sdk_response(
+    output: dict | None,
+    *,
+    status_code: int = 200,
+    code: str | None = None,
+    message: str | None = None,
+    request_id: str = "request-id",
+) -> MagicMock:
+    return MagicMock(
+        status_code=status_code, code=code, message=message, request_id=request_id, output=output
+    )
+
+
 def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
     file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "temp.mp3")
     file_obj.seek(5)
@@ -76,6 +97,7 @@ def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
     file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "upload.mp3")
     audio = MagicMock(frame_rate=16000)
     result = MagicMock()
+    result.status_code = 200
     result.get_sentence.return_value = [{"text": "hello"}]
     recognition = MagicMock()
     recognition.call.return_value = result
@@ -102,6 +124,7 @@ def test_invoke_normalizes_non_dict_sentences() -> None:
     file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "upload.wav")
     audio = MagicMock(frame_rate=16000)
     result = MagicMock()
+    result.status_code = 200
     result.get_sentence.return_value = ["hello", {"text": "world"}]
     recognition = MagicMock()
     recognition.call.return_value = result
@@ -119,9 +142,214 @@ def test_invoke_normalizes_non_dict_sentences() -> None:
                 )
 
 
+def test_invoke_raises_dashscope_status_error() -> None:
+    result = MagicMock(
+        status_code=400,
+        code="InvalidModel",
+        message="Model not available in this region",
+        request_id="request-1",
+    )
+    recognition = MagicMock()
+    recognition.call.return_value = result
+
+    with (
+        patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "false"}),
+        patch(
+            "models.speech2text.speech2text.AudioSegment.from_file",
+            return_value=MagicMock(frame_rate=16000),
+        ),
+        patch("models.speech2text.speech2text.Recognition", return_value=recognition),
+        patch("models.speech2text.speech2text._patch_dashscope_async_bridge_for_gevent"),
+        pytest.raises(ValueError) as exc_info,
+    ):
+        _model()._invoke(
+            model="paraformer-realtime-v1",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+    message = str(exc_info.value)
+    assert "Model not available in this region" in message
+    assert "InvalidModel" in message
+    assert "request-1" in message
+    result.get_sentence.assert_not_called()
+
+
+def test_invoke_fun_asr_flash_uses_http_base64() -> None:
+    response = _http_response({"output": {"text": "hello flash"}, "request_id": "request-2"})
+
+    with (
+        patch("models.speech2text.speech2text.requests.post", return_value=response) as post,
+        patch(
+            "models.speech2text.speech2text.AudioSegment.from_file",
+            side_effect=AssertionError("Fun-ASR-Flash should not decode audio locally"),
+        ),
+    ):
+        text = _model()._invoke(
+            model="fun-asr-flash-2026-06-15",
+            credentials={"dashscope_api_key": "test-key", "use_international_endpoint": "true"},
+            file=_wav_file(),
+        )
+
+    assert text == "hello flash"
+    assert (
+        post.call_args.args[0]
+        == "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    )
+    payload = post.call_args.kwargs["json"]
+    headers = post.call_args.kwargs["headers"]
+    assert headers["Authorization"] == "Bearer test-key"
+    assert headers["X-DashScope-SSE"] == "disable"
+    assert payload["model"] == "fun-asr-flash-2026-06-15"
+    assert payload["parameters"] == {"format": "wav"}
+    assert payload["input"]["messages"][0]["role"] == "user"
+    assert payload["input"]["messages"][0]["content"][0]["type"] == "input_audio"
+    assert payload["input"]["messages"][0]["content"][0]["input_audio"]["data"].startswith(
+        "data:audio/wav;base64,"
+    )
+
+
+def test_invoke_fun_asr_flash_preserves_http_error() -> None:
+    response = _http_response(
+        {
+            "code": "InvalidParameter",
+            "message": "The audio format is invalid.",
+            "request_id": "request-flash-error",
+        },
+        status_code=400,
+    )
+
+    with (
+        patch("models.speech2text.speech2text.requests.post", return_value=response),
+        pytest.raises(ValueError) as exc_info,
+    ):
+        _model()._invoke(
+            model="fun-asr-flash-2026-06-15",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+    error = str(exc_info.value)
+    assert "InvalidParameter" in error
+    assert "The audio format is invalid." in error
+    assert "request-flash-error" in error
+
+
+def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
+    submit_response = _sdk_response({"task_status": "PENDING", "task_id": "task-1"})
+    task_response = _sdk_response(
+        {
+            "task_status": "SUCCEEDED",
+            "results": [
+                {
+                    "subtask_status": "SUCCEEDED",
+                    "transcription_url": "https://example.com/result.json",
+                }
+            ],
+        },
+        request_id="request-3",
+    )
+    transcription_response = _http_response({"transcripts": [{"text": "hello"}, {"text": "world"}]})
+
+    with (
+        patch.dict(os.environ, {"TONGYI_STT_TRANSCRIPTION_TIMEOUT": "7200"}),
+        patch(
+            "models.speech2text.speech2text.OssUtils.upload",
+            return_value=("oss://temporary/audio.wav", {}),
+        ) as upload,
+        patch(
+            "models.speech2text.speech2text.Transcription.async_call", return_value=submit_response
+        ) as async_call,
+        patch(
+            "models.speech2text.speech2text.Transcription.wait", return_value=task_response
+        ) as wait,
+        patch(
+            "models.speech2text.speech2text.requests.get", return_value=transcription_response
+        ) as get,
+    ):
+        text = _model()._invoke(
+            model="fun-asr",
+            credentials={"dashscope_api_key": "test-key", "use_international_endpoint": "true"},
+            file=_wav_file(),
+        )
+
+    assert text == "hello\nworld"
+    assert upload.call_args.kwargs["model"] == "fun-asr"
+    assert upload.call_args.kwargs["api_key"] == "test-key"
+    assert upload.call_args.kwargs["base_address"] == ("https://dashscope-intl.aliyuncs.com/api/v1")
+    assert async_call.call_args.kwargs["file_urls"] == ["oss://temporary/audio.wav"]
+    assert async_call.call_args.kwargs["api_key"] == "test-key"
+    assert async_call.call_args.kwargs["base_address"] == (
+        "https://dashscope-intl.aliyuncs.com/api/v1"
+    )
+    assert async_call.call_args.kwargs["headers"]["X-DashScope-OssResourceResolve"] == "enable"
+    assert wait.call_args.args == ("task-1",)
+    assert wait.call_args.kwargs["api_key"] == "test-key"
+    assert wait.call_args.kwargs["base_address"] == "https://dashscope-intl.aliyuncs.com/api/v1"
+    assert wait.call_args.kwargs["wait_timeout"] == 7200
+    get.assert_called_once()
+    assert get.call_args.args[0] == "https://example.com/result.json"
+
+
+@pytest.mark.parametrize(
+    ("output", "request_id", "expected"),
+    [
+        (
+            {
+                "task_status": "SUCCEEDED",
+                "results": [
+                    {
+                        "subtask_status": "FAILED",
+                        "code": "InvalidFile.DownloadFailed",
+                        "message": "The audio file cannot be downloaded.",
+                    }
+                ],
+            },
+            "request-4",
+            ("InvalidFile.DownloadFailed", "The audio file cannot be downloaded."),
+        ),
+        (
+            {
+                "task_status": "FAILED",
+                "code": "InternalError",
+                "message": "The transcription task failed.",
+            },
+            "request-5",
+            ("InternalError", "The transcription task failed."),
+        ),
+    ],
+    ids=("subtask", "task"),
+)
+def test_invoke_fun_asr_preserves_errors(
+    output: dict, request_id: str, expected: tuple[str, str]
+) -> None:
+    submit_response = _sdk_response({"task_id": "task-error"})
+    task_response = _sdk_response(output, request_id=request_id)
+    with (
+        patch(
+            "models.speech2text.speech2text.OssUtils.upload",
+            return_value=("oss://temporary/audio.wav", {}),
+        ),
+        patch(
+            "models.speech2text.speech2text.Transcription.async_call", return_value=submit_response
+        ),
+        patch("models.speech2text.speech2text.Transcription.wait", return_value=task_response),
+        pytest.raises(ValueError) as exc_info,
+    ):
+        _model()._invoke(
+            model="fun-asr", credentials={"dashscope_api_key": "test-key"}, file=_wav_file()
+        )
+
+    message = str(exc_info.value)
+    assert expected[0] in message
+    assert expected[1] in message
+    assert request_id in message
+
+
 def test_invoke_patches_dashscope_async_bridge_by_default(monkeypatch) -> None:
     audio = MagicMock(frame_rate=16000)
     result = MagicMock()
+    result.status_code = 200
     result.get_sentence.return_value = [{"text": "hello"}]
     recognition = MagicMock()
     recognition.call.return_value = result
@@ -149,6 +377,7 @@ def test_invoke_patches_dashscope_async_bridge_by_default(monkeypatch) -> None:
 
 def test_dashscope_async_bridge_patch_yields_results() -> None:
     import dashscope.common.utils as dashscope_utils
+
     from models.speech2text import speech2text as st2
 
     async def stream() -> AsyncIterator[str]:
@@ -234,7 +463,7 @@ def test_run_recognition_in_subprocess_returns_error_for_missing_file() -> None:
 
 
 def test_worker_keeps_library_stdout_out_of_json(monkeypatch) -> None:
-    import dashscope.audio.asr as asr
+    from dashscope.audio import asr
 
     class FakeResult:
         status_code = 200
@@ -261,7 +490,7 @@ def test_worker_keeps_library_stdout_out_of_json(monkeypatch) -> None:
 
 
 def test_worker_returns_dashscope_status_error(monkeypatch) -> None:
-    import dashscope.audio.asr as asr
+    from dashscope.audio import asr
 
     class FakeResult:
         status_code = 400
