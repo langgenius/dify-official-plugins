@@ -7,12 +7,14 @@ identity:
     pt_BR: HubSpot
     ja_JP: HubSpot
     zh_Hant: HubSpot
+    ko_KR: HubSpot
   description:
-    en_US: Connect to HubSpot to manage contacts, companies, deals, tickets, and more
-    zh_Hans: 连接 HubSpot 以管理联系人、公司、交易、工单等
-    pt_BR: Conecte-se ao HubSpot para gerenciar contatos, empresas, negócios, tickets e mais
-    ja_JP: HubSpot に接続して、連絡先、企業、取引、チケットなどを管理する
-    zh_Hant: 連接 HubSpot 以管理聯絡人、公司、交易、工單等
+    en_US: Connect to HubSpot CRM to manage contacts, companies, deals, tickets, engagements, lists and forms
+    zh_Hans: 连接 HubSpot CRM 以管理联系人、公司、交易、工单、互动记录、列表和表单
+    pt_BR: Conecte-se ao HubSpot CRM para gerenciar contatos, empresas, negócios, tickets, engajamentos, listas e formulários
+    ja_JP: HubSpot CRM に接続して、連絡先、企業、取引、チケット、エンゲージメント、リスト、フォームを管理する
+    zh_Hant: 連接 HubSpot CRM 以管理聯絡人、公司、交易、工單、互動記錄、清單和表單
+    ko_KR: HubSpot CRM에 연결하여 연락처, 회사, 거래, 티켓, 참여 기록, 목록 및 양식을 관리합니다
   icon: icon.svg
 credentials_for_provider:
   access_token:
@@ -24,22 +26,51 @@ credentials_for_provider:
       pt_BR: Token de Acesso da API
       ja_JP: API アクセストークン
       zh_Hant: API 存取權杖
+      ko_KR: API 액세스 토큰
     placeholder:
       en_US: Enter your HubSpot private app access token
       zh_Hans: 输入您的 HubSpot 私有应用访问令牌
       pt_BR: Insira seu token de acesso do aplicativo privado HubSpot
       ja_JP: HubSpot プライベートアプリのアクセストークンを入力してください
       zh_Hant: 輸入您的 HubSpot 私有應用存取權杖
+      ko_KR: HubSpot 비공개 앱 액세스 토큰을 입력하세요
     help:
-      en_US: Create a private app in HubSpot. Required scopes - Read and Write for contacts and companies
-      zh_Hans: 在 HubSpot 中创建私有应用。必需的权限范围 - 联系人和公司的读写权限
-      pt_BR: Crie um aplicativo privado no HubSpot. Escopos necessários - Leitura e escrita para contatos e empresas
-      ja_JP: HubSpot でプライベートアプリを作成してください。必要なスコープ - 連絡先と会社の読み書き権限
-      zh_Hant: 在 HubSpot 中建立私有應用。必需的權限範圍 - 聯絡人和公司的讀寫權限
+      en_US: Create a private app in HubSpot and grant CRM scopes (contacts, companies, deals, tickets), then copy its access token.
+      zh_Hans: 在 HubSpot 中创建私有应用并授予 CRM 权限（联系人、公司、交易、工单），然后复制其访问令牌。
+      pt_BR: Crie um aplicativo privado no HubSpot e conceda escopos de CRM (contatos, empresas, negócios, tickets), depois copie o token de acesso.
+      ja_JP: HubSpot でプライベートアプリを作成し、CRM スコープ（連絡先・会社・取引・チケット）を付与してからアクセストークンをコピーしてください。
+      zh_Hant: 在 HubSpot 中建立私有應用並授予 CRM 權限（聯絡人、公司、交易、工單），然後複製其存取權杖。
+      ko_KR: HubSpot에서 비공개 앱을 만들고 CRM 스코프(연락처, 회사, 거래, 티켓)를 부여한 후 액세스 토큰을 복사하세요.
     url: https://developers.hubspot.com/docs/api/private-apps
 tools:
-  - tools/get_companies.yaml
   - tools/create_contact.yaml
+  - tools/update_contact.yaml
+  - tools/delete_contact.yaml
+  - tools/get_contact.yaml
+  - tools/search_contacts.yaml
+  - tools/create_company.yaml
+  - tools/update_company.yaml
+  - tools/delete_company.yaml
+  - tools/get_company.yaml
+  - tools/search_companies.yaml
+  - tools/create_deal.yaml
+  - tools/update_deal.yaml
+  - tools/delete_deal.yaml
+  - tools/get_deal.yaml
+  - tools/search_deals.yaml
+  - tools/create_ticket.yaml
+  - tools/update_ticket.yaml
+  - tools/delete_ticket.yaml
+  - tools/get_ticket.yaml
+  - tools/search_tickets.yaml
+  - tools/create_engagement.yaml
+  - tools/get_engagement.yaml
+  - tools/search_engagements.yaml
+  - tools/delete_engagement.yaml
+  - tools/add_contact_to_list.yaml
+  - tools/remove_contact_from_list.yaml
+  - tools/get_form.yaml
+  - tools/submit_form.yaml
 extra:
   python:
     source: provider/hubspot.py

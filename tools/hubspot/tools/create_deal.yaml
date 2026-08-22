@@ -1,0 +1,137 @@
+identity:
+  name: create_deal
+  author: langgenius
+  label:
+    en_US: Create Deal
+    zh_Hans: 创建交易
+    pt_BR: Criar Negócio
+    ja_JP: 取引を作成
+    zh_Hant: 建立交易
+    ko_KR: 거래 생성
+description:
+  human:
+    en_US: Create a new deal in HubSpot
+    zh_Hans: 在 HubSpot 中创建新交易
+    pt_BR: Criar um novo negócio no HubSpot
+    ja_JP: HubSpot に新しい取引を作成します
+    zh_Hant: 在 HubSpot 中建立新交易
+    ko_KR: HubSpot에 새 거래를 생성합니다
+  llm: Creates a deal in HubSpot CRM. Provide common fields (dealname, amount, dealstage, pipeline, closedate) and/or a JSON object of additional properties.
+parameters:
+  - name: dealname
+    type: string
+    required: false
+    label:
+      en_US: Deal Name
+      zh_Hans: 交易名称
+      pt_BR: Nome do Negócio
+      ja_JP: 取引名
+      zh_Hant: 交易名稱
+      ko_KR: 거래 이름
+    human_description:
+      en_US: The name of the deal
+      zh_Hans: 交易的名称
+      pt_BR: O nome do negócio
+      ja_JP: 取引の名前
+      zh_Hant: 交易的名稱
+      ko_KR: 거래의 이름
+    llm_description: The name of the deal.
+    form: llm
+  - name: amount
+    type: string
+    required: false
+    label:
+      en_US: Amount
+      zh_Hans: 金额
+      pt_BR: Valor
+      ja_JP: 金額
+      zh_Hant: 金額
+      ko_KR: 금액
+    human_description:
+      en_US: The monetary value of the deal
+      zh_Hans: 交易的金额
+      pt_BR: O valor monetário do negócio
+      ja_JP: 取引の金額
+      zh_Hant: 交易的金額
+      ko_KR: 거래의 금액
+    llm_description: The monetary value of the deal.
+    form: llm
+  - name: dealstage
+    type: string
+    required: false
+    label:
+      en_US: Deal Stage
+      zh_Hans: 交易阶段
+      pt_BR: Etapa do Negócio
+      ja_JP: 取引ステージ
+      zh_Hant: 交易階段
+      ko_KR: 거래 단계
+    human_description:
+      en_US: The stage of the deal in its pipeline
+      zh_Hans: 交易在其管道中的阶段
+      pt_BR: A etapa do negócio em seu funil
+      ja_JP: パイプライン内の取引ステージ
+      zh_Hant: 交易在其管道中的階段
+      ko_KR: 파이프라인 내 거래 단계
+    llm_description: The stage of the deal in its pipeline.
+    form: llm
+  - name: pipeline
+    type: string
+    required: false
+    label:
+      en_US: Pipeline
+      zh_Hans: 管道
+      pt_BR: Funil
+      ja_JP: パイプライン
+      zh_Hant: 管道
+      ko_KR: 파이프라인
+    human_description:
+      en_US: The pipeline the deal belongs to
+      zh_Hans: 交易所属的管道
+      pt_BR: O funil ao qual o negócio pertence
+      ja_JP: 取引が属するパイプライン
+      zh_Hant: 交易所屬的管道
+      ko_KR: 거래가 속한 파이프라인
+    llm_description: The pipeline the deal belongs to.
+    form: llm
+  - name: closedate
+    type: string
+    required: false
+    label:
+      en_US: Close Date
+      zh_Hans: 结束日期
+      pt_BR: Data de Fechamento
+      ja_JP: クローズ日
+      zh_Hant: 結束日期
+      ko_KR: 종료일
+    human_description:
+      en_US: The expected close date of the deal
+      zh_Hans: 交易的预计结束日期
+      pt_BR: A data prevista de fechamento do negócio
+      ja_JP: 取引の予定クローズ日
+      zh_Hant: 交易的預計結束日期
+      ko_KR: 거래의 예상 종료일
+    llm_description: The expected close date of the deal, e.g. an ISO 8601 date.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Additional Properties (JSON)
+      zh_Hans: 附加属性（JSON）
+      pt_BR: Propriedades Adicionais (JSON)
+      ja_JP: 追加プロパティ（JSON）
+      zh_Hant: 附加屬性（JSON）
+      ko_KR: 추가 속성(JSON)
+    human_description:
+      en_US: A JSON object of additional deal properties
+      zh_Hans: 附加交易属性的 JSON 对象
+      pt_BR: Um objeto JSON com propriedades adicionais do negócio
+      ja_JP: 追加の取引プロパティの JSON オブジェクト
+      zh_Hant: 附加交易屬性的 JSON 物件
+      ko_KR: 추가 거래 속성의 JSON 객체
+    llm_description: Optional JSON object of extra HubSpot deal properties, e.g. {"hs_priority":"high"}.
+    form: llm
+extra:
+  python:
+    source: tools/create_deal.py

@@ -1,0 +1,156 @@
+identity:
+  name: create_company
+  author: langgenius
+  label:
+    en_US: Create Company
+    zh_Hans: 创建公司
+    pt_BR: Criar Empresa
+    ja_JP: 会社を作成
+    zh_Hant: 建立公司
+    ko_KR: 회사 생성
+description:
+  human:
+    en_US: Create a new company in HubSpot
+    zh_Hans: 在 HubSpot 中创建新公司
+    pt_BR: Criar uma nova empresa no HubSpot
+    ja_JP: HubSpot に新しい会社を作成します
+    zh_Hant: 在 HubSpot 中建立新公司
+    ko_KR: HubSpot에 새 회사를 생성합니다
+  llm: Creates a company in HubSpot CRM. Provide common fields (name, domain, phone, city, industry, website) and/or a JSON object of additional properties.
+parameters:
+  - name: name
+    type: string
+    required: false
+    label:
+      en_US: Name
+      zh_Hans: 名称
+      pt_BR: Nome
+      ja_JP: 名前
+      zh_Hant: 名稱
+      ko_KR: 이름
+    human_description:
+      en_US: The company's name
+      zh_Hans: 公司的名称
+      pt_BR: O nome da empresa
+      ja_JP: 会社名
+      zh_Hant: 公司的名稱
+      ko_KR: 회사의 이름
+    llm_description: The company's name.
+    form: llm
+  - name: domain
+    type: string
+    required: false
+    label:
+      en_US: Domain
+      zh_Hans: 域名
+      pt_BR: Domínio
+      ja_JP: ドメイン
+      zh_Hant: 網域
+      ko_KR: 도메인
+    human_description:
+      en_US: The company's primary domain name
+      zh_Hans: 公司的主域名
+      pt_BR: O domínio principal da empresa
+      ja_JP: 会社の主要ドメイン
+      zh_Hant: 公司的主要網域
+      ko_KR: 회사의 기본 도메인
+    llm_description: The company's primary domain name (recommended as the unique identifier).
+    form: llm
+  - name: phone
+    type: string
+    required: false
+    label:
+      en_US: Phone
+      zh_Hans: 电话
+      pt_BR: Telefone
+      ja_JP: 電話番号
+      zh_Hant: 電話
+      ko_KR: 전화번호
+    human_description:
+      en_US: The company's phone number
+      zh_Hans: 公司的电话号码
+      pt_BR: O número de telefone da empresa
+      ja_JP: 会社の電話番号
+      zh_Hant: 公司的電話號碼
+      ko_KR: 회사의 전화번호
+    llm_description: The company's phone number.
+    form: llm
+  - name: city
+    type: string
+    required: false
+    label:
+      en_US: City
+      zh_Hans: 城市
+      pt_BR: Cidade
+      ja_JP: 市区町村
+      zh_Hant: 城市
+      ko_KR: 도시
+    human_description:
+      en_US: The company's city
+      zh_Hans: 公司所在城市
+      pt_BR: A cidade da empresa
+      ja_JP: 会社の市区町村
+      zh_Hant: 公司所在城市
+      ko_KR: 회사의 도시
+    llm_description: The company's city.
+    form: llm
+  - name: industry
+    type: string
+    required: false
+    label:
+      en_US: Industry
+      zh_Hans: 行业
+      pt_BR: Setor
+      ja_JP: 業種
+      zh_Hant: 產業
+      ko_KR: 산업
+    human_description:
+      en_US: The company's industry
+      zh_Hans: 公司所属行业
+      pt_BR: O setor da empresa
+      ja_JP: 会社の業種
+      zh_Hant: 公司所屬產業
+      ko_KR: 회사의 산업
+    llm_description: The company's industry.
+    form: llm
+  - name: website
+    type: string
+    required: false
+    label:
+      en_US: Website
+      zh_Hans: 网站
+      pt_BR: Site
+      ja_JP: ウェブサイト
+      zh_Hant: 網站
+      ko_KR: 웹사이트
+    human_description:
+      en_US: The company's website URL
+      zh_Hans: 公司的网站地址
+      pt_BR: O URL do site da empresa
+      ja_JP: 会社のウェブサイト URL
+      zh_Hant: 公司的網站網址
+      ko_KR: 회사의 웹사이트 URL
+    llm_description: The company's website URL.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Additional Properties (JSON)
+      zh_Hans: 附加属性（JSON）
+      pt_BR: Propriedades Adicionais (JSON)
+      ja_JP: 追加プロパティ（JSON）
+      zh_Hant: 附加屬性（JSON）
+      ko_KR: 추가 속성(JSON)
+    human_description:
+      en_US: A JSON object of additional company properties
+      zh_Hans: 附加公司属性的 JSON 对象
+      pt_BR: Um objeto JSON com propriedades adicionais da empresa
+      ja_JP: 追加の会社プロパティの JSON オブジェクト
+      zh_Hant: 附加公司屬性的 JSON 物件
+      ko_KR: 추가 회사 속성의 JSON 객체
+    llm_description: Optional JSON object of extra HubSpot company properties, e.g. {"numberofemployees":"100","country":"USA"}.
+    form: llm
+extra:
+  python:
+    source: tools/create_company.py

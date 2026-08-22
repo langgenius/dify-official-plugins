@@ -1,0 +1,61 @@
+identity:
+  name: add_contact_to_list
+  author: langgenius
+  label:
+    en_US: Add Contact to List
+    zh_Hans: 将联系人加入列表
+    pt_BR: Adicionar Contato à Lista
+    ja_JP: 連絡先をリストに追加
+    zh_Hant: 將聯絡人加入列表
+    ko_KR: 목록에 연락처 추가
+description:
+  human:
+    en_US: Add one or more contacts to a HubSpot contact list
+    zh_Hans: 将一个或多个联系人加入 HubSpot 联系人列表
+    pt_BR: Adicionar um ou mais contatos a uma lista de contatos do HubSpot
+    ja_JP: 1 つ以上の連絡先を HubSpot の連絡先リストに追加します
+    zh_Hant: 將一個或多個聯絡人加入 HubSpot 聯絡人列表
+    ko_KR: 하나 이상의 연락처를 HubSpot 연락처 목록에 추가합니다
+  llm: Adds one or more contacts to a HubSpot contact list by list id. Provide contact ids as a comma-separated string.
+parameters:
+  - name: list_id
+    type: string
+    required: true
+    label:
+      en_US: List ID
+      zh_Hans: 列表 ID
+      pt_BR: ID da Lista
+      ja_JP: リスト ID
+      zh_Hant: 列表 ID
+      ko_KR: 목록 ID
+    human_description:
+      en_US: The id of the contact list
+      zh_Hans: 联系人列表的 ID
+      pt_BR: O id da lista de contatos
+      ja_JP: 連絡先リストの ID
+      zh_Hant: 聯絡人列表的 ID
+      ko_KR: 연락처 목록의 ID
+    llm_description: The unique id of the HubSpot contact list.
+    form: llm
+  - name: contact_ids
+    type: string
+    required: true
+    label:
+      en_US: Contact IDs
+      zh_Hans: 联系人 ID
+      pt_BR: IDs de Contatos
+      ja_JP: 連絡先 ID
+      zh_Hant: 聯絡人 ID
+      ko_KR: 연락처 ID
+    human_description:
+      en_US: Comma-separated contact ids to add
+      zh_Hans: 要添加的联系人 ID，逗号分隔
+      pt_BR: IDs de contatos a adicionar, separados por vírgula
+      ja_JP: 追加する連絡先 ID（カンマ区切り）
+      zh_Hant: 要新增的聯絡人 ID，逗號分隔
+      ko_KR: 추가할 연락처 ID(쉼표로 구분)
+    llm_description: Comma-separated list of contact ids to add to the list.
+    form: llm
+extra:
+  python:
+    source: tools/add_contact_to_list.py

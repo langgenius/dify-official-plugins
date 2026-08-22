@@ -1,23 +1,42 @@
 identity:
-  name: create_contact
+  name: update_contact
   author: langgenius
   label:
-    en_US: Create Contact
-    zh_Hans: 创建联系人
-    pt_BR: Criar Contato
-    ja_JP: 連絡先を作成
-    zh_Hant: 建立聯絡人
-    ko_KR: 연락처 생성
+    en_US: Update Contact
+    zh_Hans: 更新联系人
+    pt_BR: Atualizar Contato
+    ja_JP: 連絡先を更新
+    zh_Hant: 更新聯絡人
+    ko_KR: 연락처 업데이트
 description:
   human:
-    en_US: Create a new contact in HubSpot
-    zh_Hans: 在 HubSpot 中创建新联系人
-    pt_BR: Criar um novo contato no HubSpot
-    ja_JP: HubSpot に新しい連絡先を作成します
-    zh_Hant: 在 HubSpot 中建立新聯絡人
-    ko_KR: HubSpot에 새 연락처를 생성합니다
-  llm: Creates a contact in HubSpot CRM. Provide common fields (email, firstname, lastname, phone, company, website, jobtitle) and/or a JSON object of additional properties.
+    en_US: Update an existing contact in HubSpot
+    zh_Hans: 更新 HubSpot 中的现有联系人
+    pt_BR: Atualizar um contato existente no HubSpot
+    ja_JP: HubSpot の既存の連絡先を更新します
+    zh_Hant: 更新 HubSpot 中的現有聯絡人
+    ko_KR: HubSpot의 기존 연락처를 업데이트합니다
+  llm: Updates a contact in HubSpot CRM by its id. Provide common fields (email, firstname, lastname, phone, company) and/or a JSON object of additional properties to merge.
 parameters:
+  - name: contact_id
+    type: string
+    required: true
+    label:
+      en_US: Contact ID
+      zh_Hans: 联系人 ID
+      pt_BR: ID do Contato
+      ja_JP: 連絡先 ID
+      zh_Hant: 聯絡人 ID
+      ko_KR: 연락처 ID
+    human_description:
+      en_US: The ID of the contact to update
+      zh_Hans: 要更新的联系人的 ID
+      pt_BR: O ID do contato a atualizar
+      ja_JP: 更新する連絡先の ID
+      zh_Hant: 要更新的聯絡人的 ID
+      ko_KR: 업데이트할 연락처의 ID
+    llm_description: The HubSpot ID of the contact to update.
+    form: llm
   - name: email
     type: string
     required: false
@@ -35,7 +54,7 @@ parameters:
       ja_JP: 連絡先のメールアドレス
       zh_Hant: 聯絡人的電子郵件地址
       ko_KR: 연락처의 이메일 주소
-    llm_description: The contact's email address (recommended as the unique identifier).
+    llm_description: The contact's email address.
     form: llm
   - name: firstname
     type: string
@@ -124,14 +143,14 @@ parameters:
       zh_Hant: 附加屬性（JSON）
       ko_KR: 추가 속성(JSON)
     human_description:
-      en_US: A JSON object of additional contact properties
-      zh_Hans: 附加联系人属性的 JSON 对象
-      pt_BR: Um objeto JSON com propriedades adicionais do contato
-      ja_JP: 追加の連絡先プロパティの JSON オブジェクト
-      zh_Hant: 附加聯絡人屬性的 JSON 物件
-      ko_KR: 추가 연락처 속성의 JSON 객체
-    llm_description: Optional JSON object of extra HubSpot contact properties, e.g. {"jobtitle":"CEO","lifecyclestage":"lead"}.
+      en_US: A JSON object of additional contact properties to merge
+      zh_Hans: 要合并的附加联系人属性的 JSON 对象
+      pt_BR: Um objeto JSON com propriedades adicionais do contato a mesclar
+      ja_JP: マージする追加の連絡先プロパティの JSON オブジェクト
+      zh_Hant: 要合併的附加聯絡人屬性的 JSON 物件
+      ko_KR: 병합할 추가 연락처 속성의 JSON 객체
+    llm_description: Optional JSON object of extra HubSpot contact properties to merge, e.g. {"jobtitle":"CEO","lifecyclestage":"lead"}.
     form: llm
 extra:
   python:
-    source: tools/create_contact.py
+    source: tools/update_contact.py

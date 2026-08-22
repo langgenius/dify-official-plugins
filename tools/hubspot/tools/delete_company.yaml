@@ -1,0 +1,42 @@
+identity:
+  name: delete_company
+  author: langgenius
+  label:
+    en_US: Delete Company
+    zh_Hans: 删除公司
+    pt_BR: Excluir Empresa
+    ja_JP: 会社を削除
+    zh_Hant: 刪除公司
+    ko_KR: 회사 삭제
+description:
+  human:
+    en_US: Delete a company in HubSpot
+    zh_Hans: 删除 HubSpot 中的公司
+    pt_BR: Excluir uma empresa no HubSpot
+    ja_JP: HubSpot の会社を削除します
+    zh_Hant: 刪除 HubSpot 中的公司
+    ko_KR: HubSpot의 회사를 삭제합니다
+  llm: Deletes a company in HubSpot CRM by its id.
+parameters:
+  - name: company_id
+    type: string
+    required: true
+    label:
+      en_US: Company ID
+      zh_Hans: 公司 ID
+      pt_BR: ID da Empresa
+      ja_JP: 会社 ID
+      zh_Hant: 公司 ID
+      ko_KR: 회사 ID
+    human_description:
+      en_US: The ID of the company to delete
+      zh_Hans: 要删除的公司的 ID
+      pt_BR: O ID da empresa a excluir
+      ja_JP: 削除する会社の ID
+      zh_Hant: 要刪除的公司的 ID
+      ko_KR: 삭제할 회사의 ID
+    llm_description: The HubSpot ID of the company to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_company.py

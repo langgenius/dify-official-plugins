@@ -1,4 +1,4 @@
-version: 0.0.8
+version: 0.1.0
 type: plugin
 author: langgenius
 name: hubspot
@@ -8,12 +8,14 @@ label:
   zh_Hans: HubSpot
   pt_BR: HubSpot
   zh_Hant: HubSpot
+  ko_KR: HubSpot
 description:
-  en_US: Connect to HubSpot CRM to manage contacts, companies, deals, tickets, and more
-  ja_JP: HubSpot CRM に接続して、連絡先、企業、取引、チケットなどを管理する
-  zh_Hans: 连接 HubSpot CRM 以管理联系人、公司、交易、工单等
-  pt_BR: Conecte-se ao HubSpot CRM para gerenciar contatos, empresas, negócios, tickets e mais
-  zh_Hant: 連接 HubSpot CRM 以管理聯絡人、公司、交易、工單等
+  en_US: Connect to HubSpot CRM to manage contacts, companies, deals, tickets, engagements, lists and forms - with filter and sort on searches
+  ja_JP: HubSpot CRM に接続して、連絡先・企業・取引・チケット・エンゲージメント・リスト・フォームを管理（検索はフィルターと並び替えに対応）
+  zh_Hans: 连接 HubSpot CRM 以管理联系人、公司、交易、工单、互动记录、列表和表单（搜索支持过滤与排序）
+  pt_BR: Conecte-se ao HubSpot CRM para gerenciar contatos, empresas, negócios, tickets, engajamentos, listas e formulários (com filtro e ordenação nas buscas)
+  zh_Hant: 連接 HubSpot CRM 以管理聯絡人、公司、交易、工單、互動記錄、清單和表單（搜尋支援過濾與排序）
+  ko_KR: HubSpot CRM에 연결하여 연락처, 회사, 거래, 티켓, 참여 기록, 목록, 양식을 관리합니다(검색에 필터 및 정렬 지원)
 icon: icon.svg
 tags:
   - business

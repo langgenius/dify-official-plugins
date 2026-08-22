@@ -1,0 +1,80 @@
+identity:
+  name: submit_form
+  author: langgenius
+  label:
+    en_US: Submit Form
+    zh_Hans: 提交表单
+    pt_BR: Enviar Formulário
+    ja_JP: フォームを送信
+    zh_Hant: 提交表單
+    ko_KR: 양식 제출
+description:
+  human:
+    en_US: Submit a HubSpot form via the Forms API
+    zh_Hans: 通过 Forms API 提交 HubSpot 表单
+    pt_BR: Enviar um formulário do HubSpot pela Forms API
+    ja_JP: Forms API 経由で HubSpot フォームを送信します
+    zh_Hant: 透過 Forms API 提交 HubSpot 表單
+    ko_KR: Forms API를 통해 HubSpot 양식을 제출합니다
+  llm: Submits a HubSpot form using the public Forms API (no access token needed). Requires the portal id, form guid, and a JSON object of field name to value pairs.
+parameters:
+  - name: portal_id
+    type: string
+    required: true
+    label:
+      en_US: Portal ID
+      zh_Hans: 门户 ID
+      pt_BR: ID do Portal
+      ja_JP: ポータル ID
+      zh_Hant: 入口網站 ID
+      ko_KR: 포털 ID
+    human_description:
+      en_US: The HubSpot portal (account) id
+      zh_Hans: HubSpot 门户（账户）ID
+      pt_BR: O id do portal (conta) do HubSpot
+      ja_JP: HubSpot ポータル（アカウント）ID
+      zh_Hant: HubSpot 入口網站（帳戶）ID
+      ko_KR: HubSpot 포털(계정) ID
+    llm_description: The HubSpot portal (account) id that owns the form.
+    form: llm
+  - name: form_guid
+    type: string
+    required: true
+    label:
+      en_US: Form GUID
+      zh_Hans: 表单 GUID
+      pt_BR: GUID do Formulário
+      ja_JP: フォーム GUID
+      zh_Hant: 表單 GUID
+      ko_KR: 양식 GUID
+    human_description:
+      en_US: The form guid to submit to
+      zh_Hans: 要提交到的表单 GUID
+      pt_BR: O guid do formulário para enviar
+      ja_JP: 送信先のフォーム GUID
+      zh_Hant: 要提交到的表單 GUID
+      ko_KR: 제출할 양식 GUID
+    llm_description: The guid of the HubSpot form to submit to.
+    form: llm
+  - name: fields
+    type: string
+    required: true
+    label:
+      en_US: Fields (JSON)
+      zh_Hans: 字段（JSON）
+      pt_BR: Campos (JSON)
+      ja_JP: フィールド（JSON）
+      zh_Hant: 欄位（JSON）
+      ko_KR: 필드(JSON)
+    human_description:
+      en_US: A JSON object of field name to value pairs
+      zh_Hans: 字段名到值的 JSON 对象
+      pt_BR: Um objeto JSON com pares de nome de campo e valor
+      ja_JP: フィールド名と値のペアの JSON オブジェクト
+      zh_Hant: 欄位名稱到值的 JSON 物件
+      ko_KR: 필드 이름과 값 쌍의 JSON 객체
+    llm_description: Required JSON object mapping form field names to values, e.g. {"email":"a@b.com","firstname":"Jane"}.
+    form: llm
+extra:
+  python:
+    source: tools/submit_form.py

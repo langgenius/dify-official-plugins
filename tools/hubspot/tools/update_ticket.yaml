@@ -1,0 +1,156 @@
+identity:
+  name: update_ticket
+  author: langgenius
+  label:
+    en_US: Update Ticket
+    zh_Hans: 更新工单
+    pt_BR: Atualizar Ticket
+    ja_JP: チケットを更新
+    zh_Hant: 更新工單
+    ko_KR: 티켓 업데이트
+description:
+  human:
+    en_US: Update an existing ticket in HubSpot
+    zh_Hans: 更新 HubSpot 中的现有工单
+    pt_BR: Atualizar um ticket existente no HubSpot
+    ja_JP: HubSpot の既存のチケットを更新します
+    zh_Hant: 更新 HubSpot 中的現有工單
+    ko_KR: HubSpot의 기존 티켓을 업데이트합니다
+  llm: Updates a ticket in HubSpot CRM by its ID. Provide common fields (subject, content, hs_pipeline, hs_pipeline_stage, hs_ticket_priority) and/or a JSON object of additional properties.
+parameters:
+  - name: ticket_id
+    type: string
+    required: true
+    label:
+      en_US: Ticket ID
+      zh_Hans: 工单 ID
+      pt_BR: ID do Ticket
+      ja_JP: チケット ID
+      zh_Hant: 工單 ID
+      ko_KR: 티켓 ID
+    human_description:
+      en_US: The ID of the ticket to update
+      zh_Hans: 要更新的工单 ID
+      pt_BR: O ID do ticket a atualizar
+      ja_JP: 更新するチケットの ID
+      zh_Hant: 要更新的工單 ID
+      ko_KR: 업데이트할 티켓의 ID
+    llm_description: The unique ID of the ticket to update.
+    form: llm
+  - name: subject
+    type: string
+    required: false
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+      zh_Hant: 主旨
+      ko_KR: 제목
+    human_description:
+      en_US: The subject of the ticket
+      zh_Hans: 工单的主题
+      pt_BR: O assunto do ticket
+      ja_JP: チケットの件名
+      zh_Hant: 工單的主旨
+      ko_KR: 티켓의 제목
+    llm_description: The subject of the ticket.
+    form: llm
+  - name: content
+    type: string
+    required: false
+    label:
+      en_US: Content
+      zh_Hans: 内容
+      pt_BR: Conteúdo
+      ja_JP: 内容
+      zh_Hant: 內容
+      ko_KR: 내용
+    human_description:
+      en_US: The description or content of the ticket
+      zh_Hans: 工单的描述或内容
+      pt_BR: A descrição ou conteúdo do ticket
+      ja_JP: チケットの説明または内容
+      zh_Hant: 工單的描述或內容
+      ko_KR: 티켓의 설명 또는 내용
+    llm_description: The description or content of the ticket.
+    form: llm
+  - name: hs_pipeline
+    type: string
+    required: false
+    label:
+      en_US: Pipeline
+      zh_Hans: 管道
+      pt_BR: Funil
+      ja_JP: パイプライン
+      zh_Hant: 管道
+      ko_KR: 파이프라인
+    human_description:
+      en_US: The pipeline the ticket belongs to
+      zh_Hans: 工单所属的管道
+      pt_BR: O funil ao qual o ticket pertence
+      ja_JP: チケットが属するパイプライン
+      zh_Hant: 工單所屬的管道
+      ko_KR: 티켓이 속한 파이프라인
+    llm_description: The pipeline the ticket belongs to.
+    form: llm
+  - name: hs_pipeline_stage
+    type: string
+    required: false
+    label:
+      en_US: Pipeline Stage
+      zh_Hans: 管道阶段
+      pt_BR: Etapa do Funil
+      ja_JP: パイプラインステージ
+      zh_Hant: 管道階段
+      ko_KR: 파이프라인 단계
+    human_description:
+      en_US: The stage of the ticket in its pipeline
+      zh_Hans: 工单在其管道中的阶段
+      pt_BR: A etapa do ticket em seu funil
+      ja_JP: パイプライン内のチケットステージ
+      zh_Hant: 工單在其管道中的階段
+      ko_KR: 파이프라인 내 티켓 단계
+    llm_description: The stage of the ticket in its pipeline.
+    form: llm
+  - name: hs_ticket_priority
+    type: string
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+      pt_BR: Prioridade
+      ja_JP: 優先度
+      zh_Hant: 優先級
+      ko_KR: 우선순위
+    human_description:
+      en_US: The priority of the ticket (e.g. LOW, MEDIUM, HIGH)
+      zh_Hans: 工单的优先级（如 LOW、MEDIUM、HIGH）
+      pt_BR: A prioridade do ticket (ex. LOW, MEDIUM, HIGH)
+      ja_JP: チケットの優先度（例 LOW、MEDIUM、HIGH）
+      zh_Hant: 工單的優先級（如 LOW、MEDIUM、HIGH）
+      ko_KR: 티켓의 우선순위(예 LOW, MEDIUM, HIGH)
+    llm_description: The priority of the ticket, e.g. LOW, MEDIUM, HIGH.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Additional Properties (JSON)
+      zh_Hans: 附加属性（JSON）
+      pt_BR: Propriedades Adicionais (JSON)
+      ja_JP: 追加プロパティ（JSON）
+      zh_Hant: 附加屬性（JSON）
+      ko_KR: 추가 속성(JSON)
+    human_description:
+      en_US: A JSON object of additional ticket properties
+      zh_Hans: 附加工单属性的 JSON 对象
+      pt_BR: Um objeto JSON com propriedades adicionais do ticket
+      ja_JP: 追加のチケットプロパティの JSON オブジェクト
+      zh_Hant: 附加工單屬性的 JSON 物件
+      ko_KR: 추가 티켓 속성의 JSON 객체
+    llm_description: Optional JSON object of extra HubSpot ticket properties to update, e.g. {"source_type":"EMAIL"}.
+    form: llm
+extra:
+  python:
+    source: tools/update_ticket.py
