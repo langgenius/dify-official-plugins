@@ -11,3 +11,5 @@ Gemini 是 Google 推出的多模态 AI 模型系列,旨在处理和生成各种
 
 如果您在 Gemini 和其他视觉模型中同时对 `MULTIMODAL_SEND_FORMAT` 使用 `url` 模式,可以设置 `Files URL` 以获得更好的性能。
 
+`启用请求元数据` 是可选的,默认禁用。启用后,会将 `dify_app_id` 和 `dify_source` 作为标签附加到 `GenerateContentConfig` 中的每个 Gemini 请求,以便在 Cloud Billing 中将用量归因到特定的 Dify 应用。该功能仅适用于 `generate_content` 路由;Interactions API 在其账单明细中不显示标签,因此有意保持不变。Dify 会话查找采用尽力而为的策略:如果会话上下文未初始化,则不会附加标签,请求将保持不变发送。
+
