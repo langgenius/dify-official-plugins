@@ -1320,6 +1320,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             last_nonempty_content.role if last_nonempty_content else None,
         )
 
+        # Optional: attach Dify app_id as Gemini labels for Cloud Billing
+        # breakdown. Default disabled; opt-in via the enable_request_metadata
+        # credential. Scoped to the generate_content route only; the
+        # Interactions API below does not surface labels in its billing
+        # breakdown, so it is intentionally left untouched.
+        from ._labels import apply_dify_labels_if_enabled
+
+        apply_dify_labels_if_enabled(config, credentials)
+
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model, contents=contents, config=config
