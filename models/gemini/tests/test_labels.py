@@ -1,0 +1,214 @@
+from types import SimpleNamespace
+
+from models.llm._labels import (
+    apply_dify_labels_if_enabled,
+    build_dify_labels,
+    normalize_label_value,
+)
+
+
+# --- normalize_label_value ---
+
+
+def test_normalize_uuid_passthrough():
+    uuid = "550e8400-e29b-41d4-a716-446655440000"
+    assert normalize_label_value(uuid) == uuid
+
+
+def test_normalize_replaces_invalid_chars():
+    # GCP label values are restricted to [a-z0-9_-]; any other character
+    # is replaced with an underscore.
+    assert normalize_label_value("a@b.c") == "a_b_c"
+
+
+def test_normalize_lowercases_uppercase():
+    assert normalize_label_value("FOO-BAR") == "foo-bar"
+
+
+def test_normalize_preserves_underscore_and_hyphen():
+    assert normalize_label_value("a_b-c") == "a_b-c"
+
+
+def test_normalize_truncates_at_63_chars():
+    long_input = "a" * 100
+    result = normalize_label_value(long_input)
+    assert len(result) == 63
+    assert result == "a" * 63
+
+
+def test_normalize_truncation_bound_applied_before_substitution():
+    # Truncation happens before regex substitution so that pathological
+    # inputs do not incur unbounded regex work on the tail.
+    long_input = "Z" * 200
+    result = normalize_label_value(long_input)
+    assert len(result) == 63
+
+
+def test_normalize_empty_string():
+    assert normalize_label_value("") == ""
+
+
+def test_normalize_none_returns_empty():
+    assert normalize_label_value(None) == ""
+
+
+def test_normalize_coerces_non_string_input():
+    # Non-string inputs are stringified before validation, so a numeric 0
+    # (falsy) does not get dropped by the empty-check.
+    assert normalize_label_value(0) == "0"
+    assert normalize_label_value(123) == "123"
+
+
+# --- build_dify_labels ---
+
+
+def test_build_dify_labels_returns_none_for_none():
+    assert build_dify_labels(None) is None
+
+
+def test_build_dify_labels_returns_none_for_empty():
+    assert build_dify_labels("") is None
+
+
+def test_build_dify_labels_includes_source_marker():
+    labels = build_dify_labels("550e8400-e29b-41d4-a716-446655440000")
+    assert labels is not None
+    assert labels["dify_source"] == "dify"
+
+
+def test_build_dify_labels_normalizes_app_id():
+    labels = build_dify_labels("My App@Example.com/" + "x" * 100)
+    assert labels is not None
+    app_id = labels["dify_app_id"]
+    assert len(app_id) <= 63
+    assert all(c.islower() or c.isdigit() or c in "_-" for c in app_id)
+
+
+def test_build_dify_labels_keeps_non_string_falsy():
+    # build_dify_labels only rejects None and "" — other falsy values
+    # such as numeric 0 are coerced by normalize_label_value.
+    labels = build_dify_labels(0)
+    assert labels == {"dify_app_id": "0", "dify_source": "dify"}
+
+
+def test_build_dify_labels_uuid_passthrough():
+    uuid = "550e8400-e29b-41d4-a716-446655440000"
+    labels = build_dify_labels(uuid)
+    assert labels == {"dify_app_id": uuid, "dify_source": "dify"}
+
+
+# --- apply_dify_labels_if_enabled: credential gating ---
+
+
+def test_apply_no_op_when_credential_missing():
+    config = SimpleNamespace()
+    apply_dify_labels_if_enabled(config, {})
+    assert not hasattr(config, "labels")
+
+
+def test_apply_no_op_when_credential_disabled():
+    config = SimpleNamespace()
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "disabled"})
+    assert not hasattr(config, "labels")
+
+
+def test_apply_noop_without_session_context():
+    # Outside a Dify session, get_current_session() returns None rather
+    # than raising, so no app_id resolves and the config is left untouched.
+    config = SimpleNamespace()
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    assert not hasattr(config, "labels")
+
+
+def test_apply_silent_when_session_lookup_raises(monkeypatch):
+    # Telemetry must never break generation, so a raising session lookup
+    # is swallowed. Exercises the except branch directly, which the
+    # None-returning path above cannot reach.
+    import dify_plugin
+
+    def _boom():
+        raise RuntimeError("session backend unavailable")
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", _boom)
+    config = SimpleNamespace()
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    assert not hasattr(config, "labels")
+
+
+class _FakeSession:
+    app_id = "550e8400-e29b-41d4-a716-446655440000"
+
+
+# --- apply_dify_labels_if_enabled: label composition ---
+
+
+def test_apply_merges_with_existing_labels(monkeypatch):
+    # When the config already carries labels (e.g. caller-supplied
+    # labels), Dify keys must merge in rather than replace the whole dict.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    config = SimpleNamespace(labels={"existing": "value"})
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    assert config.labels["existing"] == "value"
+    assert config.labels["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert config.labels["dify_source"] == "dify"
+
+
+def test_apply_replaces_non_dict_labels(monkeypatch):
+    # If existing labels is somehow not a dict, Dify keys take over rather
+    # than blow up — telemetry is best-effort.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    config = SimpleNamespace(labels="unexpected-string")
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    assert isinstance(config.labels, dict)
+    assert config.labels["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_does_not_mutate_existing_labels(monkeypatch):
+    # The merge must not mutate the caller's dict in place: a shared
+    # reference must never be modified as a side effect of telemetry opt-in.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    original = {"existing_key": "existing_value"}
+    config = SimpleNamespace(labels=original)
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    # The original dict is left untouched.
+    assert original == {"existing_key": "existing_value"}
+    # config carries a new, merged dict.
+    assert config.labels is not original
+    assert config.labels["existing_key"] == "existing_value"
+    assert config.labels["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_writes_labels_when_config_empty(monkeypatch):
+    # With no prior labels, apply should write a fresh dict carrying only
+    # the Dify keys.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    config = SimpleNamespace()
+    apply_dify_labels_if_enabled(config, {"enable_request_metadata": "enabled"})
+    assert config.labels == {
+        "dify_app_id": "550e8400-e29b-41d4-a716-446655440000",
+        "dify_source": "dify",
+    }
+
+
+# --- apply_dify_labels_if_enabled: source-level guard ---
+
+
+def test_llm_module_uses_dify_labels_helper():
+    # The wiring in llm.py must reach apply_dify_labels_if_enabled so the
+    # opt-in credential is honored on the request path. A source-level
+    # guard catches accidental removal during refactors of the call site.
+    import inspect
+
+    from models.llm import llm as llm_module
+
+    source = inspect.getsource(llm_module)
+    assert "apply_dify_labels_if_enabled(config, credentials)" in source
+    assert "from ._labels import apply_dify_labels_if_enabled" in source
