@@ -38,6 +38,10 @@ Create a **HubSpot Private App** and copy its access token:
 
 Keep the token secret; it grants access to your HubSpot data.
 
+### Or: OAuth 2.0
+
+The plugin also supports OAuth 2.0 (for multi-account / public-app use). In Dify, choose the OAuth option and provide your HubSpot app's **Client ID** and **Client Secret** (and optionally a custom scope string), then authorize. Tokens are refreshed automatically. Use the Private App token for a single account; use OAuth to let multiple HubSpot accounts connect.
+
 ## Notes
 
 - Search results are capped at 100 per call — use `after` (the returned `paging.next.after`) to page through more.

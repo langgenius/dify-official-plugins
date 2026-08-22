@@ -42,6 +42,73 @@ credentials_for_provider:
       zh_Hant: 在 HubSpot 中建立私有應用並授予 CRM 權限（聯絡人、公司、交易、工單），然後複製其存取權杖。
       ko_KR: HubSpot에서 비공개 앱을 만들고 CRM 스코프(연락처, 회사, 거래, 티켓)를 부여한 후 액세스 토큰을 복사하세요.
     url: https://developers.hubspot.com/docs/api/private-apps
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: text-input
+      required: true
+      label:
+        en_US: Client ID
+        zh_Hans: 客户端 ID
+        pt_BR: ID do Cliente
+        ja_JP: クライアント ID
+        zh_Hant: 客戶端 ID
+        ko_KR: 클라이언트 ID
+      help:
+        en_US: From your HubSpot public app - Auth settings
+        zh_Hans: 来自你的 HubSpot 公开应用的 Auth 设置
+        pt_BR: Das configurações de Auth do seu aplicativo público HubSpot
+        ja_JP: HubSpot パブリックアプリの Auth 設定から取得
+        zh_Hant: 來自你的 HubSpot 公開應用的 Auth 設定
+        ko_KR: HubSpot 공개 앱의 Auth 설정에서 확인
+      url: https://developers.hubspot.com/docs/api/oauth-quickstart-guide
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        en_US: Client Secret
+        zh_Hans: 客户端密钥
+        pt_BR: Segredo do Cliente
+        ja_JP: クライアントシークレット
+        zh_Hant: 客戶端密鑰
+        ko_KR: 클라이언트 시크릿
+    - name: scope
+      type: text-input
+      required: false
+      default: crm.objects.contacts.read crm.objects.contacts.write crm.objects.companies.read crm.objects.companies.write crm.objects.deals.read crm.objects.deals.write crm.objects.tickets.read crm.objects.tickets.write
+      label:
+        en_US: OAuth Scopes
+        zh_Hans: OAuth 权限范围
+        pt_BR: Escopos OAuth
+        ja_JP: OAuth スコープ
+        zh_Hant: OAuth 權限範圍
+        ko_KR: OAuth 스코프
+      help:
+        en_US: Space-separated scopes; must be a subset of the scopes enabled on your HubSpot app
+        zh_Hans: 空格分隔的权限范围，必须是你 HubSpot 应用已启用权限的子集
+        pt_BR: Escopos separados por espaço; devem ser um subconjunto dos escopos habilitados no seu app HubSpot
+        ja_JP: スペース区切りのスコープ。HubSpot アプリで有効なスコープの部分集合である必要があります
+        zh_Hant: 空格分隔的權限範圍，必須是你 HubSpot 應用已啟用權限的子集
+        ko_KR: 공백으로 구분된 스코프이며 HubSpot 앱에서 활성화된 스코프의 부분 집합이어야 합니다
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: Access Token
+        zh_Hans: 访问令牌
+        pt_BR: Token de Acesso
+        ja_JP: アクセストークン
+        zh_Hant: 存取權杖
+        ko_KR: 액세스 토큰
+    - name: refresh_token
+      type: secret-input
+      label:
+        en_US: Refresh Token
+        zh_Hans: 刷新令牌
+        pt_BR: Token de Atualização
+        ja_JP: リフレッシュトークン
+        zh_Hant: 重新整理權杖
+        ko_KR: 리프레시 토큰
 tools:
   - tools/create_contact.yaml
   - tools/update_contact.yaml
