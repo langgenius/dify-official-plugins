@@ -33,7 +33,10 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeBadRequestError,
+)
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import Stream
 from openai.types import Completion
@@ -363,7 +366,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["safety_identifier"] = user
-        if stream:
+        if stream and self._supports_stream_options(credentials):
+            # stream_options predates some dated Azure API versions; when the
+            # endpoint cannot accept it, usage falls back to tiktoken
+            # estimation inside the streaming handler (has_usage flag).
             extra_model_kwargs["stream_options"] = {"include_usage": True}
         prompt_messages = self._clear_illegal_prompt_messages(
             base_model_name, prompt_messages
@@ -431,6 +437,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Reference: https://platform.openai.com/docs/guides/migrate-to-responses
         """
         base_model_name = self._get_base_model_name(credentials)
+        self._ensure_responses_api_supported(credentials, base_model_name)
         client = self._create_client(credentials)
 
         # Whether this model is a pure reasoning model (gpt-5, gpt-5-mini, etc.)
@@ -509,9 +516,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if user:
             responses_params["safety_identifier"] = user
 
-        # stop sequences are not supported by gpt-5 reasoning models
-        if stop and not is_reasoning_model:
-            responses_params["stop"] = stop
+        # Stop sequences are not supported by the Responses API at all
+        # (the SDK's responses.create has no such parameter). They are
+        # enforced client-side inside the response handlers below.
 
         # Handle the response format
         response_format = model_parameters.get("response_format")
@@ -560,9 +567,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         # for why the API requires it.
         apply_dify_metadata_if_enabled(responses_params, credentials)
 
+        # Log only non-sensitive routing information: the full payload can
+        # contain user input, tool schemas, document URLs and base64 data.
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
-            f"parameters={responses_params}"
+            f"param_keys={sorted(responses_params.keys())}"
         )
 
         # Call the Responses API
@@ -573,11 +582,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         if stream:
             return self._handle_responses_stream_response(
-                model, credentials, response, prompt_messages, tools
+                model, credentials, response, prompt_messages, tools, stop=stop
             )
         else:
             return self._handle_responses_response(
-                model, credentials, response, prompt_messages, tools
+                model, credentials, response, prompt_messages, tools, stop=stop
             )
 
     @staticmethod
@@ -702,23 +711,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                             "converted to a Responses API format."
                         )
             elif isinstance(message, AssistantPromptMessage):
-                # If the assistant message contains tool_calls, emit each as a
-                # Responses API function_call item (type="function_call").
-                # A plain-text assistant turn is emitted as a normal message item.
-                if message.tool_calls:
-                    for tc in message.tool_calls:
-                        input_messages.append({
-                            "type": "function_call",
-                            "call_id": tc.id,
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        })
-                else:
-                    if message.content:
-                        input_messages.append({
-                            "role": "assistant",
-                            "content": message.content,
-                        })
+                # Multi-round agent history often pairs prose with tool
+                # calls; both halves must reach the Responses input.
+                if message.content:
+                    input_messages.append({
+                        "role": "assistant",
+                        "content": message.content,
+                    })
+                for tc in message.tool_calls or []:
+                    input_messages.append({
+                        "type": "function_call",
+                        "call_id": tc.id,
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    })
             elif isinstance(message, ToolPromptMessage):
                 # Responses API requires tool results as function_call_output items.
                 # The call_id links back to the function_call item
@@ -776,10 +782,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         response: Response,
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
     ) -> LLMResult:
         """Handle non-streaming Responses API responses."""
-        # Extract text content
-        content = ""
+        # Keep synthetic reasoning separate from output text so that
+        # client-side stop enforcement never cuts inside the reasoning
+        # wrapper.
+        reasoning_text = ""
+        message_text = ""
 
         # Inspect the actual response structure
         if hasattr(response, 'output') and response.output:
@@ -793,31 +803,45 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         s.text for s in summary_list if hasattr(s, 'text') and s.text
                     )
                     if summary_text:
-                        content += "<think>\n" + summary_text + "\n</think>"
+                        reasoning_text += summary_text
                 elif item_type == "message":
                     # message.content can be a string or a list of segments
                     item_content = getattr(item, 'content', None)
                     if isinstance(item_content, str):
                         if item_content:
-                            content += item_content
+                            message_text += item_content
                     elif isinstance(item_content, list):
                         for part in item_content:
                             part_type = getattr(part, 'type', '')
                             if part_type in ("output_text", "text", "input_text"):
                                 text_val = getattr(part, 'text', '')
                                 if text_val:
-                                    content += text_val
+                                    message_text += text_val
                 elif item_type in ("output_text", "text"):
                     # Some implementations return output_text/text entries directly
                     text_val = getattr(item, 'text', '')
                     if text_val:
-                        content += text_val
+                        message_text += text_val
         elif hasattr(response, 'text') and response.text:
             # Fallback format
-            content = response.text
+            message_text = response.text
         elif hasattr(response, 'content') and response.content:
             # Direct content format
-            content = response.content
+            message_text = response.content
+
+        # Client-side stop enforcement applies only to output text.
+        stop_sequences = [s for s in (stop or []) if s]
+        if stop_sequences:
+            cut = self._earliest_stop_cut(message_text, stop_sequences)
+            if cut != -1:
+                message_text = message_text[:cut]
+        if reasoning_text:
+            content = (
+                "<think>\n" + reasoning_text + "\n</think>"
+            )
+        else:
+            content = ""
+        content += message_text
 
         # Handle tool calls
         tool_calls = []
@@ -880,7 +904,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             prompt_messages=prompt_messages,
             message=assistant_prompt_message,
             usage=usage,
-            system_fingerprint=getattr(response, 'id', ''),
+            system_fingerprint=None,
         )
 
     def _handle_responses_stream_response(
@@ -890,208 +914,282 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         response: Stream[ResponseStreamEvent],
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
     ) -> Generator:
         """Handle streaming Responses API responses."""
         full_text = ""
-        tool_calls = []
         index = 0
-        is_first = True
         is_reasoning = False
 
-        # Track tool call state
-        pending_tool_calls = {}  # call_id -> tool_call_dict
-        current_tool_call = None
+        # Client-side stop enforcement state. The Responses API has no stop
+        # parameter, so sequences are matched on accumulated output text.
+        # A tail of (longest sequence - 1) characters is held back so a
+        # sequence split across deltas is still caught before emission.
+        stop_sequences = [s for s in (stop or []) if s]
+        stop_hit = False
+        pending = ""
+        holdback = max((len(s) for s in stop_sequences), default=1) - 1
 
-        for chunk in response:
-            if is_first:
-                is_first = False
+        # Real usage / terminal status captured from terminal events (B4).
+        real_usage: Optional[tuple[int, int]] = None
+        terminal_status: Optional[str] = None
+        error_message = ""
 
-            # Handle the Responses API streaming event format
-            chunk_type = getattr(chunk, 'type', '')
+        # Tool call assembly state.
+        pending_tool_calls: dict[str, dict] = {}
+        current_tool_call: Optional[str] = None
+        emitted_tool_calls: list[AssistantPromptMessage.ToolCall] = []
 
-            if chunk_type == 'response.reasoning_summary_text.delta':
-                # Reasoning summary delta - wrap with <think> tags
-                delta_text = getattr(chunk, 'delta', '')
-                if delta_text:
-                    if not is_reasoning:
-                        delta_text = "<think>\n" + delta_text
-                        is_reasoning = True
-                    full_text += delta_text
+        def _text_chunk(text: str) -> Optional[LLMResultChunk]:
+            nonlocal full_text, index
+            if not text:
+                return None
+            full_text += text
+            message = AssistantPromptMessage(content=text, tool_calls=[])
+            result_chunk = LLMResultChunk(
+                model=model,
+                prompt_messages=prompt_messages,
+                system_fingerprint=None,
+                delta=LLMResultChunkDelta(index=index, message=message),
+            )
+            index += 1
+            return result_chunk
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_text,
-                        tool_calls=[]
-                    )
+        def _feed_text(delta_text: str) -> list[LLMResultChunk]:
+            """Route an output-text piece through closure + stop matching."""
+            nonlocal is_reasoning, stop_hit, pending
+            out: list[LLMResultChunk] = []
+            if not delta_text:
+                return out
+            if is_reasoning:
+                # Close the reasoning block before regular text.
+                closing = "\n</think>"
+                is_reasoning = False
+                chunk = _text_chunk(closing)
+                if chunk:
+                    out.append(chunk)
+            if stop_hit:
+                # Swallow everything once a stop sequence matched.
+                return out
+            pending += delta_text
+            cut = self._earliest_stop_cut(pending, stop_sequences)
+            if cut != -1:
+                emit_text, pending = pending[:cut], ""
+                stop_hit = True
+            elif len(pending) > holdback:
+                if holdback > 0:
+                    emit_text, pending = pending[:-holdback], pending[-holdback:]
+                else:
+                    emit_text, pending = pending, ""
+            else:
+                emit_text = ""
+            if emit_text:
+                chunk = _text_chunk(emit_text)
+                if chunk:
+                    out.append(chunk)
+            return out
 
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        system_fingerprint=getattr(chunk, 'item_id', ''),
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message
-                        ),
-                    )
-                    index += 1
+        def _flush_pending() -> Optional[LLMResultChunk]:
+            """Emit held-back text before non-text output preserves order."""
+            nonlocal pending
+            if stop_hit or not pending:
+                return None
+            tail, pending = pending, ""
+            return _text_chunk(tail)
 
-            elif chunk_type == 'response.output_text.delta':
-                # ResponseTextDeltaEvent format - text delta
-                delta_text = getattr(chunk, 'delta', '')
-                if delta_text:
-                    if is_reasoning:
-                        # Close the <think> block before regular text
-                        delta_text = "\n</think>" + delta_text
-                        is_reasoning = False
-                    full_text += delta_text
+        for chunk_event in response:
+            event_type = getattr(chunk_event, 'type', '')
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_text,
-                        tool_calls=[]
-                    )
+            if event_type == 'response.reasoning_summary_text.delta':
+                # Reasoning summary delta - wrap with THINK_OPEN tags
+                delta_text = getattr(chunk_event, 'delta', '') or ''
+                if not delta_text:
+                    continue
+                if is_reasoning:
+                    out = delta_text
+                else:
+                    is_reasoning = True
+                    out = "<think>\n" + delta_text
+                emitted = _text_chunk(out)
+                if emitted:
+                    yield emitted
 
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        system_fingerprint=getattr(chunk, 'item_id', ''),
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message
-                        ),
-                    )
-                    index += 1
+            elif event_type == 'response.output_text.delta':
+                for emitted in _feed_text(
+                    getattr(chunk_event, 'delta', '') or ''
+                ):
+                    yield emitted
 
-            elif chunk_type == 'response.output_item.added':
-                # ResponseOutputItemAddedEvent format - tool call start
-                item = getattr(chunk, 'item', None)
+            elif event_type == 'response.output_item.added':
+                item = getattr(chunk_event, 'item', None)
                 if item and hasattr(item, 'type'):
                     item_type = getattr(item, 'type', '')
-
                     if item_type == 'function_call':
-                        # Tool call start - initialize the tool call object
                         function_name = getattr(item, 'name', '')
                         call_id = getattr(item, 'call_id', '')
-
                         if function_name and call_id:
                             pending_tool_calls[call_id] = {
                                 'id': call_id,
                                 'name': function_name,
-                                'arguments': ''  # Start empty and wait for argument deltas
+                                'arguments': '',
                             }
                             current_tool_call = call_id
 
-            elif chunk_type == 'response.function_call_arguments.delta':
-                # ResponseFunctionCallArgumentsDeltaEvent format - tool argument delta
-                delta_args = getattr(chunk, 'delta', '')
-
-                # Use the currently tracked tool call
+            elif event_type == 'response.function_call_arguments.delta':
+                delta_args = getattr(chunk_event, 'delta', '') or ''
                 if current_tool_call and current_tool_call in pending_tool_calls:
-                    # Append arguments to the existing tool call
                     pending_tool_calls[current_tool_call]['arguments'] += delta_args
 
-            elif chunk_type == 'response.function_call_arguments.done':
-                # ResponseFunctionCallArgumentsDoneEvent format - tool arguments complete
-                call_id = getattr(chunk, 'item_id', '')
-                final_args = getattr(chunk, 'arguments', '')
-
+            elif event_type == 'response.function_call_arguments.done':
+                call_id = getattr(chunk_event, 'item_id', '')
+                final_args = getattr(chunk_event, 'arguments', '')
                 if call_id and call_id in pending_tool_calls:
-                    # Update the tool call with the completed arguments
                     pending_tool_calls[call_id]['arguments'] = final_args
 
-            elif chunk_type == 'response.output_item.done':
-                # ResponseOutputItemDoneEvent format - tool call complete
-                item = getattr(chunk, 'item', None)
+            elif event_type == 'response.output_item.done':
+                item = getattr(chunk_event, 'item', None)
                 if item and hasattr(item, 'type'):
                     item_type = getattr(item, 'type', '')
-
                     if item_type == 'function_call':
-                        # Tool call complete - emit the full tool call
+                        # Text preceding the call must not jump behind it.
+                        flushed = _flush_pending()
+                        if flushed:
+                            yield flushed
+                        # Close an open reasoning block BEFORE tool output.
+                        if is_reasoning:
+                            closing = "\n</think>"
+                            is_reasoning = False
+                            emitted = _text_chunk(closing)
+                            if emitted:
+                                yield emitted
                         function_name = getattr(item, 'name', '')
                         function_args = getattr(item, 'arguments', '')
                         call_id = getattr(item, 'call_id', '')
-
-                        # Prefer the completed arguments (from response.function_call_arguments.done)
                         if call_id in pending_tool_calls:
-                            final_args = pending_tool_calls[call_id]['arguments'] or function_args
+                            final_args = (
+                                pending_tool_calls[call_id]['arguments']
+                                or function_args
+                            )
                         else:
                             final_args = function_args
-
                         if function_name:
                             tool_call = AssistantPromptMessage.ToolCall(
                                 id=call_id,
                                 type="function",
                                 function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                                     name=function_name,
-                                    arguments=final_args or "{}"
-                                )
+                                    arguments=final_args or "{}",
+                                ),
                             )
-
                             assistant_prompt_message = AssistantPromptMessage(
                                 content="",
-                                tool_calls=[tool_call]
+                                tool_calls=[tool_call],
                             )
-
                             yield LLMResultChunk(
                                 model=model,
                                 prompt_messages=prompt_messages,
-                                system_fingerprint=call_id,
+                                system_fingerprint=None,
                                 delta=LLMResultChunkDelta(
                                     index=index,
-                                    message=assistant_prompt_message
+                                    message=assistant_prompt_message,
                                 ),
                             )
                             index += 1
-
-                            # Clean up completed tool calls
-                            if call_id in pending_tool_calls:
-                                del pending_tool_calls[call_id]
-
-                            # Reset tracking for the current tool call
+                            emitted_tool_calls.append(tool_call)
+                            pending_tool_calls.pop(call_id, None)
                             if call_id == current_tool_call:
                                 current_tool_call = None
 
-            elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
-                # Handle alternative formats
-                delta_text = chunk.delta.text or ""
-                if delta_text:
-                    full_text += delta_text
-
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_text,
-                        tool_calls=[]
+            elif event_type in ('response.completed', 'response.incomplete'):
+                resp = getattr(chunk_event, 'response', None)
+                usage_obj = getattr(resp, 'usage', None)
+                if usage_obj is not None:
+                    input_tokens = (
+                        getattr(usage_obj, 'input_tokens', None)
+                        or getattr(usage_obj, 'prompt_tokens', 0)
+                        or 0
                     )
-
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        system_fingerprint=getattr(chunk, 'item_id', ''),
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message
-                        ),
+                    output_tokens = (
+                        getattr(usage_obj, 'output_tokens', None)
+                        or getattr(usage_obj, 'completion_tokens', 0)
+                        or 0
                     )
-                    index += 1
+                    real_usage = (int(input_tokens), int(output_tokens))
+                terminal_status = (
+                    'completed'
+                    if event_type == 'response.completed'
+                    else 'incomplete'
+                )
 
-        # Handle the final usage statistics
-        prompt_tokens = self._num_tokens_from_messages(
-            credentials, prompt_messages, tools
-        )
-        full_assistant_prompt_message = AssistantPromptMessage(content=full_text)
-        completion_tokens = self._num_tokens_from_messages(
-            credentials, [full_assistant_prompt_message]
-        )
+            elif event_type == 'response.failed':
+                terminal_status = 'failed'
+                failed_response = getattr(chunk_event, 'response', None)
+                error_obj = getattr(failed_response, 'error', None)
+                error_message = str(
+                    getattr(error_obj, 'message', '') or error_obj or 'response failed'
+                )
 
+            elif event_type == 'error':
+                terminal_status = 'failed'
+                error_message = str(
+                    getattr(chunk_event, 'message', '')
+                    or getattr(chunk_event, 'error', '')
+                    or 'stream error'
+                )
+
+            elif hasattr(chunk_event, 'delta') and hasattr(
+                chunk_event.delta, 'text'
+            ):
+                # Alternative formats share the text pipeline.
+                for emitted in _feed_text(chunk_event.delta.text or ""):
+                    yield emitted
+
+        # Flush any held-back tail when no stop sequence matched.
+        flushed = _flush_pending()
+        if flushed:
+            yield flushed
+        # Never leave a synthetic reasoning block unclosed.
+        if is_reasoning:
+            closing = "\n</think>"
+            is_reasoning = False
+            emitted = _text_chunk(closing)
+            if emitted:
+                yield emitted
+
+        if terminal_status == 'failed':
+            raise InvokeBadRequestError(
+                f"Azure OpenAI Responses stream failed: {error_message}"
+            )
+
+        # Prefer real usage reported by the API; fall back to estimates only
+        # when the terminal event did not carry it.
+        if real_usage is not None:
+            prompt_tokens, completion_tokens = real_usage
+        else:
+            prompt_tokens = self._num_tokens_from_messages(
+                credentials, prompt_messages, tools
+            )
+            completion_tokens = self._num_tokens_from_messages(
+                credentials,
+                [
+                    AssistantPromptMessage(
+                        content=full_text,
+                        tool_calls=list(emitted_tool_calls),
+                    )
+                ],
+            )
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens
         )
-
+        finish_reason = "length" if terminal_status == "incomplete" else "stop"
         yield LLMResultChunk(
             model=model,
             prompt_messages=prompt_messages,
-            system_fingerprint="",
+            system_fingerprint=None,
             delta=LLMResultChunkDelta(
                 index=index,
                 message=AssistantPromptMessage(content=""),
-                finish_reason="stop",
+                finish_reason=finish_reason,
                 usage=usage,
             ),
         )
@@ -1113,10 +1211,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         :param stop: stop words
         :return: llm response chunk generator
         """
-        text = block_result.message.content
-        text = cast(str, text)
+        text = cast(str, block_result.message.content or "")
         if stop:
-            text = self.enforce_stop_tokens(text, stop)
+            stop_sequences = [s for s in stop if s]
+            cut = self._earliest_stop_cut(text, stop_sequences)
+            if cut != -1:
+                text = text[:cut]
         yield LLMResultChunk(
             model=block_result.model,
             prompt_messages=prompt_messages,
@@ -1192,15 +1292,19 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             tool_calls=tool_calls, tool_calls_response=assistant_message_tool_calls
         )
         content = ""
-        if hasattr(
-            assistant_message, "model_extra"
-        ) and assistant_message.model_extra.get("reasoning_content"):
-            content += (
-                "<think>\n"
-                + assistant_message.model_extra["reasoning_content"]
-                + "\n</think>"
+        # model_extra is None on plain completions; reasoning may also
+        # arrive as a direct attribute depending on the provider.
+        reasoning_content = (
+            (getattr(assistant_message, "model_extra", None) or {}).get(
+                "reasoning_content"
             )
-        content += assistant_message.content
+            or getattr(assistant_message, "reasoning_content", None)
+        )
+        if reasoning_content:
+            content += (
+                "<think>\n" + reasoning_content + "\n</think>"
+            )
+        content += assistant_message.content or ""
 
         assistant_prompt_message = AssistantPromptMessage(
             content=content, tool_calls=tool_calls
@@ -1254,18 +1358,69 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             delta = chunk.choices[0]
             if delta.delta is None:
                 continue
+            tools_before = len(tool_calls)
             self._update_tool_calls(
                 tool_calls=tool_calls, tool_calls_response=delta.delta.tool_calls
             )
+            # Sparse padding may create placeholder entries; give them a
+            # stable synthetic id so downstream never sees an empty one.
+            for _i, _tc in enumerate(tool_calls):
+                if not _tc.id:
+                    _tc.id = f"call-{_i}"
+            raw_content = delta.delta.content or ""
+            reasoning_content = getattr(delta.delta, "reasoning_content", None)
+            new_tools = len(tool_calls) > tools_before
+            # Fresh per-delta accumulators: never carry stale pieces.
+            pieces: list[str] = []
+            if reasoning_content:
+                # Reasoning streams WITHOUT tool payload attached, so a
+                # same-delta tool transition stays correctly ordered.
+                reasoning_pieces: list[str] = []
+                if not is_reasoning:
+                    reasoning_pieces.append("<think>\n")
+                    is_reasoning = True
+                reasoning_pieces.append(reasoning_content)
+                content = "".join(reasoning_pieces)
+                completion += content
+                yield LLMResultChunk(
+                    model=chunk.model,
+                    prompt_messages=prompt_messages,
+                    system_fingerprint=chunk.system_fingerprint,
+                    delta=LLMResultChunkDelta(
+                        index=index,
+                        message=AssistantPromptMessage(
+                            content=content, tool_calls=[]
+                        ),
+                    ),
+                )
+                index += 1
+            if raw_content:
+                pieces.append(raw_content)
+            # Any visible output - text now, or same-delta tool activity -
+            # closes an open wrapper as its own standalone chunk.
+            if is_reasoning and (raw_content or new_tools):
+                closing_content = "\n</think>"
+                is_reasoning = False
+                completion += closing_content
+                yield LLMResultChunk(
+                    model=chunk.model,
+                    prompt_messages=prompt_messages,
+                    system_fingerprint=chunk.system_fingerprint,
+                    delta=LLMResultChunkDelta(
+                        index=index,
+                        message=AssistantPromptMessage(
+                            content=closing_content
+                        ),
+                    ),
+                )
+                index += 1
             if (
                 delta.finish_reason is None
-                and not delta.delta.content
-                and not hasattr(delta.delta, "reasoning_content")
+                and not any(p for p in pieces)
+                and not new_tools
             ):
                 continue
-            content, is_reasoning = self._azure_wrap_thinking_by_reasoning_content(
-                delta.delta, is_reasoning
-            )
+            content = "".join(pieces)
             assistant_prompt_message = AssistantPromptMessage(
                 content=content, tool_calls=tool_calls
             )
@@ -1281,11 +1436,27 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ),
             )
             index += 1
+        if is_reasoning:
+            closing_content = "\n</think>"
+            completion += closing_content
+            yield LLMResultChunk(
+                model=real_model,
+                prompt_messages=prompt_messages,
+                system_fingerprint=system_fingerprint,
+                delta=LLMResultChunkDelta(
+                    index=index,
+                    message=AssistantPromptMessage(content=closing_content),
+                ),
+            )
+            index += 1
         if not has_usage:
             prompt_tokens = self._num_tokens_from_messages(
                 credentials, prompt_messages, tools
             )
-            full_assistant_prompt_message = AssistantPromptMessage(content=completion)
+            full_assistant_prompt_message = AssistantPromptMessage(
+                content=completion,
+                tool_calls=list(tool_calls),
+            )
             completion_tokens = self._num_tokens_from_messages(
                 credentials, [full_assistant_prompt_message]
             )
@@ -1304,6 +1475,22 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 usage=usage,
             ),
         )
+
+    @staticmethod
+    def _earliest_stop_cut(text: str, stop_sequences: list[str]) -> int:
+        """Index of the earliest literal stop-sequence occurrence (-1 if none).
+
+        Literal matching (str.find), NOT regex: dify's enforce_stop_tokens
+        joins sequences with '|' into a pattern, so metacharacters such as
+        '.' or '[' would change semantics or raise. Streaming and blocking
+        paths must agree.
+        """
+        cut = -1
+        for seq in stop_sequences:
+            pos = text.find(seq)
+            if pos != -1 and (cut == -1 or pos < cut):
+                cut = pos
+        return cut
 
     @staticmethod
     def _update_tool_calls(
@@ -1326,38 +1513,31 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     )
                     tool_calls.append(tool_call)
                 elif isinstance(response_tool_call, ChoiceDeltaToolCall):
-                    index = response_tool_call.index
-                    if index < len(tool_calls):
-                        tool_calls[index].id = (
-                            response_tool_call.id or tool_calls[index].id
-                        )
-                        tool_calls[index].type = (
-                            response_tool_call.type or tool_calls[index].type
-                        )
-                        if response_tool_call.function:
-                            tool_calls[index].function.name = (
-                                response_tool_call.function.name
-                                or tool_calls[index].function.name
+                    # Deltas are sparse: any subset of id/type/function can
+                    # arrive first. Pad placeholders up to the index and
+                    # merge instead of asserting provider completeness.
+                    delta_index = response_tool_call.index
+                    while len(tool_calls) <= delta_index:
+                        tool_calls.append(
+                            AssistantPromptMessage.ToolCall(
+                                id="",
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name="", arguments=""
+                                ),
                             )
-                            tool_calls[index].function.arguments += (
-                                response_tool_call.function.arguments or ""
-                            )
-                    else:
-                        assert response_tool_call.id is not None
-                        assert response_tool_call.type is not None
-                        assert response_tool_call.function is not None
-                        assert response_tool_call.function.name is not None
-                        assert response_tool_call.function.arguments is not None
-                        function = AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=response_tool_call.function.name,
-                            arguments=response_tool_call.function.arguments,
                         )
-                        tool_call = AssistantPromptMessage.ToolCall(
-                            id=response_tool_call.id,
-                            type=response_tool_call.type,
-                            function=function,
+                    target = tool_calls[delta_index]
+                    target.id = response_tool_call.id or target.id
+                    target.type = response_tool_call.type or target.type
+                    if response_tool_call.function:
+                        target.function.name = (
+                            response_tool_call.function.name
+                            or target.function.name
                         )
-                        tool_calls.append(tool_call)
+                        target.function.arguments += (
+                            response_tool_call.function.arguments or ""
+                        )
 
     @staticmethod
     def _convert_prompt_message_to_dict(message: PromptMessage):
@@ -1482,16 +1662,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
-                if isinstance(value, list):
-                    text = ""
-                    for item in value:
-                        if isinstance(item, dict):
-                            if item["type"] == "text":
-                                text += item["text"]
-                            elif item["type"] == "image_url":
-                                image_details.append(item["image_url"])
-                    value = text
                 if key == "tool_calls":
+                    # Account on the pristine list: flattening below
+                    # replaces list values with text and loses them.
                     for tool_call in value:
                         assert isinstance(tool_call, dict)
                         for t_key, t_value in tool_call.items():
@@ -1501,10 +1674,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     num_tokens += len(encoding.encode(f_key))
                                     num_tokens += len(encoding.encode(f_value))
                             else:
-                                num_tokens += len(encoding.encode(t_key))
-                                num_tokens += len(encoding.encode(t_value))
-                else:
-                    num_tokens += len(encoding.encode(str(value)))
+                                num_tokens += len(encoding.encode(str(t_value)))
+                    continue
+                if isinstance(value, list):
+                    text = ""
+                    for item in value:
+                        if isinstance(item, dict):
+                            if item["type"] == "text":
+                                text += item["text"]
+                            elif item["type"] == "image_url":
+                                image_details.append(item["image_url"])
+                    value = text
+                num_tokens += len(encoding.encode(str(value)))
                 if key == "name":
                     num_tokens += tokens_per_name
         num_tokens += 3
@@ -1581,7 +1762,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if base_model_name.startswith("gpt-4o-mini"):
             base_tokens = 2833
             tile_tokens = 5667
-        elif base_model_name.startswith(("gpt-4o", "gpt-4.1", "gpt-4.5")):
+        elif base_model_name.startswith(
+            ("gpt-4o", "gpt-4.1", "gpt-4.5", "gpt-5")
+        ):
             base_tokens = 85
             tile_tokens = 170
         elif base_model_name.startswith(("o1", "o3", "o1-pro")):
@@ -1589,11 +1772,30 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             tile_tokens = 150
 
         for image_detail in image_details:
-            base64_str = image_detail["url"].split(",")[1]
-
-            image_data = base64.b64decode(base64_str)
-            image = Image.open(io.BytesIO(image_data))
-            width, height = image.size
+            detail = ""
+            url = ""
+            if isinstance(image_detail, dict):
+                detail = str(image_detail.get("detail") or "")
+                url = image_detail.get("url") or ""
+            low_detail = detail == "low"
+            fallback_cost = 85 if low_detail else 765  # base + 4x170 tiles
+            if not isinstance(url, str) or not url.startswith("data:"):
+                # Remote URL: dimensions unknown. Never fetch during
+                # token estimation; use a conservative fixed cost.
+                num_tokens += fallback_cost
+                continue
+            try:
+                base64_str = url.split(",", 1)[1]
+                image_data = base64.b64decode(base64_str)
+                image = Image.open(io.BytesIO(image_data))
+                width, height = image.size
+            except Exception:
+                logger.warning(
+                    "Failed to decode image data for token estimation;"
+                    " using conservative estimate."
+                )
+                num_tokens += fallback_cost
+                continue
 
             if base_model_name.startswith(("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini")):
                 width_patches = self._get_image_patches(width)
@@ -1620,7 +1822,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 elif base_model_name.startswith("gpt-4.1-mini"):
                     num_tokens += int(tokens * 1.62)
             else:
-                if image_detail["detail"] == "low":
+                if low_detail:
                     # Regardless of input size, low detail images are a fixed cost.
                     num_tokens += 85
                 else:
@@ -1708,39 +1910,3 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             schema["required"] = required
         return schema
 
-    @staticmethod
-    def _azure_wrap_thinking_by_reasoning_content(
-        delta: ChoiceDelta, is_reasoning: bool
-    ) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
-        :param delta: delta dictionary from LLM streaming response
-        :param is_reasoning: is reasoning
-        :return: tuple of (processed_content, is_reasoning)
-        """
-
-        content = delta.content or ""
-        reasoning_content = (
-            delta.reasoning_content if hasattr(delta, "reasoning_content") else ""
-        )
-        try:
-            if reasoning_content:
-                try:
-                    if not is_reasoning:
-                        content = "<think>\n" + reasoning_content
-                        is_reasoning = True
-                    else:
-                        content = reasoning_content
-                except Exception as ex:
-                    raise ValueError(
-                        f"[_azure_wrap_thinking_by_reasoning_content-1] {ex}"
-                    ) from ex
-            elif is_reasoning and content:
-                content = "\n</think>" + content
-                is_reasoning = False
-        except Exception as ex:
-            raise ValueError(
-                f"[_azure_wrap_thinking_by_reasoning_content-2] {ex}"
-            ) from ex
-        return content, is_reasoning

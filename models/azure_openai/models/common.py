@@ -1,4 +1,6 @@
+import re
 import threading
+from datetime import date
 from urllib.parse import urlparse
 
 import openai
@@ -13,6 +15,32 @@ from dify_plugin.errors.model import (
 
 from .constants import AZURE_OPENAI_API_VERSION
 
+# Minimum Azure OpenAI dated API version that accepts ``stream_options``
+# (added together with ``include_usage`` in the 2024-08-01-preview spec).
+# Older versions reject the parameter outright, breaking every streamed
+# request; see https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle
+_MIN_STREAM_OPTIONS_API_VERSION = "2024-08-01-preview"
+
+# Minimum dated API version exposing the Responses API surface
+# (``/responses`` first appeared in the 2025-03-01-preview spec).
+# Responses-routed models (gpt-5*, codex) cannot work below this.
+_MIN_RESPONSES_API_VERSION = "2025-03-01-preview"
+
+# Dated versions are YYYY-MM-DD[-preview]; anything else is unknown and
+# must fail closed instead of passing a lexicographic comparison.
+_AZURE_API_VERSION_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}(-preview)?")
+
+
+def _is_valid_azure_version(version: str) -> bool:
+    """Full match plus a real calendar date; rejects trailing junk."""
+    if not _AZURE_API_VERSION_PATTERN.fullmatch(version):
+        return False
+    try:
+        date.fromisoformat(version[:10])
+    except ValueError:
+        return False
+    return True
+
 _client_cache: dict[tuple, openai.AzureOpenAI | openai.OpenAI] = {}
 _client_cache_lock = threading.Lock()
 
@@ -22,6 +50,52 @@ class _CommonAzureOpenAI:
     def _is_v1_api_base(api_base: str) -> bool:
         path = urlparse(api_base.strip()).path.rstrip("/")
         return path.endswith("/openai/v1")
+
+    @classmethod
+    def _effective_api_version(cls, credentials: dict) -> str:
+        return str(credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION)
+
+    @classmethod
+    def _supports_dated_feature(cls, credentials: dict, min_version: str) -> bool:
+        """Whether the configured endpoint accepts a feature introduced at ``min_version``.
+
+        Versionless ``/openai/v1`` endpoints always track the latest surface.
+        Dated endpoints sort correctly because versions are ``YYYY-MM-DD``-prefixed;
+        malformed or unknown version strings fail closed.
+        """
+        api_base = str(credentials.get("openai_api_base") or "").strip()
+        if cls._is_v1_api_base(api_base):
+            return True
+        version = cls._effective_api_version(credentials)
+        if not _is_valid_azure_version(version):
+            return False
+        # Compare calendar dates: a GA release on the threshold date must
+        # satisfy a '-preview' minimum (lexicographic would rank it below).
+        return version[:10] >= min_version[:10]
+
+    @classmethod
+    def _supports_stream_options(cls, credentials: dict) -> bool:
+        return cls._supports_dated_feature(credentials, _MIN_STREAM_OPTIONS_API_VERSION)
+
+    @classmethod
+    def _ensure_responses_api_supported(cls, credentials: dict, base_model_name: str) -> None:
+        """Fail fast with an actionable message instead of an opaque failure.
+
+        Models routed to the Responses API require the versionless v1 surface
+        or a dated version that exposes ``/responses``. With the historical
+        default version this combination previously failed deep inside the
+        request with an unhelpful error.
+        """
+        if cls._supports_dated_feature(credentials, _MIN_RESPONSES_API_VERSION):
+            return
+        raise ValueError(
+            f"Base model '{base_model_name}' uses the Azure OpenAI Responses API, "
+            f"which requires an '/openai/v1' endpoint or api-version "
+            f">= {_MIN_RESPONSES_API_VERSION} (configured: "
+            f"'{cls._effective_api_version(credentials)}'). Point API Base URL at "
+            "'https://<resource>.openai.azure.com/openai/v1' or select a newer "
+            "API Version."
+        )
 
     @staticmethod
     def _normalize_v1_base_url(api_base: str) -> str:
@@ -35,7 +109,9 @@ class _CommonAzureOpenAI:
         1. API Key authentication (default)
         2. Microsoft Entra ID with Service Principal (user-provided credentials)
         """
-        api_base = credentials["openai_api_base"].strip()
+        api_base = str(credentials.get("openai_api_base") or "").strip()
+        if not api_base:
+            raise ValueError("Azure OpenAI API Base URL is required")
         api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
         auth_method = credentials.get("auth_method", "api_key")
         is_v1_api = cls._is_v1_api_base(api_base)
@@ -105,7 +181,7 @@ class _CommonAzureOpenAI:
     @staticmethod
     def _credential_cache_key(credentials: dict) -> tuple:
         auth_method = credentials.get("auth_method", "api_key")
-        api_base = credentials.get("openai_api_base", "").strip()
+        api_base = str(credentials.get("openai_api_base") or "").strip()
         api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
         return (
             api_base,
@@ -120,7 +196,7 @@ class _CommonAzureOpenAI:
     @classmethod
     def _build_client(cls, credentials: dict):
         client_kwargs = cls._to_credential_kwargs(credentials)
-        if cls._is_v1_api_base(credentials["openai_api_base"]):
+        if cls._is_v1_api_base(str(credentials.get("openai_api_base") or "")):
             return openai.OpenAI(**client_kwargs)
         return openai.AzureOpenAI(**client_kwargs)
 

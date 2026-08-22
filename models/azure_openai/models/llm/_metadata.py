@@ -29,6 +29,7 @@ from __future__ import annotations
 from typing import Any, Optional
 from urllib.parse import urlparse
 
+from ..common import _CommonAzureOpenAI
 from ..constants import AZURE_OPENAI_API_VERSION
 
 _MAX_VALUE_LENGTH = 512
@@ -50,11 +51,10 @@ def _supports_metadata(credentials: dict) -> bool:
     Otherwise compare the effective api-version, which sorts correctly because
     the values are ``YYYY-MM-DD``-prefixed.
     """
-    api_base = str(credentials.get("openai_api_base") or "").strip()
-    if urlparse(api_base).path.rstrip("/").endswith("/openai/v1"):
-        return True
-    api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
-    return str(api_version) >= _MIN_METADATA_API_VERSION
+    # Reuse the shared fail-closed gate (v1 detection, version shape).
+    return _CommonAzureOpenAI._supports_dated_feature(
+        credentials, _MIN_METADATA_API_VERSION
+    )
 
 
 def normalize_metadata_value(s: Any) -> str:
