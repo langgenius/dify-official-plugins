@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import sys
@@ -6,6 +7,8 @@ from io import BytesIO, StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
+from dashscope.api_entities import dashscope_response
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,14 +53,23 @@ def _worker_payload() -> dict:
     }
 
 
-def _http_response(data: dict, status_code: int = 200) -> MagicMock:
-    response = MagicMock(status_code=status_code)
-    response.json.return_value = data
+def _http_response(data: dict | str, status_code: int = 200) -> requests.Response:
+    response = requests.Response()
+    response.status_code = status_code
+    response._content = (data if isinstance(data, str) else json.dumps(data)).encode()
+    response.headers["Content-Type"] = "application/json"
     return response
 
 
-def _sdk_response(output: dict | None, request_id: str = "request-id") -> MagicMock:
-    return MagicMock(status_code=200, request_id=request_id, output=output)
+def _sdk_response(
+    output: dict | None, request_id: str = "request-id"
+) -> dashscope_response.TranscriptionResponse:
+    output = {"task_id": "task-1", "task_status": "SUCCEEDED", **(output or {})}
+    return dashscope_response.TranscriptionResponse.from_api_response(
+        dashscope_response.DashScopeAPIResponse(
+            status_code=200, request_id=request_id, output=output, headers={}
+        )
+    )
 
 
 def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
@@ -74,14 +86,31 @@ def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
     assert file_obj.tell() == 5
 
 
-def test_get_audio_type_uses_magic_bytes_before_misleading_filename() -> None:
-    file_obj = _named_bytes(b"ID3\x04\x00\x00\x00\x00\x00\x21" + b"\x00" * 16, "upload.wav")
+@pytest.mark.parametrize(
+    ("data", "name", "expected"),
+    [
+        (b"ID3" + b"\0" * 40, "upload.wav", "mp3"),
+        (b"\0\0\0\x18ftypM4A " + b"\0" * 12, "upload.wav", "m4a"),
+        (b"\0\0\0\x01ftyp" + b"\0" * 7 + b"\x18M4A " + b"\0" * 4, "upload.wav", "m4a"),
+        (b"\0\0\0\x18ftypisom" + b"\0" * 12, "upload.wav", "mp4"),
+        (b"\0\0\0\x18ftypisom" + b"\0" * 12, "upload.m4a", "m4a"),
+        (b"\0\0\0\x18ftypqt  " + b"\0" * 12, "upload.wav", "mov"),
+        (b"\x1a\x45\xdf\xa3\x87\x42\x82\x84webm", "upload.wav", "webm"),
+        (b"\x1a\x45\xdf\xa3\x8b\x42\x82\x88matroska", "upload.wav", "mkv"),
+        (b"OggS" + b"\0" * 22 + b"\x01\x08OpusHead", "upload.wav", "opus"),
+        (b"OggS" + b"\0" * 22 + b"\x01\x07\x01vorbis", "upload.wav", "ogg"),
+    ],
+)
+def test_get_audio_type_uses_container_metadata_before_filename(
+    data: bytes, name: str, expected: str
+) -> None:
+    file_obj = _named_bytes(data, name)
 
     with patch(
         "models.speech2text.speech2text.AudioSegment.from_file",
         side_effect=AssertionError("magic-byte detection should not decode audio"),
     ):
-        assert _model().get_audio_type(file_obj) == "mp3"
+        assert _model().get_audio_type(file_obj) == expected
 
 
 def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
@@ -160,6 +189,7 @@ def test_invoke_raises_dashscope_status_error() -> None:
         )
 
     message = str(exc_info.value)
+    assert "status: 400" in message
     assert "Model not available in this region" in message
     assert "InvalidModel" in message
     assert "request-1" in message
@@ -168,12 +198,14 @@ def test_invoke_raises_dashscope_status_error() -> None:
 
 def test_invoke_fun_asr_flash_uses_http_base64() -> None:
     response = _http_response({"output": {"text": "hello flash"}})
+    audio_file = _wav_file()
+    audio_bytes = audio_file.getvalue()
 
     with patch("models.speech2text.speech2text.requests.post", return_value=response) as post:
         text = _model()._invoke(
             model="fun-asr-flash-2026-06-15",
             credentials={"dashscope_api_key": "test-key", "use_international_endpoint": "true"},
-            file=_wav_file(),
+            file=audio_file,
         )
 
     assert text == "hello flash"
@@ -189,9 +221,11 @@ def test_invoke_fun_asr_flash_uses_http_base64() -> None:
     assert payload["parameters"] == {"format": "wav"}
     assert payload["input"]["messages"][0]["role"] == "user"
     assert payload["input"]["messages"][0]["content"][0]["type"] == "input_audio"
-    assert payload["input"]["messages"][0]["content"][0]["input_audio"]["data"].startswith(
-        "data:audio/wav;base64,"
-    )
+    data_uri = payload["input"]["messages"][0]["content"][0]["input_audio"]["data"]
+    prefix, encoded = data_uri.split(",", 1)
+    assert prefix == "data:audio/wav;base64"
+    assert base64.b64decode(encoded) == audio_bytes
+    assert post.call_args.kwargs["timeout"] == (10, 600)
 
 
 def test_invoke_fun_asr_flash_preserves_http_error() -> None:
@@ -215,13 +249,99 @@ def test_invoke_fun_asr_flash_preserves_http_error() -> None:
         )
 
     error = str(exc_info.value)
+    assert "status: 400" in error
     assert "InvalidParameter" in error
     assert "The audio format is invalid." in error
     assert "request-flash-error" in error
 
 
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (_http_response("upstream failure", status_code=502), "InvalidJSONResponse"),
+        (_http_response({"output": {}}), "missing output.text"),
+    ],
+)
+def test_invoke_fun_asr_flash_rejects_malformed_responses(
+    response: requests.Response, expected: str
+) -> None:
+    with (
+        patch("models.speech2text.speech2text.requests.post", return_value=response),
+        pytest.raises(ValueError, match=expected),
+    ):
+        _model()._invoke(
+            model="fun-asr-flash-2026-06-15",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+
+def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None:
+    header = b"RIFF\x24\x00\x00\x00WAVE"
+    limit = 7 * 1024 * 1024
+    oversized = _named_bytes(header + b"\0" * (limit + 1 - len(header)), "large.wav")
+
+    with (
+        patch(
+            "models.speech2text.speech2text.Path.read_bytes",
+            side_effect=AssertionError("oversized audio must not be read for encoding"),
+        ) as read_bytes,
+        patch(
+            "models.speech2text.speech2text.base64.b64encode",
+            side_effect=AssertionError("oversized audio must not be encoded"),
+        ) as encode,
+        patch("models.speech2text.speech2text.requests.post") as post,
+        pytest.raises(ValueError, match="must not exceed 7 MB"),
+    ):
+        _model()._invoke(
+            model="fun-asr-flash-2026-06-15",
+            credentials={"dashscope_api_key": "test-key"},
+            file=oversized,
+        )
+
+    read_bytes.assert_not_called()
+    encode.assert_not_called()
+    post.assert_not_called()
+
+    allowed = _named_bytes(header + b"\0" * (limit - len(header)), "maximum.wav")
+    response = _http_response({"output": {"text": "accepted"}})
+    with (
+        patch(
+            "models.speech2text.speech2text.Path.read_bytes", return_value=b"audio"
+        ) as read_bytes,
+        patch("models.speech2text.speech2text.requests.post", return_value=response),
+    ):
+        assert (
+            _model()._invoke(
+                model="fun-asr-flash-2026-06-15",
+                credentials={"dashscope_api_key": "test-key"},
+                file=allowed,
+            )
+            == "accepted"
+        )
+
+    read_bytes.assert_called_once()
+
+
+def test_invoke_preserves_http_transport_errors() -> None:
+    error = requests.exceptions.ReadTimeout("timed out")
+    with (
+        patch("models.speech2text.speech2text.requests.post", side_effect=error),
+        pytest.raises(requests.exceptions.ReadTimeout) as exc_info,
+    ):
+        _model()._invoke(
+            model="fun-asr-flash-2026-06-15",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+    assert exc_info.value is error
+
+
 def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
-    submit_response = _sdk_response({"task_id": "task-1"})
+    submit_response = _http_response(
+        {"output": {"task_id": "task-1", "task_status": "PENDING"}, "request_id": "submit-request"}
+    )
     task_response = _sdk_response(
         {
             "results": [
@@ -232,6 +352,9 @@ def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
             ]
         }
     )
+    unavailable_response = _http_response(
+        {"code": "ServiceUnavailable", "message": "try again"}, status_code=503
+    )
     transcription_response = _http_response({"transcripts": [{"text": "hello"}, {"text": "world"}]})
 
     with (
@@ -239,15 +362,17 @@ def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
             "models.speech2text.speech2text.OssUtils.upload",
             return_value=("oss://temporary/audio.wav", {}),
         ) as upload,
+        patch("models.speech2text.speech2text.requests.post", return_value=submit_response) as post,
         patch(
-            "models.speech2text.speech2text.Transcription.async_call", return_value=submit_response
-        ) as async_call,
-        patch(
-            "models.speech2text.speech2text.Transcription.wait", return_value=task_response
+            "models.speech2text.speech2text.Transcription.wait",
+            side_effect=[requests.exceptions.ReadTimeout("poll timed out"), task_response],
         ) as wait,
         patch(
-            "models.speech2text.speech2text.requests.get", return_value=transcription_response
+            "models.speech2text.speech2text.requests.get",
+            side_effect=[unavailable_response, unavailable_response, transcription_response],
         ) as get,
+        patch("models.speech2text.speech2text.time.sleep") as sleep,
+        patch("models.speech2text.speech2text.time.monotonic", return_value=0),
     ):
         text = _model()._invoke(
             model="fun-asr",
@@ -259,17 +384,32 @@ def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
     assert upload.call_args.kwargs["model"] == "fun-asr"
     assert upload.call_args.kwargs["api_key"] == "test-key"
     assert upload.call_args.kwargs["base_address"] == ("https://dashscope-intl.aliyuncs.com/api/v1")
-    assert async_call.call_args.kwargs["file_urls"] == ["oss://temporary/audio.wav"]
-    assert async_call.call_args.kwargs["api_key"] == "test-key"
-    assert async_call.call_args.kwargs["base_address"] == (
-        "https://dashscope-intl.aliyuncs.com/api/v1"
+    assert (
+        post.call_args.args[0]
+        == "https://dashscope-intl.aliyuncs.com/api/v1/services/audio/asr/transcription"
     )
-    assert async_call.call_args.kwargs["headers"]["X-DashScope-OssResourceResolve"] == "enable"
+    assert post.call_args.kwargs["json"] == {
+        "model": "fun-asr",
+        "input": {"file_urls": ["oss://temporary/audio.wav"]},
+        "parameters": {},
+    }
+    submit_headers = post.call_args.kwargs["headers"]
+    assert submit_headers["Authorization"] == "Bearer test-key"
+    assert submit_headers["Content-Type"] == "application/json"
+    assert submit_headers["X-DashScope-Async"] == "enable"
+    assert submit_headers["X-DashScope-OssResourceResolve"] == "enable"
+    assert post.call_args.kwargs["timeout"] == (10, 600)
     assert wait.call_args.args == ("task-1",)
     assert wait.call_args.kwargs["api_key"] == "test-key"
     assert wait.call_args.kwargs["base_address"] == "https://dashscope-intl.aliyuncs.com/api/v1"
     assert wait.call_args.kwargs["wait_timeout"] == 10_800
-    assert get.call_args.args[0] == "https://example.com/result.json"
+    upload.assert_called_once()
+    post.assert_called_once()
+    assert wait.call_count == 2
+    assert get.call_count == 3
+    assert all(call.args[0] == "https://example.com/result.json" for call in get.call_args_list)
+    assert all(call.kwargs["timeout"] == (10, 600) for call in get.call_args_list)
+    assert [call.args[0] for call in sleep.call_args_list] == [1, 1, 3]
 
 
 @pytest.mark.parametrize(
@@ -304,16 +444,19 @@ def test_invoke_fun_asr_uploads_waits_and_downloads() -> None:
 def test_invoke_fun_asr_preserves_errors(
     output: dict, request_id: str, expected: tuple[str, str]
 ) -> None:
-    submit_response = _sdk_response({"task_id": "task-error"})
+    submit_response = _http_response(
+        {
+            "output": {"task_id": "task-error", "task_status": "PENDING"},
+            "request_id": "submit-request",
+        }
+    )
     task_response = _sdk_response(output, request_id=request_id)
     with (
         patch(
             "models.speech2text.speech2text.OssUtils.upload",
             return_value=("oss://temporary/audio.wav", {}),
         ),
-        patch(
-            "models.speech2text.speech2text.Transcription.async_call", return_value=submit_response
-        ),
+        patch("models.speech2text.speech2text.requests.post", return_value=submit_response),
         patch("models.speech2text.speech2text.Transcription.wait", return_value=task_response),
         pytest.raises(ValueError) as exc_info,
     ):
@@ -322,6 +465,7 @@ def test_invoke_fun_asr_preserves_errors(
         )
 
     message = str(exc_info.value)
+    assert "status: FAILED" in message
     assert expected[0] in message
     assert expected[1] in message
     assert request_id in message
@@ -358,7 +502,6 @@ def test_invoke_patches_dashscope_async_bridge_by_default(monkeypatch) -> None:
 
 def test_dashscope_async_bridge_patch_yields_results() -> None:
     import dashscope.common.utils as dashscope_utils
-
     from models.speech2text import speech2text as st2
 
     async def stream() -> AsyncIterator[str]:
@@ -475,7 +618,9 @@ def test_worker_returns_dashscope_status_error(monkeypatch) -> None:
 
     class FakeResult:
         status_code = 400
+        code = "InvalidModel"
         message = "invalid audio"
+        request_id = "request-1"
 
         def get_sentence(self):
             raise AssertionError("API errors should be returned before reading sentences")
@@ -494,5 +639,8 @@ def test_worker_returns_dashscope_status_error(monkeypatch) -> None:
 
     assert exit_code == 0
     assert data["status"] == "err"
-    assert "DashScope error: invalid audio (400)" == data["data"]
+    assert "status: 400" in data["data"]
+    assert "code: InvalidModel" in data["data"]
+    assert "invalid audio" in data["data"]
+    assert "request_id: request-1" in data["data"]
     assert stderr == ""
