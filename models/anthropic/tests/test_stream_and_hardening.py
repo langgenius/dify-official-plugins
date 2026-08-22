@@ -446,7 +446,10 @@ def test_image_fetch_rejects_oversized_content_length_header(monkeypatch) -> Non
 def test_image_fetch_rejects_chunked_body_over_cap(monkeypatch) -> None:
     # No Content-Length (chunked transfer): the cap must trip on the bounded
     # iter_content accumulation, and iteration must stop right after the cap.
-    too_big = b"x" * (AnthropicLargeLanguageModel.MAX_IMAGE_FETCH_BYTES + 1)
+    # The body is 2x the cap on purpose: with a cap+1 body a "drain the whole
+    # stream" regression would read the same chunk count as a correct early
+    # abort, so it would not be caught by the read-count assertion.
+    too_big = b"x" * (2 * AnthropicLargeLanguageModel.MAX_IMAGE_FETCH_BYTES)
     response = _FakeResponse(too_big)
     response.headers = {}
     read_count = {"n": 0}
@@ -463,8 +466,9 @@ def test_image_fetch_rejects_chunked_body_over_cap(monkeypatch) -> None:
     with pytest.raises(ValueError, match="exceeds the 10 MB limit"):
         AnthropicLargeLanguageModel()._process_image_data("http://x/img.png")
 
-    # 10 MB / 64 KB = 160 full chunks; the 161st trips the cap. It must not
-    # drain the rest of the body.
+    # 10 MB / 64 KB = 160 full chunks; the 161st trips the cap, so a correct
+    # early abort reads exactly 161 chunks. A regression that drains the
+    # stream would read all 320 and fail this bound.
     assert read_count["n"] <= 162
 
 
