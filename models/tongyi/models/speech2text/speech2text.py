@@ -1,17 +1,22 @@
+import base64
 import json
 import logging
+import mimetypes
 import os
 import subprocess
 import sys
 import tempfile
 import uuid
 from pathlib import Path
-from typing import IO, Any, Optional, Tuple
+from typing import IO, Any
 
-from dashscope.audio.asr import Recognition
+import requests
+from dashscope.audio.asr import Recognition, Transcription
+from dashscope.utils.oss_utils import OssUtils
 from dify_plugin import OAICompatSpeech2TextModel
-from models._common import get_ws_base_address
 from pydub import AudioSegment
+
+from models._common import get_http_base_address, get_ws_base_address
 
 from ..constant import BURY_POINT_HEADER
 
@@ -50,7 +55,11 @@ _SUBPROCESS_ENV = "TONGYI_STT_SUBPROCESS"
 _SUBPROCESS_TRUE_VALUES = {"1", "true", "yes", "on"}
 _RECOGNITION_TIMEOUT_ENV = "TONGYI_STT_RECOGNITION_TIMEOUT"
 _DEFAULT_RECOGNITION_TIMEOUT = 120
+_TRANSCRIPTION_TIMEOUT_ENV = "TONGYI_STT_TRANSCRIPTION_TIMEOUT"
+_DEFAULT_TRANSCRIPTION_TIMEOUT = 10_800
 _DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
+_FUN_ASR_MODEL = "fun-asr"
+_FUN_ASR_FLASH_MODEL = "fun-asr-flash-2026-06-15"
 
 
 def _is_subprocess_enabled() -> bool:
@@ -134,7 +143,7 @@ def _patch_dashscope_async_bridge_for_gevent() -> None:
                             message_queue.put((True, None, None))
                             break
                         message_queue.put((False, None, obj))
-                    except BaseException as ex:  # noqa: E722
+                    except BaseException as ex:
                         dashscope_logger.exception(ex)
                         message_queue.put((True, ex, None))
                         break
@@ -161,15 +170,55 @@ def _patch_dashscope_async_bridge_for_gevent() -> None:
     _DASHSCOPE_ASYNC_BRIDGE_PATCHED = True
 
 
-def _get_recognition_timeout() -> int:
-    value = os.getenv(_RECOGNITION_TIMEOUT_ENV)
+def _get_timeout(env_name: str, default: int) -> int:
+    value = os.getenv(env_name)
     if not value:
-        return _DEFAULT_RECOGNITION_TIMEOUT
+        return default
     try:
         seconds = int(value)
     except (TypeError, ValueError):
-        return _DEFAULT_RECOGNITION_TIMEOUT
-    return seconds if seconds > 0 else _DEFAULT_RECOGNITION_TIMEOUT
+        return default
+    return seconds if seconds > 0 else default
+
+
+def _get_recognition_timeout() -> int:
+    return _get_timeout(_RECOGNITION_TIMEOUT_ENV, _DEFAULT_RECOGNITION_TIMEOUT)
+
+
+def _get_transcription_timeout() -> int:
+    return _get_timeout(_TRANSCRIPTION_TIMEOUT_ENV, _DEFAULT_TRANSCRIPTION_TIMEOUT)
+
+
+def _parse_json_response(response) -> dict:
+    try:
+        data = response.json()
+    except ValueError as ex:
+        body = response.text[:500]
+        raise ValueError(
+            f"DashScope returned invalid JSON ({response.status_code}): {body}"
+        ) from ex
+
+    if not isinstance(data, dict):
+        raise TypeError("DashScope returned invalid JSON: expected an object")
+    if response.status_code != 200:
+        code = data.get("code") or response.status_code
+        message = data.get("message") or response.text or "Unknown DashScope error"
+        request_id = data.get("request_id")
+        request_suffix = f", request_id: {request_id}" if request_id else ""
+        raise ValueError(f"DashScope error {code}: {message}{request_suffix}")
+    return data
+
+
+def _raise_for_dashscope_error(response) -> None:
+    status_code = getattr(response, "status_code", 200)
+    if status_code == 200:
+        return
+    message = getattr(response, "message", None) or "Unknown DashScope error"
+    code = getattr(response, "code", None)
+    request_id = getattr(response, "request_id", None)
+    code_suffix = f", code: {code}" if code else ""
+    request_suffix = f", request_id: {request_id}" if request_id else ""
+    raise ValueError(f"DashScope error: {message} ({status_code}{code_suffix}{request_suffix})")
 
 
 def _run_recognition_in_subprocess(
@@ -178,10 +227,10 @@ def _run_recognition_in_subprocess(
     audio_format: str,
     sample_rate: int,
     api_key: str,
-    base_address: Optional[str],
+    base_address: str | None,
     headers: dict,
-    timeout: Optional[int] = None,
-) -> Tuple[str, Any]:
+    timeout: int | None = None,
+) -> tuple[str, Any]:
     if timeout is None:
         timeout = _get_recognition_timeout()
 
@@ -241,7 +290,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
 
     def _invoke(
-        self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None
+        self, model: str, credentials: dict, file: IO[bytes], user: str | None = None
     ) -> str:
         """
         Invoke speech2text model
@@ -254,17 +303,26 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
         """
         file_path = None
         try:
-            ws_base_address = get_ws_base_address(credentials)
             file.seek(0)
             audio_format = self.get_audio_type(file)
             if audio_format == "unknown":
                 raise ValueError("Unsupported audio format")
-            audio = AudioSegment.from_file(file, format=audio_format)
-            sample_rate = audio.frame_rate
             file.seek(0)
             file_path = self.write_bytes_to_temp_file(file, audio_format)
             api_key = credentials["dashscope_api_key"]
 
+            if model == _FUN_ASR_MODEL:
+                return self._invoke_fun_asr(
+                    model, file_path, api_key, get_http_base_address(credentials)
+                )
+            if model == _FUN_ASR_FLASH_MODEL:
+                return self._invoke_fun_asr_flash(
+                    model, file_path, audio_format, api_key, get_http_base_address(credentials)
+                )
+
+            audio = AudioSegment.from_file(file_path, format=audio_format)
+            sample_rate = audio.frame_rate
+            ws_base_address = get_ws_base_address(credentials)
             if _is_subprocess_enabled():
                 headers = dict(BURY_POINT_HEADER) if BURY_POINT_HEADER else {}
                 status, data = _run_recognition_in_subprocess(
@@ -293,6 +351,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                     api_key=api_key,
                     base_address=ws_base_address,
                 )
+                _raise_for_dashscope_error(result)
                 sentence_list = result.get_sentence()
 
             if not sentence_list:
@@ -310,6 +369,117 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                     os.remove(file_path)
                 except OSError:
                     pass
+
+    def _invoke_fun_asr_flash(
+        self, model: str, file_path: str, audio_format: str, api_key: str, base_address: str
+    ) -> str:
+        mime_type = (
+            {"mp3": "audio/mpeg", "wav": "audio/wav"}.get(audio_format)
+            or mimetypes.guess_type(file_path)[0]
+            or "application/octet-stream"
+        )
+        audio_data = base64.b64encode(Path(file_path).read_bytes()).decode()
+        response = requests.post(
+            f"{base_address}/services/aigc/multimodal-generation/generation",
+            headers={
+                **BURY_POINT_HEADER,
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "X-DashScope-SSE": "disable",
+            },
+            json={
+                "model": model,
+                "input": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "input_audio",
+                                    "input_audio": {
+                                        "data": f"data:{mime_type};base64,{audio_data}"
+                                    },
+                                }
+                            ],
+                        }
+                    ]
+                },
+                "parameters": {"format": audio_format},
+            },
+            timeout=(10, _get_recognition_timeout()),
+        )
+        data = _parse_json_response(response)
+        text = (data.get("output") or {}).get("text")
+        if not isinstance(text, str):
+            raise TypeError(
+                "DashScope returned an invalid Fun-ASR-Flash response: missing output.text"
+            )
+        return text
+
+    def _invoke_fun_asr(self, model: str, file_path: str, api_key: str, base_address: str) -> str:
+        # ponytail: the official temporary upload is non-production (100 QPS and
+        # a one-hour SDK upload timeout); accept public-URL input before adding OSS credentials.
+        oss_url, _ = OssUtils.upload(
+            model=model,
+            file_path=file_path,
+            api_key=api_key,
+            base_address=base_address,
+            headers=BURY_POINT_HEADER,
+        )
+        submit_response = Transcription.async_call(
+            model=model,
+            file_urls=[oss_url],
+            api_key=api_key,
+            base_address=base_address,
+            headers={**BURY_POINT_HEADER, "X-DashScope-OssResourceResolve": "enable"},
+        )
+        _raise_for_dashscope_error(submit_response)
+        task_id = (submit_response.output or {}).get("task_id")
+        if not task_id:
+            raise ValueError("DashScope returned an invalid Fun-ASR response: missing task_id")
+
+        task_response = Transcription.wait(
+            task_id,
+            api_key=api_key,
+            base_address=base_address,
+            headers=BURY_POINT_HEADER,
+            wait_timeout=_get_transcription_timeout(),
+        )
+        _raise_for_dashscope_error(task_response)
+        output = task_response.output or {}
+        task_status = output.get("task_status")
+
+        results = output.get("results") or []
+        result = results[0] if results else {}
+        if result.get("subtask_status") != "SUCCEEDED":
+            code = result.get("code") or output.get("code") or task_status or "Unknown"
+            message = (
+                result.get("message") or output.get("message") or "Fun-ASR transcription failed"
+            )
+            request_id = task_response.request_id
+            request_suffix = f", request_id: {request_id}" if request_id else ""
+            raise ValueError(f"DashScope error {code}: {message}{request_suffix}")
+
+        transcription_url = result.get("transcription_url")
+        if not transcription_url:
+            raise ValueError(
+                "DashScope returned an invalid Fun-ASR response: missing transcription_url"
+            )
+        transcription = _parse_json_response(
+            requests.get(transcription_url, timeout=(10, _get_recognition_timeout()))
+        )
+        transcripts = transcription.get("transcripts")
+        if not isinstance(transcripts, list):
+            raise TypeError("DashScope returned an invalid Fun-ASR result: missing transcripts")
+
+        texts = []
+        for transcript in transcripts:
+            text = transcript.get("text") if isinstance(transcript, dict) else None
+            if not isinstance(text, str):
+                raise TypeError("DashScope returned an invalid Fun-ASR transcript")
+            if text:
+                texts.append(text)
+        return "\n".join(texts)
 
     def write_bytes_to_temp_file(self, file: IO[bytes], file_extension: str) -> str:
         temp_dir = tempfile.gettempdir()
