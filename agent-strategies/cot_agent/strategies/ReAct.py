@@ -172,6 +172,9 @@ class ReActAgentStrategy(AgentStrategy):
             )
             yield round_log
             message_file_ids: list[str] = []
+            # True when the model emitted a JSON blob in this round that could
+            # not be parsed as a valid Action (issue #3699).
+            round_parse_failed = False
 
             # recalc llm max tokens
             prompt_messages = self._organize_prompt_messages(
@@ -225,6 +228,8 @@ class ReActAgentStrategy(AgentStrategy):
                     assert isinstance(react_chunk, ReactChunk)
                     chunk = react_chunk.content
                     scratchpad.agent_response = (scratchpad.agent_response or "") + chunk
+                    if react_chunk.parse_failed:
+                        round_parse_failed = True
                     if react_chunk.state == ReactState.ANSWER and not scratchpad.action:
                         final_answer += chunk
                         yield self.create_text_message(chunk)
@@ -271,6 +276,28 @@ class ReActAgentStrategy(AgentStrategy):
                 else:
                     final_answer = scratchpad.thought
                     final_answer_already_streamed = False
+                    if round_parse_failed:
+                        # The model attempted structured output that could not
+                        # be parsed as an Action or FinalAnswer (e.g. an
+                        # unexpected JSON wrapper). Surface the failure in the
+                        # agent log instead of ending the round silently; the
+                        # thought is kept as the final answer for backward
+                        # compatibility.
+                        yield self.create_log_message(
+                            label="Action parse failed",
+                            data={
+                                "error": (
+                                    "Model output did not contain a valid "
+                                    "Action or FinalAnswer, so no tool was "
+                                    "invoked and the round ended early. The "
+                                    "thought was used as the final answer."
+                                ),
+                                # parser-normalized model output, truncated
+                                "model_output": (scratchpad.agent_response or "")[:500],
+                            },
+                            parent=round_log,
+                            status=ToolInvokeMessage.LogMessage.LogStatus.ERROR,
+                        )
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     try:
