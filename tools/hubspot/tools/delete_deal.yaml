@@ -6,16 +6,12 @@ identity:
     zh_Hans: 删除交易
     pt_BR: Excluir Negócio
     ja_JP: 取引を削除
-    zh_Hant: 刪除交易
-    ko_KR: 거래 삭제
 description:
   human:
     en_US: Delete a deal in HubSpot
     zh_Hans: 删除 HubSpot 中的交易
     pt_BR: Excluir um negócio no HubSpot
     ja_JP: HubSpot の取引を削除します
-    zh_Hant: 刪除 HubSpot 中的交易
-    ko_KR: HubSpot의 거래를 삭제합니다
   llm: Deletes a deal from HubSpot CRM by its ID.
 parameters:
   - name: deal_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 交易 ID
       pt_BR: ID do Negócio
       ja_JP: 取引 ID
-      zh_Hant: 交易 ID
-      ko_KR: 거래 ID
     human_description:
       en_US: The ID of the deal to delete
       zh_Hans: 要删除的交易 ID
       pt_BR: O ID do negócio a excluir
       ja_JP: 削除する取引の ID
-      zh_Hant: 要刪除的交易 ID
-      ko_KR: 삭제할 거래의 ID
     llm_description: The unique ID of the deal to delete.
     form: llm
 extra:

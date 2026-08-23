@@ -6,16 +6,12 @@ identity:
     zh_Hans: 从列表移除联系人
     pt_BR: Remover Contato da Lista
     ja_JP: 連絡先をリストから削除
-    zh_Hant: 從列表移除聯絡人
-    ko_KR: 목록에서 연락처 제거
 description:
   human:
     en_US: Remove one or more contacts from a HubSpot contact list
     zh_Hans: 从 HubSpot 联系人列表移除一个或多个联系人
     pt_BR: Remover um ou mais contatos de uma lista de contatos do HubSpot
     ja_JP: 1 つ以上の連絡先を HubSpot の連絡先リストから削除します
-    zh_Hant: 從 HubSpot 聯絡人列表移除一個或多個聯絡人
-    ko_KR: 하나 이상의 연락처를 HubSpot 연락처 목록에서 제거합니다
   llm: Removes one or more contacts from a HubSpot contact list by list id. Provide contact ids as a comma-separated string.
 parameters:
   - name: list_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 列表 ID
       pt_BR: ID da Lista
       ja_JP: リスト ID
-      zh_Hant: 列表 ID
-      ko_KR: 목록 ID
     human_description:
       en_US: The id of the contact list
       zh_Hans: 联系人列表的 ID
       pt_BR: O id da lista de contatos
       ja_JP: 連絡先リストの ID
-      zh_Hant: 聯絡人列表的 ID
-      ko_KR: 연락처 목록의 ID
     llm_description: The unique id of the HubSpot contact list.
     form: llm
   - name: contact_ids
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 联系人 ID
       pt_BR: IDs de Contatos
       ja_JP: 連絡先 ID
-      zh_Hant: 聯絡人 ID
-      ko_KR: 연락처 ID
     human_description:
       en_US: Comma-separated contact ids to remove
       zh_Hans: 要移除的联系人 ID，逗号分隔
       pt_BR: IDs de contatos a remover, separados por vírgula
       ja_JP: 削除する連絡先 ID（カンマ区切り）
-      zh_Hant: 要移除的聯絡人 ID，逗號分隔
-      ko_KR: 제거할 연락처 ID(쉼표로 구분)
     llm_description: Comma-separated list of contact ids to remove from the list.
     form: llm
 extra:

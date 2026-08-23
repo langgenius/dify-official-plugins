@@ -6,16 +6,12 @@ identity:
     zh_Hans: 获取交易
     pt_BR: Obter Negócio
     ja_JP: 取引を取得
-    zh_Hant: 取得交易
-    ko_KR: 거래 가져오기
 description:
   human:
     en_US: Get a deal from HubSpot by ID
     zh_Hans: 通过 ID 获取 HubSpot 交易
     pt_BR: Obter um negócio do HubSpot pelo ID
     ja_JP: ID を指定して HubSpot の取引を取得します
-    zh_Hant: 透過 ID 取得 HubSpot 交易
-    ko_KR: ID로 HubSpot 거래를 가져옵니다
   llm: Retrieves a single deal from HubSpot CRM by its ID, optionally returning specific properties.
 parameters:
   - name: deal_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 交易 ID
       pt_BR: ID do Negócio
       ja_JP: 取引 ID
-      zh_Hant: 交易 ID
-      ko_KR: 거래 ID
     human_description:
       en_US: The ID of the deal to retrieve
       zh_Hans: 要获取的交易 ID
       pt_BR: O ID do negócio a obter
       ja_JP: 取得する取引の ID
-      zh_Hant: 要取得的交易 ID
-      ko_KR: 가져올 거래의 ID
     llm_description: The unique ID of the deal to retrieve.
     form: llm
   - name: properties
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 返回属性
       pt_BR: Propriedades
       ja_JP: 取得プロパティ
-      zh_Hant: 返回屬性
-      ko_KR: 반환 속성
     human_description:
       en_US: Comma-separated property names to return
       zh_Hans: 要返回的属性名，逗号分隔
       pt_BR: Nomes de propriedades a retornar, separados por vírgula
       ja_JP: 返すプロパティ名（カンマ区切り）
-      zh_Hant: 要返回的屬性名稱，逗號分隔
-      ko_KR: 반환할 속성 이름(쉼표로 구분)
     llm_description: Optional comma-separated list of properties to include in the result.
     form: llm
 extra:

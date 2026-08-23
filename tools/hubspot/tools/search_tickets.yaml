@@ -6,16 +6,12 @@ identity:
     zh_Hans: 搜索工单
     pt_BR: Pesquisar Tickets
     ja_JP: チケットを検索
-    zh_Hant: 搜尋工單
-    ko_KR: 티켓 검색
 description:
   human:
     en_US: Search or list tickets, with optional filter and sort
     zh_Hans: 搜索或列出工单，可选过滤和排序
     pt_BR: Pesquisar ou listar tickets, com filtro e ordenação opcionais
     ja_JP: チケットを検索または一覧表示します（フィルターと並び替えは任意）
-    zh_Hant: 搜尋或列出工單，可選過濾與排序
-    ko_KR: 티켓을 검색하거나 나열합니다(선택적 필터 및 정렬)
   llm: Search or list HubSpot tickets. Optionally full-text query, filter by a property (property/operator/value), and sort by a property. Leave everything empty to list recent tickets.
 parameters:
   - name: query
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 查询
       pt_BR: Consulta
       ja_JP: クエリ
-      zh_Hant: 查詢
-      ko_KR: 검색어
     human_description:
       en_US: Full-text search across default searchable properties
       zh_Hans: 对默认可搜索属性进行全文搜索
       pt_BR: Busca de texto completo nas propriedades pesquisáveis padrão
       ja_JP: 既定の検索可能プロパティに対する全文検索
-      zh_Hant: 對預設可搜尋屬性進行全文搜尋
-      ko_KR: 기본 검색 가능 속성에 대한 전체 텍스트 검색
     llm_description: Optional full-text search string.
     form: llm
   - name: filter_property
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 过滤属性
       pt_BR: Propriedade de Filtro
       ja_JP: フィルタープロパティ
-      zh_Hant: 過濾屬性
-      ko_KR: 필터 속성
     human_description:
       en_US: Property name to filter on (e.g. hs_pipeline_stage, hs_ticket_priority)
       zh_Hans: 用于过滤的属性名（如 hs_pipeline_stage、hs_ticket_priority）
       pt_BR: Nome da propriedade para filtrar (ex. hs_pipeline_stage, hs_ticket_priority)
       ja_JP: フィルターに使うプロパティ名（例 hs_pipeline_stage、hs_ticket_priority）
-      zh_Hant: 用於過濾的屬性名稱（如 hs_pipeline_stage、hs_ticket_priority）
-      ko_KR: 필터링할 속성 이름(예 hs_pipeline_stage, hs_ticket_priority)
     llm_description: Optional property name to filter by, e.g. hs_pipeline_stage, hs_ticket_priority, createdate.
     form: llm
   - name: filter_operator
@@ -62,35 +50,31 @@ parameters:
     default: EQ
     options:
       - value: EQ
-        label: {en_US: Equal, zh_Hans: 等于, pt_BR: Igual, ja_JP: 等しい, zh_Hant: 等於, ko_KR: 같음}
+        label: {en_US: Equal, zh_Hans: 等于, pt_BR: Igual, ja_JP: 等しい}
       - value: NEQ
-        label: {en_US: Not equal, zh_Hans: 不等于, pt_BR: Diferente, ja_JP: 等しくない, zh_Hant: 不等於, ko_KR: 같지 않음}
+        label: {en_US: Not equal, zh_Hans: 不等于, pt_BR: Diferente, ja_JP: 等しくない}
       - value: GT
-        label: {en_US: Greater than, zh_Hans: 大于, pt_BR: Maior que, ja_JP: より大きい, zh_Hant: 大於, ko_KR: 초과}
+        label: {en_US: Greater than, zh_Hans: 大于, pt_BR: Maior que, ja_JP: より大きい}
       - value: GTE
-        label: {en_US: Greater or equal, zh_Hans: 大于等于, pt_BR: Maior ou igual, ja_JP: 以上, zh_Hant: 大於等於, ko_KR: 이상}
+        label: {en_US: Greater or equal, zh_Hans: 大于等于, pt_BR: Maior ou igual, ja_JP: 以上}
       - value: LT
-        label: {en_US: Less than, zh_Hans: 小于, pt_BR: Menor que, ja_JP: より小さい, zh_Hant: 小於, ko_KR: 미만}
+        label: {en_US: Less than, zh_Hans: 小于, pt_BR: Menor que, ja_JP: より小さい}
       - value: LTE
-        label: {en_US: Less or equal, zh_Hans: 小于等于, pt_BR: Menor ou igual, ja_JP: 以下, zh_Hant: 小於等於, ko_KR: 이하}
+        label: {en_US: Less or equal, zh_Hans: 小于等于, pt_BR: Menor ou igual, ja_JP: 以下}
       - value: CONTAINS_TOKEN
-        label: {en_US: Contains, zh_Hans: 包含, pt_BR: Contém, ja_JP: 含む, zh_Hant: 包含, ko_KR: 포함}
+        label: {en_US: Contains, zh_Hans: 包含, pt_BR: Contém, ja_JP: 含む}
       - value: HAS_PROPERTY
-        label: {en_US: Has property, zh_Hans: 存在该属性, pt_BR: Possui propriedade, ja_JP: プロパティあり, zh_Hant: 存在該屬性, ko_KR: 속성 있음}
+        label: {en_US: Has property, zh_Hans: 存在该属性, pt_BR: Possui propriedade, ja_JP: プロパティあり}
     label:
       en_US: Filter Operator
       zh_Hans: 过滤运算符
       pt_BR: Operador de Filtro
       ja_JP: フィルター演算子
-      zh_Hant: 過濾運算子
-      ko_KR: 필터 연산자
     human_description:
       en_US: Comparison operator for the filter
       zh_Hans: 过滤所用的比较运算符
       pt_BR: Operador de comparação do filtro
       ja_JP: フィルターの比較演算子
-      zh_Hant: 過濾所用的比較運算子
-      ko_KR: 필터에 사용할 비교 연산자
     llm_description: Comparison operator for the filter. Defaults to EQ.
     form: llm
   - name: filter_value
@@ -101,15 +85,11 @@ parameters:
       zh_Hans: 过滤值
       pt_BR: Valor do Filtro
       ja_JP: フィルター値
-      zh_Hant: 過濾值
-      ko_KR: 필터 값
     human_description:
       en_US: Value to compare against (not needed for HAS_PROPERTY)
       zh_Hans: 用于比较的值（HAS_PROPERTY 时不需要）
       pt_BR: Valor para comparação (não necessário para HAS_PROPERTY)
       ja_JP: 比較する値（HAS_PROPERTY では不要）
-      zh_Hant: 用於比較的值（HAS_PROPERTY 時不需要）
-      ko_KR: 비교할 값(HAS_PROPERTY에는 불필요)
     llm_description: Value to compare against; omit for HAS_PROPERTY / NOT_HAS_PROPERTY.
     form: llm
   - name: sort_by
@@ -120,15 +100,11 @@ parameters:
       zh_Hans: 排序字段
       pt_BR: Ordenar Por
       ja_JP: 並び替え項目
-      zh_Hant: 排序欄位
-      ko_KR: 정렬 기준
     human_description:
       en_US: Property to sort by (e.g. createdate, lastmodifieddate)
       zh_Hans: 用于排序的属性（如 createdate、lastmodifieddate）
       pt_BR: Propriedade para ordenar (ex. createdate, lastmodifieddate)
       ja_JP: 並び替えに使うプロパティ（例 createdate、lastmodifieddate）
-      zh_Hant: 用於排序的屬性（如 createdate、lastmodifieddate）
-      ko_KR: 정렬할 속성(예 createdate, lastmodifieddate)
     llm_description: Optional property name to sort results by, e.g. createdate.
     form: llm
   - name: sort_direction
@@ -137,23 +113,19 @@ parameters:
     default: DESCENDING
     options:
       - value: DESCENDING
-        label: {en_US: Descending (newest first), zh_Hans: 降序（最新在前）, pt_BR: Decrescente, ja_JP: 降順, zh_Hant: 降序, ko_KR: 내림차순}
+        label: {en_US: Descending (newest first), zh_Hans: 降序（最新在前）, pt_BR: Decrescente, ja_JP: 降順}
       - value: ASCENDING
-        label: {en_US: Ascending (oldest first), zh_Hans: 升序（最早在前）, pt_BR: Crescente, ja_JP: 昇順, zh_Hant: 升序, ko_KR: 오름차순}
+        label: {en_US: Ascending (oldest first), zh_Hans: 升序（最早在前）, pt_BR: Crescente, ja_JP: 昇順}
     label:
       en_US: Sort Direction
       zh_Hans: 排序方向
       pt_BR: Direção da Ordenação
       ja_JP: 並び替え方向
-      zh_Hant: 排序方向
-      ko_KR: 정렬 방향
     human_description:
       en_US: Ascending or descending
       zh_Hans: 升序或降序
       pt_BR: Crescente ou decrescente
       ja_JP: 昇順または降順
-      zh_Hant: 升序或降序
-      ko_KR: 오름차순 또는 내림차순
     llm_description: Sort direction; DESCENDING (default) or ASCENDING.
     form: llm
   - name: properties
@@ -164,15 +136,11 @@ parameters:
       zh_Hans: 返回属性
       pt_BR: Propriedades
       ja_JP: 取得プロパティ
-      zh_Hant: 返回屬性
-      ko_KR: 반환 속성
     human_description:
       en_US: Comma-separated property names to return
       zh_Hans: 要返回的属性名，逗号分隔
       pt_BR: Nomes de propriedades a retornar, separados por vírgula
       ja_JP: 返すプロパティ名（カンマ区切り）
-      zh_Hant: 要返回的屬性名稱，逗號分隔
-      ko_KR: 반환할 속성 이름(쉼표로 구분)
     llm_description: Optional comma-separated list of properties to include in each result.
     form: llm
   - name: limit
@@ -184,15 +152,11 @@ parameters:
       zh_Hans: 数量限制
       pt_BR: Limite
       ja_JP: 上限数
-      zh_Hant: 數量限制
-      ko_KR: 개수 제한
     human_description:
       en_US: Maximum number of results (1-100)
       zh_Hans: 返回结果的最大数量（1-100）
       pt_BR: Número máximo de resultados (1-100)
       ja_JP: 返す結果の最大数（1〜100）
-      zh_Hant: 返回結果的最大數量（1-100）
-      ko_KR: 최대 결과 수(1~100)
     llm_description: Maximum number of results to return, 1-100. Defaults to 20.
     form: llm
   - name: after
@@ -203,15 +167,11 @@ parameters:
       zh_Hans: 分页游标
       pt_BR: Após (cursor)
       ja_JP: カーソル
-      zh_Hant: 分頁游標
-      ko_KR: 커서
     human_description:
       en_US: Pagination cursor from a previous response
       zh_Hans: 上一次响应返回的分页游标
       pt_BR: Cursor de paginação de uma resposta anterior
       ja_JP: 前回の応答で返されたページングカーソル
-      zh_Hant: 上一次回應返回的分頁游標
-      ko_KR: 이전 응답에서 반환된 페이지네이션 커서
     llm_description: Optional pagination cursor (paging.next.after) from a previous response.
     form: llm
 extra:

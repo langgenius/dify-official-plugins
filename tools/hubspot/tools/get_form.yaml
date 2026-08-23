@@ -6,16 +6,12 @@ identity:
     zh_Hans: 获取表单
     pt_BR: Obter Formulário
     ja_JP: フォームを取得
-    zh_Hant: 取得表單
-    ko_KR: 양식 조회
 description:
   human:
     en_US: Get a HubSpot form definition (fields) by id
     zh_Hans: 按 ID 获取 HubSpot 表单定义（字段）
     pt_BR: Obter a definição de um formulário do HubSpot (campos) por id
     ja_JP: ID で HubSpot フォームの定義（フィールド）を取得します
-    zh_Hant: 按 ID 取得 HubSpot 表單定義（欄位）
-    ko_KR: ID로 HubSpot 양식 정의(필드)를 조회합니다
   llm: Retrieves a HubSpot form definition, including its fields, by the form id.
 parameters:
   - name: form_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 表单 ID
       pt_BR: ID do Formulário
       ja_JP: フォーム ID
-      zh_Hant: 表單 ID
-      ko_KR: 양식 ID
     human_description:
       en_US: The id of the form to retrieve
       zh_Hans: 要获取的表单的 ID
       pt_BR: O id do formulário a recuperar
       ja_JP: 取得するフォームの ID
-      zh_Hant: 要取得的表單的 ID
-      ko_KR: 조회할 양식의 ID
     llm_description: The unique id (guid) of the HubSpot form to retrieve.
     form: llm
 extra:

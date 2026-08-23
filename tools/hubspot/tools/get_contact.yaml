@@ -6,16 +6,12 @@ identity:
     zh_Hans: 获取联系人
     pt_BR: Obter Contato
     ja_JP: 連絡先を取得
-    zh_Hant: 取得聯絡人
-    ko_KR: 연락처 가져오기
 description:
   human:
     en_US: Retrieve a contact from HubSpot by ID
     zh_Hans: 通过 ID 从 HubSpot 获取联系人
     pt_BR: Recuperar um contato do HubSpot por ID
     ja_JP: ID を指定して HubSpot から連絡先を取得します
-    zh_Hant: 透過 ID 從 HubSpot 取得聯絡人
-    ko_KR: ID로 HubSpot에서 연락처를 가져옵니다
   llm: Retrieves a single HubSpot contact by its id. Optionally specify which properties to return.
 parameters:
   - name: contact_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 联系人 ID
       pt_BR: ID do Contato
       ja_JP: 連絡先 ID
-      zh_Hant: 聯絡人 ID
-      ko_KR: 연락처 ID
     human_description:
       en_US: The ID of the contact to retrieve
       zh_Hans: 要获取的联系人的 ID
       pt_BR: O ID do contato a recuperar
       ja_JP: 取得する連絡先の ID
-      zh_Hant: 要取得的聯絡人的 ID
-      ko_KR: 가져올 연락처의 ID
     llm_description: The HubSpot ID of the contact to retrieve.
     form: llm
   - name: properties
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 返回属性
       pt_BR: Propriedades
       ja_JP: 取得プロパティ
-      zh_Hant: 返回屬性
-      ko_KR: 반환 속성
     human_description:
       en_US: Comma-separated property names to return
       zh_Hans: 要返回的属性名，逗号分隔
       pt_BR: Nomes de propriedades a retornar, separados por vírgula
       ja_JP: 返すプロパティ名（カンマ区切り）
-      zh_Hant: 要返回的屬性名稱，逗號分隔
-      ko_KR: 반환할 속성 이름(쉼표로 구분)
     llm_description: Optional comma-separated list of properties to include in the result.
     form: llm
 extra:

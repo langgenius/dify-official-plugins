@@ -6,16 +6,12 @@ identity:
     zh_Hans: 创建互动
     pt_BR: Criar Engajamento
     ja_JP: エンゲージメントを作成
-    zh_Hant: 建立互動
-    ko_KR: 참여 생성
 description:
   human:
     en_US: Create an engagement (note, task, meeting, call, or email) in HubSpot
     zh_Hans: 在 HubSpot 中创建互动（备注、任务、会议、通话或邮件）
     pt_BR: Criar um engajamento (nota, tarefa, reunião, chamada ou e-mail) no HubSpot
     ja_JP: HubSpot でエンゲージメント（メモ、タスク、会議、通話、メール）を作成します
-    zh_Hant: 在 HubSpot 中建立互動（備註、任務、會議、通話或郵件）
-    ko_KR: HubSpot에서 참여(메모, 작업, 회의, 통화 또는 이메일)를 생성합니다
   llm: Creates a HubSpot engagement object of the given type (notes, tasks, meetings, calls, emails). Provide the engagement-specific properties as a JSON object, e.g. {"hs_note_body":"..."} for notes or {"hs_task_subject":"..."} for tasks.
 parameters:
   - name: engagement_type
@@ -24,29 +20,25 @@ parameters:
     default: notes
     options:
       - value: notes
-        label: {en_US: Notes, zh_Hans: 备注, pt_BR: Notas, ja_JP: メモ, zh_Hant: 備註, ko_KR: 메모}
+        label: {en_US: Notes, zh_Hans: 备注, pt_BR: Notas, ja_JP: メモ}
       - value: tasks
-        label: {en_US: Tasks, zh_Hans: 任务, pt_BR: Tarefas, ja_JP: タスク, zh_Hant: 任務, ko_KR: 작업}
+        label: {en_US: Tasks, zh_Hans: 任务, pt_BR: Tarefas, ja_JP: タスク}
       - value: meetings
-        label: {en_US: Meetings, zh_Hans: 会议, pt_BR: Reuniões, ja_JP: 会議, zh_Hant: 會議, ko_KR: 회의}
+        label: {en_US: Meetings, zh_Hans: 会议, pt_BR: Reuniões, ja_JP: 会議}
       - value: calls
-        label: {en_US: Calls, zh_Hans: 通话, pt_BR: Chamadas, ja_JP: 通話, zh_Hant: 通話, ko_KR: 통화}
+        label: {en_US: Calls, zh_Hans: 通话, pt_BR: Chamadas, ja_JP: 通話}
       - value: emails
-        label: {en_US: Emails, zh_Hans: 邮件, pt_BR: E-mails, ja_JP: メール, zh_Hant: 郵件, ko_KR: 이메일}
+        label: {en_US: Emails, zh_Hans: 邮件, pt_BR: E-mails, ja_JP: メール}
     label:
       en_US: Engagement Type
       zh_Hans: 互动类型
       pt_BR: Tipo de Engajamento
       ja_JP: エンゲージメントタイプ
-      zh_Hant: 互動類型
-      ko_KR: 참여 유형
     human_description:
       en_US: The type of engagement object
       zh_Hans: 互动对象的类型
       pt_BR: O tipo de objeto de engajamento
       ja_JP: エンゲージメントオブジェクトの種類
-      zh_Hant: 互動物件的類型
-      ko_KR: 참여 객체의 유형
     llm_description: The engagement object type - one of notes, tasks, meetings, calls, emails. Defaults to notes.
     form: llm
   - name: properties
@@ -57,15 +49,11 @@ parameters:
       zh_Hans: 属性（JSON）
       pt_BR: Propriedades (JSON)
       ja_JP: プロパティ（JSON）
-      zh_Hant: 屬性（JSON）
-      ko_KR: 속성(JSON)
     human_description:
       en_US: A JSON object of engagement-specific properties
       zh_Hans: 特定于互动类型的属性 JSON 对象
       pt_BR: Um objeto JSON com propriedades específicas do engajamento
       ja_JP: エンゲージメント固有のプロパティの JSON オブジェクト
-      zh_Hant: 特定於互動類型的屬性 JSON 物件
-      ko_KR: 참여 유형별 속성의 JSON 객체
     llm_description: Required JSON object of engagement-specific properties. For notes use {"hs_note_body":"..."}, for tasks use {"hs_task_subject":"..."}, etc.
     form: llm
 extra:

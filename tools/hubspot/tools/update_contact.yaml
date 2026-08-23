@@ -6,16 +6,12 @@ identity:
     zh_Hans: 更新联系人
     pt_BR: Atualizar Contato
     ja_JP: 連絡先を更新
-    zh_Hant: 更新聯絡人
-    ko_KR: 연락처 업데이트
 description:
   human:
     en_US: Update an existing contact in HubSpot
     zh_Hans: 更新 HubSpot 中的现有联系人
     pt_BR: Atualizar um contato existente no HubSpot
     ja_JP: HubSpot の既存の連絡先を更新します
-    zh_Hant: 更新 HubSpot 中的現有聯絡人
-    ko_KR: HubSpot의 기존 연락처를 업데이트합니다
   llm: Updates a contact in HubSpot CRM by its id. Provide common fields (email, firstname, lastname, phone, company) and/or a JSON object of additional properties to merge.
 parameters:
   - name: contact_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 联系人 ID
       pt_BR: ID do Contato
       ja_JP: 連絡先 ID
-      zh_Hant: 聯絡人 ID
-      ko_KR: 연락처 ID
     human_description:
       en_US: The ID of the contact to update
       zh_Hans: 要更新的联系人的 ID
       pt_BR: O ID do contato a atualizar
       ja_JP: 更新する連絡先の ID
-      zh_Hant: 要更新的聯絡人的 ID
-      ko_KR: 업데이트할 연락처의 ID
     llm_description: The HubSpot ID of the contact to update.
     form: llm
   - name: email
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 邮箱
       pt_BR: E-mail
       ja_JP: メールアドレス
-      zh_Hant: 電子郵件
-      ko_KR: 이메일
     human_description:
       en_US: The contact's email address
       zh_Hans: 联系人的电子邮箱地址
       pt_BR: O endereço de e-mail do contato
       ja_JP: 連絡先のメールアドレス
-      zh_Hant: 聯絡人的電子郵件地址
-      ko_KR: 연락처의 이메일 주소
     llm_description: The contact's email address.
     form: llm
   - name: firstname
@@ -64,15 +52,11 @@ parameters:
       zh_Hans: 名字
       pt_BR: Nome
       ja_JP: 名
-      zh_Hant: 名字
-      ko_KR: 이름
     human_description:
       en_US: The contact's first name
       zh_Hans: 联系人的名字
       pt_BR: O primeiro nome do contato
       ja_JP: 連絡先の名
-      zh_Hant: 聯絡人的名字
-      ko_KR: 연락처의 이름
     llm_description: The contact's first name.
     form: llm
   - name: lastname
@@ -83,15 +67,11 @@ parameters:
       zh_Hans: 姓氏
       pt_BR: Sobrenome
       ja_JP: 姓
-      zh_Hant: 姓氏
-      ko_KR: 성
     human_description:
       en_US: The contact's last name
       zh_Hans: 联系人的姓氏
       pt_BR: O sobrenome do contato
       ja_JP: 連絡先の姓
-      zh_Hant: 聯絡人的姓氏
-      ko_KR: 연락처의 성
     llm_description: The contact's last name.
     form: llm
   - name: phone
@@ -102,15 +82,11 @@ parameters:
       zh_Hans: 电话
       pt_BR: Telefone
       ja_JP: 電話番号
-      zh_Hant: 電話
-      ko_KR: 전화번호
     human_description:
       en_US: The contact's phone number
       zh_Hans: 联系人的电话号码
       pt_BR: O número de telefone do contato
       ja_JP: 連絡先の電話番号
-      zh_Hant: 聯絡人的電話號碼
-      ko_KR: 연락처의 전화번호
     llm_description: The contact's phone number.
     form: llm
   - name: company
@@ -121,15 +97,11 @@ parameters:
       zh_Hans: 公司
       pt_BR: Empresa
       ja_JP: 会社
-      zh_Hant: 公司
-      ko_KR: 회사
     human_description:
       en_US: The contact's company name
       zh_Hans: 联系人的公司名称
       pt_BR: O nome da empresa do contato
       ja_JP: 連絡先の会社名
-      zh_Hant: 聯絡人的公司名稱
-      ko_KR: 연락처의 회사명
     llm_description: The contact's company name.
     form: llm
   - name: properties
@@ -140,15 +112,11 @@ parameters:
       zh_Hans: 附加属性（JSON）
       pt_BR: Propriedades Adicionais (JSON)
       ja_JP: 追加プロパティ（JSON）
-      zh_Hant: 附加屬性（JSON）
-      ko_KR: 추가 속성(JSON)
     human_description:
       en_US: A JSON object of additional contact properties to merge
       zh_Hans: 要合并的附加联系人属性的 JSON 对象
       pt_BR: Um objeto JSON com propriedades adicionais do contato a mesclar
       ja_JP: マージする追加の連絡先プロパティの JSON オブジェクト
-      zh_Hant: 要合併的附加聯絡人屬性的 JSON 物件
-      ko_KR: 병합할 추가 연락처 속성의 JSON 객체
     llm_description: Optional JSON object of extra HubSpot contact properties to merge, e.g. {"jobtitle":"CEO","lifecyclestage":"lead"}.
     form: llm
 extra:

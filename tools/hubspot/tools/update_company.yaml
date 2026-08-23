@@ -6,16 +6,12 @@ identity:
     zh_Hans: 更新公司
     pt_BR: Atualizar Empresa
     ja_JP: 会社を更新
-    zh_Hant: 更新公司
-    ko_KR: 회사 업데이트
 description:
   human:
     en_US: Update an existing company in HubSpot
     zh_Hans: 更新 HubSpot 中的现有公司
     pt_BR: Atualizar uma empresa existente no HubSpot
     ja_JP: HubSpot の既存の会社を更新します
-    zh_Hant: 更新 HubSpot 中的現有公司
-    ko_KR: HubSpot의 기존 회사를 업데이트합니다
   llm: Updates a company in HubSpot CRM by its id. Provide common fields (name, domain, phone, city, industry, website) and/or a JSON object of additional properties to merge.
 parameters:
   - name: company_id
@@ -26,15 +22,11 @@ parameters:
       zh_Hans: 公司 ID
       pt_BR: ID da Empresa
       ja_JP: 会社 ID
-      zh_Hant: 公司 ID
-      ko_KR: 회사 ID
     human_description:
       en_US: The ID of the company to update
       zh_Hans: 要更新的公司的 ID
       pt_BR: O ID da empresa a atualizar
       ja_JP: 更新する会社の ID
-      zh_Hant: 要更新的公司的 ID
-      ko_KR: 업데이트할 회사의 ID
     llm_description: The HubSpot ID of the company to update.
     form: llm
   - name: name
@@ -45,15 +37,11 @@ parameters:
       zh_Hans: 名称
       pt_BR: Nome
       ja_JP: 名前
-      zh_Hant: 名稱
-      ko_KR: 이름
     human_description:
       en_US: The company's name
       zh_Hans: 公司的名称
       pt_BR: O nome da empresa
       ja_JP: 会社名
-      zh_Hant: 公司的名稱
-      ko_KR: 회사의 이름
     llm_description: The company's name.
     form: llm
   - name: domain
@@ -64,15 +52,11 @@ parameters:
       zh_Hans: 域名
       pt_BR: Domínio
       ja_JP: ドメイン
-      zh_Hant: 網域
-      ko_KR: 도메인
     human_description:
       en_US: The company's primary domain name
       zh_Hans: 公司的主域名
       pt_BR: O domínio principal da empresa
       ja_JP: 会社の主要ドメイン
-      zh_Hant: 公司的主要網域
-      ko_KR: 회사의 기본 도메인
     llm_description: The company's primary domain name.
     form: llm
   - name: phone
@@ -83,15 +67,11 @@ parameters:
       zh_Hans: 电话
       pt_BR: Telefone
       ja_JP: 電話番号
-      zh_Hant: 電話
-      ko_KR: 전화번호
     human_description:
       en_US: The company's phone number
       zh_Hans: 公司的电话号码
       pt_BR: O número de telefone da empresa
       ja_JP: 会社の電話番号
-      zh_Hant: 公司的電話號碼
-      ko_KR: 회사의 전화번호
     llm_description: The company's phone number.
     form: llm
   - name: city
@@ -102,15 +82,11 @@ parameters:
       zh_Hans: 城市
       pt_BR: Cidade
       ja_JP: 市区町村
-      zh_Hant: 城市
-      ko_KR: 도시
     human_description:
       en_US: The company's city
       zh_Hans: 公司所在城市
       pt_BR: A cidade da empresa
       ja_JP: 会社の市区町村
-      zh_Hant: 公司所在城市
-      ko_KR: 회사의 도시
     llm_description: The company's city.
     form: llm
   - name: industry
@@ -121,15 +97,11 @@ parameters:
       zh_Hans: 行业
       pt_BR: Setor
       ja_JP: 業種
-      zh_Hant: 產業
-      ko_KR: 산업
     human_description:
       en_US: The company's industry
       zh_Hans: 公司所属行业
       pt_BR: O setor da empresa
       ja_JP: 会社の業種
-      zh_Hant: 公司所屬產業
-      ko_KR: 회사의 산업
     llm_description: The company's industry.
     form: llm
   - name: website
@@ -140,15 +112,11 @@ parameters:
       zh_Hans: 网站
       pt_BR: Site
       ja_JP: ウェブサイト
-      zh_Hant: 網站
-      ko_KR: 웹사이트
     human_description:
       en_US: The company's website URL
       zh_Hans: 公司的网站地址
       pt_BR: O URL do site da empresa
       ja_JP: 会社のウェブサイト URL
-      zh_Hant: 公司的網站網址
-      ko_KR: 회사의 웹사이트 URL
     llm_description: The company's website URL.
     form: llm
   - name: properties
@@ -159,15 +127,11 @@ parameters:
       zh_Hans: 附加属性（JSON）
       pt_BR: Propriedades Adicionais (JSON)
       ja_JP: 追加プロパティ（JSON）
-      zh_Hant: 附加屬性（JSON）
-      ko_KR: 추가 속성(JSON)
     human_description:
       en_US: A JSON object of additional company properties to merge
       zh_Hans: 要合并的附加公司属性的 JSON 对象
       pt_BR: Um objeto JSON com propriedades adicionais da empresa a mesclar
       ja_JP: マージする追加の会社プロパティの JSON オブジェクト
-      zh_Hant: 要合併的附加公司屬性的 JSON 物件
-      ko_KR: 병합할 추가 회사 속성의 JSON 객체
     llm_description: Optional JSON object of extra HubSpot company properties to merge, e.g. {"numberofemployees":"100","country":"USA"}.
     form: llm
 extra:
