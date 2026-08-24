@@ -347,8 +347,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 response = MultiModalConversation.call(
                     **params,
                     stream=stream,
-                    headers=self._get_market_bury_point_header(
-                        params["messages"], extra_headers_str
+                    headers=self._build_request_headers(
+                        params["messages"], extra_headers_str, credentials
                     ),
                     incremental_output=incremental_output,
                     base_address=base_address,
@@ -381,8 +381,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     )
                 response = Generation.call(
                     **params,
-                    headers=self._get_market_bury_point_header(
-                        params["messages"], extra_headers_str
+                    headers=self._build_request_headers(
+                        params["messages"], extra_headers_str, credentials
                     ),
                     result_format="message",
                     stream=stream,
@@ -1209,3 +1209,30 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 res_bury_point_header = {}
 
         return res_bury_point_header
+
+    def _build_request_headers(
+        self,
+        messages: list[dict],
+        extra_headers_str: str,
+        credentials: dict,
+    ) -> dict:
+        """Compose the request headers for a DashScope call.
+
+        Combines the bury-point header produced by
+        ``_get_market_bury_point_header`` (DashScope-platform analytics)
+        with the Dify request-metadata headers produced by
+        ``apply_dify_headers_if_enabled`` (Dify-platform telemetry).
+        Centralizing the merge here keeps the contract in one place so
+        the two DashScope call sites in ``_generate`` (vision and text)
+        stay in sync and the helper does not need to be re-derived by
+        future contributors.
+
+        The Dify keys take precedence on collision; see
+        ``_metadata.apply_dify_headers_if_enabled`` for the
+        case-insensitive precedence rules. Returns a new dict; the
+        caller's headers reference (if any) is never mutated.
+        """
+        from ._metadata import apply_dify_headers_if_enabled
+
+        bury_point = self._get_market_bury_point_header(messages, extra_headers_str)
+        return apply_dify_headers_if_enabled(bury_point, credentials)

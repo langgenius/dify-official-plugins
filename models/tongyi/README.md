@@ -12,3 +12,7 @@ Tongyi speech-to-text patches DashScope's async-to-sync websocket bridge when it
 
 If you need stronger isolation for STT recognition, set `TONGYI_STT_SUBPROCESS=1` in the plugin daemon environment.
 `TONGYI_STT_RECOGNITION_TIMEOUT` can be used to tune the subprocess timeout.
+
+## Request metadata
+
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `X-Dify-App-Id` and `X-Dify-Source` to each Tongyi request as custom HTTP headers, so usage can be attributed to a specific Dify app in the DashScope server logs. The opt-in is composed with the existing bury-point header (which carries market analytics) in a single merged headers dict before the call to `Generation.call` or `MultiModalConversation.call`. The Dify session lookup is best-effort: if the session context is not initialized, no Dify headers are attached and only the bury-point header is sent.
