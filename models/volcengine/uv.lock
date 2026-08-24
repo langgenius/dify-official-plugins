@@ -245,12 +245,12 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.9.1"
+version = "0.10.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dpkt" },
     { name = "flask" },
     { name = "gevent" },
+    { name = "h11" },
     { name = "httpx" },
     { name = "packaging" },
     { name = "pydantic" },
@@ -262,18 +262,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ba/9b/5d78d22aa32942f9d5375f2b0d913b3e529f8456cb91aaf04fa50638b8d5/dify_plugin-0.9.1.tar.gz", hash = "sha256:81f96f9a78ca76b22361eb40c54935bb6cf9b3d0d2be44828d63e0a25e3cb0e8", size = 318876, upload-time = "2026-06-17T03:15:11.773Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/5a/885909338df3e32604f45c579457c5dcfe982d35857994805735e5487d4b/dify_plugin-0.10.2.tar.gz", hash = "sha256:e37e707b3903c439cd09924b2125ba794ffdc886bfdbcb8f75db28ba64cb795b", size = 320685, upload-time = "2026-08-10T07:04:08.454Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/f0/9538bfce0df4e816f28a91c38e762fcf45fc10f4a0751e3bb0f83bcf4f11/dify_plugin-0.9.1-py3-none-any.whl", hash = "sha256:1c45ed4f06ccd9375382c728ebd6b7394da854273f59666c25c0d7b914a0dbf0", size = 376977, upload-time = "2026-06-17T03:15:10.345Z" },
-]
-
-[[package]]
-name = "dpkt"
-version = "1.9.8"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c9/7d/52f17a794db52a66e46ebb0c7549bf2f035ed61d5a920ba4aaa127dd038e/dpkt-1.9.8.tar.gz", hash = "sha256:43f8686e455da5052835fd1eda2689d51de3670aac9799b1b00cfd203927ee45", size = 180073, upload-time = "2022-08-18T05:54:13.582Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/79/479e2194c9096b92aecdf33634ae948d2be306c6011673e98ee1917f32c2/dpkt-1.9.8-py3-none-any.whl", hash = "sha256:4da4d111d7bf67575b571f5c678c71bddd2d8a01a3d57d489faf0a92c748fbfd", size = 194973, upload-time = "2022-08-18T05:54:10.793Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/26/5897c50381eb23a10fd7ab770288d8656f3325d3407e4ee4f6fb7e70f76a/dify_plugin-0.10.2-py3-none-any.whl", hash = "sha256:5a30db98cc4c3f36bdcc70ecd217b6bb37279c39fc0a843a985b05581dc461d3", size = 379282, upload-time = "2026-08-10T07:04:07.068Z" },
 ]
 
 [[package]]
@@ -1199,7 +1190,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.1" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "pydantic", specifier = ">=2.13.0,<3.0.0" },
     { name = "volcengine-python-sdk", extras = ["ark"], specifier = ">=5.0.28" },
 ]

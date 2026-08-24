@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-  "dify-plugin>=0.9.1",
+  # 0.10.0 introduces get_current_session(), required to resolve the
+  # current Dify app_id for Ark request metadata.
+  "dify-plugin>=0.10.0",
   "pydantic>=2.13.0,<3.0.0",
   "volcengine-python-sdk[ark]>=5.0.28",
 ]

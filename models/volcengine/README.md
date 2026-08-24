@@ -43,3 +43,7 @@ This package is an independent plugin so it can be registered and distributed se
 - **404 / invalid URL**: `api_endpoint_host` must include `/api/v3`.
 - **Model not found**: the model id is not enabled for your Ark account.
 - **Timeout / connection error**: ensure your Dify deployment can reach the configured Ark endpoint.
+
+## Request metadata
+
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `dify_app_id` and `dify_source` to each Ark request as a `metadata` field in the request body, so usage can be attributed to a specific Dify app. The injection happens via the `extra_body` kwarg on `client.chat.completions.create`; the Ark API is OpenAI-compatible and silently ignores unknown body fields, so this is safe whether or not the upstream service consumes the field. The Dify session lookup is best-effort: if the session context is not initialized, no metadata is attached and the request is sent unchanged.
