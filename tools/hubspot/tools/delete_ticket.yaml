@@ -1,0 +1,34 @@
+identity:
+  name: delete_ticket
+  author: langgenius
+  label:
+    en_US: Delete Ticket
+    zh_Hans: 删除工单
+    pt_BR: Excluir Ticket
+    ja_JP: チケットを削除
+description:
+  human:
+    en_US: Delete a ticket in HubSpot
+    zh_Hans: 删除 HubSpot 中的工单
+    pt_BR: Excluir um ticket no HubSpot
+    ja_JP: HubSpot のチケットを削除します
+  llm: Deletes a ticket from HubSpot CRM by its ID.
+parameters:
+  - name: ticket_id
+    type: string
+    required: true
+    label:
+      en_US: Ticket ID
+      zh_Hans: 工单 ID
+      pt_BR: ID do Ticket
+      ja_JP: チケット ID
+    human_description:
+      en_US: The ID of the ticket to delete
+      zh_Hans: 要删除的工单 ID
+      pt_BR: O ID do ticket a excluir
+      ja_JP: 削除するチケットの ID
+    llm_description: The unique ID of the ticket to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_ticket.py

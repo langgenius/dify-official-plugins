@@ -1,0 +1,76 @@
+identity:
+  name: get_engagement
+  author: langgenius
+  label:
+    en_US: Get Engagement
+    zh_Hans: 获取互动
+    pt_BR: Obter Engajamento
+    ja_JP: エンゲージメントを取得
+description:
+  human:
+    en_US: Get an engagement (note, task, meeting, call, or email) from HubSpot by id
+    zh_Hans: 按 ID 从 HubSpot 获取互动（备注、任务、会议、通话或邮件）
+    pt_BR: Obter um engajamento (nota, tarefa, reunião, chamada ou e-mail) do HubSpot por id
+    ja_JP: ID で HubSpot からエンゲージメント（メモ、タスク、会議、通話、メール）を取得します
+  llm: Retrieves a single HubSpot engagement object of the given type (notes, tasks, meetings, calls, emails) by its id, optionally returning specific properties.
+parameters:
+  - name: engagement_type
+    type: select
+    required: false
+    default: notes
+    options:
+      - value: notes
+        label: {en_US: Notes, zh_Hans: 备注, pt_BR: Notas, ja_JP: メモ}
+      - value: tasks
+        label: {en_US: Tasks, zh_Hans: 任务, pt_BR: Tarefas, ja_JP: タスク}
+      - value: meetings
+        label: {en_US: Meetings, zh_Hans: 会议, pt_BR: Reuniões, ja_JP: 会議}
+      - value: calls
+        label: {en_US: Calls, zh_Hans: 通话, pt_BR: Chamadas, ja_JP: 通話}
+      - value: emails
+        label: {en_US: Emails, zh_Hans: 邮件, pt_BR: E-mails, ja_JP: メール}
+    label:
+      en_US: Engagement Type
+      zh_Hans: 互动类型
+      pt_BR: Tipo de Engajamento
+      ja_JP: エンゲージメントタイプ
+    human_description:
+      en_US: The type of engagement object
+      zh_Hans: 互动对象的类型
+      pt_BR: O tipo de objeto de engajamento
+      ja_JP: エンゲージメントオブジェクトの種類
+    llm_description: The engagement object type - one of notes, tasks, meetings, calls, emails. Defaults to notes.
+    form: llm
+  - name: engagement_id
+    type: string
+    required: true
+    label:
+      en_US: Engagement ID
+      zh_Hans: 互动 ID
+      pt_BR: ID do Engajamento
+      ja_JP: エンゲージメント ID
+    human_description:
+      en_US: The id of the engagement to retrieve
+      zh_Hans: 要获取的互动的 ID
+      pt_BR: O id do engajamento a recuperar
+      ja_JP: 取得するエンゲージメントの ID
+    llm_description: The unique id of the engagement object to retrieve.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Properties
+      zh_Hans: 返回属性
+      pt_BR: Propriedades
+      ja_JP: 取得プロパティ
+    human_description:
+      en_US: Comma-separated property names to return
+      zh_Hans: 要返回的属性名，逗号分隔
+      pt_BR: Nomes de propriedades a retornar, separados por vírgula
+      ja_JP: 返すプロパティ名（カンマ区切り）
+    llm_description: Optional comma-separated list of properties to include in the result.
+    form: llm
+extra:
+  python:
+    source: tools/get_engagement.py

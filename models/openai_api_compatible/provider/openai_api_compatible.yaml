@@ -350,6 +350,28 @@ model_credential_schema:
       help:
         en_US: Choose strict OpenAI compatibility or extended settings that add extra parameters (e.g., thinking, chat_template_kwargs, enable_thinking).
         zh_Hans: 选择严格的 OpenAI 兼容或扩展设置（会添加额外参数，例如 thinking、chat_template_kwargs、enable_thinking）。
+    - variable: api_type
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: API Type
+        zh_Hans: API 类型
+      type: select
+      required: false
+      default: chat_completions
+      options:
+        - value: chat_completions
+          label:
+            en_US: Chat Completions API (/chat/completions)
+            zh_Hans: Chat Completions API (/chat/completions)
+        - value: responses
+          label:
+            en_US: Responses API (/responses)
+            zh_Hans: Responses API (/responses)
+      help:
+        en_US: Choose Chat Completions API (standard endpoint) or Responses API (required for OpenAI native web search with domain filtering).
+        zh_Hans: 选择 Chat Completions API（标准端点）或 Responses API（适用于包含域名过滤的 OpenAI 原生联网搜索）。
     - variable: token_param_name
       show_on:
         - variable: __model_type
