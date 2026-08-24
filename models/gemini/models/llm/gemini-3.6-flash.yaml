@@ -155,8 +155,9 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3.6-flash
+# Introductory pricing applies through 2026-12-31.
 pricing:
-  input: '1.50'
-  output: '7.50'
+  input: '0.75'
+  output: '3.75'
   unit: '0.000001'
   currency: USD
