@@ -12,6 +12,89 @@ THINK_START = "<think>"
 THINK_END = "</think>"
 
 
+# Keys that may carry the tool name, checked in priority order.
+ACTION_NAME_KEYS = ("action", "tool", "tool_name", "name", "function")
+# Keys that may carry the tool input, checked in priority order.
+ACTION_INPUT_KEYS = ("action_input", "tool_input", "input", "arguments", "parameters", "args")
+# Keys that are never the tool name or input (metadata the model may include).
+IGNORED_KEYS = frozenset({"thought", "reasoning", "id", "type"})
+# Single-key wrappers some models use around the whole payload, e.g. {"tool_call": {...}}.
+WRAPPER_KEYS = frozenset({"tool_call", "tool_calling", "tool_calls", "function"})
+
+
+def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
+    """Extract a canonical Action from a flat dict, or None when it is not one."""
+    lowered = {key.lower(): value for key, value in payload.items()}
+    action_name = None
+    for key in ACTION_NAME_KEYS:
+        # non-string values (e.g. an OpenAI-style nested "function" dict) are
+        # skipped so a following known key can still provide the name
+        if isinstance(lowered.get(key), str):
+            action_name = lowered[key]
+            break
+    if action_name is None and any("input" in key for key in lowered):
+        # Legacy fallback: when no known name key is present, a remaining
+        # string-valued key may carry the tool name - but only if the payload
+        # also carries an input-like key, so arbitrary JSON blobs inside a
+        # thought are not misread as tool calls.
+        for key, value in payload.items():
+            lowered_key = key.lower()
+            if "input" in lowered_key or lowered_key in IGNORED_KEYS:
+                continue
+            if isinstance(value, str) and value.strip():
+                action_name = value
+                break
+    if not isinstance(action_name, str) or not action_name.strip():
+        return None
+
+    action_input = None
+    for key in ACTION_INPUT_KEYS:
+        if key in lowered:
+            action_input = lowered[key]
+            break
+    if action_input is None:
+        for key, value in payload.items():
+            if "input" in key.lower():
+                action_input = value
+                break
+    if action_input is None:
+        # Tools without parameters may legitimately omit the input.
+        action_input = {}
+    return AgentScratchpadUnit.Action(action_name=action_name.strip(), action_input=action_input)
+
+
+def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
+    """Parse a JSON blob into an Action, or return None when it is not one.
+
+    Returns None (instead of the raw string, as the previous in-place
+    heuristic did) so the caller can distinguish a parse failure from a
+    valid action and surface it instead of silently ending the round.
+    """
+    try:
+        payload = json.loads(json_str, strict=False)
+    except (TypeError, ValueError):
+        return None
+    # cohere always returns a list
+    if isinstance(payload, list):
+        if len(payload) != 1:
+            return None
+        payload = payload[0]
+    if not isinstance(payload, dict):
+        return None
+    # Unwrap recognized single-key wrappers, e.g. {"tool_call": {...}}.
+    if len(payload) == 1:
+        key, value = next(iter(payload.items()))
+        if key in WRAPPER_KEYS and isinstance(value, (dict, list)):
+            if isinstance(value, list):
+                if len(value) != 1:
+                    return None
+                value = value[0]
+            if not isinstance(value, dict):
+                return None
+            payload = value
+    return _extract_action(payload)
+
+
 class ReactState(Enum):
     THINKING = ("Thought:", "THINKING")
     ANSWER = ("FinalAnswer:", "ANSWER")
@@ -23,9 +106,13 @@ class ReactState(Enum):
 
 
 class ReactChunk:
-    def __init__(self, state: ReactState, content: str):
+    def __init__(self, state: ReactState, content: str, parse_failed: bool = False):
         self.state = state
         self.content = content
+        # True when a JSON blob was captured but could not be parsed as an
+        # Action, so the strategy can surface the failure instead of ending
+        # the round silently (see issue #3699).
+        self.parse_failed = parse_failed
 
 
 class CotAgentOutputParser:
@@ -33,32 +120,6 @@ class CotAgentOutputParser:
     def handle_react_stream_output(
         cls, llm_response: Generator[LLMResultChunk, None, None], usage_dict: dict
     ) -> Generator[Union[ReactChunk, AgentScratchpadUnit.Action], None, None]:
-        def parse_action(json_str):
-            try:
-                action = json.loads(json_str, strict=False)
-                action_name = None
-                action_input = None
-
-                # cohere always returns a list
-                if isinstance(action, list) and len(action) == 1:
-                    action = action[0]
-
-                for key, value in action.items():
-                    if "input" in key.lower():
-                        action_input = value
-                    else:
-                        action_name = value
-
-                if action_name is not None and action_input is not None:
-                    return AgentScratchpadUnit.Action(
-                        action_name=action_name,
-                        action_input=action_input,
-                    )
-                else:
-                    return json_str or ""
-            except Exception:
-                return json_str or ""
-
         json_cache = ""
         in_json = False
         got_json = False
@@ -203,13 +264,18 @@ class CotAgentOutputParser:
                         index += steps
                         continue
 
-                    yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
-                    if emitted_chunk is not None:
-                        yield emitted_chunk
-                    yield_delta = yield_delta or yield_raw_delta
-                    if delta_consumed:
-                        index += steps
-                        continue
+                    if cur_state is not ReactState.ANSWER:
+                        yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
+                        if emitted_chunk is not None:
+                            yield emitted_chunk
+                        yield_delta = yield_delta or yield_raw_delta
+                        if delta_consumed:
+                            index += steps
+                            continue
+                    # In the answer state a later "Thought:" must not switch
+                    # the parser back to thinking mode: the final answer is
+                    # terminal, so JSON emitted after "FinalAnswer:" can never
+                    # become a tool call.
 
                     if yield_delta:
                         index += steps
@@ -260,10 +326,17 @@ class CotAgentOutputParser:
                 if got_json:
                     got_json = False
                     last_character = delta
-                    parsed_result = parse_action(json_cache)
-                    if isinstance(parsed_result, AgentScratchpadUnit.Action):
-                        yield parsed_result
+                    action = parse_action(json_cache)
+                    if action is not None and cur_state is ReactState.THINKING:
+                        yield action
+                    elif action is None and cur_state is ReactState.THINKING:
+                        # JSON that is not a valid action: keep it as thought
+                        # text but flag the parse failure so the strategy can
+                        # surface it instead of ending the round silently.
+                        yield ReactChunk(cur_state, json_cache, parse_failed=True)
                     else:
+                        # In the answer state a JSON blob is part of the final
+                        # answer and can never become a tool call.
                         yield ReactChunk(cur_state, json_cache)
                     json_cache = ""
                     in_json = False
@@ -278,8 +351,10 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            parsed_result = parse_action(json_cache)
-            if isinstance(parsed_result, AgentScratchpadUnit.Action):
-                yield parsed_result
+            action = parse_action(json_cache)
+            if action is not None and cur_state is ReactState.THINKING:
+                yield action
+            elif action is None and cur_state is ReactState.THINKING:
+                yield ReactChunk(cur_state, json_cache, parse_failed=True)
             else:
                 yield ReactChunk(cur_state, json_cache)

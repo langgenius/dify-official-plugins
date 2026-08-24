@@ -10,7 +10,8 @@ After installation, you need to get API keys from [Alibaba Cloud](https://bailia
 
 Tongyi speech-to-text patches DashScope's async-to-sync websocket bridge when it runs under Dify's gevent-based plugin runtime. This avoids sustained high CPU after STT requests while keeping the normal in-process recognition path.
 
-If you need stronger isolation for STT recognition, set `TONGYI_STT_SUBPROCESS=1` in the plugin daemon environment. `TONGYI_STT_RECOGNITION_TIMEOUT` can be used to tune the subprocess timeout.
+If you need stronger isolation for STT recognition, set `TONGYI_STT_SUBPROCESS=1` in the plugin daemon environment.
+`TONGYI_STT_RECOGNITION_TIMEOUT` can be used to tune the subprocess timeout.
 
 ## Request metadata
 

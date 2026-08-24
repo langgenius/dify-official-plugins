@@ -1,0 +1,179 @@
+identity:
+  name: search_deals
+  author: langgenius
+  label:
+    en_US: Search Deals
+    zh_Hans: 搜索交易
+    pt_BR: Pesquisar Negócios
+    ja_JP: 取引を検索
+description:
+  human:
+    en_US: Search or list deals, with optional filter and sort
+    zh_Hans: 搜索或列出交易，可选过滤和排序
+    pt_BR: Pesquisar ou listar negócios, com filtro e ordenação opcionais
+    ja_JP: 取引を検索または一覧表示します（フィルターと並び替えは任意）
+  llm: Search or list HubSpot deals. Optionally full-text query, filter by a property (property/operator/value), and sort by a property. Leave everything empty to list recent deals.
+parameters:
+  - name: query
+    type: string
+    required: false
+    label:
+      en_US: Query
+      zh_Hans: 查询
+      pt_BR: Consulta
+      ja_JP: クエリ
+    human_description:
+      en_US: Full-text search across default searchable properties
+      zh_Hans: 对默认可搜索属性进行全文搜索
+      pt_BR: Busca de texto completo nas propriedades pesquisáveis padrão
+      ja_JP: 既定の検索可能プロパティに対する全文検索
+    llm_description: Optional full-text search string.
+    form: llm
+  - name: filter_property
+    type: string
+    required: false
+    label:
+      en_US: Filter Property
+      zh_Hans: 过滤属性
+      pt_BR: Propriedade de Filtro
+      ja_JP: フィルタープロパティ
+    human_description:
+      en_US: Property name to filter on (e.g. dealstage, amount)
+      zh_Hans: 用于过滤的属性名（如 dealstage、amount）
+      pt_BR: Nome da propriedade para filtrar (ex. dealstage, amount)
+      ja_JP: フィルターに使うプロパティ名（例 dealstage、amount）
+    llm_description: Optional property name to filter by, e.g. dealstage, amount, createdate.
+    form: llm
+  - name: filter_operator
+    type: select
+    required: false
+    default: EQ
+    options:
+      - value: EQ
+        label: {en_US: Equal, zh_Hans: 等于, pt_BR: Igual, ja_JP: 等しい}
+      - value: NEQ
+        label: {en_US: Not equal, zh_Hans: 不等于, pt_BR: Diferente, ja_JP: 等しくない}
+      - value: GT
+        label: {en_US: Greater than, zh_Hans: 大于, pt_BR: Maior que, ja_JP: より大きい}
+      - value: GTE
+        label: {en_US: Greater or equal, zh_Hans: 大于等于, pt_BR: Maior ou igual, ja_JP: 以上}
+      - value: LT
+        label: {en_US: Less than, zh_Hans: 小于, pt_BR: Menor que, ja_JP: より小さい}
+      - value: LTE
+        label: {en_US: Less or equal, zh_Hans: 小于等于, pt_BR: Menor ou igual, ja_JP: 以下}
+      - value: CONTAINS_TOKEN
+        label: {en_US: Contains, zh_Hans: 包含, pt_BR: Contém, ja_JP: 含む}
+      - value: HAS_PROPERTY
+        label: {en_US: Has property, zh_Hans: 存在该属性, pt_BR: Possui propriedade, ja_JP: プロパティあり}
+    label:
+      en_US: Filter Operator
+      zh_Hans: 过滤运算符
+      pt_BR: Operador de Filtro
+      ja_JP: フィルター演算子
+    human_description:
+      en_US: Comparison operator for the filter
+      zh_Hans: 过滤所用的比较运算符
+      pt_BR: Operador de comparação do filtro
+      ja_JP: フィルターの比較演算子
+    llm_description: Comparison operator for the filter. Defaults to EQ.
+    form: llm
+  - name: filter_value
+    type: string
+    required: false
+    label:
+      en_US: Filter Value
+      zh_Hans: 过滤值
+      pt_BR: Valor do Filtro
+      ja_JP: フィルター値
+    human_description:
+      en_US: Value to compare against (not needed for HAS_PROPERTY)
+      zh_Hans: 用于比较的值（HAS_PROPERTY 时不需要）
+      pt_BR: Valor para comparação (não necessário para HAS_PROPERTY)
+      ja_JP: 比較する値（HAS_PROPERTY では不要）
+    llm_description: Value to compare against; omit for HAS_PROPERTY / NOT_HAS_PROPERTY.
+    form: llm
+  - name: sort_by
+    type: string
+    required: false
+    label:
+      en_US: Sort By
+      zh_Hans: 排序字段
+      pt_BR: Ordenar Por
+      ja_JP: 並び替え項目
+    human_description:
+      en_US: Property to sort by (e.g. createdate, lastmodifieddate)
+      zh_Hans: 用于排序的属性（如 createdate、lastmodifieddate）
+      pt_BR: Propriedade para ordenar (ex. createdate, lastmodifieddate)
+      ja_JP: 並び替えに使うプロパティ（例 createdate、lastmodifieddate）
+    llm_description: Optional property name to sort results by, e.g. createdate.
+    form: llm
+  - name: sort_direction
+    type: select
+    required: false
+    default: DESCENDING
+    options:
+      - value: DESCENDING
+        label: {en_US: Descending (newest first), zh_Hans: 降序（最新在前）, pt_BR: Decrescente, ja_JP: 降順}
+      - value: ASCENDING
+        label: {en_US: Ascending (oldest first), zh_Hans: 升序（最早在前）, pt_BR: Crescente, ja_JP: 昇順}
+    label:
+      en_US: Sort Direction
+      zh_Hans: 排序方向
+      pt_BR: Direção da Ordenação
+      ja_JP: 並び替え方向
+    human_description:
+      en_US: Ascending or descending
+      zh_Hans: 升序或降序
+      pt_BR: Crescente ou decrescente
+      ja_JP: 昇順または降順
+    llm_description: Sort direction; DESCENDING (default) or ASCENDING.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Properties
+      zh_Hans: 返回属性
+      pt_BR: Propriedades
+      ja_JP: 取得プロパティ
+    human_description:
+      en_US: Comma-separated property names to return
+      zh_Hans: 要返回的属性名，逗号分隔
+      pt_BR: Nomes de propriedades a retornar, separados por vírgula
+      ja_JP: 返すプロパティ名（カンマ区切り）
+    llm_description: Optional comma-separated list of properties to include in each result.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Limit
+      zh_Hans: 数量限制
+      pt_BR: Limite
+      ja_JP: 上限数
+    human_description:
+      en_US: Maximum number of results (1-100)
+      zh_Hans: 返回结果的最大数量（1-100）
+      pt_BR: Número máximo de resultados (1-100)
+      ja_JP: 返す結果の最大数（1〜100）
+    llm_description: Maximum number of results to return, 1-100. Defaults to 20.
+    form: llm
+  - name: after
+    type: string
+    required: false
+    label:
+      en_US: After (cursor)
+      zh_Hans: 分页游标
+      pt_BR: Após (cursor)
+      ja_JP: カーソル
+    human_description:
+      en_US: Pagination cursor from a previous response
+      zh_Hans: 上一次响应返回的分页游标
+      pt_BR: Cursor de paginação de uma resposta anterior
+      ja_JP: 前回の応答で返されたページングカーソル
+    llm_description: Optional pagination cursor (paging.next.after) from a previous response.
+    form: llm
+extra:
+  python:
+    source: tools/search_deals.py

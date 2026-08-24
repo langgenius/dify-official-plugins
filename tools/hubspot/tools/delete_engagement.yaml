@@ -1,0 +1,61 @@
+identity:
+  name: delete_engagement
+  author: langgenius
+  label:
+    en_US: Delete Engagement
+    zh_Hans: 删除互动
+    pt_BR: Excluir Engajamento
+    ja_JP: エンゲージメントを削除
+description:
+  human:
+    en_US: Delete an engagement (note, task, meeting, call, or email) in HubSpot
+    zh_Hans: 在 HubSpot 中删除互动（备注、任务、会议、通话或邮件）
+    pt_BR: Excluir um engajamento (nota, tarefa, reunião, chamada ou e-mail) no HubSpot
+    ja_JP: HubSpot でエンゲージメント（メモ、タスク、会議、通話、メール）を削除します
+  llm: Deletes a HubSpot engagement object of the given type (notes, tasks, meetings, calls, emails) by its id.
+parameters:
+  - name: engagement_type
+    type: select
+    required: false
+    default: notes
+    options:
+      - value: notes
+        label: {en_US: Notes, zh_Hans: 备注, pt_BR: Notas, ja_JP: メモ}
+      - value: tasks
+        label: {en_US: Tasks, zh_Hans: 任务, pt_BR: Tarefas, ja_JP: タスク}
+      - value: meetings
+        label: {en_US: Meetings, zh_Hans: 会议, pt_BR: Reuniões, ja_JP: 会議}
+      - value: calls
+        label: {en_US: Calls, zh_Hans: 通话, pt_BR: Chamadas, ja_JP: 通話}
+      - value: emails
+        label: {en_US: Emails, zh_Hans: 邮件, pt_BR: E-mails, ja_JP: メール}
+    label:
+      en_US: Engagement Type
+      zh_Hans: 互动类型
+      pt_BR: Tipo de Engajamento
+      ja_JP: エンゲージメントタイプ
+    human_description:
+      en_US: The type of engagement object
+      zh_Hans: 互动对象的类型
+      pt_BR: O tipo de objeto de engajamento
+      ja_JP: エンゲージメントオブジェクトの種類
+    llm_description: The engagement object type - one of notes, tasks, meetings, calls, emails. Defaults to notes.
+    form: llm
+  - name: engagement_id
+    type: string
+    required: true
+    label:
+      en_US: Engagement ID
+      zh_Hans: 互动 ID
+      pt_BR: ID do Engajamento
+      ja_JP: エンゲージメント ID
+    human_description:
+      en_US: The id of the engagement to delete
+      zh_Hans: 要删除的互动的 ID
+      pt_BR: O id do engajamento a excluir
+      ja_JP: 削除するエンゲージメントの ID
+    llm_description: The unique id of the engagement object to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_engagement.py

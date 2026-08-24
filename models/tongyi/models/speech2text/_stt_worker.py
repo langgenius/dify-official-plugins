@@ -36,11 +36,16 @@ def main() -> int:
         status_code = getattr(result, "status_code", 200)
         if status_code != 200:
             message = getattr(result, "message", None) or "Unknown DashScope error"
+            code = getattr(result, "code", None) or "Unknown"
+            request_id = getattr(result, "request_id", None) or "Unknown"
             print(
                 json.dumps(
                     {
                         "status": "err",
-                        "data": f"DashScope error: {message} ({status_code})",
+                        "data": (
+                            f"DashScope error: {message} "
+                            f"(status: {status_code}, code: {code}, request_id: {request_id})"
+                        ),
                     }
                 )
             )
