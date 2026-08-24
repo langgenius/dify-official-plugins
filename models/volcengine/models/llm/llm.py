@@ -1655,6 +1655,17 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             user=user,
         )
 
+        # Optional: attach Dify app_id as request metadata. Default disabled;
+        # opt-in via the enable_request_metadata credential. The Ark API is
+        # OpenAI-compatible and silently ignores unknown body fields, so
+        # injecting a `metadata` field via extra_body is safe whether or not
+        # the upstream service consumes it. The session lookup is best-effort:
+        # if the session context is not initialized, no metadata is attached
+        # and the request is sent unchanged.
+        from ._metadata import apply_dify_metadata_if_enabled
+
+        extra_body = apply_dify_metadata_if_enabled({}, credentials)
+
         def _handle_stream() -> Generator[LLMResultChunk, None, None]:
             try:
                 stream_request = chat_request.model_copy(
@@ -1670,6 +1681,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                     client.chat.completions.create(
                         **stream_request.to_payload(),
                         stream=True,
+                        extra_body=extra_body,
                     ),
                 )
 
@@ -1808,6 +1820,7 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
                     client.chat.completions.create(
                         **chat_request.to_payload(),
                         stream=False,
+                        extra_body=extra_body,
                     ),
                 )
                 choice = resp.choices[0]
