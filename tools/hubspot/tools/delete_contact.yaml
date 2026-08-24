@@ -1,0 +1,34 @@
+identity:
+  name: delete_contact
+  author: langgenius
+  label:
+    en_US: Delete Contact
+    zh_Hans: 删除联系人
+    pt_BR: Excluir Contato
+    ja_JP: 連絡先を削除
+description:
+  human:
+    en_US: Delete a contact in HubSpot
+    zh_Hans: 删除 HubSpot 中的联系人
+    pt_BR: Excluir um contato no HubSpot
+    ja_JP: HubSpot の連絡先を削除します
+  llm: Deletes a contact in HubSpot CRM by its id.
+parameters:
+  - name: contact_id
+    type: string
+    required: true
+    label:
+      en_US: Contact ID
+      zh_Hans: 联系人 ID
+      pt_BR: ID do Contato
+      ja_JP: 連絡先 ID
+    human_description:
+      en_US: The ID of the contact to delete
+      zh_Hans: 要删除的联系人的 ID
+      pt_BR: O ID do contato a excluir
+      ja_JP: 削除する連絡先の ID
+    llm_description: The HubSpot ID of the contact to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_contact.py
