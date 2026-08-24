@@ -124,6 +124,34 @@ provider_credential_schema:
           en_US: "False"
           zh_Hans: "否"
         value: "false"
+  - label:
+      en_US: Enable request metadata
+      zh_Hans: 启用请求元数据
+    help:
+      text:
+        en_US: >-
+          Attach Dify app_id and dify_source to each Tongyi request as
+          X-Dify-App-Id and X-Dify-Source headers, so usage can be
+          attributed to a specific Dify app. Routed through custom
+          headers because the DashScope API does not document a
+          body-level metadata field. Default is disabled.
+        zh_Hans: >-
+          将 Dify app_id 与 dify_source 作为 X-Dify-App-Id 和 X-Dify-Source
+          头附加到每次 Tongyi 请求，以便按 Dify 应用归因用量。由于 DashScope
+          API 不支持 body 级别的元数据，因此通过自定义头传递。默认禁用。
+    options:
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    required: false
+    type: select
+    variable: enable_request_metadata
+    default: disabled
 supported_model_types:
   - llm
   - text-embedding
