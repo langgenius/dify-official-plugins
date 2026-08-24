@@ -604,6 +604,17 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if stream and include_usage and "stream_options" not in model_parameters:
             model_parameters["stream_options"] = {"include_usage": True}
 
+        # Optional: attach Dify app_id as request headers. Default disabled;
+        # opt-in via the enable_request_metadata credential. Routed through
+        # extra_headers because the SDK's OAICompat base class does not
+        # forward body-level metadata. Placed immediately before super()
+        # so the helper is the last writer to extra_headers, guarding
+        # against future ordering regressions. No-op when disabled or
+        # when the Dify session does not expose an app_id.
+        from ._metadata import apply_dify_headers_if_enabled
+
+        credentials = apply_dify_headers_if_enabled(credentials)
+
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
