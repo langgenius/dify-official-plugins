@@ -63,6 +63,36 @@ provider_credential_schema:
       required: false
       type: text-input
       variable: validate_model
+  - label:
+      en_US: Enable request metadata
+      zh_Hans: 启用请求元数据
+    help:
+      text:
+        en_US: >-
+          Attach Dify app_id and dify_source to each ZhipuAI request as
+          a metadata field in the body, so usage can be attributed to
+          a specific Dify app. The ZhipuAI API is OpenAI-compatible and
+          silently ignores unknown body fields, so this is safe
+          whether or not the upstream service consumes the field.
+          Default is disabled.
+        zh_Hans: >-
+          将 Dify app_id 与 dify_source 作为 metadata 字段附加到每次 ZhipuAI
+          请求的 body 中，以便按 Dify 应用归因用量。ZhipuAI API 兼容 OpenAI
+          协议，会静默忽略未知的 body 字段，因此无论上游服务是否消费该字段都
+          安全。默认禁用。
+    options:
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    required: false
+    type: select
+    variable: enable_request_metadata
+    default: disabled
 
 supported_model_types:
   - llm
