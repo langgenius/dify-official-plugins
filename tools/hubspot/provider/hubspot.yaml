@@ -6,13 +6,11 @@ identity:
     zh_Hans: HubSpot
     pt_BR: HubSpot
     ja_JP: HubSpot
-    zh_Hant: HubSpot
   description:
-    en_US: Connect to HubSpot to manage contacts, companies, deals, tickets, and more
-    zh_Hans: 连接 HubSpot 以管理联系人、公司、交易、工单等
-    pt_BR: Conecte-se ao HubSpot para gerenciar contatos, empresas, negócios, tickets e mais
-    ja_JP: HubSpot に接続して、連絡先、企業、取引、チケットなどを管理する
-    zh_Hant: 連接 HubSpot 以管理聯絡人、公司、交易、工單等
+    en_US: Connect to HubSpot CRM to manage contacts, companies, deals, tickets, engagements, lists and forms
+    zh_Hans: 连接 HubSpot CRM 以管理联系人、公司、交易、工单、互动记录、列表和表单
+    pt_BR: Conecte-se ao HubSpot CRM para gerenciar contatos, empresas, negócios, tickets, engajamentos, listas e formulários
+    ja_JP: HubSpot CRM に接続して、連絡先、企業、取引、チケット、エンゲージメント、リスト、フォームを管理する
   icon: icon.svg
 credentials_for_provider:
   access_token:
@@ -23,23 +21,99 @@ credentials_for_provider:
       zh_Hans: API 访问令牌
       pt_BR: Token de Acesso da API
       ja_JP: API アクセストークン
-      zh_Hant: API 存取權杖
     placeholder:
       en_US: Enter your HubSpot private app access token
       zh_Hans: 输入您的 HubSpot 私有应用访问令牌
       pt_BR: Insira seu token de acesso do aplicativo privado HubSpot
       ja_JP: HubSpot プライベートアプリのアクセストークンを入力してください
-      zh_Hant: 輸入您的 HubSpot 私有應用存取權杖
     help:
-      en_US: Create a private app in HubSpot. Required scopes - Read and Write for contacts and companies
-      zh_Hans: 在 HubSpot 中创建私有应用。必需的权限范围 - 联系人和公司的读写权限
-      pt_BR: Crie um aplicativo privado no HubSpot. Escopos necessários - Leitura e escrita para contatos e empresas
-      ja_JP: HubSpot でプライベートアプリを作成してください。必要なスコープ - 連絡先と会社の読み書き権限
-      zh_Hant: 在 HubSpot 中建立私有應用。必需的權限範圍 - 聯絡人和公司的讀寫權限
+      en_US: Create a private app in HubSpot and grant CRM scopes (contacts, companies, deals, tickets), then copy its access token.
+      zh_Hans: 在 HubSpot 中创建私有应用并授予 CRM 权限（联系人、公司、交易、工单），然后复制其访问令牌。
+      pt_BR: Crie um aplicativo privado no HubSpot e conceda escopos de CRM (contatos, empresas, negócios, tickets), depois copie o token de acesso.
+      ja_JP: HubSpot でプライベートアプリを作成し、CRM スコープ（連絡先・会社・取引・チケット）を付与してからアクセストークンをコピーしてください。
     url: https://developers.hubspot.com/docs/api/private-apps
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: text-input
+      required: true
+      label:
+        en_US: Client ID
+        zh_Hans: 客户端 ID
+        pt_BR: ID do Cliente
+        ja_JP: クライアント ID
+      help:
+        en_US: From your HubSpot public app - Auth settings
+        zh_Hans: 来自你的 HubSpot 公开应用的 Auth 设置
+        pt_BR: Das configurações de Auth do seu aplicativo público HubSpot
+        ja_JP: HubSpot パブリックアプリの Auth 設定から取得
+      url: https://developers.hubspot.com/docs/api/oauth-quickstart-guide
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        en_US: Client Secret
+        zh_Hans: 客户端密钥
+        pt_BR: Segredo do Cliente
+        ja_JP: クライアントシークレット
+    - name: scope
+      type: text-input
+      required: false
+      default: crm.objects.contacts.read crm.objects.contacts.write crm.objects.companies.read crm.objects.companies.write crm.objects.deals.read crm.objects.deals.write crm.objects.tickets.read crm.objects.tickets.write
+      label:
+        en_US: OAuth Scopes
+        zh_Hans: OAuth 权限范围
+        pt_BR: Escopos OAuth
+        ja_JP: OAuth スコープ
+      help:
+        en_US: Space-separated scopes; must be a subset of the scopes enabled on your HubSpot app
+        zh_Hans: 空格分隔的权限范围，必须是你 HubSpot 应用已启用权限的子集
+        pt_BR: Escopos separados por espaço; devem ser um subconjunto dos escopos habilitados no seu app HubSpot
+        ja_JP: スペース区切りのスコープ。HubSpot アプリで有効なスコープの部分集合である必要があります
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: Access Token
+        zh_Hans: 访问令牌
+        pt_BR: Token de Acesso
+        ja_JP: アクセストークン
+    - name: refresh_token
+      type: secret-input
+      label:
+        en_US: Refresh Token
+        zh_Hans: 刷新令牌
+        pt_BR: Token de Atualização
+        ja_JP: リフレッシュトークン
 tools:
-  - tools/get_companies.yaml
   - tools/create_contact.yaml
+  - tools/update_contact.yaml
+  - tools/delete_contact.yaml
+  - tools/get_contact.yaml
+  - tools/search_contacts.yaml
+  - tools/create_company.yaml
+  - tools/update_company.yaml
+  - tools/delete_company.yaml
+  - tools/get_company.yaml
+  - tools/search_companies.yaml
+  - tools/create_deal.yaml
+  - tools/update_deal.yaml
+  - tools/delete_deal.yaml
+  - tools/get_deal.yaml
+  - tools/search_deals.yaml
+  - tools/create_ticket.yaml
+  - tools/update_ticket.yaml
+  - tools/delete_ticket.yaml
+  - tools/get_ticket.yaml
+  - tools/search_tickets.yaml
+  - tools/create_engagement.yaml
+  - tools/get_engagement.yaml
+  - tools/search_engagements.yaml
+  - tools/delete_engagement.yaml
+  - tools/add_contact_to_list.yaml
+  - tools/remove_contact_from_list.yaml
+  - tools/get_form.yaml
+  - tools/submit_form.yaml
 extra:
   python:
     source: provider/hubspot.py

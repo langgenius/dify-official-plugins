@@ -420,7 +420,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.10.1"
+version = "0.10.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
@@ -437,9 +437,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2b/bc/a8dd795c7dd33947a90a2832a7d32c6b7f5a771554cb3890369244d72331/dify_plugin-0.10.1.tar.gz", hash = "sha256:875fe38d7a97d05fabb3b4f1ab467f2dc50ad2458a1eac68e6e212e29e7e1d29", size = 320686, upload-time = "2026-08-05T16:52:22.828Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/5a/885909338df3e32604f45c579457c5dcfe982d35857994805735e5487d4b/dify_plugin-0.10.2.tar.gz", hash = "sha256:e37e707b3903c439cd09924b2125ba794ffdc886bfdbcb8f75db28ba64cb795b", size = 320685, upload-time = "2026-08-10T07:04:08.454Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/d1/21ef487ef4bbb38ea1e19489a2c7a81f4a91865ba91fedd921226ede862c/dify_plugin-0.10.1-py3-none-any.whl", hash = "sha256:b36161c72d4235af4241b8e417edea78689f3d6e4598cf2368b2a1523bf96809", size = 379287, upload-time = "2026-08-05T16:52:21.112Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/26/5897c50381eb23a10fd7ab770288d8656f3325d3407e4ee4f6fb7e70f76a/dify_plugin-0.10.2-py3-none-any.whl", hash = "sha256:5a30db98cc4c3f36bdcc70ecd217b6bb37279c39fc0a843a985b05581dc461d3", size = 379282, upload-time = "2026-08-10T07:04:07.068Z" },
 ]
 
 [[package]]
@@ -1604,7 +1604,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dashscope", specifier = ">=1.26.7,<1.27.0" },
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openai", specifier = ">=2.38.0" },
     { name = "pydub", specifier = ">=0.25.1" },
