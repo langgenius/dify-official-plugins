@@ -19,6 +19,8 @@ Official StepFun model provider plugin for Dify.
    - If your API key is from the international platform (platform.stepfun.ai), enable the **Use International Endpoint** option.
 4. Save the configuration.
 
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `X-Dify-App-Id` and `X-Dify-Source` to each StepFun request as custom HTTP headers, so usage can be attributed to a specific Dify app. The opt-in is routed through the `extra_headers` credential because the SDK's OAICompat base class does not forward body-level metadata to the upstream request. The Dify session lookup is best-effort: if the session context is not initialized, no headers are attached and the request is sent unchanged.
+
 ## Usage
 Select **Stepfun** as the model provider in Dify, choose an available model, and use it in applications, agents, or workflows.
 
