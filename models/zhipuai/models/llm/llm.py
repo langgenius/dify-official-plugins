@@ -300,14 +300,28 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             params["tools"] = [
                 {"type": "function", "function": tool.model_dump()} for tool in tools
             ]
+
+        # Optional: attach Dify app_id as request metadata. Default disabled;
+        # opt-in via the enable_request_metadata credential. The ZhipuAI API
+        # is OpenAI-compatible and silently ignores unknown body fields, so
+        # injecting a `metadata` field via extra_body is safe whether or not
+        # the upstream service consumes it. The session lookup is best-effort:
+        # if the session context is not initialized, no metadata is attached
+        # and the request is sent unchanged.
+        from ._metadata import apply_dify_metadata_if_enabled
+
+        extra_body = apply_dify_metadata_if_enabled({}, credentials_kwargs)
+
         if stream:
             response = client.chat.completions.create(
-                stream=stream, **params, **extra_model_kwargs
+                stream=stream, **params, **extra_model_kwargs, extra_body=extra_body
             )
             return self._handle_generate_stream_response(
                 model, credentials_kwargs, tools, response, prompt_messages
             )
-        response = client.chat.completions.create(**params, **extra_model_kwargs)
+        response = client.chat.completions.create(
+            **params, **extra_model_kwargs, extra_body=extra_body
+        )
         return self._handle_generate_response(
             model, credentials_kwargs, tools, response, prompt_messages
         )
