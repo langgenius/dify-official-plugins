@@ -25,3 +25,7 @@ Use `https://api.tokenlab.sh/v1` for LLM/chat models. For non-LLM model types wh
 Other TokenLab chat models can be added the same way, for example `gpt-5.5`, `claude-opus-4-8`, `claude-sonnet-5`, `gemini-3.5-flash`, `grok-4.3`, `qwen3.7-max`, `deepseek-v4-pro`, `deepseek-v4-flash`, `glm-5.2`, `minimax-m3`, and `kimi-k2.7-code`.
 
 TokenLab also provides native endpoint families such as Responses, Anthropic Messages, and Gemini-compatible APIs. This OpenAI-API-compatible plugin uses TokenLab's `/v1` OpenAI-compatible endpoint.
+
+## Request metadata
+
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `X-Dify-App-Id` and `X-Dify-Source` to each OpenAI-compatible request as custom HTTP headers, so usage can be attributed to a specific Dify app in the upstream server logs. The opt-in is routed through the `extra_headers` credential because the SDK's OAICompat base class does not forward body-level metadata. The Dify session lookup is best-effort: if the session context is not initialized, no headers are attached and the request is sent unchanged.
