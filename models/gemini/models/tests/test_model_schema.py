@@ -14,9 +14,14 @@ from models.llm.model_schema import (
 LLM_SCHEMA_DIR = Path(__file__).parents[1] / "llm"
 LATEST_FLASH_MODELS = (
     ("gemini-3.7-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
-    ("gemini-3.6-flash", "Medium", Decimal("1.50"), Decimal("7.50")),
+    ("gemini-3.6-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
     ("gemini-3.5-flash-lite", "Minimal", Decimal("0.30"), Decimal("2.50")),
 )
+
+# 3.6 and 3.7 Flash are published on one introductory rate card: $0.75 in /
+# $3.75 out per 1M tokens through 2026-12-31, doubling on 2027-01-01.
+# https://ai.google.dev/gemini-api/docs/pricing
+INTRODUCTORY_FLASH_MODELS = ("gemini-3.6-flash", "gemini-3.7-flash")
 
 
 def _load_llm_model_schemas() -> list[AIModelEntity]:
@@ -106,6 +111,22 @@ def test_latest_flash_model_contract(
     assert schema.pricing.output == output_price
     assert schema.pricing.unit == Decimal("0.000001")
     assert schema.pricing.currency == "USD"
+
+
+def test_introductory_flash_models_share_one_rate_card():
+    # The two models on the introductory schedule move together: same price
+    # today, same doubling on 2027-01-01. Pinning them to each other rather
+    # than only to literals means one of them cannot quietly carry the
+    # post-promotion number while the other still carries the current one.
+    llm = GoogleLargeLanguageModel(_load_llm_model_schemas())
+    pricings = []
+    for model in INTRODUCTORY_FLASH_MODELS:
+        schema = llm.get_model_schema(model)
+        assert schema is not None, model
+        assert schema.pricing is not None, model
+        pricings.append((schema.pricing.input, schema.pricing.output))
+
+    assert len(set(pricings)) == 1, dict(zip(INTRODUCTORY_FLASH_MODELS, pricings))
 
 
 def test_latest_flash_models_are_first_in_display_order():
