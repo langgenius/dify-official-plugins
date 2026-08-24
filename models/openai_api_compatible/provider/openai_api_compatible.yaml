@@ -41,6 +41,26 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: enable_request_metadata
+      label:
+        zh_Hans: 启用请求元数据
+        en_US: Enable request metadata
+      help:
+        text:
+          zh_Hans: 将 Dify app_id 与 dify_source 作为 X-Dify-App-Id 和 X-Dify-Source 头附加到每次 OpenAI 兼容请求，以便按 Dify 应用归因用量。由于 SDK 的 OAICompat 基类不转发 body 级别的元数据，因此通过 extra_headers 传递。默认禁用。
+          en_US: Attach Dify app_id and dify_source to each OpenAI-compatible request as X-Dify-App-Id and X-Dify-Source headers, so usage can be attributed to a specific Dify app. Routed through extra_headers because the SDK's OAICompat base class does not forward body-level metadata. Default is disabled.
+      options:
+        - label:
+            zh_Hans: 禁用
+            en_US: Disabled
+          value: disabled
+        - label:
+            zh_Hans: 启用
+            en_US: Enabled
+          value: enabled
+      required: false
+      type: select
+      default: disabled
     - variable: language
       label:
         en_US: Language
