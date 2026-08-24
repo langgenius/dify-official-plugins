@@ -63,7 +63,7 @@ class _CommonAzureOpenAI:
         Dated endpoints sort correctly because versions are ``YYYY-MM-DD``-prefixed;
         malformed or unknown version strings fail closed.
         """
-        api_base = str(credentials.get("openai_api_base") or "").strip()
+        api_base = (credentials.get("openai_api_base") or "").strip()
         if cls._is_v1_api_base(api_base):
             return True
         version = cls._effective_api_version(credentials)
@@ -109,7 +109,7 @@ class _CommonAzureOpenAI:
         1. API Key authentication (default)
         2. Microsoft Entra ID with Service Principal (user-provided credentials)
         """
-        api_base = str(credentials.get("openai_api_base") or "").strip()
+        api_base = (credentials.get("openai_api_base") or "").strip()
         if not api_base:
             raise ValueError("Azure OpenAI API Base URL is required")
         api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
@@ -181,7 +181,7 @@ class _CommonAzureOpenAI:
     @staticmethod
     def _credential_cache_key(credentials: dict) -> tuple:
         auth_method = credentials.get("auth_method", "api_key")
-        api_base = str(credentials.get("openai_api_base") or "").strip()
+        api_base = (credentials.get("openai_api_base") or "").strip()
         api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
         return (
             api_base,
@@ -196,7 +196,7 @@ class _CommonAzureOpenAI:
     @classmethod
     def _build_client(cls, credentials: dict):
         client_kwargs = cls._to_credential_kwargs(credentials)
-        if cls._is_v1_api_base(str(credentials.get("openai_api_base") or "")):
+        if cls._is_v1_api_base(credentials["openai_api_base"]):
             return openai.OpenAI(**client_kwargs)
         return openai.AzureOpenAI(**client_kwargs)
 
