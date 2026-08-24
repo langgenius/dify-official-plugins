@@ -633,7 +633,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Sort by priority (lower number = higher priority), then by length descending
             blocks.sort(key=lambda x: (x[0], x[1]))
 
-            logging.debug(f"Blocks: {blocks}")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
             for idx, (_, _, block_dict) in enumerate(blocks):
@@ -683,7 +684,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             ]
             
             # Log the transformed tools to verify cache_control is added
-            logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
             
             request_payload["tools"] = extra_model_kwargs["tools"]
 
@@ -691,7 +693,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -705,7 +708,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -720,7 +724,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -1123,7 +1128,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_creation_1h_input_tokens = 0
         
         for chunk in response:
-            logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model

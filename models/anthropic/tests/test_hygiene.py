@@ -256,3 +256,92 @@ def test_stream_redacted_thinking_block_start_between_blocks() -> None:
     assert text.count(OPEN_THINK) == 1
     assert text.count(CLOSE_THINK) == 1
     assert "hello" in text
+
+
+# ---------------------------------------------------------------------------
+# DEBUG payload logs must not pay serialization cost at the default INFO
+# level: f-string arguments (json.dumps / model_dump_json) are evaluated
+# before logging.debug() filters the record out.
+# ---------------------------------------------------------------------------
+
+
+def _spy_stream_serialization(monkeypatch) -> dict:
+    calls = {"n": 0}
+    for cls in (
+        MessageStartEvent,
+        ContentBlockStartEvent,
+        ContentBlockDeltaEvent,
+        MessageDeltaEvent,
+        MessageStopEvent,
+    ):
+        origin = cls.model_dump_json
+
+        def make_spy(origin):
+            def spy(self, *args, **kwargs):
+                calls["n"] += 1
+                return origin(self, *args, **kwargs)
+
+            return spy
+
+        monkeypatch.setattr(cls, "model_dump_json", make_spy(origin))
+    return calls
+
+
+def test_stream_chunks_not_serialized_when_debug_disabled(monkeypatch, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    calls = _spy_stream_serialization(monkeypatch)
+    events = [_message_start(), _message_delta("end_turn"), MessageStopEvent(type="message_stop")]
+
+    _run_stream(events)
+
+    assert calls["n"] == 0, "stream chunks serialized although DEBUG is disabled"
+    assert not [
+        r for r in caplog.records if "Anthropic API Stream Response Chunk" in r.getMessage()
+    ]
+
+
+def test_stream_chunks_serialized_when_debug_enabled(monkeypatch, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    calls = _spy_stream_serialization(monkeypatch)
+    events = [_message_start(), _message_delta("end_turn"), MessageStopEvent(type="message_stop")]
+
+    _run_stream(events)
+
+    assert calls["n"] == len(events), "DEBUG log must serialize every streamed chunk"
+    assert [
+        r for r in caplog.records if "Anthropic API Stream Response Chunk" in r.getMessage()
+    ]
+
+
+def test_request_payload_not_serialized_when_debug_disabled(monkeypatch, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    calls = {"n": 0}
+    real_dumps = llm_module.json.dumps
+
+    def spy(*args, **kwargs):
+        # Only the payload log lines use indent=2; the non-logging uses
+        # (tool schema, tool arguments) do not.
+        if kwargs.get("indent") == 2 or (len(args) > 1 and args[1] == 2):
+            calls["n"] += 1
+        return real_dumps(*args, **kwargs)
+
+    monkeypatch.setattr(llm_module.json, "dumps", spy)
+    _capture_payload(monkeypatch, [UserPromptMessage(content="Hello")])
+
+    assert calls["n"] == 0, "request payload serialized although DEBUG is disabled"
+
+
+def test_request_payload_serialized_when_debug_enabled(monkeypatch, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    calls = {"n": 0}
+    real_dumps = llm_module.json.dumps
+
+    def spy(*args, **kwargs):
+        if kwargs.get("indent") == 2 or (len(args) > 1 and args[1] == 2):
+            calls["n"] += 1
+        return real_dumps(*args, **kwargs)
+
+    monkeypatch.setattr(llm_module.json, "dumps", spy)
+    _capture_payload(monkeypatch, [UserPromptMessage(content="Hello")])
+
+    assert calls["n"] == 1, "DEBUG log must serialize the request payload once"
