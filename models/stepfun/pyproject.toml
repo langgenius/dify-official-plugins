@@ -7,10 +7,14 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.9.0",
+    # 0.10.0 introduces get_current_session(), required to resolve the
+    # current Dify app_id for StepFun request headers.
+    "dify-plugin>=0.10.0",
     "requests>=2.34.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=9.0.3",
+]
