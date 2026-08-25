@@ -1,7 +1,8 @@
 import json
 import logging
 from collections.abc import Generator, Iterator
-from typing import Optional, Union, cast
+from typing import cast
+
 import cohere
 from cohere import (
     ChatMessage,
@@ -20,7 +21,6 @@ from cohere import (
     ToolCall,
     ToolParameterDefinitionsValue,
 )
-from cohere.core import RequestOptions
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -50,6 +50,8 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
+from models.llm._metadata import build_cohere_request_options
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,11 +66,11 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+        user: str | None = None,
+    ) -> LLMResult | Generator:
         """
         Invoke large language model
 
@@ -110,7 +112,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+        tools: list[PromptMessageTool] | None = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -169,10 +171,10 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        stop: Optional[list[str]] = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+        user: str | None = None,
+    ) -> LLMResult | Generator:
         """
         Invoke llm model
 
@@ -195,7 +197,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 prompt=prompt_messages[0].content,
                 model=model,
                 **model_parameters,
-                request_options=RequestOptions(max_retries=0),
+                request_options=build_cohere_request_options(credentials),
             )
             return self._handle_generate_stream_response(
                 model, credentials, response, prompt_messages
@@ -205,7 +207,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 prompt=prompt_messages[0].content,
                 model=model,
                 **model_parameters,
-                request_options=RequestOptions(max_retries=0),
+                request_options=build_cohere_request_options(credentials),
             )
             return self._handle_generate_response(
                 model, credentials, response, prompt_messages
@@ -309,11 +311,11 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
+        tools: list[PromptMessageTool] | None = None,
+        stop: list[str] | None = None,
         stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+        user: str | None = None,
+    ) -> LLMResult | Generator:
         """
         Invoke llm chat model
 
@@ -355,7 +357,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 chat_history=chat_histories,
                 model=real_model,
                 **model_parameters,
-                request_options=RequestOptions(max_retries=0),
+                request_options=build_cohere_request_options(credentials),
             )
             return self._handle_chat_generate_stream_response(
                 model, credentials, response, prompt_messages
@@ -366,7 +368,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 chat_history=chat_histories,
                 model=real_model,
                 **model_parameters,
-                request_options=RequestOptions(max_retries=0),
+                request_options=build_cohere_request_options(credentials),
             )
             return self._handle_chat_generate_response(
                 model, credentials, response, prompt_messages
@@ -441,7 +443,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
             full_text: str,
             tool_calls: list[AssistantPromptMessage.ToolCall],
             index: int,
-            finish_reason: Optional[str] = None,
+            finish_reason: str | None = None,
         ) -> LLMResultChunk:
             prompt_tokens = self._num_tokens_from_messages(
                 model, credentials, prompt_messages
@@ -573,7 +575,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
 
     def _convert_prompt_message_to_dict(
         self, message: PromptMessage
-    ) -> Optional[ChatMessage]:
+    ) -> ChatMessage | None:
         """
         Convert PromptMessage to dict for Cohere model
         """
