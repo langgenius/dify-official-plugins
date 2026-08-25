@@ -6,6 +6,8 @@ You'll need your Anthropic API Key to configure this plugin. After obtaining it 
 
 ![](./_assets/anthropic-01.png)
 
+`Enable request metadata` is optional and disabled by default. Turning it on attaches `dify_app_id` and `dify_source` to each Anthropic request as `metadata`, so usage can be attributed to a specific Dify app in the Anthropic admin console. The opt-in is honored at both the provider and the per-model credential level. The Dify session lookup is best-effort: if the session context is not initialized, no metadata is attached and the request is sent unchanged.
+
 ## Prompt-Caching Options
 Claude’s API allows you to mark specific parts of a request as *ephemeral*. The blocks are then cached on Anthropic’s side so future requests are cheaper and faster.  
 This plugin exposes fine-grained switches so you control exactly **what** is cached.

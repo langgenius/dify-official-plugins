@@ -19,6 +19,8 @@ from anthropic.types import (
     MessageStreamEvent,
     completion_create_params,
 )
+
+from ._metadata import apply_dify_metadata_if_enabled
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -560,6 +562,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["metadata"] = completion_create_params.Metadata(
                 user_id=user
             )
+        # Optional: attach Dify app_id as request metadata. Default disabled;
+        # opt-in via the enable_request_metadata credential. Merges into any
+        # caller-supplied metadata (e.g. the user_id set above) rather than
+        # overwriting it, and is a no-op when the feature is disabled or the
+        # Dify session does not expose an app_id.
+        apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
         # Extract caching flags early so _convert_prompt_messages can use them
         self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", False)
