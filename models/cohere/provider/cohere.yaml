@@ -104,6 +104,42 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: base_url
+  - default: disabled
+    label:
+      en_US: Attach Dify app_id as request metadata
+      zh_Hans: 附加 Dify app_id 作为请求元数据
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+          every Cohere SDK call via `RequestOptions.additional_headers`. The
+          headers are forwarded by the underlying HTTP client alongside the
+          rest of the request and are used for observability / proxy-side
+          propagation. The Cohere API does not consume them. Default is
+          `disabled`, so the request shape is unchanged unless you opt in.
+        zh_Hans: |-
+          启用后，插件会通过 `RequestOptions.additional_headers` 在每次 Cohere SDK
+          调用中附加当前 Dify app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` /
+          `X-Dify-Source` 请求头。这些请求头由底层 HTTP 客户端随请求一起转发，
+          用于可观测性与代理侧传播，Cohere API 不会消费它们。默认值为 `disabled`，
+          即未开启时请求结构保持不变。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on: []
+    type: select
+    variable: enable_request_metadata
 supported_model_types:
 - llm
 - text-embedding
