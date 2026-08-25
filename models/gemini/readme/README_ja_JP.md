@@ -11,3 +11,5 @@ Geminiプラグインをインストールした後、Googleから取得でき�
 
 Geminiやその他のビジョンモデルで `MULTIMODAL_SEND_FORMAT` に `url` モードを使用する場合、`Files URL` を設定することで、より良いパフォーマンスを得ることができます。
 
+`Enable request metadata` はオプションで、デフォルトでは無効になっています。これを有効にすると、`dify_app_id` と `dify_source` が `GenerateContentConfig` の `labels` として各 Gemini リクエストに付加され、Cloud Billing で特定の Dify アプリに使用量を帰属させることができます。このオプトインは `generate_content` ルートにのみ適用されます。Interactions API はその課金内訳で labels を表示しないため、意図的に変更されていません。Dify セッションの検索はベストエフォートです。セッションコンテキストが初期化されていない場合、labels は付加されず、リクエストは変更されずに送信されます。
+
