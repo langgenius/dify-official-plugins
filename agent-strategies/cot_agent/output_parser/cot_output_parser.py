@@ -84,7 +84,7 @@ def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
     # Unwrap recognized single-key wrappers, e.g. {"tool_call": {...}}.
     if len(payload) == 1:
         key, value = next(iter(payload.items()))
-        if key in WRAPPER_KEYS and isinstance(value, (dict, list)):
+        if key.lower() in WRAPPER_KEYS and isinstance(value, (dict, list)):
             if isinstance(value, list):
                 if len(value) != 1:
                     return None
@@ -92,7 +92,43 @@ def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
             if not isinstance(value, dict):
                 return None
             payload = value
+    # Unwrap OpenAI-style function envelopes, e.g.
+    # {"function": {"name": "tool", "arguments": {...}}} (optionally alongside
+    # a "type": "function" key). Explicit canonical name keys (action, tool,
+    # tool_name, name) take precedence over the envelope, and a "function"
+    # value that is not a dict with a string "name" leaves the payload
+    # untouched.
+    lowered = {key.lower(): value for key, value in payload.items()}
+    has_explicit_name = any(isinstance(lowered.get(key), str) for key in ACTION_NAME_KEYS)
+    if not has_explicit_name:
+        function = lowered.get("function")
+        if isinstance(function, dict) and isinstance(function.get("name"), str):
+            arguments = function.get("arguments")
+            if arguments is None:
+                arguments = function.get("input")
+            if arguments is None:
+                arguments = {}
+            payload = {"action": function["name"], "action_input": arguments}
     return _extract_action(payload)
+
+
+# Maximum number of trailing characters that could still be the start of a
+# (split) think tag at a chunk boundary: longest tag length minus one.
+_MAX_PARTIAL_TAG = max(len(THINK_START), len(THINK_END)) - 1
+
+
+def _partial_tag_suffix(text: str) -> int:
+    """Length of the longest suffix of text that is a prefix of a think tag.
+
+    Used to hold back a chunk tail that may complete into a think tag on the
+    next chunk, so tags split across stream chunks are still stripped.
+    """
+    limit = min(_MAX_PARTIAL_TAG, len(text))
+    for length in range(limit, 0, -1):
+        suffix = text[-length:]
+        if THINK_START.startswith(suffix) or THINK_END.startswith(suffix):
+            return length
+    return 0
 
 
 class ReactState(Enum):
@@ -131,6 +167,21 @@ class CotAgentOutputParser:
 
         cur_state = ReactState.THINKING
         last_character = ""
+
+        def emit_json_blob(blob: str):
+            """Yield a completed JSON blob as an Action or as (flagged) text."""
+            action = parse_action(blob)
+            if action is not None and cur_state is ReactState.THINKING:
+                yield action
+            elif action is None and cur_state is ReactState.THINKING:
+                # JSON that is not a valid action: keep it as thought text
+                # but flag the parse failure so the strategy can surface it
+                # instead of ending the round silently.
+                yield ReactChunk(cur_state, blob, parse_failed=True)
+            else:
+                # In the answer state a JSON blob is part of the final answer
+                # and can never become a tool call.
+                yield ReactChunk(cur_state, blob)
 
         class PrefixMatcher:
             __slots__ = ("prefix", "state_on_full_match", "cache", "idx")
@@ -200,41 +251,46 @@ class CotAgentOutputParser:
                 continue
             if not response_content:
                 continue
-            # When include_thoughts=True, Gemini injects <think>...</think>; strip across chunks so
-            # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply.
-            # Nested <think> tags are supported via a depth counter.
-            if THINK_START in response_content or THINK_END in response_content or _in_think:
-                buf = _think_buf + response_content
-                _think_buf = ""
-                out = []
-                i = 0
-                while i < len(buf):
-                    if _in_think:
-                        end_j = buf.find(THINK_END, i)
-                        start_j = buf.find(THINK_START, i)
-                        if end_j == -1 and start_j == -1:
-                            _think_buf = buf[i:]
-                            break
-                        if start_j != -1 and (end_j == -1 or start_j < end_j):
-                            _think_depth += 1
-                            i = start_j + len(THINK_START)
-                        else:
-                            j = end_j
-                            _think_depth -= 1
-                            if _think_depth <= 0:
-                                _in_think = False
-                                _think_depth = 0
-                            i = j + len(THINK_END)
+            # When include_thoughts=True, Gemini injects think tags around
+            # model reasoning; strip them across chunks so the ReAct parser
+            # only sees Thought:/Action:/FinalAnswer: from the model reply.
+            # Nested tags are supported via a depth counter, and a chunk tail
+            # that could still be the start of a tag is held back in
+            # _think_buf until the next chunk, so tags split across chunks
+            # are stripped as well.
+            buf = _think_buf + response_content
+            _think_buf = ""
+            out = []
+            i = 0
+            while i < len(buf):
+                if _in_think:
+                    end_j = buf.find(THINK_END, i)
+                    start_j = buf.find(THINK_START, i)
+                    if end_j == -1 and start_j == -1:
+                        _think_buf = buf[i:]
+                        break
+                    if start_j != -1 and (end_j == -1 or start_j < end_j):
+                        _think_depth += 1
+                        i = start_j + len(THINK_START)
                     else:
-                        j = buf.find(THINK_START, i)
-                        if j == -1:
-                            out.append(buf[i:])
-                            break
-                        out.append(buf[i:j])
-                        _in_think = True
-                        _think_depth = 1
-                        i = j + len(THINK_START)
-                response_content = "".join(out)
+                        j = end_j
+                        _think_depth -= 1
+                        if _think_depth <= 0:
+                            _in_think = False
+                            _think_depth = 0
+                        i = j + len(THINK_END)
+                else:
+                    j = buf.find(THINK_START, i)
+                    if j == -1:
+                        hold = _partial_tag_suffix(buf[i:])
+                        out.append(buf[i : len(buf) - hold])
+                        _think_buf = buf[len(buf) - hold :]
+                        break
+                    out.append(buf[i:j])
+                    _in_think = True
+                    _think_depth = 1
+                    i = j + len(THINK_START)
+            response_content = "".join(out)
             if not response_content:
                 continue
 
@@ -244,6 +300,18 @@ class CotAgentOutputParser:
                 steps = 1
                 delta = response_content[index: index + steps]
                 yield_delta = False
+
+                # Flush a completed JSON blob before processing the next
+                # character, so that adjacent roots like {...}{...} cannot
+                # overwrite an unprocessed blob in json_cache.
+                if got_json:
+                    got_json = False
+                    yield from emit_json_blob(json_cache)
+                    json_cache = ""
+                    in_json = False
+                    json_in_string = False
+                    json_escape = False
+                    json_stack = []
 
                 if not in_json:
                     yield_raw_delta, emitted_chunk, delta_consumed, matched_action_prefix = action_matcher.step(delta)
@@ -323,27 +391,6 @@ class CotAgentOutputParser:
                                 index += steps
                                 continue
 
-                if got_json:
-                    got_json = False
-                    last_character = delta
-                    action = parse_action(json_cache)
-                    if action is not None and cur_state is ReactState.THINKING:
-                        yield action
-                    elif action is None and cur_state is ReactState.THINKING:
-                        # JSON that is not a valid action: keep it as thought
-                        # text but flag the parse failure so the strategy can
-                        # surface it instead of ending the round silently.
-                        yield ReactChunk(cur_state, json_cache, parse_failed=True)
-                    else:
-                        # In the answer state a JSON blob is part of the final
-                        # answer and can never become a tool call.
-                        yield ReactChunk(cur_state, json_cache)
-                    json_cache = ""
-                    in_json = False
-                    json_in_string = False
-                    json_escape = False
-                    json_stack = []
-
                 if not in_json:
                     last_character = delta
                     yield ReactChunk(cur_state, delta)
@@ -351,10 +398,11 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            action = parse_action(json_cache)
-            if action is not None and cur_state is ReactState.THINKING:
-                yield action
-            elif action is None and cur_state is ReactState.THINKING:
-                yield ReactChunk(cur_state, json_cache, parse_failed=True)
-            else:
-                yield ReactChunk(cur_state, json_cache)
+            yield from emit_json_blob(json_cache)
+
+        # Flush the chunk tail held back as a possible partial think tag.
+        # (If the stream ended inside an unclosed think block, the buffered
+        # content is still dropped, as before.)
+        if _think_buf and not _in_think:
+            yield ReactChunk(cur_state, _think_buf)
+            _think_buf = ""
