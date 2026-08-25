@@ -83,49 +83,39 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
                 sentences = self._split_text_into_sentences(
                     content_text, max_length=max_length
                 )
-                executor = concurrent.futures.ThreadPoolExecutor(
-                    max_workers=min(3, len(sentences))
-                )
-                futures = [
-                    executor.submit(
-                        client.audio.speech.with_streaming_response.create,
+                # The OpenAI SDK's with_streaming_response.create returns a
+                # deferred context manager: the HTTP request fires on
+                # __enter__, not on .create(). Fetch each sentence inside a
+                # worker (real parallelism), buffer the bytes, and yield them
+                # in order. Contexts and the executor always close.
+                def _fetch_sentence_audio(sentence: str) -> bytes:
+                    with client.audio.speech.with_streaming_response.create(
                         model=model,
                         response_format=audio_type,
-                        input=sentences[i],
+                        input=sentence,
                         voice=voice,
-                    )
-                    for i in range(len(sentences))
-                ]
-                for future in futures:
-                    yield from future.result().__enter__().iter_bytes(1024)
+                    ) as response:
+                        return b"".join(response.iter_bytes(1024))
+
+                with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=min(3, len(sentences))
+                ) as executor:
+                    futures = [
+                        executor.submit(_fetch_sentence_audio, sentence)
+                        for sentence in sentences
+                    ]
+                    for future in futures:
+                        yield future.result()
             else:
-                response = client.audio.speech.with_streaming_response.create(
+                with client.audio.speech.with_streaming_response.create(
                     model=model,
                     voice=voice,
                     response_format=audio_type,
                     input=content_text.strip(),
-                )
-                yield from response.__enter__().iter_bytes(1024)
+                ) as response:
+                    yield from response.iter_bytes(1024)
         except Exception as ex:
             raise InvokeBadRequestError(str(ex))
-
-    def _process_sentence(self, sentence: str, model: str, voice, credentials: dict):
-        """
-        _tts_invoke openai text2speech model api
-
-        :param model: model name
-        :param credentials: model credentials
-        :param voice: model timbre
-        :param sentence: text content to be translated
-        :return: text translated to audio file
-        """
-        client = self._create_client(credentials)
-        audio_type = self._get_model_audio_type(model, credentials)
-        response = client.audio.speech.create(
-            model=model, voice=voice, response_format=audio_type, input=sentence.strip()
-        )
-        if isinstance(response.read(), bytes):
-            return response.read()
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict

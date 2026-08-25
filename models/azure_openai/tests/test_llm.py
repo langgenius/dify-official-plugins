@@ -355,7 +355,11 @@ class TestResponsesPayloadWithWebSearch(unittest.TestCase):
         prompt_messages = [UserPromptMessage(content="hello")]
         return self.llm._chat_generate_with_responses(
             model="deployment-name",
-            credentials={"base_model_name": "gpt-5"},
+            credentials={
+                "base_model_name": "gpt-5",
+                # Versionless v1 surface: always Responses-capable.
+                "openai_api_base": "https://example.openai.azure.com/openai/v1",
+            },
             prompt_messages=prompt_messages,
             model_parameters=model_parameters,
             tools=tools,
