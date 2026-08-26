@@ -13,6 +13,8 @@ from llama_cloud_services import LlamaParse
 from llama_cloud_services.parse.utils import ResultType
 from pydantic import BaseModel
 
+from tools.file_inputs import call_sync, file_bytes, file_name, iter_files
+
 logger = logging.getLogger(__name__)
 
 
@@ -153,7 +155,9 @@ class LlamaParseAdvancedTool(Tool):
         nest_asyncio.apply()
         if tool_parameters.get("files") is None:
             raise ValueError("File is required")
-        params = AdvancedToolParameters(**tool_parameters)
+        params = AdvancedToolParameters(
+            **{**tool_parameters, "files": iter_files(tool_parameters["files"])}
+        )
         files = params.files
 
         # Build parser configuration with advanced features
@@ -180,53 +184,40 @@ class LlamaParseAdvancedTool(Tool):
         parser = LlamaParse(**parser_config)
 
         for file in files:
-            try:
-                # Add timeout and error handling for file access
-                file_size_mb = getattr(file, 'size', 0) / (1024 * 1024)
-                logger.info(f"Processing file: {file.filename} ({file_size_mb:.1f}MB)")
-                
-                # Show warning for very large files
-                if file_size_mb > 50:
-                    logger.warning(f"Processing very large file ({file_size_mb:.1f}MB). This may take several minutes.")
-                    yield self.create_text_message(f"Processing large file ({file_size_mb:.1f}MB). Please be patient...")
-                
-                # Try to access the file content with custom timeout handling
-                try:
-                    file_content = self._get_file_content_with_timeout(file, timeout=300.0)
-                except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
-                    error_msg = str(e)
-                    logger.error(error_msg)
-                    yield self.create_text_message(error_msg)
-                    continue
-                except Exception as e:
-                    error_msg = f"Unexpected error while accessing file '{file.filename}': {e}"
-                    logger.error(error_msg)
-                    yield self.create_text_message(error_msg)
-                    continue
+            filename = file_name(file)
+            file_size_mb = getattr(file, "size", 0) / (1024 * 1024)
+            logger.info(f"Processing file: {filename} ({file_size_mb:.1f}MB)")
 
-                # Parse the document
-                logger.info(f"Parsing file '{file.filename}' with LlamaParse LLM mode...")
-                documents = parser.load_data(
-                    file_path=file_content,
-                    extra_info={"file_name": file.filename},
+            if file_size_mb > 50:
+                logger.warning(
+                    f"Processing very large file ({file_size_mb:.1f}MB). This may take several minutes."
                 )
-                
-                texts = "---".join([doc.text for doc in documents])
-                yield self.create_text_message(texts)
-                handled_docs = [
-                    {"text": doc.text, "metadata": doc.metadata} for doc in documents
-                ]
-                yield self.create_json_message({file.filename: handled_docs})
-                yield self.create_blob_message(
-                    texts.encode(),
-                    meta={
-                        "mime_type": mime_type_map[params.result_type],
-                    },
+                yield self.create_text_message(
+                    f"Processing large file ({file_size_mb:.1f}MB). Please be patient..."
                 )
-                
-                logger.info(f"Successfully processed file '{file.filename}'")
-                
-            except Exception as e:
-                error_msg = f"Error processing file '{file.filename}': {e}"
-                logger.error(error_msg)
-                yield self.create_text_message(error_msg) 
+
+            try:
+                file_content = file_bytes(file)
+            except ValueError:
+                file_content = self._get_file_content_with_timeout(file, timeout=300.0)
+
+            logger.info(f"Parsing file '{filename}' with LlamaParse LLM mode...")
+            documents = call_sync(
+                parser.load_data,
+                file_path=file_content,
+                extra_info={"file_name": filename},
+            )
+
+            texts = "---".join([doc.text for doc in documents])
+            yield self.create_text_message(texts)
+            handled_docs = [
+                {"text": doc.text, "metadata": doc.metadata} for doc in documents
+            ]
+            yield self.create_json_message({filename: handled_docs})
+            yield self.create_blob_message(
+                texts.encode(),
+                meta={
+                    "mime_type": mime_type_map[params.result_type],
+                },
+            )
+            logger.info(f"Successfully processed file '{filename}'") 
