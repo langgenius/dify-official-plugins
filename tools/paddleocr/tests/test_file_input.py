@@ -409,6 +409,19 @@ def test_failed_markdown_image_is_replaced_with_placeholder():
     )
 
 
+def test_markdown_image_replacement_does_not_change_non_image_content():
+    upload_response = MagicMock(preview_url="https://example.com/preview.png")
+    markdown = (
+        '<img src="images/chart.jpg">\n<a src="images/chart.jpg">link</a>\n`src="images/chart.jpg"`'
+    )
+
+    assert replace_markdown_image_paths(markdown, {"images/chart.jpg": upload_response}) == (
+        '<img src="https://example.com/preview.png">\n'
+        '<a src="images/chart.jpg">link</a>\n'
+        '`src="images/chart.jpg"`'
+    )
+
+
 def test_document_markdown_uploads_each_image_once(monkeypatch):
     monkeypatch.setattr("tools.utils.download_image_from_url", lambda _url: b"image")
     upload_response = MagicMock(preview_url="https://example.com/preview.png")

@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from dify_plugin.file.file import File
 from dify_plugin.invocations.file import UploadFileResponse
 
+HTML_IMG_PATTERN = re.compile(r'(<img[^>]*src=")([^"]+)(")')
 FAILED_IMG_TAG_TEMPLATE = r'<img[^>]*src="[^"]*{escaped_path}[^"]*"[^>]*>'
 
 
@@ -356,13 +357,18 @@ def replace_markdown_image_paths(
         len(failed_images),
     )
 
-    # Replace successful images.
+    # Replace successful images without changing matching text outside image tags.
     replaced_count = 0
     for image_path, upload_response in image_path_map.items():
         if upload_response.preview_url:
             original_markdown = markdown
-            markdown = markdown.replace(
-                f'src="{image_path}"', f'src="{upload_response.preview_url}"'
+            markdown = HTML_IMG_PATTERN.sub(
+                lambda match, expected_path=image_path, preview_url=upload_response.preview_url: (
+                    f"{match.group(1)}{preview_url}{match.group(3)}"
+                    if match.group(2) == expected_path
+                    else match.group(0)
+                ),
+                markdown,
             )
             if markdown != original_markdown:
                 replaced_count += 1
