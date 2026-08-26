@@ -69,6 +69,34 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: batch_size
+  - label:
+      en_US: Enable request metadata
+      zh_Hans: 启用请求元数据
+    help:
+      text:
+        en_US: >-
+          Attach Dify app_id and dify_source to each MiniMax request as
+          metadata fields, so usage can be attributed to a specific
+          Dify app. The Anthropic-compatible metadata field accepts
+          arbitrary string keys, so this is safe whether or not the
+          upstream service consumes the values. Default is disabled.
+        zh_Hans: >-
+          将 Dify app_id 与 dify_source 作为元数据字段附加到每次 MiniMax 请求，
+          以便按 Dify 应用归因用量。Anthropic 兼容的 metadata 字段接受任意字符串键，
+          因此无论上游服务是否消费都安全。默认禁用。
+    options:
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    required: false
+    type: select
+    variable: enable_request_metadata
+    default: disabled
 supported_model_types:
 - llm
 - text-embedding

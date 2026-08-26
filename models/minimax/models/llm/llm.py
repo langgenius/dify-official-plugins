@@ -96,6 +96,18 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             request_kwargs["stop_sequences"] = list(stop)
         if user:
             request_kwargs["metadata"] = {"user_id": user}
+
+        # Optional: attach Dify app_id as request metadata. Default disabled;
+        # opt-in via the enable_request_metadata credential. The Anthropic-
+        # compatible API silently ignores unknown metadata keys, so this
+        # is safe whether or not the upstream service consumes them. The
+        # Dify session lookup is best-effort: if the session context is
+        # not initialized, no metadata is attached and metadata=None is
+        # left in the request.
+        from ._metadata import apply_dify_metadata_if_enabled
+
+        apply_dify_metadata_if_enabled(request_kwargs, credentials)
+
         thinking_payload = self._normalize_thinking_payload(
             thinking=options.thinking,
             thinking_budget=options.thinking_budget,
