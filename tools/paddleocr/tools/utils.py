@@ -5,14 +5,12 @@ import os
 import re
 import tempfile
 import time
-from typing import Any, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 from dify_plugin.file.file import File
 from dify_plugin.invocations.file import UploadFileResponse
 
-# Pre-compiled regex patterns for performance
-HTML_IMG_PATTERN = re.compile(r'(<img[^>]*src=")([^"]+)(")')
 FAILED_IMG_TAG_TEMPLATE = r'<img[^>]*src="[^"]*{escaped_path}[^"]*"[^>]*>'
 
 
@@ -27,8 +25,6 @@ OCR_MODELS = frozenset({"PP-OCRv5", "PP-OCRv5-latin", "PP-OCRv6"})
 DOCUMENT_MODELS = frozenset(
     {"PP-StructureV3", "PaddleOCR-VL", "PaddleOCR-VL-1.5", "PaddleOCR-VL-1.6"}
 )
-VL_MODELS = frozenset({"PaddleOCR-VL", "PaddleOCR-VL-1.5", "PaddleOCR-VL-1.6"})
-
 EXTRA_OPTIONS_PARAMETER = "extraOptions"
 RESERVED_EXTRA_OPTION_KEYS = frozenset(
     {
@@ -41,6 +37,9 @@ RESERVED_EXTRA_OPTION_KEYS = frozenset(
         "optionalPayload",
         "pageRanges",
     }
+)
+TRANSPORT_PARAMETER_KEYS = frozenset(
+    {"file", "fileType", "model", "pageRanges", EXTRA_OPTIONS_PARAMETER}
 )
 
 
@@ -100,6 +99,25 @@ def merge_extra_options(options: dict[str, Any], raw_extra_options: Any) -> dict
 
     options.update(extra_options)
     return options
+
+
+def build_optional_payload(params: dict[str, Any]) -> dict[str, Any]:
+    """Build the optional payload shared by all hosted API tools."""
+    options = {}
+    for api_name, value in params.items():
+        if value is None or api_name in TRANSPORT_PARAMETER_KEYS:
+            continue
+        if api_name == "promptLabel" and value == "undefined":
+            continue
+        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
+            value = [label.strip() for label in value.split(",") if label.strip()]
+        if api_name == "outputFormats":
+            if value in ("", "none"):
+                continue
+            if isinstance(value, str):
+                value = [value]
+        options[api_name] = value
+    return merge_extra_options(options, params.get(EXTRA_OPTIONS_PARAMETER))
 
 
 def validate_layout_options(options: dict[str, Any]) -> None:
@@ -189,7 +207,7 @@ def convert_file_type(file_type: str | None) -> int | None:
         return None
 
 
-def normalize_file_input(file_value: Any, file_type: str | None) -> Tuple[str, bool, int | None]:
+def normalize_file_input(file_value: Any, file_type: str | None) -> tuple[str, bool, int | None]:
     """Normalize PaddleOCR file input.
 
     Returns:
@@ -300,21 +318,6 @@ def base64_to_temp_file(base64_str: str, suffix: str = ".png") -> str:
         return f.name
 
 
-def bytes_to_temp_file(data: bytes, suffix: str = ".png") -> str:
-    """Save bytes directly to a temporary file (AI reviewer suggestion).
-
-    Args:
-        data: Raw bytes data
-        suffix: File extension suffix
-
-    Returns:
-        Path to the temporary file
-    """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
-        f.write(data)
-        return f.name
-
-
 def cleanup_temp_file(file_path: str, is_temp: bool) -> None:
     """Clean up temporary file if it exists and is marked as temporary.
 
@@ -329,17 +332,10 @@ def cleanup_temp_file(file_path: str, is_temp: bool) -> None:
             logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
 
 
-def extract_image_urls_from_markdown(markdown: str) -> List[str]:
-    """Extract image URLs from markdown"""
-    image_pattern = re.compile(r'<img[^>]*src="([^"]*)"[^>]*>', re.IGNORECASE)
-    matches = image_pattern.findall(markdown)
-    return matches
-
-
 def replace_markdown_image_paths(
     markdown: str,
     image_path_map: dict[str, UploadFileResponse],
-    failed_images: Optional[List[str]] = None,
+    failed_images: list[str] | None = None,
 ) -> str:
     """Replace image paths in HTML img tags with uploaded URLs.
 
@@ -355,18 +351,13 @@ def replace_markdown_image_paths(
         len(failed_images),
     )
 
-    # Replace successful images using pre-compiled regex
+    # Replace successful images.
     replaced_count = 0
     for image_path, upload_response in image_path_map.items():
         if upload_response.preview_url:
             original_markdown = markdown
-            markdown = HTML_IMG_PATTERN.sub(
-                lambda m: (
-                    f"{m.group(1)}{upload_response.preview_url}{m.group(3)}"
-                    if m.group(2) == image_path
-                    else m.group(0)
-                ),
-                markdown,
+            markdown = markdown.replace(
+                f'src="{image_path}"', f'src="{upload_response.preview_url}"'
             )
             if markdown != original_markdown:
                 replaced_count += 1
@@ -391,140 +382,42 @@ def replace_markdown_image_paths(
     return markdown
 
 
-def process_images_from_result(
-    result: dict, tool_instance
-) -> Tuple[
-    List[UploadFileResponse],
-    dict[str, UploadFileResponse],
-    List[str],
-    List[Tuple[bytes, dict]],
-]:
-    """Extract and process images from API result
-
-    Args:
-        result: API response result
-        tool_instance: Tool instance for file operations
-    """
-    images = []
-    image_path_map = {}
-    failed_images = []
-    blob_messages = []
-    image_counter = 0
-
-    logger.debug("Processing images from API result")
-
-    for item in result.get("result", {}).get("layoutParsingResults", []):
-        markdown_data = item.get("markdown", {})
-        if markdown_data:
-            image_dict = markdown_data.get("images", {})
-            if image_dict:
-                logger.debug(
-                    f"Found {len(image_dict)} images to process: {list(image_dict.keys())}"
-                )
-            else:
-                logger.debug("No images found in this markdown item")
-
-            for image_path, image_url in image_dict.items():
-                if image_path in image_path_map:
-                    logger.debug(f"Skipping already processed image: {image_path}")
-                    continue
-
-                logger.debug(f"Processing image: {image_path} -> {image_url}")
-
-                image_processed_successfully = False
-
-                try:
-                    try:
-                        image_bytes = download_image_from_url(image_url)
-                    except Exception as download_error:
-                        logger.warning(
-                            "Failed to download image %s from %s: %s",
-                            image_path,
-                            image_url,
-                            download_error,
-                        )
-                        failed_images.append(image_path)
-                        continue
-
-                    file_name = f"paddleocr_image_{image_counter}.jpg"
-                    logger.debug(f"Uploading image {image_path} as {file_name}")
-
-                    try:
-                        upload_response = tool_instance.session.file.upload(
-                            file_name, image_bytes, "image/jpeg"
-                        )
-                        images.append(upload_response)
-                        image_path_map[image_path] = upload_response
-                        image_counter += 1
-
-                        logger.debug(
-                            "Successfully uploaded image %s, preview_url: %s",
-                            image_path,
-                            upload_response.preview_url,
-                        )
-
-                        if not upload_response.preview_url:
-                            logger.warning(
-                                "No preview URL for uploaded image %s; creating blob fallback",
-                                image_path,
-                            )
-                            blob_messages.append(
-                                (
-                                    image_bytes,
-                                    {"filename": file_name, "mime_type": "image/jpeg"},
-                                )
-                            )
-                            failed_images.append(image_path)
-                        else:
-                            image_processed_successfully = True
-
-                    except Exception as upload_error:
-                        logger.error(f"Failed to upload image {image_path} to dify: {upload_error}")
-                        logger.info(
-                            f"Creating blob message as fallback for failed upload of {image_path}"
-                        )
-                        blob_messages.append(
-                            (
-                                image_bytes,
-                                {"filename": file_name, "mime_type": "image/jpeg"},
-                            )
-                        )
-                        failed_images.append(image_path)
-
-                except Exception as e:
-                    logger.error(f"Unexpected error processing image {image_path}: {e}")
-                    failed_images.append(image_path)
-                    continue
-
-                if image_processed_successfully:
-                    logger.debug(f"Successfully processed image {image_path}")
-
-    logger.info(
-        "Image processing completed - successful: %s, markdown-failed: %s, blob-messages: %s",
-        len(images),
-        len(failed_images),
-        len(blob_messages),
-    )
-    if failed_images:
-        logger.warning(f"Images that failed processing (no URL available): {failed_images}")
-
-    return images, image_path_map, failed_images, blob_messages
-
-
-def get_markdown_from_result(
-    result: dict,
-    image_path_map: Optional[dict[str, UploadFileResponse]] = None,
-    failed_images: Optional[List[str]] = None,
+def render_document_markdown(
+    result: dict[str, Any],
+    tool_instance: Any,
+    *,
+    image_filename_prefix: str,
+    warning_logger: Any | None = None,
 ) -> str:
-    """Extract Markdown and replace image references when mappings are provided."""
-    markdown_text_list = []
-    for item in result.get("result", {}).get("layoutParsingResults", []):
-        markdown_text = item.get("markdown", {}).get("text")
-        if markdown_text is not None:
-            if image_path_map or failed_images:
-                markdown_text = replace_markdown_image_paths(
-                    markdown_text, image_path_map or {}, failed_images
+    """Upload result images and return Markdown with usable image references."""
+    active_logger = warning_logger or logger
+    image_path_map: dict[str, UploadFileResponse] = {}
+    failed_images: list[str] = []
+
+    for page in result.get("pages", []):
+        for image_path, image_url in (page.get("markdown_images") or {}).items():
+            if image_path in image_path_map:
+                continue
+            try:
+                image_bytes = download_image_from_url(image_url)
+                file_name = f"{image_filename_prefix}_{len(image_path_map)}.jpg"
+                upload_response = tool_instance.session.file.upload(
+                    file_name, image_bytes, "image/jpeg"
                 )
+                image_path_map[image_path] = upload_response
+                if not upload_response.preview_url:
+                    failed_images.append(image_path)
+            except Exception as e:
+                active_logger.warning(f"Failed to process image {image_path}: {e}")
+                failed_images.append(image_path)
+
+    markdown_text_list = []
+    for page in result.get("pages", []):
+        markdown_text = page.get("markdown_text")
+        if markdown_text is not None:
+            markdown_text = replace_markdown_image_paths(
+                markdown_text, image_path_map, failed_images
+            )
             markdown_text_list.append(markdown_text)
     return "\n\n".join(markdown_text_list)
 

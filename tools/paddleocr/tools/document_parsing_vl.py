@@ -7,43 +7,26 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.utils import (
     DEFAULT_VL_MODEL,
     DOCX_MIME_TYPE,
-    EXTRA_OPTIONS_PARAMETER,
+    build_optional_payload,
     call_paddleocr_api,
     cleanup_temp_file,
-    download_image_from_url,
     get_api_client_config,
     iter_docx_exports,
-    merge_extra_options,
     normalize_file_input,
-    replace_markdown_image_paths,
+    render_document_markdown,
     validate_layout_options,
     validate_vl_options,
 )
 
-_SKIP_KEYS = {"file", "fileType", "model", "pageRanges", EXTRA_OPTIONS_PARAMETER}
 logger = logging.getLogger(__name__)
 
 
 def build_paddleocr_vl_options(params: dict[str, Any]) -> dict[str, Any]:
     """Build the camelCase optional payload expected by the HTTP API."""
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None or api_name in _SKIP_KEYS:
-            continue
-        if api_name == "promptLabel" and value == "undefined":
-            continue
-        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
-            value = [label.strip() for label in value.split(",") if label.strip()]
-        if api_name == "outputFormats":
-            if value in ("", "none"):
-                continue
-            if isinstance(value, str):
-                value = [value]
-        options_dict[api_name] = value
-    merge_extra_options(options_dict, params.get(EXTRA_OPTIONS_PARAMETER))
-    validate_layout_options(options_dict)
-    validate_vl_options(options_dict)
-    return options_dict
+    options = build_optional_payload(params)
+    validate_layout_options(options)
+    validate_vl_options(options)
+    return options
 
 
 class DocumentParsingVlTool(Tool):
@@ -97,43 +80,13 @@ class DocumentParsingVlTool(Tool):
                     page_ranges=page_ranges,
                 )
 
-            # Process images from result
-            images = []
-            image_path_map = {}
-            failed_images = []
-
-            for page in result["pages"]:
-                if page["markdown_images"]:
-                    image_dict = page["markdown_images"]
-                    if image_dict:
-                        for image_path, image_url in image_dict.items():
-                            if image_path in image_path_map:
-                                continue
-                            try:
-                                image_bytes = download_image_from_url(image_url)
-                                file_name = f"paddleocr_vl_image_{len(images)}.jpg"
-                                upload_response = self.session.file.upload(
-                                    file_name, image_bytes, "image/jpeg"
-                                )
-                                images.append(upload_response)
-                                image_path_map[image_path] = upload_response
-                                if not upload_response.preview_url:
-                                    failed_images.append(image_path)
-                            except Exception as e:
-                                logger.warning(f"Failed to process image {image_path}: {e}")
-                                failed_images.append(image_path)
-
-            # Build markdown with image replacement
-            markdown_text_list = []
-            for page in result["pages"]:
-                markdown_text = page["markdown_text"]
-                if markdown_text is not None:
-                    markdown_text = replace_markdown_image_paths(
-                        markdown_text, image_path_map, failed_images
-                    )
-                    markdown_text_list.append(markdown_text)
-
-            yield self.create_text_message("\n\n".join(markdown_text_list))
+            markdown_text = render_document_markdown(
+                result,
+                self,
+                image_filename_prefix="paddleocr_vl_image",
+                warning_logger=logger,
+            )
+            yield self.create_text_message(markdown_text)
 
             for filename, document_bytes in iter_docx_exports(
                 result,

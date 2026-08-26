@@ -5,25 +5,17 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.utils import (
     DEFAULT_OCR_MODEL,
-    EXTRA_OPTIONS_PARAMETER,
+    build_optional_payload,
     call_paddleocr_api,
     cleanup_temp_file,
     get_api_client_config,
-    merge_extra_options,
     normalize_file_input,
 )
-
-_SKIP_KEYS = {"file", "fileType", "model", "pageRanges", EXTRA_OPTIONS_PARAMETER}
 
 
 def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
     """Build the camelCase optional payload expected by the HTTP API."""
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None or api_name in _SKIP_KEYS:
-            continue
-        options_dict[api_name] = value
-    return merge_extra_options(options_dict, params.get(EXTRA_OPTIONS_PARAMETER))
+    return build_optional_payload(params)
 
 
 class TextRecognitionTool(Tool):

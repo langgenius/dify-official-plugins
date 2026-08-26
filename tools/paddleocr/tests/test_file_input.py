@@ -34,6 +34,7 @@ from tools.utils import (  # noqa: E402
     get_api_client_config,
     iter_docx_exports,
     normalize_file_input,
+    render_document_markdown,
     replace_markdown_image_paths,
     validate_model,
 )
@@ -396,6 +397,64 @@ def test_failed_markdown_image_is_replaced_with_placeholder():
     assert replace_markdown_image_paths(markdown, {}, ["images/chart.jpg"]) == (
         "<p>Before</p>[Image unavailable]<p>After</p>"
     )
+
+
+def test_document_markdown_uploads_each_image_once(monkeypatch):
+    monkeypatch.setattr("tools.utils.download_image_from_url", lambda _url: b"image")
+    upload_response = MagicMock(preview_url="https://example.com/preview.png")
+    tool = MagicMock()
+    tool.session.file.upload.return_value = upload_response
+    result = {
+        "pages": [
+            {
+                "markdown_text": '<img src="images/chart.jpg">',
+                "markdown_images": {"images/chart.jpg": "https://example.com/chart.jpg"},
+            },
+            {
+                "markdown_text": '<img src="images/chart.jpg">',
+                "markdown_images": {"images/chart.jpg": "https://example.com/chart.jpg"},
+            },
+        ]
+    }
+
+    markdown = render_document_markdown(
+        result,
+        tool,
+        image_filename_prefix="paddleocr_image",
+    )
+
+    assert markdown == (
+        '<img src="https://example.com/preview.png">\n\n<img src="https://example.com/preview.png">'
+    )
+    tool.session.file.upload.assert_called_once_with(
+        "paddleocr_image_0.jpg", b"image", "image/jpeg"
+    )
+
+
+def test_document_markdown_degrades_only_failed_image(monkeypatch):
+    def fail_download(_url):
+        raise RuntimeError("download failed")
+
+    monkeypatch.setattr("tools.utils.download_image_from_url", fail_download)
+    warning_logger = MagicMock()
+    result = {
+        "pages": [
+            {
+                "markdown_text": '<p>Parsed</p><img src="images/chart.jpg">',
+                "markdown_images": {"images/chart.jpg": "https://example.com/chart.jpg"},
+            }
+        ]
+    }
+
+    markdown = render_document_markdown(
+        result,
+        MagicMock(),
+        image_filename_prefix="paddleocr_image",
+        warning_logger=warning_logger,
+    )
+
+    assert markdown == "<p>Parsed</p>[Image unavailable]"
+    warning_logger.warning.assert_called_once()
 
 
 def test_document_result_parser_preserves_exports():
