@@ -148,7 +148,25 @@ parameters:
       pt_BR: Número máximo de registros do banco de dados a retornar
       ja_JP: 返すデータベースレコードの最大数
       zh_Hant: 返回的資料庫記錄最大數量
-    llm_description: The maximum number of database records to return. Default is 10.
+    llm_description: The maximum number of database records to return. Default is 10. Ignored when fetch_all is true.
+    form: llm
+  - name: fetch_all
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Fetch All Records
+      zh_Hans: 获取所有记录
+      pt_BR: Buscar Todos os Registros
+      ja_JP: 全レコードを取得
+      zh_Hant: 取得所有記錄
+    human_description:
+      en_US: If enabled, retrieves every matching record from the database (paginating through Notion's API as needed), ignoring the limit parameter.
+      zh_Hans: 启用后将检索数据库中所有匹配的记录（根据需要对 Notion API 进行分页），并忽略 limit 参数。
+      pt_BR: Se ativado, recupera todos os registros correspondentes do banco de dados (paginando pela API do Notion conforme necessário), ignorando o parâmetro limit.
+      ja_JP: 有効にすると、（必要に応じて Notion API をページングしながら）データベース内の一致するレコードをすべて取得し、limit パラメータは無視されます。
+      zh_Hant: 啟用後將擷取資料庫中所有符合的記錄（依需要對 Notion API 進行分頁），並忽略 limit 參數。
+    llm_description: Set to true to retrieve every matching record in the database instead of stopping at limit. This automatically pages through Notion's API, so it may issue multiple requests for large databases. When true, limit is ignored.
     form: llm
 extra:
   python:

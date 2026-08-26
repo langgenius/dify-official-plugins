@@ -211,29 +211,42 @@ class QueryDatabaseTool(Tool):
         filter_property = tool_parameters.get("filter_property", "")
         filter_value = tool_parameters.get("filter_value", "")
         limit = int(tool_parameters.get("limit", 10))
-        
+        fetch_all = _to_bool(tool_parameters.get("fetch_all", False))
+
         # Validate parameters
         if not database_id:
             yield self.create_text_message("Database ID is required.")
             return
-            
+
         try:
             # Get integration token from credentials
             integration_token = self.runtime.credentials.get("integration_token")
             if not integration_token:
                 yield self.create_text_message("Notion Integration Token is required.")
                 return
-                
+
             # Initialize the Notion client
             client = NotionClient(integration_token)
-            
+
+            # Resolve the data source once; reused for schema lookup, filtering, and querying
+            try:
+                data_source_id = client.get_default_data_source_id(database_id)
+            except requests.HTTPError as e:
+                if e.response.status_code == 404:
+                    yield self.create_text_message(f"Database not found or you don't have access to it: {database_id}")
+                else:
+                    yield self.create_text_message(f"Error querying database: {e}")
+                return
+            except ValueError as e:
+                yield self.create_text_message(str(e))
+                return
+
             # Prepare filter if a property is provided (value is optional for is_empty/is_not_empty/relative-date conditions)
             filter_condition = tool_parameters.get("filter_condition", "equals")
             filter_obj = None
             if filter_property and (filter_value or filter_condition in NO_VALUE_CONDITIONS):
                 # Get database schema to determine the property type
                 try:
-                    data_source_id = client.get_default_data_source_id(database_id)
                     data_source = client.retrieve_data_source(data_source_id)
                     properties = data_source.get("properties", {})
 
@@ -255,12 +268,29 @@ class QueryDatabaseTool(Tool):
             
             # Query the database
             try:
-                data = client.query_database(
-                    database_id=database_id,
-                    filter_obj=filter_obj,
-                    page_size=limit
-                )
-                results = data.get("results", [])
+                if fetch_all:
+                    results = []
+                    start_cursor = None
+                    while True:
+                        data = client.query_data_source(
+                            data_source_id=data_source_id,
+                            filter_obj=filter_obj,
+                            page_size=100,
+                            start_cursor=start_cursor
+                        )
+                        results.extend(data.get("results", []))
+                        if not data.get("has_more"):
+                            break
+                        start_cursor = data.get("next_cursor")
+                        if not start_cursor:
+                            break
+                else:
+                    data = client.query_data_source(
+                        data_source_id=data_source_id,
+                        filter_obj=filter_obj,
+                        page_size=limit
+                    )
+                    results = data.get("results", [])
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
                     yield self.create_text_message(f"Database not found or you don't have access to it: {database_id}")
