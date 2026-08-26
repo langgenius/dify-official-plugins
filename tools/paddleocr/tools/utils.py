@@ -91,6 +91,11 @@ def merge_extra_options(options: dict[str, Any], raw_extra_options: Any) -> dict
     if not isinstance(extra_options, dict):
         raise RuntimeError("extraOptions must be a JSON object.")
 
+    try:
+        json.dumps(extra_options, allow_nan=False)
+    except (TypeError, ValueError) as e:
+        raise RuntimeError(f"extraOptions must contain only valid JSON values: {e}.") from e
+
     reserved_keys = sorted(RESERVED_EXTRA_OPTION_KEYS.intersection(extra_options))
     if reserved_keys:
         raise RuntimeError(
@@ -186,7 +191,7 @@ def _valid_unclip_ratio(value: Any) -> bool:
     if isinstance(value, (list, tuple)):
         return len(value) == 2 and all(_is_number(item) and item > 0 for item in value)
     if isinstance(value, dict):
-        return bool(value) and all(_valid_unclip_ratio(item) for item in value.values())
+        return bool(value) and all(_is_number(item) and item > 0 for item in value.values())
     return False
 
 

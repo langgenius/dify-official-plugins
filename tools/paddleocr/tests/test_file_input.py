@@ -214,6 +214,15 @@ def test_extra_options_reject_invalid_or_non_object_json(value):
         build_ocr_options({"extraOptions": value})
 
 
+@pytest.mark.parametrize(
+    "value",
+    ['{"temperature": NaN}', '{"temperature": Infinity}', {"temperature": float("nan")}],
+)
+def test_extra_options_reject_non_finite_numbers(value):
+    with pytest.raises(RuntimeError, match="valid JSON values"):
+        build_ocr_options({"extraOptions": value})
+
+
 @pytest.mark.parametrize("reserved_key", ["file", "fileUrl", "model", "pageRanges", "batchId"])
 def test_extra_options_reject_transport_fields(reserved_key):
     with pytest.raises(RuntimeError, match="transport-level"):
@@ -225,6 +234,7 @@ def test_extra_options_reject_transport_fields(reserved_key):
     [
         ({"layoutThreshold": 1.1}, "layoutThreshold"),
         ({"layoutUnclipRatio": 0}, "layoutUnclipRatio"),
+        ({"layoutUnclipRatio": {"0": [1.2, 1.5]}}, "layoutUnclipRatio"),
         ({"layoutMergeBboxesMode": "invalid"}, "layoutMergeBboxesMode"),
     ],
 )
