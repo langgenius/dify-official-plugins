@@ -13,7 +13,7 @@ parameters:
   - name: model
     type: select
     required: false
-    default: PP-OCRv5
+    default: PP-OCRv6
     options:
       - label:
           en_US: PP-OCRv5
@@ -220,6 +220,17 @@ parameters:
       en_US: Whether or not to return visualization results.
       zh_Hans: 是否返回可视化结果。
     llm_description: Whether or not to return visualization results.
+    form: llm
+  - name: extraOptions
+    type: string
+    required: false
+    label:
+      en_US: Advanced API Options (JSON)
+      zh_Hans: 高级 API 参数（JSON）
+    human_description:
+      en_US: Optional JSON object merged into the official API optional payload. Values here override named options. Transport-level fields such as file, model, and pageRanges are not allowed.
+      zh_Hans: 可选 JSON 对象，将合并到官方 API 的 optional payload 中。同名值会覆盖具名参数，且不允许包含 file、model、pageRanges 等传输层字段。
+    llm_description: Optional JSON object of advanced PaddleOCR API options. Values override named options. Do not include file, model, pageRanges, or other transport-level fields.
     form: llm
 extra:
   python:

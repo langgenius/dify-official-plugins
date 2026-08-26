@@ -34,11 +34,25 @@ The `file` input supports Dify uploaded image/PDF files directly and submits the
 
 | Tool | Supported models |
 | --- | --- |
-| Text Recognition | `PP-OCRv5` (default), `PP-OCRv5-latin`, `PP-OCRv6` |
+| Text Recognition | `PP-OCRv6` (default), `PP-OCRv5`, `PP-OCRv5-latin` |
 | Document Parsing | `PP-StructureV3` |
 | Large Model Document Parsing | `PaddleOCR-VL-1.6` (default), `PaddleOCR-VL-1.5`, `PaddleOCR-VL` |
 
 All tools accept an optional PDF page range such as `2,4-6`. Both document parsing tools can skip Markdown image resources when they are not needed and can return an additional DOCX file alongside the Markdown and JSON results.
+
+The document parsing tools also expose the official layout score threshold, bounding-box expansion ratio, and overlapping-box merge mode (`large`, `small`, or `union`). All three tools accept an optional **Advanced API Options (JSON)** value that is merged into the official API `optionalPayload`. This supports per-class layout settings, PaddleOCR-VL `vlmExtraArgs`, and newly introduced hosted API options without changing the transport contract. Advanced values override named options; transport-level fields such as `file`, `model`, and `pageRanges` are rejected.
+
+For example, the following advanced value applies per-class layout thresholds and PaddleOCR-VL resolution controls:
+
+```json
+{
+  "layoutThreshold": {"0": 0.45, "2": 0.48},
+  "vlmExtraArgs": {
+    "ocr_min_pixels": 3136,
+    "ocr_max_pixels": 4014080
+  }
+}
+```
 
 See the [PaddleOCR official API documentation](https://www.paddleocr.ai/latest/en/version3.x/inference_deployment/serving/paddleocr_official_api/cli.html) for the hosted service model matrix and request behavior.
 

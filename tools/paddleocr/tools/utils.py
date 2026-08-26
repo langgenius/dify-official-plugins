@@ -3,15 +3,14 @@ import json
 import logging
 import os
 import re
-import time
 import tempfile
-from typing import Any, List, Optional, Tuple
+import time
+from typing import Any
 from urllib.parse import urlparse
 
 from dify_plugin.file.file import File
 from dify_plugin.invocations.file import UploadFileResponse
 
-# Pre-compiled regex patterns for performance
 HTML_IMG_PATTERN = re.compile(r'(<img[^>]*src=")([^"]+)(")')
 FAILED_IMG_TAG_TEMPLATE = r'<img[^>]*src="[^"]*{escaped_path}[^"]*"[^>]*>'
 
@@ -19,6 +18,30 @@ FAILED_IMG_TAG_TEMPLATE = r'<img[^>]*src="[^"]*{escaped_path}[^"]*"[^>]*>'
 logger = logging.getLogger(__name__)
 
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
+
+DEFAULT_OCR_MODEL = "PP-OCRv6"
+DEFAULT_DOCUMENT_MODEL = "PP-StructureV3"
+DEFAULT_VL_MODEL = "PaddleOCR-VL-1.6"
+OCR_MODELS = frozenset({"PP-OCRv5", "PP-OCRv5-latin", "PP-OCRv6"})
+DOCUMENT_MODELS = frozenset(
+    {"PP-StructureV3", "PaddleOCR-VL", "PaddleOCR-VL-1.5", "PaddleOCR-VL-1.6"}
+)
+EXTRA_OPTIONS_PARAMETER = "extraOptions"
+RESERVED_EXTRA_OPTION_KEYS = frozenset(
+    {
+        EXTRA_OPTIONS_PARAMETER,
+        "batchId",
+        "file",
+        "fileType",
+        "fileUrl",
+        "model",
+        "optionalPayload",
+        "pageRanges",
+    }
+)
+TRANSPORT_PARAMETER_KEYS = frozenset(
+    {"file", "fileType", "model", "pageRanges", EXTRA_OPTIONS_PARAMETER}
+)
 
 
 def extract_base_url(api_url: str) -> str:
@@ -35,11 +58,142 @@ def extract_base_url(api_url: str) -> str:
         Base URL without endpoint path
     """
     parsed = urlparse(api_url)
-    # Remove common PaddleOCR endpoints
+    # Remove common PaddleOCR endpoints and the full async jobs path.
     path = parsed.path.rstrip("/")
-    if path in ("", "/ocr", "/layout-parsing", "/paddleocr"):
+    if path.endswith(API_PATH):
+        path = path[: -len(API_PATH)].rstrip("/")
+    elif path in ("", "/ocr", "/layout-parsing", "/paddleocr"):
         path = ""
     return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def validate_model(model: str, *, is_document_parsing: bool) -> None:
+    """Validate that a hosted API model belongs to the requested task."""
+    supported_models = DOCUMENT_MODELS if is_document_parsing else OCR_MODELS
+    task_name = "document parsing" if is_document_parsing else "OCR"
+    if model not in supported_models:
+        choices = ", ".join(sorted(supported_models))
+        raise RuntimeError(f"Unsupported {task_name} model '{model}'. Choose from: {choices}.")
+
+
+def merge_extra_options(options: dict[str, Any], raw_extra_options: Any) -> dict[str, Any]:
+    """Merge a JSON object into optionalPayload, matching the official SDK's extra options."""
+    if raw_extra_options is None or raw_extra_options == "":
+        return options
+
+    if isinstance(raw_extra_options, str):
+        try:
+            extra_options = json.loads(raw_extra_options)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"extraOptions must be valid JSON: {e.msg}.") from e
+    else:
+        extra_options = raw_extra_options
+
+    if not isinstance(extra_options, dict):
+        raise RuntimeError("extraOptions must be a JSON object.")
+
+    try:
+        json.dumps(extra_options, allow_nan=False)
+    except (TypeError, ValueError) as e:
+        raise RuntimeError(f"extraOptions must contain only valid JSON values: {e}.") from e
+
+    reserved_keys = sorted(RESERVED_EXTRA_OPTION_KEYS.intersection(extra_options))
+    if reserved_keys:
+        raise RuntimeError(
+            "extraOptions cannot contain transport-level fields: " + ", ".join(reserved_keys) + "."
+        )
+
+    options.update(extra_options)
+    return options
+
+
+def build_optional_payload(params: dict[str, Any]) -> dict[str, Any]:
+    """Build the optional payload shared by all hosted API tools."""
+    options = {}
+    for api_name, value in params.items():
+        if value is None or api_name in TRANSPORT_PARAMETER_KEYS:
+            continue
+        if api_name == "promptLabel" and value == "undefined":
+            continue
+        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
+            value = [label.strip() for label in value.split(",") if label.strip()]
+        if api_name == "outputFormats":
+            if value in ("", "none"):
+                continue
+            if isinstance(value, str):
+                value = [value]
+        options[api_name] = value
+    return merge_extra_options(options, params.get(EXTRA_OPTIONS_PARAMETER))
+
+
+def validate_layout_options(options: dict[str, Any]) -> None:
+    """Validate scalar and per-class layout controls accepted by the official API."""
+    threshold = options.get("layoutThreshold")
+    if threshold is not None:
+        values = threshold.values() if isinstance(threshold, dict) else (threshold,)
+        if any(not _is_number(value) or not 0 <= value <= 1 for value in values):
+            raise RuntimeError(
+                "layoutThreshold must be a number from 0 to 1 or an object of such values."
+            )
+
+    unclip_ratio = options.get("layoutUnclipRatio")
+    if unclip_ratio is not None and not _valid_unclip_ratio(unclip_ratio):
+        raise RuntimeError(
+            "layoutUnclipRatio must be a positive number, a two-number array, "
+            "or an object of those values."
+        )
+
+    merge_mode = options.get("layoutMergeBboxesMode")
+    if merge_mode is not None:
+        values = merge_mode.values() if isinstance(merge_mode, dict) else (merge_mode,)
+        if any(value not in {"large", "small", "union"} for value in values):
+            raise RuntimeError(
+                "layoutMergeBboxesMode must be large, small, union, "
+                "or an object using those values."
+            )
+
+
+def validate_vl_options(options: dict[str, Any]) -> None:
+    """Apply the same core PaddleOCR-VL option validation as the official SDK."""
+    top_p = options.get("topP")
+    if top_p is not None and (not _is_number(top_p) or not 0 < top_p <= 1):
+        raise RuntimeError("topP must be greater than 0 and less than or equal to 1.")
+
+    temperature = options.get("temperature")
+    if temperature is not None and (not _is_number(temperature) or temperature < 0):
+        raise RuntimeError("temperature must be greater than or equal to 0.")
+
+    repetition_penalty = options.get("repetitionPenalty")
+    if repetition_penalty is not None and (
+        not _is_number(repetition_penalty) or repetition_penalty <= 0
+    ):
+        raise RuntimeError("repetitionPenalty must be greater than 0.")
+
+    min_pixels = options.get("minPixels")
+    max_pixels = options.get("maxPixels")
+    for name, value in (("minPixels", min_pixels), ("maxPixels", max_pixels)):
+        if value is not None and (not _is_number(value) or value <= 0):
+            raise RuntimeError(f"{name} must be greater than 0.")
+    if min_pixels is not None and max_pixels is not None and min_pixels > max_pixels:
+        raise RuntimeError("minPixels cannot be greater than maxPixels.")
+
+    vlm_extra_args = options.get("vlmExtraArgs")
+    if vlm_extra_args is not None and not isinstance(vlm_extra_args, dict):
+        raise RuntimeError("vlmExtraArgs must be a JSON object.")
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _valid_unclip_ratio(value: Any) -> bool:
+    if _is_number(value):
+        return value > 0
+    if isinstance(value, (list, tuple)):
+        return len(value) == 2 and all(_is_number(item) and item > 0 for item in value)
+    if isinstance(value, dict):
+        return bool(value) and all(_is_number(item) and item > 0 for item in value.values())
+    return False
 
 
 def convert_file_type(file_type: str | None) -> int | None:
@@ -59,7 +213,7 @@ def convert_file_type(file_type: str | None) -> int | None:
         return None
 
 
-def normalize_file_input(file_value: Any, file_type: str | None) -> Tuple[str, bool, int | None]:
+def normalize_file_input(file_value: Any, file_type: str | None) -> tuple[str, bool, int | None]:
     """Normalize PaddleOCR file input.
 
     Returns:
@@ -85,7 +239,7 @@ def normalize_file_input(file_value: Any, file_type: str | None) -> Tuple[str, b
         # Check if it's a URL
         if file_value.startswith(("http://", "https://")):
             return file_value, False, explicit_file_type
-        # Check if it's a file path (AI reviewer suggestion: check file path before base64 validation)
+        # Check file paths before base64 validation.
         if os.path.exists(file_value):
             return file_value, False, explicit_file_type
         # Check if it's base64 (data URL or raw)
@@ -170,21 +324,6 @@ def base64_to_temp_file(base64_str: str, suffix: str = ".png") -> str:
         return f.name
 
 
-def bytes_to_temp_file(data: bytes, suffix: str = ".png") -> str:
-    """Save bytes directly to a temporary file (AI reviewer suggestion).
-
-    Args:
-        data: Raw bytes data
-        suffix: File extension suffix
-
-    Returns:
-        Path to the temporary file
-    """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
-        f.write(data)
-        return f.name
-
-
 def cleanup_temp_file(file_path: str, is_temp: bool) -> None:
     """Clean up temporary file if it exists and is marked as temporary.
 
@@ -199,17 +338,10 @@ def cleanup_temp_file(file_path: str, is_temp: bool) -> None:
             logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
 
 
-def extract_image_urls_from_markdown(markdown: str) -> List[str]:
-    """Extract image URLs from markdown"""
-    image_pattern = re.compile(r'<img[^>]*src="([^"]*)"[^>]*>', re.IGNORECASE)
-    matches = image_pattern.findall(markdown)
-    return matches
-
-
 def replace_markdown_image_paths(
     markdown: str,
     image_path_map: dict[str, UploadFileResponse],
-    failed_images: Optional[List[str]] = None,
+    failed_images: list[str] | None = None,
 ) -> str:
     """Replace image paths in HTML img tags with uploaded URLs.
 
@@ -220,19 +352,21 @@ def replace_markdown_image_paths(
         failed_images = []
 
     logger.debug(
-        f"Replacing image paths in markdown - {len(image_path_map)} images available, {len(failed_images)} need placeholder"
+        "Replacing image paths in markdown - %s images available, %s need placeholder",
+        len(image_path_map),
+        len(failed_images),
     )
 
-    # Replace successful images using pre-compiled regex
+    # Replace successful images without changing matching text outside image tags.
     replaced_count = 0
     for image_path, upload_response in image_path_map.items():
         if upload_response.preview_url:
             original_markdown = markdown
             markdown = HTML_IMG_PATTERN.sub(
-                lambda m: (
-                    f"{m.group(1)}{upload_response.preview_url}{m.group(3)}"
-                    if m.group(2) == image_path
-                    else m.group(0)
+                lambda match, expected_path=image_path, preview_url=upload_response.preview_url: (
+                    f"{match.group(1)}{preview_url}{match.group(3)}"
+                    if match.group(2) == expected_path
+                    else match.group(0)
                 ),
                 markdown,
             )
@@ -252,136 +386,49 @@ def replace_markdown_image_paths(
             logger.debug(f"Replaced failed image {failed_path} with placeholder")
 
     logger.debug(
-        f"Markdown replacement completed - {replaced_count} URL replacements, {placeholder_count} placeholders"
+        "Markdown replacement completed - %s URL replacements, %s placeholders",
+        replaced_count,
+        placeholder_count,
     )
     return markdown
 
 
-def process_images_from_result(
-    result: dict, tool_instance
-) -> Tuple[
-    List[UploadFileResponse],
-    dict[str, UploadFileResponse],
-    List[str],
-    List[Tuple[bytes, dict]],
-]:
-    """Extract and process images from API result
-
-    Args:
-        result: API response result
-        tool_instance: Tool instance for file operations
-    """
-    images = []
-    image_path_map = {}
-    failed_images = []
-    blob_messages = []
-    image_counter = 0
-
-    logger.debug("Processing images from API result")
-
-    for item in result.get("result", {}).get("layoutParsingResults", []):
-        markdown_data = item.get("markdown", {})
-        if markdown_data:
-            image_dict = markdown_data.get("images", {})
-            if image_dict:
-                logger.debug(
-                    f"Found {len(image_dict)} images to process: {list(image_dict.keys())}"
-                )
-            else:
-                logger.debug("No images found in this markdown item")
-
-            for image_path, image_url in image_dict.items():
-                if image_path in image_path_map:
-                    logger.debug(f"Skipping already processed image: {image_path}")
-                    continue
-
-                logger.debug(f"Processing image: {image_path} -> {image_url}")
-
-                image_processed_successfully = False
-
-                try:
-                    try:
-                        image_bytes = download_image_from_url(image_url)
-                    except Exception as download_error:
-                        logger.warning(
-                            f"Failed to download image {image_path} from {image_url}: {download_error}"
-                        )
-                        failed_images.append(image_path)
-                        continue
-
-                    file_name = f"paddleocr_image_{image_counter}.jpg"
-                    logger.debug(f"Uploading image {image_path} as {file_name}")
-
-                    try:
-                        upload_response = tool_instance.session.file.upload(
-                            file_name, image_bytes, "image/jpeg"
-                        )
-                        images.append(upload_response)
-                        image_path_map[image_path] = upload_response
-                        image_counter += 1
-
-                        logger.debug(
-                            f"Successfully uploaded image {image_path}, preview_url: {upload_response.preview_url}"
-                        )
-
-                        if not upload_response.preview_url:
-                            logger.warning(
-                                f"No preview URL for uploaded image {image_path}, creating blob message as fallback"
-                            )
-                            blob_messages.append(
-                                (
-                                    image_bytes,
-                                    {"filename": file_name, "mime_type": "image/jpeg"},
-                                )
-                            )
-                            failed_images.append(image_path)
-                        else:
-                            image_processed_successfully = True
-
-                    except Exception as upload_error:
-                        logger.error(f"Failed to upload image {image_path} to dify: {upload_error}")
-                        logger.info(
-                            f"Creating blob message as fallback for failed upload of {image_path}"
-                        )
-                        blob_messages.append(
-                            (
-                                image_bytes,
-                                {"filename": file_name, "mime_type": "image/jpeg"},
-                            )
-                        )
-                        failed_images.append(image_path)
-
-                except Exception as e:
-                    logger.error(f"Unexpected error processing image {image_path}: {e}")
-                    failed_images.append(image_path)
-                    continue
-
-                if image_processed_successfully:
-                    logger.debug(f"Successfully processed image {image_path}")
-
-    logger.info(
-        f"Image processing completed - successful: {len(images)}, markdown-failed: {len(failed_images)}, blob-messages: {len(blob_messages)}"
-    )
-    if failed_images:
-        logger.warning(f"Images that failed processing (no URL available): {failed_images}")
-
-    return images, image_path_map, failed_images, blob_messages
-
-
-def get_markdown_from_result(
-    result: dict,
-    image_path_map: Optional[dict[str, UploadFileResponse]] = None,
-    failed_images: Optional[List[str]] = None,
+def render_document_markdown(
+    result: dict[str, Any],
+    tool_instance: Any,
+    *,
+    image_filename_prefix: str,
+    warning_logger: Any | None = None,
 ) -> str:
-    """Extract markdown text from result, replace image references if image path mapping is provided"""
-    markdown_text_list = []
-    for item in result.get("result", {}).get("layoutParsingResults", []):
-        markdown_text = item.get("markdown", {}).get("text")
-        if markdown_text is not None:
-            if image_path_map or failed_images:
-                markdown_text = replace_markdown_image_paths(
-                    markdown_text, image_path_map or {}, failed_images
+    """Upload result images and return Markdown with usable image references."""
+    active_logger = warning_logger or logger
+    image_path_map: dict[str, UploadFileResponse] = {}
+    failed_images: list[str] = []
+
+    for page in result.get("pages", []):
+        for image_path, image_url in (page.get("markdown_images") or {}).items():
+            if image_path in image_path_map:
+                continue
+            try:
+                image_bytes = download_image_from_url(image_url)
+                file_name = f"{image_filename_prefix}_{len(image_path_map)}.jpg"
+                upload_response = tool_instance.session.file.upload(
+                    file_name, image_bytes, "image/jpeg"
                 )
+                image_path_map[image_path] = upload_response
+                if not upload_response.preview_url:
+                    failed_images.append(image_path)
+            except Exception as e:
+                active_logger.warning(f"Failed to process image {image_path}: {e}")
+                failed_images.append(image_path)
+
+    markdown_text_list = []
+    for page in result.get("pages", []):
+        markdown_text = page.get("markdown_text")
+        if markdown_text is not None:
+            markdown_text = replace_markdown_image_paths(
+                markdown_text, image_path_map, failed_images
+            )
             markdown_text_list.append(markdown_text)
     return "\n\n".join(markdown_text_list)
 
@@ -488,6 +535,10 @@ def get_api_client_config(access_token: str, *, base_url: str | None = None) -> 
     Returns:
         Configuration dict with token, base_url, headers
     """
+    if not isinstance(access_token, str) or not access_token.strip():
+        raise RuntimeError("AI Studio access token must be provided.")
+    access_token = access_token.strip()
+
     # If base_url is provided, extract it (in case user passed full API URL)
     if base_url:
         base_url = extract_base_url(base_url)
@@ -502,6 +553,48 @@ def get_api_client_config(access_token: str, *, base_url: str | None = None) -> 
             "Client-Platform": "dify",
         },
     }
+
+
+def _extract_api_message(payload: Any, fallback: str = "") -> str:
+    if not isinstance(payload, dict):
+        return fallback
+    for key in ("msg", "errorMsg", "message", "error"):
+        value = payload.get(key)
+        if value:
+            return str(value)
+    data = payload.get("data")
+    if isinstance(data, dict):
+        return _extract_api_message(data, fallback)
+    return fallback
+
+
+def _response_data(response: Any, *, operation: str) -> dict[str, Any]:
+    """Validate an official API response envelope while accepting the legacy flat form."""
+    try:
+        payload = response.json()
+    except ValueError as e:
+        if not 200 <= response.status_code < 300:
+            raise RuntimeError(
+                f"{operation} failed (HTTP {response.status_code}): {response.text}"
+            ) from e
+        raise RuntimeError(f"{operation} response is not valid JSON: {e}") from e
+
+    message = _extract_api_message(payload, response.text)
+    if not 200 <= response.status_code < 300:
+        raise RuntimeError(f"{operation} failed (HTTP {response.status_code}): {message}")
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"{operation} response must be a JSON object.")
+
+    code = payload.get("code", 0)
+    if code not in (0, None):
+        raise RuntimeError(f"{operation} failed (code {code}): {message}")
+
+    data = payload.get("data")
+    if data is None:
+        return payload
+    if not isinstance(data, dict):
+        raise RuntimeError(f"{operation} response field 'data' must be a JSON object.")
+    return data
 
 
 def _submit_job(
@@ -570,22 +663,11 @@ def _submit_job(
     except requests.ConnectionError as e:
         raise RuntimeError(f"Connection failed: {e}") from e
 
-    if not 200 <= resp.status_code < 300:
-        try:
-            payload = resp.json()
-            msg = payload.get("msg") or payload.get("message") or payload.get("error") or resp.text
-        except ValueError:
-            msg = resp.text
-        raise RuntimeError(f"Job submission failed (HTTP {resp.status_code}): {msg}")
-
-    try:
-        payload = resp.json()
-        job_id = payload.get("data", {}).get("jobId") or payload.get("jobId")
-        if not job_id:
-            raise RuntimeError(f"Job ID not found in response: {payload}")
-        return job_id
-    except (ValueError, KeyError) as e:
-        raise RuntimeError(f"Failed to parse job submission response: {e}") from e
+    data = _response_data(resp, operation="Job submission")
+    job_id = data.get("jobId")
+    if not isinstance(job_id, str) or not job_id:
+        raise RuntimeError(f"Job ID not found in response: {data}")
+    return job_id
 
 
 def _poll_job(
@@ -629,32 +711,15 @@ def _poll_job(
         except requests.ConnectionError as e:
             raise RuntimeError(f"Connection failed: {e}") from e
 
-        if not 200 <= resp.status_code < 300:
-            try:
-                payload = resp.json()
-                msg = (
-                    payload.get("msg")
-                    or payload.get("message")
-                    or payload.get("error")
-                    or resp.text
-                )
-            except ValueError:
-                msg = resp.text
-            raise RuntimeError(f"Poll failed (HTTP {resp.status_code}): {msg}")
-
-        try:
-            data = resp.json()
-            state = data.get("data", {}).get("state") or data.get("state")
-        except (ValueError, KeyError) as e:
-            raise RuntimeError(f"Failed to parse poll response: {e}") from e
+        data = _response_data(resp, operation="Job status request")
+        state = data.get("state")
+        if state not in {"pending", "running", "done", "failed"}:
+            raise RuntimeError(f"Unknown or missing job state: {state!r}.")
 
         if state == "done":
             # Get result URL — handle both response formats
-            result_data = data.get("data", {})
-            result_json_url = (
-                result_data.get("resultJsonUrl")
-                or (result_data.get("resultUrl") or {}).get("jsonUrl")
-                or data.get("resultJsonUrl")
+            result_json_url = (data.get("resultUrl") or {}).get("jsonUrl") or data.get(
+                "resultJsonUrl"
             )
             if not result_json_url:
                 raise RuntimeError(f"Result URL not found in response: {data}")
@@ -665,7 +730,7 @@ def _poll_job(
                 resp.raise_for_status()
             except requests.Timeout as e:
                 raise RuntimeError(f"Result download timed out: {e}") from e
-            except requests.ConnectionError as e:
+            except requests.RequestException as e:
                 raise RuntimeError(f"Result download failed: {e}") from e
 
             # Parse JSONL
@@ -682,9 +747,7 @@ def _poll_job(
             return jsonl_data, data
 
         if state == "failed":
-            error_msg = (
-                data.get("data", {}).get("errorMsg") or data.get("errorMsg") or "Unknown error"
-            )
+            error_msg = data.get("errorMsg") or "Unknown error"
             raise RuntimeError(f"Job {job_id} failed: {error_msg}")
 
         # Continue polling
@@ -789,6 +852,8 @@ def call_paddleocr_api(
     Raises:
         RuntimeError: If API call fails
     """
+    validate_model(model, is_document_parsing=is_document_parsing)
+
     job_id = _submit_job(
         model,
         file_url,
@@ -798,7 +863,9 @@ def call_paddleocr_api(
         client_config["headers"],
         page_ranges,
     )
-    jsonl_data, status_data = _poll_job(job_id, client_config["base_url"], client_config["headers"])
+    jsonl_data, _status_data = _poll_job(
+        job_id, client_config["base_url"], client_config["headers"]
+    )
 
     if is_document_parsing:
         return _parse_doc_parsing_result(job_id, jsonl_data)
