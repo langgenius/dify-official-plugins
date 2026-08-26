@@ -165,6 +165,52 @@ parameters:
       zh_Hans: 是否对版面检测结果进行 NMS。
     llm_description: Whether to perform NMS on layout detection results.
     form: llm
+  - name: layoutThreshold
+    type: number
+    required: false
+    label:
+      en_US: Layout Detection Score Threshold
+      zh_Hans: 版面检测得分阈值
+    human_description:
+      en_US: Optional score threshold from 0 to 1 for filtering layout detections. Use Advanced API Options for per-class thresholds.
+      zh_Hans: 可选的版面检测过滤阈值，取值范围为 0 到 1。按类别设置阈值时请使用高级 API 参数。
+    llm_description: Optional layout detection score threshold from 0 to 1. Use extraOptions for per-class thresholds.
+    form: llm
+  - name: layoutUnclipRatio
+    type: number
+    required: false
+    label:
+      en_US: Layout Bounding Box Expansion Ratio
+      zh_Hans: 版面检测框扩张比例
+    human_description:
+      en_US: Optional positive expansion ratio for layout bounding boxes. Use Advanced API Options for directional or per-class values.
+      zh_Hans: 可选的版面检测框正数扩张比例。设置横纵向或按类别的值时请使用高级 API 参数。
+    llm_description: Optional positive expansion ratio for layout bounding boxes. Use extraOptions for arrays or per-class values.
+    form: llm
+  - name: layoutMergeBboxesMode
+    type: select
+    required: false
+    options:
+      - label:
+          en_US: Keep Larger Boxes
+          zh_Hans: 保留较大框
+        value: large
+      - label:
+          en_US: Keep Smaller Boxes
+          zh_Hans: 保留较小框
+        value: small
+      - label:
+          en_US: Keep All Boxes
+          zh_Hans: 保留全部框
+        value: union
+    label:
+      en_US: Layout Bounding Box Merge Mode
+      zh_Hans: 版面检测框合并模式
+    human_description:
+      en_US: Controls how overlapping layout boxes are filtered. Use Advanced API Options for per-class modes.
+      zh_Hans: 控制如何过滤相互重叠的版面检测框。按类别设置模式时请使用高级 API 参数。
+    llm_description: Layout bounding box merge mode. Use extraOptions for per-class modes.
+    form: llm
   - name: layoutShapeMode
     type: select
     required: false
@@ -439,6 +485,17 @@ parameters:
       en_US: Whether or not to return visualization results.
       zh_Hans: 是否返回可视化结果。
     llm_description: Whether or not to return visualization results.
+    form: llm
+  - name: extraOptions
+    type: string
+    required: false
+    label:
+      en_US: Advanced API Options (JSON)
+      zh_Hans: 高级 API 参数（JSON）
+    human_description:
+      en_US: Optional JSON object merged into the official API optional payload. Values here override named options and can provide per-class layout controls or vlmExtraArgs. Transport-level fields are not allowed.
+      zh_Hans: 可选 JSON 对象，将合并到官方 API 的 optional payload 中。同名值会覆盖具名参数，并可提供按类别的版面控制或 vlmExtraArgs。不允许包含传输层字段。
+    llm_description: Optional JSON object of advanced PaddleOCR API options, including vlmExtraArgs. Values override named options. Do not include transport-level fields.
     form: llm
 output_schema:
     type: object

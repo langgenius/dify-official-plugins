@@ -11,7 +11,9 @@ PLUGIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PLUGIN_DIR not in sys.path:
     sys.path.insert(0, PLUGIN_DIR)
 
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError  # noqa: E402
 from dify_plugin.file.file import File, FileType  # noqa: E402
+from provider.paddleocr import PaddleocrProvider  # noqa: E402
 from tools.document_parsing import (  # noqa: E402
     DocumentParsingTool,
     build_pp_structure_v3_options,
@@ -24,9 +26,16 @@ from tools.text_recognition import TextRecognitionTool, build_ocr_options  # noq
 from tools.utils import (  # noqa: E402
     DOCX_MIME_TYPE,
     _parse_doc_parsing_result,
+    _poll_job,
+    _response_data,
     _submit_job,
+    download_image_from_url,
+    extract_base_url,
+    get_api_client_config,
     iter_docx_exports,
     normalize_file_input,
+    replace_markdown_image_paths,
+    validate_model,
 )
 
 
@@ -170,6 +179,75 @@ def test_option_builders_preserve_official_camel_case_keys():
     ) == {"useLayoutDetection": True}
 
 
+def test_extra_options_override_named_options_and_support_structured_values():
+    assert build_pp_structure_v3_options(
+        {
+            "layoutThreshold": 0.5,
+            "layoutMergeBboxesMode": "large",
+            "extraOptions": json.dumps(
+                {
+                    "layoutThreshold": {"0": 0.45},
+                    "layoutUnclipRatio": [1.2, 1.5],
+                    "layoutMergeBboxesMode": {"0": "small"},
+                }
+            ),
+        }
+    ) == {
+        "layoutThreshold": {"0": 0.45},
+        "layoutUnclipRatio": [1.2, 1.5],
+        "layoutMergeBboxesMode": {"0": "small"},
+    }
+
+    assert build_paddleocr_vl_options(
+        {
+            "extraOptions": {
+                "vlmExtraArgs": {"ocr_min_pixels": 3136},
+            }
+        }
+    ) == {"vlmExtraArgs": {"ocr_min_pixels": 3136}}
+
+
+@pytest.mark.parametrize("value", ["not-json", "[]", "1"])
+def test_extra_options_reject_invalid_or_non_object_json(value):
+    with pytest.raises(RuntimeError, match="extraOptions"):
+        build_ocr_options({"extraOptions": value})
+
+
+@pytest.mark.parametrize("reserved_key", ["file", "fileUrl", "model", "pageRanges", "batchId"])
+def test_extra_options_reject_transport_fields(reserved_key):
+    with pytest.raises(RuntimeError, match="transport-level"):
+        build_ocr_options({"extraOptions": json.dumps({reserved_key: "value"})})
+
+
+@pytest.mark.parametrize(
+    ("parameters", "message"),
+    [
+        ({"layoutThreshold": 1.1}, "layoutThreshold"),
+        ({"layoutUnclipRatio": 0}, "layoutUnclipRatio"),
+        ({"layoutMergeBboxesMode": "invalid"}, "layoutMergeBboxesMode"),
+    ],
+)
+def test_layout_option_validation(parameters, message):
+    with pytest.raises(RuntimeError, match=message):
+        build_pp_structure_v3_options(parameters)
+
+
+@pytest.mark.parametrize(
+    ("parameters", "message"),
+    [
+        ({"topP": 0}, "topP"),
+        ({"temperature": -0.1}, "temperature"),
+        ({"repetitionPenalty": 0}, "repetitionPenalty"),
+        ({"minPixels": 0}, "minPixels"),
+        ({"minPixels": 200, "maxPixels": 100}, "minPixels cannot"),
+        ({"extraOptions": '{"vlmExtraArgs": []}'}, "vlmExtraArgs"),
+    ],
+)
+def test_vl_option_validation(parameters, message):
+    with pytest.raises(RuntimeError, match=message):
+        build_paddleocr_vl_options(parameters)
+
+
 def test_submit_url_sends_page_ranges_at_job_level(monkeypatch):
     response = MagicMock(status_code=200)
     response.json.return_value = {"data": {"jobId": "job-url"}}
@@ -215,6 +293,109 @@ def test_submit_file_sends_page_ranges_as_multipart_field(monkeypatch, tmp_path)
     request_data = post.call_args.kwargs["data"]
     assert request_data["pageRanges"] == "1-3"
     assert json.loads(request_data["optionalPayload"]) == {"returnMarkdownImages": False}
+
+
+def test_base_url_accepts_full_jobs_endpoint_and_gateway_prefix():
+    assert extract_base_url("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/") == (
+        "https://paddleocr.aistudio-app.com"
+    )
+    assert extract_base_url("https://example.com/gateway/api/v2/ocr/jobs") == (
+        "https://example.com/gateway"
+    )
+    assert get_api_client_config(
+        " token ", base_url="https://example.com/gateway/api/v2/ocr/jobs"
+    ) == {
+        "token": "token",
+        "base_url": "https://example.com/gateway",
+        "headers": {
+            "Authorization": "Bearer token",
+            "Client-Platform": "dify",
+        },
+    }
+
+
+@pytest.mark.parametrize("token", ["", "   ", None])
+def test_api_client_rejects_empty_access_token(token):
+    with pytest.raises(RuntimeError, match="access token must be provided"):
+        get_api_client_config(token)
+
+
+def test_response_data_rejects_nonzero_api_code():
+    response = MagicMock(status_code=200, text="")
+    response.json.return_value = {"code": 17, "data": {"errorMsg": "quota exhausted"}}
+
+    with pytest.raises(RuntimeError, match=r"code 17.*quota exhausted"):
+        _response_data(response, operation="Job submission")
+
+
+def test_response_data_preserves_legacy_flat_payload():
+    response = MagicMock(status_code=200, text="")
+    response.json.return_value = {"jobId": "legacy-job"}
+
+    assert _response_data(response, operation="Job submission") == {"jobId": "legacy-job"}
+
+
+def test_model_validation_rejects_cross_task_and_unknown_models():
+    validate_model("PP-OCRv6", is_document_parsing=False)
+    validate_model("PaddleOCR-VL-1.6", is_document_parsing=True)
+
+    with pytest.raises(RuntimeError, match="Unsupported OCR model"):
+        validate_model("PaddleOCR-VL-1.6", is_document_parsing=False)
+    with pytest.raises(RuntimeError, match="Unsupported document parsing model"):
+        validate_model("HPD-Parsing", is_document_parsing=True)
+
+
+def test_poll_rejects_unknown_job_state(monkeypatch):
+    response = MagicMock(status_code=200, text="")
+    response.json.return_value = {"code": 0, "data": {"state": "paused"}}
+    monkeypatch.setattr("requests.get", MagicMock(return_value=response))
+
+    with pytest.raises(RuntimeError, match="Unknown or missing job state"):
+        _poll_job("job-id", "https://example.com", {}, max_wait_time=1)
+
+
+@pytest.mark.parametrize(
+    "result_field",
+    [
+        {"resultUrl": {"jsonUrl": "https://example.com/result.jsonl"}},
+        {"resultJsonUrl": "https://example.com/result.jsonl"},
+    ],
+)
+def test_poll_accepts_current_and_legacy_result_urls(monkeypatch, result_field):
+    status_response = MagicMock(status_code=200, text="")
+    status_response.json.return_value = {
+        "code": 0,
+        "data": {"state": "done", **result_field},
+    }
+    result_response = MagicMock(
+        status_code=200,
+        text='{"result": {"ocrResults": []}}\n',
+    )
+    get = MagicMock(side_effect=[status_response, result_response])
+    monkeypatch.setattr("requests.get", get)
+
+    jsonl_data, status_data = _poll_job("job-id", "https://example.com", {}, max_wait_time=1)
+
+    assert jsonl_data == [{"result": {"ocrResults": []}}]
+    assert status_data["state"] == "done"
+    result_response.raise_for_status.assert_called_once_with()
+
+
+def test_image_download_checks_http_status(monkeypatch):
+    response = MagicMock(content=b"image")
+    get = MagicMock(return_value=response)
+    monkeypatch.setattr("requests.get", get)
+
+    assert download_image_from_url("https://example.com/image.png") == b"image"
+    response.raise_for_status.assert_called_once_with()
+
+
+def test_failed_markdown_image_is_replaced_with_placeholder():
+    markdown = '<p>Before</p><img src="images/chart.jpg"><p>After</p>'
+
+    assert replace_markdown_image_paths(markdown, {}, ["images/chart.jpg"]) == (
+        "<p>Before</p>[Image unavailable]<p>After</p>"
+    )
 
 
 def test_document_result_parser_preserves_exports():
@@ -367,7 +548,7 @@ def test_text_recognition_sends_normalized_file_to_api(monkeypatch):
     # HTTP API receives file_path (temp file), not base64 directly
     assert "file_path" in captured["kwargs"]
     assert captured["kwargs"]["file_path"] == "temp_file.png"
-    assert captured["kwargs"]["model"] == "PP-OCRv5"
+    assert captured["kwargs"]["model"] == "PP-OCRv6"
     assert captured["kwargs"]["is_document_parsing"] is False
     assert captured["cleanup"] == ("temp_file.png", True)
 
@@ -512,11 +693,36 @@ def test_text_recognition_yaml_exposes_all_official_models():
     parameters = {parameter["name"]: parameter for parameter in tool_yaml["parameters"]}
     model = parameters["model"]
 
-    assert model["default"] == "PP-OCRv5"
+    assert model["default"] == "PP-OCRv6"
     assert [option["value"] for option in model["options"]] == [
         "PP-OCRv5",
         "PP-OCRv5-latin",
         "PP-OCRv6",
+    ]
+
+
+@pytest.mark.parametrize(
+    "tool_name", ["text_recognition", "document_parsing", "document_parsing_vl"]
+)
+def test_yaml_exposes_advanced_api_options(tool_name):
+    tool_yaml = load_tool_yaml(tool_name)
+    parameters = {parameter["name"]: parameter for parameter in tool_yaml["parameters"]}
+
+    assert parameters["extraOptions"]["type"] == "string"
+    assert parameters["extraOptions"]["required"] is False
+
+
+@pytest.mark.parametrize("tool_name", ["document_parsing", "document_parsing_vl"])
+def test_document_yaml_exposes_layout_controls(tool_name):
+    tool_yaml = load_tool_yaml(tool_name)
+    parameters = {parameter["name"]: parameter for parameter in tool_yaml["parameters"]}
+
+    assert parameters["layoutThreshold"]["type"] == "number"
+    assert parameters["layoutUnclipRatio"]["type"] == "number"
+    assert [option["value"] for option in parameters["layoutMergeBboxesMode"]["options"]] == [
+        "large",
+        "small",
+        "union",
     ]
 
 
@@ -537,4 +743,25 @@ def test_manifest_version_is_bumped():
     with open(os.path.join(PLUGIN_DIR, "manifest.yaml"), encoding="utf-8") as manifest_file:
         manifest = yaml.safe_load(manifest_file)
 
-    assert manifest["version"] == "0.2.10"
+    assert manifest["version"] == "0.3.0"
+
+
+def test_provider_validation_uses_latest_default_model(monkeypatch):
+    captured = {}
+
+    def fake_call(**kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr("provider.paddleocr.call_paddleocr_api", fake_call)
+    provider = object.__new__(PaddleocrProvider)
+    provider._validate_credentials({"aistudio_access_token": "token"})
+
+    assert captured["model"] == "PP-OCRv6"
+    assert captured["is_document_parsing"] is False
+
+
+@pytest.mark.parametrize("token", ["", "   ", None])
+def test_provider_validation_rejects_empty_token(token):
+    provider = object.__new__(PaddleocrProvider)
+    with pytest.raises(ToolProviderCredentialValidationError, match="must be provided"):
+        provider._validate_credentials({"aistudio_access_token": token})
