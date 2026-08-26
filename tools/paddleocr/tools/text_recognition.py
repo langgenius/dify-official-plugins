@@ -3,41 +3,36 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
 from tools.utils import (
+    DEFAULT_OCR_MODEL,
+    build_optional_payload,
     call_paddleocr_api,
     cleanup_temp_file,
     get_api_client_config,
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType", "model", "pageRanges"}
-
 
 def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
     """Build the camelCase optional payload expected by the HTTP API."""
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None or api_name in _SKIP_KEYS:
-            continue
-        options_dict[api_name] = value
-    return options_dict
+    return build_optional_payload(params)
 
 
 class TextRecognitionTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """Invoke the PaddleOCR API to recognize the text in the image."""
-        if "aistudio_access_token" not in self.runtime.credentials:
+        access_token = self.runtime.credentials.get("aistudio_access_token")
+        if not isinstance(access_token, str) or not access_token.strip():
             raise RuntimeError(
-                "The AI Studio access token is not configured or invalid. Please provide it in the plugin settings."
+                "The AI Studio access token is not configured or invalid. "
+                "Please provide it in the plugin settings."
             )
-        access_token = self.runtime.credentials["aistudio_access_token"]
 
         # Get base_url (optional, uses default if not provided)
         base_url = self.runtime.credentials.get("base_url")
 
         # Normalize file input - returns (input_value, is_temp_file, file_type_code)
-        file_input, is_temp_file, file_type_code = normalize_file_input(
+        file_input, is_temp_file, _file_type_code = normalize_file_input(
             tool_parameters.get("file"), tool_parameters.get("fileType")
         )
 
@@ -49,7 +44,7 @@ class TextRecognitionTool(Tool):
             client_config = get_api_client_config(access_token, base_url=base_url)
 
             # Get model selection
-            model = tool_parameters.get("model") or "PP-OCRv5"
+            model = tool_parameters.get("model") or DEFAULT_OCR_MODEL
             page_ranges = tool_parameters.get("pageRanges")
 
             # Call API
