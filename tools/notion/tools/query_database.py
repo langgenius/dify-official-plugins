@@ -8,6 +8,10 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.notion_client import NotionClient
 
+# Safety cap on Notion API calls when fetch_all paginates through a data source
+# (mirrors retrieve_page.py's max_api_calls budget).
+DEFAULT_MAX_API_CALLS = 500
+
 # Conditions whose Notion API value is fixed (not taken from filter_value)
 NO_VALUE_CONDITIONS = {
     "is_empty", "is_not_empty",
@@ -212,6 +216,9 @@ class QueryDatabaseTool(Tool):
         filter_value = tool_parameters.get("filter_value", "")
         limit = int(tool_parameters.get("limit", 10))
         fetch_all = _to_bool(tool_parameters.get("fetch_all", False))
+        max_api_calls = int(tool_parameters.get("max_api_calls") or DEFAULT_MAX_API_CALLS)
+        if max_api_calls < 1:
+            max_api_calls = 1
 
         # Validate parameters
         if not database_id:
@@ -267,17 +274,23 @@ class QueryDatabaseTool(Tool):
                     filter_obj = client.create_simple_text_filter(filter_property, filter_value)
             
             # Query the database
+            truncated = False
             try:
                 if fetch_all:
                     results = []
                     start_cursor = None
+                    api_calls_made = 0
                     while True:
+                        if api_calls_made >= max_api_calls:
+                            truncated = True
+                            break
                         data = client.query_data_source(
                             data_source_id=data_source_id,
                             filter_obj=filter_obj,
                             page_size=100,
                             start_cursor=start_cursor
                         )
+                        api_calls_made += 1
                         results.extend(data.get("results", []))
                         if not data.get("has_more"):
                             break
@@ -396,8 +409,15 @@ class QueryDatabaseTool(Tool):
             # Return results
             filter_msg = f" with filter {filter_property}={filter_value}" if filter_property and filter_value else ""
             summary = f"Found {len(formatted_results)} results in database{filter_msg}"
+            response = {"results": formatted_results}
+            if truncated:
+                summary += f" (truncated: max_api_calls={max_api_calls} reached, more records remain)"
+                response["fetch_truncated"] = True
+                response["fetch_truncated_reason"] = (
+                    f"max_api_calls={max_api_calls} exceeded; increase the limit to fetch the remaining records."
+                )
             yield self.create_text_message(summary)
-            yield self.create_json_message({"results": formatted_results})
+            yield self.create_json_message(response)
             
         except Exception as e:
             yield self.create_text_message(f"Error querying Notion database: {str(e)}")
