@@ -3,13 +3,14 @@ import ipaddress
 import json
 import mimetypes
 import socket
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 import httpx
+import nest_asyncio
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
@@ -262,6 +263,17 @@ async def _get_job_results(
             await asyncio.sleep(min(_RESULTS_RETRY_SECONDS, remaining))
 
 
+def _run_coroutine(coro_factory: Callable[[], Any]) -> Any:
+    """Run an async function even when the plugin daemon already has a loop.
+
+    Dify's plugin runtime (gevent) can already be inside an event loop, so
+    ``asyncio.run`` raises ``RuntimeError``. ``nest_asyncio`` is the same
+    workaround LlamaParse uses for this environment.
+    """
+    nest_asyncio.apply()
+    return asyncio.run(coro_factory())
+
+
 def _stages(parameters: dict[str, Any]) -> dict[str, Any]:
     stages: dict[str, Any] = {}
     partition: dict[str, Any] = {}
@@ -301,7 +313,7 @@ class TransformTool(Tool):
             )
         _require_hosted_transform_url(api_url)
         try:
-            asyncio.run(TransformTool._validate_connection(api_url, api_key))
+            _run_coroutine(lambda: TransformTool._validate_connection(api_url, api_key))
         except Exception as exc:
             raise ToolProviderCredentialValidationError(
                 f"Could not connect to Unstructured Transform: {exc}"
@@ -338,8 +350,8 @@ class TransformTool(Tool):
             )
         _require_hosted_transform_url(api_url)
 
-        result = asyncio.run(
-            self._transform(
+        result = _run_coroutine(
+            lambda: self._transform(
                 api_url=api_url,
                 api_key=api_key,
                 parameters=tool_parameters,

@@ -15,6 +15,7 @@ from tools.transform import (
     _get_job_results,
     _require_public_file_url,
     _require_public_https_transfer_url,
+    _run_coroutine,
     _stages,
     _tool_payload,
     _validate_transform_tools,
@@ -542,3 +543,60 @@ def test_partition_rejects_transform_credentials() -> None:
 
     with pytest.raises(ToolProviderCredentialValidationError, match="use Partition"):
         PartitionTool._get_credentials(tool)
+
+
+def test_run_coroutine_from_running_event_loop() -> None:
+    async def ping() -> str:
+        await asyncio.sleep(0)
+        return "ok"
+
+    async def invoke_from_loop() -> str:
+        return _run_coroutine(lambda: ping())
+
+    assert asyncio.run(invoke_from_loop()) == "ok"
+
+
+def test_invoke_from_running_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_transform(self, *, api_url: str, api_key: str, parameters: dict) -> dict:
+        del self, api_url, api_key, parameters
+        asyncio.get_running_loop()
+        return {
+            "job_id": "job-123",
+            "output_ref": "",
+            "filename": "document.md",
+            "mime_type": "text/markdown",
+            "content": b"parsed",
+        }
+
+    monkeypatch.setattr(TransformTool, "_transform", fake_transform)
+
+    tool = object.__new__(TransformTool)
+    tool.runtime = SimpleNamespace(
+        credentials={
+            "server_type": "transform",
+            "api_url": "https://mcp.transform.unstructured.io",
+            "api_key": "test-key",
+        }
+    )
+    tool.create_text_message = lambda text: ("text", text)
+    tool.create_blob_message = lambda content, meta: ("blob", content, meta)
+    tool.create_json_message = lambda obj: ("json", obj)
+    tool.create_variable_message = lambda name, value: ("var", name, value)
+
+    async def invoke_from_loop() -> list:
+        return list(
+            tool._invoke(
+                {
+                    "file": SimpleNamespace(
+                        filename="document.pdf",
+                        mime_type="application/pdf",
+                        blob=b"%PDF",
+                    ),
+                    "output_format": "md",
+                }
+            )
+        )
+
+    messages = asyncio.run(invoke_from_loop())
+    assert ("text", "parsed") in messages
+    assert any(item[0] == "var" and item[1] == "job_id" for item in messages)
