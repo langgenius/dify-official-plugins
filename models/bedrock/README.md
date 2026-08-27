@@ -43,6 +43,18 @@ The "Anthropic Claude 5" entry provides Claude Opus 5 (`anthropic.claude-opus-5`
 - **Fable 5 prerequisite: data retention opt-in.** Your AWS account must set data retention mode to `provider_data_share` via the Bedrock Data Retention API before invoking Fable 5 (no console UI at launch). See the [Fable 5 model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html). The plugin never changes account settings.
 - **Pricing note.** Displayed prices are the Global cross-region rates (Opus 5 $5/$25, Sonnet 5 $3/$15, Fable 5 $10/$50 per 1M tokens). Geo/in-region invocation is ~10% higher. Prompt-cache read/write rates are not representable in Dify's cost tracking — refer to your AWS bill.
 
+## Claude 4.5-Generation Models
+
+The 4.5-generation Claude models — Sonnet 4.5 (`anthropic.claude-sonnet-4-5-20250929-v1:0`), Haiku 4.5 (`anthropic.claude-haiku-4-5-20251001-v1:0`), Opus 4.5 (`anthropic.claude-opus-4-5-20251101-v1:0`), Sonnet 4.6 (`anthropic.claude-sonnet-4-6`), Opus 4.6 (`anthropic.claude-opus-4-6-v1`), Opus 4.7 (`anthropic.claude-opus-4-7`), and Opus 4.8 (`anthropic.claude-opus-4-8`) — are inference-profile-only on Bedrock, like Claude 5. Key behaviors:
+
+- **Invocable via `us.`, `eu.`, or `global.` cross-region inference profiles only.** No on-demand bare-ID invocation, and no `apac.` geo profile (unlike earlier Claude generations).
+- **Plugin resolves the correct profile from your *Cross-Region Inference* selection:**
+  - From US/Canada regions: `global` or `geographic` both work (the latter resolves to `us.`).
+  - From EU regions: `global` or `geographic` both work (the latter resolves to `eu.`).
+  - From APAC regions (e.g., `ap-northeast-1`): use `global`; `geographic` fails because no `apac.` profile exists for these models.
+  - `disabled` always fails (ValidationException) for these models — they have no on-demand invocation.
+- **Japan cross-region option:** Sonnet 4.6 and Opus 4.7 / 4.8 also support `japan`, which resolves to the `jp.` profile for data residency in Japan (requires region `ap-northeast-1` or `ap-northeast-3`). Sonnet 4.5, Haiku 4.5, and Opus 4.5 / 4.6 do not have a `jp.` profile.
+
 ## Japan data residency (`japan` cross-region inference)
 
 Selecting `japan` for *Cross-Region Inference* uses the `jp.` geographic profile, which routes only to `ap-northeast-3` and `ap-northeast-1` — inference never leaves Japan. It requires the configured region to be one of those two, and the model to have a `jp.` profile (Sonnet 4.5 / 4.6, Haiku 4.5, Opus 4.7 / 4.8 and Nova Lite V2 at the time of writing). Otherwise the call fails with an explanatory error instead of silently routing elsewhere.

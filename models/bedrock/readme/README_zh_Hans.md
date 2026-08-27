@@ -66,6 +66,20 @@ Requires model invocation logging to be enabled on the account for the field to 
 - **Fable 5 前置条件：数据保留 opt-in。** 调用 Fable 5 前，AWS 账户必须通过 Bedrock Data Retention API 将数据保留模式设置为 `provider_data_share`（上线初期无控制台入口）。详见 [Fable 5 模型卡](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html)。插件不会修改账户设置。
 - **价格说明。** 展示价格为 Global 跨区域费率（Opus 5 每百万 token $5/$25，Sonnet 5 $3/$15，Fable 5 $10/$50）。Geo/区域内调用约贵 10%。Prompt 缓存读写费率无法体现在 Dify 费用统计中，请以 AWS 账单为准。
 
+## Claude 4.5 代模型
+
+涵盖 Claude Sonnet 4.5（`anthropic.claude-sonnet-4-5-20250929-v1:0`）、Claude Haiku 4.5（`anthropic.claude-haiku-4-5-20251001-v1:0`）、Claude Opus 4.5（`anthropic.claude-opus-4-5-20251101-v1:0`）、Claude Sonnet 4.6（`anthropic.claude-sonnet-4-6`）、Claude Opus 4.6（`anthropic.claude-opus-4-6-v1`）、Claude Opus 4.7（`anthropic.claude-opus-4-7`）和 Claude Opus 4.8（`anthropic.claude-opus-4-8`）。
+
+与 Claude 5 类似，这些模型在 Bedrock 上只能通过推理配置文件调用：
+
+- 可以通过 `us.`、`eu.` 或 `global.` 跨区域推理配置文件调用，不支持裸模型 ID 的按需调用。无 `apac.` 地理配置文件。
+- 插件根据"跨区域推理"选项自动解析正确的配置文件：
+  - 从美国/加拿大区域：使用 `global` 或 `geographic`（解析为 `us.`）
+  - 从欧洲区域：使用 `global` 或 `geographic`（解析为 `eu.`）
+  - 从亚太区域（例如 ap-northeast-1）：使用 `global`，因为这些模型没有 `apac.` 配置文件
+  - 使用 `disabled` 会导致 ValidationException 错误
+- Sonnet 4.6 和 Opus 4.7 / 4.8 还支持 `japan` 跨区域选项，解析为 `jp.` 配置文件以满足日本数据驻留要求。
+
 ## 日本数据驻留（`japan` 跨区域推理）
 
 在"跨区域推理"选项中选择 `japan` 将使用 `jp.` 地理配置文件，仅路由到 `ap-northeast-3` 和 `ap-northeast-1` — 推理请求不会离开日本。此选项要求配置的区域必须是这两个之一，且模型必须具有 `jp.` 配置文件（撰写时支持 Sonnet 4.5 / 4.6、Haiku 4.5、Opus 4.7 / 4.8 以及 Nova Lite V2）。否则调用将失败并显示说明性错误，而不会静默路由到其他区域。
