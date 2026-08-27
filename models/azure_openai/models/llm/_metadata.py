@@ -27,19 +27,17 @@ respected rather than overwritten.
 from __future__ import annotations
 
 from typing import Any, Optional
-from urllib.parse import urlparse
 
 from ..common import _CommonAzureOpenAI
-from ..constants import AZURE_OPENAI_API_VERSION
 
 _MAX_VALUE_LENGTH = 512
 
 # Stored Completions, and with it the ``metadata`` field, is only available
 # from this api-version onward. Older versions reject the request outright, so
 # telemetry is skipped rather than allowed to break generation. The dropdown in
-# provider/azure_openai.yaml still offers versions as old as 2023-12-01-preview
-# and AZURE_OPENAI_API_VERSION is older than this, so the check is load-bearing
-# rather than theoretical.
+# provider/azure_openai.yaml still offers versions older than this and users
+# may pin them explicitly, so the check is load-bearing rather than
+# theoretical (the fallback default itself is newer since 0.0.69).
 _MIN_METADATA_API_VERSION = "2024-10-01-preview"
 
 
