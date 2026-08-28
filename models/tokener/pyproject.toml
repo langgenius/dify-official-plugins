@@ -1,0 +1,28 @@
+[project]
+name = "dify-plugin-tokener"
+version = "0.0.1"
+description = "Tokener.ai model provider for Dify"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dify_plugin>=0.9.0",
+    "requests>=2.32.4",
+]
+
+[dependency-groups]
+dev = [
+    "pyrefly==1.1.1",
+    "pytest==9.1.1",
+    "ruff==0.15.22",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
