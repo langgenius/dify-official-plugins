@@ -1,8 +1,10 @@
-model: glm-5.3
+model: glm-5.3-flash
 label:
-  en_US: glm-5.3
+  en_US: glm-5.3-flash
 model_type: llm
 features:
+  - vision
+  - video
   - multi-tool-call
   - agent-thought
   - stream-tool-call
@@ -27,8 +29,8 @@ parameter_rules:
       - high
       - max
     help:
-      zh_Hans: 控制模型的思考强度。GLM-5.3 始终启用思考模式。
-      en_US: Controls the model's reasoning effort. GLM-5.3 always uses thinking mode.
+      zh_Hans: 控制模型的思考强度。GLM-5.3-Flash 始终启用思考模式。
+      en_US: Controls the model's reasoning effort. GLM-5.3-Flash always uses thinking mode.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -42,7 +44,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "0.008"
-  output: "0.028"
+  input: "0.0008"
+  output: "0.0028"
   unit: "0.001"
   currency: RMB
