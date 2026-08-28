@@ -1,7 +1,7 @@
 # Outlook Plugin for Dify
 
 **Author:** langgenius
-**Version:** 0.5.0
+**Version:** 0.6.0
 **Type:** Plugin
 
 ---
@@ -21,6 +21,12 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 - Set the priority/importance of an email
 - Flag emails for follow-up
 - Search and filter messages
+- List calendars
+- List upcoming events from calendars
+- Search events by keyword and/or date range
+- Create calendar events/meetings with attendees
+- Get event details by ID
+- Update existing events
 
 ### Available Tools
 | Tool Name                | Description |
@@ -33,6 +39,12 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 | add_attachment_to_draft  | Add a file attachment to an existing draft email. |
 | prioritize_email         | Set the priority level (low, normal, high) of an email message. |
 | flag_email               | Flag an email message for follow-up, with optional due date and message. |
+| list_calendars           | List your Outlook calendars. |
+| list_events              | List upcoming calendar events, optionally from a specific calendar. |
+| search_events            | Search calendar events by keyword and/or date range. **New in 0.6.0** |
+| create_event             | Create a calendar event/meeting with attendees, location, and Teams meeting support. |
+| get_event                | Get detailed information about a specific calendar event by its ID. |
+| update_event             | Update fields of an existing calendar event. |
 
 ### Installation
 
@@ -137,7 +149,8 @@ The plugin requires the following Microsoft Graph API permissions:
 - Mail.Read: For reading emails
 - Mail.Send: For sending emails
 - Mail.ReadWrite: For updating email properties (flags, priority)
-- Calendars.ReadWrite: For calendar events (list/create/get/update/delete) — added in 0.3.0
+- Calendars.Read: For reading calendar events
+- Calendars.ReadWrite: For creating and updating calendar events
 
 > Calendar tools (0.3.0): `list_calendars`, `list_events`, `create_event`, `get_event`, `update_event`, `delete_event`. Existing installs will be asked to re-authorize once to grant the new `Calendars.ReadWrite` scope.
 
@@ -186,6 +199,12 @@ The plugin requires the following Microsoft Graph API permissions:
 - メールの優先度/重要度を設定
 - フォローアップ用にメールにフラグを設定
 - メッセージの検索とフィルタリング
+- カレンダーを一覧表示
+- カレンダーからの今後の予定を一覧表示
+- キーワードや日付範囲でイベントを検索
+- 出席者とのカレンダーイベント/会議を作成
+- IDでイベントの詳細を取得
+- 既存のイベントを更新
 
 ### 利用可能なツール
 | ツール名                | 説明 |
@@ -198,6 +217,12 @@ The plugin requires the following Microsoft Graph API permissions:
 | add_attachment_to_draft  | 既存のドラフトメールにファイル添付を追加。 |
 | prioritize_email         | メールメッセージの優先度レベル（低、通常、高）を設定。 |
 | flag_email               | フォローアップ用にメールメッセージにフラグを設定。オプションで期限とメッセージを設定可能。 |
+| list_calendars           | Outlookカレンダーを一覧表示。 |
+| list_events              | カレンダーイベントの今後の予定を一覧表示、オプションで特定のカレンダーから。 |
+| search_events            | キーワードや日付範囲でカレンダーイベントを検索。**バージョン0.6.0の新機能** |
+| create_event             | 出席者、場所、Teamsミーティング対応のカレンダーイベント/会議を作成。 |
+| get_event                | IDで特定のカレンダーイベントの詳細情報を取得。 |
+| update_event             | 既存のカレンダーイベントのフィールドを更新。 |
 
 ### インストール
 
@@ -246,9 +271,9 @@ The plugin requires the following Microsoft Graph API permissions:
 4. **Difyに戻る** - アクセストークンと共にリダイレクトされる
 
 #### OAuth設定後：
-1. 输入您的Azure AD应用程序凭据（客户端ID、客户端密钥、租户ID）
-2. 插件将使用OAuth访问令牌进行所有API调用
-3. 无需管理用户凭据 - 认证通过Microsoft安全处理
+1. Azure ADアプリケーション認証情報（クライアントID、クライアントシークレット、テナントID）を入力
+2. プラグインはすべてのAPI呼び出しにOAuthアクセストークンを使用
+3. ユーザー認証情報の管理は不要 - 認証はMicrosoftを通じて安全に処理されます
 
 ### 使用例
 
@@ -289,50 +314,51 @@ ID draft123のドラフトを送信
 
 #### 優先度を設定
 ```
-将ID为abc123的消息的优先级设置为高
+ID abc123のメッセージの優先度を高に設定
 ```
 
-#### 为消息设置标志
+#### メッセージにフラグを設定
 ```
-为ID为abc123的消息设置2天后跟进的标志，消息为"需要审查"
+ID abc123のメッセージに2日後のフォローアップのフラグを設定、メッセージは「レビューが必要」
 ```
 
 ### 設定
-插件需要以下Microsoft Graph API权限：
-- Mail.Read：用于读取邮件
-- Mail.Send：用于发送邮件
-- Mail.ReadWrite：用于更新邮件属性（标志、优先级）
-- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+プラグインには以下のMicrosoft Graph API権限が必要です：
+- Mail.Read：メールの読み取り用
+- Mail.Send：メールの送信用
+- Mail.ReadWrite：メールプロパティ（フラグ、優先度）の更新用
+- Calendars.Read：カレンダーイベントの読み取り用
+- Calendars.ReadWrite：カレンダーイベントの作成と更新用
 
-> 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
+> カレンダーツール（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。既存のインストールでは、新しい`Calendars.ReadWrite`スコープを付与するために再認証が求められます。
 
 ### セキュリティの利点
-- **无共享凭据**：用户直接通过Microsoft认证
-- **安全令牌管理**：访问令牌由Dify安全处理
-- **用户特定访问**：每个用户只能访问自己的邮件
-- **自动令牌刷新**：OAuth自动处理令牌过期
+- **共有認証情報なし**：ユーザーはMicrosoftで直接認証
+- **安全なトークン管理**：アクセストークンはDifyによって安全に処理
+- **ユーザー固有のアクセス**：各ユーザーは自分のメールのみにアクセス
+- **自動トークン更新**：OAuthがトークンの有効期限を自動的に処理
 
 ### トラブルシューティング
 
-#### OAuth问题：
-1. **"Use OAuth Authorization"不工作：**
-   - 确保Azure AD应用程序有正确的重定向URI
-   - 检查Azure AD中OAuth配置是否正确
+#### OAuth問題：
+1. **"Use OAuth Authorization"が機能しない：**
+   - Azure ADアプリに正しいリダイレクトURIがあることを確認
+   - Azure ADでOAuthが適切に設定されていることを確認
 
-2. **认证失败：**
-   - 验证Azure AD凭据是否正确
-   - 检查应用程序是否有所需权限
-   - 确保客户端密钥未过期
+2. **認証が失敗する：**
+   - Azure AD認証情報が正しいことを確認
+   - アプリケーションに必要な権限があることを確認
+   - クライアントシークレットが期限切れでないことを確認
 
-3. **API错误：**
-   - 检查互联网连接
-   - 验证Outlook账户是否可访问
-   - 确保有必要的权限
+3. **APIエラー：**
+   - インターネット接続を確認
+   - Outlookアカウントがアクセス可能であることを確認
+   - 必要な権限があることを確認
 
-#### 常见错误消息：
-- **"Id is malformed"**：工具现在自动处理URL编码
-- **"SearchWithOrderBy"**：搜索和orderby参数现在正确处理
-- **"Access denied"**：检查OAuth权限是否已授予
+#### 一般的なエラーメッセージ：
+- **"Id is malformed"**：ツールは現在URL エンコーディングを自動的に処理
+- **"SearchWithOrderBy"**：検索とorderbyパラメータは現在正しく処理
+- **"Access denied"**：OAuth権限が付与されていることを確認
 
 ---
 
@@ -351,6 +377,12 @@ ID draft123のドラフトを送信
 - 设置邮件的优先级/重要性
 - 为邮件设置跟进标志
 - 搜索和过滤消息
+- 列出日历
+- 列出日历中即将到来的事件
+- 按关键词和/或日期范围搜索事件
+- 创建带有出席者的日历事件/会议
+- 通过ID获取事件详细信息
+- 更新现有事件
 
 ### 可用工具
 | 工具名称                | 描述 |
@@ -363,6 +395,12 @@ ID draft123のドラフトを送信
 | add_attachment_to_draft  | 向现有草稿邮件添加文件附件。 |
 | prioritize_email         | 设置邮件消息的优先级级别（低、正常、高）。 |
 | flag_email               | 为邮件消息设置跟进标志，可选择到期日期和消息。 |
+| list_calendars           | 列出您的Outlook日历。 |
+| list_events              | 列出即将到来的日历事件，可选择来自特定日历。 |
+| search_events            | 按关键词和/或日期范围搜索日历事件。**0.6.0版本新增** |
+| create_event             | 创建日历事件/会议，支持与会者、位置和Teams在线会议。 |
+| get_event                | 通过ID获取特定日历事件的详细信息。 |
+| update_event             | 更新现有日历事件的字段。 |
 
 ### 安装
 
@@ -467,7 +505,8 @@ ID draft123のドラフトを送信
 - Mail.Read：用于读取邮件
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
-- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+- Calendars.Read：用于读取日历事件
+- Calendars.ReadWrite：用于创建和更新日历事件
 
 > 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
 
