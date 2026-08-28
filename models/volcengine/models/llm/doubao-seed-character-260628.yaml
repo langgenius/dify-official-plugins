@@ -29,27 +29,10 @@ parameter_rules:
     default: enabled
     options:
       - enabled
+      - disabled
     help:
-      zh_Hans: 启用后模型会在回答前进行系统性分析和多步骤规划。本模型的分级思考强度依赖该参数为 enabled，故不提供 disabled 选项；要关闭思考请把下面的思考强度设为 none 或 minimal。
-      en_US: When enabled, the model performs systematic analysis and multi-step planning before answering. This model's graded reasoning levels require this to be enabled, so no disabled option is offered; to turn thinking off, set Reasoning Effort below to none or minimal.
-  - name: reasoning_effort
-    label:
-      zh_Hans: 思考强度
-      en_US: Reasoning Effort
-    type: string
-    required: false
-    default: high
-    options:
-      - none
-      - minimal
-      - low
-      - medium
-      - high
-      - xhigh
-      - max
-    help:
-      zh_Hans: 控制思维链长度。none/minimal 直接回答不思考；low 至 max 逐级加长思维链。
-      en_US: Controls chain-of-thought length. none/minimal answer directly without thinking; low through max progressively lengthen the chain.
+      zh_Hans: 启用后模型会在回答前进行系统性分析和多步骤规划，适用于复杂推理任务。
+      en_US: When enabled, the model performs systematic analysis and multi-step planning before answering, suitable for complex reasoning tasks.
   - name: response_format
     label:
       zh_Hans: 回复格式
