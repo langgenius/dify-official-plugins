@@ -1,0 +1,98 @@
+identity:
+  name: search_events
+  display_name: Search Events
+  author: Dify
+  label:
+    en_US: Search Events
+    zh_Hans: 搜索事件
+    pt_BR: Pesquisar Eventos
+    ja_JP: イベントを検索
+description:
+  human:
+    en_US: Search calendar events by keyword and/or date range
+    zh_Hans: 按关键词和/或日期范围搜索日历事件
+    pt_BR: Pesquisar eventos de calendário por palavra-chave e/ou intervalo de datas
+    ja_JP: キーワードや日付範囲でカレンダーイベントを検索
+  llm: Search the user's Outlook calendar events using Microsoft Graph. Provide a keyword (matches subject/body) and/or a date range (start_date/end_date). Giving both narrows a date range by keyword.
+parameters:
+  - name: query
+    type: string
+    required: false
+    label:
+      en_US: Keyword
+      zh_Hans: 关键词
+      pt_BR: Palavra-chave
+      ja_JP: キーワード
+    human_description:
+      en_US: Keyword to match against event subject and body
+      zh_Hans: 用于匹配事件标题和正文的关键词
+      pt_BR: Palavra-chave para corresponder ao assunto e corpo do evento
+      ja_JP: イベントの件名・本文に一致させるキーワード
+    llm_description: Keyword to search event subject and body. Optional if a date range is given.
+    form: llm
+  - name: start_date
+    type: string
+    required: false
+    label:
+      en_US: Start Date
+      zh_Hans: 开始日期
+      pt_BR: Data de Início
+      ja_JP: 開始日
+    human_description:
+      en_US: Start of the date range (e.g. 2026-09-01 or 2026-09-01T09:00:00Z)
+      zh_Hans: 日期范围的开始（如 2026-09-01 或 2026-09-01T09:00:00Z）
+      pt_BR: Início do intervalo de datas (ex. 2026-09-01 ou 2026-09-01T09:00:00Z)
+      ja_JP: 日付範囲の開始（例 2026-09-01 または 2026-09-01T09:00:00Z）
+    llm_description: Optional start of the date range, ISO date or datetime. If only start is given, the range extends one year forward.
+    form: llm
+  - name: end_date
+    type: string
+    required: false
+    label:
+      en_US: End Date
+      zh_Hans: 结束日期
+      pt_BR: Data de Fim
+      ja_JP: 終了日
+    human_description:
+      en_US: End of the date range (e.g. 2026-09-30 or 2026-09-30T18:00:00Z)
+      zh_Hans: 日期范围的结束（如 2026-09-30 或 2026-09-30T18:00:00Z）
+      pt_BR: Fim do intervalo de datas (ex. 2026-09-30 ou 2026-09-30T18:00:00Z)
+      ja_JP: 日付範囲の終了（例 2026-09-30 または 2026-09-30T18:00:00Z）
+    llm_description: Optional end of the date range, ISO date or datetime. If only end is given, the range starts from now.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 25
+    min: 1
+    max: 100
+    label:
+      en_US: Limit
+      zh_Hans: 数量
+      pt_BR: Limite
+      ja_JP: 件数
+    human_description:
+      en_US: Maximum number of events to return
+      zh_Hans: 要返回的最大事件数
+      pt_BR: Número máximo de eventos a retornar
+      ja_JP: 返すイベントの最大数
+    llm_description: Maximum number of events to return, between 1 and 100, default is 25.
+    form: llm
+  - name: calendar_id
+    type: string
+    required: false
+    label:
+      en_US: Calendar ID
+      zh_Hans: 日历 ID
+      pt_BR: ID do Calendário
+      ja_JP: カレンダー ID
+    human_description:
+      en_US: The ID of the calendar to search; defaults to the primary calendar
+      zh_Hans: 要搜索的日历 ID；默认为主日历
+      pt_BR: O ID do calendário a pesquisar; o padrão é o calendário principal
+      ja_JP: 検索するカレンダーの ID。デフォルトはプライマリカレンダー
+    llm_description: The ID of the calendar to search. If omitted, the primary calendar is used.
+    form: llm
+extra:
+  python:
+    source: tools/search_events.py

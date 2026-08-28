@@ -115,6 +115,7 @@ tools:
   - tools/flag_message.yaml
   - tools/list_calendars.yaml
   - tools/list_events.yaml
+  - tools/search_events.yaml
   - tools/create_event.yaml
   - tools/get_event.yaml
   - tools/update_event.yaml
