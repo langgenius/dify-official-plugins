@@ -22,7 +22,7 @@ def test_provider_validation_uses_models_endpoint(get) -> None:
     get.return_value = response(200, {"object": "list", "data": []})
     provider = TokenerModelProvider.__new__(TokenerModelProvider)
 
-    provider.validate_provider_credentials({"api_key": " test-key "})
+    provider.validate_provider_credentials({"api_key": "test-key"})
 
     get.assert_called_once_with(
         "https://api.tokener.dev/v1/models",

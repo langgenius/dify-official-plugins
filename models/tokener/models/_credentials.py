@@ -17,7 +17,7 @@ def validate_model_access(credentials: dict, model: str | None = None) -> None:
             f"{ENDPOINT_URL}/models",
             headers={
                 "Accept": "application/json",
-                "Authorization": f"Bearer {api_key.strip()}",
+                "Authorization": f"Bearer {api_key}",
             },
             timeout=VALIDATION_TIMEOUT,
         )
