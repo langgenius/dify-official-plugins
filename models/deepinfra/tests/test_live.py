@@ -40,6 +40,7 @@ pytestmark = [
 
 CHAT_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 VISION_MODEL = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+REASONING_MODEL = "zai-org/GLM-5.3-Flash"
 EMBED_MODEL = "BAAI/bge-m3"
 
 
@@ -206,6 +207,21 @@ def test_llm_vision_invoke(llm, credentials) -> None:
         stream=False,
     )
     assert _text(chunks).strip()
+
+
+def test_reasoning_model_returns_content(llm, credentials) -> None:
+    """Reasoning models spend tokens thinking before answering, so a small
+    max_tokens yields an empty content field. Confirm a realistic budget
+    still produces visible output."""
+    chunks = _invoke(
+        llm,
+        credentials,
+        [UserPromptMessage(content="Reply with exactly: OK")],
+        model=REASONING_MODEL,
+        parameters={"temperature": 0.0, "max_tokens": 2000},
+        stream=False,
+    )
+    assert _text(chunks).strip(), "reasoning model produced no visible content"
 
 
 def test_embedding_validate_credentials(embedding, credentials) -> None:

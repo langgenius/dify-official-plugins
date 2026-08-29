@@ -5,10 +5,10 @@ API at a low per-token price, and can be used directly from Dify.
 
 ## Features
 - Provides `llm` and `text-embedding` models in Dify.
-- Includes predefined LLMs such as `openai/gpt-oss-120b`, `deepseek-ai/DeepSeek-V3.2`,
+- Includes 25 predefined LLMs such as `openai/gpt-oss-120b`, `deepseek-ai/DeepSeek-V4-Flash`,
   `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `Qwen/Qwen3-235B-A22B-Instruct-2507` and
-  `zai-org/GLM-4.7`, including vision-capable models.
-- Includes predefined embedding models such as `BAAI/bge-m3`, `Qwen/Qwen3-Embedding-8B`
+  `zai-org/GLM-5.3-Flash`, including vision-capable models.
+- Includes 8 predefined embedding models such as `BAAI/bge-m3`, `Qwen/Qwen3-Embedding-8B`
   and `intfloat/multilingual-e5-large`.
 - Supports predefined model and customizable model configuration. DeepInfra hosts far
   more models than are predefined here — any other model ID can be added through
