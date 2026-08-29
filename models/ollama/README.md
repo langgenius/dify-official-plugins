@@ -54,6 +54,7 @@ Go to `Settings > Model Providers > Ollama` and add a model.
 - Upper bound for max tokens: the maximum `num_predict` value Dify should allow
 - Vision support: choose `Yes` only for vision-capable models
 - Function call support: choose `Yes` only for tool-capable models
+- Attach Dify app_id as request headers: optional; when enabled, the plugin attaches the current Dify app_id and a `dify` source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on every Ollama API call for observability and proxy-side propagation. Default is disabled.
 
 For Docker deployments, use a host address reachable from the Dify container, such as `http://host.docker.internal:11434` or a LAN IP address.
 
