@@ -66,7 +66,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
-from models._common import get_http_base_address
+from models._common import get_http_base_address, get_openai_compatible_base_url
 
 from ..constant import BURY_POINT_HEADER
 from .qwen_long import MAX_DOCUMENT_INPUT_BASE64_BYTES, QwenLongFiles
@@ -356,7 +356,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
             else:
                 if model.startswith("qwen-long"):
-                    if credentials.get("use_international_endpoint", "false") == "true":
+                    if (
+                        credentials.get("use_international_endpoint", "false") == "true"
+                        and not str(credentials.get("dashscope_api_base") or "").strip()
+                    ):
                         raise InvokeBadRequestError(
                             "Qwen-Long is only available in the Beijing region."
                         )
@@ -365,7 +368,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     qwen_long_files = QwenLongFiles(
                         openai.OpenAI(
                             api_key=credentials["dashscope_api_key"],
-                            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            base_url=get_openai_compatible_base_url(credentials),
                             max_retries=0,
                             timeout=120,
                         )
