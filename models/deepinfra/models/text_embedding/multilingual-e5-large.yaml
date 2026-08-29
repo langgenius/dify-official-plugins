@@ -1,7 +1,7 @@
 model: intfloat/multilingual-e5-large
 label:
-  en_US: Multilingual E5 Large
-  zh_Hans: Multilingual E5 Large
+  en_US: multilingual e5 large
+  zh_Hans: multilingual e5 large
 model_type: text-embedding
 model_properties:
   context_size: 512

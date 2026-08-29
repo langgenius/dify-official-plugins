@@ -1,7 +1,7 @@
 model: google/embeddinggemma-300m
 label:
-  en_US: EmbeddingGemma 300M
-  zh_Hans: EmbeddingGemma 300M
+  en_US: embeddinggemma 300m
+  zh_Hans: embeddinggemma 300m
 model_type: text-embedding
 model_properties:
   context_size: 2048

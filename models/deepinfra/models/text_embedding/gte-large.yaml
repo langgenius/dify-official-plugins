@@ -1,7 +1,7 @@
 model: thenlper/gte-large
 label:
-  en_US: GTE Large
-  zh_Hans: GTE Large
+  en_US: gte large
+  zh_Hans: gte large
 model_type: text-embedding
 model_properties:
   context_size: 512

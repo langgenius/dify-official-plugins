@@ -1,7 +1,7 @@
 model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
 label:
-  en_US: Llama 3.1 8B Instruct Turbo
-  zh_Hans: Llama 3.1 8B Instruct Turbo
+  en_US: Meta Llama 3.1 8B Instruct Turbo
+  zh_Hans: Meta Llama 3.1 8B Instruct Turbo
 model_type: llm
 features:
   - agent-thought

@@ -1,10 +1,12 @@
 model: google/gemma-3-27b-it
 label:
-  en_US: Gemma 3 27B IT
-  zh_Hans: Gemma 3 27B IT
+  en_US: gemma 3 27b it
+  zh_Hans: gemma 3 27b it
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
   - vision
 model_properties:
   mode: chat

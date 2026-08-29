@@ -1,12 +1,10 @@
 model: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8
 label:
-  en_US: Llama 4 Maverick 17B
-  zh_Hans: Llama 4 Maverick 17B
+  en_US: Llama 4 Maverick 17B 128E Instruct FP8
+  zh_Hans: Llama 4 Maverick 17B 128E Instruct FP8
 model_type: llm
 features:
   - agent-thought
-  - tool-call
-  - stream-tool-call
   - vision
 model_properties:
   mode: chat

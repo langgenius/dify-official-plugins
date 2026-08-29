@@ -1,0 +1,34 @@
+model: google/gemma-4-31B-it-turbo
+label:
+  en_US: gemma 4 31B it turbo
+  zh_Hans: gemma 4 31B it turbo
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 262144
+    default: 4096
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.09'
+  output: '0.34'
+  unit: '0.000001'
+  currency: USD

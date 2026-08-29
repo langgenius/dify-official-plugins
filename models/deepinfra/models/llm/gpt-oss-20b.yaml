@@ -1,7 +1,7 @@
 model: openai/gpt-oss-20b
 label:
-  en_US: GPT-OSS 20B
-  zh_Hans: GPT-OSS 20B
+  en_US: gpt oss 20b
+  zh_Hans: gpt oss 20b
 model_type: llm
 features:
   - agent-thought

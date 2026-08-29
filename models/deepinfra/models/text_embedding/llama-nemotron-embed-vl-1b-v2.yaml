@@ -1,0 +1,12 @@
+model: nvidia/llama-nemotron-embed-vl-1b-v2
+label:
+  en_US: llama nemotron embed vl 1b v2
+  zh_Hans: llama nemotron embed vl 1b v2
+model_type: text-embedding
+model_properties:
+  context_size: 10240
+  max_chunks: 32
+pricing:
+  input: '0.01'
+  unit: '0.000001'
+  currency: USD

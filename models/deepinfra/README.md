@@ -5,14 +5,15 @@ API at a low per-token price, and can be used directly from Dify.
 
 ## Features
 - Provides `llm` and `text-embedding` models in Dify.
-- Includes 26 predefined LLMs such as `openai/gpt-oss-120b`, `deepseek-ai/DeepSeek-V4-Flash-0731`,
-  `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `Qwen/Qwen3-235B-A22B-Instruct-2507` and
-  `zai-org/GLM-5.3-Flash`, including vision-capable models.
-- Includes 8 predefined embedding models such as `BAAI/bge-m3`, `Qwen/Qwen3-Embedding-8B`
-  and `intfloat/multilingual-e5-large`.
-- Supports predefined model and customizable model configuration. DeepInfra hosts far
-  more models than are predefined here — any other model ID can be added through
-  **customizable model** configuration.
+- Ships the full DeepInfra catalog: **106 chat models** and **24 embedding models**,
+  so every model DeepInfra advertises is selectable without typing an ID.
+- Capability flags are measured, not guessed: `context_size` and pricing come from
+  DeepInfra's `/v1/openai/models` metadata, `vision` from its model tags, and
+  `tool-call` from probing every chat model against the live API — 10 of the 106 do
+  not support tool calling and are marked accordingly.
+- Supports predefined model and customizable model configuration. Models DeepInfra
+  adds after this release can be used immediately through **customizable model**
+  configuration.
 
 ## Setup
 1. Install this plugin from the Dify Marketplace.
@@ -24,10 +25,15 @@ API at a low per-token price, and can be used directly from Dify.
 Select **DeepInfra** as the model provider in Dify, choose an available model, and use
 it in applications, agents, or workflows.
 
-To use a model that is not predefined, choose **Add Model**, enter the DeepInfra model
-ID exactly as it appears on the [DeepInfra models page](https://deepinfra.com/models)
-(for example `Qwen/Qwen3-Next-80B-A3B-Instruct`), and set the context size and
+To use a model released after this plugin version, choose **Add Model**, enter the
+DeepInfra model ID exactly as it appears on the
+[DeepInfra models page](https://deepinfra.com/models), and set the context size and
 capability flags to match that model.
+
+### Reasoning models
+Several DeepInfra models emit `reasoning_content` before their answer. With a small
+`max_tokens` budget the whole allowance can be spent reasoning, leaving the visible
+response empty. Give reasoning models at least ~1000 max tokens.
 
 ## Privacy
 This plugin sends the inputs required by the selected operation to DeepInfra. Review

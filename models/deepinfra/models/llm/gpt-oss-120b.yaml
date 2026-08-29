@@ -1,7 +1,7 @@
 model: openai/gpt-oss-120b
 label:
-  en_US: GPT-OSS 120B
-  zh_Hans: GPT-OSS 120B
+  en_US: gpt oss 120b
+  zh_Hans: gpt oss 120b
 model_type: llm
 features:
   - agent-thought

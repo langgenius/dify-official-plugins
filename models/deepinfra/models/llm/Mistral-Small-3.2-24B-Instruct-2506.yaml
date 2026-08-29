@@ -1,7 +1,7 @@
 model: mistralai/Mistral-Small-3.2-24B-Instruct-2506
 label:
-  en_US: Mistral Small 3.2 24B
-  zh_Hans: Mistral Small 3.2 24B
+  en_US: Mistral Small 3.2 24B Instruct 2506
+  zh_Hans: Mistral Small 3.2 24B Instruct 2506
 model_type: llm
 features:
   - agent-thought

@@ -1,0 +1,31 @@
+model: Sao10K/L3-8B-Lunaris-v1-Turbo
+label:
+  en_US: L3 8B Lunaris v1 Turbo
+  zh_Hans: L3 8B Lunaris v1 Turbo
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 8192
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 8192
+    default: 4096
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.04'
+  output: '0.05'
+  unit: '0.000001'
+  currency: USD

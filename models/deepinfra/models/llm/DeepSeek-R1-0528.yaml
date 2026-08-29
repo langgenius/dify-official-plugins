@@ -1,10 +1,12 @@
 model: deepseek-ai/DeepSeek-R1-0528
 label:
-  en_US: DeepSeek R1 (0528)
-  zh_Hans: DeepSeek R1 (0528)
+  en_US: DeepSeek R1 0528
+  zh_Hans: DeepSeek R1 0528
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 163840

@@ -1,7 +1,7 @@
 model: mistralai/Mistral-Nemo-Instruct-2407
 label:
-  en_US: Mistral Nemo Instruct
-  zh_Hans: Mistral Nemo Instruct
+  en_US: Mistral Nemo Instruct 2407
+  zh_Hans: Mistral Nemo Instruct 2407
 model_type: llm
 features:
   - agent-thought

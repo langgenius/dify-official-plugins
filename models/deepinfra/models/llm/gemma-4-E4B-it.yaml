@@ -1,10 +1,12 @@
 model: google/gemma-4-E4B-it
 label:
-  en_US: Gemma 4 E4B IT
-  zh_Hans: Gemma 4 E4B IT
+  en_US: gemma 4 E4B it
+  zh_Hans: gemma 4 E4B it
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 131072

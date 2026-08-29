@@ -1,7 +1,7 @@
 model: meta-llama/Llama-4-Scout-17B-16E-Instruct
 label:
-  en_US: Llama 4 Scout 17B
-  zh_Hans: Llama 4 Scout 17B
+  en_US: Llama 4 Scout 17B 16E Instruct
+  zh_Hans: Llama 4 Scout 17B 16E Instruct
 model_type: llm
 features:
   - agent-thought

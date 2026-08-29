@@ -1,0 +1,12 @@
+model: BAAI/bge-en-icl
+label:
+  en_US: bge en icl
+  zh_Hans: bge en icl
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+  max_chunks: 32
+pricing:
+  input: '0.01'
+  unit: '0.000001'
+  currency: USD

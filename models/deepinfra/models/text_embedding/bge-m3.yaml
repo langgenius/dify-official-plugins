@@ -1,7 +1,7 @@
 model: BAAI/bge-m3
 label:
-  en_US: BGE M3
-  zh_Hans: BGE M3
+  en_US: bge m3
+  zh_Hans: bge m3
 model_type: text-embedding
 model_properties:
   context_size: 8192
