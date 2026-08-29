@@ -1,0 +1,33 @@
+model: openai/gpt-oss-120b
+label:
+  en_US: GPT-OSS 120B
+  zh_Hans: GPT-OSS 120B
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 131072
+    default: 4096
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.037'
+  output: '0.17'
+  unit: '0.000001'
+  currency: USD

@@ -1,0 +1,12 @@
+model: BAAI/bge-m3
+label:
+  en_US: BGE M3
+  zh_Hans: BGE M3
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+  max_chunks: 32
+pricing:
+  input: '0.01'
+  unit: '0.000001'
+  currency: USD

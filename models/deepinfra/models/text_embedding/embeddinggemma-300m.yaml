@@ -1,0 +1,12 @@
+model: google/embeddinggemma-300m
+label:
+  en_US: EmbeddingGemma 300M
+  zh_Hans: EmbeddingGemma 300M
+model_type: text-embedding
+model_properties:
+  context_size: 2048
+  max_chunks: 32
+pricing:
+  input: '0.002'
+  unit: '0.000001'
+  currency: USD

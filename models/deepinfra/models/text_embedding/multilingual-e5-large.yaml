@@ -1,0 +1,12 @@
+model: intfloat/multilingual-e5-large
+label:
+  en_US: Multilingual E5 Large
+  zh_Hans: Multilingual E5 Large
+model_type: text-embedding
+model_properties:
+  context_size: 512
+  max_chunks: 32
+pricing:
+  input: '0.01'
+  unit: '0.000001'
+  currency: USD

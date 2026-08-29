@@ -1,0 +1,12 @@
+model: Qwen/Qwen3-Embedding-4B
+label:
+  en_US: Qwen3 Embedding 4B
+  zh_Hans: Qwen3 Embedding 4B
+model_type: text-embedding
+model_properties:
+  context_size: 32768
+  max_chunks: 32
+pricing:
+  input: '0.02'
+  unit: '0.000001'
+  currency: USD

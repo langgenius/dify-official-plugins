@@ -1,0 +1,32 @@
+model: google/gemma-3-27b-it
+label:
+  en_US: Gemma 3 27B IT
+  zh_Hans: Gemma 3 27B IT
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 131072
+    default: 4096
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.08'
+  output: '0.16'
+  unit: '0.000001'
+  currency: USD
