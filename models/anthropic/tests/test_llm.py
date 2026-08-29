@@ -84,6 +84,46 @@ def test_calc_adjusted_prompt_tokens() -> None:
     )
 
 
+def test_to_credential_kwargs_omits_workspace_header_by_default() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test"}
+    )
+    assert kwargs["api_key"] == "sk-test"
+    assert "default_headers" not in kwargs
+
+
+def test_to_credential_kwargs_sends_workspace_id_header() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {
+            "anthropic_api_key": "sk-test",
+            "anthropic_workspace_id": "  ws-abc  ",
+        }
+    )
+    assert kwargs["default_headers"] == {"anthropic-workspace-id": "ws-abc"}
+
+
+def test_to_credential_kwargs_ignores_blank_workspace_id() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_workspace_id": "   "}
+    )
+    assert "default_headers" not in kwargs
+
+
+def test_to_credential_kwargs_merges_workspace_id_with_proxy_user_agent() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {
+            "anthropic_api_key": "sk-test",
+            "anthropic_api_url": "https://proxy.example/v1",
+            "anthropic_workspace_id": "ws-abc",
+        }
+    )
+    assert kwargs["base_url"] == "https://proxy.example/v1"
+    assert kwargs["default_headers"] == {
+        "User-Agent": "python-httpx",
+        "anthropic-workspace-id": "ws-abc",
+    }
+
+
 def test_validate_credentials_probes_and_wraps_error() -> None:
     model = AnthropicLargeLanguageModel()
     credentials = {"anthropic_api_key": "sk-test"}

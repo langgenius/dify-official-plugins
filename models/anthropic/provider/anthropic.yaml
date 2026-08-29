@@ -48,6 +48,25 @@ model_credential_schema:
     type: text-input
     variable: anthropic_api_url
   - label:
+      en_US: Workspace ID
+      zh_Hans: 工作区 ID
+    placeholder:
+      en_US: Enter your Anthropic workspace ID
+      zh_Hans: 在此输入您的 Anthropic 工作区 ID
+    help:
+      text:
+        en_US: >-
+          Required for identity-linked and service-account API keys created on
+          platform.claude.com. Sent as the anthropic-workspace-id request
+          header. Leave blank for legacy API keys from console.anthropic.com.
+        zh_Hans: >-
+          在 platform.claude.com 上创建的身份关联密钥或服务账号密钥需要填写。
+          将作为 anthropic-workspace-id 请求头发送。console.anthropic.com
+          的旧版 API Key 可留空。
+    required: false
+    type: text-input
+    variable: anthropic_workspace_id
+  - label:
       en_US: Enable request metadata
       zh_Hans: 启用请求元数据
     help:
@@ -96,6 +115,25 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: anthropic_api_url
+  - label:
+      en_US: Workspace ID
+      zh_Hans: 工作区 ID
+    placeholder:
+      en_US: Enter your Anthropic workspace ID
+      zh_Hans: 在此输入您的 Anthropic 工作区 ID
+    help:
+      text:
+        en_US: >-
+          Required for identity-linked and service-account API keys created on
+          platform.claude.com. Sent as the anthropic-workspace-id request
+          header. Leave blank for legacy API keys from console.anthropic.com.
+        zh_Hans: >-
+          在 platform.claude.com 上创建的身份关联密钥或服务账号密钥需要填写。
+          将作为 anthropic-workspace-id 请求头发送。console.anthropic.com
+          的旧版 API Key 可留空。
+    required: false
+    type: text-input
+    variable: anthropic_workspace_id
   - label:
       en_US: Enable request metadata
       zh_Hans: 启用请求元数据
