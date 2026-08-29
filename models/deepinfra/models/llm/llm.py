@@ -240,7 +240,18 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
             # Reasoning models stream their thinking in reasoning_content, leaving content empty
             # for most of the response. Surfacing it as <think> blocks keeps the user from staring
             # at a silent gap while being billed for the tokens.
-            delta_dict = delta.delta.model_dump() if hasattr(delta.delta, "model_dump") else {}
+            # model_dump() carries reasoning_content through model_extra, since the SDK does not
+            # declare it. The fallback reads the attributes directly rather than defaulting to an
+            # empty dict, which would silently discard the whole response instead of just the
+            # reasoning.
+            if hasattr(delta.delta, "model_dump"):
+                delta_dict = delta.delta.model_dump()
+            else:
+                delta_dict = {
+                    "content": getattr(delta.delta, "content", None),
+                    "reasoning_content": getattr(delta.delta, "reasoning_content", None),
+                    "tool_calls": getattr(delta.delta, "tool_calls", None),
+                }
             content, is_reasoning = self._wrap_thinking_by_reasoning_content(delta_dict, is_reasoning)
 
             for delta_tool_call in delta.delta.tool_calls or []:
