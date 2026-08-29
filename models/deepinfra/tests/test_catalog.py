@@ -69,9 +69,11 @@ def test_llm_features_are_known() -> None:
 def test_models_without_tool_support_do_not_advertise_it() -> None:
     """The whole point of probing: never claim a capability the API rejects."""
     _, schemas = _catalog("llm")
+    # Assert presence rather than skipping: a renamed or dropped model must fail loudly, or the
+    # guard quietly stops covering anything.
+    missing = NO_TOOL_CALL - set(schemas)
+    assert not missing, f"probed models are no longer in the catalog: {sorted(missing)}"
     for model in NO_TOOL_CALL:
-        if model not in schemas:
-            continue
         features = set(schemas[model].get("features", []))
         assert "tool-call" not in features, f"{model} advertises tool-call but DeepInfra rejects it"
         assert "stream-tool-call" not in features, model

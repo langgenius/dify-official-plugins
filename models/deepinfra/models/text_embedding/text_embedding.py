@@ -3,7 +3,15 @@ from collections.abc import Mapping
 from typing import Optional, Union
 from dify_plugin import TextEmbeddingModel
 import numpy as np
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    EmbeddingInputType,
+    FetchFrom,
+    I18nObject,
+    ModelPropertyKey,
+    ModelType,
+    PriceType,
+)
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from openai import OpenAI
@@ -128,3 +136,20 @@ class DeepInfraTextEmbeddingModel(CommonDeepInfra, TextEmbeddingModel):
             latency=time.perf_counter() - self.started_at,
         )
         return usage
+
+    def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity:
+        """
+        The provider advertises customizable-model for text-embedding, so this has to exist:
+        without it the host receives no schema for a custom embedding model, and the model saves
+        successfully but then never appears in any selector.
+        """
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_US=model, zh_Hans=model),
+            model_type=ModelType.TEXT_EMBEDDING,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 8192)),
+                ModelPropertyKey.MAX_CHUNKS: 32,
+            },
+        )

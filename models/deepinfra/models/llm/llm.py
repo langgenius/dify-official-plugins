@@ -23,7 +23,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeServerUnavailableError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI, Stream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk, ChatCompletionMessageToolCall
@@ -139,6 +139,11 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
+        if stream:
+            # Without this the response carries no usage, and every streamed call falls back to
+            # counting with a GPT-2 tokenizer -- which is the wrong vocabulary for every model
+            # DeepInfra serves.
+            extra_model_kwargs["stream_options"] = {"include_usage": True}
         response = client.chat.completions.create(
             messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],
             model=model,
@@ -168,6 +173,8 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
         :param tools: tools for tool calling
         :return: llm response
         """
+        if not response.choices:
+            raise InvokeServerUnavailableError("Empty response from DeepInfra")
         assistant_message = response.choices[0].message
         tool_calls = self._extract_response_tool_calls(assistant_message.tool_calls or [])
         assistant_prompt_message = AssistantPromptMessage(content=assistant_message.content, tool_calls=tool_calls)
@@ -217,14 +224,24 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
             prompt_messages=prompt_messages,
             delta=LLMResultChunkDelta(index=0, message=AssistantPromptMessage(content="")),
         )
+        is_reasoning = False
         for chunk in response:
+            # Usage is captured before the choices guard: DeepInfra can attach it to the finish
+            # chunk as well as to a trailing choices-empty one, and reading it only in the latter
+            # branch silently falls back to the GPT-2 estimate for every streamed call.
+            if chunk.usage:
+                prompt_tokens = chunk.usage.prompt_tokens
+                completion_tokens = chunk.usage.completion_tokens
             if len(chunk.choices) == 0:
-                if chunk.usage:
-                    prompt_tokens = chunk.usage.prompt_tokens
-                    completion_tokens = chunk.usage.completion_tokens
                 continue
             delta = chunk.choices[0]
             has_finish_reason = delta.finish_reason is not None
+
+            # Reasoning models stream their thinking in reasoning_content, leaving content empty
+            # for most of the response. Surfacing it as <think> blocks keeps the user from staring
+            # at a silent gap while being billed for the tokens.
+            delta_dict = delta.delta.model_dump() if hasattr(delta.delta, "model_dump") else {}
+            content, is_reasoning = self._wrap_thinking_by_reasoning_content(delta_dict, is_reasoning)
 
             for delta_tool_call in delta.delta.tool_calls or []:
                 slot = tool_call_buffer.setdefault(
@@ -240,24 +257,15 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
                     if delta_tool_call.function.arguments:
                         slot["arguments"] += delta_tool_call.function.arguments
 
-            if not has_finish_reason and (delta.delta.content is None or delta.delta.content == ""):
+            if not has_finish_reason and not content:
                 continue
 
             tool_calls = []
             if has_finish_reason and tool_call_buffer:
-                tool_calls = [
-                    AssistantPromptMessage.ToolCall(
-                        id=slot["id"],
-                        type=slot["type"],
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=slot["name"], arguments=slot["arguments"]
-                        ),
-                    )
-                    for _, slot in sorted(tool_call_buffer.items())
-                ]
+                tool_calls = self._drain_tool_call_buffer(tool_call_buffer)
                 final_tool_calls.extend(tool_calls)
-            assistant_prompt_message = AssistantPromptMessage(content=delta.delta.content or "", tool_calls=tool_calls)
-            full_assistant_content += delta.delta.content or ""
+            assistant_prompt_message = AssistantPromptMessage(content=content, tool_calls=tool_calls)
+            full_assistant_content += content
             if has_finish_reason:
                 final_chunk = LLMResultChunk(
                     model=chunk.model,
@@ -274,6 +282,13 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
                     system_fingerprint=chunk.system_fingerprint,
                     delta=LLMResultChunkDelta(index=delta.index, message=assistant_prompt_message),
                 )
+        # A stream that ends without a finish_reason chunk would otherwise drop a fully
+        # reassembled tool call on the floor, with no error anywhere.
+        if tool_call_buffer and not final_tool_calls:
+            leftover = self._drain_tool_call_buffer(tool_call_buffer)
+            final_tool_calls.extend(leftover)
+            final_chunk.delta.message.tool_calls = leftover
+
         if not prompt_tokens:
             prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
         if not completion_tokens:
@@ -284,6 +299,20 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         final_chunk.delta.usage = usage
         yield final_chunk
+
+    @staticmethod
+    def _drain_tool_call_buffer(buffer: dict[int, dict]) -> list[AssistantPromptMessage.ToolCall]:
+        """Turn accumulated streaming fragments into tool calls, ordered by their index."""
+        return [
+            AssistantPromptMessage.ToolCall(
+                id=slot["id"],
+                type=slot["type"],
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name=slot["name"], arguments=slot["arguments"]
+                ),
+            )
+            for _, slot in sorted(buffer.items())
+        ]
 
     def _extract_response_tool_calls(
         self, response_tool_calls: list[ChatCompletionMessageToolCall | ChoiceDeltaToolCall]
@@ -373,7 +402,10 @@ class DeepInfraLargeLanguageModel(CommonDeepInfra, LargeLanguageModel):
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
-                if isinstance(value, list):
+                # tool_calls is itself a list, so it has to be recognised before the generic list
+                # flattening below -- otherwise it is collapsed to "" and every tool call counts
+                # as zero tokens.
+                if key != "tool_calls" and isinstance(value, list):
                     text = ""
                     for item in value:
                         if isinstance(item, dict) and item["type"] == "text":
