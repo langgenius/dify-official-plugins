@@ -6,8 +6,8 @@
 - openai/gpt-oss-20b
 - openai/gpt-oss-120b
 - deepseek-ai/DeepSeek-V3.2
-- deepseek-ai/DeepSeek-V4-Flash
-- deepseek-ai/DeepSeek-V4-Pro
+- deepseek-ai/DeepSeek-V4-Flash-0731
+- deepseek-ai/DeepSeek-V4-Pro-0813
 - deepseek-ai/DeepSeek-R1-0528
 - Qwen/Qwen3-32B
 - Qwen/Qwen3-235B-A22B-Instruct-2507
@@ -21,5 +21,6 @@
 - zai-org/GLM-5.2
 - zai-org/GLM-5.3-Flash
 - MiniMaxAI/MiniMax-M2.7
+- MiniMaxAI/MiniMax-M3
 - moonshotai/Kimi-K2.5
 - nvidia/Nemotron-3-Nano-30B-A3B

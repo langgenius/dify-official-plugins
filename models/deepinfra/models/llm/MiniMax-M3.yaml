@@ -1,15 +1,16 @@
-model: deepseek-ai/DeepSeek-V4-Flash
+model: MiniMaxAI/MiniMax-M3
 label:
-  en_US: DeepSeek V4 Flash
-  zh_Hans: DeepSeek V4 Flash
+  en_US: MiniMax M3
+  zh_Hans: MiniMax M3
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
+  - vision
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 524288
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -18,7 +19,7 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     min: 1
-    max: 1048576
+    max: 524288
     default: 4096
   - name: frequency_penalty
     use_template: frequency_penalty
@@ -27,7 +28,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.09'
-  output: '0.18'
+  input: '0.28'
+  output: '1.1'
   unit: '0.000001'
   currency: USD

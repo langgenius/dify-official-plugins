@@ -1,7 +1,7 @@
-model: deepseek-ai/DeepSeek-V4-Pro
+model: deepseek-ai/DeepSeek-V4-Flash-0731
 label:
-  en_US: DeepSeek V4 Pro
-  zh_Hans: DeepSeek V4 Pro
+  en_US: DeepSeek V4 Flash 0731
+  zh_Hans: DeepSeek V4 Flash 0731
 model_type: llm
 features:
   - agent-thought
@@ -27,7 +27,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '1.3'
-  output: '2.6'
+  input: '0.08'
+  output: '0.18'
   unit: '0.000001'
   currency: USD
