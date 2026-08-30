@@ -1,0 +1,38 @@
+provider: gandr
+label:
+  en_US: Gandr
+description:
+  en_US: Gandr text to speech models.
+  zh_Hans: Gandr 文本转语音模型。
+icon_small:
+  en_US: icon.svg
+icon_large:
+  en_US: icon.svg
+background: "#E5E7EB"
+help:
+  title:
+    en_US: Get your API key from gandr.ai
+  url:
+    en_US: https://gandr.ai
+supported_model_types:
+  - tts
+configurate_methods:
+  - predefined-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: gnd_...
+models:
+  tts:
+    predefined:
+      - "models/tts/*.yaml"
+extra:
+  python:
+    provider_source: provider/gandr.py
+    model_sources:
+      - "models/tts/tts.py"

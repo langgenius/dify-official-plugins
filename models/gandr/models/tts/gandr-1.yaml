@@ -1,0 +1,26 @@
+model: gandr-1
+model_type: tts
+model_properties:
+  default_voice: 'gandr-ava'
+  voices:
+    - mode: 'gandr-ava'
+      name: 'Ava'
+      language: ['en-US']
+    - mode: 'gandr-dane'
+      name: 'Dane'
+      language: ['en-US']
+    - mode: 'gandr-jenny'
+      name: 'Jenny'
+      language: ['en-US']
+    - mode: 'gandr-leo'
+      name: 'Leo'
+      language: ['en-US']
+    - mode: 'gandr-lewis'
+      name: 'Lewis'
+      language: ['en-US']
+    - mode: 'gandr-mia'
+      name: 'Mia'
+      language: ['en-US']
+  word_limit: 2000
+  audio_type: 'mp3'
+  max_workers: 5
