@@ -369,9 +369,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # The base SDK implementation only handles TEXT and IMAGE content for user
         # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
         # OpenAI-compatible request shape carries the additional modalities. The
-        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
-        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
-        #     which providers like Vertex Gemini convert into inline_data.
+        # encoding follows what each provider accepts:
+        #   - VIDEO: video_url with a data URI (mime_type carried in the URI).
+        #     Providers that define the video_url content part (vLLM, LiteLLM
+        #     hosted_vllm, ...) decode the video correctly. #3090 used image_url
+        #     with a video data URI for Vertex Gemini via LiteLLM; that path
+        #     silently fails on backends that don't have an image decoder for
+        #     the video MIME (vLLM rejects with "Failed to load image"). Sending
+        #     video_url with the same data URI matches what the vLLM and
+        #     LiteLLM-vLLM providers expect.
+        #   - AUDIO: image_url with a data URI (mime_type carried in the URI).
+        #     Some providers accept input_audio instead, but image_url with
+        #     the audio MIME is the conservative default that Vertex Gemini
+        #     and others convert to inline_data.
         #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
         #     to the data URI.
         if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
@@ -394,8 +404,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     video_c: VideoPromptMessageContent = c
                     sub_messages.append(
                         {
-                            "type": "image_url",
-                            "image_url": {"url": video_c.data},
+                            "type": "video_url",
+                            "video_url": {"url": video_c.data},
                         }
                     )
                 elif c.type == PromptMessageContentType.AUDIO:
