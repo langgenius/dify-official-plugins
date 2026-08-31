@@ -1,0 +1,27 @@
+# DO NOT EDIT — generated from truth/ by scripts/gen.mjs
+# truth-sha: 540d5ca39fd40903
+# Edit truth/service.json or truth/tools.json instead, then run: node scripts/gen.mjs
+
+identity:
+  name: purchase_options
+  author: changchinfu
+  label:
+    en_US: "Purchase options"
+  icon: icon.svg
+description:
+  human:
+    en_US: "FREE. Ask how to pay for a listed endpoint and get every channel with its REAL status - including the ones that are wired but not open yet. Three channels exist: x402 micropayment (for an agent with a funded USDC wallet on Base), a stateles"
+  llm: "FREE. Ask how to pay for a listed endpoint and get every channel with its REAL status - including the ones that are wired but not open yet. Three channels exist: x402 micropayment (for an agent with a funded USDC wallet on Base), a stateless subscription Bearer token (for a person or team - no wallet, no private key, no account), and a card rail. This tool takes no payment and holds no key; it only tells you which doors exist and which are open today."
+parameters:
+  - name: path
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: "path"
+    human_description:
+      en_US: "A listed endpoint path (e.g. \"/gauge/grid-reliability-region\") to get its price alongside the channels. Omit it to get the channel list on its own. The full list of legal paths is the free /manifest?all=1."
+    llm_description: "A listed endpoint path (e.g. \"/gauge/grid-reliability-region\") to get its price alongside the channels. Omit it to get the channel list on its own. The full list of legal paths is the free /manifest?all=1."
+extra:
+  python:
+    source: tools/purchase_options.py

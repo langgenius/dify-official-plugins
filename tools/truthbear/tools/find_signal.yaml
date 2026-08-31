@@ -1,0 +1,54 @@
+# DO NOT EDIT — generated from truth/ by scripts/gen.mjs
+# truth-sha: 540d5ca39fd40903
+# Edit truth/service.json or truth/tools.json instead, then run: node scripts/gen.mjs
+
+identity:
+  name: find_signal
+  author: changchinfu
+  label:
+    en_US: "Find coverage and freshness"
+  icon: icon.svg
+description:
+  human:
+    en_US: "FREE coverage + freshness manifest: which signal_id lines exist, how many entities each covers, and fresh/recent/stale counts - so you can check \"is my entity covered and how fresh\" BEFORE paying. Optional filters: industry, signal_id, enti"
+  llm: "FREE coverage + freshness manifest: which signal_id lines exist, how many entities each covers, and fresh/recent/stale counts - so you can check \"is my entity covered and how fresh\" BEFORE paying. Optional filters: industry, signal_id, entity."
+parameters:
+  - name: industry
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: "industry"
+    human_description:
+      en_US: "restrict to one domain, e.g. hydrology, agriculture, energy"
+    llm_description: "restrict to one domain, e.g. hydrology, agriculture, energy"
+  - name: signal_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: "signal_id"
+    human_description:
+      en_US: "e.g. hydrology.river-level"
+    llm_description: "e.g. hydrology.river-level"
+  - name: entity
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: "entity"
+    human_description:
+      en_US: "object id, e.g. a USGS site id"
+    llm_description: "object id, e.g. a USGS site id"
+  - name: full
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: "full"
+    human_description:
+      en_US: "true = per-entity detail (larger); default compact summary"
+    llm_description: "true = per-entity detail (larger); default compact summary"
+extra:
+  python:
+    source: tools/find_signal.py

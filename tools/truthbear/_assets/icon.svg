@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Truth Bear placeholder mark">
+  <!-- PLACEHOLDER - replace with the official brand mark before submitting to the Marketplace. -->
+  <rect width="64" height="64" rx="14" fill="#111827"/>
+  <path d="M32 12 L50 20 v14 c0 10-7.5 16.5-18 20-10.5-3.5-18-10-18-20V20z" fill="none" stroke="#f5f5f4" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M23 33 l6.5 7 L42 26" fill="none" stroke="#f5f5f4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,23 @@
+# DO NOT EDIT — generated from truth/ by scripts/gen.mjs
+# truth-sha: 540d5ca39fd40903
+# Edit truth/service.json or truth/tools.json instead, then run: node scripts/gen.mjs
+
+identity:
+  author: changchinfu
+  name: truthbear
+  label:
+    en_US: "Truth Bear"
+  description:
+    en_US: "Truth Bear returns official-source records for AI agents: every record carries the official source URL, a record_hash you can recompute offline, a freshness stamp, and a did:key signature."
+  icon: icon.svg
+  tags:
+    - utilities
+    - search
+tools:
+  - tools/verify_citation.yaml
+  - tools/find_signal.yaml
+  - tools/get_official_record.yaml
+  - tools/purchase_options.yaml
+extra:
+  python:
+    source: provider/truthbear.py

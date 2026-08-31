@@ -1,0 +1,27 @@
+# DO NOT EDIT — generated from truth/ by scripts/gen.mjs
+# truth-sha: 540d5ca39fd40903
+# Edit truth/service.json or truth/tools.json instead, then run: node scripts/gen.mjs
+
+identity:
+  name: verify_citation
+  author: changchinfu
+  label:
+    en_US: "Verify a record_hash"
+  icon: icon.svg
+description:
+  human:
+    en_US: "FREE. Given a record_hash from any Truth Bear record, look it up and recompute the canonical hash server-side, returning whether it is a genuine Truth Bear official record plus a plain-language reverse lookup of what exactly that hash attes"
+  llm: "FREE. Given a record_hash from any Truth Bear record, look it up and recompute the canonical hash server-side, returning whether it is a genuine Truth Bear official record plus a plain-language reverse lookup of what exactly that hash attests. Use this to check a citation you were handed by another agent or document BEFORE relying on it. No payment, no API key."
+parameters:
+  - name: record_hash
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: "record_hash"
+    human_description:
+      en_US: "sha256:<64 hex>, or a >=8-hex prefix as posted publicly"
+    llm_description: "sha256:<64 hex>, or a >=8-hex prefix as posted publicly"
+extra:
+  python:
+    source: tools/verify_citation.py
