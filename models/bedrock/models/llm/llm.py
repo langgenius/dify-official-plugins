@@ -238,9 +238,20 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     )
                 else:
                     raise InvokeError(f"Could not get model information for inference profile {inference_profile_id}")
-            except Exception as e:
-                logger.error(f"Failed to invoke inference profile: {str(e)}")
-                raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
+            except (ClientError, KeyError) as ex:
+                # Specific AWS-boto3 client errors and any unexpected
+                # KeyError are real bugs the operator should see — surface
+                # them as InvokeError without hiding the message.
+                logger.exception("Failed to invoke inference profile")
+                raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(ex)}")
+            except Exception as ex:
+                # Unknown errors (NameError, TypeError, AttributeError, …)
+                # must propagate verbatim so the operator sees the real
+                # traceback instead of a misleading InvokeError. Mirrors
+                # the fix already applied to _generate in PR #3565 (issue
+                # #3564) and to _generate_with_converse in PR #3661.
+                logger.exception("Unexpected error invoking inference profile")
+                raise ex
         else:
             # Check for bedrock-mantle models (GPT-5.5, GPT-5.4) before attempting Converse API.
             # These models use a different endpoint and the OpenAI Responses API.
