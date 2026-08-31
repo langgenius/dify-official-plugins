@@ -472,6 +472,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_id = model_ids.resolve_japan_profile_id(model_id, region_name)
                 except ValueError as e:
                     raise InvokeError(str(e))
+            elif model_ids.is_claude45_model(model_id):
+                # 4.5-generation models are profile-only too (us./eu./global.,
+                # no apac.) but never got the Claude 5 treatment. See model_ids.
+                try:
+                    model_id = model_ids.resolve_claude45_profile_id(model_id, cross_region, region_name)
+                except ValueError as e:
+                    raise InvokeError(str(e))
             elif cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
                 prefer_global = (cross_region == 'global')
