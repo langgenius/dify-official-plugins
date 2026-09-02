@@ -7,10 +7,10 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "anthropic>=0.120.0",
+    "anthropic>=1.3.0",
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Anthropic request metadata.
-    "dify_plugin>=0.10.0",
+    "dify_plugin>=0.10.2",
     "httpx>=0.28.1",
     "pillow>=12.3.0",
     "requests>=2.34.2",
@@ -19,6 +19,6 @@ dependencies = [
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
-    "pyrefly>=1.0.0",
-    "pytest>=9.0.3",
+    "pyrefly>=1.2.0",
+    "pytest>=9.1.1",
 ]
