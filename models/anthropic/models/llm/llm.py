@@ -994,6 +994,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
+    @staticmethod
+    def _thinking_block_to_dict(block: Any) -> dict[str, Any]:
+        """Convert an SDK thinking / redacted_thinking block to a JSON-safe dict.
+
+        Used to round-trip the block through ``AssistantPromptMessage.opaque_body``
+        so the next tool-result turn can read it back from the persisted message
+        (see #3658). ``block`` is either an SDK Pydantic model with a
+        ``model_dump`` method, or a raw ``dict`` built in the streaming path.
+        """
+        if hasattr(block, "model_dump"):
+            return block.model_dump(exclude_none=True)
+        return dict(block)
+
+    def _build_thinking_opaque_body(
+        self,
+        thinking_blocks: list[Any],
+        redacted_thinking_blocks: list[Any],
+    ) -> dict[str, Any] | None:
+        if not thinking_blocks and not redacted_thinking_blocks:
+            return None
+        return {
+            "thinking_blocks": [self._thinking_block_to_dict(b) for b in thinking_blocks],
+            "redacted_thinking_blocks": [
+                self._thinking_block_to_dict(b) for b in redacted_thinking_blocks
+            ],
+        }
+
     def _handle_chat_generate_response(
         self,
         model: str,
@@ -1012,9 +1039,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         self.previous_thinking_blocks = []
         self.previous_redacted_thinking_blocks = []
-        
+
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
-        
+
         for content in response.content:
             if content.type == "thinking":
                 self.previous_thinking_blocks.append(content)
@@ -1033,6 +1060,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 assistant_prompt_message.tool_calls.append(tool_call)
+
+        # Round-trip the thinking / redacted_thinking blocks through
+        # ``AssistantPromptMessage.opaque_body`` so the next tool-result
+        # turn can read them back. ``self.previous_*`` is per-instance
+        # state, which the SDK's per-RPC ``ModelFactory.get_instance()``
+        # invalidates — see #3658.
+        opaque_body = self._build_thinking_opaque_body(
+            self.previous_thinking_blocks, self.previous_redacted_thinking_blocks
+        )
+        if opaque_body is not None:
+            assistant_prompt_message.opaque_body = opaque_body
         
         prompt_tokens = (
             response.usage.input_tokens if response.usage else
@@ -1315,14 +1353,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for tool_call in tool_calls:
                     if not tool_call.function.arguments:
                         tool_call.function.arguments = "{}"
+                # Round-trip thinking / redacted_thinking blocks through
+                # the final assistant message's opaque_body so they survive
+                # the SDK's per-RPC ModelFactory.get_instance() lifecycle.
+                # See #3658.
+                final_message = AssistantPromptMessage(
+                    content="", tool_calls=tool_calls
+                )
+                opaque_body = self._build_thinking_opaque_body(
+                    self.previous_thinking_blocks, self.previous_redacted_thinking_blocks
+                )
+                if opaque_body is not None:
+                    final_message.opaque_body = opaque_body
                 yield LLMResultChunk(
                     model=return_model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=index + 1,
-                        message=AssistantPromptMessage(
-                            content="", tool_calls=tool_calls
-                        ),
+                        message=final_message,
                         finish_reason=finish_reason,
                         usage=usage,
                     ),
@@ -1552,22 +1600,40 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         return result
     
     def _process_assistant_message(
-        self, 
+        self,
         message: AssistantPromptMessage,
         all_messages: Sequence[PromptMessage]
     ) -> dict:
         """Process assistant message into API format."""
         content = []
-        
+
         # Check if we need to include thinking blocks
         has_tool_messages = any(
             isinstance(msg, ToolPromptMessage) for msg in all_messages
         )
-        
+
         if has_tool_messages:
-            content.extend(self.previous_thinking_blocks)
-            content.extend(self.previous_redacted_thinking_blocks)
-        
+            # Prefer the thinking / redacted_thinking blocks round-tripped
+            # through ``message.opaque_body`` (the same pattern
+            # ``models/moonshot`` uses for ``reasoning_content``). That field
+            # IS persisted with the message and survives the SDK's
+            # per-RPC ``ModelFactory.get_instance()`` lifecycle, which
+            # ``self.previous_*`` does not. Fall back to the instance
+            # state for the legacy case where a caller hand-crafts an
+            # ``AssistantPromptMessage`` without ``opaque_body`` (e.g. tests).
+            thinking_blocks: list = []
+            redacted_thinking_blocks: list = []
+            if isinstance(message.opaque_body, dict):
+                thinking_blocks = list(message.opaque_body.get("thinking_blocks") or [])
+                redacted_thinking_blocks = list(
+                    message.opaque_body.get("redacted_thinking_blocks") or []
+                )
+            if not thinking_blocks and not redacted_thinking_blocks:
+                thinking_blocks = self.previous_thinking_blocks
+                redacted_thinking_blocks = self.previous_redacted_thinking_blocks
+            content.extend(thinking_blocks)
+            content.extend(redacted_thinking_blocks)
+
         # Dify stores assistant text and tool calls separately; Anthropic expects the next
         # user tool_result message to immediately follow the assistant tool_use turn.
         # Keep assistant prose before tool_use so no text lands between tool_use and tool_result.
@@ -1578,7 +1644,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 self._create_tool_use_content(tool_call)
                 for tool_call in message.tool_calls
             )
-        
+
         return {"role": "assistant", "content": content}
 
     def _create_assistant_text_contents(self, message: AssistantPromptMessage) -> list[dict]:
