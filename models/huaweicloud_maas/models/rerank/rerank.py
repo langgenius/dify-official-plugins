@@ -20,12 +20,10 @@ class HuaweiCloudMaasRerankModel(OAICompatRerankModel):
         user: Optional[str] = None,
     ) -> RerankResult:
         self._add_custom_parameters(credentials)
-        return super()._invoke(
-            model, credentials, query, docs, score_threshold, top_n, user
-        )
+        return super()._invoke(model, credentials, query, docs, score_threshold, top_n, user)
 
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
         credentials["endpoint_url"] = str(
-            credentials.get("endpoint_url", "https://api.modelarts-maas.com/v1")
+            credentials.get("maas_base_url", "https://api.modelarts-maas.com/v1")
         )
