@@ -209,7 +209,16 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     }
 
 
-def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
+def test_invoke_does_not_set_non_standard_user_id_field() -> None:
+    """#3765: the legacy 0.0.20 code injected a non-standard ``user_id`` field
+    into ``model_parameters`` alongside the OpenAI-standard ``user`` field
+    that the OAICompat base class already sends. The extra field changed
+    the DeepSeek upstream cache key and dropped the cache hit from 97 %
+    to ~75 % on long-instruction agents. The fix removes the redundant
+    ``user_id`` so the request shape matches what the upstream cache was
+    keyed on in 0.0.19 and earlier.
+    """
+
     captured = {}
 
     def invoke(
@@ -252,7 +261,11 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
 
     assert result == "ok"
     assert captured["model"] == "deepseek-v4-pro"
-    assert captured["parameters"]["user_id"] == "user-1"
+    # The user must still be forwarded to the base class (which sends the
+    # OpenAI-standard ``user`` field), but the plugin must NOT inject the
+    # legacy ``user_id`` field any more.
+    assert captured["user"] == "user-1"
+    assert "user_id" not in captured["parameters"]
     assert captured["parameters"]["tools"] == [
         {
             "type": "function",
@@ -265,7 +278,6 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
     ]
     assert "tool_choice" not in captured["parameters"]
     assert captured["tools"] is None
-    assert captured["user"] is None
     assert credentials["_current_model"] == "deepseek-v4-pro"
     assert credentials["endpoint_url"] == "https://api.deepseek.com"
 
