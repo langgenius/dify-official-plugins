@@ -7,6 +7,8 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 REASONING_MODELS = {
     "grok-3-mini",
     "grok-3-mini-fast",
@@ -36,6 +38,7 @@ class XAILargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         self._validate_search_parameters(model_parameters)
         if self._is_reasoning_model(model):
             stop = None
@@ -44,6 +47,7 @@ class XAILargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @staticmethod
