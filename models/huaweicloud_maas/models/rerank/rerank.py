@@ -6,8 +6,21 @@ from dify_plugin.entities.model.rerank import RerankResult
 
 class HuaweiCloudMaasRerankModel(OAICompatRerankModel):
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        try:
+            self._invoke(
+                model=model,
+                credentials=credentials,
+                query="What is the capital of France?",
+                docs=[
+                    "Paris is the capital and most populous city of France.",
+                    "Lyon is a major city in southeast France, known for its cuisine.",
+                    "The Eiffel Tower is a popular landmark located in Paris.",
+                ],
+                score_threshold=0.5,
+                top_n=2,
+            )
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _invoke(
         self,
