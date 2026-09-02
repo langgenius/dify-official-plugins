@@ -2,7 +2,9 @@
 
 ## Overview
 
-DuckDuckGo is a search engine focused on privacy. It offers search capabilities for web pages, images, and provides translation services. DuckDuckGo also features a private AI chat interface, providing users with an AI assistant that prioritizes data protection.
+DuckDuckGo is a search engine focused on privacy. This plugin offers web page search and image search.
+
+> **Note:** the AI Chat and Translate tools are deprecated and no longer functional. DuckDuckGo removed the endpoints they depended on, and the maintained search library this plugin uses (`ddgs`) provides no replacement. They remain registered so existing workflows still load, but calling them raises an explanatory error. Use an LLM node or a dedicated translation tool instead.
 
 ## Configuration
 
@@ -20,7 +22,7 @@ You can use the DuckDuckGo tool in the following application types.
 
 #### - Chatflow / Workflow applications
 
-Both Chatflow and Workflow applications support adding DuckDuckGo tool nodes, it provides four tools: ai chatbox, image search, simple search, and translation.
+Both Chatflow and Workflow applications support adding DuckDuckGo tool nodes. Two tools are functional: simple search and image search. The ai chatbox and translation tools are deprecated (see the note above).
 
 #### - Agent applications
 
