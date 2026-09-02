@@ -574,7 +574,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_drop_deprecated_sampling_parameters(self, model):
         mock_client = Mock()
@@ -649,7 +654,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_reject_assistant_prefill(self, model):
         mock_client = Mock()
@@ -838,7 +848,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_accept_scalar_system_only_prompt(self, model):
         mock_client = Mock()

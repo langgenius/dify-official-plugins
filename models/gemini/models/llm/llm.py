@@ -48,6 +48,7 @@ file_cache = FileCache()
 
 IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
 NO_SAMPLING_OR_PREFILL_MODELS = {
+    "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash-lite",

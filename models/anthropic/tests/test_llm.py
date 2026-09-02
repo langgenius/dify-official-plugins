@@ -82,6 +82,7 @@ def test_calc_adjusted_prompt_tokens() -> None:
         )
         == 1342
     )
+    assert calculate(1000, cache_read_input_tokens=109, cache_read_multiplier=0.025) == 1002
 
 
 def test_validate_credentials_probes_and_wraps_error() -> None:
@@ -111,6 +112,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
         ("CLAUDE-OPUS-4-7-latest", (True, False, False, True, False)),
         ("CLAUDE-OPUS-4-8-latest", (True, False, False, True, False)),
         ("CLAUDE-FABLE-5-latest", (True, True, False, True, False)),
+        ("CLAUDE-FABLE-5-1", (True, True, False, True, False)),
         ("CLAUDE-MYTHOS-5-latest", (True, True, False, True, False)),
         ("CLAUDE-OPUS-5-latest", (True, False, True, True, True)),
         ("CLAUDE-SONNET-4-6", (False, False, False, False, False)),
@@ -126,3 +128,10 @@ def test_model_classification(model: str, expected: tuple[bool, ...]) -> None:
         llm._supports_task_budget(model),
         llm._enforces_disabled_thinking_effort_cap(model),
     ) == expected
+
+
+def test_fable_5_1_cache_read_multiplier() -> None:
+    llm = AnthropicLargeLanguageModel()
+
+    assert llm._cache_read_multiplier("claude-fable-5-1") == 0.025
+    assert llm._cache_read_multiplier("claude-fable-5") == 0.1
