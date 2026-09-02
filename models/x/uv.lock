@@ -1099,7 +1099,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "yarl", specifier = ">=1.24.2" },
 ]
 
