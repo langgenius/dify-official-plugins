@@ -10,6 +10,8 @@ from llama_cloud_services import LlamaParse
 from llama_cloud_services.parse.utils import ResultType
 from pydantic import BaseModel
 
+from tools.file_inputs import call_sync, file_bytes, file_name, iter_files
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,9 @@ class LlamaParseTool(Tool):
         nest_asyncio.apply()
         if tool_parameters.get("files") is None:
             raise ValueError("File is required")
-        params = ToolParameters(**tool_parameters)
+        params = ToolParameters(
+            **{**tool_parameters, "files": iter_files(tool_parameters["files"])}
+        )
         files = params.files
 
         parser = LlamaParse(
@@ -51,16 +55,18 @@ class LlamaParseTool(Tool):
             ignore_errors=False,
         )
         for file in files:
-            documents = parser.load_data(
-                file_path=file.blob,
-                extra_info={"file_name": file.filename},
+            filename = file_name(file)
+            documents = call_sync(
+                parser.load_data,
+                file_path=file_bytes(file),
+                extra_info={"file_name": filename},
             )
             texts = "---".join([doc.text for doc in documents])
             yield self.create_text_message(texts)
             handled_docs = [
                 {"text": doc.text, "metadata": doc.metadata} for doc in documents
             ]
-            yield self.create_json_message({file.filename: handled_docs})
+            yield self.create_json_message({filename: handled_docs})
             yield self.create_blob_message(
                 texts.encode(),
                 meta={
