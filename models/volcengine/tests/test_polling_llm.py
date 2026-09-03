@@ -6,6 +6,7 @@ from urllib.error import URLError
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -47,6 +48,28 @@ def credentials() -> dict[str, str]:
 
 def video_credentials() -> dict[str, str]:
     return {**credentials(), "endpoint_type": "video_generation"}
+
+
+def test_ark_credentials_default_request_metadata_to_disabled() -> None:
+    parsed = ArkCredentials.model_validate(credentials())
+
+    assert parsed.enable_request_metadata == "disabled"
+
+
+@pytest.mark.parametrize("value", ["disabled", "enabled"])
+def test_ark_credentials_accept_request_metadata_setting(value: str) -> None:
+    parsed = ArkCredentials.model_validate(
+        {**credentials(), "enable_request_metadata": value}
+    )
+
+    assert parsed.enable_request_metadata == value
+
+
+def test_ark_credentials_reject_invalid_request_metadata_setting() -> None:
+    with pytest.raises(ValidationError, match="enable_request_metadata"):
+        ArkCredentials.model_validate(
+            {**credentials(), "enable_request_metadata": "invalid"}
+        )
 
 
 @dataclass(frozen=True)
@@ -251,6 +274,16 @@ def test_provider_yaml_exposes_custom_video_model() -> None:
         for field in provider["model_credential_schema"]["credential_form_schemas"]
     }
     assert {"ark_api_key", "api_endpoint_host", "endpoint_type"} <= variables
+
+    provider_variables = {
+        field["variable"]
+        for field in provider["provider_credential_schema"]["credential_form_schemas"]
+    }
+    assert {
+        "ark_api_key",
+        "api_endpoint_host",
+        "enable_request_metadata",
+    } <= provider_variables
 
 
 def test_custom_video_schema_exposes_polling_features() -> None:
