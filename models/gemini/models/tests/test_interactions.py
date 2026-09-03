@@ -9,12 +9,14 @@ handlers. Live tests (skip without ``GEMINI_API_KEY``) exercise the
 end-to-end path against the real Gemini API.
 """
 
+from decimal import Decimal
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from dify_plugin.entities.model.llm import LLMResultChunk, LLMUsage
 from dify_plugin.entities.model.message import (
     PromptMessageTool,
+    UserPromptMessage,
 )
 from dify_plugin.errors.model import InvokeError
 
@@ -296,3 +298,45 @@ class TestInteractionsResponseHandler:
                     [],
                 )
             )
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_interactions_service_tier_request_and_pricing(self, stream):
+        interaction = MagicMock()
+        interaction.output_text = "OK"
+        interaction.service_tier = "flex"
+        interaction.usage.total_input_tokens = 10
+        interaction.usage.total_output_tokens = 5
+
+        mock_client = Mock()
+        if stream:
+            event = MagicMock()
+            event.event_type = "interaction.completed"
+            event.interaction = interaction
+            mock_client.interactions.create.return_value = iter([event])
+        else:
+            mock_client.interactions.create.return_value = interaction
+
+        base_usage = _make_usage()
+        expected_prompt_price = base_usage.prompt_price * Decimal("0.5")
+        expected_completion_price = base_usage.completion_price * Decimal("0.5")
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_calc_response_usage", return_value=base_usage),
+        ):
+            result = self.llm._generate(
+                model="gemini-3.8-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={
+                    "json_schema": {"type": "object"},
+                    "grounding": True,
+                    "service_tier": "flex",
+                },
+                stream=stream,
+            )
+            usage = list(result)[-1].delta.usage if stream else result.usage
+
+        assert mock_client.interactions.create.call_args.kwargs["service_tier"] == "flex"
+        assert usage is not None
+        assert usage.prompt_price == expected_prompt_price
+        assert usage.completion_price == expected_completion_price

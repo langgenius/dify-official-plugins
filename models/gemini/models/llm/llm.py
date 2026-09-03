@@ -290,22 +290,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _apply_service_tier_pricing(
         usage: LLMUsage,
-        response: types.GenerateContentResponse,
+        response: Any,
         requested_service_tier: types.ServiceTier | str | None = None,
     ) -> LLMUsage:
-        headers = getattr(getattr(response, "sdk_http_response", None), "headers", None)
-        actual_service_tier = (
-            next(
-                (
-                    str(value).lower()
-                    for name, value in headers.items()
-                    if name.lower() == "x-gemini-service-tier"
-                ),
-                None,
+        actual_service_tier = getattr(response, "service_tier", None)
+        if isinstance(actual_service_tier, types.ServiceTier):
+            actual_service_tier = actual_service_tier.value
+        if not isinstance(actual_service_tier, str):
+            headers = getattr(
+                getattr(response, "sdk_http_response", None), "headers", None
             )
-            if isinstance(headers, Mapping)
-            else None
-        )
+            actual_service_tier = (
+                next(
+                    (
+                        str(value).lower()
+                        for name, value in headers.items()
+                        if name.lower() == "x-gemini-service-tier"
+                    ),
+                    None,
+                )
+                if isinstance(headers, Mapping)
+                else None
+            )
+        else:
+            actual_service_tier = actual_service_tier.lower()
         requested = (
             requested_service_tier.value
             if isinstance(requested_service_tier, types.ServiceTier)
@@ -1381,6 +1389,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # that ``_build_gemini_contents`` can capture ``system_instruction``
         # as a side-effect.
         config = types.GenerateContentConfig()
+        self._set_service_tier(config=config, model_parameters=model_parameters)
+        requested_service_tier = config.service_tier
         file_server_url_prefix = credentials.get("file_url") or None
         contents = self._build_gemini_contents(
             prompt_messages=prompt_messages,
@@ -1555,16 +1565,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             kwargs["response_format"] = response_format
         if gen_config:
             kwargs["generation_config"] = gen_config
+        if (
+            requested_service_tier
+            and requested_service_tier != types.ServiceTier.UNSPECIFIED
+        ):
+            kwargs["service_tier"] = requested_service_tier.value
 
         if stream:
             _response = genai_client.interactions.create(stream=True, **kwargs)
             return self._handle_interactions_stream_response(
-                model, credentials, _response, prompt_messages, genai_client
+                model,
+                credentials,
+                _response,
+                prompt_messages,
+                genai_client,
+                requested_service_tier,
             )
 
         _interaction = genai_client.interactions.create(**kwargs)
         return self._handle_interactions_response(
-            model, credentials, _interaction, prompt_messages
+            model,
+            credentials,
+            _interaction,
+            prompt_messages,
+            requested_service_tier,
         )
 
     def _handle_interactions_response(
@@ -1573,6 +1597,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         interaction: Any,
         prompt_messages: list[PromptMessage],
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> LLMResult:
         """Handle Interactions API non-streaming response."""
         text = ""
@@ -1613,6 +1638,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
         )
+        usage = self._apply_service_tier_pricing(
+            usage, interaction, requested_service_tier
+        )
 
         return LLMResult(
             model=model,
@@ -1628,6 +1656,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         response: Any,
         prompt_messages: list[PromptMessage],
         genai_client: Any = None,
+        requested_service_tier: types.ServiceTier | str | None = None,
     ) -> Generator[LLMResultChunk]:
         """Handle Interactions API streaming response (SSE events).
 
@@ -1687,6 +1716,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         credentials=dict(credentials),
                         prompt_tokens=_p_tok,
                         completion_tokens=_c_tok,
+                    )
+                    usage = self._apply_service_tier_pricing(
+                        usage, _interaction_evt, requested_service_tier
                     )
 
                     yield LLMResultChunk(
