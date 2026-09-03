@@ -993,7 +993,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model=model,
                 credentials=dict(credentials),
                 prompt_messages=[UserPromptMessage(content="ping")],
-                model_parameters={"temperature": 0, "max_tokens": 20},
+                model_parameters={"max_tokens": 20},
                 stream=False,
             )
         except Exception as ex:

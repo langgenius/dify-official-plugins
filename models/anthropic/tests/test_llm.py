@@ -109,7 +109,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
             model="claude-sonnet-4-6",
             credentials=credentials,
             prompt_messages=[UserPromptMessage(content="ping")],
-            model_parameters={"temperature": 0, "max_tokens": 20},
+            model_parameters={"max_tokens": 20},
             stream=False,
         )
 
