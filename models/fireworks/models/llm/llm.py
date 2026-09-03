@@ -102,8 +102,17 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
             client = OpenAI(**credentials_kwargs)
+            validate_extra_kwargs: dict = {}
+            from models.llm._metadata import apply_dify_metadata_if_enabled
+
+            apply_dify_metadata_if_enabled(validate_extra_kwargs, credentials)
             client.chat.completions.create(
-                messages=[{"role": "user", "content": "ping"}], model=model, temperature=0, max_tokens=10, stream=False
+                messages=[{"role": "user", "content": "ping"}],
+                model=model,
+                temperature=0,
+                max_tokens=10,
+                stream=False,
+                **validate_extra_kwargs,
             )
         except Exception as e:
             raise CredentialsValidateFailedError(str(e))
@@ -130,6 +139,9 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
+        from models.llm._metadata import apply_dify_metadata_if_enabled
+
+        apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
         response = client.chat.completions.create(
             messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],
             model=model,

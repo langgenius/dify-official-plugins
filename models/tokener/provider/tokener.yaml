@@ -6,10 +6,10 @@ description:
   en_US: OpenAI-compatible language models from Tokener.ai.
   zh_Hans: 使用 Tokener.ai 调用 OpenAI-compatible 语言模型。
 icon_small:
-  en_US: tokener.png
+  en_US: tokener.svg
 icon_large:
-  en_US: tokener.png
-background: "#111827"
+  en_US: tokener.svg
+background: "#F7F5EE"
 help:
   title:
     en_US: Get your API key from Tokener.ai

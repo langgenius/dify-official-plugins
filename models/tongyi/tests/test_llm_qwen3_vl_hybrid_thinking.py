@@ -86,7 +86,7 @@ def test_qwen38_schema_and_dashscope_parameters() -> None:
         ModelFeature.STRUCTURED_OUTPUT,
     }.issubset(schema.features or [])
     assert rules["temperature"].default == 0.6
-    assert (rules["temperature"].min, rules["temperature"].max) == (0.6, 1.99)
+    assert (rules["temperature"].min, rules["temperature"].max) == (0, 1.99)
     assert rules["max_completion_tokens"].default == 131072
     assert rules["top_p"].default is None
     assert (rules["top_p"].min, rules["top_p"].max) == (0.01, 1.0)
@@ -141,3 +141,18 @@ def test_qwen38_schema_and_dashscope_parameters() -> None:
         {"enable_thinking": False, "reasoning_effort": "xhigh"},
     )
     assert "reasoning_effort" not in kwargs
+
+    assert model._validate_and_filter_model_parameters(
+        "qwen3.8-max",
+        {"temperature": 0},
+        {},
+    ) == {"temperature": 0}
+
+    kwargs, _ = _invoke("qwen3.8-max", {"temperature": 0})
+    assert kwargs["temperature"] == 0.6
+
+    kwargs, _ = _invoke(
+        "qwen3.8-max",
+        {"temperature": 0, "enable_thinking": False},
+    )
+    assert kwargs["temperature"] == 0

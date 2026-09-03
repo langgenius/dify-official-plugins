@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: langgenius
 name: tokener
@@ -8,7 +8,7 @@ label:
 description:
   en_US: Tokener.ai model provider for Dify.
   zh_Hans: Tokener.ai 的 Dify 模型插件。
-icon: tokener.png
+icon: tokener.svg
 resource:
   memory: 268435456
   permission:
