@@ -15,6 +15,8 @@ from dify_plugin.entities.model.message import (
 )
 from requests import Response
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     _THINK_MARKER = "<!--dify-deepseek-reasoning-->"
@@ -42,6 +44,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         credentials["_current_model"] = model
         self._normalize_model_parameters(model, model_parameters)
         if user:
@@ -121,6 +124,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @classmethod

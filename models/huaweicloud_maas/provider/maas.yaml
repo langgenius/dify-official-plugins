@@ -32,7 +32,7 @@ model_credential_schema:
         zh_Hans: Base URL, e.g. https://api.modelarts-maas.com/v2 or https://{region}.modelarts-maas.com/v1/infers/{service-id}/v1
       required: true
       type: text-input
-      variable: endpoint_url
+      variable: maas_base_url
     - label:
         en_US: API Key
       placeholder:
