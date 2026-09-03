@@ -1,10 +1,10 @@
 import time
-from typing import Optional
+from typing import Optional, cast
 
 import cohere
 import numpy as np
 from cohere.core import RequestOptions
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
+from dify_plugin.entities.model import AIModelEntity, EmbeddingInputType, FetchFrom, I18nObject, ModelType, PriceType
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     TextEmbeddingResult,
@@ -135,6 +135,45 @@ class CohereTextEmbeddingModel(TextEmbeddingModel):
             request_options=RequestOptions(max_retries=0),
         )
         return response.token_strings
+
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> AIModelEntity:
+        """
+        Return schema for user-defined Cohere embedding model names.
+
+        Custom models are not listed in Knowledge Base pickers unless this method
+        synthesizes a schema for them.
+        """
+        models = self.predefined_models()
+        model_map = {predefined_model.model: predefined_model for predefined_model in models}
+        if model.startswith("embed-v4"):
+            base_model_schema = model_map.get("embed-v4.0")
+        else:
+            base_model_schema = model_map.get("embed-multilingual-v3.0")
+        if base_model_schema is None:
+            base_model_schema = next(
+                (
+                    predefined_model
+                    for predefined_model in models
+                    if predefined_model.model_type == ModelType.TEXT_EMBEDDING
+                ),
+                None,
+            )
+        if base_model_schema is None:
+            raise ValueError("No predefined Cohere text embedding model schema available")
+
+        base_model_schema = cast(AIModelEntity, base_model_schema)
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(zh_hans=model, en_us=model),
+            model_type=ModelType.TEXT_EMBEDDING,
+            features=list(base_model_schema.features or []),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties=dict(base_model_schema.model_properties.items()),
+            parameter_rules=list(base_model_schema.parameter_rules),
+            pricing=base_model_schema.pricing,
+        )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
