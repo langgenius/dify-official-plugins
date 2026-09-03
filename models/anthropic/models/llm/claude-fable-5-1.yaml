@@ -1,15 +1,14 @@
 # yaml-language-server: $schema=../../schemas/model-schema.json
 
 # References:
-# https://platform.claude.com/docs/en/about-claude/models/overview.md
-# https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5.md
-# https://platform.claude.com/docs/en/resources/overview.md
-# https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking.md
-# https://platform.claude.com/docs/en/build-with-claude/effort.md
-# https://platform.claude.com/docs/en/about-claude/models/migration-guide.md
-model: claude-fable-5
+# https://platform.claude.com/docs/en/models/fable-5-1/overview
+# https://www.anthropic.com/claude-fable-and-mythos-5-1
+# https://platform.claude.com/docs/en/release-notes/overview
+# https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
+# https://platform.claude.com/docs/en/build-with-claude/effort
+model: claude-fable-5-1
 label:
-  en_US: claude-fable-5
+  en_US: claude-fable-5-1
 model_type: llm
 features:
   - agent-thought
@@ -33,9 +32,9 @@ parameter_rules:
       - omitted
       - summarized
     help:
-      zh_Hans: Claude Fable 5 的 adaptive thinking 始终开启。此参数仅控制响应中推理内容的展示方式：omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
+      zh_Hans: Claude Fable 5.1 的 adaptive thinking 始终开启。此参数仅控制响应中推理内容的展示方式：omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
       en_US: |
-        Claude Fable 5 always runs with adaptive thinking. This only controls how thinking content is exposed in the response: `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
+        Claude Fable 5.1 always runs with adaptive thinking. This only controls how thinking content is exposed in the response: `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
   - name: effort
     label:
       zh_Hans: 推理投入等级
@@ -156,7 +155,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 
-# https://claude.com/pricing#api
+# https://platform.claude.com/docs/en/models/fable-5-1/overview#pricing
 pricing:
   input: '10.00'
   output: '50.00'
