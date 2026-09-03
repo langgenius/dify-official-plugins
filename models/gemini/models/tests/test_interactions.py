@@ -19,6 +19,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import InvokeError
+from google.genai import types
 
 from models.llm.llm import GoogleLargeLanguageModel
 
@@ -340,3 +341,137 @@ class TestInteractionsResponseHandler:
         assert usage is not None
         assert usage.prompt_price == expected_prompt_price
         assert usage.completion_price == expected_completion_price
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_interactions_thought_summaries(self, stream):
+        interaction = MagicMock()
+        interaction.output_text = "Answer"
+        interaction.service_tier = "standard"
+        interaction.usage.total_input_tokens = 10
+        interaction.usage.total_output_tokens = 5
+        thought_step = Mock(
+            type="thought",
+            summary=[Mock(type="text", text="Reasoning")],
+        )
+        interaction.steps = [thought_step]
+
+        mock_client = Mock()
+        if stream:
+            mock_client.interactions.create.return_value = iter(
+                [
+                    Mock(
+                        event_type="step.delta",
+                        delta=Mock(
+                            type="thought_summary",
+                            content=Mock(type="text", text="Reasoning"),
+                        ),
+                    ),
+                    Mock(
+                        event_type="step.delta",
+                        delta=Mock(type="text", text="Answer"),
+                    ),
+                    Mock(event_type="interaction.completed", interaction=interaction),
+                ]
+            )
+        else:
+            mock_client.interactions.create.return_value = interaction
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_calc_response_usage", return_value=_make_usage()),
+        ):
+            result = self.llm._generate(
+                model="gemini-3.8-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={
+                    "json_schema": {"type": "object"},
+                    "grounding": True,
+                    "include_thoughts": True,
+                },
+                stream=stream,
+            )
+            if stream:
+                output = "".join(
+                    part.data
+                    for chunk in result
+                    for part in chunk.delta.message.content
+                )
+            else:
+                output = "".join(part.data for part in result.message.content)
+
+        assert mock_client.interactions.create.call_args.kwargs["generation_config"][
+            "thinking_summaries"
+        ] == "auto"
+        assert output == "<think>\n\nReasoning\n\n</think>Answer"
+
+    def test_interactions_media_resolution_on_image_and_video(self):
+        interaction = MagicMock()
+        interaction.output_text = "OK"
+        interaction.steps = []
+        interaction.service_tier = "standard"
+        interaction.usage.total_input_tokens = 10
+        interaction.usage.total_output_tokens = 5
+        mock_client = Mock()
+        mock_client.interactions.create.return_value = interaction
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_bytes(data=b"image", mime_type="image/png"),
+                    types.Part.from_uri(
+                        file_uri="gs://bucket/video.mp4", mime_type="video/mp4"
+                    ),
+                ],
+            )
+        ]
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_build_gemini_contents", return_value=contents),
+            patch.object(self.llm, "_calc_response_usage", return_value=_make_usage()),
+        ):
+            self.llm._generate(
+                model="gemini-3.8-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={
+                    "json_schema": {"type": "object"},
+                    "grounding": True,
+                    "media_resolution": "Medium",
+                },
+                stream=False,
+            )
+
+        blocks = mock_client.interactions.create.call_args.kwargs["input"][0][
+            "content"
+        ]
+        assert [block["type"] for block in blocks] == ["image", "video"]
+        assert [block["resolution"] for block in blocks] == ["medium", "medium"]
+
+    def test_interactions_rejects_document_media_resolution(self):
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_bytes(data=b"pdf", mime_type="application/pdf")
+                ],
+            )
+        ]
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=Mock()),
+            patch.object(self.llm, "_build_gemini_contents", return_value=contents),
+            pytest.raises(InvokeError, match="document inputs"),
+        ):
+            self.llm._generate(
+                model="gemini-3.8-flash",
+                credentials=self.credentials,
+                prompt_messages=[UserPromptMessage(content="Hello")],
+                model_parameters={
+                    "json_schema": {"type": "object"},
+                    "grounding": True,
+                    "media_resolution": "Medium",
+                },
+                stream=False,
+            )

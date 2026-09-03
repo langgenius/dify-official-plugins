@@ -1442,16 +1442,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 "schema": schema,
             }
 
-        # Build generation_config (Interactions API subset).
-        # NOTE: top_k, thinking_budget, include_thoughts, media_resolution
-        # are NOT available in the Interactions API GenerationConfigParam.
+        # Build generation_config (Interactions API subset). Sampling fields and
+        # thinking budgets are unavailable here. Media resolution belongs on
+        # individual Interactions image/video content blocks.
         gen_config: dict = {}
-        if model_parameters.get("temperature") is not None:
-            gen_config["temperature"] = float(model_parameters["temperature"])
         if model_parameters.get("max_output_tokens") is not None:
             gen_config["max_output_tokens"] = int(model_parameters["max_output_tokens"])
-        if model_parameters.get("top_p") is not None:
-            gen_config["top_p"] = float(model_parameters["top_p"])
         if stop:
             gen_config["stop_sequences"] = stop
         if _tl := model_parameters.get("thinking_level"):
@@ -1464,6 +1460,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             gen_config["thinking_level"] = _level_map.get(
                 str(_tl).strip().lower(), "medium"
             )
+        if (include_thoughts := model_parameters.get("include_thoughts")) is not None:
+            gen_config["thinking_summaries"] = (
+                "auto" if include_thoughts else "none"
+            )
+
+        media_resolution = str(
+            model_parameters.get("media_resolution", "")
+        ).strip().lower()
+        if media_resolution not in {"low", "medium", "high"}:
+            media_resolution = ""
 
         # Handle empty contents (system-instruction-only)
         if not contents and system_instruction:
@@ -1541,6 +1547,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         _step_content.append(
                             {"type": "video", "mime_type": _fd_mime, "uri": _file_uri}
                         )
+            if media_resolution:
+                if any(part["type"] == "document" for part in _step_content):
+                    raise InvokeError(
+                        "media_resolution is not supported for document inputs "
+                        "on the Gemini Interactions API"
+                    )
+                for part in _step_content:
+                    if part["type"] in {"image", "video"}:
+                        part["resolution"] = media_resolution
             if _step_content:
                 _interactions_input.append(
                     {"type": _step_type, "content": _step_content}
@@ -1600,23 +1615,34 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         requested_service_tier: types.ServiceTier | str | None = None,
     ) -> LLMResult:
         """Handle Interactions API non-streaming response."""
-        text = ""
-        if hasattr(interaction, "output_text") and interaction.output_text:
-            text = interaction.output_text
-        elif hasattr(interaction, "steps") and interaction.steps:
-            for _step in interaction.steps:
-                if getattr(_step, "type", None) == "model_output" and getattr(
-                    _step, "content", None
-                ):
-                    for _part in _step.content:
-                        if getattr(_part, "type", None) == "text" and getattr(
-                            _part, "text", None
-                        ):
-                            text += _part.text
-
-        assistant_prompt_message = AssistantPromptMessage(
-            content=[TextPromptMessageContent(data=text)] if text else []
+        steps = getattr(interaction, "steps", None) or []
+        thought_text = "".join(
+            _part.text
+            for _step in steps
+            if getattr(_step, "type", None) == "thought"
+            for _part in (getattr(_step, "summary", None) or [])
+            if getattr(_part, "type", None) == "text"
+            and getattr(_part, "text", None)
         )
+        text = getattr(interaction, "output_text", None) or ""
+        if not text:
+            text = "".join(
+                _part.text
+                for _step in steps
+                if getattr(_step, "type", None) == "model_output"
+                for _part in (getattr(_step, "content", None) or [])
+                if getattr(_part, "type", None) == "text"
+                and getattr(_part, "text", None)
+            )
+
+        content = []
+        if thought_text:
+            content.append(
+                TextPromptMessageContent(data=f"<think>\n\n{thought_text}\n\n</think>")
+            )
+        if text:
+            content.append(TextPromptMessageContent(data=text))
+        assistant_prompt_message = AssistantPromptMessage(content=content)
 
         prompt_tokens, completion_tokens = 0, 0
         _usage_obj = getattr(interaction, "usage", None)
@@ -1665,6 +1691,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         _client_ref = genai_client
         index = -1
+        is_thinking = False
 
         try:
             for event in response:
@@ -1678,22 +1705,38 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         delta_type = getattr(delta, "type", None) or (
                             delta.get("type") if isinstance(delta, dict) else None
                         )
-                        if delta_type == "text":
+                        text_chunk = ""
+                        if delta_type == "thought_summary":
+                            summary = getattr(delta, "content", None) or (
+                                delta.get("content")
+                                if isinstance(delta, dict)
+                                else None
+                            )
+                            text_chunk = getattr(summary, "text", "") or (
+                                summary.get("text", "")
+                                if isinstance(summary, dict)
+                                else ""
+                            )
+                            if text_chunk and not is_thinking:
+                                text_chunk = f"<think>\n\n{text_chunk}"
+                                is_thinking = True
+                        elif delta_type == "text":
                             text_chunk = getattr(delta, "text", "") or (
                                 delta.get("text", "") if isinstance(delta, dict) else ""
                             )
-                            if text_chunk:
-                                index += 1
-                                message = AssistantPromptMessage(
-                                    content=[TextPromptMessageContent(data=text_chunk)]
-                                )
-                                yield LLMResultChunk(
-                                    model=model,
-                                    prompt_messages=list(prompt_messages),
-                                    delta=LLMResultChunkDelta(
-                                        index=index, message=message
-                                    ),
-                                )
+                            if text_chunk and is_thinking:
+                                text_chunk = f"\n\n</think>{text_chunk}"
+                                is_thinking = False
+                        if text_chunk:
+                            index += 1
+                            message = AssistantPromptMessage(
+                                content=[TextPromptMessageContent(data=text_chunk)]
+                            )
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=list(prompt_messages),
+                                delta=LLMResultChunkDelta(index=index, message=message),
+                            )
 
                 elif event_type in ("interaction.completed", "interaction.complete"):
                     _interaction_evt = getattr(event, "interaction", None) or event
@@ -1721,12 +1764,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         usage, _interaction_evt, requested_service_tier
                     )
 
+                    final_content = []
+                    if is_thinking:
+                        final_content.append(
+                            TextPromptMessageContent(data="\n\n</think>")
+                        )
+                        is_thinking = False
+
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=list(prompt_messages),
                         delta=LLMResultChunkDelta(
                             index=max(0, index),
-                            message=AssistantPromptMessage(content=[]),
+                            message=AssistantPromptMessage(content=final_content),
                             finish_reason="stop",
                             usage=usage,
                         ),
