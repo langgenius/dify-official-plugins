@@ -1,0 +1,70 @@
+model: qwen3.7-flash
+label:
+  en_US: Qwen3.7 Flash
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 991000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 0.3
+    min: 0.0
+    max: 2.0
+  - name: max_completion_tokens
+    use_template: max_tokens
+    type: int
+    default: 8192
+    min: 1
+    max: 64000
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 0.8
+    min: 0.1
+    max: 0.9
+  - name: top_k
+    type: int
+    min: 0
+    max: 99
+  - name: seed
+    type: int
+    required: false
+    default: 1234
+  - name: repetition_penalty
+    type: float
+    required: false
+    default: 1.1
+  - name: enable_search
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+  - name: enable_thinking
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 深度思考
+      en_US: Deep Thinking
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0.0282'
+  output: '0.1128'
+  unit: '0.000001'
+  currency: USD
