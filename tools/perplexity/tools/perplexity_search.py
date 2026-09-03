@@ -27,6 +27,7 @@ class PerplexityAITool(Tool):
         headers = {
             "Authorization": f"Bearer {self.runtime.credentials['perplexity_api_key']}",
             "Content-Type": "application/json",
+            "X-Pplx-Integration": "dify",
         }
         payload = {
             "model": tool_parameters.get("model", "sonar"),
