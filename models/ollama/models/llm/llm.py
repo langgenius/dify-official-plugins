@@ -182,10 +182,16 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        from models.llm._metadata import apply_dify_headers_if_enabled
+
+        apply_dify_headers_if_enabled(credentials)
         headers = {"Content-Type": "application/json"}
         api_key = credentials.get("api_key")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            headers.update(extra_headers)
         endpoint_url = credentials["base_url"]
         if not endpoint_url.endswith("/"):
             endpoint_url += "/"
