@@ -133,6 +133,7 @@ arn:aws:iam::TARGET-ACCOUNT-ID:role/SageMakerCrossAccountRole
 | **Assume Role ARN** | Optional | Target account role ARN for cross-account access |
 | **AWS Region** | Required | Region where the SageMaker endpoint is deployed |
 | **SageMaker Endpoint** | Required | The endpoint name to invoke |
+| **Attach Dify app_id as request body** | Optional | When enabled, attaches the current Dify app_id and a `dify` source marker as a `_dify_metadata` field in the request body sent to the SageMaker endpoint. The endpoint is expected to ignore unknown body fields. Default is disabled. If your endpoint has strict payload validation and rejects unknown fields, keep this disabled. |
 
 | 字段 | 必填 | 描述 |
 |------|------|------|
@@ -141,6 +142,7 @@ arn:aws:iam::TARGET-ACCOUNT-ID:role/SageMakerCrossAccountRole
 | **跨账户角色ARN** | 可选 | 用于跨账户访问的目标账户角色 ARN |
 | **AWS 地区** | 必填 | 部署 SageMaker 端点的地区 |
 | **SageMaker 端点** | 必填 | 要调用的端点名称 |
+| **附加 Dify app_id 作为请求体** | 可选 | 启用后，插件会通过在发给 SageMaker 端点的请求体中附加 `_dify_metadata` 字段来携带当前 Dify app_id 与 `dify` 源标记。SageMaker 端点预期会静默忽略未知的 body 字段，该元数据仅用于可观测性。默认为禁用。如果端点对 payload 有严格校验且拒绝未知字段，请保持禁用。|
 
 ### Security Best Practices | 安全最佳实践
 
