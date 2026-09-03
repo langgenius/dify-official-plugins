@@ -172,8 +172,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 docs=rerank_docs,
             )
 
-        except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
+        except requests.exceptions.RequestException:
+            raise InvokeServerUnavailableError("Rerank API request failed") from None
         except Exception as ex:
             raise InvokeError(str(ex))
 
@@ -314,8 +314,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 docs=rerank_docs,
             )
 
-        except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
+        except requests.exceptions.RequestException:
+            raise InvokeServerUnavailableError("Rerank API request failed") from None
         except Exception as ex:
             raise InvokeError(str(ex))
 

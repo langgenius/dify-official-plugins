@@ -10,9 +10,12 @@ the implementation actually sends and the URL it targets, without needing
 a real rerank gateway.
 """
 
+import traceback
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
+from dify_plugin.errors.model import InvokeServerUnavailableError
 
 from models.rerank.rerank import OpenAIRerankModel
 
@@ -105,6 +108,25 @@ def test_credential_validation_uses_custom_endpoint_url():
 
     req = _captured_request(mock_post)
     assert req["url"] == "https://gateway.example.com/v1/reranks"
+
+
+def test_request_error_does_not_expose_custom_endpoint_url():
+    endpoint_url = "https://user:password@gateway.example.com/v1/reranks?token=secret"
+    model = OpenAIRerankModel(model_schemas=[])
+    with patch(
+        "models.rerank.rerank.requests.post",
+        side_effect=requests.exceptions.ConnectionError(endpoint_url),
+    ):
+        with pytest.raises(InvokeServerUnavailableError) as exc_info:
+            model._invoke(
+                model="bge-reranker-v2-m3",
+                credentials=_credentials(rerank_endpoint_url=endpoint_url),
+                query="q",
+                docs=["d1"],
+            )
+
+    assert str(exc_info.value) == "Rerank API request failed"
+    assert endpoint_url not in "".join(traceback.format_exception(exc_info.value))
 
 
 def test_text_rerank_omits_authorization_when_api_key_missing():
