@@ -121,7 +121,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         try:
-            logger.info(f"Rerank API Request (text mode) to {rerank_endpoint_url}")
+            logger.info("Rerank API Request (text mode)")
 
             response = requests.post(
                 rerank_endpoint_url,
@@ -255,9 +255,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         try:
-            logger.info(
-                f"Rerank API Request (multimodal mode) to {rerank_endpoint_url}"
-            )
+            logger.info("Rerank API Request (multimodal mode)")
             logger.info(f"Query: {query_text[:100]}")
             logger.info(f"Documents count: {len(documents_params)}")
             logger.debug(f"Payload: {json.dumps(payload, ensure_ascii=False)[:1000]}")
