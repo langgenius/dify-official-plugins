@@ -13,15 +13,20 @@ from models.llm.model_schema import (
 
 LLM_SCHEMA_DIR = Path(__file__).parents[1] / "llm"
 LATEST_FLASH_MODELS = (
+    ("gemini-3.8-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
     ("gemini-3.7-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
     ("gemini-3.6-flash", "Medium", Decimal("0.75"), Decimal("3.75")),
     ("gemini-3.5-flash-lite", "Minimal", Decimal("0.30"), Decimal("2.50")),
 )
 
-# 3.6 and 3.7 Flash are published on one introductory rate card: $0.75 in /
+# 3.6 through 3.8 Flash are published on one introductory rate card: $0.75 in /
 # $3.75 out per 1M tokens through 2026-12-31, doubling on 2027-01-01.
 # https://ai.google.dev/gemini-api/docs/pricing
-INTRODUCTORY_FLASH_MODELS = ("gemini-3.6-flash", "gemini-3.7-flash")
+INTRODUCTORY_FLASH_MODELS = (
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+)
 
 
 def _load_llm_model_schemas() -> list[AIModelEntity]:
@@ -98,7 +103,7 @@ def test_latest_flash_model_contract(
     assert rules["thinking_level"].default == thinking_level
     expected_thinking_levels = (
         ["Low", "Medium", "High"]
-        if model == "gemini-3.7-flash"
+        if model in {"gemini-3.7-flash", "gemini-3.8-flash"}
         else ["Minimal", "Low", "Medium", "High"]
     )
     assert rules["thinking_level"].options == expected_thinking_levels
@@ -114,7 +119,7 @@ def test_latest_flash_model_contract(
 
 
 def test_introductory_flash_models_share_one_rate_card():
-    # The two models on the introductory schedule move together: same price
+    # The models on the introductory schedule move together: same price
     # today, same doubling on 2027-01-01. Pinning them to each other rather
     # than only to literals means one of them cannot quietly carry the
     # post-promotion number while the other still carries the current one.
@@ -131,7 +136,8 @@ def test_introductory_flash_models_share_one_rate_card():
 
 def test_latest_flash_models_are_first_in_display_order():
     position = yaml.safe_load((LLM_SCHEMA_DIR / "_position.yaml").read_text())
-    assert position[:4] == [
+    assert position[:5] == [
+        "gemini-3.8-flash",
         "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-3.5-flash",

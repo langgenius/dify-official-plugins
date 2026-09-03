@@ -17,7 +17,7 @@ from anthropic.types import (
     MessageStartEvent,
     MessageStopEvent,
     MessageStreamEvent,
-    completion_create_params,
+    MetadataParam,
 )
 
 from ._metadata import apply_dify_metadata_if_enabled
@@ -567,9 +567,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
-            extra_model_kwargs["metadata"] = completion_create_params.Metadata(
-                user_id=user
-            )
+            extra_model_kwargs["metadata"] = MetadataParam(user_id=user)
         # Optional: attach Dify app_id as request metadata. Default disabled;
         # opt-in via the enable_request_metadata credential. Merges into any
         # caller-supplied metadata (e.g. the user_id set above) rather than
