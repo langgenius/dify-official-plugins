@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from anthropic import Timeout
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -9,6 +10,18 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
 from models.llm.llm import AnthropicLargeLanguageModel, PromptCachingHandler
+
+
+def test_client_timeout_uses_anthropic_http_type() -> None:
+    timeout = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test"}
+    )["timeout"]
+
+    assert isinstance(timeout, Timeout)
+    assert timeout.connect == 5.0
+    assert timeout.read == 300.0
+    assert timeout.write == 10.0
+    assert timeout.pool == 315.0
 
 
 def test_get_cache_control_defaults_overrides_and_copies() -> None:

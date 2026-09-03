@@ -11,7 +11,6 @@ dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Anthropic request metadata.
     "dify_plugin>=0.10.2",
-    "httpx>=0.28.1",
     "pillow>=12.3.0",
     "requests>=2.34.2",
 ]

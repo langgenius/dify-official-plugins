@@ -9,7 +9,7 @@ import logging
 
 import anthropic
 import requests
-from anthropic import Anthropic, Stream
+from anthropic import Anthropic, Stream, Timeout
 from anthropic.types import (
     ContentBlockDeltaEvent,
     Message,
@@ -59,7 +59,6 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from httpx import Timeout
 from PIL import Image
 
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
