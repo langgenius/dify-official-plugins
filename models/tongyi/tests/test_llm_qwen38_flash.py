@@ -17,7 +17,10 @@ from models.llm.llm import TongyiLargeLanguageModel
 
 
 MODELS_DIR = Path(__file__).parent.parent / "models" / "llm"
-MODEL_NAME = "qwen3.8-flash-next"
+QWEN38_FLASH_MODELS = (
+    "qwen3.8-flash",
+    "qwen3.8-flash-next",
+)
 
 
 def _load_yaml(path: Path):
@@ -37,13 +40,13 @@ def _model() -> TongyiLargeLanguageModel:
     return model
 
 
-def _invoke(model_parameters: dict):
+def _invoke(model_name: str, model_parameters: dict):
     model = _model()
     with patch(
         "models.llm.llm.MultiModalConversation.call", return_value=MagicMock()
     ) as call:
         result = model._generate(
-            model=MODEL_NAME,
+            model=model_name,
             credentials={"dashscope_api_key": "test-key"},
             prompt_messages=[UserPromptMessage(content="hello")],
             model_parameters=model_parameters,
@@ -52,12 +55,13 @@ def _invoke(model_parameters: dict):
     return call.call_args.kwargs, result
 
 
-def test_qwen38_flash_next_schema() -> None:
-    data = _load_yaml(MODELS_DIR / f"{MODEL_NAME}.yaml")
+@pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
+def test_qwen38_flash_schema(model_name: str) -> None:
+    data = _load_yaml(MODELS_DIR / f"{model_name}.yaml")
     schema = AIModelEntity.model_validate(data)
     rules = {rule.name: rule for rule in schema.parameter_rules}
 
-    assert data["model"] == MODEL_NAME
+    assert data["model"] == model_name
     assert data["model_properties"]["context_size"] == 1_000_000
     assert {
         ModelFeature.VISION,
@@ -79,19 +83,22 @@ def test_qwen38_flash_next_schema() -> None:
     model = _model()
     model.get_model_schema.return_value = schema
     assert model._validate_and_filter_model_parameters(
-        MODEL_NAME,
+        model_name,
         {"max_tokens": 128},
         {},
     ) == {"max_completion_tokens": 128}
 
 
-def test_qwen38_flash_next_is_listed_after_qwen38_max() -> None:
+def test_qwen38_flash_models_are_ordered_together() -> None:
     position = _load_yaml(MODELS_DIR / "_position.yaml")
-    assert position.index("qwen3.8-flash-next") == position.index("qwen3.8-max") + 1
+    indexes = [position.index(model_name) for model_name in QWEN38_FLASH_MODELS]
+    assert position.index("qwen3.8-flash") == position.index("qwen3.8-max") + 1
+    assert indexes[1] == indexes[0] + 1
 
 
-def test_qwen38_flash_next_defaults_to_non_thinking() -> None:
-    kwargs, result = _invoke({})
+@pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
+def test_qwen38_flash_defaults_to_non_thinking(model_name: str) -> None:
+    kwargs, result = _invoke(model_name, {})
 
     assert kwargs["enable_thinking"] is False
     assert kwargs["stream"] is False
@@ -99,8 +106,9 @@ def test_qwen38_flash_next_defaults_to_non_thinking() -> None:
     assert result == "non-stream-result"
 
 
-def test_qwen38_flash_next_forces_streaming_when_thinking() -> None:
-    kwargs, result = _invoke({"enable_thinking": True})
+@pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
+def test_qwen38_flash_forces_streaming_when_thinking(model_name: str) -> None:
+    kwargs, result = _invoke(model_name, {"enable_thinking": True})
 
     assert kwargs["enable_thinking"] is True
     assert kwargs["stream"] is True
@@ -108,14 +116,16 @@ def test_qwen38_flash_next_forces_streaming_when_thinking() -> None:
     assert list(result) == ["stream-result"]
 
 
-def test_qwen38_flash_next_accepts_json_object_output() -> None:
-    kwargs, result = _invoke({"response_format": "json_object"})
+@pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
+def test_qwen38_flash_accepts_json_object_output(model_name: str) -> None:
+    kwargs, result = _invoke(model_name, {"response_format": "json_object"})
 
     assert kwargs["response_format"] == {"type": "json_object"}
     assert result == "non-stream-result"
 
 
-def test_qwen38_flash_next_accepts_json_schema_output() -> None:
+@pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
+def test_qwen38_flash_accepts_json_schema_output(model_name: str) -> None:
     output_schema = {
         "name": "answer",
         "strict": True,
@@ -126,10 +136,11 @@ def test_qwen38_flash_next_accepts_json_schema_output() -> None:
         },
     }
     kwargs, result = _invoke(
+        model_name,
         {
             "response_format": "json_schema",
             "json_schema": json.dumps(output_schema),
-        }
+        },
     )
 
     assert kwargs["response_format"] == {
