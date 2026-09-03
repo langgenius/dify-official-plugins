@@ -6,6 +6,8 @@ from typing import Optional, Union, Any
 
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
+
+from models.llm._metadata import apply_dify_headers_if_enabled
 from dify_plugin.entities.model import (
     AIModelEntity,
     I18nObject,
@@ -203,6 +205,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
+        apply_dify_headers_if_enabled(credentials)
 
         # Only convert file content to text descriptions for models that don't support vision
         model_schema = self.get_model_schema(model, credentials)
@@ -237,6 +240,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._update_credential(model, credentials)
+        apply_dify_headers_if_enabled(credentials)
         return super().validate_credentials(model, credentials)
 
     def _generate(
