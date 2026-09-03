@@ -143,10 +143,11 @@ parameter_rules:
       zh_Hans: 模型单次输出的最大 tokens 数。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing#gemini-3-flash-preview
+# https://ai.google.dev/gemini-api/docs/changelog (gemini-flash-latest → gemini-3.7-flash as of 2026-08-13)
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3.7-flash
 pricing:
   # prompts <= 200k tokens
-  input: '0.5'
-  output: '3.00'
+  input: '0.75'
+  output: '3.75'
   unit: '0.000001'
   currency: USD
