@@ -268,6 +268,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if model == "qwen3.8-max":
             if not model_parameters["enable_thinking"]:
                 model_parameters.pop("reasoning_effort", None)
+            elif (temperature := model_parameters.get("temperature")) is not None and temperature < 0.6:
+                # DashScope resets values below 0.6 to 0.6 in thinking mode.
+                model_parameters["temperature"] = 0.6
             # Dify stores reasoning in content, which preserved thinking rejects.
             model_parameters["preserve_thinking"] = False
 
