@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIRerankModel(OAICompatRerankModel):
+    @staticmethod
+    def _resolve_rerank_endpoint_url(credentials: Mapping) -> str:
+        rerank_endpoint_url = (credentials.get("rerank_endpoint_url") or "").strip()
+        if rerank_endpoint_url:
+            return rerank_endpoint_url
+
+        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        return f"{endpoint_url}/rerank"
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -91,7 +100,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
             return RerankResult(model=model, docs=[])
 
         # Build API request
-        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        rerank_endpoint_url = self._resolve_rerank_endpoint_url(credentials)
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
@@ -112,10 +121,10 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         try:
-            logger.info(f"Rerank API Request (text mode) to {endpoint_url}/rerank")
+            logger.info("Rerank API Request (text mode)")
 
             response = requests.post(
-                f"{endpoint_url}/rerank",
+                rerank_endpoint_url,
                 headers=headers,
                 json=payload,
                 timeout=60,
@@ -163,8 +172,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 docs=rerank_docs,
             )
 
-        except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
+        except requests.exceptions.RequestException:
+            raise InvokeServerUnavailableError("Rerank API request failed") from None
         except Exception as ex:
             raise InvokeError(str(ex))
 
@@ -216,7 +225,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
 
         # Build API request
-        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        rerank_endpoint_url = self._resolve_rerank_endpoint_url(credentials)
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
@@ -246,15 +255,13 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         try:
-            logger.info(
-                f"Rerank API Request (multimodal mode) to {endpoint_url}/rerank"
-            )
+            logger.info("Rerank API Request (multimodal mode)")
             logger.info(f"Query: {query_text[:100]}")
             logger.info(f"Documents count: {len(documents_params)}")
             logger.debug(f"Payload: {json.dumps(payload, ensure_ascii=False)[:1000]}")
 
             response = requests.post(
-                f"{endpoint_url}/rerank",
+                rerank_endpoint_url,
                 headers=headers,
                 json=payload,
                 timeout=60,
@@ -307,8 +314,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 docs=rerank_docs,
             )
 
-        except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
+        except requests.exceptions.RequestException:
+            raise InvokeServerUnavailableError("Rerank API request failed") from None
         except Exception as ex:
             raise InvokeError(str(ex))
 
