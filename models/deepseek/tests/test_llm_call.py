@@ -209,7 +209,23 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     }
 
 
-def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
+def test_invoke_forwards_user_and_omits_user_id_field() -> None:
+    """#3765: the legacy 0.0.20 rewrite injected a non-standard ``user_id``
+    field into ``model_parameters`` AND did not forward ``user`` to the
+    OAICompat base class — together, this changed DeepSeek's upstream
+    cache key and dropped the cache hit rate from 97 % to ~75 % on
+    long-instruction agents.
+
+    The fix:
+    - stop injecting the ``user_id`` field (the OAICompat base class
+      already emits the OpenAI-standard ``user`` field),
+    - forward the ``user`` parameter to ``super()._invoke(...)`` so the
+      base class's ``user``-field emission actually runs.
+
+    Pin both halves of the contract: the captured call gets ``user``
+    forwarded, and ``model_parameters`` must NOT contain a ``user_id``
+    key (that's what was perturbing the cache key).
+    """
     captured = {}
 
     def invoke(
@@ -252,7 +268,11 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
 
     assert result == "ok"
     assert captured["model"] == "deepseek-v4-pro"
-    assert captured["parameters"]["user_id"] == "user-1"
+    # The user must still be forwarded to the base class (which sends
+    # the OpenAI-standard ``user`` field), but the plugin must NOT
+    # inject the legacy ``user_id`` field any more.
+    assert captured["user"] == "user-1"
+    assert "user_id" not in captured["parameters"]
     assert captured["parameters"]["tools"] == [
         {
             "type": "function",
@@ -265,7 +285,6 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
     ]
     assert "tool_choice" not in captured["parameters"]
     assert captured["tools"] is None
-    assert captured["user"] is None
     assert credentials["_current_model"] == "deepseek-v4-pro"
     assert credentials["endpoint_url"] == "https://api.deepseek.com"
 

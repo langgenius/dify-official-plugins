@@ -47,8 +47,6 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         apply_dify_headers_if_enabled(credentials)
         credentials["_current_model"] = model
         self._normalize_model_parameters(model, model_parameters)
-        if user:
-            model_parameters["user_id"] = user
         if tools:
             model_parameters["tools"] = [
                 PromptMessageFunction(function=tool).model_dump() for tool in tools
@@ -63,6 +61,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             tools,
             stop,
             stream,
+            user=user,
         )
 
     def _clean_messages(self, messages: list[PromptMessage]) -> list[PromptMessage]:
