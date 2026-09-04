@@ -1,0 +1,129 @@
+background: '#F9FAFB'
+configurate_methods:
+- customizable-model
+description:
+  en_US: llmman is a local model runner that serves the Ollama API (alongside OpenAI- and Anthropic-compatible ones) on port 17434.
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    - models/text_embedding/text_embedding.py
+    provider_source: provider/llmman.py
+help:
+  title:
+    en_US: How to integrate with llmman
+  url:
+    en_US: https://github.com/llmmanorg/llmman
+icon_small:
+  en_US: icon.svg
+label:
+  en_US: llmman
+model_credential_schema:
+  credential_form_schemas:
+  - default: http://localhost:17434/v1
+    label:
+      en_US: Base URL
+    placeholder:
+      en_US: OpenAI-compatible base URL of the llmman server, e.g. http://localhost:17434/v1
+    required: true
+    type: text-input
+    variable: endpoint_url
+  - label:
+      en_US: API Key (optional)
+    placeholder:
+      en_US: llmman does not require an API key; leave blank unless a proxy in front of it does.
+    required: false
+    type: secret-input
+    variable: api_key
+  - default: chat
+    label:
+      en_US: Completion mode
+    options:
+    - label:
+        en_US: Completion
+      value: completion
+    - label:
+        en_US: Chat
+      value: chat
+    placeholder:
+      en_US: Select completion mode
+    required: true
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: select
+    variable: mode
+  - default: '4096'
+    label:
+      en_US: Model context size
+    placeholder:
+      en_US: Enter your Model context size
+    required: true
+    type: text-input
+    variable: context_size
+  - default: '4096'
+    label:
+      en_US: Upper bound for max tokens
+    required: true
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: text-input
+    variable: max_tokens_to_sample
+  - default: no_support
+    label:
+      en_US: Vision support
+    options:
+    - label:
+        en_US: 'Yes'
+      value: support
+    - label:
+        en_US: 'No'
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: vision_support
+  - default: no_call
+    label:
+      en_US: Function call support
+    options:
+    - label:
+        en_US: 'Yes'
+      value: tool_call
+    - label:
+        en_US: 'No'
+      value: no_call
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: function_calling_type
+  - default: supported
+    label:
+      en_US: Stream function calling
+    options:
+    - label:
+        en_US: 'Yes'
+      value: supported
+    - label:
+        en_US: 'No'
+      value: not_supported
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: stream_function_calling
+  model:
+    label:
+      en_US: Model Name
+    placeholder:
+      en_US: Enter your model name, e.g. gemma4 or hf.co/unsloth/Qwen3.5-0.8B-GGUF
+provider: llmman
+supported_model_types:
+- llm
+- text-embedding
