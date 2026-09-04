@@ -45,32 +45,14 @@ model_credential_schema:
       label:
         en_US: Language
         zh_Hans: 语言
-      type: select
-      default: zh
+      type: text-input
       required: false
       show_on:
         - variable: __model_type
           value: speech2text
       placeholder:
-        zh_Hans: 模型支持的语言，例如 zh,en
-        en_US: The language supported by the model, e.g. zh,en
-      options:
-        - value: zh
-          label:
-            en_US: zh-Hans
-            zh_Hans: 中文
-        - value: en
-          label:
-            en_US: en-US
-            zh_Hans: 英文
-        - value: ja
-          label:
-            en_US: ja-JP
-            zh_Hans: 日语
-        - value: ko
-          label:
-            en_US: ko-KR
-            zh_Hans: 韩语
+        zh_Hans: ISO-639-1 语言代码，例如 zh、en、ru；留空则由模型自动检测
+        en_US: ISO-639-1 language code, e.g. zh, en, ru. Leave empty to let the model auto-detect.
     - variable: initial_prompt
       label:
         en_US: Initial Prompt
