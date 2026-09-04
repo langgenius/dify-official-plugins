@@ -5,6 +5,8 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
 from yarl import URL
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -19,6 +21,7 @@ class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         if "enable_thinking" in model_parameters:
             enable_thinking = model_parameters.pop("enable_thinking")
             model_parameters["thinking"] = {
@@ -30,6 +33,7 @@ class LongCatLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @staticmethod
