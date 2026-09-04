@@ -1,7 +1,7 @@
 """Helpers for attaching Dify metadata to Anthropic Messages requests.
 
 The Anthropic Messages API accepts a ``metadata`` object on each call. The
-official typed schema (``anthropic.types.completion_create_params.MetadataParam``)
+official typed schema (``anthropic.types.MetadataParam``)
 only declares ``user_id``, but the underlying API accepts arbitrary
 string-to-string keys, which surface in the Anthropic admin console for
 per-app cost and usage attribution. Constraints:

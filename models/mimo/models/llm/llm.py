@@ -4,6 +4,8 @@ from dify_plugin.entities.model.llm import LLMResult, LLMMode
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -18,6 +20,7 @@ class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         thinking_type = model_parameters.pop('thinking', 'disabled')
         model_parameters['thinking'] = {'type': thinking_type}
         return super()._invoke(
@@ -26,6 +29,7 @@ class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @staticmethod

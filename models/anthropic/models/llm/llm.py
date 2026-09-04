@@ -9,7 +9,7 @@ import logging
 
 import anthropic
 import requests
-from anthropic import Anthropic, Stream
+from anthropic import Anthropic, Stream, Timeout
 from anthropic.types import (
     ContentBlockDeltaEvent,
     Message,
@@ -17,7 +17,7 @@ from anthropic.types import (
     MessageStartEvent,
     MessageStopEvent,
     MessageStreamEvent,
-    completion_create_params,
+    MetadataParam,
 )
 
 from ._metadata import apply_dify_metadata_if_enabled
@@ -59,7 +59,6 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from httpx import Timeout
 from PIL import Image
 
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
@@ -147,6 +146,7 @@ class PromptCachingHandler:
         cache_creation_5m_input_tokens: int = 0,
         cache_creation_1h_input_tokens: int = 0,
         cache_creation_fallback_multiplier: float = CACHE_WRITE_5M_MULTIPLIER,
+        cache_read_multiplier: float = CACHE_READ_MULTIPLIER,
     ) -> int:
         """Return billing-adjusted prompt tokens.
 
@@ -166,7 +166,7 @@ class PromptCachingHandler:
             adjusted += int(cache_creation_input_tokens * cache_creation_fallback_multiplier)
 
         if cache_read_input_tokens > 0:
-            adjusted += int(cache_read_input_tokens * cls.CACHE_READ_MULTIPLIER)
+            adjusted += int(cache_read_input_tokens * cache_read_multiplier)
 
         return adjusted
 
@@ -286,6 +286,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if self._prompt_cache_ttl == "1h":
             return PromptCachingHandler.CACHE_WRITE_1H_MULTIPLIER
         return PromptCachingHandler.CACHE_WRITE_5M_MULTIPLIER
+
+    @staticmethod
+    def _cache_read_multiplier(model: str) -> float:
+        model_id = (model or "").lower()
+        if model_id == "claude-fable-5-1":
+            return 0.025
+        return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
     @staticmethod
     def _get_cache_creation_input_tokens_by_ttl(usage: Any) -> tuple[int, int]:
@@ -559,9 +566,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
-            extra_model_kwargs["metadata"] = completion_create_params.Metadata(
-                user_id=user
-            )
+            extra_model_kwargs["metadata"] = MetadataParam(user_id=user)
         # Optional: attach Dify app_id as request metadata. Default disabled;
         # opt-in via the enable_request_metadata credential. Merges into any
         # caller-supplied metadata (e.g. the user_id set above) rather than
@@ -988,7 +993,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model=model,
                 credentials=dict(credentials),
                 prompt_messages=[UserPromptMessage(content="ping")],
-                model_parameters={"temperature": 0, "max_tokens": 20},
+                model_parameters={"max_tokens": 20},
                 stream=False,
             )
         except Exception as ex:
@@ -1070,6 +1075,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             cache_creation_5m_input_tokens,
             cache_creation_1h_input_tokens,
             self._cache_write_fallback_multiplier(),
+            self._cache_read_multiplier(model),
         )
 
         usage = super()._calc_response_usage(
@@ -1303,6 +1309,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     cache_creation_5m_input_tokens,
                     cache_creation_1h_input_tokens,
                     self._cache_write_fallback_multiplier(),
+                    self._cache_read_multiplier(model),
                 )
                 
                 usage = super()._calc_response_usage(
