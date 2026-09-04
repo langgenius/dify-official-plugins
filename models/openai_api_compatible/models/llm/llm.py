@@ -330,11 +330,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     name="reasoning_effort",
                     label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
                     help=I18nObject(
-                        en_us="Constrains effort on reasoning for reasoning models.",
-                        zh_hans="限制推理模型的推理工作。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Not every level is accepted by every model — 'none' and 'xhigh' in "
+                        "particular are only supported by newer OpenAI reasoning models. The "
+                        "upstream endpoint validates the value.",
+                        zh_hans="限制推理模型的推理工作。并非所有模型都接受全部级别，"
+                        "其中 none 与 xhigh 仅较新的 OpenAI 推理模型支持，具体由上游端点校验。",
                     ),
                     type=ParameterType.STRING,
-                    options=["low", "medium", "high"],
+                    options=["none", "minimal", "low", "medium", "high", "xhigh"],
                     required=False,
                 )
             )
