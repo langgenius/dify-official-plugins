@@ -1,9 +1,9 @@
 from typing import Any, Generator
 
-from ddgs import DDGS
-
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+
+from tools.ddgs_utils import search_with_retry
 
 # ddgs aggregates several image backends and they disagree on the time-range vocabulary:
 # the Bing engine expects "day"/"week"/"month"/"year" while the DuckDuckGo engine expects
@@ -17,9 +17,7 @@ class DuckDuckGoImageSearchTool(Tool):
     Tool for performing an image search using DuckDuckGo search engine.
     """
 
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         query = tool_parameters.get("query")
         timelimit = tool_parameters.get("timelimit")
         query_dict = {
@@ -30,7 +28,8 @@ class DuckDuckGoImageSearchTool(Tool):
         # ddgs treats an explicit None size as a real filter value, so drop empty options.
         query_dict = {k: v for k, v in query_dict.items() if v is not None}
         proxy = tool_parameters.get("proxy_server", None)
-        response = DDGS(proxy=proxy).images(query, **query_dict)
+        backend = tool_parameters.get("backend", None)
+        response = search_with_retry("images", query, proxy=proxy, backend=backend, **query_dict)
         for res in response:
             # Yield IMAGE rather than IMAGE_LINK. Dify only derives a tool_file_id for an
             # IMAGE_LINK by matching its URL against its own /files/tools/ route, so a remote
