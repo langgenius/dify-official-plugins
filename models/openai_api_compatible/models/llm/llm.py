@@ -167,29 +167,43 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         SAFE_MIN_TOKENS = 16
 
+        # `stream_mode_auth` is read by the base implementation, which validate_credentials()
+        # skips for o1/o3/gpt-5 models via its early return. Honour it here so the setting is
+        # not silently ignored for exactly the models that take this path.
+        use_stream = credentials.get("stream_mode_auth", "not_use") == "use"
+
         try:
             if mode == "chat":
                 if use_max_completion:
-                    client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=endpoint_model,
                         messages=[{"role": "user", "content": "ping"}],
                         max_completion_tokens=SAFE_MIN_TOKENS,
-                        stream=False,
+                        stream=use_stream,
                     )
                 else:
-                    client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=endpoint_model,
                         messages=[{"role": "user", "content": "ping"}],
                         max_tokens=SAFE_MIN_TOKENS,
-                        stream=False,
+                        stream=use_stream,
                     )
             else:
-                client.completions.create(
+                response = client.completions.create(
                     model=endpoint_model,
                     prompt="ping",
                     max_tokens=SAFE_MIN_TOKENS,
-                    stream=False,
+                    stream=use_stream,
                 )
+
+            if use_stream:
+                # Pull the first chunk so transport and auth failures surface as a
+                # validation error instead of leaving an unread stream behind.
+                try:
+                    for _ in response:
+                        break
+                finally:
+                    response.close()
         except Exception as sub_e:
             raise CredentialsValidateFailedError(str(sub_e)) from sub_e
 
