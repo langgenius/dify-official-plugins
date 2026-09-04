@@ -646,13 +646,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             self._drop_analyze_channel(prompt_messages)
 
         # Map token parameter name when needed (Responses API style)
+        # Auto-detection must look at the model the endpoint actually receives, which is
+        # `endpoint_model_name` when set. validate_credentials() and the Responses API path
+        # already resolve it this way; using the Dify-side display name here made the same
+        # credentials validate as max_completion_tokens but invoke with max_tokens.
         param_pref = credentials.get("token_param_name", "auto")
-
-        def _needs_max_completion_tokens(m: str) -> bool:
-            return bool(re.match(r"^(o1|o3|gpt-5)", m, re.IGNORECASE))
+        endpoint_model = credentials.get("endpoint_model_name") or model
 
         use_max_completion = (param_pref == "max_completion_tokens") or (
-            param_pref == "auto" and _needs_max_completion_tokens(model)
+            param_pref == "auto" and self._needs_max_completion_tokens(endpoint_model)
         )
 
         if use_max_completion:
