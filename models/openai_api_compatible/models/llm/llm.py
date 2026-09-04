@@ -167,29 +167,43 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         SAFE_MIN_TOKENS = 16
 
+        # `stream_mode_auth` is read by the base implementation, which validate_credentials()
+        # skips for o1/o3/gpt-5 models via its early return. Honour it here so the setting is
+        # not silently ignored for exactly the models that take this path.
+        use_stream = credentials.get("stream_mode_auth", "not_use") == "use"
+
         try:
             if mode == "chat":
                 if use_max_completion:
-                    client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=endpoint_model,
                         messages=[{"role": "user", "content": "ping"}],
                         max_completion_tokens=SAFE_MIN_TOKENS,
-                        stream=False,
+                        stream=use_stream,
                     )
                 else:
-                    client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=endpoint_model,
                         messages=[{"role": "user", "content": "ping"}],
                         max_tokens=SAFE_MIN_TOKENS,
-                        stream=False,
+                        stream=use_stream,
                     )
             else:
-                client.completions.create(
+                response = client.completions.create(
                     model=endpoint_model,
                     prompt="ping",
                     max_tokens=SAFE_MIN_TOKENS,
-                    stream=False,
+                    stream=use_stream,
                 )
+
+            if use_stream:
+                # Pull the first chunk so transport and auth failures surface as a
+                # validation error instead of leaving an unread stream behind.
+                try:
+                    for _ in response:
+                        break
+                finally:
+                    response.close()
         except Exception as sub_e:
             raise CredentialsValidateFailedError(str(sub_e)) from sub_e
 
@@ -330,11 +344,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     name="reasoning_effort",
                     label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
                     help=I18nObject(
-                        en_us="Constrains effort on reasoning for reasoning models.",
-                        zh_hans="限制推理模型的推理工作。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Not every level is accepted by every model — 'none' and 'xhigh' in "
+                        "particular are only supported by newer OpenAI reasoning models. The "
+                        "upstream endpoint validates the value.",
+                        zh_hans="限制推理模型的推理工作。并非所有模型都接受全部级别，"
+                        "其中 none 与 xhigh 仅较新的 OpenAI 推理模型支持，具体由上游端点校验。",
                     ),
                     type=ParameterType.STRING,
-                    options=["low", "medium", "high"],
+                    options=["none", "minimal", "low", "medium", "high", "xhigh"],
                     required=False,
                 )
             )
@@ -647,13 +665,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             self._drop_analyze_channel(prompt_messages)
 
         # Map token parameter name when needed (Responses API style)
+        # Auto-detection must look at the model the endpoint actually receives, which is
+        # `endpoint_model_name` when set. validate_credentials() and the Responses API path
+        # already resolve it this way; using the Dify-side display name here made the same
+        # credentials validate as max_completion_tokens but invoke with max_tokens.
         param_pref = credentials.get("token_param_name", "auto")
-
-        def _needs_max_completion_tokens(m: str) -> bool:
-            return bool(re.match(r"^(o1|o3|gpt-5)", m, re.IGNORECASE))
+        endpoint_model = credentials.get("endpoint_model_name") or model
 
         use_max_completion = (param_pref == "max_completion_tokens") or (
-            param_pref == "auto" and _needs_max_completion_tokens(model)
+            param_pref == "auto" and self._needs_max_completion_tokens(endpoint_model)
         )
 
         if use_max_completion:

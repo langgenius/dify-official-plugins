@@ -1,0 +1,43 @@
+provider: tokener
+label:
+  en_US: Tokener.ai
+  zh_Hans: Tokener.ai
+description:
+  en_US: OpenAI-compatible language models from Tokener.ai.
+  zh_Hans: 使用 Tokener.ai 调用 OpenAI-compatible 语言模型。
+icon_small:
+  en_US: tokener.svg
+icon_large:
+  en_US: tokener.svg
+background: "#F7F5EE"
+help:
+  title:
+    en_US: Get your API key from Tokener.ai
+    zh_Hans: 获取 Tokener.ai API Key
+  url:
+    en_US: https://console.tokener.dev/keys
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Tokener.ai API key
+        zh_Hans: 输入 Tokener.ai API Key
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+extra:
+  python:
+    provider_source: provider/tokener.py
+    model_sources:
+      - models/llm/llm.py

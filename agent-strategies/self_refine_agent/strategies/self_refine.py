@@ -14,12 +14,11 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage
 )
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
-    ToolEntity,
-    ToolInvokeMeta
+    ToolEntity
 )
 from pydantic import BaseModel, Field
 
@@ -279,66 +278,42 @@ class SelfRefineStrategy(AgentStrategy):
         )
 
         # Prepare tools
-        prompt_tools = self._init_prompt_tools(params.tools) if params.tools else []
+        prompt_tools = self._init_prompt_tools(params.tools)
+        has_tools = bool(params.tools)
 
-        # Invoke LLM
-        yield self.create_log_message(
-            label=f"Invoking {params.model.model}",
-            data={},
-            status=ToolInvokeMessage.LogMessage.LogStatus.START
-        )
-
+        # One execution attempt is itself a loop: the model may call tools, read
+        # the observations and then continue. `maximum_iterations` bounds the
+        # number of model calls so a model that keeps calling tools cannot spin
+        # forever.
+        max_rounds = max(1, params.maximum_iterations) if has_tools else 1
+        metadata = ExecutionMetadata()
+        final_output = ""
+        observations: list[str] = []
         started_at = time.perf_counter()
 
-        try:
-            chunks = self.session.model.llm.invoke(
-                model_config=model_config,
-                prompt_messages=prompt_messages,
-                stream=stream,
-                tools=prompt_tools,
-                stop=[]
+        for round_number in range(1, max_rounds + 1):
+            yield self.create_log_message(
+                label=f"Invoking {params.model.model}",
+                data={"round": round_number},
+                status=ToolInvokeMessage.LogMessage.LogStatus.START
             )
 
-            # Collect response
-            response_text = ""
-            tool_calls: list[tuple[str, str, dict[str, Any]]] = []
-            usage: Optional[LLMUsage] = None
+            try:
+                chunks = self.session.model.llm.invoke(
+                    model_config=model_config,
+                    prompt_messages=prompt_messages,
+                    stream=stream,
+                    tools=prompt_tools,
+                    stop=[]
+                )
 
-            if stream and isinstance(chunks, Generator):
-                for chunk in chunks:
-                    if chunk.delta and chunk.delta.message and chunk.delta.message.content:
-                        response_text += chunk.delta.message.get_text_content()
+                response_text, tool_calls, usage = self._collect_response(chunks, stream)
 
-                    if chunk.delta and chunk.delta.message and chunk.delta.message.tool_calls:
-                        for tool_call in chunk.delta.message.tool_calls:
-                            if tool_call.function:
-                                tool_calls.append((
-                                    tool_call.id or "",
-                                    tool_call.function.name,
-                                    json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
-                                ))
+            except Exception as e:
+                logger.error(f"LLM invocation failed: {e}")
+                raise
 
-                    if chunk.delta and chunk.delta.usage:
-                        usage = chunk.delta.usage
-            else:
-                result = chunks if isinstance(chunks, LLMResult) else next(chunks)
-                if result.message and result.message.content:
-                    response_text = result.message.get_text_content()
-
-                if result.message and result.message.tool_calls:
-                    for tool_call in result.message.tool_calls:
-                        if tool_call.function:
-                            tool_calls.append((
-                                tool_call.id or "",
-                                tool_call.function.name,
-                                json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
-                            ))
-
-                usage = result.usage
-
-            elapsed_time = time.perf_counter() - started_at
-            metadata = ExecutionMetadata.from_llm_usage(usage)
-            metadata.latency = elapsed_time
+            self._accumulate_usage(metadata, usage)
 
             yield self.create_log_message(
                 label=f"{params.model.model} Response",
@@ -349,42 +324,147 @@ class SelfRefineStrategy(AgentStrategy):
                 status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
             )
 
-            # Execute tool calls if any
-            final_output = response_text
+            if response_text:
+                final_output = response_text
 
-            if tool_calls and params.tools:
-                tool_results = yield from self._execute_tools(
-                    tool_calls=tool_calls,
-                    tools=params.tools
+            if not tool_calls or not has_tools:
+                break
+
+            # Same rule as the official cot_agent: on the last of several rounds
+            # there is no round left to consume the observations, so stop instead
+            # of running tools whose results would be discarded.
+            if round_number == max_rounds and max_rounds > 1:
+                logger.warning(f"Hit maximum_iterations={max_rounds} with tool calls still pending")
+                yield self.create_log_message(
+                    label="Maximum Iterations Reached",
+                    data={"maximum_iterations": max_rounds},
+                    status=ToolInvokeMessage.LogMessage.LogStatus.ERROR
+                )
+                break
+
+            # Record what the model asked for, then hand the observations back to
+            # it. Without this the model never sees any tool output.
+            prompt_messages.append(
+                AssistantPromptMessage(
+                    content=response_text,
+                    tool_calls=[
+                        AssistantPromptMessage.ToolCall(
+                            id=call_id,
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=tool_name,
+                                arguments=json.dumps(tool_params, ensure_ascii=False)
+                            )
+                        )
+                        for call_id, tool_name, tool_params in tool_calls
+                    ]
+                )
+            )
+
+            observations = yield from self._execute_tools(
+                tool_calls=tool_calls,
+                tools=params.tools or []
+            )
+
+            for (call_id, tool_name, _), observation in zip(tool_calls, observations):
+                prompt_messages.append(
+                    ToolPromptMessage(
+                        content=observation,
+                        tool_call_id=call_id,
+                        name=tool_name
+                    )
                 )
 
-                # Append tool results to output
-                if tool_results:
-                    final_output += "\n\n[Tool Results]\n" + "\n".join(tool_results)
+        # With maximum_iterations=1 the model never gets a round to summarise the
+        # observations, so surface them rather than returning an empty answer.
+        if not final_output and observations:
+            final_output = "\n".join(observations)
 
-            return {
-                "output": final_output,
-                "metadata": metadata
-            }
+        metadata.latency = time.perf_counter() - started_at
 
-        except Exception as e:
-            logger.error(f"LLM invocation failed: {e}")
-            raise
+        return {
+            "output": final_output,
+            "metadata": metadata
+        }
+
+    def _collect_response(
+        self,
+        chunks: Generator[LLMResultChunk, None, None] | LLMResult,
+        stream: bool
+    ) -> tuple[str, list[tuple[str, str, dict[str, Any]]], Optional[LLMUsage]]:
+        """Collect text, tool calls and usage from a streaming or blocking result"""
+
+        response_text = ""
+        tool_calls: list[tuple[str, str, dict[str, Any]]] = []
+        usage: Optional[LLMUsage] = None
+
+        if stream and isinstance(chunks, Generator):
+            for chunk in chunks:
+                if chunk.delta and chunk.delta.message and chunk.delta.message.content:
+                    response_text += chunk.delta.message.get_text_content()
+
+                if chunk.delta and chunk.delta.message and chunk.delta.message.tool_calls:
+                    tool_calls.extend(self._parse_tool_calls(chunk.delta.message.tool_calls))
+
+                if chunk.delta and chunk.delta.usage:
+                    usage = chunk.delta.usage
+        else:
+            result = chunks if isinstance(chunks, LLMResult) else next(chunks)
+            if result.message and result.message.content:
+                response_text = result.message.get_text_content()
+
+            if result.message and result.message.tool_calls:
+                tool_calls.extend(self._parse_tool_calls(result.message.tool_calls))
+
+            usage = result.usage
+
+        return response_text, tool_calls, usage
+
+    @staticmethod
+    def _parse_tool_calls(
+        raw_tool_calls: list[AssistantPromptMessage.ToolCall]
+    ) -> list[tuple[str, str, dict[str, Any]]]:
+        """Flatten SDK tool calls into (call_id, tool_name, parameters) tuples"""
+
+        return [
+            (
+                tool_call.id or "",
+                tool_call.function.name,
+                json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+            )
+            for tool_call in raw_tool_calls
+            if tool_call.function
+        ]
+
+    @staticmethod
+    def _accumulate_usage(metadata: ExecutionMetadata, usage: Optional[LLMUsage]) -> None:
+        """Add one round of usage into the attempt totals"""
+
+        round_usage = ExecutionMetadata.from_llm_usage(usage)
+        metadata.total_tokens += round_usage.total_tokens
+        metadata.prompt_tokens += round_usage.prompt_tokens
+        metadata.completion_tokens += round_usage.completion_tokens
+        metadata.total_price += round_usage.total_price
+        metadata.currency = round_usage.currency or metadata.currency
 
     def _execute_tools(
         self,
         tool_calls: list[tuple[str, str, dict[str, Any]]],
         tools: list[ToolEntity]
     ) -> Generator[AgentInvokeMessage, None, list[str]]:
-        """Execute tool calls and return results"""
+        """Execute tool calls and return one observation per call, in call order.
+
+        The caller relies on the positional pairing with `tool_calls`, so every
+        call contributes exactly one entry - failures included.
+        """
 
         tool_instances = {tool.identity.name: tool for tool in tools}
         results = []
 
-        for tool_call_id, tool_name, tool_params in tool_calls:
+        for _tool_call_id, tool_name, tool_params in tool_calls:
             if tool_name not in tool_instances:
                 logger.warning(f"Tool {tool_name} not found")
-                results.append(f"{tool_name}: Tool not found")
+                results.append("Tool not found")
                 continue
 
             tool = tool_instances[tool_name]
@@ -397,19 +477,21 @@ class SelfRefineStrategy(AgentStrategy):
 
             try:
                 tool_result = self.session.tool.invoke(
+                    provider_type=tool.provider_type,
                     provider=tool.identity.provider,
                     tool_name=tool_name,
-                    parameters=tool_params
+                    parameters=tool_params,
+                    credential_id=tool.credential_id
                 )
 
                 result_text = ""
                 for message in tool_result:
-                    if message.type == ToolInvokeMessage.MessageType.TEXT:
-                        result_text += message.message
-                    elif message.type == ToolInvokeMessage.MessageType.JSON:
-                        result_text += json.dumps(message.message)
+                    if isinstance(message.message, ToolInvokeMessage.TextMessage):
+                        result_text += message.message.text
+                    elif isinstance(message.message, ToolInvokeMessage.JsonMessage):
+                        result_text += json.dumps(message.message.json_object, ensure_ascii=False)
 
-                results.append(f"{tool_name}: {result_text}")
+                results.append(result_text or "The tool returned no textual output.")
 
                 yield self.create_log_message(
                     label=f"Tool {tool_name} Complete",
@@ -419,7 +501,7 @@ class SelfRefineStrategy(AgentStrategy):
 
             except Exception as e:
                 logger.error(f"Tool {tool_name} failed: {e}")
-                results.append(f"{tool_name}: Error - {str(e)}")
+                results.append(f"Error - {str(e)}")
 
                 yield self.create_log_message(
                     label=f"Tool {tool_name} Failed",
@@ -495,21 +577,3 @@ class SelfRefineStrategy(AgentStrategy):
                 issues=SELF_REFINE_TEMPLATES["fallback_critique"],
                 score=50
             )
-
-    def _init_prompt_tools(self, tools: list[ToolEntity] | None) -> list[ToolInvokeMeta]:
-        """Convert ToolEntity to ToolInvokeMeta for LLM invocation"""
-        if not tools:
-            return []
-
-        prompt_tools = []
-        for tool in tools:
-            prompt_tools.append(
-                ToolInvokeMeta(
-                    provider_type=tool.identity.provider_type or ToolProviderType.BUILT_IN,
-                    provider=tool.identity.provider,
-                    tool_name=tool.identity.name,
-                    tool_parameters=tool.runtime_parameters or {}
-                )
-            )
-
-        return prompt_tools

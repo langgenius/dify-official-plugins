@@ -23,5 +23,5 @@ class HuaweiCloudMaasTextEmbeddingModel(OAICompatEmbeddingModel):
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
         credentials["endpoint_url"] = str(
-            credentials.get("endpoint_url", "https://api.modelarts-maas.com/v1")
+            credentials.get("maas_base_url", "https://api.modelarts-maas.com/v1")
         )

@@ -103,8 +103,8 @@ model_credential_schema:
         en_US: API Version
         zh_Hans: API 版本
       help:
-        en_US: Optional when your API Base URL already ends with /openai/v1. Non-v1 Azure endpoints will fall back to the default API version if left empty.
-        zh_Hans: 当 API Base URL 已经以 /openai/v1 结尾时，此项可留空。非 v1 的 Azure endpoint 若留空，会自动回退到默认 API 版本。
+        en_US: Optional when your API Base URL already ends with /openai/v1. Non-v1 Azure endpoints fall back to the default API version (2025-04-01-preview) if left empty. Older dated versions are deprecated by Azure and no longer support modern models (gpt-5/codex require the Responses API, available from 2025-03-01-preview); prefer the versionless /openai/v1 endpoint. Upgrading this plugin changes the effective version for configurations that leave this field empty; if your Azure resource or gateway (e.g. API Management) does not serve 2025-04-01-preview, pin an explicitly supported version below.
+        zh_Hans: 当 API Base URL 已经以 /openai/v1 结尾时，此项可留空。非 v1 的 Azure endpoint 若留空，会使用默认 API 版本（2025-04-01-preview）。Azure 已弃用较旧的日期版本——现代模型（gpt-5/codex 需要自 2025-03-01-preview 起可用的 Responses API）无法在旧版本上运行；建议优先使用无版本的 /openai/v1 端点。注意：升级本插件会改变留空此字段的配置所实际使用的版本；如果您的 Azure 资源或网关（如 API Management）不支持 2025-04-01-preview，请在下方显式选择受支持的版本。
       options:
         - label:
             en_US: 2025-04-01-preview

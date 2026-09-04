@@ -286,12 +286,13 @@ class TestBuildResponsesApiInput:
         )
         assert result == [{"role": "user", "content": "hi"}]
 
-    def test_user_multimodal_message_joins_text_and_skips_non_text(self) -> None:
-        # The mantle path is text-only: text pieces are space-joined in order,
-        # any non-text content (here: an image between two text pieces) is
-        # dropped rather than raising.
+    def test_user_multimodal_message_forwards_text_and_image_parts(self) -> None:
+        # Vision: a multimodal user message becomes a Responses API
+        # content-item list; the image is forwarded as an ``input_image``
+        # (previously it was silently dropped, which broke vision on the
+        # mantle path — issue: GPT-5.6 vision greyed out / non-functional).
         image = ImagePromptMessageContent(
-            data="aGk=", format="png", mime_type="image/png", detail="low"
+            base64_data="aGk=", format="png", mime_type="image/png", detail="low"
         )
         result = BedrockLLM._build_responses_api_input(
             _make_instance(),
@@ -305,7 +306,54 @@ class TestBuildResponsesApiInput:
                 )
             ],
         )
-        assert result == [{"role": "user", "content": "look at this"}]
+        assert result == [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "look at"},
+                    {
+                        "type": "input_image",
+                        "image_url": "data:image/png;base64,aGk=",
+                        "detail": "low",
+                    },
+                    {"type": "input_text", "text": "this"},
+                ],
+            }
+        ]
+
+    def test_user_image_via_url_is_forwarded_as_image_url(self) -> None:
+        # When the image is provided as a URL, ``.data`` returns the URL as-is
+        # and it is forwarded unchanged; ``detail`` is carried through.
+        image = ImagePromptMessageContent(
+            url="https://example.com/cat.png",
+            format="png",
+            mime_type="image/png",
+            detail="high",
+        )
+        result = BedrockLLM._build_responses_api_input(
+            _make_instance(), [UserPromptMessage(content=[image])]
+        )
+        assert result == [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_image",
+                        "image_url": "https://example.com/cat.png",
+                        "detail": "high",
+                    }
+                ],
+            }
+        ]
+
+    def test_image_without_url_or_base64_raises_bad_request(self) -> None:
+        # An image part carrying neither a url nor base64 data cannot be sent;
+        # surface a clear bad-request rather than silently dropping it.
+        image = ImagePromptMessageContent(format="png", mime_type="image/png")
+        with pytest.raises(llm_mod.InvokeBadRequestError, match="url or base64"):
+            BedrockLLM._build_responses_api_input(
+                _make_instance(), [UserPromptMessage(content=[image])]
+            )
 
     def test_assistant_message_and_none_content(self) -> None:
         result = BedrockLLM._build_responses_api_input(

@@ -66,6 +66,8 @@ Find pages in my Notion workspace containing "project plan"
 Show me all items in my Notion database with ID "abc123" where Status is "In Progress"
 ```
 
+By default, `query_database` returns up to `limit` records (default 10). To retrieve every matching record in the database, set `fetch_all: true`, which automatically paginates through Notion's API. Each API call returns up to 100 records, and pagination is bounded by `max_api_calls` (default 500, so ~50,000 records max by default). The response includes `fetch_truncated: true` if the cap was hit. When `fetch_all` is enabled, the `limit` parameter is ignored. For large databases, consider tuning `max_api_calls` based on your expected record count to balance completeness with latency.
+
 ### Create a Page
 ```
 Create a new Notion page titled "Meeting Notes" with content "Discussed project timeline and assigned tasks."

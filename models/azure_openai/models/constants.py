@@ -15,7 +15,7 @@ from dify_plugin.entities.model import (
 from dify_plugin.entities.model.llm import LLMMode
 from pydantic import BaseModel
 
-AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
+AZURE_OPENAI_API_VERSION = "2025-04-01-preview"
 
 AZURE_DEFAULT_PARAM_SEED_HELP = I18nObject(
     zh_hans="如果指定，模型将尽最大努力进行确定性采样，使得重复的具有相同种子和参数的请求应该返回相同的结果。不能保证确定性，"
