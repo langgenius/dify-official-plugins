@@ -35,6 +35,33 @@ model_credential_schema:
     required: true
     type: secret-input
     variable: dashscope_api_key
+  - label:
+      en_US: DashScope API Base URL
+      zh_Hans: DashScope API Base URL
+    placeholder:
+      en_US: Leave blank for the default DashScope endpoint
+      zh_Hans: 留空则使用默认 DashScope 端点
+    help:
+      text:
+        en_US: >-
+          Optional. Use an Alibaba Cloud Model Studio workspace-specific
+          native endpoint such as
+          https://<workspace-id>.cn-beijing.maas.aliyuncs.com/api/v1
+          (OpenAI-compatible .../compatible-mode/v1 is also accepted and
+          converted for the DashScope SDK). When set, this overrides
+          Use International Endpoint. Speech WebSocket calls derive
+          wss://<host>/api-ws/v1/inference from the same host; leave
+          blank if your workspace does not expose that path.
+        zh_Hans: >-
+          可选。用于阿里云百炼工作空间专属原生端点，例如
+          https://<workspace-id>.cn-beijing.maas.aliyuncs.com/api/v1。
+          也接受 OpenAI 兼容的 compatible-mode/v1，并会转换为 DashScope SDK
+          使用的 /api/v1。填写后将覆盖「使用国际端点」。语音 WebSocket
+          会从同一主机推导 wss://<host>/api-ws/v1/inference；
+          若工作空间未提供该路径请留空。
+    required: false
+    type: text-input
+    variable: dashscope_api_base
   - default: '4096'
     label:
       en_US: Model context size
@@ -124,6 +151,33 @@ provider_credential_schema:
           en_US: "False"
           zh_Hans: "否"
         value: "false"
+  - label:
+      en_US: DashScope API Base URL
+      zh_Hans: DashScope API Base URL
+    placeholder:
+      en_US: Leave blank for the default DashScope endpoint
+      zh_Hans: 留空则使用默认 DashScope 端点
+    help:
+      text:
+        en_US: >-
+          Optional. Use an Alibaba Cloud Model Studio workspace-specific
+          native endpoint such as
+          https://<workspace-id>.cn-beijing.maas.aliyuncs.com/api/v1
+          (OpenAI-compatible .../compatible-mode/v1 is also accepted and
+          converted for the DashScope SDK). When set, this overrides
+          Use International Endpoint. Speech WebSocket calls derive
+          wss://<host>/api-ws/v1/inference from the same host; leave
+          blank if your workspace does not expose that path.
+        zh_Hans: >-
+          可选。用于阿里云百炼工作空间专属原生端点，例如
+          https://<workspace-id>.cn-beijing.maas.aliyuncs.com/api/v1。
+          也接受 OpenAI 兼容的 compatible-mode/v1，并会转换为 DashScope SDK
+          使用的 /api/v1。填写后将覆盖「使用国际端点」。语音 WebSocket
+          会从同一主机推导 wss://<host>/api-ws/v1/inference；
+          若工作空间未提供该路径请留空。
+    required: false
+    type: text-input
+    variable: dashscope_api_base
   - label:
       en_US: Enable request metadata
       zh_Hans: 启用请求元数据
