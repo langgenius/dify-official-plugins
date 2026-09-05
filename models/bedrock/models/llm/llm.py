@@ -8,6 +8,7 @@ from typing import Optional, Union, cast
 # 3rd import
 import boto3  # type: ignore
 from botocore.config import Config  # type: ignore
+from botocore.credentials import Credentials as BotocoreCredentials  # type: ignore
 from botocore.exceptions import (  # type: ignore
     ClientError,
     EndpointConnectionError,
@@ -63,6 +64,27 @@ from utils.inference_profile import (
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
+
+
+class _StaticCredentialsProvider:
+    """Minimal credentials provider for aws-bedrock-token-generator.
+
+    ``provide_token()`` requires an object with ``load()`` (a CredentialProvider).
+    Passing a raw ``botocore.credentials.Credentials`` raises AttributeError.
+    """
+
+    def __init__(self, access_key: str, secret_key: str, token: Optional[str] = None):
+        session_token = (token or "").strip() or None
+        self._credentials = BotocoreCredentials(
+            access_key=access_key,
+            secret_key=secret_key,
+            token=session_token,
+        )
+
+    def load(self) -> BotocoreCredentials:
+        return self._credentials
+
+
 ANTHROPIC_BLOCK_MODE_PROMPT = """You should always follow the instructions and output a valid {{block}} object.
 The structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure
 if you are not sure about the structure.
@@ -2077,7 +2099,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         - Access_Secret_Key / IAM_Role: generate a short-lived token via
           aws-bedrock-token-generator (official AWS library).
         """
-        auth_method = credentials.get("auth_method", "IAM_Role")
+        # Match get_bedrock_client(): omit auth_method → Access_Secret_Key, so
+        # configured access/secret keys are used on mantle the same way as Converse.
+        auth_method = credentials.get("auth_method", "Access_Secret_Key")
         region = credentials.get("aws_region", "us-east-2")
 
         if auth_method == "API_Key":
@@ -2099,13 +2123,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         aws_secret_access_key = credentials.get("aws_secret_access_key")
 
         if auth_method == "Access_Secret_Key" and aws_access_key_id and aws_secret_access_key:
-            from botocore.credentials import Credentials as BotocoreCredentials
-            creds = BotocoreCredentials(
+            provider = _StaticCredentialsProvider(
                 access_key=aws_access_key_id,
                 secret_key=aws_secret_access_key,
                 token=credentials.get("aws_session_token"),
             )
-            return provide_token(region=region, aws_credentials_provider=creds)
+            return provide_token(region=region, aws_credentials_provider=provider)
 
         # IAM_Role: rely on the environment (instance profile, env vars, etc.)
         return provide_token(region=region)
