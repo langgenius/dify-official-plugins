@@ -1,0 +1,52 @@
+background: '#E6EDFF'
+configurate_methods:
+- predefined-model
+description:
+  en_US: Models provided by The Grid, an OpenAI-compatible inference marketplace addressing capability tiers such as text-standard, code-prime and agent-max.
+  zh_Hans: The Grid 提供的模型。The Grid 是一个兼容 OpenAI 接口的推理市场，按能力等级调用，例如 text-standard、code-prime、agent-max。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/thegrid.py
+help:
+  title:
+    en_US: Get your API Key from The Grid
+    zh_Hans: 从 The Grid 获取 API Key
+  url:
+    en_US: https://thegrid.ai/docs
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: The Grid
+  zh_Hans: The Grid
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: thegrid
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - label:
+      en_US: API Base URL
+      zh_Hans: API Base URL
+    placeholder:
+      en_US: Base URL, e.g. https://api.thegrid.ai/v1
+      zh_Hans: Base URL, e.g. https://api.thegrid.ai/v1
+    required: false
+    type: text-input
+    default: "https://api.thegrid.ai/v1"
+    variable: endpoint_url
+supported_model_types:
+- llm

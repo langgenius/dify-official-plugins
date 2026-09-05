@@ -1,0 +1,17 @@
+- text-standard
+- text-prime
+- text-max
+- code-standard
+- code-prime
+- code-max
+- agent-standard
+- agent-prime
+- agent-max
+- claude-opus-latest
+- gpt-sol-latest
+- gemini-pro-latest
+- deepseek-pro-latest
+- glm-latest
+- kimi-latest
+- minimax-latest
+- bytedance-pro-latest

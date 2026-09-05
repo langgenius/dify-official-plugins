@@ -1,0 +1,48 @@
+# The catalog reports max_completion_tokens equal to the full context window
+# (1048576), which cannot be an output ceiling; capped conservatively here.
+model: kimi-latest
+label:
+  en_US: Kimi Latest
+  zh_Hans: Kimi Latest
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 1
+    min: 0.01
+    max: 1.00
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 131072
+  - name: reasoning_effort
+    type: string
+    default: max
+    options:
+      - low
+      - high
+      - max
+    label:
+      en_US: Reasoning effort
+      zh_Hans: 推理强度
+    help:
+      en_US: How much reasoning the instrument performs before answering. Reasoning tokens are billed and count toward max_tokens.
+      zh_Hans: 模型在作答前的推理强度。推理 token 会计费并计入 max_tokens。

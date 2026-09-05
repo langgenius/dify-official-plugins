@@ -1,0 +1,37 @@
+author: langgenius
+created_at: '2026-09-05T00:00:00.000000000-00:00'
+description:
+  en_US: Models provided by The Grid, an OpenAI-compatible inference marketplace addressing capability tiers such as text-standard, code-prime and agent-max.
+  zh_Hans: The Grid 提供的模型。The Grid 是一个兼容 OpenAI 接口的推理市场，按能力等级调用，例如 text-standard、code-prime、agent-max。
+icon: icon_s_en.svg
+label:
+  en_US: The Grid
+  zh_Hans: The Grid
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: thegrid
+plugins:
+  models:
+  - provider/thegrid.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+    tool:
+      enabled: true
+type: plugin
+version: 0.0.1
