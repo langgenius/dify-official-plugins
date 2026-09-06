@@ -245,6 +245,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             model: The model name
         """
         if model not in vision_models:
+            is_vision = False
             try:
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 yaml_file_path = os.path.join(current_dir, f"{model}.yaml")
@@ -257,10 +258,10 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                             'features' in yaml_content and
                             isinstance(yaml_content['features'], list) and
                             'vision' in yaml_content['features']):
-                        vision_models[model] = True
+                        is_vision = True
             except Exception:
                 pass
-            vision_models[model] = False
+            vision_models[model] = is_vision
         return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
@@ -364,6 +365,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     return "png"
                 elif data.startswith(b"BM"):
                     return "bmp"
+                elif data.startswith(b"RIFF") and len(data) >= 12 and data[8:12] == b"WEBP":
+                    return "webp"
                 else:
                     return "unknown"
             except Exception:
@@ -388,7 +391,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 }
             elif document.content_type == MultiModalContentType.IMAGE:
                 image_format = detect_image_format(document.content)
-                if image_format not in ["jpeg", "png", "bmp"]:
+                if image_format not in ["jpeg", "png", "bmp", "webp"]:
                     raise ValueError(f"Unsupported image format: {image_format}")
                 input = {
                     "image": "data:image/" + image_format + ";base64," + document.content
@@ -415,10 +418,18 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
                 
             if hasattr(response, 'usage') and response.usage:
-                if response.output["embeddings"][0]["type"] == "text":
-                    embedding_used_tokens += response.usage["input_tokens"]
-                elif response.output["embeddings"][0]["type"] == "image":
-                    embedding_used_tokens += response.usage["image_tokens"]
+                usage = response.usage
+                if "total_tokens" in usage:
+                    embedding_used_tokens += usage["total_tokens"]
+                else:
+                    embedding_type = response.output["embeddings"][0].get("type", "text")
+                    if embedding_type in ("text", "vl", "fusion"):
+                        embedding_used_tokens += usage.get("input_tokens", 0)
+                        embedding_used_tokens += usage.get("image_tokens", 0)
+                    elif embedding_type == "image":
+                        embedding_used_tokens += usage.get("image_tokens", 0)
+                    else:
+                        embedding_used_tokens += usage.get("input_tokens", 0)
             else:
                 raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
                 
