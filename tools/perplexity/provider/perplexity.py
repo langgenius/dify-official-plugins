@@ -10,6 +10,7 @@ class PerplexityProvider(ToolProvider):
         headers = {
             "Authorization": f"Bearer {credentials.get('perplexity_api_key')}",
             "Content-Type": "application/json",
+            "X-Pplx-Integration": "dify",
         }
         payload = {
             "model": "sonar",

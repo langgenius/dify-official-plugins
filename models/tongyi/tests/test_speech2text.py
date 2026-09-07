@@ -140,6 +140,44 @@ def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
     assert decode_mock.call_args.kwargs["format"] == "wav"
 
 
+WORKSPACE_NATIVE = "https://ws-example.cn-beijing.maas.aliyuncs.com/api/v1"
+WORKSPACE_WS = "wss://ws-example.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference"
+
+
+def test_invoke_realtime_speech_uses_workspace_ws_base_address() -> None:
+    file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "upload.wav")
+    audio = MagicMock(frame_rate=16000)
+    result = MagicMock()
+    result.status_code = 200
+    result.get_sentence.return_value = [{"text": "hello"}]
+    recognition = MagicMock()
+    recognition.call.return_value = result
+
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "false"}):
+        with patch(
+            "models.speech2text.speech2text.AudioSegment.from_file", return_value=audio
+        ):
+            with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
+                assert (
+                    _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={
+                            "dashscope_api_key": "test-key",
+                            "dashscope_api_base": WORKSPACE_NATIVE,
+                        },
+                        file=file_obj,
+                    )
+                    == "hello"
+                )
+
+    recognition.call.assert_called_once_with(
+        file=recognition.call.call_args.kwargs["file"],
+        headers=recognition.call.call_args.kwargs["headers"],
+        api_key="test-key",
+        base_address=WORKSPACE_WS,
+    )
+
+
 def test_invoke_normalizes_non_dict_sentences() -> None:
     file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "upload.wav")
     audio = MagicMock(frame_rate=16000)

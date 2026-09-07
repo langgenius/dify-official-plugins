@@ -95,6 +95,69 @@ def test_qwen_long_generate_normalizes_graphon_split_input_and_cleans_up() -> No
     client.close.assert_called_once()
 
 
+WORKSPACE_NATIVE = "https://ws-example.cn-beijing.maas.aliyuncs.com/api/v1"
+WORKSPACE_COMPATIBLE = (
+    "https://ws-example.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+)
+
+
+def test_qwen_long_uses_workspace_compatible_base_url() -> None:
+    model = _model()
+    model._handle_generate_response = MagicMock(return_value="result")
+    client = _client()
+
+    with (
+        patch("models.llm.llm.openai.OpenAI", return_value=client) as openai_client,
+        patch("models.llm.llm.Generation.call", return_value=MagicMock()),
+    ):
+        model._generate(
+            model="qwen-long",
+            credentials={
+                "dashscope_api_key": "test-key",
+                "dashscope_api_base": WORKSPACE_NATIVE,
+            },
+            prompt_messages=[UserPromptMessage(content="Hello.")],
+            model_parameters={},
+            stream=False,
+        )
+
+    openai_client.assert_called_once_with(
+        api_key="test-key",
+        base_url=WORKSPACE_COMPATIBLE,
+        max_retries=0,
+        timeout=120,
+    )
+
+
+def test_qwen_long_allows_workspace_base_with_international_flag() -> None:
+    model = _model()
+    model._handle_generate_response = MagicMock(return_value="result")
+    client = _client()
+
+    with (
+        patch("models.llm.llm.openai.OpenAI", return_value=client) as openai_client,
+        patch("models.llm.llm.Generation.call", return_value=MagicMock()),
+    ):
+        model._generate(
+            model="qwen-long",
+            credentials={
+                "dashscope_api_key": "test-key",
+                "use_international_endpoint": "true",
+                "dashscope_api_base": WORKSPACE_NATIVE,
+            },
+            prompt_messages=[UserPromptMessage(content="Hello.")],
+            model_parameters={},
+            stream=False,
+        )
+
+    openai_client.assert_called_once_with(
+        api_key="test-key",
+        base_url=WORKSPACE_COMPATIBLE,
+        max_retries=0,
+        timeout=120,
+    )
+
+
 def test_qwen_long_keeps_documents_in_their_conversation_turn() -> None:
     model = _model()
     files = MagicMock(spec=QwenLongFiles)
