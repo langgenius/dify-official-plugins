@@ -142,21 +142,25 @@ def sleeps(monkeypatch) -> list:
 
 
 def _embed_documents():
+    session = MagicMock(spec=requests.Session)
     return TongyiTextEmbeddingModel.embed_documents(
         credentials_kwargs=CREDENTIALS,
         model=TEXT_MODEL,
         texts=["hello"],
         base_address=BASE_ADDRESS,
+        session=session,
     )
 
 
 def _embed_multimodal_documents():
     documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content="hello")]
+    session = MagicMock(spec=requests.Session)
     return TongyiTextEmbeddingModel.embed_multimodal_documents(
         credentials_kwargs=CREDENTIALS,
         model=MULTIMODAL_MODEL,
         documents=documents,
         base_address=BASE_ADDRESS,
+        session=session,
     )
 
 

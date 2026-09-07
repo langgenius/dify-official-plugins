@@ -14,6 +14,13 @@ Fireworks AI provides hosted generative and embedding models that can be used di
 3. Add the credentials in the plugin settings.
 4. Save the configuration.
 
+## Configuration Options
+
+### Attach Dify app_id as request metadata
+This plugin offers an optional **Attach Dify app_id as request metadata** credential that is disabled by default. When enabled, the plugin attaches the current Dify `app_id` and a `dify` source marker as a `metadata` field via the `extra_body` argument to the underlying `openai` SDK call.
+
+The Fireworks API is OpenAI-compatible and silently ignores unknown body fields, so the metadata travels alongside the rest of the request payload and is used for observability / proxy-side propagation. Fireworks does not currently consume the metadata. Default is `disabled`, so the request shape is unchanged unless you opt in.
+
 ## Usage
 Select **Fireworks AI** as the model provider in Dify, choose an available model, and use it in applications, agents, or workflows.
 
