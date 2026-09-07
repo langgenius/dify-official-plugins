@@ -574,7 +574,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_drop_deprecated_sampling_parameters(self, model):
         mock_client = Mock()
@@ -603,7 +608,8 @@ class TestBuildGeminiContents:
         assert config.top_k is None
         assert config.thinking_config.thinking_budget is None
 
-    def test_gemini_3_7_drops_legacy_parameters_on_interactions_api(self):
+    @pytest.mark.parametrize("model", ["gemini-3.7-flash", "gemini-3-pro-preview"])
+    def test_interactions_api_drops_unsupported_sampling_parameters(self, model):
         mock_client = Mock()
 
         with (
@@ -611,7 +617,7 @@ class TestBuildGeminiContents:
             patch.object(self.llm, "_handle_interactions_response"),
         ):
             self.llm._generate(
-                model="gemini-3.7-flash",
+                model=model,
                 credentials={"google_api_key": "test-key"},
                 prompt_messages=[UserPromptMessage(content="Hello")],
                 model_parameters={
@@ -649,7 +655,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_reject_assistant_prefill(self, model):
         mock_client = Mock()
@@ -838,7 +849,12 @@ class TestBuildGeminiContents:
 
     @pytest.mark.parametrize(
         "model",
-        ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"],
+        [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+        ],
     )
     def test_new_models_accept_scalar_system_only_prompt(self, model):
         mock_client = Mock()

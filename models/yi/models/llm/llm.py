@@ -20,6 +20,8 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
 )
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class YiLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -34,6 +36,7 @@ class YiLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         if model == "yi-vl-plus":
             prompt_message_except_system: list[PromptMessage] = []
             for message in prompt_messages:
@@ -54,6 +57,7 @@ class YiLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     def _num_tokens_from_string(

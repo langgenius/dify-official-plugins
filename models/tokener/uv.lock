@@ -125,7 +125,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin-tokener"
-version = "0.0.1"
+version = "0.0.2"
 source = { virtual = "." }
 dependencies = [
     { name = "dify-plugin" },

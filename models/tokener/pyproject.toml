@@ -1,6 +1,6 @@
 [project]
 name = "dify-plugin-tokener"
-version = "0.0.1"
+version = "0.0.2"
 description = "Tokener.ai model provider for Dify"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
