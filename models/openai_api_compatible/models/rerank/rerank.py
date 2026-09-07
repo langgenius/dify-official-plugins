@@ -181,8 +181,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
             raise InvokeServerUnavailableError(
                 f"Rerank API request failed ({detail})"
             ) from None
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        except Exception:
+            raise InvokeError("Rerank API returned an invalid response") from None
 
     def _invoke_multimodal(
         self,
@@ -315,8 +315,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
             raise InvokeServerUnavailableError(
                 f"Rerank API request failed ({detail})"
             ) from None
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        except Exception:
+            raise InvokeError("Rerank API returned an invalid response") from None
 
     def _validate_image_url(self, url: str) -> str:
         """

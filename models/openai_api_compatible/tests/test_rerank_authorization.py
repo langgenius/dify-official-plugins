@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from dify_plugin.errors.model import InvokeServerUnavailableError
+from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
 
 from models.rerank.rerank import OpenAIRerankModel
 
@@ -153,6 +153,52 @@ def test_http_error_exposes_only_status_code(caplog):
     assert str(exc_info.value) == "Rerank API request failed (HTTP 401)"
     assert endpoint_url not in error_output
     assert "response-secret" not in error_output + caplog.text
+
+
+@pytest.mark.parametrize("multimodal", [False, True])
+def test_invalid_response_does_not_expose_values(multimodal):
+    model = OpenAIRerankModel(model_schemas=[])
+    response_secret = "response-secret"
+    response = MagicMock(
+        status_code=200,
+        json=lambda: {"results": [{"index": 0, "relevance_score": response_secret}]},
+    )
+
+    with patch("models.rerank.rerank.requests.post", return_value=response):
+        with pytest.raises(InvokeError) as exc_info:
+            if multimodal:
+                from dify_plugin.entities.model.text_embedding import (
+                    MultiModalContent,
+                    MultiModalContentType,
+                )
+
+                query = MultiModalContent(
+                    content_type=MultiModalContentType.TEXT,
+                    content="q",
+                )
+                docs = [
+                    MultiModalContent(
+                        content_type=MultiModalContentType.TEXT,
+                        content="d1",
+                    )
+                ]
+                model._invoke_multimodal(
+                    model="qwen3-vl-reranker",
+                    credentials=_credentials(),
+                    query=query,
+                    docs=docs,
+                )
+            else:
+                model._invoke(
+                    model="bge-reranker-v2-m3",
+                    credentials=_credentials(),
+                    query="q",
+                    docs=["d1"],
+                )
+
+    error_output = "".join(traceback.format_exception(exc_info.value))
+    assert str(exc_info.value) == "Rerank API returned an invalid response"
+    assert response_secret not in error_output
 
 
 def test_rerank_logs_exclude_multimodal_content_and_image_urls(caplog):
