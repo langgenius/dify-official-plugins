@@ -74,7 +74,7 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, model: str, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = str(credentials.get("endpoint_url", self._BASE_URL_V2))
+        credentials["endpoint_url"] = str(credentials.get("maas_base_url", self._BASE_URL_V2))
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)

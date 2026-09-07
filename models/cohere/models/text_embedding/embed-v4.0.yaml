@@ -1,0 +1,13 @@
+model: embed-v4.0
+label:
+  en_US: Embed v4.0
+model_type: text-embedding
+model_properties:
+  context_size: 128000
+  max_chunks: 48
+pricing:
+  input: '0.12'
+  unit: '0.000001'
+  currency: USD
+features:
+  - vision

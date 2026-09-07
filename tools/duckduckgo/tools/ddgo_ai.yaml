@@ -2,13 +2,13 @@ identity:
   name: ddgo_ai
   author: hjlarry
   label:
-    en_US: DuckDuckGo AI Chat
-    zh_Hans: DuckDuckGo AI聊天
+    en_US: DuckDuckGo AI Chat (deprecated)
+    zh_Hans: DuckDuckGo AI聊天（已弃用）
 description:
   human:
-    en_US: Use the anonymous private chat provided by DuckDuckGo.
-    zh_Hans: 使用DuckDuckGo提供的匿名私密聊天。
-  llm: Use the anonymous private chat provided by DuckDuckGo.
+    en_US: Deprecated and non-functional. DuckDuckGo no longer exposes its AI chat endpoint to this plugin; use an LLM node instead.
+    zh_Hans: 已弃用且无法使用。DuckDuckGo 不再向本插件开放 AI 聊天接口，请改用 LLM 节点。
+  llm: Deprecated and non-functional. Do not call this tool; use an LLM node instead.
 parameters:
   - name: query
     type: string

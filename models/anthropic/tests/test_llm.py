@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from anthropic import Timeout
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -9,6 +10,18 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
 from models.llm.llm import AnthropicLargeLanguageModel, PromptCachingHandler
+
+
+def test_client_timeout_uses_anthropic_http_type() -> None:
+    timeout = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test"}
+    )["timeout"]
+
+    assert isinstance(timeout, Timeout)
+    assert timeout.connect == 5.0
+    assert timeout.read == 300.0
+    assert timeout.write == 10.0
+    assert timeout.pool == 315.0
 
 
 def test_get_cache_control_defaults_overrides_and_copies() -> None:
@@ -82,6 +95,7 @@ def test_calc_adjusted_prompt_tokens() -> None:
         )
         == 1342
     )
+    assert calculate(1000, cache_read_input_tokens=109, cache_read_multiplier=0.025) == 1002
 
 
 def test_validate_credentials_probes_and_wraps_error() -> None:
@@ -95,7 +109,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
             model="claude-sonnet-4-6",
             credentials=credentials,
             prompt_messages=[UserPromptMessage(content="ping")],
-            model_parameters={"temperature": 0, "max_tokens": 20},
+            model_parameters={"max_tokens": 20},
             stream=False,
         )
 
@@ -111,6 +125,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
         ("CLAUDE-OPUS-4-7-latest", (True, False, False, True, False)),
         ("CLAUDE-OPUS-4-8-latest", (True, False, False, True, False)),
         ("CLAUDE-FABLE-5-latest", (True, True, False, True, False)),
+        ("CLAUDE-FABLE-5-1", (True, True, False, True, False)),
         ("CLAUDE-MYTHOS-5-latest", (True, True, False, True, False)),
         ("CLAUDE-OPUS-5-latest", (True, False, True, True, True)),
         ("CLAUDE-SONNET-4-6", (False, False, False, False, False)),
@@ -126,3 +141,10 @@ def test_model_classification(model: str, expected: tuple[bool, ...]) -> None:
         llm._supports_task_budget(model),
         llm._enforces_disabled_thinking_effort_cap(model),
     ) == expected
+
+
+def test_fable_5_1_cache_read_multiplier() -> None:
+    llm = AnthropicLargeLanguageModel()
+
+    assert llm._cache_read_multiplier("claude-fable-5-1") == 0.025
+    assert llm._cache_read_multiplier("claude-fable-5") == 0.1
