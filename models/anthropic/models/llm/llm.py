@@ -535,6 +535,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for key in ("temperature", "top_p", "top_k"):
                     model_parameters.pop(key, None)
 
+        # Anthropic SDK 1.x removed sampling parameters from the generated
+        # messages.create() signature. Older models (for example Sonnet 4.6)
+        # still support them through the HTTP API, so forward the parameters
+        # in extra_body after model/thinking capability filtering above.
+        sampling_parameters = {
+            key: model_parameters.pop(key)
+            for key in ("temperature", "top_p", "top_k")
+            if key in model_parameters
+        }
+        if sampling_parameters:
+            extra_body = dict(model_parameters.pop("extra_body", {}) or {})
+            extra_body.update(sampling_parameters)
+            model_parameters["extra_body"] = extra_body
+
         # Native structured output: when Dify provides a JSON schema, send it via
         # output_config.format (API constrained decoding) instead of the code-fence
         # prompt hack. Merges with effort/task_budget set above for adaptive models.
