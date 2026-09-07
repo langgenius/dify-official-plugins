@@ -10,6 +10,7 @@ the implementation actually sends and the URL it targets, without needing
 a real rerank gateway.
 """
 
+import logging
 import traceback
 from unittest.mock import MagicMock, patch
 
@@ -125,8 +126,88 @@ def test_request_error_does_not_expose_custom_endpoint_url():
                 docs=["d1"],
             )
 
-    assert str(exc_info.value) == "Rerank API request failed"
+    assert str(exc_info.value) == "Rerank API request failed (ConnectionError)"
     assert endpoint_url not in "".join(traceback.format_exception(exc_info.value))
+
+
+def test_http_error_exposes_only_status_code(caplog):
+    endpoint_url = "https://user:password@gateway.example.com/rerank?token=secret"
+    response = requests.Response()
+    response.status_code = 401
+    response.url = endpoint_url
+    response.reason = "Unauthorized"
+    response._content = b"response-secret"
+    model = OpenAIRerankModel(model_schemas=[])
+    caplog.set_level(logging.DEBUG, logger="models.rerank.rerank")
+
+    with patch("models.rerank.rerank.requests.post", return_value=response):
+        with pytest.raises(InvokeServerUnavailableError) as exc_info:
+            model._invoke(
+                model="bge-reranker-v2-m3",
+                credentials=_credentials(rerank_endpoint_url=endpoint_url),
+                query="q",
+                docs=["d1"],
+            )
+
+    error_output = "".join(traceback.format_exception(exc_info.value))
+    assert str(exc_info.value) == "Rerank API request failed (HTTP 401)"
+    assert endpoint_url not in error_output
+    assert "response-secret" not in error_output + caplog.text
+
+
+def test_rerank_logs_exclude_multimodal_content_and_image_urls(caplog):
+    from dify_plugin.entities.model.text_embedding import (
+        MultiModalContent,
+        MultiModalContentType,
+    )
+
+    model = OpenAIRerankModel(model_schemas=[])
+    caplog.set_level(logging.DEBUG, logger="models.rerank.rerank")
+    query = MultiModalContent(
+        content_type=MultiModalContentType.TEXT,
+        content="query-secret",
+    )
+    docs = [
+        MultiModalContent(
+            content_type=MultiModalContentType.TEXT,
+            content="document-secret",
+        ),
+        MultiModalContent(
+            content_type=MultiModalContentType.IMAGE,
+            content="file://image-secret",
+        ),
+    ]
+
+    with patch("models.rerank.rerank.requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"results": []},
+        )
+        model._invoke_multimodal(
+            model="qwen3-vl-reranker",
+            credentials=_credentials(),
+            query=query,
+            docs=docs,
+        )
+
+    model._validate_image_url("http://localhost/localhost-secret")
+    model._validate_image_url("http://10.0.0.1/private-secret")
+    with patch(
+        "models.rerank.rerank.urlparse",
+        side_effect=ValueError("parse-secret"),
+    ):
+        model._validate_image_url("https://example.com/url-secret")
+
+    secrets = (
+        "query-secret",
+        "document-secret",
+        "image-secret",
+        "localhost-secret",
+        "private-secret",
+        "url-secret",
+        "parse-secret",
+    )
+    assert all(secret not in caplog.text for secret in secrets)
 
 
 def test_text_rerank_omits_authorization_when_api_key_missing():

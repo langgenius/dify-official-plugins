@@ -84,11 +84,8 @@ model_credential_schema:
         - variable: __model_type
           value: rerank
       placeholder:
-        zh_Hans: https://gateway.example.com/v1/reranks
-        en_US: https://gateway.example.com/v1/reranks
-      help:
-        zh_Hans: 可选的完整重排序端点。留空时使用 API Base URL + /rerank。请勿在 URL 中包含凭据或令牌。
-        en_US: Optional complete rerank endpoint. When empty, API Base URL + /rerank is used. Do not include credentials or tokens in the URL.
+        zh_Hans: 可选完整 URL；留空使用 API Base URL + /rerank；请勿包含凭据或令牌
+        en_US: Optional complete URL; defaults to API Base URL + /rerank; do not include credentials or tokens
     - variable: endpoint_model_name
       label:
         zh_Hans: API endpoint中的模型名称
