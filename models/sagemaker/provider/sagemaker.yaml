@@ -112,6 +112,47 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: enable_request_metadata
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Attach Dify app_id as request body
+        zh_Hans: 附加 Dify app_id 作为请求体
+      help:
+        title:
+          en_US: How does this work?
+          zh_Hans: 这是如何工作的？
+        text:
+          en_US: |-
+            When enabled, the plugin attaches the current Dify app_id and a
+            `dify` source marker as a `_dify_metadata` field in the request
+            body sent to the SageMaker endpoint. The endpoint is expected
+            to ignore unknown body fields (consistent with OpenAI-compatible
+            body behavior); the metadata is purely for observability /
+            proxy-side propagation. If your endpoint has strict payload
+            validation and rejects unknown fields, disable the credential
+            (`enable_request_metadata=disabled`). Default is `disabled`, so
+            the request shape is unchanged unless you opt in.
+          zh_Hans: |-
+            启用后，插件会通过在发给 SageMaker 端点的请求体中附加 `_dify_metadata`
+            字段来携带当前 Dify app_id 与 `dify` 源标记。SageMaker 端点预期会静默
+            忽略未知的 body 字段（与 OpenAI 兼容 body 行为一致），该元数据仅用于
+            可观测性与代理侧传播。如果端点对 payload 有严格校验且拒绝未知字段，
+            请将凭据设置为 `enable_request_metadata=disabled`。默认值为 `disabled`，
+            即未开启时请求结构保持不变。
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 禁用
     - variable: vision_support
       show_on:
         - variable: __model_type

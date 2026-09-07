@@ -8,7 +8,9 @@ from typing import Any, Optional, Union, cast
 import boto3  # type: ignore
 from sagemaker import Predictor, serializers  # type: ignore
 from sagemaker.session import Session  # type: ignore
-        
+
+from models.llm._metadata import apply_dify_metadata_if_enabled
+
 from dify_plugin.entities.model import (
     AIModelEntity,
     DefaultParameterName,
@@ -51,7 +53,15 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 logger = logging.getLogger(__name__)
 
 
-def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any], stop: list, model_id: str, stream=False):
+def inference(
+    predictor,
+    messages: list[dict[str, Any]],
+    params: dict[str, Any],
+    stop: list,
+    model_id: str,
+    stream=False,
+    extra_metadata: dict[str, Any] | None = None,
+):
     """
     params:
     predictor : Sagemaker Predictor
@@ -77,6 +87,12 @@ def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any],
         "top_p": params.get("top_p", 0.9),
         "stop": stop,
     }
+    if extra_metadata:
+        # Namespaced under a single key so the endpoint sees at most one
+        # extra top-level field, reducing the risk of payload-validation
+        # rejections. The endpoint is expected to ignore unknown body
+        # fields (consistent with OpenAI-compatible body behavior).
+        payload["_dify_metadata"] = dict(extra_metadata)
 
     if not stream:
         response = predictor.predict(payload)
@@ -325,8 +341,15 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
             )
 
         messages: list[dict[str, Any]] = [self._convert_prompt_message_to_dict(p) for p in prompt_messages]
+        apply_dify_metadata_if_enabled(credentials)
         response = inference(
-            predictor=self.predictor, messages=messages, params=model_parameters, stop=stop, model_id=credentials.get("model_id", ""), stream=stream
+            predictor=self.predictor,
+            messages=messages,
+            params=model_parameters,
+            stop=stop,
+            model_id=credentials.get("model_id", ""),
+            stream=stream,
+            extra_metadata=credentials.get("_dify_metadata"),
         )
 
         if stream:
@@ -472,7 +495,7 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
         """
         try:
             # get model mode
-            pass
+            apply_dify_metadata_if_enabled(credentials)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
