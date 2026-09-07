@@ -4,6 +4,8 @@ from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class WenxinLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -18,10 +20,12 @@ class WenxinLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @staticmethod
