@@ -111,6 +111,43 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: fireworks_api_key
+  - default: disabled
+    label:
+      en_US: Attach Dify app_id as request metadata
+      zh_Hans: 附加 Dify app_id 作为请求元数据
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as a `metadata` field via the `extra_body` argument to
+          the underlying `openai` SDK call. The Fireworks API is
+          OpenAI-compatible and silently ignores unknown body fields, so the
+          metadata travels alongside the rest of the request payload and is
+          used for observability / proxy-side propagation. Fireworks does not
+          currently consume the metadata. Default is `disabled`, so the
+          request shape is unchanged unless you opt in.
+        zh_Hans: |-
+          启用后，插件会通过 `openai` SDK 的 `extra_body` 参数附加当前 Dify
+          app_id 与 `dify` 源标记，作为 `metadata` 字段。Fireworks API 与
+          OpenAI 兼容，会静默忽略未知的 body 字段，因此该元数据随请求一起
+          传递，可用于可观测性与代理侧传播。Fireworks API 当前不会消费该
+          元数据。默认值为 `disabled`，即未开启时请求结构保持不变。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on: []
+    type: select
+    variable: enable_request_metadata
 supported_model_types:
 - llm
 - text-embedding

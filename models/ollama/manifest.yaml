@@ -30,4 +30,4 @@ resource:
       text_embedding: true
       tts: false
 type: plugin
-version: 1.0.0
+version: 1.0.1

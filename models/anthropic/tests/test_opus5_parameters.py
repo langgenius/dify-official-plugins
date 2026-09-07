@@ -65,6 +65,17 @@ def test_opus5_schema_defaults_match_anthropic_docs() -> None:
     assert schema["model_properties"]["context_size"] == 1000000
 
 
+def test_json_schema_models_advertise_structured_output() -> None:
+    model_dir = Path(__file__).parents[1] / "models" / "llm"
+    for schema_path in model_dir.glob("claude-*.yaml"):
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        parameter_names = {
+            rule["name"] for rule in schema.get("parameter_rules", [])
+        }
+        if "json_schema" in parameter_names:
+            assert "structured-output" in schema.get("features", []), schema_path.name
+
+
 def test_opus5_omitted_thinking_preserves_api_default(monkeypatch) -> None:
     payload = _capture_payload(
         monkeypatch,
@@ -172,3 +183,46 @@ def test_opus5_task_budget_below_minimum_silently_ignored(monkeypatch) -> None:
 
     assert "task_budget" not in payload.get("output_config", {})
     assert payload["extra_headers"] == {}
+
+
+def test_fable_5_1_schema_and_request_contract(monkeypatch) -> None:
+    schema_path = Path(__file__).parents[1] / "models" / "llm" / "claude-fable-5-1.yaml"
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+
+    assert "structured-output" in schema["features"]
+    assert schema["model_properties"]["context_size"] == 1_000_000
+    assert rules["max_tokens"]["default"] == 128_000
+    assert rules["max_tokens"]["max"] == 128_000
+    assert rules["thinking_display"]["default"] == "summarized"
+    assert rules["effort"]["default"] == "high"
+    assert rules["task_budget"]["max"] == 1_000_000
+    assert not {"temperature", "top_p", "top_k", "thinking_budget"} & rules.keys()
+    assert schema["pricing"] == {
+        "input": "10.00",
+        "output": "50.00",
+        "unit": "0.000001",
+        "currency": "USD",
+    }
+
+    payload = _capture_payload(
+        monkeypatch,
+        {
+            "max_tokens": 128_000,
+            "temperature": 0,
+            "top_p": 0.1,
+            "top_k": 1,
+            "thinking_display": "summarized",
+            "effort": "xhigh",
+            "task_budget": 64_000,
+        },
+        model="claude-fable-5-1",
+    )
+
+    assert payload["thinking"] == {"type": "adaptive", "display": "summarized"}
+    assert payload["output_config"] == {
+        "effort": "xhigh",
+        "task_budget": {"type": "tokens", "total": 64_000},
+    }
+    assert not {"temperature", "top_p", "top_k"} & payload.keys()
+    assert payload["extra_headers"] == {"anthropic-beta": "task-budgets-2026-03-13"}

@@ -8,6 +8,7 @@ from typing import Optional, Union, cast
 # 3rd import
 import boto3  # type: ignore
 from botocore.config import Config  # type: ignore
+from botocore.credentials import Credentials as BotocoreCredentials  # type: ignore
 from botocore.exceptions import (  # type: ignore
     ClientError,
     EndpointConnectionError,
@@ -63,6 +64,27 @@ from utils.inference_profile import (
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
+
+
+class _StaticCredentialsProvider:
+    """Minimal credentials provider for aws-bedrock-token-generator.
+
+    ``provide_token()`` requires an object with ``load()`` (a CredentialProvider).
+    Passing a raw ``botocore.credentials.Credentials`` raises AttributeError.
+    """
+
+    def __init__(self, access_key: str, secret_key: str, token: Optional[str] = None):
+        session_token = (token or "").strip() or None
+        self._credentials = BotocoreCredentials(
+            access_key=access_key,
+            secret_key=secret_key,
+            token=session_token,
+        )
+
+    def load(self) -> BotocoreCredentials:
+        return self._credentials
+
+
 ANTHROPIC_BLOCK_MODE_PROMPT = """You should always follow the instructions and output a valid {{block}} object.
 The structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure
 if you are not sure about the structure.
@@ -2077,7 +2099,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         - Access_Secret_Key / IAM_Role: generate a short-lived token via
           aws-bedrock-token-generator (official AWS library).
         """
-        auth_method = credentials.get("auth_method", "IAM_Role")
+        # Match get_bedrock_client(): omit auth_method → Access_Secret_Key, so
+        # configured access/secret keys are used on mantle the same way as Converse.
+        auth_method = credentials.get("auth_method", "Access_Secret_Key")
         region = credentials.get("aws_region", "us-east-2")
 
         if auth_method == "API_Key":
@@ -2099,19 +2123,27 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         aws_secret_access_key = credentials.get("aws_secret_access_key")
 
         if auth_method == "Access_Secret_Key" and aws_access_key_id and aws_secret_access_key:
-            from botocore.credentials import Credentials as BotocoreCredentials
-            creds = BotocoreCredentials(
+            provider = _StaticCredentialsProvider(
                 access_key=aws_access_key_id,
                 secret_key=aws_secret_access_key,
                 token=credentials.get("aws_session_token"),
             )
-            return provide_token(region=region, aws_credentials_provider=creds)
+            return provide_token(region=region, aws_credentials_provider=provider)
 
         # IAM_Role: rely on the environment (instance profile, env vars, etc.)
         return provide_token(region=region)
 
     def _build_responses_api_input(self, prompt_messages: list[PromptMessage]) -> list[dict]:
-        """Convert Dify prompt messages to OpenAI Responses API input format."""
+        """Convert Dify prompt messages to OpenAI Responses API input format.
+
+        Text-only user messages keep a plain-string ``content``. Multimodal
+        user messages are converted to a Responses API content-item list so
+        images (vision) are forwarded to the model instead of being silently
+        dropped. GPT-5.6/5.5/5.4 on the bedrock-mantle endpoint expose the
+        OpenAI Responses API, so image parts use the ``input_image`` content
+        type — mirrors the reference implementation in models/openai
+        (responses.py).
+        """
         result = []
         for message in prompt_messages:
             if isinstance(message, SystemPromptMessage):
@@ -2120,14 +2152,48 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 if isinstance(message.content, str):
                     content = message.content
                 else:
-                    content = " ".join(
-                        c.data for c in message.content
-                        if c.type == PromptMessageContentType.TEXT
-                    )
+                    content = self._convert_responses_api_user_content(message.content)
                 result.append({"role": "user", "content": content})
             elif isinstance(message, AssistantPromptMessage):
                 result.append({"role": "assistant", "content": message.content or ""})
         return result
+
+    @staticmethod
+    def _convert_responses_api_user_content(contents: list) -> list[dict]:
+        """Convert a multimodal user-message content list into OpenAI Responses
+        API input content items.
+
+        Text -> ``{"type": "input_text", "text": ...}``
+        Image -> ``{"type": "input_image", "image_url": <data uri or url>, "detail": ...}``
+
+        ``ImagePromptMessageContent.data`` returns the source URL when present,
+        otherwise a ``data:<mime>;base64,<data>`` URI — both are accepted by the
+        Responses API ``image_url`` field.
+
+        :raises InvokeBadRequestError: for an image part with neither a url nor
+            base64 data, or for a content type the mantle GPT-5.x models cannot
+            accept (audio/video/document).
+        """
+        items: list[dict] = []
+        for content in contents:
+            if content.type == PromptMessageContentType.TEXT:
+                content = cast(TextPromptMessageContent, content)
+                items.append({"type": "input_text", "text": content.data})
+            elif content.type == PromptMessageContentType.IMAGE:
+                content = cast(ImagePromptMessageContent, content)
+                if not content.url and not content.base64_data:
+                    raise InvokeBadRequestError("Image input must include a url or base64 data")
+                items.append({
+                    "type": "input_image",
+                    "image_url": content.data,
+                    "detail": content.detail.value,
+                })
+            else:
+                raise InvokeBadRequestError(
+                    f"Unsupported content type '{content.type}' for GPT-5.x on the "
+                    "bedrock-mantle endpoint; only text and image inputs are supported."
+                )
+        return items
 
     def _generate_with_responses_api(
         self,

@@ -1,8 +1,7 @@
 from typing import Any, Generator
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
-from dify_plugin.entities.model.message import SystemPromptMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
@@ -19,7 +18,7 @@ class DuckDuckGoSearchTool(Tool):
         max_results = tool_parameters.get("max_results", 5)
         require_summary = tool_parameters.get("require_summary", False)
         proxy = tool_parameters.get("proxy_server", None)
-        response = DDGS(proxy=proxy).text(query, max_results=max_results) if proxy else DDGS().text(query, max_results=max_results)
+        response = DDGS(proxy=proxy).text(query, max_results=max_results)
         if require_summary:
             results = "\n".join([res.get("body") for res in response])
             results = self.summary_results(content=results, query=query)
