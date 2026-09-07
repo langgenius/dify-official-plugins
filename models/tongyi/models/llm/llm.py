@@ -252,7 +252,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # Qwen3.5/3.6/3.7/3.8 series
             "qwen3.8-max",
             "qwen3.8-flash",
-            "qwen3.8-flash-next",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",
@@ -301,7 +300,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-omni-flash-2025-12-01",
             "qwen3.8-max",
             "qwen3.8-flash",
-            "qwen3.8-flash-next",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",
