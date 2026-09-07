@@ -1,0 +1,53 @@
+model: doubao-seed-2-0-mini-260428
+label:
+  en_US: Doubao Seed 2.0 Mini 260428
+  zh_Hans: Doubao Seed 2.0 Mini 260428
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - video
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 32000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0.0282'
+  output: '0.282'
+  unit: '0.000001'
+  currency: USD
