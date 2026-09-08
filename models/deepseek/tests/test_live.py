@@ -8,8 +8,10 @@ import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
+    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageTool,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -95,6 +97,37 @@ def test_every_current_model_accepts_a_minimal_request(model: str) -> None:
     )
 
     assert _text(chunks).strip()
+    _terminal(chunks)
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_vision_recognizes_an_inline_image(stream: bool) -> None:
+    # A 32x32 red PNG keeps the live request small and independent of external URLs.
+    image = ImagePromptMessageContent(
+        format="png",
+        mime_type="image/png",
+        base64_data=(
+            "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKElEQVR4nO3NsQ0A"
+            "AAzCMP5/un0CNkuZ41wybXsHAAAAAAAAAAAAxR4yw/wuPL6QkAAAAABJRU5ErkJggg=="
+        ),
+    )
+    chunks = _invoke(
+        [
+            UserPromptMessage(
+                content=[
+                    TextPromptMessageContent(
+                        data="Name the color of this image in one English word."
+                    ),
+                    image,
+                ]
+            )
+        ],
+        model="deepseek-v4-flash-vision-exp",
+        parameters={"thinking": False, "max_tokens": 16},
+        stream=stream,
+    )
+
+    assert "red" in _text(chunks).lower()
     _terminal(chunks)
 
 
