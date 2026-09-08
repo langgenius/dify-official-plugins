@@ -2,6 +2,7 @@ import re
 from collections.abc import Generator
 
 from dify_plugin import OAICompatLargeLanguageModel
+from models.llm._metadata import apply_dify_headers_if_enabled
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -54,6 +55,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
         self._add_function_call(model, credentials)
+        apply_dify_headers_if_enabled(credentials)
         user = user[:32] if user else None
 
         credentials["_current_model"] = model
@@ -125,6 +127,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         return cleaned
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
+        apply_dify_headers_if_enabled(credentials)
         # An explicitly set endpoint_url (including a proxy/gateway URL) is used
         # as-is with no fallback, so existing configurations stay untouched.
         if credentials.get("endpoint_url"):
