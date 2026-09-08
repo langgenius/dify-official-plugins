@@ -64,7 +64,7 @@ class SlackEndpoint(Endpoint):
                             )
                             return Response(
                                 status=200,
-                                response=json.dumps(result),
+                                response=json.dumps(result.data),
                                 content_type="application/json"
                             )
                         except SlackApiError as e:
