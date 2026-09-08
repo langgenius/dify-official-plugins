@@ -5,6 +5,7 @@ description:
   pt_BR: GitHub é uma plataforma online para serviços de hospedagem de código fonte de software.
   zh_Hans: GitHub是一个在线软件源代码托管服务平台。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: GitHub
   pt_BR: GitHub
@@ -34,4 +35,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 0.3.9
+version: 0.3.10

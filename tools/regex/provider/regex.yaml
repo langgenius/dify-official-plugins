@@ -8,6 +8,7 @@ identity:
     pt_BR: A tool for regex extraction.
     zh_Hans: 一个用于正则表达式内容提取的工具。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Regex
     pt_BR: Regex

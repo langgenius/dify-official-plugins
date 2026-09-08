@@ -138,6 +138,6 @@ plugin = PushoverPlugin(
         description="Pushover plugin for sending notifications",
         version="0.0.1",
         label="Pushover",
-        icon="icon.png",
+        icon="icon.svg",
     )
 )

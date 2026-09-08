@@ -22,7 +22,8 @@ identity:
       provides highly relevant search results and raw content extraction from web
       pages.
     zh_Hans: 一个强大的原生AI搜索引擎和网页内容提取工具，提供高度相关的搜索结果和网页原始内容提取。
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Tavily
     zh_Hans: Tavily

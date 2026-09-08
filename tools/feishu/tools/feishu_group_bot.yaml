@@ -9,7 +9,7 @@ extra:
     source: tools/feishu_group_bot.py
 identity:
   author: Arkii Sun
-  icon: icon.png
+  icon: icon.svg
   label:
     en_US: Send Group Message
     pt_BR: Send Group Message

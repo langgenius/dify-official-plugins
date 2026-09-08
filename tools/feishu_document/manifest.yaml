@@ -6,6 +6,7 @@ description:
   zh_Hans:
     "飞书云文档，需要开通以下权限: docx:document、drive:drive、docs:document.content:read。"
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu Cloud Document
   zh_Hans: 飞书云文档
@@ -34,4 +35,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

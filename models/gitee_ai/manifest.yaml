@@ -3,7 +3,7 @@ created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
   en_US: 快速体验大模型，领先探索 AI 开源世界
   zh_Hans: 快速体验大模型，领先探索 AI 开源世界
-icon: Gitee-AI-Logo.svg
+icon: icon.svg
 label:
   en_US: Gitee AI
   zh_Hans: 模力方舟
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.1.10
+version: 0.1.11

@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="56px" height="56px" viewBox="0 0 56 56" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>形状结合</title>
-    <g id="设计规范" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <path d="M56,0 L56,56 L0,56 L0,0 L56,0 Z M31.6063018,12 L24.3936982,12 L24.1061064,12.7425499 L12.6071308,42.4324141 L12,44 L19.7849972,44 L20.0648488,43.2391815 L22.5196173,36.5567427 L33.4780427,36.5567427 L35.9351512,43.2391815 L36.2150028,44 L44,44 L43.3928692,42.4324141 L31.8938936,12.7425499 L31.6063018,12 Z M28.0163803,21.5755126 L31.1613993,30.2523823 L24.8432808,30.2523823 L28.0163803,21.5755126 Z" id="形状结合" fill="#2F4F4F"></path>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1264 -322)"><g id="alphavantage_light">
+<rect width="40" height="40" transform="translate(1264 322)" fill="#364E4F"/>
+<path id="A" d="M1281.65 344.14H1287.2L1284.5 336.28H1284.44L1281.65 344.14ZM1282.1 331H1286.93L1294.94 352.42H1290.05L1288.43 347.65H1280.42L1278.74 352.42H1274L1282.1 331Z" fill="white"/>
+</g>
+</g>
 </svg>

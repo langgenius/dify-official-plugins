@@ -3,7 +3,7 @@ created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US: Translate text using Baidu
   zh_Hans: 使用百度进行翻译
-icon: icon.png
+icon: icon.svg
 label:
   en_US: Baidu Translate
   zh_Hans: 百度翻译
@@ -31,4 +31,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.0.8
+version: 0.0.9

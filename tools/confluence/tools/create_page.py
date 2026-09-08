@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -17,18 +18,16 @@ class CreatePageTool(Tool):
         title = tool_parameters.get("title")
         body = tool_parameters.get("body")
 
-        space = confluence.get_space(space_key)
+        space = confluence.get_space_by_key(space_key) if isinstance(confluence, ConfluenceV2) else confluence.get_space(space_key)
         if not space:
             yield self.create_text_message("Space not found")
             return
 
         try:
-            _ = confluence.create_page(
-                space=space_key,
-                title=title,
-                body=body,
-                representation="storage",
-            )
+            if isinstance(confluence, ConfluenceV2):
+                confluence.create_page(space_id=space["id"], title=title, body=body, body_format="storage")
+            else:
+                confluence.create_page(space=space_key, title=title, body=body, representation="storage")
             yield self.create_text_message("Page created successfully")
 
         except Exception as e:

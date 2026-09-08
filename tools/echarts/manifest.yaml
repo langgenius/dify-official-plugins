@@ -6,6 +6,7 @@ description:
     line chart, pie chart, etc.
   zh_Hans: ECharts图表生成是一个用于生成可视化ECharts图表的工具，你可以通过它来生成柱状图、折线图、饼图等各类图表
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: ECharts Chart Generator
   zh_Hans: ECharts图表生成
@@ -35,4 +36,4 @@ tags:
   - productivity
   - utilities
 type: plugin
-version: 0.0.7
+version: 0.0.8

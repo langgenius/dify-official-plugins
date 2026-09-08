@@ -8,6 +8,7 @@ description:
     for readers to access the full text of papers.
   zh_Hans: Crossref是于2000年创建的使用DOI技术的跨出版商参考文献链接注册查询系统。Crossref建立了在论文的参考文献列表和引文全文之间的跨数据库链接，使得读者能够非常便捷地获取文献全文。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: CrossRef
   zh_Hans: CrossRef
@@ -35,4 +36,4 @@ resource:
 tags:
   - search
 type: plugin
-version: 0.0.7
+version: 0.0.8

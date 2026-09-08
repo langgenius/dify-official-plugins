@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="baichuan_light">
+<rect width="40" height="40" fill="white"/>
+<g id="Layer_1" clip-path="url(#clip0_18015_5351)">
+<path id="Vector" d="M16.0018 9H12.5109L10.3291 13.7291V26.2364L8 30.8182H13.6727L15.8873 26.2364L16.0018 9ZM23.9982 9H18.3255V30.8182H23.9982V9ZM26.3273 15.2564H32V30.8182H26.3273V15.2564ZM32 9H26.3273V13.5109H32V9Z" fill="url(#paint0_linear_18015_5351)"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_18015_5351" x1="11.12" y1="11.9455" x2="29.1679" y2="31.559" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFB81E"/>
+<stop offset="1" stop-color="#FF5A1F"/>
+</linearGradient>
+<clipPath id="clip0_18015_5351">
+<rect width="24" height="21.8182" fill="white" transform="translate(8 9)"/>
+</clipPath>
+</defs>
+</svg>

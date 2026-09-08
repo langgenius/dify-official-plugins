@@ -1,7 +1,7 @@
 model: gpt-5-4
 label:
   en_US: GPT-5.4
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - vision

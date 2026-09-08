@@ -5,7 +5,6 @@ from typing import ClassVar
 import pytest
 import yaml
 from dify_plugin.entities.model.message import UserPromptMessage
-
 from models.llm import anthropic as anthropic_module
 from models.llm.anthropic import AnthropicLargeLanguageModel
 
@@ -28,7 +27,7 @@ class _Anthropic:
         self.instances.append(self)
 
 
-def _capture_payload(monkeypatch, model_parameters: dict) -> dict:
+def _capture_payload(monkeypatch, model_parameters: dict, user: str | None = None) -> dict:
     _Anthropic.instances = []
     monkeypatch.setattr(anthropic_module, "Anthropic", _Anthropic)
 
@@ -38,9 +37,16 @@ def _capture_payload(monkeypatch, model_parameters: dict) -> dict:
         prompt_messages=[UserPromptMessage(content="Hello")],
         model_parameters=dict(model_parameters),
         stream=True,
+        user=user,
     )
 
     return _Anthropic.instances[0].messages.calls[0]
+
+
+def test_messages_metadata_preserves_user_id(monkeypatch) -> None:
+    payload = _capture_payload(monkeypatch, {"max_tokens": 16}, user="test-user")
+
+    assert payload["metadata"] == {"user_id": "test-user"}
 
 
 def test_opus5_schema_matches_aihubmix_facts() -> None:
