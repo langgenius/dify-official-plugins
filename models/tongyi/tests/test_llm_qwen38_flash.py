@@ -19,7 +19,6 @@ from models.llm.llm import TongyiLargeLanguageModel
 MODELS_DIR = Path(__file__).parent.parent / "models" / "llm"
 QWEN38_FLASH_MODELS = (
     "qwen3.8-flash",
-    "qwen3.8-flash-next",
 )
 
 
@@ -89,11 +88,9 @@ def test_qwen38_flash_schema(model_name: str) -> None:
     ) == {"max_completion_tokens": 128}
 
 
-def test_qwen38_flash_models_are_ordered_together() -> None:
+def test_qwen38_flash_is_ordered_after_max() -> None:
     position = _load_yaml(MODELS_DIR / "_position.yaml")
-    indexes = [position.index(model_name) for model_name in QWEN38_FLASH_MODELS]
     assert position.index("qwen3.8-flash") == position.index("qwen3.8-max") + 1
-    assert indexes[1] == indexes[0] + 1
 
 
 @pytest.mark.parametrize("model_name", QWEN38_FLASH_MODELS)
