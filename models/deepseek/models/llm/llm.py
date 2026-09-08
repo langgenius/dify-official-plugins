@@ -24,7 +24,11 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         rf"<think>\n{re.escape(_THINK_MARKER)}(.*?)\n</think>",
         re.DOTALL | re.IGNORECASE,
     )
-    _V4_MODELS = ("deepseek-v4-flash", "deepseek-v4-pro")
+    _V4_MODELS = (
+        "deepseek-v4-flash",
+        "deepseek-v4-flash-vision-exp",
+        "deepseek-v4-pro",
+    )
     _THINKING_UNSUPPORTED_PARAMETERS = (
         "temperature",
         "top_p",
