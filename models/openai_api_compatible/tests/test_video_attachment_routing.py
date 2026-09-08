@@ -52,6 +52,70 @@ def test_video_content_serializes_as_video_url_not_image_url():
     assert "image_url" not in part
 
 
+def test_video_url_form_serializes_as_video_url():
+    """VIDEO content referenced by URL (not base64) must also route
+    through ``video_url`` -- the routing is keyed on the content
+    type, not on whether the data is inline or remote. vLLM and
+    LiteLLM-hosted_vllm accept both forms behind the ``video_url``
+    content part; the previous ``image_url``+URL shape was rejected
+    the same way as the data-URI shape."""
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    video_c = VideoPromptMessageContent(
+        type=PromptMessageContentType.VIDEO,
+        format="url",
+        url="https://example.com/clip.mp4",
+        mime_type="video/mp4",
+    )
+    msg = UserPromptMessage(content=[video_c])
+    rendered = model._convert_prompt_message_to_dict(msg)
+
+    part = rendered["content"][0]
+    assert part["type"] == "video_url"
+    assert part["video_url"] == {"url": "https://example.com/clip.mp4"}
+    # Defensive: URL-form video must not regress to image_url either.
+    assert "image_url" not in part
+
+
+def test_video_does_not_use_image_url_data_uri_for_litellm_gemini_path():
+    """Intentional divergence from the #3090 LiteLLM/Vertex-Gemini path.
+
+    #3090 serialised VIDEO as an ``image_url`` content part carrying a
+    data URI because LiteLLM would convert ``image_url`` to Gemini's
+    ``inline_data`` block. That worked for Vertex Gemini via LiteLLM
+    but was rejected by vLLM / LiteLLM-hosted_vllm (no image decoder
+    for the video MIME -> HTTP 400 "cannot identify image file").
+
+    The fix intentionally trades the LiteLLM/Vertex-Gemini path for
+    the OpenAI-standard ``video_url`` path, which is what vLLM and
+    any other backend that follows the OpenAI content-part spec
+    expect. Vertex Gemini users on LiteLLM can route through
+    ``hosted_vllm`` or use a vLLM backend instead.
+
+    This test pins that the plugin does NOT silently fall back to the
+    old ``image_url`` shape for video -- if a future refactor reintroduces
+    it, this test will fail and the trade-off will need to be re-evaluated.
+    """
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    video_c = VideoPromptMessageContent(
+        type=PromptMessageContentType.VIDEO,
+        format="data",
+        base64_data="AAAA",
+        mime_type="video/mp4",
+    )
+    msg = UserPromptMessage(content=[video_c])
+    rendered = model._convert_prompt_message_to_dict(msg)
+
+    # The single content part must be video_url, not image_url.
+    parts = rendered["content"]
+    assert len(parts) == 1
+    assert parts[0]["type"] != "image_url", (
+        "VIDEO must not serialise as image_url -- that was the "
+        "LiteLLM/Vertex-Gemini workaround from #3090 which vLLM rejects"
+    )
+
+
 def test_image_content_still_serializes_as_image_url():
     """The fix only routes VIDEO through video_url. IMAGE content
     must keep its image_url part so existing image-only providers
