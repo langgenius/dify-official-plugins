@@ -98,11 +98,12 @@ def search_with_retry(
     if str(last_error) == DDGS_NO_RESULTS_MESSAGE:
         message = (
             f"DuckDuckGo {category} search returned nothing for {query!r} after {MAX_ATTEMPTS} attempts. "
-            "ddgs reports 'No results found.' when every upstream search engine answered with a "
-            "non-200 status or a captcha page, so this almost always means the engines blocked this "
-            "server's requests rather than that the query has no matches. Retry later, reduce how "
-            "many searches the workflow runs at once, set proxy_server, or pin backend to engines "
-            "that still answer from this host."
+            "ddgs reports 'No results found.' both when every upstream search engine answered with a "
+            "non-200 status or a captcha page and when they all genuinely returned nothing, and it "
+            "discards the status code before the caller can tell the two apart. A query that has no "
+            "matches anywhere is rare, so this is usually a block on this server's requests. If the "
+            "query should have matches: retry later, reduce how many searches the workflow runs at "
+            "once, set proxy_server, or pin backend to engines that still answer from this host."
         )
     else:
         message = f"DuckDuckGo {category} search failed after {MAX_ATTEMPTS} attempts: {last_error}"
