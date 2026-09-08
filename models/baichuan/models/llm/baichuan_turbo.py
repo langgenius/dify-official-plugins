@@ -77,15 +77,22 @@ class BaichuanModel:
         parameters: dict[str, Any],
         timeout: int,
         tools: Optional[list[PromptMessageTool]] = None,
+        extra_headers: Optional[dict[str, str]] = None,
     ) -> Union[Iterator, dict]:
         if model in self._model_mapping:
             api_base = "https://api.baichuan-ai.com/v1/chat/completions"
         else:
             raise BadRequestError(f"Unknown model: {model}")
         data = self._build_parameters(model, stream, messages, parameters, tools)
+        # Merge caller-supplied extra headers into the request headers so
+        # the Dify opt-in (and any other caller-supplied observability
+        # headers) propagate to the upstream Baichuan endpoint.
+        headers = dict(self.request_headers)
+        if extra_headers:
+            headers.update(extra_headers)
         try:
             response = post(
-                url=api_base, headers=self.request_headers, data=json.dumps(data), timeout=timeout, stream=stream
+                url=api_base, headers=headers, data=json.dumps(data), timeout=timeout, stream=stream
             )
         except Exception as e:
             raise InternalServerError(f"Failed to invoke model: {e}")
