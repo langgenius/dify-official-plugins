@@ -27,6 +27,8 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class GPUStackLanguageModel(OAICompatLargeLanguageModel):
     """GPUStack-specific OpenAI-compatible LLM implementation."""
@@ -159,6 +161,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
                     )
 
         compatible_credentials = self._get_compatible_credentials(credentials)
+        apply_dify_headers_if_enabled(compatible_credentials)
 
         # Handle thinking mode based on model support configuration
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
@@ -267,6 +270,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         # When max_completion_tokens is explicitly requested, validate directly
         # instead of letting the base class fail with max_tokens first.
         compatible_credentials = self._get_compatible_credentials(credentials)
+        apply_dify_headers_if_enabled(compatible_credentials)
         param_pref = compatible_credentials.get("token_param_name", "auto")
         endpoint_model = compatible_credentials.get("endpoint_model_name") or model
         if (
