@@ -47,19 +47,6 @@ parameter_rules:
       - high
       - xhigh
       - max
-  - name: reasoning_mode
-    label:
-      zh_Hans: 推理模式
-      en_US: Reasoning Mode
-    type: string
-    help:
-      zh_Hans: 标准模式平衡质量与延迟；Pro 模式会投入更多模型计算。
-      en_US: Standard mode balances quality and latency; Pro mode applies more model work.
-    required: false
-    default: standard
-    options:
-      - standard
-      - pro
   - name: verbosity
     label:
       zh_Hans: 详细程度
@@ -85,7 +72,7 @@ parameter_rules:
     required: true
     default: true
 pricing:
-  input: '1'
-  output: '6'
+  input: '0.2'
+  output: '1.2'
   unit: '0.000001'
   currency: USD
