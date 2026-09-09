@@ -8,8 +8,10 @@ import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.entities.model.message import (
+    ImagePromptMessageContent,
     PromptMessage,
     PromptMessageTool,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -98,6 +100,37 @@ def test_every_current_model_accepts_a_minimal_request(model: str) -> None:
     _terminal(chunks)
 
 
+@pytest.mark.parametrize("stream", [False, True])
+def test_vision_recognizes_an_inline_image(stream: bool) -> None:
+    # A 32x32 red PNG keeps the live request small and independent of external URLs.
+    image = ImagePromptMessageContent(
+        format="png",
+        mime_type="image/png",
+        base64_data=(
+            "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKElEQVR4nO3NsQ0A"
+            "AAzCMP5/un0CNkuZ41wybXsHAAAAAAAAAAAAxR4yw/wuPL6QkAAAAABJRU5ErkJggg=="
+        ),
+    )
+    chunks = _invoke(
+        [
+            UserPromptMessage(
+                content=[
+                    TextPromptMessageContent(
+                        data="Name the color of this image in one English word."
+                    ),
+                    image,
+                ]
+            )
+        ],
+        model="deepseek-v4-flash-vision-exp",
+        parameters={"thinking": False, "max_tokens": 16},
+        stream=stream,
+    )
+
+    assert "red" in _text(chunks).lower()
+    _terminal(chunks)
+
+
 @pytest.mark.parametrize(
     ("stream", "thinking", "effort", "max_tokens"),
     [
@@ -107,7 +140,9 @@ def test_every_current_model_accepts_a_minimal_request(model: str) -> None:
         pytest.param(True, False, "max", 32, id="nonthinking-stream"),
     ],
 )
+@pytest.mark.parametrize("model", MODELS)
 def test_thinking_modes_and_effort_boundaries(
+    model: str,
     stream: bool,
     thinking: bool | None,
     effort: str | None,
@@ -121,6 +156,7 @@ def test_thinking_modes_and_effort_boundaries(
 
     chunks = _invoke(
         [UserPromptMessage(content="Calculate 17 * 19, then reply only with 323.")],
+        model=model,
         parameters=parameters,
         stream=stream,
     )
@@ -140,7 +176,8 @@ def test_thinking_modes_and_effort_boundaries(
     _terminal(chunks)
 
 
-def test_thinking_tool_call_replays_reasoning_content() -> None:
+@pytest.mark.parametrize("model", MODELS)
+def test_thinking_tool_call_replays_reasoning_content(model: str) -> None:
     tool = PromptMessageTool(
         name="get_live_test_marker",
         description="Return the marker required to finish the live test.",
@@ -162,6 +199,7 @@ def test_thinking_tool_call_replays_reasoning_content() -> None:
     for sub_turn in range(3):
         chunks = _invoke(
             messages,
+            model=model,
             parameters=parameters,
             tools=[tool],
             stream=False,
@@ -194,7 +232,8 @@ def test_thinking_tool_call_replays_reasoning_content() -> None:
     assert "LIVE_TOOL_OK" in answer
 
 
-def test_json_object_output() -> None:
+@pytest.mark.parametrize("model", MODELS)
+def test_json_object_output(model: str) -> None:
     chunks = _invoke(
         [
             UserPromptMessage(
@@ -204,6 +243,7 @@ def test_json_object_output() -> None:
                 )
             )
         ],
+        model=model,
         parameters={
             "thinking": False,
             "max_tokens": 64,
