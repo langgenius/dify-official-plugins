@@ -34,6 +34,22 @@ from models.llm.baichuan_turbo_errors import (
     InvalidAuthenticationError,
     RateLimitReachedError,
 )
+from models.llm._metadata import apply_dify_metadata_if_enabled
+
+
+def _build_dify_extra_headers(credentials: dict) -> dict[str, str]:
+    """Run the opt-in helper and return the merged extra_headers dict.
+
+    Returns an empty dict when the credential is disabled, when
+    ``app_id`` is missing, or when the helper falls back to a no-op.
+    The returned dict is always a fresh copy (or empty) so callers
+    can mutate it without affecting other call sites.
+    """
+    apply_dify_metadata_if_enabled(credentials)
+    extra = credentials.get("extra_headers")
+    if not extra:
+        return {}
+    return dict(extra)
 
 
 class BaichuanLanguageModel(LargeLanguageModel):
@@ -128,6 +144,7 @@ class BaichuanLanguageModel(LargeLanguageModel):
                 messages=[{"content": "ping", "role": "user"}],
                 parameters={"max_tokens": 1},
                 timeout=60,
+                extra_headers=_build_dify_extra_headers(credentials),
             )
         except Exception as e:
             raise CredentialsValidateFailedError(f"Invalid API key: {e}")
@@ -150,6 +167,7 @@ class BaichuanLanguageModel(LargeLanguageModel):
             parameters=model_parameters,
             timeout=60,
             tools=tools,
+            extra_headers=_build_dify_extra_headers(credentials),
         )
         if stream:
             return self._handle_chat_generate_stream_response(

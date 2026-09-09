@@ -37,6 +37,47 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - default: disabled
+    label:
+      en_US: Attach Dify app_id as request headers
+      zh_Hans: 附加 Dify app_id 作为请求头
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+          every Baichuan API call. The headers are written into the
+          `extra_headers` credential, which the underlying Baichuan SDK
+          merges into the outbound request alongside the auth and
+          content-type headers. The headers are forwarded by the
+          underlying HTTP client and are used for observability /
+          proxy-side propagation. Baichuan does not document them.
+          Default is `disabled`, so the request shape is unchanged
+          unless you opt in. This opt-in applies to the LLM endpoint
+          only; the text-embedding endpoint is not affected.
+        zh_Hans: |-
+          启用后，插件会通过 `extra_headers` 凭据在每次百川智能调用中附加当前 Dify
+          app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source` 请求头。
+          底层 Baichuan SDK 会将其与认证头和 content-type 头合并后一并发送。
+          这些请求头由底层 HTTP 客户端转发，用于可观测性与代理侧传播，
+          百川智能 API 不会消费它们。默认值为 `disabled`，即未开启时请求结构
+          保持不变。该选项仅作用于 LLM 端点，不会影响 text-embedding 端点。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on: []
+    type: select
+    variable: enable_request_metadata
 supported_model_types:
 - llm
 - text-embedding
