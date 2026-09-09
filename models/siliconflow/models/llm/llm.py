@@ -27,6 +27,8 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
@@ -41,6 +43,7 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         self._add_function_call(model, credentials)
         prompt_messages = self._clean_messages(prompt_messages)
         return super()._invoke(
@@ -122,6 +125,7 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @classmethod
