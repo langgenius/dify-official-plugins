@@ -138,6 +138,7 @@ class ArkCredentials(RequestModel):
     ark_api_key: str = Field(min_length=1)
     api_endpoint_host: str = Field(min_length=1)
     endpoint_type: str | None = None
+    enable_request_metadata: Literal["enabled", "disabled"] = "disabled"
 
 
 class ArkURL(RequestModel):
