@@ -3,7 +3,8 @@ created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US: Generate presentation slides using SlideSpeak API
   zh_Hans: 使用 SlideSpeak API 生成演示幻灯片
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: SlideSpeak
   zh_Hans: SlideSpeak
@@ -30,4 +31,4 @@ resource:
       enabled: true
 tags: []
 type: plugin
-version: 1.0.5
+version: 1.0.6

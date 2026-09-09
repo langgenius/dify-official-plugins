@@ -1,7 +1,7 @@
 model: cohere-command-light
 label:
   en_US: Cohere Command Light
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

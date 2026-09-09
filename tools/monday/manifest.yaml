@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 author: langgenius
 name: monday
@@ -11,6 +11,7 @@ description:
   zh_CN: 用于与 Monday.com 的看板、项目和更新进行交互的插件。
   ja_JP: Monday.com のボード、アイテム、更新と連携するためのプラグイン。
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

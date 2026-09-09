@@ -17,9 +17,13 @@ help:
   url:
     en_US: https://modelscope.cn/docs/model-service/API-Inference/intro
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
   en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: ModelScope
   zh_Hans: 魔搭社区

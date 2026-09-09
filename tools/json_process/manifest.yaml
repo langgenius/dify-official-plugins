@@ -5,6 +5,7 @@ description:
   pt_BR: Tools for processing JSON content using jsonpath_ng
   zh_Hans: 利用 jsonpath_ng 处理 JSON 内容的工具
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: JSON Process
   pt_BR: JSON Process
@@ -33,4 +34,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 0.0.7
+version: 0.0.8

@@ -5,7 +5,8 @@ description:
     xAI is a company working on building artificial intelligence to accelerate
     human scientific discovery. We are guided by our mission to advance our collective
     understanding of the universe.
-icon: x-ai-logo.svg
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: xAI
 meta:
@@ -35,4 +36,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.25
+version: 0.0.26

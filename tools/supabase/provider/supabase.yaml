@@ -10,6 +10,7 @@ identity:
     zh_CN: Supabase 是一个开源的后端即服务（BaaS），提供基于 PostgreSQL 的实时数据库、身份验证和存储功能。
     ja_JP: Supabase は、PostgreSQL を基盤としたリアルタイムデータベース、認証、ストレージを提供するオープンソースのバックエンドサービスです。
   icon: icon.svg
+  icon_dark: icon-dark.svg
 credentials_for_provider:
   url:
     type: text-input

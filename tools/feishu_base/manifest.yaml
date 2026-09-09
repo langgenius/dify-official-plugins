@@ -3,7 +3,8 @@ created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US: "Feishu base, requires the following permissions: bitable:app."
   zh_Hans: "飞书多维表格，需要开通以下权限: bitable:app。"
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu Base
   zh_Hans: 飞书多维表格
@@ -32,4 +33,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

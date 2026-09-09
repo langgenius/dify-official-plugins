@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 author: langgenius
 name: smartsheet
@@ -14,7 +14,7 @@ description:
   zh_Hans: Smartsheet 是一个工作管理平台，帮助团队协作、组织和执行工作。
   pt_BR: Smartsheet é uma plataforma de gerenciamento de trabalho que ajuda equipes a colaborar, organizar e executar tarefas.
   zh_Hant: Smartsheet 是一個工作管理平台，幫助團隊協作、組織和執行工作。
-icon: icon.png
+icon: icon.svg
 resource:
   memory: 268435456
   permission:

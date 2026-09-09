@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.1.1
 type: plugin
 author: langgenius
 name: notion
@@ -15,6 +15,7 @@ description:
   pt_BR: Integração abrangente com o Notion permitindo pesquisar, recuperar, criar e atualizar páginas, bancos de dados e comentários diretamente de seus aplicativos Dify. Consulte bancos de dados com filtros, gerencie propriedades de banco de dados e organize seu espaço de trabalho do Notion de forma eficiente.
   zh_Hant: 全面的 Notion 整合，讓您直接從 Dify 應用程式中搜尋、獲取、建立和更新頁面、資料庫和評論。使用篩選器查詢資料庫，管理資料庫屬性，有效組織您的 Notion 工作區。
 icon: icon.svg
+icon_dark: icon-dark.svg
 tags:
   - productivity
   - business

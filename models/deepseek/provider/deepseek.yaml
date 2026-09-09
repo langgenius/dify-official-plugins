@@ -16,9 +16,9 @@ help:
   url:
     en_US: https://platform.deepseek.com/api_keys
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: deepseek
   zh_Hans: 深度求索

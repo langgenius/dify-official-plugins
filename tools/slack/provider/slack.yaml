@@ -12,6 +12,7 @@ identity:
     ja_JP: Slack ワークスペースと連携 - Slack Web API を通じてメッセージ、チャンネル、ユーザー、リアクション、ファイルを送信・管理します。
     ko_KR: Slack 워크스페이스와 연동 - Slack Web API를 통해 메시지, 채널, 사용자, 반응, 파일을 전송 및 관리합니다.
   icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - social
     - productivity

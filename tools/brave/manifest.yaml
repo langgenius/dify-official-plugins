@@ -5,6 +5,7 @@ description:
   pt_BR: Brave Search offers programmatic web search capabilities, providing private, high-quality search results in various formats with comprehensive sources and an intuitive structure.
   zh_Hans: Brave Search 提供程序化的网络搜索功能，以各种格式提供私密、高质量的搜索结果，具有全面的来源和直观的结构。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Brave
   pt_BR: Brave
@@ -33,4 +34,4 @@ resource:
 tags:
   - search
 type: plugin
-version: 0.0.10
+version: 0.0.11

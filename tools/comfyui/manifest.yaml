@@ -3,7 +3,7 @@ created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US: ComfyUI is a tool for generating images which can be deployed locally.
   zh_Hans: ComfyUI 是一个可以在本地部署的图片生成的工具。
-icon: icon.png
+icon: icon.svg
 label:
   en_US: ComfyUI
   zh_Hans: ComfyUI
@@ -31,4 +31,4 @@ resource:
 tags:
   - image
 type: plugin
-version: 0.3.11
+version: 0.3.12

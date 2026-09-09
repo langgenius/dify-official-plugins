@@ -31,7 +31,8 @@ identity:
     zh_Hans: 'Lark 消息和群组，需要开通以下权限: im:message、im:message.group_msg。
 
       '
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Lark Message And Group
     zh_Hans: Lark 消息和群组
