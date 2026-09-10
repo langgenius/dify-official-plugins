@@ -23,7 +23,12 @@ sys.path.insert(0, str(ROOT))
 from models.llm.llm import DeepseekLargeLanguageModel
 from provider.deepseek import DeepSeekProvider
 
-MODELS = ("deepseek-flash", "deepseek-v4-pro")
+MODELS = (
+    "deepseek-flash",
+    "deepseek-v4-flash",
+    "deepseek-v4-flash-vision-exp",
+    "deepseek-v4-pro",
+)
 
 
 def _llm() -> DeepseekLargeLanguageModel:
@@ -43,11 +48,16 @@ def test_current_catalog_and_parameter_boundaries() -> None:
         schema = yaml.safe_load((directory / f"{model}.yaml").read_text())
         entity = AIModelEntity.model_validate(schema)
         rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
-        assert ("vision" in schema["features"]) == (model == "deepseek-flash")
+        assert ("vision" in schema["features"]) == (
+            model in ("deepseek-flash", "deepseek-v4-flash-vision-exp")
+        )
         assert schema["model_properties"]["context_size"] == 1_000_000
-        assert rules["max_tokens"]["max"] == 393_216
-        assert rules["max_tokens"]["default"] == 65_536
-        assert rules["top_p"]["min"] == 0.95
+        maximum = 393_216 if model == "deepseek-flash" else 384_000
+        assert rules["max_tokens"]["max"] == maximum
+        assert rules["max_tokens"]["default"] == (
+            65_536 if model == "deepseek-flash" else 4_096
+        )
+        assert rules["top_p"]["min"] == (0.95 if model == "deepseek-flash" else 0.01)
         assert rules["top_p"]["max"] == 1
         assert rules["thinking"]["default"] is True
         assert rules["reasoning_effort"]["default"] == "high"
@@ -59,10 +69,10 @@ def test_current_catalog_and_parameter_boundaries() -> None:
         with patch.object(
             DeepseekLargeLanguageModel, "_invoke", return_value=iter(())
         ) as invoke:
-            list(llm.invoke(model, {}, [], {"max_tokens": 393_216}))
-            assert invoke.call_args.args[3]["max_tokens"] == 393_216
-            with pytest.raises(ValueError, match="max_tokens.*393216"):
-                list(llm.invoke(model, {}, [], {"max_tokens": 393_217}))
+            list(llm.invoke(model, {}, [], {"max_tokens": maximum}))
+            assert invoke.call_args.args[3]["max_tokens"] == maximum
+            with pytest.raises(ValueError, match=f"max_tokens.*{maximum}"):
+                list(llm.invoke(model, {}, [], {"max_tokens": maximum + 1}))
             assert invoke.call_count == 1
 
 
@@ -103,9 +113,12 @@ def test_thinking_parameters_are_normalized(
     }
     if enabled:
         expected["reasoning_effort"] = "low"
-        expected["top_p"] = top_p
+        if model == "deepseek-flash":
+            expected["top_p"] = top_p
     else:
         expected.update(unsupported)
+        if model != "deepseek-flash":
+            expected["top_p"] = top_p
     assert parameters == expected
 
 
@@ -303,8 +316,15 @@ def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
 
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("thinking", [False, True])
-def test_vision_images_reach_chat_completions(stream: bool, thinking: bool) -> None:
-    model = "deepseek-flash"
+@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-flash-vision-exp"])
+def test_vision_images_reach_chat_completions(
+    model: str, stream: bool, thinking: bool
+) -> None:
+    schema = AIModelEntity.model_validate(
+        yaml.safe_load((ROOT / "models" / "llm" / f"{model}.yaml").read_text())
+    )
+    llm = DeepseekLargeLanguageModel(model_schemas=[schema])
+    top_p = 0.95 if model == "deepseek-flash" else 0.8
     images = [
         ImagePromptMessageContent(
             format="png", mime_type="image/png", url="https://example.com/image.png"
@@ -360,15 +380,16 @@ def test_vision_images_reach_chat_completions(stream: bool, thinking: bool) -> N
     ]
 
     with patch("requests.post", return_value=response) as post:
-        result = _llm()._invoke(
+        result = llm.invoke(
             model,
             {"api_key": "test"},
             messages,
             {
                 "thinking": thinking,
                 "reasoning_effort": "low",
-                "top_p": 0.95,
+                "top_p": top_p,
                 "temperature": 0.7,
+                "max_tokens": 4_096,
             },
             tools=[
                 PromptMessageTool(
@@ -379,24 +400,26 @@ def test_vision_images_reach_chat_completions(stream: bool, thinking: bool) -> N
             ],
             stream=stream,
         )
-        if stream:
-            result = list(result)[-1].delta
+        result = list(result)[-1].delta
 
     assert result.usage.prompt_tokens == 400
     assert messages == originals
     assert post.call_args.args == ("https://api.deepseek.com/chat/completions",)
     payload = json.loads(post.call_args.kwargs["data"])
     assert payload["model"] == model
+    assert payload["max_tokens"] == 4_096
     assert payload["stream"] is stream
     assert payload["thinking"] == {"type": "enabled" if thinking else "disabled"}
     if thinking:
         assert payload["reasoning_effort"] == "low"
-        assert payload["top_p"] == 0.95
         assert "temperature" not in payload
     else:
         assert "reasoning_effort" not in payload
-        assert "top_p" not in payload
         assert payload["temperature"] == 0.7
+    if thinking == (model == "deepseek-flash"):
+        assert payload["top_p"] == top_p
+    else:
+        assert "top_p" not in payload
     expected_images = [
         {
             "type": "image_url",
@@ -439,7 +462,7 @@ def test_vision_images_reach_chat_completions(stream: bool, thinking: bool) -> N
     ]
 
 
-def test_provider_validation_does_not_fallback_to_retired_models() -> None:
+def test_provider_validation_keeps_existing_model_and_propagates_errors() -> None:
     provider = object.__new__(DeepSeekProvider)
     model_instance = MagicMock()
     error = CredentialsValidateFailedError("model not exist")
@@ -458,6 +481,6 @@ def test_provider_validation_does_not_fallback_to_retired_models() -> None:
 
     assert raised.value is error
     model_instance.validate_credentials.assert_called_once_with(
-        model="deepseek-flash",
+        model="deepseek-v4-flash",
         credentials=credentials,
     )

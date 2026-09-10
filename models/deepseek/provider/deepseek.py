@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class DeepSeekProvider(ModelProvider):
-    _VALIDATION_MODEL = "deepseek-flash"
+    _VALIDATION_MODEL = "deepseek-v4-flash"
 
     def validate_provider_credentials(self, credentials: dict) -> None:
         try:

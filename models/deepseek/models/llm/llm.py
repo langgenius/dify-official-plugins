@@ -26,6 +26,8 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     )
     _THINKING_MODELS = (
         "deepseek-flash",
+        "deepseek-v4-flash",
+        "deepseek-v4-flash-vision-exp",
         "deepseek-v4-pro",
     )
     _THINKING_UNSUPPORTED_PARAMETERS = (
@@ -143,11 +145,14 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             return
         if thinking.get("type") == "disabled":
             model_parameters.pop("reasoning_effort", None)
-            model_parameters.pop("top_p", None)
+            if model == "deepseek-flash":
+                model_parameters.pop("top_p", None)
             return
         if thinking.get("type") == "enabled":
             for parameter in cls._THINKING_UNSUPPORTED_PARAMETERS:
                 model_parameters.pop(parameter, None)
+            if model != "deepseek-flash":
+                model_parameters.pop("top_p", None)
 
     @staticmethod
     def _add_custom_parameters(credentials: dict) -> None:

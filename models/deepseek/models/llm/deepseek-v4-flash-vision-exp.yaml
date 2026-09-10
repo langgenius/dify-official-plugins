@@ -1,9 +1,10 @@
-model: deepseek-v4-pro
+model: deepseek-v4-flash-vision-exp
 label:
-  zh_Hans: deepseek-v4-pro
-  en_US: deepseek-v4-pro
+  zh_Hans: deepseek-v4-flash-vision-exp
+  en_US: deepseek-v4-flash-vision-exp
 model_type: llm
 features:
+  - vision
   - agent-thought
   - tool-call
   - multi-tool-call

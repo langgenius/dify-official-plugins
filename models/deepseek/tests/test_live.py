@@ -101,7 +101,8 @@ def test_every_current_model_accepts_a_minimal_request(model: str) -> None:
 
 
 @pytest.mark.parametrize("stream", [False, True])
-def test_vision_recognizes_an_inline_image(stream: bool) -> None:
+@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-flash-vision-exp"])
+def test_vision_recognizes_an_inline_image(model: str, stream: bool) -> None:
     # A 32x32 red PNG keeps the live request small and independent of external URLs.
     image = ImagePromptMessageContent(
         format="png",
@@ -122,7 +123,7 @@ def test_vision_recognizes_an_inline_image(stream: bool) -> None:
                 ]
             )
         ],
-        model="deepseek-flash",
+        model=model,
         parameters={"thinking": False, "max_tokens": 16},
         stream=stream,
     )
