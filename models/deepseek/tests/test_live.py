@@ -53,7 +53,7 @@ llm = DeepseekLargeLanguageModel(model_schemas=schemas)
 def _invoke(
     messages: list[PromptMessage],
     *,
-    model: str = "deepseek-v4-flash",
+    model: str = "deepseek-flash",
     parameters: dict,
     tools: list[PromptMessageTool] | None = None,
     stream: bool,
@@ -122,7 +122,7 @@ def test_vision_recognizes_an_inline_image(stream: bool) -> None:
                 ]
             )
         ],
-        model="deepseek-v4-flash-vision-exp",
+        model="deepseek-flash",
         parameters={"thinking": False, "max_tokens": 16},
         stream=stream,
     )
@@ -148,7 +148,7 @@ def test_thinking_modes_and_effort_boundaries(
     effort: str | None,
     max_tokens: int,
 ) -> None:
-    parameters = {"max_tokens": max_tokens}
+    parameters = {"max_tokens": max_tokens, "top_p": 1.0 if effort == "max" else 0.95}
     if thinking is not None:
         parameters["thinking"] = thinking
     if effort is not None:

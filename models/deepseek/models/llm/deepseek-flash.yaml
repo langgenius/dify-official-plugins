@@ -1,9 +1,10 @@
-model: deepseek-v4-flash
+model: deepseek-flash
 label:
-  zh_Hans: deepseek-v4-flash
-  en_US: deepseek-v4-flash
+  zh_Hans: DeepSeek V4.1 Flash
+  en_US: DeepSeek V4.1 Flash
 model_type: llm
 features:
+  - vision
   - agent-thought
   - tool-call
   - multi-tool-call
@@ -19,26 +20,26 @@ parameter_rules:
     min: 0.0
     max: 2.0
     help:
-      zh_Hans: 控制生成结果的多样性和随机性。数值越小，越严谨；数值越大，越发散。
-      en_US: Control the diversity and randomness of generated results. The smaller the value, the more rigorous it is; the larger the value, the more divergent it is.
+      zh_Hans: 控制非思考模式下的随机性。思考模式下不生效。
+      en_US: Controls randomness in non-thinking mode. Has no effect in thinking mode.
   - name: max_tokens
     use_template: max_tokens
     type: int
-    default: 4096
+    default: 65536
     min: 1
-    max: 384000
+    max: 393216
     help:
-      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
-      en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
+      zh_Hans: 输出 token 上限，包含思考内容，最大 393216。输入和输出总长度不能超过上下文限制。
+      en_US: Maximum output tokens, including reasoning, up to 393216. Input and output together must fit within the context window.
   - name: top_p
     use_template: top_p
     type: float
     default: 1
-    min: 0.01
+    min: 0.95
     max: 1.00
     help:
-      zh_Hans: 控制生成结果的随机性。数值越小，随机性越弱；数值越大，随机性越强。一般而言，top_p 和 temperature 两个参数选择一个进行调整即可。
-      en_US: Control the randomness of generated results. The smaller the value, the weaker the randomness; the larger the value, the stronger the randomness. Generally speaking, you can adjust one of the two parameters top_p and temperature.
+      zh_Hans: 思考模式下的核采样概率，取值 0.95 至 1.0。非思考模式下固定为 1.0。
+      en_US: Nucleus sampling in thinking mode, from 0.95 to 1.0. Fixed at 1.0 in non-thinking mode.
   - name: thinking
     label:
       zh_Hans: 思考模式
@@ -47,8 +48,8 @@ parameter_rules:
     default: true
     required: false
     help:
-      zh_Hans: 控制是否启用 DeepSeek v4 的思考模式。
-      en_US: Controls whether DeepSeek v4 thinking mode is enabled.
+      zh_Hans: 控制是否启用 DeepSeek 的思考模式，默认启用。
+      en_US: Controls whether DeepSeek thinking mode is enabled. Enabled by default.
   - name: reasoning_effort
     label:
       zh_Hans: 思考强度
