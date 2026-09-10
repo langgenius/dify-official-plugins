@@ -1,0 +1,31 @@
+version: 0.0.1
+type: plugin
+author: community
+name: opencode_go
+description:
+  en_US: OpenCode Go model provider. Access curated open coding models via the OpenCode Zen Go gateway ($10/month subscription).
+  zh_Hans: OpenCode Go 模型供应商。通过 OpenCode Zen Go 网关访问精选开源编码模型（$10/月订阅）。
+label:
+  en_US: OpenCode Go
+  zh_Hans: OpenCode Go
+icon: icon.svg
+icon_dark: icon-dark.svg
+created_at: "2026-09-10T00:00:00.000000000Z"
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - provider/opencode_go.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main

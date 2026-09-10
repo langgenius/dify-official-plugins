@@ -1,0 +1,14 @@
+[project]
+name = "opencode-go"
+version = "0.1.0"
+description = "Dify model provider plugin for OpenCode Go"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dify_plugin>=0.10.0",
+    "httpx>=0.28.1",
+    "openai>=1.50.0",
+]
+
+[dependency-groups]
+dev = []
