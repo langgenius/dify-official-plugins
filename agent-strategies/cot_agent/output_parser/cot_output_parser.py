@@ -163,24 +163,26 @@ class CotAgentOutputParser:
         json_in_string = False
         json_escape = False
         pending_action_json = False
+        json_promote_as_action = False
+        saw_thought_prefix = False
         json_stack: list[str] = []
 
         cur_state = ReactState.THINKING
         last_character = ""
 
-        def emit_json_blob(blob: str):
+        def emit_json_blob(blob: str, *, promote_as_action: bool):
             """Yield a completed JSON blob as an Action or as (flagged) text."""
             action = parse_action(blob)
-            if action is not None and cur_state is ReactState.THINKING:
+            if promote_as_action and action is not None and cur_state is ReactState.THINKING:
                 yield action
-            elif action is None and cur_state is ReactState.THINKING:
+            elif promote_as_action and action is None and cur_state is ReactState.THINKING:
                 # JSON that is not a valid action: keep it as thought text
                 # but flag the parse failure so the strategy can surface it
                 # instead of ending the round silently.
                 yield ReactChunk(cur_state, blob, parse_failed=True)
             else:
-                # In the answer state a JSON blob is part of the final answer
-                # and can never become a tool call.
+                # JSON inside Thought: (issue #3861), in the answer state, or
+                # otherwise not following an explicit Action: marker stays as text.
                 yield ReactChunk(cur_state, blob)
 
         class PrefixMatcher:
@@ -306,7 +308,7 @@ class CotAgentOutputParser:
                 # overwrite an unprocessed blob in json_cache.
                 if got_json:
                     got_json = False
-                    yield from emit_json_blob(json_cache)
+                    yield from emit_json_blob(json_cache, promote_as_action=json_promote_as_action)
                     json_cache = ""
                     in_json = False
                     json_in_string = False
@@ -333,10 +335,14 @@ class CotAgentOutputParser:
                         continue
 
                     if cur_state is not ReactState.ANSWER:
-                        yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
+                        yield_raw_delta, emitted_chunk, delta_consumed, matched_thought_prefix = (
+                            thought_matcher.step(delta)
+                        )
                         if emitted_chunk is not None:
                             yield emitted_chunk
                         yield_delta = yield_delta or yield_raw_delta
+                        if matched_thought_prefix:
+                            saw_thought_prefix = True
                         if delta_consumed:
                             index += steps
                             continue
@@ -354,6 +360,9 @@ class CotAgentOutputParser:
                 if not in_json and delta in {"{", "["}:
                     in_json = True
                     got_json = False
+                    # Only JSON after an explicit Action: (or bare JSON at the
+                    # very start before Thought:) may become a tool call.
+                    json_promote_as_action = pending_action_json or not saw_thought_prefix
                     json_cache = delta
                     json_in_string = False
                     json_escape = False
@@ -398,7 +407,7 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            yield from emit_json_blob(json_cache)
+            yield from emit_json_blob(json_cache, promote_as_action=json_promote_as_action)
 
         # Flush the chunk tail held back as a possible partial think tag.
         # (If the stream ended inside an unclosed think block, the buffered
