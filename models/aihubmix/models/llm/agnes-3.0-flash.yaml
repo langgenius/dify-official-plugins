@@ -12,6 +12,16 @@ model_properties:
   mode: chat
   context_size: 512000
 parameter_rules:
+  - name: enable_thinking
+    label:
+      zh_Hans: 开启思考
+      en_US: Enable Thinking
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 是否开启深度思考。插件会转成官方的 chat_template_kwargs.enable_thinking 下发。
+      en_US: Whether to enable deep thinking. The plugin sends it as the official chat_template_kwargs.enable_thinking.
   - name: temperature
     use_template: temperature
   - name: top_p

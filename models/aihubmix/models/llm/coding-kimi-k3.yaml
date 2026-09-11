@@ -26,12 +26,15 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     required: false
-    default: max
+    default: medium
     options:
+      - low
+      - medium
+      - high
       - max
     help:
-      zh_Hans: Kimi K3 默认启用最大推理强度。
-      en_US: Kimi K3 uses always-on maximum reasoning.
+      zh_Hans: 控制推理努力程度，取值来自 AiHubMix 公网投影中该模型的官方枚举。
+      en_US: Controls reasoning effort. The values come from this model's official enum in the AiHubMix public projection.
   - name: response_format
     label:
       zh_Hans: 回复格式

@@ -25,8 +25,12 @@ parameter_rules:
     required: false
     default: max
     options:
+      - none
+      - minimal
       - low
+      - medium
       - high
+      - xhigh
       - max
   - name: response_format
     label:

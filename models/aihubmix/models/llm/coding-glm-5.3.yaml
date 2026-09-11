@@ -23,9 +23,10 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     required: false
-    default: max
+    default: medium
     options:
       - low
+      - medium
       - high
       - max
   - name: response_format

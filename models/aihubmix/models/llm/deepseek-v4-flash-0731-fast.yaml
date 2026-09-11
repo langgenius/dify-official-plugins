@@ -26,15 +26,16 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     required: false
-    default: high
+    default: medium
     options:
       - none
       - low
+      - medium
       - high
       - max
     help:
-      zh_Hans: 控制模型的思考强度。none 关闭思考（即非思考模式），low/high/max 对应不同强度的思考。
-      en_US: Controls the model's reasoning intensity. none disables thinking (non-thinking mode); low/high/max enable progressively stronger thinking.
+      zh_Hans: 控制推理努力程度；low/high/max 为公网投影的官方枚举，medium 为其默认档，none 关闭思考（线上实测生效）。
+      en_US: Controls reasoning effort. low/high/max are the projection's official enum, medium its default; none disables thinking (verified live).
   - name: response_format
     label:
       zh_Hans: 回复格式

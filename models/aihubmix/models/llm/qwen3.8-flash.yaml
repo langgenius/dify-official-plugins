@@ -28,7 +28,7 @@ parameter_rules:
     type: int
     default: 128000
     min: 1
-    max: 128000
+    max: 131072
     help:
       zh_Hans: 指定思维链与回复合计的最大 Token 数量。
       en_US: Specifies the maximum total number of tokens for reasoning and the answer.
@@ -96,7 +96,7 @@ parameter_rules:
   - name: reasoning_effort
     required: false
     type: string
-    default: xhigh
+    default: medium
     options:
       - low
       - medium
@@ -105,8 +105,8 @@ parameter_rules:
       zh_Hans: 推理强度
       en_US: Reasoning effort
     help:
-      zh_Hans: 思考模式的推理强度，分别对应 4096、16384 与 262144 个思维链 Token。
-      en_US: Reasoning effort, corresponding to 4096, 16384, or 262144 chain-of-thought tokens.
+      zh_Hans: 思考模式的推理强度，low / medium / xhigh 分别对应 4096、16384 与 262144 个思维链 Token。
+      en_US: Reasoning effort in thinking mode; low / medium / xhigh map to 4096, 16384 and 262144 chain-of-thought tokens.
   - name: response_format
     label:
       zh_Hans: 回复格式

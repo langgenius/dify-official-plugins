@@ -24,8 +24,8 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     help:
-      zh_Hans: GPT-6 Astra 支持 low、medium、high 和 xhigh，默认值为 medium。
-      en_US: GPT-6 Astra supports low, medium, high and xhigh, defaulting to medium.
+      zh_Hans: GPT-6 Astra 支持 low、medium、high、xhigh 和 max，默认 medium。
+      en_US: GPT-6 Astra supports low, medium, high, xhigh and max, defaulting to medium.
     required: false
     default: medium
     options:
@@ -33,6 +33,7 @@ parameter_rules:
       - medium
       - high
       - xhigh
+      - max
   - name: verbosity
     label:
       zh_Hans: 详细程度
