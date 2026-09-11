@@ -1,15 +1,20 @@
-model: coding-minimax-m2.5-free
+# Served through the OpenAI-compatible endpoint; thinking is disabled upstream.
+model: gemini-3.1-flash-lite-nothink
 label:
-  en_US: Coding MiniMax M2.5 (free)
+  en_US: Gemini 3.1 Flash-Lite (no think)
 model_type: llm
 features:
-  - agent-thought
   - tool-call
-  - stream-tool-call
   - multi-tool-call
+  - stream-tool-call
+  - vision
+  - video
+  - audio
+  - document
+  - structured-output
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -19,7 +24,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 13100
+    max: 65536
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -33,7 +38,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.25'
+  output: '1.5'
   unit: '0.000001'
   currency: USD

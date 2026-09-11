@@ -1,16 +1,21 @@
-model: gpt-4.1-nano-free
+# AIHubMix Smart Router: the gateway picks the best model for each request.
+# Pricing is an average estimate; the actual price depends on the model that is routed to.
+model: auto
 label:
-  en_US: GPT 4.1 Nano (free)
+  en_US: Auto (Smart Router)
 model_type: llm
 features:
   - agent-thought
   - tool-call
-  - stream-tool-call
   - multi-tool-call
+  - stream-tool-call
   - vision
+  - video
+  - audio
+  - structured-output
 model_properties:
   mode: chat
-  context_size: 1047576
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -34,7 +39,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '2'
+  output: '2'
   unit: '0.000001'
   currency: USD

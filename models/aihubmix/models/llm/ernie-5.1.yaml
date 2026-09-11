@@ -1,0 +1,54 @@
+model: ernie-5.1
+label:
+  en_US: ERNIE 5.1
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 119000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 65536
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理深度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: none
+    options:
+      - none
+      - low
+      - medium
+      - high
+    help:
+      zh_Hans: 控制推理深度。none 关闭思考，low/medium/high 对应不同强度的思考。ERNIE 5.1 不支持布尔型 thinking 参数。
+      en_US: Controls reasoning depth. none disables thinking; low/medium/high enable progressively deeper reasoning. ERNIE 5.1 does not accept the boolean `thinking` parameter.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0.5634'
+  output: '2.5353'
+  unit: '0.000001'
+  currency: USD

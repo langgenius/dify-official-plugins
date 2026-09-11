@@ -1,6 +1,6 @@
-model: coding-minimax-m2.7-free
+model: glm-5.2-fast-preview
 label:
-  en_US: Coding MiniMax M2.7 (free)
+  en_US: GLM 5.2 Fast Preview
 model_type: llm
 features:
   - agent-thought
@@ -9,8 +9,27 @@ features:
   - multi-tool-call
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 1000000
 parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。
+      en_US: Controls the model's thinking capability.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 32000
+    required: false
   - name: temperature
     use_template: temperature
   - name: top_p
@@ -19,7 +38,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 13100
+    max: 128000
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -33,7 +52,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '2.254'
+  output: '7.889'
   unit: '0.000001'
   currency: USD

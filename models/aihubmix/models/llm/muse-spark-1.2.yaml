@@ -1,27 +1,27 @@
-model: gpt-4.5-preview
+model: muse-spark-1.2
 label:
-  en_US: gpt-4.5-preview
+  en_US: Muse Spark 1.2
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
+  - tool-call
+  - multi-tool-call
   - stream-tool-call
   - vision
+  - video
+  - audio
+  - document
 model_properties:
   mode: chat
-  context_size: 1047576
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
   - name: top_p
     use_template: top_p
-  - name: presence_penalty
-    use_template: presence_penalty
-  - name: frequency_penalty
-    use_template: frequency_penalty
   - name: max_tokens
     use_template: max_tokens
-    default: 512
+    default: 8192
     min: 1
     max: 32768
   - name: response_format
@@ -29,9 +29,6 @@ parameter_rules:
       zh_Hans: 回复格式
       en_US: Response Format
     type: string
-    help:
-      zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
     required: false
     options:
       - text
@@ -40,7 +37,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '75.00'
-  output: '150.00'
+  input: '1.375'
+  output: '4.675'
   unit: '0.000001'
   currency: USD
