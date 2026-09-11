@@ -1,0 +1,199 @@
+identity:
+  name: "image-generate"
+  author: "langgenius"
+  label:
+    en_US: "Generate Image"
+    zh_Hans: "生成图像"
+    pt_BR: "Gerar Imagem"
+    ja_JP: "画像を生成"
+description:
+  human:
+    en_US: "Generate an image from a text prompt with any image model AIHubMix serves — GPT Image, Gemini, Seedream, Qwen-Image, Flux, GLM, Wan and more. The model list is fetched from the gateway, and each model's own parameters are validated before the request is sent."
+    zh_Hans: "用 AIHubMix 上的任意图像模型进行文生图 —— GPT Image、Gemini、Seedream、Qwen-Image、Flux、GLM、Wan 等。模型列表实时来自网关，参数会按所选模型的规格校验后再发送。"
+    pt_BR: "Gere uma imagem a partir de um prompt de texto com qualquer modelo de imagem do AIHubMix — GPT Image, Gemini, Seedream, Qwen-Image, Flux, GLM, Wan e outros. A lista de modelos vem do gateway e os parâmetros são validados antes do envio."
+    ja_JP: "AIHubMix が提供する任意の画像モデル（GPT Image、Gemini、Seedream、Qwen-Image、Flux、GLM、Wan など）でテキストから画像を生成します。モデル一覧はゲートウェイから取得され、パラメータはモデルごとの仕様で検証されます。"
+  llm: "Generate one or more images from a text prompt. Requires a model id from the AIHubMix image catalog and a prompt. Optional: reference images, number of images, size or aspect ratio, output format, seed and negative prompt. Returns the generated image files."
+parameters:
+  - name: model
+    type: dynamic-select
+    required: true
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Image model to use. The list is fetched from AIHubMix with your API key."
+      zh_Hans: "要使用的图像模型，列表用你的 API Key 实时从 AIHubMix 拉取。"
+      pt_BR: "Modelo de imagem a usar. A lista é obtida do AIHubMix com sua API Key."
+      ja_JP: "使用する画像モデル。一覧は API キーで AIHubMix から取得されます。"
+    llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, doubao-seedream-4-5 or qwen-image-3.0."
+    form: form
+
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of the image to generate."
+      zh_Hans: "想要生成的图像的文字描述。"
+      pt_BR: "Descrição textual da imagem a ser gerada."
+      ja_JP: "生成したい画像のテキスト説明。"
+    llm_description: "Detailed description of the image to generate."
+    form: llm
+
+  - name: reference_images
+    type: files
+    required: false
+    label:
+      en_US: "Reference Images"
+      zh_Hans: "参考图"
+      pt_BR: "Imagens de Referência"
+      ja_JP: "参考画像"
+    human_description:
+      en_US: "Optional reference images for models that accept image input. Ignored by text-only models such as GLM Image."
+      zh_Hans: "可选的参考图，仅对支持图像输入的模型生效；纯文生图模型（如 GLM Image）会忽略并提示。"
+      pt_BR: "Imagens de referência opcionais para modelos que aceitam entrada de imagem. Ignoradas por modelos somente-texto como o GLM Image."
+      ja_JP: "画像入力に対応したモデル向けの参考画像（任意）。GLM Image のようなテキスト専用モデルでは無視されます。"
+    llm_description: "Optional reference images to guide the generation."
+    form: llm
+
+  - name: n
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "How many images to generate. The accepted range depends on the model; some accept only one."
+      zh_Hans: "生成几张图。取值范围随模型而定，部分模型只支持 1 张。"
+      pt_BR: "Quantas imagens gerar. O intervalo depende do modelo; alguns aceitam apenas uma."
+      ja_JP: "生成する画像の枚数。許容範囲はモデルによって異なり、1 枚のみのモデルもあります。"
+    llm_description: "Number of images to generate. Leave unset to use the model default."
+    form: form
+    min: 1
+    max: 10
+
+  - name: size
+    type: string
+    required: false
+    label:
+      en_US: "Size"
+      zh_Hans: "尺寸"
+      pt_BR: "Tamanho"
+      ja_JP: "サイズ"
+    human_description:
+      en_US: "Output size as {width}x{height}, for example 1024x1024. Mutually exclusive with aspect ratio — if both are set, size wins."
+      zh_Hans: "输出尺寸，格式 {宽}x{高}，例如 1024x1024。与宽高比互斥，同时填写时以尺寸为准。"
+      pt_BR: "Tamanho de saída no formato {largura}x{altura}, por exemplo 1024x1024. Mutuamente exclusivo com a proporção; se ambos forem definidos, o tamanho prevalece."
+      ja_JP: "出力サイズ（{幅}x{高さ}、例: 1024x1024）。アスペクト比とは排他で、両方指定した場合はサイズが優先されます。"
+    llm_description: "Output image size such as 1024x1024, 1536x1024 or auto."
+    form: form
+
+  - name: aspect_ratio
+    type: string
+    required: false
+    label:
+      en_US: "Aspect Ratio"
+      zh_Hans: "宽高比"
+      pt_BR: "Proporção"
+      ja_JP: "アスペクト比"
+    human_description:
+      en_US: "Output aspect ratio such as 16:9, for models that take a ratio instead of an explicit size."
+      zh_Hans: "输出宽高比，例如 16:9，适用于按比例而非绝对尺寸出图的模型。"
+      pt_BR: "Proporção de saída, como 16:9, para modelos que usam proporção em vez de tamanho explícito."
+      ja_JP: "出力アスペクト比（例: 16:9）。明示的なサイズではなく比率を取るモデル向け。"
+    llm_description: "Output aspect ratio such as 1:1, 16:9 or 9:16."
+    form: form
+
+  - name: output_format
+    type: select
+    required: false
+    label:
+      en_US: "Output Format"
+      zh_Hans: "输出格式"
+      pt_BR: "Formato de Saída"
+      ja_JP: "出力形式"
+    human_description:
+      en_US: "Image file format. Not every model supports every format; unsupported values are reported with the accepted list."
+      zh_Hans: "输出图片格式。并非所有模型都支持全部格式，不支持时会直接告诉你该模型允许哪些取值。"
+      pt_BR: "Formato do arquivo de imagem. Nem todo modelo suporta todos os formatos; valores inválidos são reportados com a lista aceita."
+      ja_JP: "画像ファイル形式。モデルによって対応形式は異なり、非対応の場合は使用可能な値を提示します。"
+    llm_description: "Output image format: png, jpeg or webp."
+    form: form
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
+
+  - name: seed
+    type: number
+    required: false
+    label:
+      en_US: "Seed"
+      zh_Hans: "随机种子"
+      pt_BR: "Semente"
+      ja_JP: "シード"
+    human_description:
+      en_US: "Random seed for reproducible output, on models that support it."
+      zh_Hans: "随机种子，用于复现同一张图（仅支持该参数的模型有效）。"
+      pt_BR: "Semente aleatória para saída reproduzível, em modelos que a suportam."
+      ja_JP: "再現性のための乱数シード（対応モデルのみ）。"
+    llm_description: "Random seed for reproducible generation."
+    form: form
+
+  - name: negative_prompt
+    type: string
+    required: false
+    label:
+      en_US: "Negative Prompt"
+      zh_Hans: "反向提示词"
+      pt_BR: "Prompt Negativo"
+      ja_JP: "ネガティブプロンプト"
+    human_description:
+      en_US: "What to avoid in the image, on models that support it."
+      zh_Hans: "希望画面中避免出现的内容（仅支持该参数的模型有效）。"
+      pt_BR: "O que evitar na imagem, em modelos que suportam."
+      ja_JP: "画像に含めたくない要素（対応モデルのみ）。"
+    llm_description: "Description of what should not appear in the image."
+    form: llm
+
+  - name: extra
+    type: string
+    required: false
+    label:
+      en_US: "Advanced Parameters (JSON)"
+      zh_Hans: "高级参数（JSON）"
+      pt_BR: "Parâmetros Avançados (JSON)"
+      ja_JP: "詳細パラメータ（JSON）"
+    human_description:
+      en_US: "Model-specific parameters as a JSON object, for example {\"quality\": \"high\"} or {\"watermark\": false}. Each key is routed to wherever the model declares it; unknown keys are reported with the model's accepted list."
+      zh_Hans: "模型特有参数，JSON 对象，例如 {\"quality\": \"high\"} 或 {\"watermark\": false}。每个键会按该模型的 schema 自动放到正确位置；不支持的键会连同该模型允许的参数列表一起提示。"
+      pt_BR: "Parâmetros específicos do modelo como objeto JSON, por exemplo {\"quality\": \"high\"}. Cada chave é roteada conforme o modelo a declara; chaves desconhecidas são reportadas com a lista aceita."
+      ja_JP: "モデル固有パラメータを JSON オブジェクトで指定します（例: {\"quality\": \"high\"}）。各キーはモデルの宣言に従って配置され、未対応のキーは使用可能な一覧とともに通知されます。"
+    llm_description: "Optional JSON object of model-specific parameters such as quality, watermark or background."
+    form: form
+extra:
+  python:
+    source: tools/image-generate.py

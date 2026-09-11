@@ -1,4 +1,4 @@
-version: 0.1.6
+version: 0.2.0
 type: plugin
 author: langgenius
 name: aihubmix-image
@@ -8,10 +8,10 @@ label:
   zh_Hans: AIHubMix Image
   pt_BR: AIHubMix Image
 description:
-  en_US: "AIHubMix unified image generation: a single API key for OpenAI GPT-Image, Microsoft MAI Image, Google Imagen 4 and Gemini Nano Banana, Flux, Alibaba Qwen-Image and Wan, ByteDance Doubao Seedream, Zhipu GLM, Ideogram V3, and Baidu ERNIE iRAG."
-  zh_Hans: "AIHubMix 统一图像生成接口：一把 API Key 调用 OpenAI GPT-Image、微软 MAI Image、Google Imagen 4 与 Gemini Nano Banana、Flux、阿里 Qwen-Image 与 Wan、字节豆包 Seedream、智谱 GLM、Ideogram V3、百度 ERNIE iRAG。"
-  ja_JP: "AIHubMix 統合画像生成：1 つの API キーで OpenAI GPT-Image、Google Imagen 4、Gemini Nano Banana、Flux、Alibaba Qwen-Image と Wan、ByteDance Doubao Seedream、Zhipu GLM、Ideogram V3、Baidu ERNIE iRAG を呼び出せます。"
-  pt_BR: "Geração unificada de imagens AIHubMix: uma única API Key para OpenAI GPT-Image, Google Imagen 4, Gemini Nano Banana, Flux, Qwen-Image e Wan da Alibaba, Doubao Seedream, GLM da Zhipu, Ideogram V3 e ERNIE iRAG da Baidu."
+  en_US: "AIHubMix image generation and editing. Two tools cover every image model the gateway serves — GPT Image, Gemini, Seedream, Qwen-Image, Flux, GLM, Wan, MAI and more — with the model list and each model's parameters read from the gateway at call time."
+  zh_Hans: "AIHubMix 图像生成与编辑。两个工具覆盖网关上所有图像模型 —— GPT Image、Gemini、Seedream、Qwen-Image、Flux、GLM、Wan、MAI 等；模型列表与每个模型支持的参数都在调用时实时从网关读取。"
+  ja_JP: "AIHubMix の画像生成と編集。2 つのツールでゲートウェイが提供する全画像モデル（GPT Image、Gemini、Seedream、Qwen-Image、Flux、GLM、Wan、MAI など）に対応し、モデル一覧と各モデルのパラメータは呼び出し時にゲートウェイから取得します。"
+  pt_BR: "Geração e edição de imagens AIHubMix. Duas ferramentas cobrem todos os modelos de imagem do gateway — GPT Image, Gemini, Seedream, Qwen-Image, Flux, GLM, Wan, MAI e outros — com a lista de modelos e os parâmetros de cada um lidos do gateway no momento da chamada."
 icon: icon.svg
 resource:
   memory: 268435456

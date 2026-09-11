@@ -1,37 +1,22 @@
-import requests
 from typing import Any
 
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
+from utils.client import AIHubMixClient, GatewayError
+
 
 class AIHubMixImageProvider(ToolProvider):
-    
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
-        api_key = credentials.get("api_key")
-        if not api_key:
-            raise ToolProviderCredentialValidationError("API Key is required")
-
-        base_url = (credentials.get("base_url") or "https://api.inferera.com").rstrip("/")
-
         try:
-            response = requests.get(
-                f"{base_url}/v1/models",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=10,
-            )
-        except requests.exceptions.RequestException as e:
-            raise ToolProviderCredentialValidationError(f"Network error during validation: {e}")
-
-        if response.status_code == 401:
-            raise ToolProviderCredentialValidationError("Invalid API Key")
-        if response.status_code != 200:
-            raise ToolProviderCredentialValidationError(
-                f"API validation failed: {response.status_code}"
-            )
+            client = AIHubMixClient(credentials)
+            # Any authenticated endpoint proves the key; the model list is the cheapest one.
+            client.get_json("/v1/models", timeout=10)
+        except GatewayError as exc:
+            if exc.status in (401, 403):
+                raise ToolProviderCredentialValidationError("Invalid API Key") from exc
+            raise ToolProviderCredentialValidationError(str(exc)) from exc
 
     #########################################################################################
     # OAuth support can be implemented by uncommenting the following functions.
