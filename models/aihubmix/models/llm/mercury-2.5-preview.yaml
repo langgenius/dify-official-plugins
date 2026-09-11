@@ -11,21 +11,6 @@ model_properties:
   mode: chat
   context_size: 260000
 parameter_rules:
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理努力程度
-      en_US: Reasoning Effort
-    type: string
-    required: false
-    default: medium
-    options:
-      - instant
-      - low
-      - medium
-      - high
-    help:
-      zh_Hans: 控制推理努力程度，instant 为最快档；取值来自公网投影的官方枚举。
-      en_US: Controls reasoning effort; instant is the fastest tier. Values come from the projection's official enum.
   - name: temperature
     use_template: temperature
   - name: top_p

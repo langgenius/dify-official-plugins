@@ -41,12 +41,12 @@ parameter_rules:
       en_US: Response Format
     type: string
     required: false
+    help:
+      zh_Hans: 线上实测只支持 json_object；传 json_schema 时服务端静默忽略、照样回散文，所以不提供该选项。
+      en_US: Verified on the gateway - only json_object works. A json_schema request is silently ignored and still answered in prose, so that option is not offered.
     options:
       - text
       - json_object
-      - json_schema
-  - name: json_schema
-    use_template: json_schema
 pricing:
   input: '0.5634'
   output: '2.5353'

@@ -11,6 +11,28 @@ model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 官方的思考开关，对象形式 {"type":"enabled"/"disabled"}；插件会把这个布尔值翻译成对象再发出。线上实测关闭后不再产生任何推理 token，也不再回 reasoning_content。
+      en_US: The official thinking switch, an object of the form {"type":"enabled"/"disabled"}; the plugin translates this boolean into that object. Verified on the gateway - disabling it stops every reasoning token and the reasoning_content field.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 32000
+    required: false
+    help:
+      zh_Hans: 思考阶段的 token 上限，线上实测精确封顶（传 64 实际就只花 64 个推理 token）。
+      en_US: Caps the tokens spent on thinking. Verified on the gateway - a budget of 64 spends exactly 64 reasoning tokens.
   - name: reasoning_effort
     label:
       zh_Hans: 推理努力程度
@@ -27,8 +49,8 @@ parameter_rules:
       - xhigh
       - max
     help:
-      zh_Hans: 控制推理努力程度，取值来自 AiHubMix 公网投影中该模型的官方枚举。
-      en_US: Controls reasoning effort. The values come from this model's official enum in the AiHubMix public projection.
+      zh_Hans: 公网投影 fields 收录的官方枚举，线上实测 none 确实不再产生推理 token；其余档位之间的推理量差异不稳定，需要彻底关思考请用 thinking 开关。
+      en_US: The official enum recorded in the projection's fields. Verified on the gateway - none really does stop reasoning tokens, while the gap between the other levels is not stable; use the thinking switch to turn reasoning off outright.
   - name: temperature
     use_template: temperature
   - name: top_p

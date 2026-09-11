@@ -96,12 +96,15 @@ def test_flagship_model_facts() -> None:
 def test_ernie_5_1_uses_reasoning_effort_not_boolean_thinking() -> None:
     rules = {rule["name"]: rule for rule in _schema("ernie-5.1")["parameter_rules"]}
 
-    # A boolean `thinking` is rejected upstream with
-    # "json: cannot unmarshal bool into struct field ... model.Thinking".
+    # The object form does switch thinking on ernie-5.1 (429 reasoning tokens enabled,
+    # none disabled), but reasoning_effort=none already turns it off just as completely,
+    # so the model is not given a second switch for the same thing.
     assert "thinking" not in rules
-    # The projection lists only a thinking_budget for ernie-5.1 and gives it no provable
-    # upper bound, but reasoning_effort is verified to work on the gateway, so it stays.
     assert rules["reasoning_effort"]["options"] == ["none", "low", "medium", "high"]
+    # json_schema is silently ignored here - the gateway answers a schema-constrained
+    # request in prose - so only json_object is offered.
+    assert rules["response_format"]["options"] == ["text", "json_object"]
+    assert "json_schema" not in rules
 
 
 def test_gemini_image_models_expose_vision() -> None:
@@ -218,7 +221,6 @@ PROJECTION_REASONING_EFFORT = {
     "gpt-6-astra": (["low", "medium", "high", "xhigh", "max"], "medium"),
     "hy3-preview": (["no_think", "low", "high"], "no_think"),
     "hy4-preview": (["none", "high"], "high"),
-    "mercury-2.5-preview": (["instant", "low", "medium", "high"], "medium"),
     "muse-spark-1.1": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
     "muse-spark-1.2": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
     "muse-spark-1.3": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
@@ -251,12 +253,11 @@ def test_limits_match_public_projection() -> None:
 
 
 def test_inert_knobs_are_not_exposed() -> None:
-    # The projection records no thinking field for glm-5.2-fast-preview on chat_completions,
-    # and the gateway bears that out: the endpoint answers 200 to a thinking switch while
-    # still streaming reasoning_content back. reasoning_effort=none is the off switch here.
-    rules = {rule["name"] for rule in _schema("glm-5.2-fast-preview")["parameter_rules"]}
-    assert "thinking" not in rules
-    assert "thinking_budget" not in rules
+    # reasoning_effort is inert on mercury-2.5-preview: across six calls no level ever moved
+    # the reasoning-token count in the documented direction, and `instant` - the level that
+    # should spend the least - spent the most (864 and 872 against 794 for `high`).
+    rules = {rule["name"] for rule in _schema("mercury-2.5-preview")["parameter_rules"]}
+    assert "reasoning_effort" not in rules
     # The projection lists reasoning_effort for gemini-3.1-flash-lite-nothink, but that enum
     # belongs to the base model. On the -nothink id the gateway accepts even a bogus value and
     # bills zero reasoning tokens for every level, so the knob stays out.
@@ -385,3 +386,23 @@ def test_json_schema_is_offered_only_where_the_gateway_honours_it() -> None:
     # decoding to the schema, so the knob stays.
     for model in ("glm-5.2", "glm-5.2-fast-preview", "deepseek-v4-flash-0731-fast"):
         assert "json_schema" in _rule(model, "response_format")["options"], model
+    # ox-alpha answers a schema-constrained request in prose, exactly like ernie-5.1.
+    ox_rules = {rule["name"] for rule in _schema("ox-alpha")["parameter_rules"]}
+    assert "json_schema" not in ox_rules
+    assert _rule("ox-alpha", "response_format")["options"] == ["text", "json_object"]
+    # mai-thinking-1 rejects every structured format with 400 "Structured `response_format`
+    # is not enabled for model", so it gets no response_format knob at all.
+    mai = _schema("mai-thinking-1")
+    mai_rules = {rule["name"] for rule in mai["parameter_rules"]}
+    assert "json_schema" not in mai_rules
+    assert "response_format" not in mai_rules
+    assert "structured-output" not in (mai.get("features") or [])
+
+
+def test_glm_fast_preview_exposes_the_verified_thinking_switch() -> None:
+    # Sent as the official object by llm.py, the switch really does stop thinking on
+    # glm-5.2-fast-preview (333 reasoning tokens enabled, none disabled), and the budget
+    # caps it exactly - a budget of 64 spends 64 reasoning tokens.
+    assert _rule("glm-5.2-fast-preview", "thinking")["type"] == "boolean"
+    assert _rule("glm-5.2-fast-preview", "thinking_budget")["type"] == "int"
+    assert _rule("glm-5.2", "thinking_budget")["type"] == "int"

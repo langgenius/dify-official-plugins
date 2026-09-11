@@ -31,6 +31,9 @@ parameter_rules:
       - high
       - xhigh
       - max
+    help:
+      zh_Hans: 档位本身有效（线上实测 low 约 20 个推理 token、high/xhigh/max 约 57-59 个），但 none 并不关思考 —— 实测仍产出约 40 个推理 token 并回 reasoning_content，与 hy3 / hy4-preview 属于同一类网关侧漂移，已单独立项跟进。
+      en_US: The levels do work - low spends about 20 reasoning tokens on the gateway while high, xhigh and max spend about 57-59 - but none does not turn thinking off - it still spends about 40 reasoning tokens and returns reasoning_content. This is the same gateway-side drift as hy3 / hy4-preview and is tracked separately.
   - name: response_format
     label:
       zh_Hans: 回复格式
