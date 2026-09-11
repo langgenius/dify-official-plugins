@@ -171,3 +171,29 @@ def test_both_tools_prefill_the_same_default_model():
     }
     assert defaults["image-generate"] == defaults["image-edit"]
     assert defaults["image-generate"]
+
+
+def test_the_plugin_files_itself_under_the_image_category():
+    """Without a tag the plugin lands in no category at all -- Dify shows it only under the
+    catch-all tool listing, never under Image. The tag has to be declared in both places:
+    the manifest drives the plugin list, the provider identity drives the tool picker."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    manifest = yaml.safe_load((root / "manifest.yaml").read_text())
+    provider = yaml.safe_load((root / "provider" / "aihubmix-image.yaml").read_text())
+    assert "image" in manifest["tags"]
+    assert "image" in provider["identity"]["tags"]
+
+
+def test_the_provider_label_is_something_a_user_would_search_for():
+    """The tool picker matches the typed keyword against provider/tool `name` and `label` and
+    nothing else -- descriptions are not searched. A label that just repeats the provider id
+    means the plugin cannot be found by what it does."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    identity = yaml.safe_load((root / "provider" / "aihubmix-image.yaml").read_text())["identity"]
+    label = identity["label"]
+    assert label["en_US"] != identity["name"]
+    assert "图片" in label["zh_Hans"]
