@@ -8,9 +8,8 @@
 
 ## Overview
 
-Two tools — **Generate Image** and **Edit Image** — that reach every image model AIHubMix
-serves through the gateway's unified image endpoint: GPT Image, Gemini, Doubao Seedream,
-Qwen-Image, Flux, GLM, Wan, MAI, ERNIE, Ideogram and the rest.
+Two tools — **Generate Image** and **Edit Image** — that reach the image models AIHubMix serves
+through the gateway's unified image endpoint: GPT Image, Gemini, Qwen-Image, GLM, Wan, Agnes.
 
 There is no per-model tool. The model dropdown is filled from the gateway with your API key,
 and each model's accepted parameters are read from its published schema at call time, so a
@@ -18,12 +17,14 @@ model added to AIHubMix shows up without a plugin update.
 
 ## What that means in practice
 
-* **The model list is live.** Pick from the dropdown; the edit tool only offers models that
-  accept an image as input.
+* **The model list is live.** It is the gateway's own catalog, narrowed to the models whose
+  unified-endpoint schema the gateway has verified (`schema_checked`) — the plugin keeps no
+  hand-written list of its own, so a newly verified model appears on its own and a withdrawn
+  one disappears. The edit tool further narrows it to models that accept an image as input.
 * **Parameters are validated against the model you picked.** A value the model does not allow
   is rejected with the list of values it does allow, instead of a bare HTTP 400 from the
   gateway. A parameter the model does not have at all is dropped and reported in the output
-  (`mai-image-2.6-flash`, for example, has no `n` and rejects the whole request if it is sent).
+  (`agnes-image-2.1-flash`, for example, has no `n` and rejects the whole request if it is sent).
 * **Images come back as files.** The plugin downloads the artifact with your key and hands
   Dify the bytes, with the real image type detected from the file contents.
 * **Long-tail parameters have an escape hatch.** The *Advanced Parameters (JSON)* field takes
@@ -54,14 +55,15 @@ format, seed, negative prompt, advanced parameters.
 using an old tool has to be repointed** at *Generate Image* or *Edit Image* and have its model
 picked from the dropdown.
 
-Models that 0.1.x could call but the unified endpoint does not serve (endpoint discovery
-answers 404) are not available in 0.2.0 and are kept out of the dropdown: `imagen-4.0` /
-`imagen-4.0-ultra`, `FLUX-1.1-pro`, `dall-e-3` / `dall-e-2`, `gpt-image-1.5`, `gpt-image-1` /
-`gpt-image-1-mini`, `doubao-seedream-5.0-pro`, and the Ideogram aliases `V_1`, `V_1_TURBO`,
-`V_2`, `V_2_TURBO`, `V_2A`, `V_2A_TURBO`, `UPSCALE`, `DESCRIBE`. Use their current equivalents
-— `gemini-3-pro-image`, `flux-2-pro`, `gpt-image-2`, `doubao-seedream-5.0-lite`, `V3` —
-instead. `-free` trial tiers are also hidden, because they answer `model_unavailable` most of
-the time.
+Which models you get is decided by the gateway, not by the plugin: the dropdown carries every
+active image model the gateway marks as schema-verified. At the time of writing that is
+thirteen for *Generate Image* — `gpt-image-2`, `gpt-image-2.5-flare`, `gpt-image-2.5-sunburst`,
+`gemini-2.5-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-image`,
+`gemini-3.1-flash-lite-image`, `qwen-image-2.0`, `qwen-image-2.0-pro`, `wan2.7-image`,
+`wan2.7-image-pro`, `glm-image`, `agnes-image-2.1-flash` — and twelve for *Edit Image*
+(all but `glm-image`, which is text-only). Models 0.1.x could call that are not verified,
+including `imagen-4.0`, `FLUX-1.1-pro`, `dall-e-3`, `gpt-image-1.5` and the Ideogram aliases,
+are not offered; the nearest verified equivalents are `gemini-3-pro-image` and `gpt-image-2`.
 
 ## Credentials
 
@@ -74,14 +76,10 @@ the time.
   the call, so this only matters if you re-run a very old task.
 * Generation can take a few minutes on large sizes; the plugin polls until the task reaches a
   terminal state and reports the task id if it does not settle in time.
-* A few models in the dropdown are currently rejected by the gateway itself rather than by the
-  plugin (`flux-2-pro`, `flux-2-flex`, `V3`, `Stable-Diffusion-3-5-Large` answer
-  `internal_error`; `ernie-image-turbo` and `gemini-2.5-flash-image-preview` answer
-  `upstream_rejected`). They are left in the list so they come back on their own once the
-  gateway serves them; the error carries a request id for support.
-* Not every model that the catalog marks as accepting images actually declares an image field
-  in its schema (`qwen-image`, `qwen-image-max`, `wan2.6-t2i`). The edit tool says so
-  immediately instead of spending a call.
+* `agnes-image-2.1-flash` is the one model that makes *Size* mandatory; the plugin says so
+  before spending a call.
+* If the gateway cannot be reached the dropdown reports the error rather than falling back to
+  a frozen list, so it never silently offers a model that is no longer served.
 
 ## Privacy Policy
 

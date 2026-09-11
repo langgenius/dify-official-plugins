@@ -61,11 +61,20 @@ def test_catalog_lists_active_models_only():
     assert ids and not (ids & retired)
 
 
-def test_models_the_unified_endpoint_cannot_serve_are_hidden():
-    ids = {model.model_id for model in catalog.list_image_models(FakeClient(CATALOG))}
-    # These are listed in the catalog but answer 404 on endpoint discovery.
+def test_only_schema_checked_models_are_offered():
+    models = catalog.list_image_models(FakeClient(CATALOG))
+    ids = {model.model_id for model in models}
+    expected = {
+        item["model_id"]
+        for item in CATALOG["data"]
+        if item.get("schema_checked") and item.get("retire_stage") == "active"
+        and not item["model_id"].endswith("-free")
+    }
+    assert ids == expected
+    # Unchecked entries include both the ones discovery answers 404 for and ones that are
+    # served but from an unreviewed schema.
     assert "dall-e-3" not in ids
-    assert "imagen-4.0" not in ids
+    assert "doubao-seedream-4-5" not in ids
     assert "gpt-image-2" in ids
 
 
@@ -82,10 +91,15 @@ def test_edit_dropdown_only_offers_models_that_take_an_image():
     assert "glm-image" not in ids  # text-only
 
 
-def test_dropdown_falls_back_when_the_catalog_call_fails():
-    models = catalog.list_image_models(FakeClient(fail=True))
-    assert models
-    assert all(model.accepts_image for model in models)
+def test_a_failed_catalog_call_surfaces_instead_of_guessing():
+    # A hand-written fallback list would go stale silently; the gateway error is the truth.
+    with pytest.raises(GatewayError):
+        catalog.list_image_models(FakeClient(fail=True))
+
+
+def test_an_empty_catalog_says_so():
+    with pytest.raises(GatewayError, match="no image models"):
+        catalog.list_image_models(FakeClient({"data": []}))
 
 
 def test_single_file_maps_to_the_field_the_model_declares():

@@ -17,46 +17,6 @@ from utils.client import AIHubMixClient, GatewayError
 CATALOG_PATH = "/api/v1/models?type=image_generation&sort_by=order"
 CATALOG_CACHE_TTL = 300
 
-# Listed in the catalog but not served by the unified endpoint — discovery answers 404, so
-# showing them in the dropdown would only produce a failure at invoke time.
-UNSUPPORTED_MODELS = frozenset({
-    "imagen-4.0",
-    "imagen-4.0-ultra",
-    "FLUX-1.1-pro",
-    "dall-e-3",
-    "dall-e-2",
-    "gpt-image-1.5",
-    "doubao-seedream-5.0-pro",
-    "gpt-image-1",
-    "gpt-image-1-mini",
-    # The Ideogram catalog entries are legacy aliases kept for the old passthrough routes.
-    "V_1",
-    "V_1_TURBO",
-    "V_2",
-    "V_2_TURBO",
-    "V_2A",
-    "V_2A_TURBO",
-    "UPSCALE",
-    "DESCRIBE",
-})
-
-# Used only when the catalog call itself fails (network, proxy, expired key); a stale
-# dropdown still lets the user work, an empty one does not.
-FALLBACK_MODELS: tuple[tuple[str, str], ...] = (
-    ("gpt-image-2", "GPT Image 2"),
-    ("gpt-image-2.5-flare", "GPT Image 2.5 Flare"),
-    ("gemini-3-pro-image", "Gemini 3 Pro Image"),
-    ("gemini-3.1-flash-image", "Gemini 3.1 Flash Image"),
-    ("doubao-seedream-4-5", "Doubao Seedream 4.5"),
-    ("doubao-seedream-5.0-lite", "Doubao Seedream 5.0 Lite"),
-    ("qwen-image-2.0", "Qwen Image 2.0"),
-    ("qwen-image-3.0", "Qwen Image 3.0"),
-    ("flux-2-pro", "Flux 2 Pro"),
-    ("glm-image", "GLM Image"),
-    ("wan2.7-image", "Wan2.7 Image"),
-    ("mai-image-2.6-flash", "Mai Image 2.6 Flash"),
-)
-
 _CATALOG_CACHE: dict[str, tuple[float, list["CatalogModel"]]] = {}
 
 
@@ -79,14 +39,12 @@ def _load(client: AIHubMixClient) -> list[CatalogModel]:
     if cached and now - cached[0] < CATALOG_CACHE_TTL:
         return cached[1]
 
-    try:
-        payload = client.get_json(CATALOG_PATH)
-        models = _parse(payload)
-    except GatewayError:
-        models = []
-
+    models = _parse(client.get_json(CATALOG_PATH))
     if not models:
-        return [CatalogModel(model_id=mid, display_name=name, accepts_image=True) for mid, name in FALLBACK_MODELS]
+        raise GatewayError(
+            "The gateway returned no image models for this key. Check the API Base URL and "
+            "that the key is allowed to list models."
+        )
 
     _CATALOG_CACHE[client.base_url] = (now, models)
     return models
@@ -103,9 +61,15 @@ def _parse(payload: Any) -> list[CatalogModel]:
         if not isinstance(item, dict):
             continue
         model_id = str(item.get("model_id") or item.get("id") or "").strip()
-        if not model_id or model_id in seen or model_id in UNSUPPORTED_MODELS:
+        if not model_id or model_id in seen:
             continue
         if str(item.get("retire_stage") or "active").lower() != "active":
+            continue
+        # schema_checked marks the models whose unified-endpoint schema the gateway has
+        # verified. Everything else is either not served there at all (endpoint discovery
+        # answers 404) or served from an unreviewed schema, so it stays out of the dropdown
+        # rather than being maintained as a hand-written exclusion list here.
+        if not item.get("schema_checked"):
             continue
         # The -free tiers are rate-limited trial models that answer model_unavailable most of
         # the time; offering them in the dropdown only produces failed runs.
