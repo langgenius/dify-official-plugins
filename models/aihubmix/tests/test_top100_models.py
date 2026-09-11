@@ -208,9 +208,10 @@ PROJECTION_REASONING_EFFORT = {
     "coding-glm-5.2": (["none", "minimal", "low", "medium", "high", "xhigh", "max"], "max"),
     "coding-glm-5.3": (["low", "medium", "high", "max"], "medium"),
     "coding-kimi-k3": (["low", "medium", "high", "max"], "medium"),
-    "deepseek-v4-flash-0731-fast": (["none", "low", "medium", "high", "max"], "medium"),
-    "deepseek-v4-flash-vision-exp": (["none", "low", "medium", "high", "max"], "medium"),
-    "deepseek-v4.1-flash": (["none", "low", "medium", "high", "max"], "medium"),
+    "deepseek-v4-flash-0731-fast": (["low", "medium", "high", "max"], "medium"),
+    "deepseek-v4-flash-vision-exp": (["low", "medium", "high", "max"], "medium"),
+    "deepseek-v4.1-flash": (["low", "medium", "high", "max"], "medium"),
+    "glm-5.2": (["none", "minimal", "low", "medium", "high", "xhigh", "max"], "max"),
     "glm-5.2-fast-preview": (["none", "minimal", "low", "medium", "high", "xhigh", "max"], "max"),
     "gpt-5.5-pro": (["medium", "high", "xhigh"], "medium"),
     "gpt-5.6-sol-disc": (["none", "low", "medium", "high", "xhigh", "max"], "medium"),
@@ -250,15 +251,17 @@ def test_limits_match_public_projection() -> None:
 
 
 def test_inert_knobs_are_not_exposed() -> None:
-    # A boolean `thinking` reaches glm-5.2-fast-preview as `"thinking": false`, which the
-    # endpoint answers 200 to while still streaming reasoning_content back. The official
-    # shape is the object `{"type": "disabled"}`, which Dify parameter_rules cannot express,
-    # so the working reasoning_effort=none is the off switch instead.
+    # The projection records no thinking field for glm-5.2-fast-preview on chat_completions,
+    # and the gateway bears that out: the endpoint answers 200 to a thinking switch while
+    # still streaming reasoning_content back. reasoning_effort=none is the off switch here.
     rules = {rule["name"] for rule in _schema("glm-5.2-fast-preview")["parameter_rules"]}
     assert "thinking" not in rules
     assert "thinking_budget" not in rules
-    # reasoning_mode appears nowhere in the projection for gpt-5.6-sol-disc.
-    assert "reasoning_mode" not in {r["name"] for r in _schema("gpt-5.6-sol-disc")["parameter_rules"]}
+    # The projection lists reasoning_effort for gemini-3.1-flash-lite-nothink, but that enum
+    # belongs to the base model. On the -nothink id the gateway accepts even a bogus value and
+    # bills zero reasoning tokens for every level, so the knob stays out.
+    rules = {rule["name"] for rule in _schema("gemini-3.1-flash-lite-nothink")["parameter_rules"]}
+    assert "reasoning_effort" not in rules
 
 
 def test_agnes_thinking_toggle_uses_chat_template_kwargs() -> None:
@@ -330,3 +333,55 @@ def test_gemini_thinking_toggle_uses_the_name_google_py_reads() -> None:
     assert 'thinking_mode = model_parameters.get("thinking_mode", None)' in (
         MODEL_DIR / "google.py"
     ).read_text(encoding="utf-8")
+
+
+# --- enums taken from domains[].capabilities[].protocols[].fields[] ----------
+# specs.reasoning_options only summarises the reasoning knobs. The per-protocol
+# fields carry the rest of the enums, each against the protocol the plugin
+# actually routes that model through.
+
+
+def _responses_source() -> str:
+    return (MODEL_DIR / "openai_response.py").read_text(encoding="utf-8")
+
+
+def test_sol_disc_exposes_every_official_responses_reasoning_field() -> None:
+    # gpt-5.6-sol-disc goes to /v1/responses, where the projection marks reasoning.mode,
+    # reasoning.summary, reasoning.context and text.verbosity official-model-level. The
+    # gateway validates all four server side: a bogus value comes back 400 naming the enum.
+    expected = {
+        "reasoning_mode": ["standard", "pro"],
+        "reasoning_summary": ["auto", "concise", "detailed"],
+        "reasoning_context": ["auto", "current_turn", "all_turns"],
+        "verbosity": ["low", "medium", "high"],
+    }
+    for name, options in expected.items():
+        assert _rule("gpt-5.6-sol-disc", name)["options"] == options, name
+    # Each of those names only reaches the wire because openai_response.py translates it.
+    source = _responses_source()
+    for name in ("reasoning_effort", "reasoning_summary", "reasoning_mode", "reasoning_context"):
+        assert f'("{name}", "' in source, name
+    assert 'params.pop("verbosity"' in source
+
+
+def test_deepseek_v4_flash_turns_thinking_off_through_the_official_field() -> None:
+    # The projection's effort enum is low/high/max (medium is its default). Thinking is
+    # switched by the separate thinking object, not by an invented reasoning_effort=none.
+    for model in ("deepseek-v4.1-flash", "deepseek-v4-flash-vision-exp", "deepseek-v4-flash-0731-fast"):
+        assert _rule(model, "thinking")["type"] == "boolean", model
+        assert "none" not in _rule(model, "reasoning_effort")["options"], model
+
+
+def test_json_schema_is_offered_only_where_the_gateway_honours_it() -> None:
+    # response_format fields narrowed to text/json_object by the projection, confirmed on the
+    # gateway: deepseek answers 400 "This response_format type is unavailable now" and the
+    # coding-glm ids answer 200 while ignoring the schema outright.
+    for model in ("coding-glm-5.2", "coding-glm-5.3", "deepseek-v4.1-flash", "deepseek-v4-flash-vision-exp"):
+        assert _rule(model, "response_format")["options"] == ["text", "json_object"], model
+        rules = {rule["name"] for rule in _schema(model)["parameter_rules"]}
+        assert "json_schema" not in rules, model
+        assert "structured-output" not in (_schema(model).get("features") or []), model
+    # The same projection narrows glm-5.2 too, but there the gateway really does constrain
+    # decoding to the schema, so the knob stays.
+    for model in ("glm-5.2", "glm-5.2-fast-preview", "deepseek-v4-flash-0731-fast"):
+        assert "json_schema" in _rule(model, "response_format")["options"], model

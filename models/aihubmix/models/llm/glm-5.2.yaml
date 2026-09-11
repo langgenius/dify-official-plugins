@@ -30,6 +30,24 @@ parameter_rules:
     min: 0
     max: 32000
     required: false
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 公网投影收录的官方枚举 none/minimal/low/medium/high/xhigh/max，默认 max；线上实测 none 不再产生推理 token，max 与 minimal 均产生 reasoning_content。
+      en_US: The public projection records the official enum none/minimal/low/medium/high/xhigh/max with the default max. Verified on the gateway - none stops reasoning tokens, while max and minimal both return reasoning_content.
+    required: false
+    default: max
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
   - name: temperature
     use_template: temperature
   - name: top_p

@@ -29,14 +29,23 @@ parameter_rules:
     required: false
     default: medium
     options:
-      - none
       - low
       - medium
       - high
       - max
     help:
-      zh_Hans: 控制推理努力程度；low/high/max 为公网投影的官方枚举，medium 为其默认档，none 关闭思考（线上实测生效）。
-      en_US: Controls reasoning effort. low/high/max are the projection's official enum, medium its default; none disables thinking (verified live).
+      zh_Hans: 公网投影 fields 收录的官方枚举为 low/high/max，medium 是其默认档；关闭思考请改用 thinking 开关。
+      en_US: The projection's fields record the official enum low/high/max with medium as its default; use the thinking toggle to turn reasoning off.
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 公网投影在 chat_completions 协议下把 thinking 标为 official-model-level 的思考开关（对象形式 {"type":"enabled"/"disabled"}，默认思考）；插件会把这个布尔值翻译成官方要求的对象。线上实测关闭后不再产生推理 token。
+      en_US: The public projection marks thinking as the official model-level toggle on chat_completions (object form {"type":"enabled"/"disabled"}, thinking on by default); the plugin translates this boolean into that object. Verified on the gateway - turning it off stops reasoning tokens.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -46,9 +55,6 @@ parameter_rules:
     options:
       - text
       - json_object
-      - json_schema
-  - name: json_schema
-    use_template: json_schema
 pricing:
   input: '0.155'
   output: '0.62'

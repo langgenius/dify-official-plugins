@@ -47,6 +47,45 @@ parameter_rules:
       - high
       - xhigh
       - max
+  - name: reasoning_mode
+    label:
+      zh_Hans: 推理模式
+      en_US: Reasoning Mode
+    type: string
+    help:
+      zh_Hans: 标准模式平衡质量与延迟；Pro 模式会投入更多模型计算。公网投影在 responses 协议下把该字段标为 official-model-level，枚举 standard/pro，默认 standard。
+      en_US: Standard mode balances quality and latency; Pro mode applies more model work. The public projection marks this field official-model-level on the responses protocol with the enum standard/pro, defaulting to standard.
+    required: false
+    default: standard
+    options:
+      - standard
+      - pro
+  - name: reasoning_summary
+    label:
+      zh_Hans: 推理摘要
+      en_US: Reasoning Summary
+    type: string
+    help:
+      zh_Hans: 让模型回传思考过程的摘要，concise 为简要、detailed 为详细、auto 由服务端决定；流式下以 reasoning_summary_text 事件返回（线上实测 detailed 产出 79 个摘要增量）。
+      en_US: Asks the model to return a summary of its reasoning - concise, detailed, or auto (server decides). It streams back as reasoning_summary_text events (verified live - detailed produced 79 summary deltas).
+    required: false
+    options:
+      - auto
+      - concise
+      - detailed
+  - name: reasoning_context
+    label:
+      zh_Hans: 推理上下文
+      en_US: Reasoning Context
+    type: string
+    help:
+      zh_Hans: 控制模型在推理时可以回看多少历史：auto 由服务端决定，current_turn 只看本轮，all_turns 看完整会话。
+      en_US: Controls how much history the model may revisit while reasoning - auto lets the server decide, current_turn keeps it to this turn, all_turns spans the whole conversation.
+    required: false
+    options:
+      - auto
+      - current_turn
+      - all_turns
   - name: verbosity
     label:
       zh_Hans: 详细程度
