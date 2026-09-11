@@ -8,15 +8,20 @@ identity:
     ja_JP: "画像を編集"
 description:
   human:
-    en_US: "Edit or recompose existing images with any AIHubMix image model that accepts image input — inpainting with a mask, style changes, multi-image composition. The model list only shows models that can take a source image."
-    zh_Hans: "用 AIHubMix 上支持图生图的模型编辑已有图片 —— 带蒙版的局部重绘、风格改写、多图合成。模型下拉只列出能接收源图的模型。"
-    pt_BR: "Edite ou recomponha imagens existentes com qualquer modelo do AIHubMix que aceite entrada de imagem — inpainting com máscara, mudança de estilo, composição de várias imagens. A lista mostra apenas modelos que aceitam imagem de origem."
-    ja_JP: "画像入力に対応した AIHubMix の画像モデルで既存画像を編集します（マスクによる部分再生成、スタイル変更、複数画像の合成）。モデル一覧には画像入力に対応したモデルのみが表示されます。"
+    en_US: "Edit or recompose existing images with any AIHubMix image model that accepts image input — inpainting with a mask, style changes, multi-image composition. The list covers the latest GPT Image, Gemini, Qwen Image, Wan and Agnes releases, narrowed to the models that can take a source image."
+    zh_Hans: "用 AIHubMix 上支持图生图的模型编辑已有图片 —— 带蒙版的局部重绘、风格改写、多图合成。下拉覆盖 GPT Image、Gemini、Qwen Image、Wan、Agnes 等系列的最新版本，并只列出能接收源图的模型。"
+    pt_BR: "Edite ou recomponha imagens existentes com qualquer modelo do AIHubMix que aceite entrada de imagem — inpainting com máscara, mudança de estilo, composição de várias imagens. A lista cobre os lançamentos mais recentes de GPT Image, Gemini, Qwen Image, Wan e Agnes, restrita aos modelos que aceitam imagem de origem."
+    ja_JP: "画像入力に対応した AIHubMix の画像モデルで既存画像を編集します（マスクによる部分再生成、スタイル変更、複数画像の合成）。一覧は GPT Image、Gemini、Qwen Image、Wan、Agnes などの最新世代を対象に、画像入力に対応したモデルだけを表示します。"
   llm: "Edit one or more source images according to an instruction. Requires a model id that accepts image input, a prompt describing the edit, and at least one source image. Optionally takes a mask marking the region to change. Returns the edited image files."
 parameters:
   - name: model
     type: dynamic-select
     required: true
+    # Prefills the dropdown on a freshly added node. Dify applies a parameter default
+    # from the static declaration, so this has to name one model rather than 'whatever
+    # the catalog lists first'; it is a starting point only -- the options themselves
+    # still come from the live catalog, and picking anything else overrides it.
+    default: "gpt-image-2.5-sunburst"
     label:
       en_US: "Model"
       zh_Hans: "模型"
@@ -28,7 +33,10 @@ parameters:
       pt_BR: "Modelo de imagem a usar. A lista é obtida do AIHubMix com sua API Key."
       ja_JP: "使用する画像モデル。一覧は API キーで AIHubMix から取得されます。"
     llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, qwen-image-2.0 or wan2.7-image. Pick one from the model list rather than guessing an id."
-    form: form
+    # Must stay `llm`, not `form`: the Dify workflow tool panel only passes the
+    # provider/tool context to the input-variable section, so a `form: form`
+    # dynamic-select never fetches its options and renders as an empty dropdown.
+    form: llm
 
   - name: prompt
     type: string

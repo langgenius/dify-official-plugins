@@ -321,11 +321,22 @@ def build_payload(
         if vendor:
             payload["extra"] = vendor
 
+    # Which fields are mandatory is per-model and only known from the live schema -- `size`
+    # is required by agnes-image-2.1-flash and optional everywhere else -- so the tool YAML
+    # cannot express it. Catch it here, before the request goes out, and say what to enter.
     missing = [name for name in endpoint.required if name not in payload]
     if missing:
-        described = ", ".join(f"{name} ({describe(endpoint.properties.get(name))})" for name in missing)
+        described = ", ".join(_requirement(endpoint, name) for name in missing)
         raise GatewayError(
             f"{endpoint.model} requires {described}; set the matching tool parameter"
         )
 
     return payload, notes
+
+
+def _requirement(endpoint: ImageEndpoint, name: str) -> str:
+    """One missing field, described with the model's own wording where it has any."""
+    prop = endpoint.properties.get(name)
+    hint = describe(prop)
+    description = prop.get("description") if isinstance(prop, dict) else None
+    return f"{name} -- {description} ({hint})" if description else f"{name} ({hint})"

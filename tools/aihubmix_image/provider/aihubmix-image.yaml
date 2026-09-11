@@ -1,17 +1,24 @@
 identity:
   author: "langgenius"
   name: "aihubmix-image"
+  # The workflow tool picker searches provider `name` + `label` and tool `name` + `label`
+  # only -- never the descriptions -- so the label has to carry the words a user would type
+  # rather than repeat the provider id.
   label:
-    en_US: "aihubmix-image"
-    zh_Hans: "aihubmix-image"
-    pt_BR: "aihubmix-image"
-    ja_JP: "aihubmix-image"
+    en_US: "AIHubMix Image"
+    zh_Hans: "AIHubMix 图片生成"
+    pt_BR: "AIHubMix Image"
+    ja_JP: "AIHubMix 画像生成"
   description:
-    en_US: "Image generation by AIHubMix API with support for sync/async models"
-    zh_Hans: "基于 AIHubMix API 的图像生成工具，支持同步/异步模型"
-    pt_BR: "Geração de imagem por API AIHubMix com suporte para modelos síncronos/assíncronos"
-    ja_JP: "AIHubMix APIによる画像生成、同期/非同期モデルをサポート"
+    en_US: "Image generation and editing through the AIHubMix unified image endpoint. The model dropdown is filled from the gateway with your API key, covering the latest GPT Image, Gemini, Qwen Image, Wan, GLM and Agnes releases as they are published."
+    zh_Hans: "基于 AIHubMix 统一图像接口的图像生成与编辑。模型下拉用你的 API Key 实时从网关拉取，覆盖 GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes 等系列的最新版本，新模型上线即可选。"
+    pt_BR: "Geração e edição de imagens pelo endpoint unificado de imagem do AIHubMix. A lista de modelos vem do gateway com sua API Key e cobre os lançamentos mais recentes de GPT Image, Gemini, Qwen Image, Wan, GLM e Agnes assim que são publicados."
+    ja_JP: "AIHubMix の統合画像エンドポイントによる画像生成と編集。モデル一覧は API キーでゲートウェイから取得され、GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes などの最新世代を公開され次第カバーします。"
   icon: icon.svg
+  # Files the plugin under the Image category. Without it the plugin lands in no category at
+  # all and only shows up under the catch-all tool listing.
+  tags:
+    - image
 
 # The key must be `credentials_for_provider` and the value a mapping keyed by credential
 # name: the SDK reads it through that alias (ToolProviderConfiguration.credentials_schema)

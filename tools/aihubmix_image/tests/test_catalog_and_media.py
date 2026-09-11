@@ -137,3 +137,63 @@ def test_oversized_file_is_rejected_before_the_request():
     with pytest.raises(GatewayError) as excinfo:
         media.source_images(endpoint, [FakeFile(b"x" * (media.MAX_INLINE_BYTES + 1))])
     assert "limit" in str(excinfo.value)
+
+
+def test_the_model_parameter_sits_in_the_section_that_can_fetch_its_options():
+    """Dify's workflow tool panel splits parameters into an input-variable list and a
+    settings list, and only the input-variable list is handed the provider/tool context
+    that `dynamic-select` needs to call dynamic-options. A `form: form` dynamic-select
+    therefore renders as a permanently empty dropdown, so `model` must stay `form: llm`.
+    """
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    for name in ("image-generate", "image-edit"):
+        declaration = yaml.safe_load((root / "tools" / f"{name}.yaml").read_text())
+        model = next(p for p in declaration["parameters"] if p["name"] == "model")
+        assert model["type"] == "dynamic-select", name
+        assert model["form"] == "llm", name
+
+
+def test_both_tools_prefill_the_same_default_model():
+    """Dify fills a new node's parameters from the static declaration, so the dropdown only
+    starts on a model if one is named here. Edit narrows the catalog to models that accept
+    image input, so the shared default has to be one of those."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    defaults = {
+        name: next(
+            p for p in yaml.safe_load((root / "tools" / f"{name}.yaml").read_text())["parameters"]
+            if p["name"] == "model"
+        )["default"]
+        for name in ("image-generate", "image-edit")
+    }
+    assert defaults["image-generate"] == defaults["image-edit"]
+    assert defaults["image-generate"]
+
+
+def test_the_plugin_files_itself_under_the_image_category():
+    """Without a tag the plugin lands in no category at all -- Dify shows it only under the
+    catch-all tool listing, never under Image. The tag has to be declared in both places:
+    the manifest drives the plugin list, the provider identity drives the tool picker."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    manifest = yaml.safe_load((root / "manifest.yaml").read_text())
+    provider = yaml.safe_load((root / "provider" / "aihubmix-image.yaml").read_text())
+    assert "image" in manifest["tags"]
+    assert "image" in provider["identity"]["tags"]
+
+
+def test_the_provider_label_is_something_a_user_would_search_for():
+    """The tool picker matches the typed keyword against provider/tool `name` and `label` and
+    nothing else -- descriptions are not searched. A label that just repeats the provider id
+    means the plugin cannot be found by what it does."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    identity = yaml.safe_load((root / "provider" / "aihubmix-image.yaml").read_text())["identity"]
+    label = identity["label"]
+    assert label["en_US"] != identity["name"]
+    assert "图片" in label["zh_Hans"]

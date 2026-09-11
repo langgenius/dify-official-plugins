@@ -8,15 +8,20 @@ identity:
     ja_JP: "画像を生成"
 description:
   human:
-    en_US: "Generate an image from a text prompt with the image models AIHubMix serves — GPT Image, Gemini, Qwen-Image, GLM, Wan and more. The model list is fetched from the gateway, and each model's own parameters are validated before the request is sent."
-    zh_Hans: "用 AIHubMix 提供的图像模型进行文生图 —— GPT Image、Gemini、Qwen-Image、GLM、Wan 等。模型列表实时来自网关，参数会按所选模型的规格校验后再发送。"
-    pt_BR: "Gere uma imagem a partir de um prompt de texto com os modelos de imagem do AIHubMix — GPT Image, Gemini, Qwen-Image, GLM, Wan e outros. A lista de modelos vem do gateway e os parâmetros são validados antes do envio."
-    ja_JP: "AIHubMix が提供する画像モデル（GPT Image、Gemini、Qwen-Image、GLM、Wan など）でテキストから画像を生成します。モデル一覧はゲートウェイから取得され、パラメータはモデルごとの仕様で検証されます。"
+    en_US: "Generate an image from a text prompt with the image models AIHubMix serves, including the latest GPT Image, Gemini, Qwen Image, Wan, GLM and Agnes releases. The model list is fetched live from the gateway, and each model's own parameters are validated before the request is sent."
+    zh_Hans: "用 AIHubMix 提供的图像模型进行文生图，包括 GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes 等系列的最新版本。模型列表实时来自网关，参数会按所选模型的规格校验后再发送。"
+    pt_BR: "Gere uma imagem a partir de um prompt de texto com os modelos de imagem do AIHubMix, incluindo os lançamentos mais recentes de GPT Image, Gemini, Qwen Image, Wan, GLM e Agnes. A lista de modelos vem do gateway em tempo real e os parâmetros são validados antes do envio."
+    ja_JP: "AIHubMix が提供する画像モデル（GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes などの最新世代を含む）でテキストから画像を生成します。モデル一覧はゲートウェイからリアルタイムに取得され、パラメータはモデルごとの仕様で検証されます。"
   llm: "Generate one or more images from a text prompt. Requires a model id from the AIHubMix image catalog and a prompt. Optional: reference images, number of images, size or aspect ratio, output format, seed and negative prompt. Returns the generated image files."
 parameters:
   - name: model
     type: dynamic-select
     required: true
+    # Prefills the dropdown on a freshly added node. Dify applies a parameter default
+    # from the static declaration, so this has to name one model rather than 'whatever
+    # the catalog lists first'; it is a starting point only -- the options themselves
+    # still come from the live catalog, and picking anything else overrides it.
+    default: "gpt-image-2.5-sunburst"
     label:
       en_US: "Model"
       zh_Hans: "模型"
@@ -28,7 +33,10 @@ parameters:
       pt_BR: "Modelo de imagem a usar. A lista é obtida do AIHubMix com sua API Key."
       ja_JP: "使用する画像モデル。一覧は API キーで AIHubMix から取得されます。"
     llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, qwen-image-2.0 or wan2.7-image. Pick one from the model list rather than guessing an id."
-    form: form
+    # Must stay `llm`, not `form`: the Dify workflow tool panel only passes the
+    # provider/tool context to the input-variable section, so a `form: form`
+    # dynamic-select never fetches its options and renders as an empty dropdown.
+    form: llm
 
   - name: prompt
     type: string

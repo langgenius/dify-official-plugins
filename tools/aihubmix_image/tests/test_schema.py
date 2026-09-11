@@ -149,6 +149,16 @@ def test_missing_required_field_says_what_it_accepts():
     assert payload["size"] == "2K"
 
 
+def test_a_missing_field_is_explained_in_the_model_own_words():
+    """The pattern alone reads as line noise in the tool panel, so the message carries the
+    field description the gateway publishes alongside it."""
+    endpoint = endpoint_for("agnes-image-2.1-flash")
+    description = endpoint.properties["size"]["description"]
+    with pytest.raises(GatewayError) as excinfo:
+        build_payload(endpoint, prompt="hi", scalars={}, media={}, extra={})
+    assert description in str(excinfo.value)
+
+
 def test_prompt_is_required():
     endpoint = endpoint_for("glm-image")
     with pytest.raises(GatewayError):

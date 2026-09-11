@@ -1,6 +1,6 @@
 [project]
 name = "aihubmix_image"
-version = "0.2.0"
+version = "0.2.1"
 description = "AIHubMix image generation and editing for Dify, driven by the gateway's live model schemas"
 readme = "README.md"
 requires-python = ">=3.12"
