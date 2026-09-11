@@ -3,7 +3,8 @@ created_at: "2026-02-14T20:15:00+08:00"
 description:
   en_US: Volcengine Ark base and multimodal model invocation.
   zh_Hans: 火山方舟基础和多模态模型调用。
-icon: icon_s_en.svg
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Volcengine
   zh_Hans: 火山方舟
@@ -33,4 +34,4 @@ resource:
       text_embedding: false
       tts: false
 type: plugin
-version: 0.0.16
+version: 0.0.18

@@ -251,6 +251,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-omni-flash-2025-12-01",
             # Qwen3.5/3.6/3.7/3.8 series
             "qwen3.8-max",
+            "qwen3.8-flash",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",
@@ -268,6 +269,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if model == "qwen3.8-max":
             if not model_parameters["enable_thinking"]:
                 model_parameters.pop("reasoning_effort", None)
+            elif (temperature := model_parameters.get("temperature")) is not None and temperature < 0.6:
+                # DashScope resets values below 0.6 to 0.6 in thinking mode.
+                model_parameters["temperature"] = 0.6
             # Dify stores reasoning in content, which preserved thinking rejects.
             model_parameters["preserve_thinking"] = False
 
@@ -295,6 +299,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
             "qwen3.8-max",
+            "qwen3.8-flash",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",

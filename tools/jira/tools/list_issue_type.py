@@ -21,6 +21,6 @@ class ListIssueTypeTool(Tool):
 
         yield self.create_json_message(
             jira.issue_createmeta_issuetypes(
-                project, start=None, limit=None
+                project_key, start=None, limit=None
             )  # Get create metadata issue types for a project
         )

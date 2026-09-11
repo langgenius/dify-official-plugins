@@ -9,7 +9,8 @@ identity:
     en_US: Gemini Image Generation and Editing
     zh_Hans: Gemini 图像生成和编辑
     ja_JP: Gemini 画像生成・編集
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - image
     - productivity

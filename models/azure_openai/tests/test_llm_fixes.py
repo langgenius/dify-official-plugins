@@ -113,9 +113,16 @@ class TestStreamOptionsGate(unittest.TestCase):
         creds = {"openai_api_base": LEGACY_BASE, "openai_api_version": "2024-08-01-preview"}
         self.assertTrue(self.llm._supports_stream_options(creds))
 
-    def test_blank_version_falls_back_to_default_and_is_unsupported(self):
+    def test_blank_version_falls_back_to_modern_default_and_is_supported(self):
+        # Since 0.0.69 the fallback default is 2025-04-01-preview, which
+        # supports stream_options; explicitly old versions stay unsupported.
         creds = {"openai_api_base": LEGACY_BASE}
-        self.assertFalse(self.llm._supports_stream_options(creds))
+        self.assertTrue(self.llm._supports_stream_options(creds))
+        creds_old = {
+            "openai_api_base": LEGACY_BASE,
+            "openai_api_version": "2024-02-15-preview",
+        }
+        self.assertFalse(self.llm._supports_stream_options(creds_old))
 
     def test_chat_generate_includes_stream_options_when_supported(self):
         self.llm._get_base_model_name = MagicMock(return_value="gpt-4o")
@@ -200,12 +207,23 @@ class TestResponsesVersionGuard(unittest.TestCase):
             return str(ex)
         return None
 
-    def test_legacy_default_version_raises_actionable_error(self):
-        message = self._invoke({"base_model_name": "gpt-5", "openai_api_base": LEGACY_BASE})
+    def test_explicit_pre_responses_version_raises_actionable_error(self):
+        message = self._invoke(
+            {
+                "base_model_name": "gpt-5",
+                "openai_api_base": LEGACY_BASE,
+                "openai_api_version": "2024-02-15-preview",
+            }
+        )
         self.assertIsNotNone(message)
         self.assertIn("/openai/v1", message)
         self.assertIn("2025-03-01-preview", message)
         self.assertIn("2024-02-15-preview", message)
+
+    def test_blank_version_uses_modern_default_and_passes_guard(self):
+        # Since 0.0.69 the fallback default satisfies the Responses gate.
+        result = self._invoke({"base_model_name": "gpt-5", "openai_api_base": LEGACY_BASE})
+        self.assertIsNone(result)
 
     def test_legacy_newer_preview_passes_guard(self):
         result = self._invoke(
@@ -796,9 +814,11 @@ class TestCredentialRobustness(unittest.TestCase):
     def setUp(self):
         self.llm = make_llm()
 
-    def test_none_api_base_is_treated_as_legacy(self):
+    def test_none_api_base_falls_back_to_default_version_gate(self):
+        # Missing base URL behaves like a dated endpoint evaluated against
+        # the fallback default (modern since 0.0.69).
         creds = {"openai_api_base": None}
-        self.assertFalse(self.llm._supports_stream_options(creds))
+        self.assertTrue(self.llm._supports_stream_options(creds))
 
     def test_malformed_version_fails_closed(self):
         creds = {

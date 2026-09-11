@@ -4,7 +4,8 @@ description:
   en_US: Notion webhook triggers for pages, databases, data sources, and comments.
   ja_JP: Notionのページ・データベース・データソース・コメントの変更を通知するWebhookトリガーです。
   zh_Hans: Notion 页面、数据库、数据源与评论的变更通知触发器。
-icon: notion.icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Notion
   ja_JP: Notion
@@ -29,4 +30,4 @@ resource:
 tags:
 - productivity
 type: plugin
-version: 0.2.0
+version: 0.2.1

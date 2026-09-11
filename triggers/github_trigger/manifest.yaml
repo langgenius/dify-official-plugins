@@ -5,6 +5,7 @@ description:
   ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスです。
   zh_Hans: GitHub是一个在线软件源代码托管服务平台。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: GitHub
   ja_JP: GitHub
@@ -32,4 +33,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 1.5.0
+version: 1.5.1

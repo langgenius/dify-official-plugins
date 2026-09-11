@@ -28,11 +28,26 @@ class OpenAISpeech2TextModel(OAICompatSpeech2TextModel):
             endpoint_url += "/"
         endpoint_url = urljoin(endpoint_url, "audio/transcriptions")
 
-        language = credentials.get("language", "en")
-        prompt = credentials.get("initial_prompt", "convert the audio to text")
-        payload = {"model": credentials.get("endpoint_model_name", model), "language": language, "prompt": prompt}
+        payload = {"model": credentials.get("endpoint_model_name", model)}
+        # `language` and `prompt` are optional in the OpenAI transcription API and both
+        # change the output, so only forward them when the user actually configured one.
+        # Sending a hardcoded default made every request claim a language the server may
+        # not support, and injected an unrelated English instruction as the decoder prompt.
+        language = credentials.get("language")
+        if language:
+            payload["language"] = language
+        prompt = credentials.get("initial_prompt")
+        if prompt:
+            payload["prompt"] = prompt
+
         files = [("file", file)]
-        response = requests.post(endpoint_url, headers=headers, data=payload, files=files)  # noqa: S113
+        response = requests.post(
+            endpoint_url,
+            headers=headers,
+            data=payload,
+            files=files,
+            timeout=(10, 300),
+        )
 
         if response.status_code != 200:
             raise InvokeBadRequestError(response.text)

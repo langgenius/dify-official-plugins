@@ -280,3 +280,54 @@ def get_claude5_fallback_model_id(profile_model_id):
     base = strip_profile_prefix(profile_model_id)
     prefix = profile_model_id[: len(profile_model_id) - len(base)]
     return f"{prefix}{CLAUDE5_REFUSAL_FALLBACK_BASE_ID}"
+
+
+# 4.5-generation Claude models are INFERENCE_PROFILE-only on Bedrock, same as
+# Claude 5, but never got the Claude 5 treatment (#3675). Live-verified
+# (ap-northeast-1, 2026-08-17): us./eu./global. exist, apac. does not.
+CLAUDE45_PROFILE_PREFIXES = {
+    'anthropic.claude-sonnet-4-5-20250929-v1:0': ('us', 'eu'),
+    'anthropic.claude-haiku-4-5-20251001-v1:0': ('us', 'eu'),
+    'anthropic.claude-opus-4-5-20251101-v1:0': ('us', 'eu'),
+    'anthropic.claude-sonnet-4-6': ('us', 'eu'),
+    'anthropic.claude-opus-4-6-v1': ('us', 'eu'),
+    'anthropic.claude-opus-4-7': ('us', 'eu'),
+    'anthropic.claude-opus-4-8': ('us', 'eu'),
+}
+
+
+def is_claude45_model(model_id):
+    """True if model_id is a bare 4.5-generation Claude base model ID."""
+    return model_id in CLAUDE45_PROFILE_PREFIXES
+
+
+def resolve_claude45_profile_id(model_id, cross_region, region_name):
+    """
+    Resolve the inference profile ID for a 4.5-generation Claude model for
+    the 'global'/'geographic' cross-region options; raise a clear error for
+    'disabled' and for a 'geographic' region with no matching geo profile
+    (mirrors resolve_claude5_profile_id).
+
+    :param model_id: bare base model ID
+    :param cross_region: 'global', 'geographic', or 'disabled'
+    :param region_name: AWS region of the caller
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message
+    """
+    allowed = CLAUDE45_PROFILE_PREFIXES[model_id]
+    if cross_region == 'global':
+        return f"global.{model_id}"
+    if cross_region == 'geographic':
+        area = get_region_area(region_name)
+        if area in allowed:
+            return f"{area}.{model_id}"
+        alternative = "'japan' or 'global'" if model_id in JP_PROFILE_MODELS else "'global'"
+        raise ValueError(
+            f"{model_id} has no '{area or region_name}' geographic inference profile. "
+            f"From {region_name} set Cross-Region Inference to {alternative}."
+        )
+    raise ValueError(
+        f"{model_id} can only be invoked through an inference profile. "
+        f"Set Cross-Region Inference to 'global' (recommended) or 'geographic'"
+        + (", or 'japan'." if model_id in JP_PROFILE_MODELS else ".")
+    )

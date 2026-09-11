@@ -1,0 +1,50 @@
+model: glm-5.3-flash
+label:
+  en_US: glm-5.3-flash
+model_type: llm
+features:
+  - vision
+  - video
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 131072
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: max
+    required: false
+    options:
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制模型的思考强度。GLM-5.3-Flash 始终启用思考模式。
+      en_US: Controls the model's reasoning effort. GLM-5.3-Flash always uses thinking mode.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: Specifies the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: "0.0008"
+  output: "0.0028"
+  unit: "0.001"
+  currency: RMB

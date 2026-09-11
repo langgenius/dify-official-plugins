@@ -1,10 +1,11 @@
 model: openai
 label:
   en_US: OpenAI
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought
+  - vision
   - tool-call
   - stream-tool-call
 model_properties:

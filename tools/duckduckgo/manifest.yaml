@@ -1,4 +1,4 @@
-version: 0.0.10
+version: 0.0.12
 type: plugin
 author: "langgenius"
 name: "duckduckgo"
@@ -9,6 +9,7 @@ label:
   en_US: "DuckDuckGo"
 created_at: "2024-09-18T08:03:44.658609186Z"
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 1048576
   permission:

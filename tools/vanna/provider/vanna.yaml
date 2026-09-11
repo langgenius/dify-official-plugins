@@ -29,7 +29,8 @@ identity:
     en_US: The fastest way to get actionable insights from your database just by asking
       questions.
     zh_Hans: 一个基于大模型和RAG的Text2SQL工具。
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Vanna.AI
     zh_Hans: Vanna.AI

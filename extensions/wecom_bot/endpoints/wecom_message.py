@@ -231,7 +231,7 @@ class WeComMessageEndpoint(Endpoint):
             return Response(status=200, response="success")
         
         message_id = payload.get("msgid")
-        
+
         # ── Stream message handling (polling) ──────────────────
         if msgtype == "stream":
             stream_id = (payload.get("stream") or {}).get("id")
@@ -333,6 +333,30 @@ class WeComMessageEndpoint(Endpoint):
             app = settings.get("app")
             app_id = app.get("app_id")
 
+            # Scope a Dify conversation to the configured bot and WeCom chat.
+            # Single chats belong to one user; group chats share one conversation.
+            raw_from = payload.get("from")
+            userid = raw_from.get("userid") if isinstance(raw_from, Mapping) else None
+            chat_type = payload.get("chattype")
+            chat_id = payload.get("chatid")
+            bot_id = payload.get("aibotid")
+            conversation_key = None
+            if app_id and bot_id:
+                if chat_type == "group" and chat_id:
+                    conversation_key = f"wecom_conv_{app_id}_{bot_id}_{chat_id}"
+                elif chat_type == "single" and userid:
+                    conversation_key = f"wecom_conv_{app_id}_{bot_id}_{userid}"
+
+            conversation_id = None
+            if conversation_key:
+                try:
+                    stored_conversation_id = self.session.storage.get(conversation_key)
+                    if stored_conversation_id:
+                        conversation_id = stored_conversation_id.decode("utf-8")
+                except Exception:
+                    # A missing conversation is expected for the first message.
+                    pass
+
             # ── Log: Dify invocation parameters ─────────────
             logger.debug(
                 f"[Dify] invoke request: "
@@ -340,6 +364,7 @@ class WeComMessageEndpoint(Endpoint):
                 f"query={effective_query!r} "
                 f"inputs={json.dumps(dify_inputs, ensure_ascii=False, default=str)} "
                 f"files={json.dumps(dify_files, ensure_ascii=False)} "
+                f"conversation_id={conversation_id!r} "
                 f"response_mode='blocking'"
             )
 
@@ -348,8 +373,16 @@ class WeComMessageEndpoint(Endpoint):
                 query=effective_query,
                 inputs=dify_inputs,
                 response_mode="blocking",
+                conversation_id=conversation_id or None,
             )
             answer = response.get("answer") or json.dumps(response, ensure_ascii=False)
+
+            new_conversation_id = response.get("conversation_id")
+            if conversation_key and new_conversation_id:
+                self.session.storage.set(
+                    conversation_key,
+                    str(new_conversation_id).encode("utf-8"),
+                )
 
             # ── Log: Dify response ──────────────────────────
             logger.debug(

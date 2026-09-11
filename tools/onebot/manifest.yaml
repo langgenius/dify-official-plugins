@@ -3,7 +3,7 @@ created_at: '2024-09-20T08:03:44.658609186Z'
 description:
   en_US: OneBot v11 protocol tool, provides a set of actions for OneBot v11 protocol
   zh_Hans: OneBot v11 协议工具，提供 OneBot v11 协议的一组动作 API
-icon: icon.ico
+icon: icon.svg
 label:
   en_US: OneBot v11 Protocol Tool
   zh_Hans: OneBot v11 协议工具
@@ -30,4 +30,4 @@ resource:
       enabled: true
 tags: []
 type: plugin
-version: 0.0.7
+version: 0.0.8

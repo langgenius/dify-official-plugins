@@ -4,7 +4,8 @@ description:
   en_US: Gemini Image Generation and Editing
   zh_Hans: Gemini 图像生成和编辑
   ja_JP: Gemini 画像生成・編集
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Gemini Image
   zh_Hans: Gemini Image
@@ -34,4 +35,4 @@ tags:
 - image
 - productivity
 type: plugin
-version: 0.1.9
+version: 0.1.10

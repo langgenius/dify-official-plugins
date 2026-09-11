@@ -113,6 +113,7 @@ identity:
     ja_JP: Outlook Triggerは、Outlookイベントに基づいてアクションをトリガーするプラグインです。
     zh_Hans: Outlook Trigger是一个插件，允许您基于Outlook事件触发操作。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Outlook Triggers
     zh_Hans: Outlook 触发器

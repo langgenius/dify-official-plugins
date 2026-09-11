@@ -15,14 +15,16 @@ from dify_plugin.entities.model.message import (
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from zai import ZhipuAiClient
 from zai.core import StreamResponse
-from zai.types.chat import ChatCompletionChunk, Completion, ChoiceDelta
+from zai.types.chat import ChatCompletionChunk, ChoiceDelta, Completion
 
 from .._common import _CommonZhipuaiAI
 
@@ -38,6 +40,7 @@ viso_models = [
     "glm-4.6v-flash",
     "glm-4.6v-flashx",
     "glm-5v-turbo",
+    "glm-5.3-flash",
 ]
 
 TOKEN_BEGIN_OF_BOX = "<|begin_of_box|>"
@@ -175,9 +178,16 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     and new_prompt_messages[-1].role == PromptMessageRole.USER
                     and (copy_prompt_message.role == PromptMessageRole.USER)
                 ):
-                    new_prompt_messages[-1].content += (
-                        "\n\n" + copy_prompt_message.content
-                    )
+                    previous_content = new_prompt_messages[-1].content
+                    if isinstance(previous_content, str):
+                        new_prompt_messages[-1].content = (
+                            previous_content + "\n\n" + copy_prompt_message.content
+                        )
+                    else:
+                        new_prompt_messages[-1].content = [
+                            *previous_content,
+                            TextPromptMessageContent(data=copy_prompt_message.content),
+                        ]
                 elif copy_prompt_message.role in {
                     PromptMessageRole.USER,
                     PromptMessageRole.TOOL,
@@ -241,7 +251,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
-        if model == "glm-5.3":
+        if model in {"glm-5.3", "glm-5.3-flash"}:
             model_parameters["thinking"] = {"type": "enabled"}
         elif "thinking" in model_parameters:
             thinking = model_parameters.pop("thinking")
@@ -251,51 +261,46 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 model_parameters["thinking"] = {"type": "disabled"}
         if "stream_options" in model_parameters:
             del model_parameters["stream_options"]
-        if model in viso_models:
-            params = self._construct_glm_4v_parameter(
-                model, new_prompt_messages, model_parameters
-            )
-        else:
-            params = {"model": model, "messages": [], **model_parameters}
-            for prompt_message in new_prompt_messages:
-                if prompt_message.role == PromptMessageRole.TOOL:
+        params = {"model": model, "messages": [], **model_parameters}
+        for prompt_message in new_prompt_messages:
+            if prompt_message.role == PromptMessageRole.TOOL:
+                params["messages"].append(
+                    {
+                        "role": "tool",
+                        "content": prompt_message.content,
+                        "tool_call_id": prompt_message.tool_call_id,
+                    }
+                )
+            elif isinstance(prompt_message, AssistantPromptMessage):
+                if prompt_message.tool_calls:
                     params["messages"].append(
                         {
-                            "role": "tool",
+                            "role": "assistant",
                             "content": prompt_message.content,
-                            "tool_call_id": prompt_message.tool_call_id,
+                            "tool_calls": [
+                                {
+                                    "id": tool_call.id,
+                                    "type": tool_call.type,
+                                    "function": {
+                                        "name": tool_call.function.name,
+                                        "arguments": tool_call.function.arguments,
+                                    },
+                                }
+                                for tool_call in prompt_message.tool_calls
+                            ],
                         }
                     )
-                elif isinstance(prompt_message, AssistantPromptMessage):
-                    if prompt_message.tool_calls:
-                        params["messages"].append(
-                            {
-                                "role": "assistant",
-                                "content": prompt_message.content,
-                                "tool_calls": [
-                                    {
-                                        "id": tool_call.id,
-                                        "type": tool_call.type,
-                                        "function": {
-                                            "name": tool_call.function.name,
-                                            "arguments": tool_call.function.arguments,
-                                        },
-                                    }
-                                    for tool_call in prompt_message.tool_calls
-                                ],
-                            }
-                        )
-                    else:
-                        params["messages"].append(
-                            {"role": "assistant", "content": prompt_message.content}
-                        )
                 else:
                     params["messages"].append(
-                        {
-                            "role": prompt_message.role.value,
-                            "content": prompt_message.content,
-                        }
+                        {"role": "assistant", "content": prompt_message.content}
                     )
+            else:
+                content = prompt_message.content
+                if model in viso_models and isinstance(content, list):
+                    content = self._construct_multimodal_content(model, content)
+                params["messages"].append(
+                    {"role": prompt_message.role.value, "content": content}
+                )
         if tools and len(tools) > 0:
             params["tools"] = [
                 {"type": "function", "function": tool.model_dump()} for tool in tools
@@ -312,44 +317,35 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             model, credentials_kwargs, tools, response, prompt_messages
         )
 
-    def _construct_glm_4v_parameter(
-        self, model: str, prompt_messages: list[PromptMessage], model_parameters: dict
-    ):
-        messages = [
-            {
-                "role": message.role.value,
-                "content": self._construct_glm_4v_messages(message.content),
-            }
-            for message in prompt_messages
-        ]
-        params = {"model": model, "messages": messages, **model_parameters}
-        return params
-
-    def _construct_glm_4v_messages(
-        self, prompt_message: Union[str, list[PromptMessageContent]]
+    def _construct_multimodal_content(
+        self, model: str, prompt_message: list[PromptMessageContent]
     ) -> list[dict]:
-        if isinstance(prompt_message, list):
-            sub_messages = []
-            for item in prompt_message:
-                if item.type == PromptMessageContentType.IMAGE:
-                    sub_messages.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": self._remove_base64_header(item.data)},
-                        }
+        sub_messages = []
+        for item in prompt_message:
+            if item.type == PromptMessageContentType.IMAGE:
+                sub_messages.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": self._remove_base64_header(item.data)},
+                    }
+                )
+            elif isinstance(item, VideoPromptMessageContent):
+                if model == "glm-5.3-flash" and not item.url:
+                    raise ValueError(
+                        "ZhipuAI video input requires a URL; "
+                        "set MULTIMODAL_SEND_FORMAT=url"
                     )
-                elif item.type == PromptMessageContentType.VIDEO:
-                    sub_messages.append(
-                        {
-                            "type": "video_url",
-                            "video_url": {"url": self._remove_base64_header(item.data)},
-                        }
-                    )
-                else:
-                    sub_messages.append({"type": "text", "text": item.data})
-            return sub_messages
-        else:
-            return [{"type": "text", "text": prompt_message}]
+                sub_messages.append(
+                    {
+                        "type": "video_url",
+                        "video_url": {
+                            "url": item.url or self._remove_base64_header(item.data)
+                        },
+                    }
+                )
+            else:
+                sub_messages.append({"type": "text", "text": item.data})
+        return sub_messages
 
     def _remove_base64_header(self, file_content: str) -> str:
         if file_content.startswith("data:"):

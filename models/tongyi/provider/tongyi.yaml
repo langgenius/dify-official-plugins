@@ -18,10 +18,15 @@ help:
   url:
     en_US: https://bailian.console.aliyun.com/?apiKey=1#/api-key
 icon_large:
-  en_US: icon_l_en.png
-  zh_Hans: icon_l_zh.png
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Tongyi
   zh_Hans: 通义

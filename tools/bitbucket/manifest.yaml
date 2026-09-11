@@ -1,4 +1,4 @@
-version: 0.0.9
+version: 0.0.10
 type: plugin
 author: langgenius
 name: bitbucket
@@ -13,6 +13,7 @@ description:
   zh_Hans: Bitbucket Cloud 是一款基于Git 的代码托管与协作工具，专为团队打造。
   pt_BR: Bitbucket Cloud é uma ferramenta de hospedagem e colaboração de código baseada em Git, projetada para equipes.
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

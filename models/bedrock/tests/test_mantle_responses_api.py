@@ -228,10 +228,90 @@ class TestGetMantleAuthToken:
         fake.provide_token.assert_called_once()
         kwargs = fake.provide_token.call_args.kwargs
         assert kwargs["region"] == "us-west-2"
-        creds = kwargs["aws_credentials_provider"]
+        provider = kwargs["aws_credentials_provider"]
+        # aws-bedrock-token-generator calls provider.load() — must not be a
+        # raw botocore Credentials object.
+        assert hasattr(provider, "load")
+        creds = provider.load()
         assert creds.access_key == "AKIAEXAMPLE"
         assert creds.secret_key == "secret"
         assert creds.token == "session"
+
+    @pytest.mark.parametrize("session_token", ["", "   "])
+    def test_access_secret_key_blank_session_token_is_omitted(
+        self, session_token: str
+    ) -> None:
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        credentials = {
+            "auth_method": "Access_Secret_Key",
+            "aws_region": "us-west-2",
+            "aws_access_key_id": "AKIAEXAMPLE",
+            "aws_secret_access_key": "secret",
+            "aws_session_token": session_token,
+        }
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(credentials)
+        creds = fake.provide_token.call_args.kwargs["aws_credentials_provider"].load()
+        assert creds.token is None
+
+    def test_missing_auth_method_uses_configured_access_keys(self) -> None:
+        # Same default as get_bedrock_client: keys in credentials must be used.
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        credentials = {
+            "aws_region": "us-east-1",
+            "aws_access_key_id": "AKIAEXAMPLE",
+            "aws_secret_access_key": "secret",
+        }
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(credentials)
+        kwargs = fake.provide_token.call_args.kwargs
+        creds = kwargs["aws_credentials_provider"].load()
+        assert kwargs["region"] == "us-east-1"
+        assert creds.access_key == "AKIAEXAMPLE"
+
+    def test_iam_role_ignores_leftover_access_keys(self) -> None:
+        # Switching auth_method in the UI can leave AK/SK in the payload.
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(
+                {
+                    "auth_method": "IAM_Role",
+                    "aws_region": "us-west-2",
+                    "aws_access_key_id": "AKIA-SHOULD-IGNORE",
+                    "aws_secret_access_key": "secret-should-ignore",
+                }
+            )
+        fake.provide_token.assert_called_once_with(region="us-west-2")
+
+    def test_api_key_ignores_leftover_access_keys(self) -> None:
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            token = instance._get_mantle_auth_token(
+                {
+                    "auth_method": "API_Key",
+                    "bedrock_api_key": "long-term-key",
+                    "aws_access_key_id": "AKIA-SHOULD-IGNORE",
+                    "aws_secret_access_key": "secret-should-ignore",
+                }
+            )
+        assert token == "long-term-key"
+        fake.provide_token.assert_not_called()
+
+    def test_static_provider_satisfies_real_provide_token_load_contract(self) -> None:
+        # Regression for Credentials-has-no-load: sign locally, no network.
+        from aws_bedrock_token_generator import provide_token
+
+        provider = llm_mod._StaticCredentialsProvider(
+            access_key="AKIAEXAMPLE",
+            secret_key="secret",
+            token="session",
+        )
+        token = provide_token(region="us-west-2", aws_credentials_provider=provider)
+        assert token.startswith("bedrock-api-key-")
 
     def test_iam_role_auth_uses_environment_credentials_and_default_region(
         self,
@@ -286,12 +366,13 @@ class TestBuildResponsesApiInput:
         )
         assert result == [{"role": "user", "content": "hi"}]
 
-    def test_user_multimodal_message_joins_text_and_skips_non_text(self) -> None:
-        # The mantle path is text-only: text pieces are space-joined in order,
-        # any non-text content (here: an image between two text pieces) is
-        # dropped rather than raising.
+    def test_user_multimodal_message_forwards_text_and_image_parts(self) -> None:
+        # Vision: a multimodal user message becomes a Responses API
+        # content-item list; the image is forwarded as an ``input_image``
+        # (previously it was silently dropped, which broke vision on the
+        # mantle path — issue: GPT-5.6 vision greyed out / non-functional).
         image = ImagePromptMessageContent(
-            data="aGk=", format="png", mime_type="image/png", detail="low"
+            base64_data="aGk=", format="png", mime_type="image/png", detail="low"
         )
         result = BedrockLLM._build_responses_api_input(
             _make_instance(),
@@ -305,7 +386,54 @@ class TestBuildResponsesApiInput:
                 )
             ],
         )
-        assert result == [{"role": "user", "content": "look at this"}]
+        assert result == [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "look at"},
+                    {
+                        "type": "input_image",
+                        "image_url": "data:image/png;base64,aGk=",
+                        "detail": "low",
+                    },
+                    {"type": "input_text", "text": "this"},
+                ],
+            }
+        ]
+
+    def test_user_image_via_url_is_forwarded_as_image_url(self) -> None:
+        # When the image is provided as a URL, ``.data`` returns the URL as-is
+        # and it is forwarded unchanged; ``detail`` is carried through.
+        image = ImagePromptMessageContent(
+            url="https://example.com/cat.png",
+            format="png",
+            mime_type="image/png",
+            detail="high",
+        )
+        result = BedrockLLM._build_responses_api_input(
+            _make_instance(), [UserPromptMessage(content=[image])]
+        )
+        assert result == [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_image",
+                        "image_url": "https://example.com/cat.png",
+                        "detail": "high",
+                    }
+                ],
+            }
+        ]
+
+    def test_image_without_url_or_base64_raises_bad_request(self) -> None:
+        # An image part carrying neither a url nor base64 data cannot be sent;
+        # surface a clear bad-request rather than silently dropping it.
+        image = ImagePromptMessageContent(format="png", mime_type="image/png")
+        with pytest.raises(llm_mod.InvokeBadRequestError, match="url or base64"):
+            BedrockLLM._build_responses_api_input(
+                _make_instance(), [UserPromptMessage(content=[image])]
+            )
 
     def test_assistant_message_and_none_content(self) -> None:
         result = BedrockLLM._build_responses_api_input(

@@ -10,9 +10,9 @@ extra:
       - models/text_embedding/text_embedding.py
     provider_source: provider/gpustack.py
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
 label:
   en_US: GPUStack
 model_credential_schema:

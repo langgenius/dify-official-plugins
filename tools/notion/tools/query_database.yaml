@@ -148,7 +148,43 @@ parameters:
       pt_BR: Número máximo de registros do banco de dados a retornar
       ja_JP: 返すデータベースレコードの最大数
       zh_Hant: 返回的資料庫記錄最大數量
-    llm_description: The maximum number of database records to return. Default is 10.
+    llm_description: The maximum number of database records to return. Default is 10. Ignored when fetch_all is true.
+    form: llm
+  - name: fetch_all
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Fetch All Records
+      zh_Hans: 获取所有记录
+      pt_BR: Buscar Todos os Registros
+      ja_JP: 全レコードを取得
+      zh_Hant: 取得所有記錄
+    human_description:
+      en_US: If enabled, retrieves every matching record from the database (paginating through Notion's API as needed), ignoring the limit parameter.
+      zh_Hans: 启用后将检索数据库中所有匹配的记录（根据需要对 Notion API 进行分页），并忽略 limit 参数。
+      pt_BR: Se ativado, recupera todos os registros correspondentes do banco de dados (paginando pela API do Notion conforme necessário), ignorando o parâmetro limit.
+      ja_JP: 有効にすると、（必要に応じて Notion API をページングしながら）データベース内の一致するレコードをすべて取得し、limit パラメータは無視されます。
+      zh_Hant: 啟用後將擷取資料庫中所有符合的記錄（依需要對 Notion API 進行分頁），並忽略 limit 參數。
+    llm_description: Set to true to retrieve every matching record in the database instead of stopping at limit. This automatically pages through Notion's API, so it may issue multiple requests for large databases. When true, limit is ignored.
+    form: llm
+  - name: max_api_calls
+    type: number
+    required: false
+    default: 500
+    label:
+      en_US: Max API Calls
+      zh_Hans: 最大 API 调用次数
+      pt_BR: Máximo de Chamadas de API
+      ja_JP: 最大 API 呼び出し回数
+      zh_Hant: 最大 API 呼叫次數
+    human_description:
+      en_US: "Safety cap on Notion API calls when fetch_all is true (ignored otherwise). Each call returns up to 100 records. When hit, partial results are returned with fetch_truncated=true."
+      zh_Hans: "当 fetch_all 为 true 时，Notion API 调用次数的安全上限（否则忽略）。每次调用最多返回 100 条记录。达到上限时返回部分结果并标记 fetch_truncated=true。"
+      pt_BR: "Limite de segurança para chamadas à API do Notion quando fetch_all é true (ignorado caso contrário). Cada chamada retorna até 100 registros. Ao atingir o limite, resultados parciais são retornados com fetch_truncated=true."
+      ja_JP: "fetch_allがtrueのときにのみ有効な、Notion API呼び出し回数の安全上限（それ以外では無視されます）。1回の呼び出しで最大100件のレコードを返します。上限到達時は部分的な結果をfetch_truncated=true付きで返します。"
+      zh_Hant: "當 fetch_all 為 true 時，Notion API 呼叫次數的安全上限（否則忽略）。每次呼叫最多回傳 100 筆記錄。達到上限時回傳部分結果並標記 fetch_truncated=true。"
+    llm_description: Safety cap on Notion API calls when fetch_all is true (ignored otherwise). Default 500, each call returns up to 100 records (so ~50,000 records max by default). If exceeded, partial results are returned with fetch_truncated=true.
     form: llm
 extra:
   python:

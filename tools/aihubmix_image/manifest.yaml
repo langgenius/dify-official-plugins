@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 type: plugin
 author: langgenius
 name: aihubmix-image
@@ -13,7 +13,6 @@ description:
   ja_JP: "AIHubMix 統合画像生成：1 つの API キーで OpenAI GPT-Image、Google Imagen 4、Gemini Nano Banana、Flux、Alibaba Qwen-Image と Wan、ByteDance Doubao Seedream、Zhipu GLM、Ideogram V3、Baidu ERNIE iRAG を呼び出せます。"
   pt_BR: "Geração unificada de imagens AIHubMix: uma única API Key para OpenAI GPT-Image, Google Imagen 4, Gemini Nano Banana, Flux, Qwen-Image e Wan da Alibaba, Doubao Seedream, GLM da Zhipu, Ideogram V3 e ERNIE iRAG da Baidu."
 icon: icon.svg
-icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

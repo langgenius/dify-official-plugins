@@ -14,6 +14,7 @@ identity:
     ja_JP: Notionに接続して検索、データベースのクエリ、コンテンツの作成を行います
     zh_Hant: 連接 Notion 以搜索、查詢數據庫和創建內容
   icon: icon.svg
+  icon_dark: icon-dark.svg
 credentials_for_provider:
   integration_token:
     type: secret-input

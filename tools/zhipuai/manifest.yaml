@@ -3,7 +3,8 @@ created_at: "2025-02-28T22:05:40.229703756+08:00"
 description:
   en_US: The image/video generation API provided  by ZhipuAI, support cogview and cogvideox models.
   zh_Hans: 智谱AI提供的图片、视频API，支持 cogview 和 cogvideox 模型。
-icon: icon_s_en.svg
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: ZhipuAI
   pt_BR: ZhipuAI
@@ -33,4 +34,4 @@ tags:
   - image
   - videos
 type: plugin
-version: 0.0.8
+version: 0.0.9

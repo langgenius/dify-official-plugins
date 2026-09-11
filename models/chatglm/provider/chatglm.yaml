@@ -13,9 +13,9 @@ help:
   url:
     en_US: https://github.com/THUDM/ChatGLM3
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: ChatGLM
 models:

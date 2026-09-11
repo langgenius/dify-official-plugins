@@ -9,7 +9,8 @@ identity:
     en_US: Tool for integrate with e2b.dev.
     zh_Hans: Tool for integrate with e2b.dev.
     pt_BR: Tool for integrate with e2b.dev.
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
 credentials_for_provider:
   api_key:
     description:

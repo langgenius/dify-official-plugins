@@ -4,7 +4,8 @@ description:
   en_US: CogView art
   pt_BR: CogView art
   zh_Hans: CogView 绘画
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: CogView
   pt_BR: CogView
@@ -34,4 +35,4 @@ tags:
   - image
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

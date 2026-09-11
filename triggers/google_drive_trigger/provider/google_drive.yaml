@@ -1,6 +1,7 @@
 identity:
   name: google_drive_trigger
   icon: icon.svg
+  icon_dark: icon-dark.svg
   author: langgenius
   label:
     en_US: Google Drive

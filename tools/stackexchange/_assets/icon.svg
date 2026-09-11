@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><style>.st0{fill:#376db6}.st1{fill:#4ca2da}.st2{fill:#91d8f4}.st3{fill:#1e5397}</style><path class="st0" d="M22.4 57.5h74.8v15.4H22.4z"/><path class="st1" d="M22.4 37.6h74.8V53H22.4z"/><path class="st2" d="M85.5 17H34.4c-6.6 0-12 5.5-12 12.3v4h74.8v-4C97.2 22.5 92 17 85.5 17z"/><path class="st3" d="M22.4 77.3v4c0 6.8 5.4 12.3 12 12.3h32v16.3l15.8-16.3h3.5c6.6 0 12-5.5 12-12.3v-4H22.4z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1536 -1402)"><g id="stackexchange_light">
+<rect width="40" height="40" transform="translate(1536 1402)" fill="white"/>
+<rect width="40" height="40" transform="translate(1536 1402)" fill="white"/>
+<g id="Group 14">
+<path id="Vector_456" d="M1544 1413C1544 1410.8 1545.8 1409 1548 1409H1564C1565.06 1409 1566.08 1409.42 1566.83 1410.17C1567.58 1410.92 1568 1411.94 1568 1413H1544Z" fill="#8FD8F7"/>
+<path id="Vector_457" d="M1568 1427H1544C1544 1429.2 1545.8 1431 1548 1431H1558V1437L1564 1431C1565.06 1431 1566.08 1430.58 1566.83 1429.83C1567.58 1429.08 1568 1428.06 1568 1427Z" fill="#155397"/>
+<path id="Vector_458" d="M1544 1415H1568V1419H1544V1415Z" fill="#46A2D9"/>
+<path id="Vector_459" d="M1544 1421H1568V1425H1544V1421Z" fill="#2D6DB5"/>
+</g>
+</g>
+</g>
+</svg>

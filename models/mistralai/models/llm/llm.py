@@ -5,6 +5,8 @@ from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +23,7 @@ class MistralAILargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
 
         # Transform reasoning_mode to prompt_mode for Magistral models
         if "magistral" in model.lower() and "reasoning_mode" in model_parameters:
@@ -36,6 +39,7 @@ class MistralAILargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     @staticmethod

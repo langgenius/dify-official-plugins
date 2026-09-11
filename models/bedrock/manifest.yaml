@@ -1,4 +1,4 @@
-version: 0.0.81
+version: 0.0.84
 type: plugin
 author: langgenius
 name: bedrock
@@ -12,7 +12,8 @@ description:
   ja_JP: The models of Amazon Bedrock
   zh_Hans: The models of Amazon Bedrock
   pt_BR: The models of Amazon Bedrock
-icon: icon_s_en.svg
+icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

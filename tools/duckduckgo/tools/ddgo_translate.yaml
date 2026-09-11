@@ -2,13 +2,13 @@ identity:
   name: ddgo_translate
   author: hjlarry
   label:
-    en_US: DuckDuckGo Translate
-    zh_Hans: DuckDuckGo 翻译
+    en_US: DuckDuckGo Translate (deprecated)
+    zh_Hans: DuckDuckGo 翻译（已弃用）
 description:
   human:
-    en_US: Use DuckDuckGo's translation feature.
-    zh_Hans: 使用DuckDuckGo的翻译功能。
-  llm: Use DuckDuckGo's translation feature.
+    en_US: Deprecated and non-functional. DuckDuckGo no longer exposes a translation endpoint; use a dedicated translation tool or an LLM node instead.
+    zh_Hans: 已弃用且无法使用。DuckDuckGo 不再提供翻译接口，请改用专门的翻译工具或 LLM 节点。
+  llm: Deprecated and non-functional. Do not call this tool; use an LLM node instead.
 parameters:
   - name: query
     type: string

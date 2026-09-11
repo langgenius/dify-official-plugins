@@ -8,6 +8,10 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.notion_client import NotionClient
 
+# Safety cap on Notion API calls when fetch_all paginates through a data source
+# (mirrors retrieve_page.py's max_api_calls budget).
+DEFAULT_MAX_API_CALLS = 500
+
 # Conditions whose Notion API value is fixed (not taken from filter_value)
 NO_VALUE_CONDITIONS = {
     "is_empty", "is_not_empty",
@@ -211,29 +215,45 @@ class QueryDatabaseTool(Tool):
         filter_property = tool_parameters.get("filter_property", "")
         filter_value = tool_parameters.get("filter_value", "")
         limit = int(tool_parameters.get("limit", 10))
-        
+        fetch_all = _to_bool(tool_parameters.get("fetch_all", False))
+        max_api_calls = int(tool_parameters.get("max_api_calls") or DEFAULT_MAX_API_CALLS)
+        if max_api_calls < 1:
+            max_api_calls = 1
+
         # Validate parameters
         if not database_id:
             yield self.create_text_message("Database ID is required.")
             return
-            
+
         try:
             # Get integration token from credentials
             integration_token = self.runtime.credentials.get("integration_token")
             if not integration_token:
                 yield self.create_text_message("Notion Integration Token is required.")
                 return
-                
+
             # Initialize the Notion client
             client = NotionClient(integration_token)
-            
+
+            # Resolve the data source once; reused for schema lookup, filtering, and querying
+            try:
+                data_source_id = client.get_default_data_source_id(database_id)
+            except requests.HTTPError as e:
+                if e.response.status_code == 404:
+                    yield self.create_text_message(f"Database not found or you don't have access to it: {database_id}")
+                else:
+                    yield self.create_text_message(f"Error querying database: {e}")
+                return
+            except ValueError as e:
+                yield self.create_text_message(str(e))
+                return
+
             # Prepare filter if a property is provided (value is optional for is_empty/is_not_empty/relative-date conditions)
             filter_condition = tool_parameters.get("filter_condition", "equals")
             filter_obj = None
             if filter_property and (filter_value or filter_condition in NO_VALUE_CONDITIONS):
                 # Get database schema to determine the property type
                 try:
-                    data_source_id = client.get_default_data_source_id(database_id)
                     data_source = client.retrieve_data_source(data_source_id)
                     properties = data_source.get("properties", {})
 
@@ -254,13 +274,36 @@ class QueryDatabaseTool(Tool):
                     filter_obj = client.create_simple_text_filter(filter_property, filter_value)
             
             # Query the database
+            truncated = False
             try:
-                data = client.query_database(
-                    database_id=database_id,
-                    filter_obj=filter_obj,
-                    page_size=limit
-                )
-                results = data.get("results", [])
+                if fetch_all:
+                    results = []
+                    start_cursor = None
+                    api_calls_made = 0
+                    while True:
+                        if api_calls_made >= max_api_calls:
+                            truncated = True
+                            break
+                        data = client.query_data_source(
+                            data_source_id=data_source_id,
+                            filter_obj=filter_obj,
+                            page_size=100,
+                            start_cursor=start_cursor
+                        )
+                        api_calls_made += 1
+                        results.extend(data.get("results", []))
+                        if not data.get("has_more"):
+                            break
+                        start_cursor = data.get("next_cursor")
+                        if not start_cursor:
+                            break
+                else:
+                    data = client.query_data_source(
+                        data_source_id=data_source_id,
+                        filter_obj=filter_obj,
+                        page_size=limit
+                    )
+                    results = data.get("results", [])
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
                     yield self.create_text_message(f"Database not found or you don't have access to it: {database_id}")
@@ -366,8 +409,15 @@ class QueryDatabaseTool(Tool):
             # Return results
             filter_msg = f" with filter {filter_property}={filter_value}" if filter_property and filter_value else ""
             summary = f"Found {len(formatted_results)} results in database{filter_msg}"
+            response = {"results": formatted_results}
+            if truncated:
+                summary += f" (truncated: max_api_calls={max_api_calls} reached, more records remain)"
+                response["fetch_truncated"] = True
+                response["fetch_truncated_reason"] = (
+                    f"max_api_calls={max_api_calls} exceeded; increase the limit to fetch the remaining records."
+                )
             yield self.create_text_message(summary)
-            yield self.create_json_message({"results": formatted_results})
+            yield self.create_json_message(response)
             
         except Exception as e:
             yield self.create_text_message(f"Error querying Notion database: {str(e)}")

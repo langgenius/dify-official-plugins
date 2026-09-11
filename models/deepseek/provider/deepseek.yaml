@@ -2,8 +2,8 @@ background: '#c0cdff'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Official DeepSeek models, including deepseek-v4-flash and deepseek-v4-pro.
-  zh_Hans: DeepSeek 官方模型，包括 deepseek-v4-flash 和 deepseek-v4-pro。
+  en_US: Official DeepSeek V4 models with reasoning, tool calling, and experimental vision.
+  zh_Hans: DeepSeek 官方 V4 模型，支持推理、工具调用和实验性视觉理解。
 extra:
   python:
     model_sources:
@@ -16,9 +16,9 @@ help:
   url:
     en_US: https://platform.deepseek.com/api_keys
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: deepseek
   zh_Hans: 深度求索
@@ -47,5 +47,43 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: endpoint_url
+  - default: disabled
+    label:
+      en_US: Attach Dify app_id as request headers
+      zh_Hans: 附加 Dify app_id 作为请求头
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+          every DeepSeek SDK call. The headers are written into the
+          `extra_headers` credential, which the underlying OAICompat base
+          class merges into the outbound request alongside the rest of the
+          headers. The headers are forwarded by the underlying HTTP client
+          and are used for observability / proxy-side propagation. DeepSeek
+          does not document them. Default is `disabled`, so the request
+          shape is unchanged unless you opt in.
+        zh_Hans: |-
+          启用后，插件会通过 `extra_headers` 凭据在每次 DeepSeek 调用中附加当前
+          Dify app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source`
+          请求头。底层 OAICompat 基类会将其与其它请求头合并后一并发送。这些请求头由
+          底层 HTTP 客户端转发，用于可观测性与代理侧传播，DeepSeek API 不会消费它们。
+          默认值为 `disabled`，即未开启时请求结构保持不变。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on: []
+    type: select
+    variable: enable_request_metadata
 supported_model_types:
 - llm

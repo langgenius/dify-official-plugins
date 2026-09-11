@@ -1,4 +1,4 @@
-version: 0.0.11
+version: 0.0.12
 type: plugin
 author: langgenius
 name: slack-bot
@@ -13,6 +13,7 @@ description:
   zh_Hans: 这个 Slack Bot 支持接收来自 Slack 的消息作为 Dify 中 Chatflow/Chatbot/Agent 的输入，并将消息发送回 Slack。
   pt_BR: Este Slack Bot suporta receber mensagens do Slack como entrada para Chatflow/Chatbot/Agent no Dify e enviar mensagens de volta para o Slack.
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

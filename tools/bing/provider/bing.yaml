@@ -10,6 +10,7 @@ identity:
     zh_Hans: Bing 搜索
     pt_BR: Bing Search
   icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - search
 credentials_for_provider:

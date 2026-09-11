@@ -85,8 +85,9 @@ def test_apply_no_op_when_credential_disabled():
 
 
 # Metadata requires an api-version that supports Stored Completions. The
-# plugin's fallback default predates it, so the enabled-path tests have to be
-# explicit about the version, exactly as a working deployment must be.
+# enabled-path fixtures pin the version explicitly for determinism,
+# exactly as a deployment relying on a dated endpoint must (the plugin's
+# fallback default also satisfies the gate since 0.0.69).
 ENABLED = {
     "enable_request_metadata": "enabled",
     "openai_api_version": "2025-04-01-preview",
@@ -140,15 +141,26 @@ def test_apply_skipped_when_api_version_predates_stored_completions(monkeypatch)
     assert "store" not in target
 
 
-def test_apply_skipped_when_api_version_left_empty(monkeypatch):
-    # openai_api_version is optional, and the fallback default also predates
-    # Stored Completions, so an empty value must be treated as unsupported.
+def test_apply_attaches_when_api_version_left_empty(monkeypatch):
+    # Since 0.0.69 the fallback default (2025-04-01-preview) postdates
+    # Stored Completions, so an empty value now supports metadata even on a
+    # dated endpoint; an explicitly old version must still be skipped above.
     import dify_plugin
 
     monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
     target: dict = {}
-    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
-    assert "metadata" not in target
+    apply_dify_metadata_if_enabled(
+        target,
+        {
+            "enable_request_metadata": "enabled",
+            "openai_api_base": "https://example.openai.azure.com",
+        },
+    )
+    assert target["metadata"] == {
+        "dify_app_id": "550e8400-e29b-41d4-a716-446655440000",
+        "dify_source": "dify",
+    }
+    assert target["store"] is True
 
 
 def test_apply_allowed_on_versionless_v1_endpoint(monkeypatch):
