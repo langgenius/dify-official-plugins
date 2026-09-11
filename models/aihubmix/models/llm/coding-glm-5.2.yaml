@@ -1,0 +1,50 @@
+model: coding-glm-5.2
+label:
+  en_US: Coding GLM 5.2
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 131072
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: max
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 档位本身有效（线上实测 low 约 20 个推理 token、high/xhigh/max 约 57-59 个），但 none 并不关思考 —— 实测仍产出约 40 个推理 token 并回 reasoning_content，与 hy3 / hy4-preview 属于同一类网关侧漂移，已单独立项跟进。
+      en_US: The levels do work - low spends about 20 reasoning tokens on the gateway while high, xhigh and max spend about 57-59 - but none does not turn thinking off - it still spends about 40 reasoning tokens and returns reasoning_content. This is the same gateway-side drift as hy3 / hy4-preview and is tracked separately.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0.06'
+  output: '0.22'
+  unit: '0.000001'
+  currency: USD

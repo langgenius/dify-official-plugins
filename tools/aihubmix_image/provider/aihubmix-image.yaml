@@ -13,8 +13,13 @@ identity:
     ja_JP: "AIHubMix APIによる画像生成、同期/非同期モデルをサポート"
   icon: icon.svg
 
-credentials_schema:
-  - name: "api_key"
+# The key must be `credentials_for_provider` and the value a mapping keyed by credential
+# name: the SDK reads it through that alias (ToolProviderConfiguration.credentials_schema)
+# and injects each key as the credential's `name`. Spelling it `credentials_schema`, or
+# passing a list, leaves the provider with no credentials at all -- Dify then reports no
+# supported credential types and renders no way to enter the API key.
+credentials_for_provider:
+  api_key:
     type: "secret-input"
     required: true
     label:
@@ -32,8 +37,9 @@ credentials_schema:
       zh_Hans: "API 密钥用于认证请求到 AIHubMix API。请从 https://docs.aihubmix.com/token 获取您的 API 密钥"
       pt_BR: "A chave API é usada para autenticar solicitações à API AIHubMix. Obtenha sua chave em https://docs.aihubmix.com/token"
       ja_JP: "APIキーはAIHubMix APIへのリクエスト認証に使用されます。https://docs.aihubmix.com/token からAPIキーを取得してください"
+    url: "https://docs.aihubmix.com/token"
 
-  - name: "base_url"
+  base_url:
     type: "select"
     required: false
     default: "https://api.inferera.com"
@@ -105,22 +111,8 @@ credentials_schema:
 #         en_US: "Access Token"
 
 tools:
-  - tools/gemini-3-pro-image-preview.yaml
-  - tools/gemini-3-1-flash-lite-image.yaml
-  - tools/mai-image.yaml
-  - tools/gpt-image.yaml
-  - tools/gpt-image-edit.yaml
-  - tools/imagen.yaml
-  - tools/flux-kontext.yaml
-  - tools/qwen-image.yaml
-  - tools/qwen-image-edit.yaml
-  - tools/doubao-seedream-5-pro.yaml
-  - tools/doubao.yaml
-  - tools/ernie-irag.yaml
-  - tools/ernie-irag-edit.yaml
-  - tools/wan.yaml
-  - tools/glm-image.yaml
-  - tools/ideogram.yaml
+  - tools/image-generate.yaml
+  - tools/image-edit.yaml
 extra:
   python:
     source: provider/aihubmix-image.py
