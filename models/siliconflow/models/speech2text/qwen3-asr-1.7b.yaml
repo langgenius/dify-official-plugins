@@ -1,0 +1,5 @@
+model: Qwen/Qwen3-ASR-1.7B
+model_type: speech2text
+model_properties:
+  file_upload_limit: 50
+  supported_file_extensions: mp3,wav
