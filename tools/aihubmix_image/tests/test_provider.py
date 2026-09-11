@@ -71,3 +71,21 @@ def test_a_missing_key_is_reported_rather_than_crashing(provider):
     _, instance, _ = provider
     with pytest.raises(ToolProviderCredentialValidationError, match="API Key is required"):
         instance._validate_credentials({})
+
+
+def test_the_provider_declaration_actually_carries_the_api_key_credential():
+    """Dify parses the provider YAML through the SDK entity; a wrong key name silently
+    yields a provider with no credentials, so the console offers no way to enter the key
+    and every dynamic-select dropdown stays empty."""
+    import yaml
+    from dify_plugin.entities.tool import ToolProviderConfiguration
+
+    root = Path(__file__).resolve().parents[1]
+    declaration = yaml.safe_load((root / "provider" / "aihubmix-image.yaml").read_text())
+    provider = ToolProviderConfiguration(**declaration)
+
+    credentials = {config.name: config for config in provider.credentials_schema}
+    assert set(credentials) == {"api_key", "base_url"}
+    assert credentials["api_key"].required
+    assert credentials["api_key"].type.value == "secret-input"
+    assert credentials["base_url"].default == "https://api.inferera.com"
