@@ -8,10 +8,10 @@ identity:
     ja_JP: "画像を生成"
 description:
   human:
-    en_US: "Generate an image from a text prompt with the image models AIHubMix serves — currently GPT Image 2.5 Sunburst and Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image and Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 and 2.0 Pro, Wan2.7 Image and Image Pro, GLM Image, Agnes Image 2.1 Flash. The model list is fetched live from the gateway, and each model's own parameters are validated before the request is sent."
-    zh_Hans: "用 AIHubMix 提供的图像模型进行文生图 —— 目前包括 GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash。模型列表实时来自网关，参数会按所选模型的规格校验后再发送。"
-    pt_BR: "Gere uma imagem a partir de um prompt de texto com os modelos de imagem do AIHubMix — atualmente GPT Image 2.5 Sunburst e Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image e Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 e 2.0 Pro, Wan2.7 Image e Image Pro, GLM Image, Agnes Image 2.1 Flash. A lista de modelos vem do gateway em tempo real e os parâmetros são validados antes do envio."
-    ja_JP: "AIHubMix が提供する画像モデルでテキストから画像を生成します（現在: GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash）。モデル一覧はゲートウェイからリアルタイムに取得され、パラメータはモデルごとの仕様で検証されます。"
+    en_US: "Generate an image from a text prompt with the image models AIHubMix serves, including the latest GPT Image, Gemini, Qwen Image, Wan, GLM and Agnes releases. The model list is fetched live from the gateway, and each model's own parameters are validated before the request is sent."
+    zh_Hans: "用 AIHubMix 提供的图像模型进行文生图，包括 GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes 等系列的最新版本。模型列表实时来自网关，参数会按所选模型的规格校验后再发送。"
+    pt_BR: "Gere uma imagem a partir de um prompt de texto com os modelos de imagem do AIHubMix, incluindo os lançamentos mais recentes de GPT Image, Gemini, Qwen Image, Wan, GLM e Agnes. A lista de modelos vem do gateway em tempo real e os parâmetros são validados antes do envio."
+    ja_JP: "AIHubMix が提供する画像モデル（GPT Image、Gemini、Qwen Image、Wan、GLM、Agnes などの最新世代を含む）でテキストから画像を生成します。モデル一覧はゲートウェイからリアルタイムに取得され、パラメータはモデルごとの仕様で検証されます。"
   llm: "Generate one or more images from a text prompt. Requires a model id from the AIHubMix image catalog and a prompt. Optional: reference images, number of images, size or aspect ratio, output format, seed and negative prompt. Returns the generated image files."
 parameters:
   - name: model
