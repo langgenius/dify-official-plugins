@@ -357,6 +357,27 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 )
             )
 
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="extra_headers",
+                label=I18nObject(en_us="Extra Headers", zh_hans="额外请求头"),
+                help=I18nObject(
+                    en_us=(
+                        'JSON object of HTTP request headers sent with each invocation. '
+                        'Values support Dify variables, e.g. '
+                        '{"x-opencode-session": "{{#sys.conversation_id#}}"}'
+                    ),
+                    zh_hans=(
+                        "随每次调用发送的 HTTP 请求头 JSON 对象。"
+                        "值支持 Dify 变量，例如 "
+                        '{"x-opencode-session": "{{#sys.conversation_id#}}"}'
+                    ),
+                ),
+                type=ParameterType.STRING,
+                required=False,
+            )
+        )
+
         if api_type == "responses":
             entity.parameter_rules.append(
                 ParameterRule(
@@ -512,6 +533,46 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             return message_dict
         return super()._convert_prompt_message_to_dict(message, credentials)
 
+    @staticmethod
+    def _parse_extra_headers(raw: Any) -> dict[str, str]:
+        if raw is None:
+            return {}
+        if isinstance(raw, dict):
+            return {str(key): str(value) for key, value in raw.items()}
+        if isinstance(raw, str):
+            value = raw.strip()
+            if not value:
+                return {}
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise InvokeError(
+                    "extra_headers must be a JSON object of header names to values"
+                ) from exc
+            if not isinstance(parsed, dict):
+                raise InvokeError("extra_headers must be a JSON object")
+            return {str(key): str(value) for key, value in parsed.items()}
+        raise InvokeError("extra_headers must be a JSON object or JSON string")
+
+    def _apply_extra_headers(self, credentials: dict, model_parameters: dict) -> None:
+        raw_extra_headers = model_parameters.pop("extra_headers", None)
+        if raw_extra_headers is None:
+            return
+
+        parsed_headers = self._parse_extra_headers(raw_extra_headers)
+        if not parsed_headers:
+            return
+
+        existing_headers = credentials.get("extra_headers")
+        if existing_headers:
+            merged_headers = {
+                **self._parse_extra_headers(existing_headers),
+                **parsed_headers,
+            }
+        else:
+            merged_headers = parsed_headers
+        credentials["extra_headers"] = merged_headers
+
     def _invoke(
         self,
         model: str,
@@ -523,6 +584,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        self._apply_extra_headers(credentials, model_parameters)
+
         if credentials.get("api_type") == "responses":
             return self._chat_generate_with_responses(
                 model=model,
