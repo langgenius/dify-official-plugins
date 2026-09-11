@@ -28,7 +28,10 @@ parameters:
       pt_BR: "Modelo de imagem a usar. A lista é obtida do AIHubMix com sua API Key."
       ja_JP: "使用する画像モデル。一覧は API キーで AIHubMix から取得されます。"
     llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, qwen-image-2.0 or wan2.7-image. Pick one from the model list rather than guessing an id."
-    form: form
+    # Must stay `llm`, not `form`: the Dify workflow tool panel only passes the
+    # provider/tool context to the input-variable section, so a `form: form`
+    # dynamic-select never fetches its options and renders as an empty dropdown.
+    form: llm
 
   - name: prompt
     type: string

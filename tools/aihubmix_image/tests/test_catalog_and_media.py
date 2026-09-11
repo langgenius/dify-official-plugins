@@ -137,3 +137,19 @@ def test_oversized_file_is_rejected_before_the_request():
     with pytest.raises(GatewayError) as excinfo:
         media.source_images(endpoint, [FakeFile(b"x" * (media.MAX_INLINE_BYTES + 1))])
     assert "limit" in str(excinfo.value)
+
+
+def test_the_model_parameter_sits_in_the_section_that_can_fetch_its_options():
+    """Dify's workflow tool panel splits parameters into an input-variable list and a
+    settings list, and only the input-variable list is handed the provider/tool context
+    that `dynamic-select` needs to call dynamic-options. A `form: form` dynamic-select
+    therefore renders as a permanently empty dropdown, so `model` must stay `form: llm`.
+    """
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    for name in ("image-generate", "image-edit"):
+        declaration = yaml.safe_load((root / "tools" / f"{name}.yaml").read_text())
+        model = next(p for p in declaration["parameters"] if p["name"] == "model")
+        assert model["type"] == "dynamic-select", name
+        assert model["form"] == "llm", name
