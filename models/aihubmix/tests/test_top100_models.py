@@ -6,7 +6,6 @@ import yaml
 MODEL_DIR = Path(__file__).parents[1] / "models" / "llm"
 
 NEW_MODELS = (
-    "auto",
     "gpt-6-astra",
     "gpt-5.6-sol-disc",
     "gpt-5.5-pro",
