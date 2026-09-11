@@ -26,6 +26,8 @@ from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLan
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from typing import List
 
+from models.llm._metadata import apply_dify_headers_if_enabled
+
 
 def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
     """
@@ -222,7 +224,8 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         # Set required parameters for the OAI compatibility layer
         self._add_custom_parameters(credentials)
-        
+        apply_dify_headers_if_enabled(credentials)
+
         # Compatibility adapter for Dify's 'json_schema' structured output mode.
         # The base class does not natively handle the 'json_schema' parameter. This block
         # translates it into a standard OpenAI-compatible request by:
@@ -290,6 +293,7 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         """
         # Set required parameters for the OAI compatibility layer
         self._add_custom_parameters(credentials)
-        
+        apply_dify_headers_if_enabled(credentials)
+
         # Use shared validation function with model parameter
         validate_lemonade_credentials(credentials, model)
