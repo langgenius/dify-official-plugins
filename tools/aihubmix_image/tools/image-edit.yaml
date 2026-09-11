@@ -17,6 +17,11 @@ parameters:
   - name: model
     type: dynamic-select
     required: true
+    # Prefills the dropdown on a freshly added node. Dify applies a parameter default
+    # from the static declaration, so this has to name one model rather than 'whatever
+    # the catalog lists first'; it is a starting point only -- the options themselves
+    # still come from the live catalog, and picking anything else overrides it.
+    default: "gpt-image-2.5-sunburst"
     label:
       en_US: "Model"
       zh_Hans: "模型"

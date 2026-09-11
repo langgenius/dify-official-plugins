@@ -153,3 +153,21 @@ def test_the_model_parameter_sits_in_the_section_that_can_fetch_its_options():
         model = next(p for p in declaration["parameters"] if p["name"] == "model")
         assert model["type"] == "dynamic-select", name
         assert model["form"] == "llm", name
+
+
+def test_both_tools_prefill_the_same_default_model():
+    """Dify fills a new node's parameters from the static declaration, so the dropdown only
+    starts on a model if one is named here. Edit narrows the catalog to models that accept
+    image input, so the shared default has to be one of those."""
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    defaults = {
+        name: next(
+            p for p in yaml.safe_load((root / "tools" / f"{name}.yaml").read_text())["parameters"]
+            if p["name"] == "model"
+        )["default"]
+        for name in ("image-generate", "image-edit")
+    }
+    assert defaults["image-generate"] == defaults["image-edit"]
+    assert defaults["image-generate"]
