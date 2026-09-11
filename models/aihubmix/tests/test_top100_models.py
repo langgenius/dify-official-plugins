@@ -58,7 +58,24 @@ def _positions() -> list[str]:
 def test_every_new_model_is_registered() -> None:
     positions = _positions()
 
+    # Pinned so the PR's stated totals stay checkable: this branch adds 31 schemas on top of
+    # the 195 `_position.yaml` already carried and retires 12, leaving 214 registered ids.
+    assert len(NEW_MODELS) == 31
+    assert len(positions) == 214
     assert len(positions) == len(set(positions))
+    # Every registered id must have a schema behind it and every schema must be registered.
+    # The comparison is on the declared `model:` id, not the filename - several schemas are
+    # filed under a flattened name (`inclusionAI--Ling-1T.yaml` declares `inclusionAI/Ling-1T`).
+    # Five embedding/rerank schemas also sit in this directory but belong to the rerank and
+    # text_embedding position files, so only llm schemas are compared.
+    schemas = [
+        yaml.safe_load(path.read_text(encoding="utf-8"))
+        for path in MODEL_DIR.glob("*.yaml")
+        if path.name != "_position.yaml"
+    ]
+    declared = {s["model"] for s in schemas if s.get("model_type") == "llm"}
+    assert set(positions) - declared == set()
+    assert declared - set(positions) == set()
     for model in NEW_MODELS:
         schema = _schema(model)
         assert schema["model"] == model
