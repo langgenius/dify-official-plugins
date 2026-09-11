@@ -1,13 +1,14 @@
 from collections.abc import Generator
 from typing import Any
 
+from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 from utils.client import GatewayError
-from utils.tool_base import AIHubMixImageTool
+from utils.tool_base import AIHubMixImageMixin
 
 
-class ImageEditTool(AIHubMixImageTool):
+class ImageEditTool(AIHubMixImageMixin, Tool):
     """Image-to-image editing: a source image (plus an optional mask) and an instruction."""
 
     requires_image_input = True

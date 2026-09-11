@@ -1,12 +1,13 @@
 from collections.abc import Generator
 from typing import Any
 
+from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from utils.tool_base import AIHubMixImageTool
+from utils.tool_base import AIHubMixImageMixin
 
 
-class ImageGenerateTool(AIHubMixImageTool):
+class ImageGenerateTool(AIHubMixImageMixin, Tool):
     """Text-to-image, plus optional reference images for models that support them."""
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:

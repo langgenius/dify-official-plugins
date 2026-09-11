@@ -4,6 +4,12 @@ Both tools do the same thing — resolve the model's schema, build a payload fro
 user filled in, run the task, hand back the bytes — and differ only in whether a source image
 is required. Keeping the flow here means the model dropdown and the error messages stay
 identical between them.
+
+This is a plain mixin rather than a ``Tool`` subclass on purpose: the plugin loader calls
+``load_single_subclass_from_source`` on each tool file and refuses to load one that has more
+than one ``Tool`` subclass in its namespace — and an imported base class counts. Each tool
+therefore declares ``class XTool(AIHubMixImageMixin, Tool)``, mixin first so its
+``fetch_parameter_options`` wins over the SDK default.
 """
 
 from __future__ import annotations
@@ -11,10 +17,8 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import Any
 
-from dify_plugin import Tool
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.protocol.dynamic_select import DynamicSelectProtocol
 
 from utils import catalog, media, task
 from utils.client import AIHubMixClient, GatewayError
@@ -31,9 +35,17 @@ SCALAR_PARAMETERS = (
 )
 
 
-class AIHubMixImageTool(Tool, DynamicSelectProtocol):
+class AIHubMixImageMixin:
+    """Implements DynamicSelectProtocol and the shared generate flow; mixed into a Tool."""
+
     #: Narrows the model dropdown to models that accept image input (the edit tool).
     requires_image_input = False
+
+    # Provided by Tool, listed here so the mixin reads as the contract it depends on.
+    runtime: Any
+    create_blob_message: Any
+    create_json_message: Any
+    create_text_message: Any
 
     def _client(self) -> AIHubMixClient:
         return AIHubMixClient(self.runtime.credentials or {})
@@ -101,9 +113,6 @@ class AIHubMixImageTool(Tool, DynamicSelectProtocol):
                 "Some parameters were not sent because this model does not accept them:\n"
                 + "\n".join(f"- {note}" for note in notes)
             )
-
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        raise NotImplementedError
 
 
 def _redacted(payload: dict[str, Any]) -> dict[str, Any]:
