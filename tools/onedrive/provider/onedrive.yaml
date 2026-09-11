@@ -69,7 +69,8 @@ identity:
     en_US: Access Microsoft OneDrive in Dify
     zh_CN: 在 Dify 中访问微软 OneDrive
     ja_JP: DifyでMicrosoft OneDriveにアクセス
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
 tools:
   - tools/get_file_by_id.yaml
   - tools/delete_file_by_id.yaml

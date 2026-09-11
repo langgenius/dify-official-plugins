@@ -11,7 +11,7 @@ identity:
     zh_Hans: "基于 AIHubMix API 的图像生成工具，支持同步/异步模型"
     pt_BR: "Geração de imagem por API AIHubMix com suporte para modelos síncronos/assíncronos"
     ja_JP: "AIHubMix APIによる画像生成、同期/非同期モデルをサポート"
-  icon: "icon.svg"
+  icon: icon.svg
 
 credentials_schema:
   - name: "api_key"

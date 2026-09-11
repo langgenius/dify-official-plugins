@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.1
 type: plugin
 author: langgenius
 name: sharepoint_datasource
@@ -9,6 +9,7 @@ description:
   en_US: SharePoint Datasource
   zh_Hans: SharePoint 数据源
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

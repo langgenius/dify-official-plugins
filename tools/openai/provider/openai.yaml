@@ -43,7 +43,8 @@ identity:
   description:
     en_US: OpenAI Image Generation and Editing
     zh_Hans: OpenAI 图像生成和编辑
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: OpenAI
     zh_Hans: OpenAI

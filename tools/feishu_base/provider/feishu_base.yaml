@@ -31,7 +31,8 @@ identity:
     zh_Hans: '飞书多维表格，需要开通以下权限: bitable:app。
 
       '
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Feishu Base
     zh_Hans: 飞书多维表格

@@ -9,7 +9,8 @@ identity:
     en_US: TTS tools provided by Fish Audio.
     zh_Hans: Fish Audio 提供的 TTS 工具。
     pt_BR: TTS tools provided by Fish Audio.
-  icon: fishaudio.jpeg
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - utilities
 credentials_for_provider:

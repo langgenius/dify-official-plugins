@@ -9,7 +9,7 @@ identity:
     en_US: Pushover plugin for sending notifications
     zh_CN: 使用 Pushover 发送通知
     ja_JP: 通知送信用のPushoverプラグイン
-  icon: icon.png
+  icon: icon.svg
 credentials_for_provider:
   api_token:
     type: secret-input

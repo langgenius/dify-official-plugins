@@ -13,7 +13,7 @@ identity:
     ja_JP: GitLab プロジェクトデータソース - プロジェクト、課題、マージリクエスト、ファイルへのアクセス
     pt_BR: Fonte de Dados de Projeto GitLab - Acesse projetos, issues, merge requests e arquivos
     zh_Hant: GitLab 專案資料來源 - 存取專案、議題、合併請求和檔案
-  icon: icon.png
+  icon: icon.svg
 provider_type: online_document
 help:
   title:

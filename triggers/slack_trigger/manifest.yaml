@@ -5,6 +5,7 @@ description:
   ja_JP: Slack ワークスペースのイベントを受信するためのトリガープラグインのサンプルです。
   zh_Hans: Slack 工作区事件触发器插件示例。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Slack
   ja_JP: Slack
@@ -29,4 +30,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.3.0
+version: 0.3.1
