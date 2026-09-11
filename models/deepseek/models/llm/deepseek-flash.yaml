@@ -1,0 +1,78 @@
+model: deepseek-flash
+label:
+  zh_Hans: DeepSeek V4.1 Flash
+  en_US: DeepSeek V4.1 Flash
+model_type: llm
+features:
+  - vision
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1
+    min: 0.0
+    max: 2.0
+    help:
+      zh_Hans: 控制非思考模式下的随机性。思考模式下不生效。
+      en_US: Controls randomness in non-thinking mode. Has no effect in thinking mode.
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 65536
+    min: 1
+    max: 393216
+    help:
+      zh_Hans: 输出 token 上限，包含思考内容，最大 393216。输入和输出总长度不能超过上下文限制。
+      en_US: Maximum output tokens, including reasoning, up to 393216. Input and output together must fit within the context window.
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 1
+    min: 0.95
+    max: 1.00
+    help:
+      zh_Hans: 思考模式下的核采样概率，取值 0.95 至 1.0。非思考模式下固定为 1.0。
+      en_US: Nucleus sampling in thinking mode, from 0.95 to 1.0. Fixed at 1.0 in non-thinking mode.
+  - name: thinking
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking Mode
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 控制是否启用 DeepSeek 的思考模式，默认启用。
+      en_US: Controls whether DeepSeek thinking mode is enabled. Enabled by default.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: high
+    required: false
+    options:
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制思考模式下的推理强度。官方文档支持 low、high 和 max。
+      en_US: Controls reasoning effort in thinking mode. The official docs support low, high, and max.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object

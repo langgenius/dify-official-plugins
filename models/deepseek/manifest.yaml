@@ -1,8 +1,8 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Official DeepSeek V4 models with reasoning, tool calling, and experimental vision.
-  zh_Hans: DeepSeek 官方 V4 模型，支持推理、工具调用和实验性视觉理解。
+  en_US: Official DeepSeek models with reasoning, tool calling, and native vision in V4.1 Flash.
+  zh_Hans: DeepSeek 官方模型，支持推理、工具调用和 V4.1 Flash 原生视觉理解。
 icon: icon.svg
 label:
   en_US: DeepSeek
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.23
+version: 0.0.24
