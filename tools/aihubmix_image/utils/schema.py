@@ -4,7 +4,7 @@ The gateway describes every model it serves at
 ``GET /call/schema/models/{model}/endpoints``: which paths accept it, whether the call is
 synchronous, and a JSON Schema for the request body. The unified image endpoint declares
 ``additionalProperties: false``, so a field the model does not declare is rejected with
-HTTP 400 rather than ignored (``mai-image-2.6-flash`` rejects ``n``, for example). Building
+HTTP 400 rather than ignored (``agnes-image-2.1-flash`` rejects ``n``, for example). Building
 the payload from the live schema instead of hard-coded per-model tables is what keeps the
 plugin correct as the catalog moves.
 """

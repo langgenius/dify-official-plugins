@@ -5,14 +5,18 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from utils.client import AIHubMixClient, GatewayError
 
+CREDENTIAL_CHECK_PATH = "/v1/dashboard/billing/subscription"
+
 
 class AIHubMixImageProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         try:
             client = AIHubMixClient(credentials)
-            # Any authenticated endpoint proves the key; the model list is the cheapest one.
-            client.get_json("/v1/models", timeout=10)
+            # Both model-list routes are public -- they answer 200 for any key, valid or not --
+            # so validating against them would accept a typo'd key. The billing route is the
+            # cheapest one that actually checks the key (401 with a bad one).
+            client.get_json(CREDENTIAL_CHECK_PATH, timeout=10)
         except GatewayError as exc:
             if exc.status in (401, 403):
                 raise ToolProviderCredentialValidationError("Invalid API Key") from exc

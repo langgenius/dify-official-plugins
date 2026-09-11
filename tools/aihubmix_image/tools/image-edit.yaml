@@ -27,7 +27,7 @@ parameters:
       zh_Hans: "要使用的图像模型，列表用你的 API Key 实时从 AIHubMix 拉取。"
       pt_BR: "Modelo de imagem a usar. A lista é obtida do AIHubMix com sua API Key."
       ja_JP: "使用する画像モデル。一覧は API キーで AIHubMix から取得されます。"
-    llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, doubao-seedream-4-5 or qwen-image-3.0."
+    llm_description: "AIHubMix image model id, for example gpt-image-2, gemini-3-pro-image, qwen-image-2.0 or wan2.7-image. Pick one from the model list rather than guessing an id."
     form: form
 
   - name: prompt
