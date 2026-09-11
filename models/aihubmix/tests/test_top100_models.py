@@ -45,6 +45,13 @@ def _schema(model: str) -> dict:
     return yaml.safe_load((MODEL_DIR / f"{model}.yaml").read_text(encoding="utf-8"))
 
 
+def _rule(model: str, name: str) -> dict:
+    for rule in _schema(model)["parameter_rules"]:
+        if rule["name"] == name:
+            return rule
+    raise AssertionError(f"{model} has no {name} rule")
+
+
 def _positions() -> list[str]:
     return yaml.safe_load((MODEL_DIR / "_position.yaml").read_text(encoding="utf-8"))
 
@@ -126,3 +133,61 @@ def test_retired_models_are_gone() -> None:
     for model in retired:
         assert not (MODEL_DIR / f"{model}.yaml").exists(), model
         assert model not in positions, model
+
+
+# --- Gemini image models -----------------------------------------------------
+#
+# `llm.py` routes every `gemini*` id to `GoogleLargeLanguageModel`, and that
+# class only emits `responseModalities: [TEXT, IMAGE]` / `imageConfig` for ids
+# listed in `IMAGE_GENERATION_MODELS`. An image model missing from that set is
+# silently text-only, so the allowlist and the YAML options are asserted here.
+
+IMAGE_MODELS = (
+    "gemini-3-pro-image",
+    "gemini-3.1-flash-image",
+    "gemini-3.1-flash-lite-image",
+)
+
+
+def _google_source() -> str:
+    return (MODEL_DIR / "google.py").read_text(encoding="utf-8")
+
+
+def test_image_models_are_in_the_generation_allowlist() -> None:
+    block = _google_source().split("IMAGE_GENERATION_MODELS = {", 1)[1].split("}", 1)[0]
+    for model in IMAGE_MODELS:
+        assert f'"{model}"' in block, model
+
+
+def test_image_models_expose_validated_aspect_ratios() -> None:
+    # Live-probed against the gateway: only the 3.1 Flash Image pair renders the
+    # ultra-wide ratios; gemini-3-pro-image answers 400 for them.
+    base = ["Auto", "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9"]
+    expected = {
+        "gemini-3-pro-image": base,
+        "gemini-3.1-flash-image": base + ["4:1", "8:1"],
+        "gemini-3.1-flash-lite-image": base + ["4:1", "8:1"],
+    }
+    for model, options in expected.items():
+        rule = _rule(model, "aspect_ratio")
+        assert rule["options"] == options, model
+        assert rule["default"] == "Auto", model
+
+
+def test_image_models_expose_validated_resolutions() -> None:
+    # Flash-Lite renders 1K only; 2K and 4K come back as an upstream 400.
+    expected = {
+        "gemini-3-pro-image": ["1K", "2K", "4K"],
+        "gemini-3.1-flash-image": ["1K", "2K", "4K"],
+        "gemini-3.1-flash-lite-image": ["1K"],
+    }
+    for model, options in expected.items():
+        assert _rule(model, "resolution")["options"] == options, model
+
+
+def test_image_models_have_no_inert_thinking_switch() -> None:
+    # `_set_thinking_config` returns early for IMAGE_GENERATION_MODELS, so an
+    # `include_thoughts` rule would render a control that does nothing.
+    for model in IMAGE_MODELS:
+        names = {rule["name"] for rule in _schema(model)["parameter_rules"]}
+        assert "include_thoughts" not in names, model
