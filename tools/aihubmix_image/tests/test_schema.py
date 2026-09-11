@@ -138,6 +138,17 @@ def test_unknown_extra_key_is_reported_with_the_accepted_list():
     assert any("nonsense" in note and "accepts" in note for note in notes)
 
 
+def test_missing_required_field_says_what_it_accepts():
+    # agnes-image-2.1-flash cannot be called without a size.
+    endpoint = endpoint_for("agnes-image-2.1-flash")
+    with pytest.raises(GatewayError) as excinfo:
+        build_payload(endpoint, prompt="hi", scalars={}, media={}, extra={})
+    assert "size" in str(excinfo.value) and "x" in str(excinfo.value)
+
+    payload, _ = build_payload(endpoint, prompt="hi", scalars={"size": "2K"}, media={}, extra={})
+    assert payload["size"] == "2K"
+
+
 def test_prompt_is_required():
     endpoint = endpoint_for("glm-image")
     with pytest.raises(GatewayError):

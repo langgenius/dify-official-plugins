@@ -69,6 +69,12 @@ def test_models_the_unified_endpoint_cannot_serve_are_hidden():
     assert "gpt-image-2" in ids
 
 
+def test_free_tier_models_are_hidden():
+    ids = {model.model_id for model in catalog.list_image_models(FakeClient(CATALOG))}
+    assert "gpt-image-2-free" not in ids
+    assert "gemini-3.1-flash-image-preview-free" not in ids
+
+
 def test_edit_dropdown_only_offers_models_that_take_an_image():
     models = catalog.list_image_models(FakeClient(CATALOG), accepts_image=True)
     ids = {model.model_id for model in models}

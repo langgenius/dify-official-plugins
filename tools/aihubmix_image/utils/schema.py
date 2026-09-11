@@ -37,6 +37,7 @@ class ImageEndpoint:
     poll_path: str
     poll_method: str
     status_values: tuple[str, ...]
+    supports_async: bool
     schema: dict[str, Any]
 
     @property
@@ -116,6 +117,7 @@ def _select_unified_endpoint(document: Any, model: str) -> ImageEndpoint:
         mode=str(lifecycle.get("mode") or "sync"),
         poll_path=str(lifecycle.get("poll_path") or ""),
         poll_method=str(lifecycle.get("poll_method") or "GET").upper(),
+        supports_async=bool(lifecycle.get("supports_async")),
         status_values=tuple(str(value) for value in status_values) if isinstance(status_values, list) else (),
         schema=schema,
     )
@@ -227,6 +229,22 @@ def coerce_and_validate(name: str, prop: dict[str, Any], value: Any) -> Any:
     return value
 
 
+def describe(prop: Any) -> str:
+    """A short hint about what a field accepts, for messages about missing parameters."""
+    if not isinstance(prop, dict):
+        return "value"
+    enum = allowed_values(prop)
+    if enum:
+        return "one of: " + ", ".join(str(value) for value in enum)
+    patterns = _patterns(prop)
+    consts = [str(value) for value in _consts(prop)]
+    if patterns:
+        hint = " or ".join(patterns)
+        return f"matching {hint}" + (f", or {', '.join(consts)}" if consts else "")
+    types = _types(prop)
+    return "/".join(sorted(types)) if types else "value"
+
+
 def parse_extra(raw: Any) -> dict[str, Any]:
     """Parse the vendor passthrough escape hatch (a JSON object typed into the tool form)."""
     if raw in (None, ""):
@@ -305,8 +323,9 @@ def build_payload(
 
     missing = [name for name in endpoint.required if name not in payload]
     if missing:
+        described = ", ".join(f"{name} ({describe(endpoint.properties.get(name))})" for name in missing)
         raise GatewayError(
-            f"{endpoint.model} requires {', '.join(missing)}; set the matching tool parameter"
+            f"{endpoint.model} requires {described}; set the matching tool parameter"
         )
 
     return payload, notes

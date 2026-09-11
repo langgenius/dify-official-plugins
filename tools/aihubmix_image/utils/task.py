@@ -78,6 +78,14 @@ class TaskResult:
 
 
 def submit(client: AIHubMixClient, endpoint: ImageEndpoint, payload: dict[str, Any]) -> dict[str, Any]:
+    """Submit synchronously and let the gateway answer with the finished task.
+
+    Every image endpoint also advertises ``async`` + ``supports_async``, but that path is
+    measurably worse in production: two models (qwen-image, musesteamer-air-image) settle on
+    ``result_delivery_failed`` when polled as a task while their synchronous call returns the
+    image, and polling adds round-trips to every other model. The poll loop below still runs
+    for any task the gateway chooses to answer as pending.
+    """
     return client.post_json(endpoint.path, payload)
 
 

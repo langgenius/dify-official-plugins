@@ -54,10 +54,14 @@ format, seed, negative prompt, advanced parameters.
 using an old tool has to be repointed** at *Generate Image* or *Edit Image* and have its model
 picked from the dropdown.
 
-Four models that 0.1.x could call are not served by the unified endpoint and are therefore not
-available in 0.2.0: `imagen-4.0` (and `imagen-4.0-ultra`), `FLUX-1.1-pro`, `dall-e-3` (and
-`dall-e-2`), and `gpt-image-1.5`. Use their current equivalents — `gemini-3-pro-image`,
-`flux-2-pro`, and `gpt-image-2` — instead.
+Models that 0.1.x could call but the unified endpoint does not serve (endpoint discovery
+answers 404) are not available in 0.2.0 and are kept out of the dropdown: `imagen-4.0` /
+`imagen-4.0-ultra`, `FLUX-1.1-pro`, `dall-e-3` / `dall-e-2`, `gpt-image-1.5`, `gpt-image-1` /
+`gpt-image-1-mini`, `doubao-seedream-5.0-pro`, and the Ideogram aliases `V_1`, `V_1_TURBO`,
+`V_2`, `V_2_TURBO`, `V_2A`, `V_2A_TURBO`, `UPSCALE`, `DESCRIBE`. Use their current equivalents
+— `gemini-3-pro-image`, `flux-2-pro`, `gpt-image-2`, `doubao-seedream-5.0-lite`, `V3` —
+instead. `-free` trial tiers are also hidden, because they answer `model_unavailable` most of
+the time.
 
 ## Credentials
 
@@ -70,6 +74,14 @@ available in 0.2.0: `imagen-4.0` (and `imagen-4.0-ultra`), `FLUX-1.1-pro`, `dall
   the call, so this only matters if you re-run a very old task.
 * Generation can take a few minutes on large sizes; the plugin polls until the task reaches a
   terminal state and reports the task id if it does not settle in time.
+* A few models in the dropdown are currently rejected by the gateway itself rather than by the
+  plugin (`flux-2-pro`, `flux-2-flex`, `V3`, `Stable-Diffusion-3-5-Large` answer
+  `internal_error`; `ernie-image-turbo` and `gemini-2.5-flash-image-preview` answer
+  `upstream_rejected`). They are left in the list so they come back on their own once the
+  gateway serves them; the error carries a request id for support.
+* Not every model that the catalog marks as accepting images actually declares an image field
+  in its schema (`qwen-image`, `qwen-image-max`, `wan2.6-t2i`). The edit tool says so
+  immediately instead of spending a call.
 
 ## Privacy Policy
 

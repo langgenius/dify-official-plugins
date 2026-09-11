@@ -26,6 +26,18 @@ UNSUPPORTED_MODELS = frozenset({
     "dall-e-3",
     "dall-e-2",
     "gpt-image-1.5",
+    "doubao-seedream-5.0-pro",
+    "gpt-image-1",
+    "gpt-image-1-mini",
+    # The Ideogram catalog entries are legacy aliases kept for the old passthrough routes.
+    "V_1",
+    "V_1_TURBO",
+    "V_2",
+    "V_2_TURBO",
+    "V_2A",
+    "V_2A_TURBO",
+    "UPSCALE",
+    "DESCRIBE",
 })
 
 # Used only when the catalog call itself fails (network, proxy, expired key); a stale
@@ -94,6 +106,10 @@ def _parse(payload: Any) -> list[CatalogModel]:
         if not model_id or model_id in seen or model_id in UNSUPPORTED_MODELS:
             continue
         if str(item.get("retire_stage") or "active").lower() != "active":
+            continue
+        # The -free tiers are rate-limited trial models that answer model_unavailable most of
+        # the time; offering them in the dropdown only produces failed runs.
+        if model_id.endswith("-free"):
             continue
         seen.add(model_id)
         modalities = str(item.get("input_modalities") or "")

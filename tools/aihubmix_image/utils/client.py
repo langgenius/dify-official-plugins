@@ -14,11 +14,16 @@ and gateway error shapes are normalised in exactly one place.
 from __future__ import annotations
 
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
 DEFAULT_BASE_URL = "https://api.inferera.com"
+
+# ``content_url`` is not always served from the host the request went to: the gateway hands
+# back aihubmix.com links for an api.inferera.com call. These hosts are the gateway itself and
+# may receive the API key; anything else is an upstream vendor CDN and must not.
+GATEWAY_HOSTS = frozenset({"api.inferera.com", "inferera.com", "aihubmix.com", "api.aihubmix.com"})
 
 # Discovery is cheap but the gateway still round-trips to its schema store; generation is
 # the slow one because the request blocks until the upstream vendor returns the image.
@@ -79,6 +84,13 @@ class AIHubMixClient:
             return path
         return urljoin(self.base_url + "/", path.lstrip("/"))
 
+    def is_gateway_url(self, path: str) -> bool:
+        """True for relative paths and for absolute URLs served by the gateway itself."""
+        if not path.startswith(("http://", "https://")):
+            return True
+        host = urlsplit(path).netloc.lower()
+        return host == urlsplit(self.base_url).netloc.lower() or host in GATEWAY_HOSTS
+
     @property
     def auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.api_key}"}
@@ -90,7 +102,16 @@ class AIHubMixClient:
         return self._json("POST", path, json=payload, timeout=timeout)
 
     def get_bytes(self, path: str, *, timeout: int = DOWNLOAD_TIMEOUT) -> bytes:
-        response = self._request("GET", path, timeout=timeout, headers={"accept": "*/*"})
+        # Some models hand back a ``content_url`` on the upstream vendor CDN rather than on the
+        # gateway (Baidu BOS, for one). Those hosts parse ``Authorization`` as their own signature
+        # scheme and reject the request, so the key only travels to the gateway itself.
+        authenticated = self.is_gateway_url(path)
+        response = self._request(
+            "GET", path, timeout=timeout, authenticated=authenticated, headers={"accept": "*/*"}
+        )
+        if response.status_code in (401, 403) and not authenticated:
+            # A gateway-signed URL served from another host may still want the key.
+            response = self._request("GET", path, timeout=timeout, headers={"accept": "*/*"})
         if response.status_code != 200:
             raise self._error(response, fallback=f"Content download failed with HTTP {response.status_code}")
         return response.content

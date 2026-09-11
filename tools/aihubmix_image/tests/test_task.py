@@ -27,6 +27,7 @@ ENDPOINT = ImageEndpoint(
     poll_path="/ai/v1/images/{id}",
     poll_method="GET",
     status_values=("pending", "in_progress", "completed", "failed", "cancelled"),
+    supports_async=False,
     schema={},
 )
 
@@ -39,8 +40,10 @@ class FakeClient:
         self.blobs = blobs or {}
         self.downloaded: list[str] = []
         self.polled: list[str] = []
+        self.posted: list[dict] = []
 
     def post_json(self, path, payload, **kwargs):
+        self.posted.append(payload)
         return self.responses.pop(0)
 
     def get_json(self, path, **kwargs):
@@ -183,3 +186,13 @@ def test_polling_budget_is_reported_rather_than_hanging():
     with pytest.raises(GatewayError) as excinfo:
         task.run(client, ENDPOINT, {"model": "gpt-image-2", "prompt": "hi"}, poll_budget=0)
     assert "img_7" in str(excinfo.value)
+
+
+def test_submission_never_opts_into_the_async_task_path():
+    # The async path is advertised by every image endpoint but fails delivery on some models,
+    # so the request must go out exactly as build_payload produced it.
+    endpoint = ImageEndpoint(**{**ENDPOINT.__dict__, "supports_async": True,
+                                "schema": {"properties": {"async": {"type": "boolean"}}}})
+    client = FakeClient(responses=[{"id": "t1", "status": "completed", "output": []}])
+    task.submit(client, endpoint, {"model": "m", "prompt": "p"})
+    assert client.posted[0] == {"model": "m", "prompt": "p"}
