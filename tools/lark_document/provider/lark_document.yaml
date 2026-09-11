@@ -32,6 +32,7 @@ identity:
 
       '
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Lark Cloud Document
     zh_Hans: Lark 云文档

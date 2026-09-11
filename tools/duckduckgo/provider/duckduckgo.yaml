@@ -8,6 +8,7 @@ identity:
     en_US: A privacy-focused search engine.
     zh_Hans: 一个注重隐私的搜索引擎。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - search
 tools:

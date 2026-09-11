@@ -1,7 +1,7 @@
 model: meta
 label:
   en_US: Meta Llama
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - tool-call

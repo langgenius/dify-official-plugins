@@ -4,6 +4,7 @@ description:
   en_US: Translate text using Google
   zh_Hans: 使用 Google 进行翻译
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Google Translate
   zh_Hans: 谷歌翻译
@@ -31,4 +32,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.0.8
+version: 0.0.9

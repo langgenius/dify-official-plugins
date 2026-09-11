@@ -6,6 +6,7 @@ description:
   ja_JP: NominatimはOpenStreetMapデータの検索エンジンです
   zh_Hans: Nominatim是OpenStreetMap数据的搜索引擎
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   de_DE: Nominatim
   en_US: Nominatim
@@ -36,4 +37,4 @@ tags:
 - search
 - utilities
 type: plugin
-version: 0.0.8
+version: 0.0.9

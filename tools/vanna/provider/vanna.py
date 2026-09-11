@@ -29,7 +29,7 @@ class VannaProvider(ToolProvider):
                     "model": "chinook",
                     "db_type": "SQLite",
                     "url": f"{self._get_protocol_and_main_domain(credentials['base_url'])}/Chinook.sqlite",
-                    "query": "What are the top 10 customers by sales?",
+                    "prompt": "What are the top 10 customers by sales?",
                 }
             ):
                 pass

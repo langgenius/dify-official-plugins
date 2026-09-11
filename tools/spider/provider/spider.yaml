@@ -22,6 +22,7 @@ identity:
       websites.
     zh_CN: Spider API 集成，通过爬取和抓取网站返回 LLM-ready 数据。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Spider
     zh_CN: Spider

@@ -2,9 +2,9 @@ provider: sagemaker
 label:
   en_US: Amazon SageMaker
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
 description:
   en_US: Customized model on SageMaker
   zh_Hans: SageMaker上的私有化部署的模型

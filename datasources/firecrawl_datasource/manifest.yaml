@@ -1,4 +1,4 @@
-version: 0.2.13
+version: 0.2.14
 type: plugin
 author: langgenius
 name: firecrawl_datasource
@@ -13,6 +13,7 @@ description:
   zh_Hans: Firecrawl Datasource
   pt_BR: Firecrawl Datasource
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

@@ -9,6 +9,7 @@ description:
 
     "
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu Message
   zh_Hans: 飞书消息
@@ -37,4 +38,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

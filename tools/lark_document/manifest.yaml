@@ -8,6 +8,7 @@ description:
 
     '
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Lark Cloud Document
   zh_Hans: Lark 云文档
@@ -36,4 +37,4 @@ tags:
 - social
 - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

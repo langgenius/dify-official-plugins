@@ -32,6 +32,7 @@ identity:
 
       '
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Lark Message
     zh_Hans: 飞书消息

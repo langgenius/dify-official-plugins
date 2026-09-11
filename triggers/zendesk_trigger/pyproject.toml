@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # uv lock
 dependencies = [
-    "dify_plugin>=0.9.1",
+    "dify_plugin>=0.10.2",
     "httpx>=0.28.1",
     "werkzeug>=3.1.8",
 ]

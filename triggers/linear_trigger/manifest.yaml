@@ -4,7 +4,7 @@ description:
   en_US: Linear is a modern issue tracking tool with webhook trigger support.
   ja_JP: Linearは、webhookトリガーのサポートがある最新の課題管理ツールです。
   zh_Hans: Linear是一个现代化的问题跟踪工具，支持webhook触发器。
-icon: image.png
+icon: icon.svg
 label:
   en_US: Linear
   ja_JP: Linear
@@ -32,4 +32,4 @@ resource:
 tags:
 - productivity
 type: plugin
-version: 0.6.0
+version: 0.6.1

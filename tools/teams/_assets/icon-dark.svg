@@ -1,10 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Microsoft Teams">
-  <title>Microsoft Teams</title>
-  <!-- person (lighter purple) -->
-  <circle cx="74" cy="62" r="28" fill="#8B93F0"/>
-  <path d="M34 108h80a8 8 0 0 1 8 8v42a48 48 0 0 1-96 0v-42a8 8 0 0 1 8-8z" fill="#8B93F0"/>
-  <!-- Teams tile (purple) -->
-  <rect x="108" y="66" width="108" height="108" rx="16" fill="#6B74E0"/>
-  <!-- white "T" -->
-  <path d="M130 92h64v16h-24v54h-16v-54h-24z" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="teams_dark" clip-path="url(#clip0_18015_5351)">
+<rect width="40" height="40" fill="#3A3A40"/>
+<g id="Dark Icon BG">
+<rect id="BG" width="40" height="40" fill="url(#paint0_linear_18015_5351)"/>
+<g id="Ellipse 1" opacity="0.1" filter="url(#filter0_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle r="20" fill="white" fill-opacity="0.8"/>
+</g>
+<g id="Ellipse 2" opacity="0.12" filter="url(#filter1_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle cx="48" cy="48" r="20" fill="black" fill-opacity="0.8"/>
+</g>
+</g>
+<g id="teams_24x.1da2a0886d3c616a6242b1f249a9bdce 1" clip-path="url(#clip1_18015_5351)">
+<g id="Teams">
+<path id="Vector" opacity="0.1" d="M15.3333 17.8067V26.4167C15.3321 27.432 15.5762 28.4327 16.045 29.3333H21.8783C22.2912 29.305 22.6807 29.1312 22.9776 28.8428C23.2745 28.5545 23.4596 28.1702 23.5 27.7583V16.5H23.1733H16.64C16.2935 16.5 15.9611 16.6377 15.7161 16.8827C15.471 17.1278 15.3333 17.4601 15.3333 17.8067Z" fill="black"/>
+<path id="Vector_2" opacity="0.1" d="M22.135 13H18.635C18.8805 13.7867 19.3726 14.4736 20.0387 14.9589C20.7047 15.4442 21.5093 15.7023 22.3334 15.695C22.7301 15.6889 23.1236 15.622 23.5 15.4967V14.33C23.488 13.975 23.3393 13.6385 23.0849 13.3906C22.8305 13.1428 22.4902 13.0028 22.135 13Z" fill="black"/>
+<path id="Vector_3" d="M32.6817 16.5H26.8484L25.2267 17.8183V24.34C25.2846 25.4628 25.7715 26.5204 26.5867 27.2946C27.4019 28.0689 28.4833 28.5005 29.6075 28.5005C30.7318 28.5005 31.8131 28.0689 32.6283 27.2946C33.4436 26.5204 33.9304 25.4628 33.9884 24.34V17.8183C33.9899 17.6458 33.9572 17.4746 33.8923 17.3147C33.8273 17.1548 33.7313 17.0094 33.6098 16.8868C33.4883 16.7643 33.3437 16.667 33.1844 16.6006C33.0251 16.5342 32.8543 16.5 32.6817 16.5Z" fill="#5059C9"/>
+<path id="Head" d="M29.9167 15.3333C31.5275 15.3333 32.8333 14.0275 32.8333 12.4167C32.8333 10.8058 31.5275 9.5 29.9167 9.5C28.3058 9.5 27 10.8058 27 12.4167C27 14.0275 28.3058 15.3333 29.9167 15.3333Z" fill="#5059C9"/>
+<path id="Vector_4" d="M16.64 16.5H26.86C27.2066 16.5 27.5389 16.6377 27.784 16.8827C28.029 17.1278 28.1667 17.4601 28.1667 17.8067V26.4167C28.1667 28.1185 27.4906 29.7506 26.2873 30.9539C25.0839 32.1573 23.4518 32.8333 21.75 32.8333C20.0482 32.8333 18.4161 32.1573 17.2127 30.9539C16.0094 29.7506 15.3333 28.1185 15.3333 26.4167V17.8067C15.3333 17.4601 15.471 17.1278 15.7161 16.8827C15.9611 16.6377 16.2935 16.5 16.64 16.5Z" fill="#7B83EB"/>
+<path id="Head_2" d="M22.3333 15.6948C24.4661 15.6948 26.195 13.9658 26.195 11.8331C26.195 9.70036 24.4661 7.97144 22.3333 7.97144C20.2006 7.97144 18.4716 9.70036 18.4716 11.8331C18.4716 13.9658 20.2006 15.6948 22.3333 15.6948Z" fill="#7B83EB"/>
+<path id="Vector_5" opacity="0.5" d="M15.3333 17.8067V26.4167C15.3321 27.432 15.5762 28.4327 16.045 29.3333H21.8783C22.2912 29.305 22.6807 29.1312 22.9776 28.8428C23.2745 28.5545 23.4596 28.1702 23.5 27.7583V16.5H23.1733H16.64C16.2935 16.5 15.9611 16.6377 15.7161 16.8827C15.471 17.1278 15.3333 17.4601 15.3333 17.8067Z" fill="black"/>
+<path id="Vector_6" opacity="0.5" d="M22.135 13H18.635C18.8805 13.7867 19.3726 14.4736 20.0387 14.9589C20.7047 15.4442 21.5093 15.7023 22.3334 15.695C22.7301 15.6889 23.1236 15.622 23.5 15.4967V14.33C23.488 13.975 23.3393 13.6385 23.0849 13.3906C22.8305 13.1428 22.4902 13.0028 22.135 13Z" fill="black"/>
+<path id="Back Plate" d="M20.9683 11.8333H7.365C6.61113 11.8333 6 12.4444 6 13.1983V26.8016C6 27.5555 6.61113 28.1666 7.365 28.1666H20.9683C21.7222 28.1666 22.3333 27.5555 22.3333 26.8016V13.1983C22.3333 12.4444 21.7222 11.8333 20.9683 11.8333Z" fill="#4B53BC"/>
+<path id="Vector_7" d="M17.8767 17.1766H15.0884V24.6666H13.2567V17.1766H10.4567V15.3333H17.8767V17.1766Z" fill="white"/>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_f_18015_5351" x="-60" y="-60" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<filter id="filter1_f_18015_5351" x="-12" y="-12" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<linearGradient id="paint0_linear_18015_5351" x1="40" y1="40" x2="-3.57628e-06" y2="3.57628e-06" gradientUnits="userSpaceOnUse">
+<stop stop-color="#303036"/>
+<stop offset="1" stop-color="#3A3A40"/>
+</linearGradient>
+<clipPath id="clip0_18015_5351">
+<rect width="40" height="40" fill="white"/>
+</clipPath>
+<clipPath id="clip1_18015_5351">
+<rect width="28" height="28" fill="white" transform="translate(6 6)"/>
+</clipPath>
+</defs>
 </svg>

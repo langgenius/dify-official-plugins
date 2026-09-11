@@ -1,4 +1,4 @@
-version: 0.0.7
+version: 0.0.8
 type: plugin
 author: langgenius
 name: apitemplate
@@ -14,7 +14,7 @@ description:
   zh_Hans: "使用 APITemplate.io 从模板生成 PDF 和图像。通过基于模板的生成创建专业文档、发票、证书和图像。"
   pt_BR: "Gere PDFs e imagens a partir de modelos usando APITemplate.io. Crie documentos profissionais, faturas, certificados e imagens através da geração baseada em modelos."
   zh_Hant: "使用 APITemplate.io 從範本生成 PDF 和圖像。透過基於範本的生成建立專業文件、發票、證書和圖像。"
-icon: icon.png
+icon: icon.svg
 tags:
   - design
   - business

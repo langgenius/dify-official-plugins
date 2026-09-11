@@ -1,14 +1,14 @@
 [project]
 name = "confluence"
-version = "0.1.0"
+version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "atlassian-python-api>=4.0.7",
-    "dify_plugin>=0.9.0",
+    "atlassian-python-api>=5.0.4",
+    "dify_plugin>=0.10.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

@@ -5,6 +5,7 @@ description:
   pt_BR: Your Search Foundation, Supercharged!
   zh_Hans: 您的搜索底座，从此不同!
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Jina AI
   pt_BR: Jina AI
@@ -34,4 +35,4 @@ tags:
 - search
 - productivity
 type: plugin
-version: 0.0.13
+version: 0.0.14

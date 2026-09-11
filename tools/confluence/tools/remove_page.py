@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -18,11 +19,14 @@ class RemovePageTool(Tool):
 
         page = confluence.get_page_by_id(page_id)
         if not page:
-            yield ToolInvokeMessage(self.create_text_message("Page not found"))
+            yield self.create_text_message("Page not found")
             return
 
         try:
-            _ = confluence.remove_page(page_id)
+            if isinstance(confluence, ConfluenceV2):
+                confluence.delete_page(page_id)
+            else:
+                confluence.remove_page(page_id)
             yield self.create_text_message("Page removed successfully")
         except Exception as e:
             yield self.create_text_message(f"Failed to remove page: {str(e)}")

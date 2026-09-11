@@ -19,10 +19,15 @@ help:
     en_US: https://console.volcengine.com/iam/keymanage/
     zh_Hans: https://console.volcengine.com/iam/keymanage/
 icon_large:
-  en_US: icon_l_en.svg
-  zh_Hans: icon_l_zh.svg
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Volcengine Ark (Endpoint)
   zh_Hans: 火山方舟（接入点）

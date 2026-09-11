@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -8,6 +9,7 @@ from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    ImagePromptMessageContent,
     PromptMessageTool,
     ToolPromptMessage,
     UserPromptMessage,
@@ -20,6 +22,8 @@ sys.path.insert(0, str(ROOT))
 from models.llm.llm import DeepseekLargeLanguageModel
 from provider.deepseek import DeepSeekProvider
 
+MODELS = ("deepseek-v4-flash", "deepseek-v4-flash-vision-exp", "deepseek-v4-pro")
+
 
 def _llm() -> DeepseekLargeLanguageModel:
     return DeepseekLargeLanguageModel(model_schemas=[])
@@ -29,7 +33,7 @@ def test_v4_catalog_and_parameter_boundaries() -> None:
     directory = ROOT / "models" / "llm"
     position = yaml.safe_load((directory / "_position.yaml").read_text())
 
-    assert position == ["deepseek-v4-flash", "deepseek-v4-pro"]
+    assert position == list(MODELS)
     assert {
         path.stem for path in directory.glob("*.yaml") if path.name != "_position.yaml"
     } == set(position)
@@ -38,6 +42,9 @@ def test_v4_catalog_and_parameter_boundaries() -> None:
         schema = yaml.safe_load((directory / f"{model}.yaml").read_text())
         AIModelEntity.model_validate(schema)
         rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+        assert ("vision" in schema["features"]) == (
+            model == "deepseek-v4-flash-vision-exp"
+        )
         assert schema["model_properties"]["context_size"] == 1_000_000
         assert rules["max_tokens"]["max"] == 384_000
         assert rules["thinking"]["default"] is True
@@ -48,7 +55,8 @@ def test_v4_catalog_and_parameter_boundaries() -> None:
 
 
 @pytest.mark.parametrize("thinking", [True, False])
-def test_thinking_parameters_are_normalized(thinking: bool) -> None:
+@pytest.mark.parametrize("model", MODELS)
+def test_thinking_parameters_are_normalized(model: str, thinking: bool) -> None:
     unsupported = {
         "temperature": 0.7,
         "top_p": 0.8,
@@ -62,7 +70,7 @@ def test_thinking_parameters_are_normalized(thinking: bool) -> None:
         **unsupported,
     }
 
-    _llm()._normalize_model_parameters("deepseek-v4-pro", parameters)
+    _llm()._normalize_model_parameters(model, parameters)
 
     expected = {
         "thinking": {"type": "enabled" if thinking else "disabled"},
@@ -76,7 +84,7 @@ def test_thinking_parameters_are_normalized(thinking: bool) -> None:
 
     if thinking:
         implicit_parameters = {"temperature": 0.7, "top_p": 0.8}
-        _llm()._normalize_model_parameters("deepseek-v4-pro", implicit_parameters)
+        _llm()._normalize_model_parameters(model, implicit_parameters)
         assert implicit_parameters == {"thinking": {"type": "enabled"}}
 
 
@@ -116,12 +124,13 @@ def test_sdk_stream_wrapper_keeps_reasoning_content_and_tools() -> None:
     assert is_reasoning is False
 
 
-def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
+@pytest.mark.parametrize("model", MODELS)
+def test_non_stream_reasoning_and_tool_history_round_trip(model: str) -> None:
     reasoning_content = "  must preserve </think> & &lt; exactly\n"
     response = Mock()
     response.json.return_value = {
         "id": "chatcmpl-1",
-        "model": "deepseek-v4-pro",
+        "model": model,
         "choices": [
             {
                 "finish_reason": "tool_calls",
@@ -152,7 +161,7 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     llm = _llm()
 
     result = llm._handle_generate_response(
-        "deepseek-v4-pro",
+        model,
         credentials,
         response,
         [UserPromptMessage(content="hi")],
@@ -166,7 +175,7 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
         payload = llm._convert_prompt_message_to_dict(
             message,
             {
-                "_current_model": "deepseek-v4-pro",
+                "_current_model": model,
                 "function_calling_type": "tool_call",
             },
         )
@@ -201,7 +210,7 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     )
     assert llm._convert_prompt_message_to_dict(
         merged,
-        {"_current_model": "deepseek-v4-pro"},
+        {"_current_model": model},
     ) == {
         "role": "assistant",
         "content": "a <think>literal answer tag</think>\n\nb",
@@ -209,7 +218,8 @@ def test_non_stream_reasoning_and_tool_history_round_trip() -> None:
     }
 
 
-def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
+@pytest.mark.parametrize("model", MODELS)
+def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
     captured = {}
 
     def invoke(
@@ -235,7 +245,7 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
     credentials = {"api_key": "test", "endpoint_url": ""}
     with patch.object(OAICompatLargeLanguageModel, "_invoke", invoke):
         result = _llm()._invoke(
-            "deepseek-v4-pro",
+            model,
             credentials,
             [UserPromptMessage(content="hi")],
             {},
@@ -251,7 +261,7 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
         )
 
     assert result == "ok"
-    assert captured["model"] == "deepseek-v4-pro"
+    assert captured["model"] == model
     assert captured["parameters"]["user_id"] == "user-1"
     assert captured["parameters"]["tools"] == [
         {
@@ -266,8 +276,100 @@ def test_invoke_uses_official_user_id_and_default_endpoint() -> None:
     assert "tool_choice" not in captured["parameters"]
     assert captured["tools"] is None
     assert captured["user"] is None
-    assert credentials["_current_model"] == "deepseek-v4-pro"
+    assert credentials["_current_model"] == model
     assert credentials["endpoint_url"] == "https://api.deepseek.com"
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_vision_images_reach_chat_completions(stream: bool) -> None:
+    model = "deepseek-v4-flash-vision-exp"
+    images = [
+        ImagePromptMessageContent(
+            format="png", mime_type="image/png", url="https://example.com/image.png"
+        ),
+        ImagePromptMessageContent(
+            format="png",
+            mime_type="image/png",
+            base64_data="aW1hZ2U=",
+            detail=ImagePromptMessageContent.DETAIL.HIGH,
+        ),
+    ]
+    messages = [
+        UserPromptMessage(content="Compare these images."),
+        UserPromptMessage(content=images),
+        UserPromptMessage(content="Describe the difference."),
+        AssistantPromptMessage(content="I can compare them."),
+        UserPromptMessage(content="Please continue."),
+    ]
+    originals = [message.model_copy(deep=True) for message in messages]
+    usage = {"prompt_tokens": 400, "completion_tokens": 2, "total_tokens": 402}
+    response = Mock(status_code=200, encoding="utf-8")
+    response.json.return_value = {
+        "model": model,
+        "choices": [
+            {"message": {"content": "Different colors."}, "finish_reason": "stop"}
+        ],
+        "usage": usage,
+    }
+    response.iter_lines.return_value = [
+        'data: {"choices":[{"delta":{"content":"Different colors."},"finish_reason":null}]}',
+        "data: "
+        + json.dumps(
+            {
+                "choices": [{"delta": {}, "finish_reason": "stop"}],
+                "usage": usage,
+            }
+        ),
+        "data: [DONE]",
+    ]
+
+    with patch("requests.post", return_value=response) as post:
+        result = _llm()._invoke(
+            model,
+            {"api_key": "test"},
+            messages,
+            {"thinking": False},
+            stream=stream,
+        )
+        if stream:
+            result = list(result)[-1].delta
+
+    assert result.usage.prompt_tokens == 400
+    assert messages == originals
+    assert post.call_args.args == ("https://api.deepseek.com/chat/completions",)
+    payload = json.loads(post.call_args.kwargs["data"])
+    assert payload["model"] == model
+    assert payload["stream"] is stream
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["messages"] == [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Compare these images."},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/image.png",
+                        "detail": "low",
+                    },
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/png;base64,aW1hZ2U=",
+                        "detail": "high",
+                    },
+                },
+                {"type": "text", "text": "Describe the difference."},
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": "I can compare them.",
+            "reasoning_content": "",
+        },
+        {"role": "user", "content": "Please continue."},
+    ]
 
 
 def test_provider_validation_does_not_fallback_to_retired_models() -> None:

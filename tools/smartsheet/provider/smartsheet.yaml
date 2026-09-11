@@ -13,7 +13,7 @@ identity:
     pt_BR: Smartsheet é uma plataforma de gerenciamento de trabalho que ajuda equipes a colaborar, organizar e executar tarefas.
     ja_JP: Smartsheetは、チームが共同作業、整理、実行をサポートするワーク管理プラットフォームです。
     zh_Hant: Smartsheet 是一個工作管理平台，幫助團隊協作、組織和執行工作。
-  icon: icon.png
+  icon: icon.svg
 
 credentials_for_provider:
   api_key:
