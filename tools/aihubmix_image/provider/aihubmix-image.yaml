@@ -7,10 +7,10 @@ identity:
     pt_BR: "aihubmix-image"
     ja_JP: "aihubmix-image"
   description:
-    en_US: "Image generation by AIHubMix API with support for sync/async models"
-    zh_Hans: "基于 AIHubMix API 的图像生成工具，支持同步/异步模型"
-    pt_BR: "Geração de imagem por API AIHubMix com suporte para modelos síncronos/assíncronos"
-    ja_JP: "AIHubMix APIによる画像生成、同期/非同期モデルをサポート"
+    en_US: "Image generation and editing through the AIHubMix unified image endpoint. The model dropdown is filled from the gateway with your API key and currently offers GPT Image 2.5 Sunburst and Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image and Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 and 2.0 Pro, Wan2.7 Image and Image Pro, GLM Image and Agnes Image 2.1 Flash."
+    zh_Hans: "基于 AIHubMix 统一图像接口的图像生成与编辑。模型下拉用你的 API Key 实时从网关拉取，目前可选 GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash。"
+    pt_BR: "Geração e edição de imagens pelo endpoint unificado de imagem do AIHubMix. A lista de modelos vem do gateway com sua API Key e atualmente oferece GPT Image 2.5 Sunburst e Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image e Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 e 2.0 Pro, Wan2.7 Image e Image Pro, GLM Image e Agnes Image 2.1 Flash."
+    ja_JP: "AIHubMix の統合画像エンドポイントによる画像生成と編集。モデル一覧は API キーでゲートウェイから取得され、現在は GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash を選択できます。"
   icon: icon.svg
 
 # The key must be `credentials_for_provider` and the value a mapping keyed by credential

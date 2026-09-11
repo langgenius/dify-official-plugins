@@ -8,10 +8,10 @@ identity:
     ja_JP: "画像を編集"
 description:
   human:
-    en_US: "Edit or recompose existing images with any AIHubMix image model that accepts image input — inpainting with a mask, style changes, multi-image composition. The model list only shows models that can take a source image."
-    zh_Hans: "用 AIHubMix 上支持图生图的模型编辑已有图片 —— 带蒙版的局部重绘、风格改写、多图合成。模型下拉只列出能接收源图的模型。"
-    pt_BR: "Edite ou recomponha imagens existentes com qualquer modelo do AIHubMix que aceite entrada de imagem — inpainting com máscara, mudança de estilo, composição de várias imagens. A lista mostra apenas modelos que aceitam imagem de origem."
-    ja_JP: "画像入力に対応した AIHubMix の画像モデルで既存画像を編集します（マスクによる部分再生成、スタイル変更、複数画像の合成）。モデル一覧には画像入力に対応したモデルのみが表示されます。"
+    en_US: "Edit or recompose existing images with any AIHubMix image model that accepts image input — inpainting with a mask, style changes, multi-image composition. The list shows only models that can take a source image, currently GPT Image 2.5 Sunburst and Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image and Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 and 2.0 Pro, Wan2.7 Image and Image Pro, and Agnes Image 2.1 Flash."
+    zh_Hans: "用 AIHubMix 上支持图生图的模型编辑已有图片 —— 带蒙版的局部重绘、风格改写、多图合成。下拉只列出能接收源图的模型，目前包括 GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、Agnes Image 2.1 Flash。"
+    pt_BR: "Edite ou recomponha imagens existentes com qualquer modelo do AIHubMix que aceite entrada de imagem — inpainting com máscara, mudança de estilo, composição de várias imagens. A lista mostra apenas modelos que aceitam imagem de origem: atualmente GPT Image 2.5 Sunburst e Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image e Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 e 2.0 Pro, Wan2.7 Image e Image Pro, e Agnes Image 2.1 Flash."
+    ja_JP: "画像入力に対応した AIHubMix の画像モデルで既存画像を編集します（マスクによる部分再生成、スタイル変更、複数画像の合成）。一覧には画像入力に対応したモデルのみが表示されます（現在: GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、Agnes Image 2.1 Flash）。"
   llm: "Edit one or more source images according to an instruction. Requires a model id that accepts image input, a prompt describing the edit, and at least one source image. Optionally takes a mask marking the region to change. Returns the edited image files."
 parameters:
   - name: model

@@ -9,11 +9,36 @@
 ## Overview
 
 Two tools — **Generate Image** and **Edit Image** — that reach the image models AIHubMix serves
-through the gateway's unified image endpoint: GPT Image, Gemini, Qwen-Image, GLM, Wan, Agnes.
+through the gateway's unified image endpoint: GPT Image, Gemini, Qwen-Image, Wan, GLM, Agnes.
 
 There is no per-model tool. The model dropdown is filled from the gateway with your API key,
 and each model's accepted parameters are read from its published schema at call time, so a
 model added to AIHubMix shows up without a plugin update.
+
+## Models available today
+
+The dropdown is live, so this table is a snapshot of what the gateway offers right now (in the
+gateway's own ordering, newest flagships first) rather than a list the plugin carries.
+
+| Model id | Name | Vendor | Generate | Edit |
+| --- | --- | --- | :-: | :-: |
+| `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | OpenAI | ✅ | ✅ |
+| `gpt-image-2.5-flare` | GPT Image 2.5 Flare | OpenAI | ✅ | ✅ |
+| `agnes-image-2.1-flash` | Agnes Image 2.1 Flash | Agnes | ✅ | ✅ |
+| `gemini-3.1-flash-lite-image` | Gemini 3.1 Flash Lite Image | Google | ✅ | ✅ |
+| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | Google | ✅ | ✅ |
+| `gemini-3-pro-image` | Gemini 3 Pro Image | Google | ✅ | ✅ |
+| `gpt-image-2` | GPT Image 2 | OpenAI | ✅ | ✅ |
+| `qwen-image-2.0-pro` | Qwen Image 2.0 Pro | Alibaba | ✅ | ✅ |
+| `qwen-image-2.0` | Qwen Image 2.0 | Alibaba | ✅ | ✅ |
+| `glm-image` | GLM Image | Zhipu | ✅ | — |
+| `wan2.7-image-pro` | Wan2.7 Image Pro | Alibaba | ✅ | ✅ |
+| `wan2.7-image` | Wan2.7 Image | Alibaba | ✅ | ✅ |
+| `gemini-2.5-flash-image` | Gemini 2.5 Flash Image | Google | ✅ | ✅ |
+
+Thirteen models for *Generate Image*, twelve for *Edit Image* — `glm-image` takes text only, so
+the edit tool leaves it out. Every one of them was called end to end against the live gateway
+before this release.
 
 ## What that means in practice
 
@@ -56,14 +81,10 @@ using an old tool has to be repointed** at *Generate Image* or *Edit Image* and 
 picked from the dropdown.
 
 Which models you get is decided by the gateway, not by the plugin: the dropdown carries every
-active image model the gateway marks as schema-verified. At the time of writing that is
-thirteen for *Generate Image* — `gpt-image-2`, `gpt-image-2.5-flare`, `gpt-image-2.5-sunburst`,
-`gemini-2.5-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-image`,
-`gemini-3.1-flash-lite-image`, `qwen-image-2.0`, `qwen-image-2.0-pro`, `wan2.7-image`,
-`wan2.7-image-pro`, `glm-image`, `agnes-image-2.1-flash` — and twelve for *Edit Image*
-(all but `glm-image`, which is text-only). Models 0.1.x could call that are not verified,
-including `imagen-4.0`, `FLUX-1.1-pro`, `dall-e-3`, `gpt-image-1.5` and the Ideogram aliases,
-are not offered; the nearest verified equivalents are `gemini-3-pro-image` and `gpt-image-2`.
+active image model the gateway marks as schema-verified — see [Models available today](#models-available-today)
+for the current set. Models 0.1.x could call that are not verified, including `imagen-4.0`,
+`FLUX-1.1-pro`, `dall-e-3`, `gpt-image-1.5` and the Ideogram aliases, are not offered; the
+nearest verified equivalents are `gemini-3-pro-image` and `gpt-image-2`.
 
 ## Credentials
 

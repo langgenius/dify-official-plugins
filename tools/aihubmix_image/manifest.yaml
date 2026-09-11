@@ -8,10 +8,10 @@ label:
   zh_Hans: AIHubMix Image
   pt_BR: AIHubMix Image
 description:
-  en_US: "AIHubMix image generation and editing. Two tools cover the image models the gateway serves — GPT Image, Gemini, Qwen-Image, GLM, Wan and more — with the model list and each model's parameters read from the gateway at call time."
-  zh_Hans: "AIHubMix 图像生成与编辑。两个工具覆盖网关上的图像模型 —— GPT Image、Gemini、Qwen-Image、GLM、Wan 等；模型列表与每个模型支持的参数都在调用时实时从网关读取。"
-  ja_JP: "AIHubMix の画像生成と編集。2 つのツールでゲートウェイが提供する画像モデル（GPT Image、Gemini、Qwen-Image、GLM、Wan など）に対応し、モデル一覧と各モデルのパラメータは呼び出し時にゲートウェイから取得します。"
-  pt_BR: "Geração e edição de imagens AIHubMix. Duas ferramentas cobrem os modelos de imagem do gateway — GPT Image, Gemini, Qwen-Image, GLM, Wan e outros — com a lista de modelos e os parâmetros de cada um lidos do gateway no momento da chamada."
+  en_US: "AIHubMix image generation and editing. Two tools reach every image model the gateway serves — currently GPT Image 2.5 Sunburst and Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image and Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 and 2.0 Pro, Wan2.7 Image and Image Pro, GLM Image and Agnes Image 2.1 Flash. The model list and each model's parameters are read from the gateway at call time, so a newly released model shows up without a plugin update."
+  zh_Hans: "AIHubMix 图像生成与编辑。两个工具覆盖网关上的全部图像模型 —— 目前包括 GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash。模型列表与每个模型支持的参数都在调用时实时从网关读取，新上线的模型无需升级插件即可使用。"
+  ja_JP: "AIHubMix の画像生成と編集。2 つのツールでゲートウェイが提供するすべての画像モデルに対応します（現在: GPT Image 2.5 Sunburst / Flare、GPT Image 2、Gemini 3 Pro Image、Gemini 3.1 Flash Image / Flash Lite Image、Gemini 2.5 Flash Image、Qwen Image 2.0 / 2.0 Pro、Wan2.7 Image / Image Pro、GLM Image、Agnes Image 2.1 Flash）。モデル一覧と各モデルのパラメータは呼び出し時にゲートウェイから取得されるため、新しいモデルもプラグイン更新なしで利用できます。"
+  pt_BR: "Geração e edição de imagens AIHubMix. Duas ferramentas alcançam todos os modelos de imagem do gateway — atualmente GPT Image 2.5 Sunburst e Flare, GPT Image 2, Gemini 3 Pro Image, Gemini 3.1 Flash Image e Flash Lite Image, Gemini 2.5 Flash Image, Qwen Image 2.0 e 2.0 Pro, Wan2.7 Image e Image Pro, GLM Image e Agnes Image 2.1 Flash. A lista de modelos e os parâmetros de cada um são lidos do gateway no momento da chamada, então um modelo novo aparece sem atualizar o plugin."
 icon: icon.svg
 resource:
   memory: 268435456
