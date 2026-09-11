@@ -266,3 +266,67 @@ def test_agnes_thinking_toggle_uses_chat_template_kwargs() -> None:
     # llm.py rewrites a YAML `enable_thinking` into exactly that object.
     for model in ("agnes-2.5-flash", "agnes-3.0-flash"):
         assert _rule(model, "enable_thinking")["type"] == "boolean", model
+
+
+# --- routing and thinking-switch plumbing ------------------------------------
+# Two defects the public projection exposed in `llm.py` itself.
+
+
+def _llm_source() -> str:
+    return (MODEL_DIR / "llm.py").read_text(encoding="utf-8")
+
+
+def _normalize_thinking_switch():
+    """Lift the pure helper out of llm.py so it can run without dify_plugin."""
+    import re
+    import textwrap
+
+    source = _llm_source()
+    match = re.search(
+        r"    @staticmethod\n    def _normalize_thinking_switch.*?\n        return model_parameters\n",
+        source,
+        re.S,
+    )
+    assert match, "llm.py no longer defines _normalize_thinking_switch"
+    namespace: dict = {}
+    exec(textwrap.dedent(match.group(0).replace("    @staticmethod\n", "")), namespace)
+    return namespace["_normalize_thinking_switch"]
+
+
+def test_gpt_5_5_pro_is_routed_to_the_responses_api() -> None:
+    # The projection gives gpt-5.5-pro only openai.responses and
+    # anthropic.messages — it has no chat-completions surface, unlike gpt-5.5.
+    block = _llm_source().split("RESPONSE_SERIES_COMPATIBILITY = (", 1)[1].split(")", 1)[0]
+    assert '"gpt-5.5-pro"' in block
+    # ... and none of its rules are chat-completions-only, since
+    # openai_response.py rejects them outright.
+    names = {rule["name"] for rule in _schema("gpt-5.5-pro")["parameter_rules"]}
+    assert names.isdisjoint({"temperature", "top_p", "seed", "presence_penalty", "frequency_penalty"})
+
+
+def test_boolean_thinking_is_sent_as_the_official_object() -> None:
+    # A bare boolean `thinking` is not valid on any vendor's chat-completions
+    # schema: doubao/kimi/coding-glm/deepseek/ernie answer HTTP 400, glm-5.2
+    # ignores it and still bills reasoning tokens. The official field is an
+    # object, which parameter_rules cannot express, so llm.py converts it.
+    normalize = _normalize_thinking_switch()
+    assert normalize({"thinking": False})["thinking"] == {"type": "disabled"}
+    assert normalize({"thinking": True})["thinking"] == {"type": "enabled"}
+    # Anything that is not a boolean is passed through untouched.
+    assert normalize({"thinking": {"type": "disabled"}})["thinking"] == {"type": "disabled"}
+    assert normalize({"temperature": 0.5}) == {"temperature": 0.5}
+    # Only the OpenAI-compatible branch converts: anthropic.py consumes the
+    # boolean itself, so the call must sit next to super()._generate.
+    source = _llm_source()
+    tail = source.split("# 默认使用父类的生成方法", 1)[1]
+    assert "_normalize_thinking_switch(model_parameters)" in tail.split("super()._generate", 1)[0]
+
+
+def test_gemini_thinking_toggle_uses_the_name_google_py_reads() -> None:
+    # google.py's _set_thinking_config reads thinking_mode, not thinking.
+    names = {rule["name"] for rule in _schema("gemini-3-pro-preview")["parameter_rules"]}
+    assert "thinking_mode" in names
+    assert "thinking" not in names
+    assert 'thinking_mode = model_parameters.get("thinking_mode", None)' in (
+        MODEL_DIR / "google.py"
+    ).read_text(encoding="utf-8")
