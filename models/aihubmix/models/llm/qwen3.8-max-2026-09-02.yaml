@@ -1,7 +1,7 @@
-model: qwen3.8-max
+model: qwen3.8-max-2026-09-02
 label:
-  zh_Hans: Qwen3.8 Max
-  en_US: Qwen3.8 Max
+  zh_Hans: Qwen3.8 Max 2026-09-02
+  en_US: Qwen3.8 Max 2026-09-02
 model_type: llm
 features:
   - vision
@@ -135,7 +135,7 @@ parameter_rules:
     help:
       zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
       en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
-# https://aihubmix.com/model/qwen3.8-max
+# https://aihubmix.com/model/qwen3.8-max-2026-09-02
 pricing:
   input: '1.69'
   output: '5.07'

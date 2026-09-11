@@ -1,0 +1,51 @@
+model: gpt-5.5-pro
+label:
+  en_US: GPT 5.5 Pro
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1050000
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - medium
+      - high
+      - xhigh
+    help:
+      zh_Hans: GPT-5.5 Pro 只接受 medium、high、xhigh，默认 medium；传 low 会被上游拒绝。
+      en_US: GPT-5.5 Pro only accepts medium, high and xhigh, defaulting to medium; low is rejected upstream.
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '30'
+  output: '180'
+  unit: '0.000001'
+  currency: USD
