@@ -73,7 +73,11 @@ def test_every_new_model_is_registered() -> None:
         for path in MODEL_DIR.glob("*.yaml")
         if path.name != "_position.yaml"
     ]
-    declared = {s["model"] for s in schemas if s.get("model_type") == "llm"}
+    declared_ids = [s["model"] for s in schemas if s.get("model_type") == "llm"]
+    # Kept as a list first: collapsing straight into a set would hide two schema files that
+    # declare the same `model:` id, which is exactly the duplicate this test is meant to catch.
+    assert len(declared_ids) == len(set(declared_ids))
+    declared = set(declared_ids)
     assert set(positions) - declared == set()
     assert declared - set(positions) == set()
     for model in NEW_MODELS:
