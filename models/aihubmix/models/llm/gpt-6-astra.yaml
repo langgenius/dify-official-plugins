@@ -24,8 +24,10 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     help:
-      zh_Hans: GPT-6 Astra 支持 low、medium、high、xhigh 和 max，默认 medium。
-      en_US: GPT-6 Astra supports low, medium, high, xhigh and max, defaulting to medium.
+      zh_Hans: 推理投入档位，默认 medium。目录里还有一个 max 档，但插件走的是 chat/completions 通道，实测该通道上 max 的推理 token 数和 medium 完全一致（6 vs 6），只有 xhigh 会真正加码（21～43），所以这里不提供 max。
+      en_US: Reasoning effort, defaulting to medium. The catalog also lists max, but the plugin
+        dispatches this id over chat/completions, where max spends exactly as many reasoning
+        tokens as medium (6 vs 6) while xhigh really does escalate (21-43), so max is not offered.
     required: false
     default: medium
     options:
@@ -33,7 +35,6 @@ parameter_rules:
       - medium
       - high
       - xhigh
-      - max
   - name: verbosity
     label:
       zh_Hans: 详细程度

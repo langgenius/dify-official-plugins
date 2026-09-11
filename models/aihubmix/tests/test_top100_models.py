@@ -76,7 +76,11 @@ def test_flagship_model_facts() -> None:
     assert astra["model_properties"]["context_size"] == 1_050_000
     assert astra["pricing"]["input"] == "10"
     assert astra["pricing"]["output"] == "50"
-    assert astra_rules["reasoning_effort"]["options"] == ["low", "medium", "high", "xhigh", "max"]
+    # `max` is dropped: the plugin dispatches gpt-6-astra over chat/completions, and there
+    # max costs exactly as many reasoning tokens as medium (6 vs 6 across four runs each)
+    # while xhigh escalates to 21-43. On the /responses surface max does work (215-380
+    # against 143-184 for xhigh), but that is not the surface this schema drives.
+    assert astra_rules["reasoning_effort"]["options"] == ["low", "medium", "high", "xhigh"]
     assert astra_rules["max_tokens"]["max"] == 128_000
     assert astra_rules["enable_stream"]["type"] == "boolean"
 
@@ -125,23 +129,35 @@ def test_no_free_tier_models_remain() -> None:
 
 
 def test_retired_models_are_gone() -> None:
+    # Six of these schemas were filed under a name that differs from the id `_position.yaml`
+    # registers (`deepseek-r1-aihubmix.yaml` declares `model: aihubmix-DeepSeek-R1`), so the
+    # pair has to be tracked explicitly - asserting the filename against the registry would
+    # pass even if the retired entry were still listed.
     retired = (
-        "gpt-4.5-preview",
-        "gemini-2.0-flash",
-        "gemini-2.5-flash-preview-04-17",
-        "gemini-2.5-flash-preview-04-17-nothink",
-        "deepseek-v3.2-speciale",
-        "deepseek-r1-aihubmix",
-        "Llama-3-3-70B-Instruct-aihubmix",
-        "deepSeek-V3-0324",
-        "llama-4-maverick-17b-128e-instruct-fp8",
-        "llama-4-scout-17b-16e-instruct",
-        "llama-4-scout-17b-16e-instruct-meta-llama",
+        # (schema filename, id registered in _position.yaml)
+        ("gpt-4.5-preview", "gpt-4.5-preview"),
+        ("gemini-2.0-flash", "gemini-2.0-flash"),
+        ("gemini-2.5-flash-preview-04-17", "gemini-2.5-flash-preview-04-17"),
+        ("gemini-2.5-flash-preview-04-17-nothink", "gemini-2.5-flash-preview-04-17-nothink"),
+        ("deepseek-v3.2-speciale", "deepseek-v3.2-speciale"),
+        ("deepseek-r1-aihubmix", "aihubmix-DeepSeek-R1"),
+        ("Llama-3-3-70B-Instruct-aihubmix", "aihubmix-Llama-3-3-70B-Instruct"),
+        ("deepSeek-V3-0324", "deepseek-ai/DeepSeek-V3-0324"),
+        (
+            "llama-4-maverick-17b-128e-instruct-fp8",
+            "chutesai/Llama-4-Maverick-17B-128E-Instruct-FP8",
+        ),
+        ("llama-4-scout-17b-16e-instruct", "chutesai/Llama-4-Scout-17B-16E-Instruct"),
+        (
+            "llama-4-scout-17b-16e-instruct-meta-llama",
+            "meta-llama/llama-4-scout-17b-16e-instruct",
+        ),
     )
     positions = _positions()
-    for model in retired:
-        assert not (MODEL_DIR / f"{model}.yaml").exists(), model
-        assert model not in positions, model
+    for filename, model_id in retired:
+        assert not (MODEL_DIR / f"{filename}.yaml").exists(), filename
+        assert filename not in positions, filename
+        assert model_id not in positions, model_id
 
 
 # --- Gemini image models -----------------------------------------------------
@@ -217,7 +233,7 @@ PROJECTION_REASONING_EFFORT = {
     "glm-5.2-fast-preview": (["none", "minimal", "low", "medium", "high", "xhigh", "max"], "max"),
     "gpt-5.5-pro": (["medium", "high", "xhigh"], "medium"),
     "gpt-5.6-sol-disc": (["none", "low", "medium", "high", "xhigh", "max"], "medium"),
-    "gpt-6-astra": (["low", "medium", "high", "xhigh", "max"], "medium"),
+    "gpt-6-astra": (["low", "medium", "high", "xhigh"], "medium"),  # max is inert on chat/completions
     "hy3-preview": (["no_think", "low", "high"], "no_think"),
     "hy4-preview": (["none", "high"], "high"),
     "muse-spark-1.1": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
@@ -396,6 +412,39 @@ def test_json_schema_is_offered_only_where_the_gateway_honours_it() -> None:
     assert "json_schema" not in mai_rules
     assert "response_format" not in mai_rules
     assert "structured-output" not in (mai.get("features") or [])
+
+
+def test_structured_output_flag_follows_the_json_schema_rule() -> None:
+    # Dify reads capability from the `structured-output` feature flag, not from the
+    # response_format options, so a schema that offers `json_schema` while omitting the flag
+    # reports structured output as unsupported. Every model this branch touches keeps the two
+    # in step. Live-checked against the gateway with a strict schema and a prompt that does not
+    # itself ask for JSON, so JSON coming back proves the schema was enforced; muse-spark-1.x
+    # (403, key-level restriction) and hy3-preview (502 upstream) could not be reached and
+    # follow the projection, the same source their json_schema rule comes from.
+    touched_with_json_schema = (
+        "agnes-2.5-flash",
+        "agnes-2.5-pro",
+        "agnes-2.5-pro-alpha",
+        "agnes-3.0-flash",
+        "deepseek-v4-flash-0731-fast",
+        "gemini-3-pro-preview",
+        "glm-5.2",
+        "glm-5.2-fast-preview",
+        "gpt-5.5-pro",
+        "gpt-5.6-sol-disc",
+        "hy3-preview",
+        "hy4-preview",
+        "longcat-2.0",
+        "mercury-2.5-preview",
+        "muse-spark-1.1",
+        "muse-spark-1.2",
+        "muse-spark-1.3",
+    )
+    for model in touched_with_json_schema:
+        schema = _schema(model)
+        assert "json_schema" in _rule(model, "response_format")["options"], model
+        assert "structured-output" in (schema.get("features") or []), model
 
 
 def test_glm_fast_preview_exposes_the_verified_thinking_switch() -> None:

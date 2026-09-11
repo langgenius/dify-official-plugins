@@ -10,6 +10,7 @@ features:
   - vision
   - audio
   - video
+  - structured-output
 model_properties:
   mode: chat
   context_size: 8192

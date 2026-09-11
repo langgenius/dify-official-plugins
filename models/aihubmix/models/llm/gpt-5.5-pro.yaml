@@ -8,6 +8,7 @@ features:
   - stream-tool-call
   - multi-tool-call
   - vision
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1050000
