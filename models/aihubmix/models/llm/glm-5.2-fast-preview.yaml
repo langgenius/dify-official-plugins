@@ -1,6 +1,6 @@
-model: glm-5.2
+model: glm-5.2-fast-preview
 label:
-  en_US: GLM 5.2
+  en_US: GLM 5.2 Fast Preview
 model_type: llm
 features:
   - agent-thought
@@ -17,11 +17,11 @@ parameter_rules:
       zh_Hans: 推理模式
       en_US: Thinking Mode
     type: boolean
-    default: false
+    default: true
     required: false
     help:
-      zh_Hans: 官方的思考开关，对象形式 {"type":"enabled"/"disabled"}；插件会把这个布尔值翻译成对象再发出。线上实测开启产生 381 个推理 token，关闭后一个都不产生。
-      en_US: The official thinking switch, an object of the form {"type":"enabled"/"disabled"}; the plugin translates this boolean into that object. Verified on the gateway - on it spends 381 reasoning tokens, off it spends none.
+      zh_Hans: 官方的思考开关，对象形式 {"type":"enabled"/"disabled"}；插件会把这个布尔值翻译成对象再发出。线上实测关闭后不再产生任何推理 token，也不再回 reasoning_content。
+      en_US: The official thinking switch, an object of the form {"type":"enabled"/"disabled"}; the plugin translates this boolean into that object. Verified on the gateway - disabling it stops every reasoning token and the reasoning_content field.
   - name: thinking_budget
     label:
       zh_Hans: 推理预算
@@ -36,12 +36,9 @@ parameter_rules:
       en_US: Caps the tokens spent on thinking. Verified on the gateway - a budget of 64 spends exactly 64 reasoning tokens.
   - name: reasoning_effort
     label:
-      zh_Hans: 推理强度
+      zh_Hans: 推理努力程度
       en_US: Reasoning Effort
     type: string
-    help:
-      zh_Hans: 公网投影收录的官方枚举 none/minimal/low/medium/high/xhigh/max，默认 max；线上实测 none 不再产生推理 token，max 与 minimal 均产生 reasoning_content。
-      en_US: The public projection records the official enum none/minimal/low/medium/high/xhigh/max with the default max. Verified on the gateway - none stops reasoning tokens, while max and minimal both return reasoning_content.
     required: false
     default: max
     options:
@@ -52,6 +49,9 @@ parameter_rules:
       - high
       - xhigh
       - max
+    help:
+      zh_Hans: 公网投影 fields 收录的官方枚举，线上实测 none 确实不再产生推理 token；其余档位之间的推理量差异不稳定，需要彻底关思考请用 thinking 开关。
+      en_US: The official enum recorded in the projection's fields. Verified on the gateway - none really does stop reasoning tokens, while the gap between the other levels is not stable; use the thinking switch to turn reasoning off outright.
   - name: temperature
     use_template: temperature
   - name: top_p
@@ -74,7 +74,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '1.1268'
-  output: '3.9438'
+  input: '2.254'
+  output: '7.889'
   unit: '0.000001'
   currency: USD

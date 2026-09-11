@@ -1,7 +1,7 @@
-model: qwen3.8-max
+model: qwen3.8-flash
 label:
-  zh_Hans: Qwen3.8 Max
-  en_US: Qwen3.8 Max
+  zh_Hans: Qwen3.8 Flash
+  en_US: Qwen3.8 Flash
 model_type: llm
 features:
   - vision
@@ -21,8 +21,8 @@ parameter_rules:
     min: 0.6
     max: 1.99
     help:
-      zh_Hans: 控制生成文本的随机性。Qwen3.8 Max 会将低于 0.6 的值按 0.6 处理。
-      en_US: Controls generation randomness. Qwen3.8 Max treats values below 0.6 as 0.6.
+      zh_Hans: 控制生成文本的随机性。Qwen3.8 Flash 会将低于 0.6 的值按 0.6 处理。
+      en_US: Controls generation randomness. Qwen3.8 Flash treats values below 0.6 as 0.6.
   - name: max_completion_tokens
     use_template: max_tokens
     type: int
@@ -96,21 +96,17 @@ parameter_rules:
   - name: reasoning_effort
     required: false
     type: string
-    default: xhigh
+    default: medium
     options:
-      - none
-      - minimal
       - low
       - medium
-      - high
       - xhigh
-      - max
     label:
       zh_Hans: 推理强度
       en_US: Reasoning effort
     help:
-      zh_Hans: 思考模式的推理强度。枚举取自公网投影，none 关闭思考（线上实测生效）。
-      en_US: Reasoning effort in thinking mode. The enum comes from the public projection; none turns thinking off (verified live).
+      zh_Hans: 思考模式的推理强度，low / medium / xhigh 分别对应 4096、16384 与 262144 个思维链 Token。
+      en_US: Reasoning effort in thinking mode; low / medium / xhigh map to 4096, 16384 and 262144 chain-of-thought tokens.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -135,9 +131,9 @@ parameter_rules:
     help:
       zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
       en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
-# https://aihubmix.com/model/qwen3.8-max
+# https://aihubmix.com/model/qwen3.8-flash
 pricing:
-  input: '1.69'
-  output: '5.07'
+  input: '0.1126'
+  output: '0.380025'
   unit: '0.000001'
   currency: USD

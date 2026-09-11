@@ -1,7 +1,13 @@
-model: qwen3.6-plus-preview-free
+model: longcat-2.0
 label:
-  en_US: Qwen3.6 Plus Preview (free)
+  en_US: LongCat 2.0
 model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1000000
@@ -14,7 +20,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 65535
+    max: 131072
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -28,7 +34,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.7746'
+  output: '3.0984'
   unit: '0.000001'
   currency: USD

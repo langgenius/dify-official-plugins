@@ -1,0 +1,60 @@
+model: muse-spark-1.2
+label:
+  en_US: Muse Spark 1.2
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+  - video
+  - audio
+  - document
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+    help:
+      zh_Hans: 控制推理努力程度，取值来自 AiHubMix 公网投影中该模型的官方枚举。
+      en_US: Controls reasoning effort. The values come from this model's official enum in the AiHubMix public projection.
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 32768
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '1.375'
+  output: '4.675'
+  unit: '0.000001'
+  currency: USD
