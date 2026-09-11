@@ -1,8 +1,7 @@
-"""
-AIHubMix Image Generation Plugin
+"""AIHubMix image plugin.
 
-This plugin provides image generation capabilities through various AI models
-including GPT-Image, Flux, Imagen, Qwen, Doubao, and ERNIE iRAG.
+Two tools — generate and edit — that talk to the gateway's unified image endpoint and
+discover each model's parameters from its published schema at call time.
 """
 
 from dify_plugin import Plugin, DifyPluginEnv
