@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: community
+author: langgenius
 name: opencode_go
 description:
   en_US: OpenCode Go model provider. Access curated open coding models via the OpenCode Zen Go gateway ($10/month subscription).
