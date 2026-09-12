@@ -6,7 +6,7 @@ description:
   pt_BR: The Tianditu tool provided the functions of place name search, geocoding,
     static maps generation, etc. in China region.
   zh_Hans: 天地图工具可以调用天地图的接口，实现中国区域内的地名搜索、地理编码、静态地图等功能。
-icon: icon.svg
+icon: icon.png
 label:
   en_US: Tianditu
   pt_BR: Tianditu
@@ -36,4 +36,4 @@ tags:
 - utilities
 - travel
 type: plugin
-version: 0.0.8
+version: 0.1.1

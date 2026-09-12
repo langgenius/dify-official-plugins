@@ -7,9 +7,13 @@ description:
     Llama4, Qwen and DeepSeek Models.
   zh_Hans: SambaCloud 提供的模型。
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.png
+icon_small_dark:
+  en_US: icon-dark.png
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.png
+icon_large_dark:
+  en_US: icon-dark.png
 background: "#E5E7EB"
 help:
   title:
