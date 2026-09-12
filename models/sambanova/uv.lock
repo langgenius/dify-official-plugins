@@ -931,7 +931,7 @@ wheels = [
 
 [[package]]
 name = "sambanova"
-version = "0.1.6"
+version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "dify-plugin" },
