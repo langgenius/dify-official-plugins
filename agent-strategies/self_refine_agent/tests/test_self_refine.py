@@ -190,7 +190,9 @@ class TestSelfRefineListContent(unittest.TestCase):
     def test_invoke_end_to_end_satisfactory_on_first_attempt(self):
         model = AgentModelConfig(provider="google", model="gemini-1.5-pro", mode="chat")
 
-        eval_json = '{"is_satisfactory": true, "issues": "", "score": 10}'
+        # The documented stop rule is score>=80 (issue #3874), so a passing
+        # first attempt must clear the threshold, not just set the boolean.
+        eval_json = '{"is_satisfactory": true, "issues": "", "score": 95}'
         responses = [
             LLMResult(
                 model="gemini-1.5-pro",
@@ -360,6 +362,101 @@ class TestSelfRefineTools(unittest.TestCase):
 
         self.assertEqual(self.strategy.session.model.llm.invoke.call_count, 1)
         self.assertEqual(result["output"], "42")
+
+
+def _exec_result(text: str) -> LLMResult:
+    return LLMResult(
+        model="gpt-4o",
+        message=_list_content_message(text),
+        usage=LLMUsage.empty_usage(),
+    )
+
+
+def _eval_result(is_satisfactory: bool, score: int) -> LLMResult:
+    return LLMResult(
+        model="gpt-4o",
+        message=_list_content_message(
+            '{"is_satisfactory": %s, "issues": "", "score": %d}'
+            % ("true" if is_satisfactory else "false", score)
+        ),
+        usage=LLMUsage.empty_usage(),
+    )
+
+
+def _final_text(strategy, parameters: dict) -> str:
+    from dify_plugin.entities.agent import AgentInvokeMessage
+
+    messages = list(strategy._invoke(parameters))
+    texts = [
+        m.message.text
+        for m in messages
+        if m.type == AgentInvokeMessage.MessageType.TEXT
+    ]
+    assert texts, "expected exactly one final text message"
+    return texts[-1]
+
+
+def _invoke_params(model, max_refinements: int) -> dict:
+    return {
+        "query": "hello",
+        "instruction": "answer briefly",
+        "model": model.model_dump(mode="json"),
+        "max_refinements": max_refinements,
+    }
+
+
+class TestSelfRefineScoreContract(unittest.TestCase):
+    """Issue #3874: the documented score>=80 stopping rule and best-output
+    return, proven against the real _invoke loop (issue text, not mocks)."""
+
+    def setUp(self):
+        self.strategy = SelfRefineStrategy(runtime=Mock(), session=Mock())
+
+    def test_below_threshold_satisfactory_continues_and_high_score_stops(self):
+        model = AgentModelConfig(provider="openai", model="gpt-4o", mode="chat")
+        self.strategy.session.model.llm.invoke = Mock(
+            side_effect=[
+                _exec_result("first"),
+                _eval_result(True, 70),
+                _exec_result("second"),
+                _eval_result(False, 90),
+            ]
+        )
+
+        text = _final_text(self.strategy, _invoke_params(model, 2))
+
+        # Score 70 must NOT stop even with is_satisfactory=true; score 90 stops.
+        self.assertEqual(text, "second")
+        self.assertEqual(self.strategy.session.model.llm.invoke.call_count, 4)
+
+    def test_exhausted_budget_returns_best_scoring_output(self):
+        model = AgentModelConfig(provider="openai", model="gpt-4o", mode="chat")
+        self.strategy.session.model.llm.invoke = Mock(
+            side_effect=[
+                _exec_result("first-75"),
+                _eval_result(False, 75),
+                _exec_result("second-60"),
+                _eval_result(False, 60),
+            ]
+        )
+
+        text = _final_text(self.strategy, _invoke_params(model, 1))
+
+        # Both attempts evaluated (including the final one); best (75) wins.
+        self.assertEqual(text, "first-75")
+        self.assertEqual(self.strategy.session.model.llm.invoke.call_count, 4)
+
+    def test_zero_refinements_performs_no_evaluation(self):
+        model = AgentModelConfig(provider="openai", model="gpt-4o", mode="chat")
+        self.strategy.session.model.llm.invoke = Mock(
+            return_value=_exec_result("only")
+        )
+
+        text = _final_text(self.strategy, _invoke_params(model, 0))
+
+        # Exactly the initial execution, no added evaluator LLM call.
+        self.assertEqual(text, "only")
+        self.assertEqual(self.strategy.session.model.llm.invoke.call_count, 1)
 
 
 if __name__ == "__main__":

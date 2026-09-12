@@ -26,6 +26,11 @@ from prompt.templates import SELF_REFINE_TEMPLATES
 
 logger = logging.getLogger(__name__)
 
+# Documented quality contract (see README): stop refining once an evaluated
+# output reaches this score; when the budget is exhausted below it, return
+# the highest-scoring evaluated output instead of the most recent one.
+SCORE_STOP_THRESHOLD = 80
+
 
 class LogMetadata:
     """Metadata keys for logging"""
@@ -114,6 +119,8 @@ class SelfRefineStrategy(AgentStrategy):
         refinement_count = 0
         previous_critique: Optional[str] = None
         final_output = ""
+        best_output: Optional[str] = None
+        best_score = -1
         total_metadata = ExecutionMetadata()
 
         while refinement_count <= params.max_refinements:
@@ -165,8 +172,10 @@ class SelfRefineStrategy(AgentStrategy):
                 continue
 
             # === EVALUATION PHASE ===
-            if refinement_count >= params.max_refinements:
-                logger.info("Max refinements reached, skipping evaluation")
+            # With refinements disabled this stays a single standard-agent
+            # execution: no evaluator call is added.
+            if params.max_refinements <= 0:
+                logger.info("Refinements disabled (max_refinements=0), skipping evaluation")
                 break
 
             yield self.create_log_message(
@@ -181,7 +190,11 @@ class SelfRefineStrategy(AgentStrategy):
                     output=final_output
                 )
 
-                if evaluation.is_satisfactory:
+                if evaluation.score > best_score:
+                    best_score = evaluation.score
+                    best_output = final_output
+
+                if evaluation.score >= SCORE_STOP_THRESHOLD:
                     yield self.create_log_message(
                         label="Quality Check: PASS",
                         data={"score": evaluation.score},
@@ -212,6 +225,13 @@ class SelfRefineStrategy(AgentStrategy):
                 break
 
         # === FINAL OUTPUT ===
+        # When the budget was exhausted below the threshold, return the
+        # highest-scoring evaluated output instead of the most recent one.
+        # (On a threshold PASS, best_output already is this output; when no
+        # evaluation ran at all, best_output stays None.)
+        if best_output is not None:
+            final_output = best_output
+
         yield self.create_text_message(final_output)
 
         yield self.create_json_message({
