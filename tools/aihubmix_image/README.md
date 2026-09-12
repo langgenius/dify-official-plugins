@@ -2,18 +2,30 @@
 
 **Author:** AIHubMix
 
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 **Type:** Dify Plugin
 
 ## Overview
 
 Two tools — **Generate Image** and **Edit Image** — that reach the image models AIHubMix serves
-through the gateway's unified image endpoint: GPT Image, Gemini, Qwen-Image, GLM, Wan, Agnes.
+through the gateway's unified image endpoint: GPT Image, Gemini, Qwen-Image, Wan, GLM, Agnes.
 
 There is no per-model tool. The model dropdown is filled from the gateway with your API key,
 and each model's accepted parameters are read from its published schema at call time, so a
 model added to AIHubMix shows up without a plugin update.
+
+## Which models you get
+
+Whatever AIHubMix serves at the moment you open the dropdown — the latest GPT Image, Gemini,
+Qwen Image, Wan, GLM and Agnes releases among them, plus anything the gateway adds later. This
+README deliberately does not reproduce the list: it would be stale the week a new model lands,
+and the dropdown is the authoritative copy.
+
+*Generate Image* offers every image model the gateway marks as schema-verified; *Edit Image*
+narrows that to the ones that accept a source image (a text-only model such as GLM Image is
+left out). Every model on the list at release time was called end to end against the live
+gateway.
 
 ## What that means in practice
 
@@ -55,15 +67,10 @@ format, seed, negative prompt, advanced parameters.
 using an old tool has to be repointed** at *Generate Image* or *Edit Image* and have its model
 picked from the dropdown.
 
-Which models you get is decided by the gateway, not by the plugin: the dropdown carries every
-active image model the gateway marks as schema-verified. At the time of writing that is
-thirteen for *Generate Image* — `gpt-image-2`, `gpt-image-2.5-flare`, `gpt-image-2.5-sunburst`,
-`gemini-2.5-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-image`,
-`gemini-3.1-flash-lite-image`, `qwen-image-2.0`, `qwen-image-2.0-pro`, `wan2.7-image`,
-`wan2.7-image-pro`, `glm-image`, `agnes-image-2.1-flash` — and twelve for *Edit Image*
-(all but `glm-image`, which is text-only). Models 0.1.x could call that are not verified,
-including `imagen-4.0`, `FLUX-1.1-pro`, `dall-e-3`, `gpt-image-1.5` and the Ideogram aliases,
-are not offered; the nearest verified equivalents are `gemini-3-pro-image` and `gpt-image-2`.
+The model on each node comes from the gateway now, not from the plugin, so a few ids 0.1.x could
+call are no longer offered: `imagen-4.0`, `FLUX-1.1-pro`, `dall-e-3`, `gpt-image-1.5` and the
+Ideogram aliases have no verified unified-endpoint schema. Pick the nearest current model from
+the dropdown instead — Gemini for Imagen, GPT Image for DALL·E.
 
 ## Credentials
 
@@ -76,8 +83,9 @@ are not offered; the nearest verified equivalents are `gemini-3-pro-image` and `
   the call, so this only matters if you re-run a very old task.
 * Generation can take a few minutes on large sizes; the plugin polls until the task reaches a
   terminal state and reports the task id if it does not settle in time.
-* `agnes-image-2.1-flash` is the one model that makes *Size* mandatory; the plugin says so
-  before spending a call.
+* A few models make an otherwise optional field mandatory (*Size*, for instance). That is read
+  from the model's own schema, so the plugin says which field is missing before spending a call
+  rather than letting the gateway reject the request.
 * If the gateway cannot be reached the dropdown reports the error rather than falling back to
   a frozen list, so it never silently offers a model that is no longer served.
 
