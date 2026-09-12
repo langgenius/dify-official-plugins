@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 240 240" fill="none">
+  <!-- Square crop of official OpenCode logo (dark: light ink) -->
+  <rect width="240" height="240" rx="28" fill="#1A1717"/>
+  <g transform="translate(0 -30)">
+    <path d="M180 240H60V120H180V240Z" fill="#4B4646"/>
+    <path d="M180 60H60V240H180V60ZM240 300H0V0H240V300Z" fill="#F1ECEC"/>
+  </g>
+</svg>
