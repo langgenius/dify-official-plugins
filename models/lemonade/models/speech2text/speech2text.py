@@ -35,9 +35,18 @@ class LemonadeSpeech2TextModel(OAICompatSpeech2TextModel):
 
         endpoint_url = urljoin(_lemonade_base_url(credentials), "audio/transcriptions")
 
-        language = credentials.get("language") or "en"
-        prompt = credentials.get("initial_prompt") or "convert the audio to text"
-        payload = {"model": model, "language": language, "prompt": prompt}
+        payload = {"model": model}
+        # `language` and `prompt` are optional in the OpenAI transcription API and both
+        # change the output, so only forward them when the user actually configured one.
+        # Sending a hardcoded default made every request claim a language the server may
+        # not support, and injected an unrelated English instruction as the decoder prompt.
+        language = credentials.get("language")
+        if language:
+            payload["language"] = language
+        prompt = credentials.get("initial_prompt")
+        if prompt:
+            payload["prompt"] = prompt
+
         files = [("file", file)]
 
         response = requests.post(
