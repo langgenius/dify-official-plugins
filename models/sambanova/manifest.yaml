@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 type: plugin
 author: langgenius
 name: sambanova
@@ -16,7 +16,8 @@ description:
     LLama4, Qwen and DeepSeek Models.
   pt_BR: SambaCloud provides access to the SambaCloud API, which hosts
     LLama4, Qwen and DeepSeek Models.
-icon: icon_s_en.svg
+icon: icon.png
+icon_dark: icon-dark.png
 resource:
   memory: 268435456
   permission:

@@ -1,4 +1,4 @@
-version: 0.0.7
+version: 0.0.8
 type: plugin
 author: langgenius
 name: nocodb
@@ -12,7 +12,8 @@ description:
   ja_JP: "NocoDB に接続してデータベースレコードを管理し、CRUD操作を実行します"
   zh_Hans: "连接到 NocoDB 以管理数据库记录并执行 CRUD 操作"
   pt_BR: "Conecte-se ao NocoDB para gerenciar registros de banco de dados e executar operações CRUD"
-icon: icon.svg
+icon: icon.png
+icon_dark: icon-dark.png
 resource:
   memory: 268435456
   permission:
