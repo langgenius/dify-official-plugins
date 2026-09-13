@@ -8,6 +8,8 @@ from dify_plugin.errors.model import (InvokeAuthorizationError,
                                       InvokeServerUnavailableError)
 from httpx import Timeout
 
+from models.llm._metadata import apply_dify_metadata_if_enabled
+
 
 class _CommonUpstage:
     def _to_credential_kwargs(self, credentials: Mapping) -> dict:
@@ -17,11 +19,20 @@ class _CommonUpstage:
         :param credentials:
         :return:
         """
+        # Run the opt-in helper so any caller-supplied `extra_headers`
+        # (or the Dify default headers when `enable_request_metadata`
+        # is `"enabled"`) are written into `credentials['extra_headers']`
+        # before we read it back below to populate `default_headers` on
+        # the OpenAI client. The OpenAI SDK forwards every entry of
+        # `default_headers` on each outbound request, which is the
+        # carrier for the Dify observability headers.
+        apply_dify_metadata_if_enabled(credentials)
         credentials_kwargs = {
             "api_key": credentials["upstage_api_key"],
             "base_url": "https://api.upstage.ai/v1/solar",
             "timeout": Timeout(315.0, read=300.0, write=20.0, connect=10.0),
             "max_retries": 1,
+            "default_headers": credentials.get("extra_headers", {}),
         }
 
         return credentials_kwargs
