@@ -405,7 +405,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "oci", specifier = ">=2.175.0" },
     { name = "requests", specifier = ">=2.34.2" },
