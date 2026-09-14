@@ -187,19 +187,45 @@ class TestReActSilentRoundTermination(unittest.TestCase):
         # the final answer is streamed chunk by chunk
         self.assertEqual("".join(self._texts(messages)).strip(), "done")
 
-    def test_action_input_free_text_keeps_json_in_thought(self):
-        # Issue #3861: JSON inside Thought: without an Action: prefix is kept
-        # as thought text rather than misparsed as a tool call or flagged as
-        # a parse failure.
+    def test_unparseable_output_surfaces_error_log(self):
+        # Issue #3699 (2nd scenario): "Action_input: {...}" written as free
+        # text must surface a visible error instead of ending the round
+        # silently; the thought is still used as the final answer.
         raw = 'Thought: I need to search\nAction_input: {"input": "x"}'
         strategy = self._strategy([self._llm_chunks(raw)])
         messages = self._run(strategy)
 
         strategy.session.tool.invoke.assert_not_called()
-        self.assertEqual(self._error_logs(messages), [])
+        error_logs = self._error_logs(messages)
+        self.assertEqual(len(error_logs), 1)
+        self.assertEqual(error_logs[0].message.label, "Action parse failed")
+        self.assertIn(
+            "did not contain a valid Action", error_logs[0].message.data["error"]
+        )
         self.assertEqual(
             self._texts(messages)[-1], 'I need to search\nAction_input: {"input": "x"}'
         )
+
+    def test_line_anchored_action_json_in_thought_retries_instead_of_final_answer(self):
+        # Truncated action JSON on its own line stays in the thought; the
+        # strategy should retry with a format hint instead of ending early.
+        raw = (
+            'Thought: planning\n'
+            '{"action": "getfile", "action_input": {"q": "x"'
+        )
+        strategy = self._strategy(
+            [
+                self._llm_chunks(raw),
+                self._llm_chunks(
+                    'Thought: ok\nAction: {"action": "getfile", "action_input": {"q": "x"}}'
+                ),
+                self._llm_chunks("FinalAnswer: done"),
+            ],
+        )
+        messages = self._run(strategy, maximum_iterations=3)
+
+        strategy.session.tool.invoke.assert_called_once()
+        self.assertEqual("".join(self._texts(messages)).strip(), "done")
 
     def test_direct_answer_without_prefix_still_succeeds(self):
         # A model that answers directly (no tool, no "FinalAnswer:" prefix)
