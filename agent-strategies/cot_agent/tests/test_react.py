@@ -206,6 +206,27 @@ class TestReActSilentRoundTermination(unittest.TestCase):
             self._texts(messages)[-1], 'I need to search\nAction_input: {"input": "x"}'
         )
 
+    def test_line_anchored_action_json_in_thought_retries_instead_of_final_answer(self):
+        # Truncated action JSON on its own line stays in the thought; the
+        # strategy should retry with a format hint instead of ending early.
+        raw = (
+            'Thought: planning\n'
+            '{"action": "getfile", "action_input": {"q": "x"'
+        )
+        strategy = self._strategy(
+            [
+                self._llm_chunks(raw),
+                self._llm_chunks(
+                    'Thought: ok\nAction: {"action": "getfile", "action_input": {"q": "x"}}'
+                ),
+                self._llm_chunks("FinalAnswer: done"),
+            ],
+        )
+        messages = self._run(strategy, maximum_iterations=3)
+
+        strategy.session.tool.invoke.assert_called_once()
+        self.assertEqual("".join(self._texts(messages)).strip(), "done")
+
     def test_direct_answer_without_prefix_still_succeeds(self):
         # A model that answers directly (no tool, no "FinalAnswer:" prefix)
         # must keep working without an error log.

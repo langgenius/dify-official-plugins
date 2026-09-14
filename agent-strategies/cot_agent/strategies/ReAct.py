@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from collections.abc import Generator, Mapping
 from typing import Any, Optional, cast
@@ -42,6 +43,29 @@ class LogMetadata:
     TOTAL_TOKENS = "total_tokens"
 
 ignore_observation_providers = ["wenxin"]
+
+REACT_FORMAT_RETRY_HINT = (
+    "Your previous reply did not include a valid Action (with JSON) or a "
+    "FinalAnswer. Reply again using the required format: Thought: ... then "
+    'either Action: {"action": "<tool>", "action_input": {...}} or '
+    "FinalAnswer: <answer>."
+)
+
+
+def _should_retry_react_format(
+    scratchpad: AgentScratchpadUnit,
+    streamed_final_answer: bool,
+) -> bool:
+    if scratchpad.action or streamed_final_answer:
+        return False
+    thought = scratchpad.thought or ""
+    return bool(
+        re.search(
+            r'\n\s*\{\s*"(?:action|tool|tool_name)"\s*:',
+            thought,
+            flags=re.IGNORECASE,
+        )
+    )
 
 
 class ContextItem(BaseModel):
@@ -217,6 +241,7 @@ class ReActAgentStrategy(AgentStrategy):
             )
             yield model_log
 
+            streamed_final_answer = False
             for react_chunk in react_chunks:
                 if isinstance(react_chunk, AgentScratchpadUnit.Action):
                     action = react_chunk
@@ -231,11 +256,17 @@ class ReActAgentStrategy(AgentStrategy):
                     if react_chunk.parse_failed:
                         round_parse_failed = True
                     if react_chunk.state == ReactState.ANSWER and not scratchpad.action:
+                        streamed_final_answer = True
                         final_answer += chunk
                         yield self.create_text_message(chunk)
                     elif not scratchpad.action:
                         scratchpad.thought = (scratchpad.thought or "") + chunk
             scratchpad.thought = (scratchpad.thought or "").strip()
+            retry_react_format = _should_retry_react_format(
+                scratchpad, streamed_final_answer
+            )
+            if retry_react_format:
+                scratchpad.observation = REACT_FORMAT_RETRY_HINT
             agent_scratchpad.append(scratchpad)
 
             # get llm usage
@@ -273,6 +304,8 @@ class ReActAgentStrategy(AgentStrategy):
             if not scratchpad.action:
                 if final_answer:
                     final_answer_already_streamed = True
+                elif retry_react_format:
+                    run_agent_state = True
                 else:
                     final_answer = scratchpad.thought
                     final_answer_already_streamed = False
