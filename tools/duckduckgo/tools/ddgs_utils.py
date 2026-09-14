@@ -7,7 +7,13 @@ from typing import Any
 from ddgs import DDGS
 from ddgs.exceptions import DDGSException
 
+from tools import ddgs_hardening
+
 logger = logging.getLogger(__name__)
+
+# Pin a desktop fingerprint, add the Yahoo mobile-layout parser, record per-engine
+# diagnostics and engine cooldowns. Measurements and switches: tools/ddgs_hardening.py.
+ddgs_hardening.apply()
 
 MAX_ATTEMPTS = 3
 # Exponential backoff between attempts: 2s, 4s (each plus up to 1s of jitter).
@@ -77,20 +83,36 @@ def search_with_retry(
         kwargs["backend"] = backend.strip()
 
     last_error: DDGSException | None = None
+    user_pinned_backend = "backend" in kwargs
+    ddgs_hardening.clear_diagnostics(query)
+    attempt_history: list[str] = []
     for attempt in range(1, MAX_ATTEMPTS + 1):
         _wait_for_slot()
+        attempt_started = time.monotonic()
+        attempt_kwargs = dict(kwargs)
+        if not user_pinned_backend:
+            # Leave out engines that just rate-limited / blocked us, so this attempt is not
+            # spent on engines that cannot answer (ddgs 'auto' would retry them all).
+            healthy = ddgs_hardening.healthy_backend(category)
+            if healthy:
+                attempt_kwargs["backend"] = healthy
         try:
             client = DDGS(proxy=proxy, timeout=REQUEST_TIMEOUT_SECONDS)
-            return getattr(client, category)(query, **kwargs)
+            return getattr(client, category)(query, **attempt_kwargs)
         except DDGSException as ex:
             last_error = ex
+            engines_seen = ddgs_hardening.summarize(
+                ddgs_hardening.diagnostics_for(query, since=attempt_started)
+            )
+            attempt_history.append(f"attempt {attempt}: {engines_seen}")
             logger.warning(
-                "ddgs %s search attempt %d/%d failed for %r: %r",
+                "ddgs %s search attempt %d/%d failed for %r: %r [engines: %s]",
                 category,
                 attempt,
                 MAX_ATTEMPTS,
                 query,
                 ex,
+                engines_seen,
             )
             if attempt < MAX_ATTEMPTS:
                 time.sleep(_retry_delay(attempt))
@@ -107,4 +129,6 @@ def search_with_retry(
         )
     else:
         message = f"DuckDuckGo {category} search failed after {MAX_ATTEMPTS} attempts: {last_error}"
+    if attempt_history:
+        message += " Engine responses per attempt: " + " | ".join(attempt_history) + "."
     raise DDGSException(message) from last_error
