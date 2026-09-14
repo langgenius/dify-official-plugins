@@ -17,6 +17,9 @@ resource:
     model:
       enabled: true
       llm: true
+network:
+  domains:
+    - opencode.ai
 plugins:
   models:
     - provider/opencode_go.yaml
