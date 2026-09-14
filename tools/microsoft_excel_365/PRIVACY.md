@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective Date: July 18, 2025**
+**Effective Date: September 15, 2026**
 
 This Privacy Policy explains how we collect, use, and protect your information when you use the Microsoft Excel 365 Plugin for Dify.
 
@@ -18,7 +18,15 @@ We are committed to ensuring the security of your data. All communications with 
 
 ## Third-Party Services
 
-This plugin interacts with Microsoft Excel 365 via Microsoft Graph API. The plugin requires OAuth2 authentication and uses the following scopes: `Files.ReadWrite` for reading and writing Excel files, and `offline_access` for maintaining access to your data. Please refer to Microsoft's privacy policy for details on how your data is handled by Microsoft Excel 365 services.
+This plugin interacts with Microsoft Excel 365 via Microsoft Graph API. The plugin requires OAuth2 authentication and requests the following delegated scopes:
+
+- `offline_access`: maintain access to your data after the access token expires, without asking you to sign in again.
+- `User.Read`: read your basic profile, used only to verify that the connection works.
+- `Files.ReadWrite`: read and write the Excel workbooks in your own OneDrive.
+- `Files.ReadWrite.All`: read and write Excel workbooks that are stored outside your own OneDrive, such as in a SharePoint site you already have access to. This scope is limited to files that you can access yourself.
+- `Sites.Read.All`: read access to SharePoint sites you can already reach, used when the optional `site_id` parameter targets a site drive.
+
+These permissions are used only to carry out the operations you invoke through the plugin's tools. Please refer to Microsoft's privacy policy for details on how your data is handled by Microsoft Excel 365 services.
 
 ## Changes to This Policy
 
@@ -28,4 +36,4 @@ We may update this Privacy Policy from time to time. Any changes will be posted 
 
 If you have any questions or concerns about this Privacy Policy, please contact the developer [hello@dify.ai](mailto:hello@dify.ai) or refer to the project repository for more information.
 
-Last updated: July 18, 2025
+Last updated: September 15, 2026
