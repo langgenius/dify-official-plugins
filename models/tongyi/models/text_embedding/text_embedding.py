@@ -90,24 +90,17 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             indices += [i]
         batched_embeddings = []
         _iter = range(0, len(inputs), max_chunks)
-        session = requests.Session()
-        try:
-            for i in _iter:
-                (embeddings_batch, embedding_used_tokens) = self.embed_documents(
-                    credentials_kwargs=credentials_kwargs,
-                    model=model,
-                    texts=inputs[i : i + max_chunks],
-                    base_address=http_base_address,
-                    session=session,
-                )
-                used_tokens += embedding_used_tokens
-                batched_embeddings += embeddings_batch
-            usage = self._calc_response_usage(
-                model=model, credentials=credentials, tokens=used_tokens
+        for i in _iter:
+            (embeddings_batch, embedding_used_tokens) = self.embed_documents(
+                credentials_kwargs=credentials_kwargs,
+                model=model,
+                texts=inputs[i : i + max_chunks],
+                base_address=http_base_address,
             )
-            return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
-        finally:
-            session.close()
+            used_tokens += embedding_used_tokens
+            batched_embeddings += embeddings_batch
+        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=used_tokens)
+        return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
@@ -133,7 +126,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param credentials: model credentials
         :return:
         """
-        session = requests.Session()
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
             http_base_address = get_http_base_address(credentials)
@@ -142,12 +134,9 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 model=model,
                 texts=["ping"],
                 base_address=http_base_address,
-                session=session,
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-        finally:
-            session.close()
 
     @staticmethod
     def embed_documents(
@@ -155,7 +144,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         model: str,
         texts: list[str],
         base_address: str,
-        session: requests.Session,
     ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
@@ -163,7 +151,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             texts: The list of texts to embed.
-            session: The requests session for this invocation.
 
         Returns:
             List of embeddings, one for each text, and tokens usage.
@@ -178,7 +165,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 model,
                 documents,
                 base_address,
-                session,
             )
 
         embeddings = []
@@ -191,7 +177,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     model=model,
                     input=[{"text": text}],
                     base_address=base_address,
-                    session=session,
                 )
             else:
                 return dashscope.TextEmbedding.call(
@@ -201,7 +186,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     headers=BURY_POINT_HEADER,
                     text_type="document",
                     base_address=base_address,
-                    session=session,
                 )
 
         for text in texts:
@@ -304,27 +288,18 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         """
         http_base_address = get_http_base_address(credentials)
         credentials_kwargs = self._to_credential_kwargs(credentials)
-        session = requests.Session()
-        try:
-            (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
-                credentials_kwargs=credentials_kwargs,
-                model=model,
-                documents=documents,
-                base_address=http_base_address,
-                session=session,
-            )
-            usage = self._calc_response_usage(
-                model=model,
-                credentials=credentials,
-                tokens=embedding_used_tokens,
-            )
-            return MultiModalEmbeddingResult(
-                model=model,
-                embeddings=embeddings_batch,
-                usage=usage,
-            )
-        finally:
-            session.close()
+        (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
+            credentials_kwargs=credentials_kwargs,
+            model=model,
+            documents=documents,
+            base_address=http_base_address,
+        )
+        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
+        return MultiModalEmbeddingResult(
+            model=model,
+            embeddings=embeddings_batch,
+            usage=usage,
+        )
 
     @staticmethod
     def embed_multimodal_documents(
@@ -332,7 +307,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         model: str,
         documents: list[MultiModalContent],
         base_address: str,
-        session: requests.Session,
     ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
@@ -340,7 +314,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             documents: The list of documents to embed.
-            session: The requests session for this invocation.
 
         Returns:
             List of embeddings, one for each text, and tokens usage.
@@ -377,7 +350,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 model=model,
                 input=[input],
                 base_address=base_address,
-                session=session,
             )
 
         for document in documents:

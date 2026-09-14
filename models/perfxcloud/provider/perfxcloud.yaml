@@ -19,9 +19,13 @@ help:
   url:
     en_US: https://cloud.perfxlab.cn/panel/token
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.png
+icon_large_dark:
+  en_US: icon-dark.png
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.png
+icon_small_dark:
+  en_US: icon-dark.png
 label:
   en_US: PerfXCloud
   zh_Hans: PerfXCloud

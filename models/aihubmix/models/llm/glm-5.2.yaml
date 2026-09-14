@@ -7,6 +7,7 @@ features:
   - tool-call
   - stream-tool-call
   - multi-tool-call
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1000000
@@ -19,8 +20,8 @@ parameter_rules:
     default: false
     required: false
     help:
-      zh_Hans: 控制模型的推理能力。
-      en_US: Controls the model's thinking capability.
+      zh_Hans: 官方的思考开关，对象形式 {"type":"enabled"/"disabled"}；插件会把这个布尔值翻译成对象再发出。线上实测开启产生 381 个推理 token，关闭后一个都不产生。
+      en_US: The official thinking switch, an object of the form {"type":"enabled"/"disabled"}; the plugin translates this boolean into that object. Verified on the gateway - on it spends 381 reasoning tokens, off it spends none.
   - name: thinking_budget
     label:
       zh_Hans: 推理预算
@@ -30,6 +31,27 @@ parameter_rules:
     min: 0
     max: 32000
     required: false
+    help:
+      zh_Hans: 思考阶段的 token 上限，线上实测精确封顶（传 64 实际就只花 64 个推理 token）。
+      en_US: Caps the tokens spent on thinking. Verified on the gateway - a budget of 64 spends exactly 64 reasoning tokens.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 公网投影收录的官方枚举 none/minimal/low/medium/high/xhigh/max，默认 max；线上实测 none 不再产生推理 token，max 与 minimal 均产生 reasoning_content。
+      en_US: The public projection records the official enum none/minimal/low/medium/high/xhigh/max with the default max. Verified on the gateway - none stops reasoning tokens, while max and minimal both return reasoning_content.
+    required: false
+    default: max
+    options:
+      - none
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
   - name: temperature
     use_template: temperature
   - name: top_p
@@ -38,7 +60,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 128000
+    max: 131072
   - name: response_format
     label:
       zh_Hans: 回复格式

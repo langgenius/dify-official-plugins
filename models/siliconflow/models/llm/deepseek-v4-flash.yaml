@@ -73,7 +73,8 @@ parameter_rules:
       - high
       - max
 pricing:
-  input: "1"
-  output: "2"
+  # Standard China endpoint rates; off-peak discounts are not represented.
+  input: "3"
+  output: "9"
   unit: "0.000001"
   currency: RMB

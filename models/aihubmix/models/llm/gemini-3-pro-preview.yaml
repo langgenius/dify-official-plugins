@@ -10,11 +10,12 @@ features:
   - vision
   - audio
   - video
+  - structured-output
 model_properties:
   mode: chat
   context_size: 8192
 parameter_rules:
-  - name: thinking
+  - name: thinking_mode
     label:
       zh_Hans: 推理模式
       en_US: Thinking Mode
@@ -22,8 +23,8 @@ parameter_rules:
     default: false
     required: false
     help:
-      zh_Hans: 控制模型的推理能力。
-      en_US: Controls the model's thinking capability.
+      zh_Hans: 控制模型的推理能力。关闭时思考预算置 0，开启时交给模型动态分配。
+      en_US: Controls the model's thinking capability. Off sets the thinking budget to 0; on lets the model allocate it dynamically.
   - name: thinking_budget
     label:
       zh_Hans: 推理预算
