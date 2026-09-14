@@ -32,6 +32,8 @@ from .call_api import patched_call_api
 from oci.base_client import BaseClient 
 BaseClient.call_api = patched_call_api
 
+from models.llm._metadata import apply_dify_metadata_if_enabled
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -274,8 +276,8 @@ class OCILargeLanguageModel(LargeLanguageModel):
                 chat_request.tools = Convertor().convert_tools_to_generic(tools)
         
         chat_detail.chat_request = chat_request
-        body = client.base_client.sanitize_for_serialization(chat_detail) 
-        
+        body = client.base_client.sanitize_for_serialization(chat_detail)
+
         if "isStream" in body["chatRequest"]:
             if body["chatRequest"]["isStream"]:
                 body["chatRequest"]["streamOptions"] = {"isIncludeUsage": True}
@@ -283,15 +285,35 @@ class OCILargeLanguageModel(LargeLanguageModel):
             body["chatRequest"]["reasoning_effort"] = model_parameters.get("reasoning_effort")
         body = json.dumps(body)
         logging.debug("Request body:  "+body)
-        
+
+        # Run the opt-in helper so any caller-supplied `extra_headers`
+        # (or the Dify default headers when `enable_request_metadata`
+        # is `"enabled"`) are written into `credentials['extra_headers']`
+        # before we read it back below to merge into the SDK's
+        # `header_params` dict. The OCI base client forwards every
+        # entry of `header_params` on the outbound request, which is
+        # the carrier for the Dify observability headers.
+        apply_dify_metadata_if_enabled(credentials)
+        header_params = {
+            "accept": "application/json, text/event-stream",
+            "content-type": "application/json",
+        }
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            # Merge caller-supplied extra headers into the request
+            # headers. Caller-supplied keys lose to the SDK-required
+            # `accept` / `content-type` keys so the request format
+            # stays correct; Dify keys (if any) are merged alongside.
+            for k, v in extra_headers.items():
+                if k.lower() in {"accept", "content-type"}:
+                    continue
+                header_params[k] = v
+
         response = client.base_client.call_api(
             resource_path="/actions/chat",
             method="POST",
             operation_name="chat",
-            header_params={
-                "accept": "application/json, text/event-stream",
-                "content-type": "application/json"
-            },
+            header_params=header_params,
             body=body,
             #response_type="ChatResult"
             )
