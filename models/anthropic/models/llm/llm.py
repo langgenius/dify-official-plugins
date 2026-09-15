@@ -753,8 +753,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _parse_json_schema(raw: Any) -> Optional[dict[str, Any]]:
         """Parse the Dify-provided ``json_schema`` parameter into a schema dict.
 
-        Dify passes the schema as a JSON string (ParameterType.TEXT). Returns
-        ``None`` when no usable schema was provided.
+        Accept a raw schema or Dify's ``{"schema": ..., "name": ...}``
+        envelope, as a JSON string (ParameterType.TEXT) or dict. Returns
+        ``None`` when no schema was provided.
 
         Raises:
             ValueError: if the value is not a valid non-empty JSON object.
@@ -773,6 +774,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             schema = raw
         else:
             raise ValueError(f"Unsupported json_schema type: {type(raw).__name__}")
+        # Dify's native structured-output path wraps non-Gemini/Ollama schemas.
+        # Match Dify's fixed name marker as well as the envelope's keys to
+        # preserve raw schemas using "schema" and "name" as custom keywords.
+        if (
+            isinstance(schema, dict)
+            and set(schema) == {"schema", "name"}
+            and isinstance(schema["name"], str)
+            and schema["name"] == "llm_response"
+        ):
+            schema = schema["schema"]
         if not isinstance(schema, dict) or not schema:
             raise ValueError("Invalid json_schema: must be a non-empty JSON object")
         return schema
