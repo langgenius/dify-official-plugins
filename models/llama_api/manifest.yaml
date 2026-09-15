@@ -1,4 +1,4 @@
-version: 0.0.8
+version: 0.0.9
 type: plugin
 author: langgenius
 name: llama-api
@@ -28,7 +28,7 @@ plugins:
   models:
     - provider/llama-api.yaml
 meta:
-  version: 0.0.3
+  version: 0.0.4
   arch:
     - amd64
     - arm64
