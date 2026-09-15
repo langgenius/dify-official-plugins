@@ -1,4 +1,5 @@
 test_local.py
+test_session_id.py
 __pycache__/
 *.pyc
 .venv/

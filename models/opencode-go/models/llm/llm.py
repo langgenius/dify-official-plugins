@@ -3,7 +3,7 @@ import re
 import uuid
 from typing import Generator, Optional, Union
 
-from dify_plugin import OAICompatLargeLanguageModel
+from dify_plugin import OAICompatLargeLanguageModel, get_current_session
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -110,17 +110,36 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         )
 
     @classmethod
+    def _current_conversation_id(cls) -> Optional[str]:
+        try:
+            session = get_current_session()
+        except Exception:
+            return None
+        if session is None:
+            return None
+        conv = (session.conversation_id or "").strip()
+        return conv or None
+
+    @classmethod
     def _build_session_id(cls, user: Optional[str], credentials: dict) -> str:
         """Build a collision-resistant, per-conversation-stable session id.
 
-        OpenCode Go asks clients to send a stable session id for routing /
-        prompt-cache affinity. Bare Dify user ids are often short
-        (est-user / 20162097) and can collide across workspaces, so we
-        namespace with a per-process client id.
+        OpenCode Go asks clients to send a stable session id per conversation
+        for routing / prompt-cache affinity. Prefer Dify's conversation_id
+        (a UUID, random and stable within one chat). Fall back to process +
+        user only when conversation context is missing (validate_credentials,
+        completion apps, etc.).
         """
         explicit = str(credentials.get("session_id") or "").strip()
         if explicit:
             return explicit
+
+        conversation = re.sub(
+            r"[^A-Za-z0-9._-]+", "-", cls._current_conversation_id() or ""
+        ).strip("-._")[:64]
+        if len(conversation) >= 4:
+            # stable for this conversation; unique across installs via client id
+            return f"dify-opencode-go/{_CLIENT_ID[:16]}/{conversation}"
 
         raw = (user or "").strip()
         user_part = re.sub(r"[^A-Za-z0-9._-]+", "-", raw).strip("-._")[:32]
