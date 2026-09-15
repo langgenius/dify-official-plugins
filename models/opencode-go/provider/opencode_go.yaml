@@ -1,0 +1,168 @@
+background: "#0B0F14"
+configurate_methods:
+  - predefined-model
+  - customizable-model
+description:
+  en_US: OpenCode Go is a $10/month subscription gateway for curated open coding models (GLM, Kimi, DeepSeek, MiMo, MiniMax, Qwen, LongCat, Hy, and more).
+  zh_Hans: OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型（GLM、Kimi、DeepSeek、MiMo、MiniMax、Qwen、LongCat、Hy 等）。
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+    provider_source: provider/opencode_go.py
+help:
+  title:
+    en_US: Get your API Key from OpenCode
+    zh_Hans: 从 OpenCode 获取 API Key
+  url:
+    en_US: https://opencode.ai/auth
+icon_large:
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+label:
+  en_US: OpenCode Go
+  zh_Hans: OpenCode Go
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter model id, e.g. kimi-k2.6
+      zh_Hans: 输入模型 ID，例如 kimi-k2.6
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your OpenCode Go API Key
+        zh_Hans: 在此输入你的 OpenCode Go API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: text-input
+      required: false
+      default: https://opencode.ai/zen/go/v1
+    - variable: context_size
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: false
+      default: "262144"
+    - variable: max_tokens
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      required: false
+      default: "32768"
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: function_calling_type
+      label:
+        en_US: Function calling
+        zh_Hans: Function Calling
+      type: select
+      required: false
+      default: tool_call
+      options:
+        - label:
+            en_US: Support
+            zh_Hans: 支持
+          value: tool_call
+        - label:
+            en_US: Not Support
+            zh_Hans: 不支持
+          value: no_call
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: vision_support
+      label:
+        en_US: Vision support
+        zh_Hans: 视觉支持
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+provider: opencode_go
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your OpenCode Go API Key
+        zh_Hans: 在此输入你的 OpenCode Go API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: text-input
+      required: false
+      default: https://opencode.ai/zen/go/v1
+      placeholder:
+        en_US: https://opencode.ai/zen/go/v1
+        zh_Hans: https://opencode.ai/zen/go/v1
+    - variable: user_agent
+      label:
+        en_US: User-Agent
+        zh_Hans: User-Agent
+      type: text-input
+      required: false
+      default: dify-opencode-go-plugin/0.1.0
+      placeholder:
+        en_US: dify-opencode-go-plugin/0.1.0
+        zh_Hans: dify-opencode-go-plugin/0.1.0
+    - variable: session_id
+      label:
+        en_US: Session ID (optional)
+        zh_Hans: 会话 ID（可选）
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Leave empty to auto-generate dify-opencode-go/<client>/<user>
+        zh_Hans: 留空则自动生成 dify-opencode-go/<client>/<user>
+      help:
+        title:
+          en_US: x-opencode-session header
+          zh_Hans: x-opencode-session 请求头
+        text:
+          en_US: |-
+            OpenCode Go uses this header for routing and prompt-cache affinity.
+            Leave blank — the plugin sends a collision-resistant id:
+            dify-opencode-go/<client-id>/<dify-user>.
+          zh_Hans: |-
+            OpenCode Go 用该请求头做路由与 prompt cache。建议留空，插件会自动发送
+            dify-opencode-go/<client-id>/<dify-user>，避免与他人短 ID 冲突。
+supported_model_types:
+  - llm
