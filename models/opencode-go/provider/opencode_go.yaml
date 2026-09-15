@@ -150,8 +150,8 @@ provider_credential_schema:
       type: text-input
       required: false
       placeholder:
-        en_US: Leave empty to auto-generate dify-opencode-go/<client>/<user>
-        zh_Hans: 留空则自动生成 dify-opencode-go/<client>/<user>
+        en_US: Leave empty to auto-generate dify-opencode-go/<client>/<conversation>
+        zh_Hans: 留空则自动生成 dify-opencode-go/<client>/<conversation>
       help:
         title:
           en_US: x-opencode-session header
@@ -160,9 +160,11 @@ provider_credential_schema:
           en_US: |-
             OpenCode Go uses this header for routing and prompt-cache affinity.
             Leave blank — the plugin sends a collision-resistant id:
-            dify-opencode-go/<client-id>/<dify-user>.
+            dify-opencode-go/<client-id>/<dify-conversation-id>.
+            Same conversation keeps the same id; different conversations differ.
           zh_Hans: |-
             OpenCode Go 用该请求头做路由与 prompt cache。建议留空，插件会自动发送
-            dify-opencode-go/<client-id>/<dify-user>，避免与他人短 ID 冲突。
+            dify-opencode-go/<client-id>/<dify-conversation-id>，
+            同一对话稳定、不同对话不同，避免与他人短 ID 冲突。
 supported_model_types:
   - llm

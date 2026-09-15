@@ -10,7 +10,7 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 - 支持自定义模型，便于接入官方新增的 model id
 - 自动发送 OpenCode 要求的请求头：
   - `User-Agent`（标识客户端）
-  - `x-opencode-session`（会话路由 / prompt cache）
+  - `x-opencode-session`（会话路由 / prompt cache）：`dify-opencode-go/<client-id>/<dify-conversation-id>`，**按对话稳定**；Dify 未提供 conversation_id 时才回退到按用户。可选覆盖：供应商凭证 `session_id`。
 - 默认 Base URL：`https://opencode.ai/zen/go/v1`
 
 ## 使用步骤
