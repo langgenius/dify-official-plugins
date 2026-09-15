@@ -5,6 +5,8 @@ from typing import cast, Optional, Union
 
 import openai
 
+from ._metadata import apply_dify_metadata_if_enabled
+
 from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType
@@ -60,10 +62,19 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
         :param credentials:
         :return:
         """
+        # Run the opt-in helper so any caller-supplied `extra_headers`
+        # (or the Dify default headers when `enable_request_metadata`
+        # is `"enabled"`) are written into `credentials['extra_headers']`
+        # before we read it back below to populate `default_headers` on
+        # the OpenAI client. The OpenAI SDK forwards every entry of
+        # `default_headers` on each outbound request, which is the
+        # carrier for the Dify observability headers.
+        apply_dify_metadata_if_enabled(credentials)
         credentials_kwargs = {
             "api_key": credentials["llama_api_key"],
             "base_url": "https://api.llama.com/compat/v1",
             "max_retries": 1,
+            "default_headers": credentials.get("extra_headers", {}),
         }
 
         return credentials_kwargs
