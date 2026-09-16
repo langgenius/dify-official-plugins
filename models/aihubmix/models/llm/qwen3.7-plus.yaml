@@ -11,7 +11,7 @@ features:
   - video
 model_properties:
   mode: chat
-  context_size: 1014784
+  context_size: 1000000
 parameter_rules:
   - name: enable_thinking
     required: false
@@ -36,7 +36,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '2'
-  output: '8'
+  input: '0.282'
+  output: '1.128'
   unit: '0.000001'
   currency: RMB

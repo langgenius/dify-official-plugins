@@ -58,10 +58,10 @@ def _positions() -> list[str]:
 def test_every_new_model_is_registered() -> None:
     positions = _positions()
 
-    # Pinned so the PR's stated totals stay checkable: this branch adds 31 schemas on top of
-    # the 195 `_position.yaml` already carried and retires 12, leaving 214 registered ids.
+    # Pinned so the PR's stated totals stay checkable: the top-100 branch left 214 registered
+    # ids; the 2026-09 aihubmix-canon sync then adds 70 and retires 15, leaving 269.
     assert len(NEW_MODELS) == 31
-    assert len(positions) == 214
+    assert len(positions) == 269
     assert len(positions) == len(set(positions))
     # Every registered id must have a schema behind it and every schema must be registered.
     # The comparison is on the declared `model:` id, not the filename - several schemas are
@@ -363,10 +363,14 @@ def test_boolean_thinking_is_sent_as_the_official_object() -> None:
 
 
 def test_gemini_thinking_toggle_uses_the_name_google_py_reads() -> None:
-    # google.py's _set_thinking_config reads thinking_mode, not thinking.
-    names = {rule["name"] for rule in _schema("gemini-3-pro-preview")["parameter_rules"]}
-    assert "thinking_mode" in names
-    assert "thinking" not in names
+    # google.py's _set_thinking_config reads thinking_mode, not thinking. The one schema that
+    # exposed the toggle (gemini-3-pro-preview) was retired by the 2026-09 catalog sync, so the
+    # guard is the inverse: no google-routed schema may carry a bare `thinking` rule that
+    # google.py would silently ignore.
+    for path in sorted(MODEL_DIR.glob("gemini-*.yaml")):
+        schema = yaml.safe_load(path.read_text(encoding="utf-8"))
+        names = {rule["name"] for rule in schema.get("parameter_rules") or []}
+        assert "thinking" not in names, path.name
     assert 'thinking_mode = model_parameters.get("thinking_mode", None)' in (
         MODEL_DIR / "google.py"
     ).read_text(encoding="utf-8")
@@ -449,7 +453,6 @@ def test_structured_output_flag_follows_the_json_schema_rule() -> None:
         "agnes-2.5-pro-alpha",
         "agnes-3.0-flash",
         "deepseek-v4-flash-0731-fast",
-        "gemini-3-pro-preview",
         "glm-5.2",
         "glm-5.2-fast-preview",
         "gpt-5.5-pro",

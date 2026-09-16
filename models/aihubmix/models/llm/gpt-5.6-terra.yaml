@@ -85,7 +85,7 @@ parameter_rules:
     required: true
     default: true
 pricing:
-  input: '2.5'
-  output: '15'
+  input: '2'
+  output: '12'
   unit: '0.000001'
   currency: USD

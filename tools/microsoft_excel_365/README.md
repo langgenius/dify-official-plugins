@@ -1,7 +1,6 @@
 # Microsoft Excel 365 Plugin
 
 **Author**: langgenius  
-**Version**: 0.1.0  
 **Type**: tool  
 
 ## Introduction
@@ -50,10 +49,15 @@ This plugin supports comprehensive Excel 365 operations including:
 5. Configure API Permissions:
     - Go to "API permissions"
     - Click "Add a permission" → "Microsoft Graph"
-    - Add the following permissions:
-        - `Files.ReadWrite` (Delegated)
-        - `offline_access` (Delegated)
+    - Add the following permissions — all **Delegated**, and they must match the scopes requested by the plugin:
+        - `offline_access`
+        - `User.Read`
+        - `Files.ReadWrite`
+        - `Files.ReadWrite.All`
+        - `Sites.Read.All`
     - Grant admin consent if required
+
+    > Every permission above is listed as *Admin consent required: No* in the [Microsoft Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference). If your tenant still shows a "Need admin approval" screen during authorization, the tenant's [user consent settings](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-user-consent) restrict user consent, and an administrator has to consent on behalf of the organization.
 
 6. Configure the plugin in Dify:
     - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Azure Portal.
@@ -66,12 +70,14 @@ This plugin supports comprehensive Excel 365 operations including:
 
 ## Scopes (Hard-coded)
 
-The plugin uses the following Microsoft Graph scopes (hard-coded in the provider):
-- `Files.ReadWrite`: Read and write user's files
+The plugin uses the following Microsoft Graph delegated scopes (hard-coded in the provider):
 - `offline_access`: Maintain access to data you have given it access to
-- `Sites.Read.All`: Read SharePoint site collections and related files/drives (required for accessing SharePoint Site drives)
+- `User.Read`: Sign in and read the user profile (used by the credential validation call `GET /me`)
+- `Files.ReadWrite`: Read and write user's files
+- `Files.ReadWrite.All`: Read and write all files the signed-in user can access (required for writing to SharePoint Site drives)
+- `Sites.Read.All`: Read SharePoint site collections and related files/drives (requested since `site_id` support was added; the drive endpoints accept it as an alternative to `Files.ReadWrite.All`)
 
-Note: Scopes are defined in `provider/microsoft_excel365.py` and requested during OAuth.
+Note: Scopes are defined in `provider/microsoft_excel365.py` and requested during OAuth. They must be registered as API permissions on the Azure app registration as well; otherwise Entra ID asks for consent again on every authorization.
 
 ## SharePoint Site Support (site_id)
 
@@ -81,6 +87,7 @@ If you need to access or edit files that live under a SharePoint Site, you can p
 
 - When to use: only when you need to access/edit content inside a SharePoint Site.
 - How to find: obtain the Site’s ID from Microsoft Graph or the SharePoint admin/UI as appropriate. Quick tip: append `/_api/site/id` to your SharePoint site URL (e.g., `https://yourdomain.sharepoint.com/sites/YourSite/_api/site/id`) to get the `site_id`.
+- Required permissions: `Sites.Read.All` alone only allows reading. The writing tools (`write_worksheet_data`, `clear_worksheet_data`, `create_worksheet`) also need `Files.ReadWrite.All`, because `Files.ReadWrite` is limited to the signed-in user's own OneDrive.
 
 Tools that accept `site_id` (optional):
 - list_all_files
@@ -169,4 +176,4 @@ Search for specific values in an Excel worksheet.
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
 
-Last updated: August 11, 2025
+Last updated: September 15, 2026

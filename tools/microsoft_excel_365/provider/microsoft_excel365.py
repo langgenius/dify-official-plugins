@@ -19,8 +19,21 @@ class Excel365Provider(ToolProvider):
     _AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
     _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
-    # Hardcoded SCOPE - includes file read/write and offline access permissions
-    _SCOPES = "Files.ReadWrite offline_access Sites.Read.All"
+    # Hardcoded SCOPE - every scope the tools rely on at runtime must be listed here,
+    # and every scope listed here must also be granted on the Azure app registration:
+    # a missing scope makes Microsoft Graph reject the call, while requesting a scope
+    # the app registration never had consented sends the user through consent again.
+    # - User.Read: least privileged permission for the `GET /me` validation call
+    # - Files.ReadWrite: read/write workbooks in the signed-in user's OneDrive
+    # - Files.ReadWrite.All: read/write workbooks outside the user's own OneDrive,
+    #   which is what the `site_id` parameter targets
+    # - Sites.Read.All: kept for SharePoint access; the drive endpoints accept it as an
+    #   alternative to Files.ReadWrite.All and it has been requested since `site_id`
+    #   support was added, so dropping it would be a separate, testable change
+    # - offline_access: obtain a refresh token
+    _SCOPES = (
+        "offline_access User.Read Files.ReadWrite Files.ReadWrite.All Sites.Read.All"
+    )
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
@@ -102,12 +115,15 @@ class Excel365Provider(ToolProvider):
         if not refresh_token:
             raise ToolProviderOAuthError("No refresh token available")
 
+        # No `scope` here on purpose: on the refresh leg it has to be equivalent to or a
+        # subset of the scopes of the original authorization request, so sending the
+        # current _SCOPES would break connections that were authorized with an older,
+        # narrower set. Omitting it returns a token for everything already consented.
         data = {
             "client_id": system_credentials["client_id"],
             "client_secret": system_credentials["client_secret"],
             "refresh_token": refresh_token,
             "grant_type": "refresh_token",
-            "scope": self._SCOPES,  # Use hardcoded SCOPE
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
