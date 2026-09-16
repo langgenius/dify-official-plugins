@@ -3,7 +3,12 @@ test_session_id.py
 test_session_runtime.py
 test_extra_headers.py
 test_backward_compat_002.py
+test_protocol_routing.py
+test_smoke_live.py
 debug_remote.py
+PROTOCOL_ADAPTER_PLAN.md
+PR_DESCRIPTION.md
+docs/
 __pycache__/
 *.pyc
 .venv/

@@ -1,9 +1,17 @@
-import json
-import logging
-import re
-import uuid
-from typing import Any, Generator, Optional, Union
+"""OpenCode Go LLM provider — single entry that routes chat / Anthropic / Responses.
 
+dify_plugin registers one LargeLanguageModel class per ModelType (last source
+wins), so protocol selection must live inside this class rather than three
+model_sources.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import Generator, Mapping
+from typing import Any, Optional, Union
+
+import requests
 from dify_plugin import OAICompatLargeLanguageModel, get_current_session
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -15,51 +23,76 @@ from dify_plugin.entities.model import (
     ParameterRule,
     ParameterType,
 )
-from dify_plugin.entities.model.llm import LLMMode, LLMResult
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
-from dify_plugin.errors.model import InvokeError
+from dify_plugin.entities.model.llm import (
+    LLMMode,
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    PromptMessage,
+    PromptMessageTool,
+)
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+)
+
+try:
+    from models.llm import llm_anthropic, llm_responses, session_headers
+    from models.llm.session_headers import (
+        DEFAULT_ENDPOINT_URL,
+        DEFAULT_USER_AGENT,
+        ANTHROPIC_MODELS,
+        RESPONSES_MODELS,
+        _RUN_ID_HEADER,
+        add_custom_parameters,
+        apply_extra_headers,
+        build_session_id,
+        current_conversation_id,
+        current_rpc_session_id,
+        extra_headers_rule,
+        is_resolved_id,
+        join_endpoint_url,
+        parse_extra_headers,
+        public_headers_for_protocol,
+        resolve_protocol,
+    )
+except ImportError:  # pragma: no cover - importlib standalone load
+    import llm_anthropic
+    import llm_responses
+    import session_headers
+    from session_headers import (
+        DEFAULT_ENDPOINT_URL,
+        DEFAULT_USER_AGENT,
+        ANTHROPIC_MODELS,
+        RESPONSES_MODELS,
+        _RUN_ID_HEADER,
+        add_custom_parameters,
+        apply_extra_headers,
+        build_session_id,
+        current_conversation_id,
+        current_rpc_session_id,
+        extra_headers_rule,
+        is_resolved_id,
+        join_endpoint_url,
+        parse_extra_headers,
+        public_headers_for_protocol,
+        resolve_protocol,
+    )
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ENDPOINT_URL = "https://opencode.ai/zen/go/v1"
-DEFAULT_USER_AGENT = "dify-opencode-go-plugin/0.1.0"
-# Internal only — consumed by the plugin, never sent upstream.
-_RUN_ID_HEADER = "x-dify-run-id"
-
-
-def _extra_headers_rule() -> ParameterRule:
-    return ParameterRule(
-        name="extra_headers",
-        label=I18nObject(en_us="Extra Headers", zh_hans="额外请求头"),
-        help=I18nObject(
-            en_us=(
-                "Recommended: enable this parameter and keep the default JSON. "
-                "It auto-selects Chatflow conversation id vs Workflow run id "
-                "for OpenCode routing / prompt cache. If left disabled, sessions "
-                "are still isolated per invoke (may split one workflow run "
-                "across multiple LLM nodes)."
-            ),
-            zh_hans=(
-                "建议开启本参数并保留默认 JSON。"
-                "会自动选择 Chatflow 会话 ID 或工作流运行 ID，"
-                "用于 OpenCode 路由与 prompt cache。"
-                "若不开启，仍会按次隔离会话，但同一次工作流内多个 LLM 节点可能各用各的 session。"
-            ),
-        ),
-        type=ParameterType.STRING,
-        required=True,
-        default=(
-            '{"x-opencode-session": "{{#sys.conversation_id#}}", '
-            '"x-dify-run-id": "{{#sys.workflow_run_id#}}"}'
-        ),
-    )
+# Back-compat aliases (tests and older imports).
+_extra_headers_rule = extra_headers_rule
 
 
 class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
     @staticmethod
     def _inject_extra_headers_rule(entity: AIModelEntity) -> AIModelEntity:
         if not any(rule.name == "extra_headers" for rule in entity.parameter_rules):
-            entity.parameter_rules.append(_extra_headers_rule())
+            entity.parameter_rules.append(extra_headers_rule())
         return entity
 
     def predefined_models(self) -> list[AIModelEntity]:
@@ -70,6 +103,39 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Optional[AIModelEntity]:
         schema = super().get_model_schema(model, credentials)
         return self._inject_extra_headers_rule(schema) if schema else None
+
+    # --- session helpers kept as classmethods so existing tests can call them ---
+    @staticmethod
+    def _parse_extra_headers(raw: Any) -> dict[str, str]:
+        return parse_extra_headers(raw)
+
+    @classmethod
+    def _apply_extra_headers(cls, credentials: dict, model_parameters: dict) -> None:
+        apply_extra_headers(credentials, model_parameters)
+
+    @classmethod
+    def _current_conversation_id(cls) -> Optional[str]:
+        return current_conversation_id()
+
+    @classmethod
+    def _current_rpc_session_id(cls) -> Optional[str]:
+        return current_rpc_session_id()
+
+    @staticmethod
+    def _is_resolved_id(value: str) -> bool:
+        return is_resolved_id(value)
+
+    @classmethod
+    def _build_session_id(cls, user: Optional[str], credentials: dict) -> str:
+        return build_session_id(user, credentials)
+
+    @classmethod
+    def _add_custom_parameters(cls, credentials: dict, user: Optional[str]) -> None:
+        add_custom_parameters(credentials, user)
+
+    @classmethod
+    def _resolve_protocol(cls, model: str, credentials: dict) -> str:
+        return resolve_protocol(model, credentials)
 
     def _invoke(
         self,
@@ -83,7 +149,30 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._apply_extra_headers(credentials, model_parameters)
-        self._add_custom_parameters(credentials, user)
+        headers = add_custom_parameters(credentials, user)
+        protocol = self._resolve_protocol(model, credentials)
+        if protocol == "anthropic":
+            return self._invoke_anthropic(
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                stream,
+                headers,
+            )
+        if protocol == "responses":
+            return self._invoke_responses(
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                stream,
+                headers,
+            )
         return super()._invoke(
             model,
             credentials,
@@ -96,13 +185,25 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials, user=None)
-        super().validate_credentials(model, credentials)
+        credentials = dict(credentials)
+        add_custom_parameters(credentials, user=None)
+        protocol = self._resolve_protocol(model, credentials)
+        try:
+            if protocol == "anthropic":
+                self._validate_anthropic_credentials(model, credentials)
+            elif protocol == "responses":
+                self._validate_responses_credentials(model, credentials)
+            else:
+                super().validate_credentials(model, credentials)
+        except CredentialsValidateFailedError:
+            raise
+        except InvokeError as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
-        self._add_custom_parameters(credentials, user=None)
+        add_custom_parameters(credentials, user=None)
         features: list[ModelFeature] = []
         if credentials.get("function_calling_type", "tool_call") == "tool_call":
             features.extend(
@@ -115,7 +216,7 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         if credentials.get("vision_support", "false") == "true":
             features.append(ModelFeature.VISION)
 
-        return AIModelEntity(
+        entity = AIModelEntity(
             model=model,
             label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
@@ -149,181 +250,368 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                     label=I18nObject(en_us="Max Tokens", zh_hans="最大 Token"),
                     type=ParameterType.INT,
                 ),
-                _extra_headers_rule(),
+                extra_headers_rule(),
             ],
         )
+        return self._inject_extra_headers_rule(entity)
 
-    @staticmethod
-    def _parse_extra_headers(raw: Any) -> dict[str, str]:
-        if raw is None:
-            return {}
-        if isinstance(raw, dict):
-            return {str(key): str(value) for key, value in raw.items()}
-        if isinstance(raw, str):
-            value = raw.strip()
-            if not value:
-                return {}
-            try:
-                parsed = json.loads(value)
-            except json.JSONDecodeError as exc:
-                raise InvokeError(
-                    "extra_headers must be a JSON object of header names to values"
-                ) from exc
-            if not isinstance(parsed, dict):
-                raise InvokeError("extra_headers must be a JSON object")
-            return {str(key): str(value) for key, value in parsed.items()}
-        raise InvokeError("extra_headers must be a JSON object or JSON string")
+    # ------------------------------------------------------------------
+    # Anthropic Messages
+    # ------------------------------------------------------------------
+    def _anthropic_headers(self, credentials: dict, headers: dict[str, str]) -> dict[str, str]:
+        api_key = str(credentials.get("api_key") or "")
+        return public_headers_for_protocol(headers, api_key, "anthropic")
 
-    @classmethod
-    def _apply_extra_headers(cls, credentials: dict, model_parameters: dict) -> None:
-        """Merge LLM-node extra_headers (Dify-resolved) into credentials.
+    def _anthropic_url(self, credentials: dict) -> str:
+        base = credentials.get("endpoint_url") or DEFAULT_ENDPOINT_URL
+        return join_endpoint_url(base, "messages")
 
-        Empty resolved values (e.g. conversation_id on Workflow) are dropped so
-        session generation can fall back to a per-run id instead of a sticky user.
-        """
-        raw_extra_headers = model_parameters.pop("extra_headers", None)
-        if raw_extra_headers is None or (
-            isinstance(raw_extra_headers, str) and not raw_extra_headers.strip()
-        ):
-            credentials.pop("_opencode_node_extra_headers", None)
-            return
-
-        parsed_headers = {
-            k: v for k, v in cls._parse_extra_headers(raw_extra_headers).items() if str(v).strip()
+    def _build_anthropic_body(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]],
+        stream: bool,
+    ) -> dict[str, Any]:
+        system, messages = llm_anthropic.build_messages_payload(prompt_messages)
+        body: dict[str, Any] = {
+            "model": credentials.get("endpoint_model_name") or model,
+            "messages": messages,
+            "stream": bool(stream),
+            **llm_anthropic.filter_model_parameters(model_parameters),
         }
-        credentials["_opencode_node_extra_headers"] = True
+        if system:
+            body["system"] = system
+        tool_payload = llm_anthropic.build_tools_payload(tools)
+        if tool_payload:
+            body["tools"] = tool_payload
+        return body
 
-        if not parsed_headers:
-            return
-
-        existing_headers = credentials.get("extra_headers")
-        if existing_headers:
-            merged_headers = {
-                **cls._parse_extra_headers(existing_headers),
-                **parsed_headers,
-            }
-        else:
-            merged_headers = parsed_headers
-        credentials["extra_headers"] = merged_headers
-
-    @classmethod
-    def _current_conversation_id(cls) -> Optional[str]:
+    def _invoke_anthropic(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]],
+        stop: Optional[list[str]],
+        stream: bool,
+        headers: dict[str, str],
+    ):
+        body = self._build_anthropic_body(
+            model, credentials, prompt_messages, model_parameters, tools, stream
+        )
+        if stop:
+            body["stop_sequences"] = list(stop)
         try:
-            session = get_current_session()
-        except Exception:
-            return None
-        if session is None:
-            return None
-        conv = (session.conversation_id or "").strip()
-        return conv or None
+            response = requests.post(
+                self._anthropic_url(credentials),
+                headers=self._anthropic_headers(credentials, headers),
+                json=body,
+                stream=stream,
+                timeout=(10, 600),
+            )
+        except requests.RequestException as ex:
+            raise InvokeError(
+                f"OpenCode Anthropic Messages connection error: {ex}"
+            ) from ex
 
-    @classmethod
-    def _build_session_id(cls, user: Optional[str], credentials: dict) -> str:
-        """OpenCode only needs a stable per-conversation id — pass the unique
-        Dify id as-is (docs: x-opencode-session for routing / prompt cache).
-        """
-        explicit = str(credentials.get("session_id") or "").strip()
-        if explicit:
-            return explicit
+        if response.status_code != 200:
+            raise llm_anthropic.map_http_error(response, response.text)
 
-        conversation = re.sub(
-            r"[^A-Za-z0-9._-]+", "-", cls._current_conversation_id() or ""
-        ).strip("-._")[:64]
-        if len(conversation) >= 4:
-            return conversation
+        if stream:
+            return self._wrap_anthropic_stream(model, credentials, prompt_messages, response)
 
-        # extra_headers present but conversation empty/unresolved — isolate per invoke.
-        if credentials.get("_opencode_node_extra_headers"):
-            return uuid.uuid4().hex
-
-        # Agent / unchecked extra_headers: still isolate per invoke. Never sticky
-        # on Dify user (that collapsed every run onto one OpenCode session).
-        rpc_session = cls._current_rpc_session_id()
-        if rpc_session:
-            return rpc_session[:64]
-
-        return uuid.uuid4().hex
-
-    @classmethod
-    def _current_rpc_session_id(cls) -> Optional[str]:
-        try:
-            session = get_current_session()
-        except Exception:
-            return None
-        if session is None:
-            return None
-        return (getattr(session, "session_id", None) or "").strip() or None
-
-    @staticmethod
-    def _is_resolved_id(value: str) -> bool:
-        """True only for a real id — reject unresolved Dify templates.
-
-        Dify sometimes injects the default extra_headers without resolving
-        {{#sys.*#}} (e.g. {{#sys.conversation_id#}} or sys.conversation_id).
-        Sending those as x-opencode-session makes every request share one
-        garbage session in the OpenCode console.
-        """
-        v = (value or "").strip()
-        if not v or len(v) > 128:
-            return False
-        lowered = v.lower()
-        if "{{" in v or "}}" in v or "#sys." in lowered or "sys." in lowered:
-            return False
-        if lowered in {"none", "null", "undefined"}:
-            return False
-        return True
-
-    @classmethod
-    def _add_custom_parameters(cls, credentials: dict, user: Optional[str]) -> None:
-        credentials["mode"] = "chat"
-        if not credentials.get("endpoint_url"):
-            credentials["endpoint_url"] = DEFAULT_ENDPOINT_URL
-        credentials["function_calling_type"] = (
-            credentials.get("function_calling_type") or "tool_call"
+        data = response.json()
+        text, tool_calls, in_tok, out_tok, stop_reason = (
+            llm_anthropic.parse_non_stream_response(data)
+        )
+        assistant = AssistantPromptMessage(content=text, tool_calls=tool_calls or [])
+        usage = self._calc_response_usage(model, credentials, in_tok, out_tok)
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=assistant,
+            usage=usage,
+            system_fingerprint=data.get("id"),
         )
 
-        headers = cls._parse_extra_headers(credentials.get("extra_headers"))
+    def _wrap_anthropic_stream(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        response: requests.Response,
+    ) -> Generator[LLMResultChunk, None, None]:
+        tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        tool_arg_buffers: dict[int, str] = {}
+        usage_in = 0
+        usage_out = 0
 
-        # Drop auto sessions that Dify may have persisted back into credentials
-        # after a previous invoke/schema call — never treat them as configured.
-        existing = str(headers.get("x-opencode-session") or "")
-        if existing.startswith("dify-opencode-go/") or not cls._is_resolved_id(
-            existing
-        ):
-            if "x-opencode-session" in headers:
-                del headers["x-opencode-session"]
-            existing = ""
+        for event in llm_anthropic.parse_stream_response(response, prompt_messages):
+            kind = event.get("kind")
+            if kind == "error":
+                raise InvokeError(str(event.get("message") or "Anthropic stream error"))
+            if kind == "usage":
+                usage_in = int(event.get("input_tokens") or usage_in)
+                usage_out = int(event.get("output_tokens") or usage_out)
+            if kind == "text_delta":
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=event.get("text") or ""),
+                    ),
+                )
+            elif kind == "tool_call_delta":
+                idx = int(event.get("index") or 0)
+                while len(tool_calls) <= idx:
+                    tool_calls.append(
+                        AssistantPromptMessage.ToolCall(
+                            id="",
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name="", arguments=""
+                            ),
+                        )
+                    )
+                if event.get("id"):
+                    tool_calls[idx].id = event["id"]
+                if event.get("name"):
+                    tool_calls[idx].function.name = event["name"]
+                arg_delta = event.get("arguments_delta") or ""
+                if arg_delta:
+                    tool_arg_buffers[idx] = tool_arg_buffers.get(idx, "") + arg_delta
+                    tool_calls[idx].function.arguments = tool_arg_buffers[idx]
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=idx,
+                        message=AssistantPromptMessage(
+                            content="",
+                            tool_calls=[tool_calls[idx]],
+                        ),
+                    ),
+                )
+            elif kind == "stop":
+                usage = None
+                if usage_in or usage_out:
+                    usage = self._calc_response_usage(
+                        model, credentials, usage_in, usage_out
+                    )
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=""),
+                        finish_reason=(
+                            "tool_calls"
+                            if any(t.id or t.function.name for t in tool_calls)
+                            else "stop"
+                        ),
+                        usage=usage,
+                    ),
+                )
 
-        # Prefer conversation; if empty (Workflow), fall back to run id from
-        # the default extra_headers payload. Never send the helper header out.
-        run_id = str(headers.pop(_RUN_ID_HEADER, "") or "").strip()
-        if not cls._is_resolved_id(run_id):
-            run_id = ""
-        used_run_id = False
-        if not existing and run_id:
-            headers["x-opencode-session"] = run_id
-            existing = run_id
-            used_run_id = True
-
-        if not any(k.lower() == "user-agent" for k in headers):
-            headers["User-Agent"] = credentials.get("user_agent") or DEFAULT_USER_AGENT
-        if "x-opencode-session" not in headers:
-            headers["x-opencode-session"] = cls._build_session_id(user, credentials)
-        credentials["extra_headers"] = headers
-
+    def _validate_anthropic_credentials(self, model: str, credentials: dict) -> None:
+        body = {
+            "model": credentials.get("endpoint_model_name") or model,
+            "max_tokens": 8,
+            "messages": [{"role": "user", "content": "ping"}],
+        }
         try:
-            sess = get_current_session()
-            conv = (getattr(sess, "conversation_id", None) or "") if sess else ""
-            rpc = (getattr(sess, "session_id", None) or "") if sess else ""
-        except Exception:
-            conv, rpc = "", ""
-        node_extra = bool(credentials.pop("_opencode_node_extra_headers", False))
-        logger.info(
-            "opencode-go session=%s used_run_id=%s node_extra_headers=%s conv=%s rpc=%s user=%s",
-            headers.get("x-opencode-session"),
-            used_run_id,
-            node_extra,
-            conv or "-",
-            (rpc[:8] + "...") if rpc else "-",
-            user,
+            response = requests.post(
+                self._anthropic_url(credentials),
+                headers=self._anthropic_headers(credentials, credentials.get("extra_headers") or {}),
+                json=body,
+                timeout=(10, 60),
+            )
+        except requests.RequestException as ex:
+            raise CredentialsValidateFailedError(
+                f"OpenCode Anthropic Messages connection error: {ex}"
+            ) from ex
+        if response.status_code != 200:
+            raise CredentialsValidateFailedError(
+                f"Anthropic Messages validate failed ({response.status_code}): {response.text[:400]}"
+            )
+
+    # ------------------------------------------------------------------
+    # OpenAI Responses
+    # ------------------------------------------------------------------
+    def _responses_headers(self, credentials: dict, headers: dict[str, str]) -> dict[str, str]:
+        api_key = str(credentials.get("api_key") or "")
+        return public_headers_for_protocol(headers, api_key, "responses")
+
+    def _responses_url(self, credentials: dict) -> str:
+        base = credentials.get("endpoint_url") or DEFAULT_ENDPOINT_URL
+        return join_endpoint_url(base, "responses")
+
+    def _build_responses_body(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]],
+        stream: bool,
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "model": credentials.get("endpoint_model_name") or model,
+            "input": llm_responses.build_input_payload(prompt_messages),
+            "stream": bool(stream),
+            **llm_responses.filter_model_parameters(model_parameters),
+        }
+        tool_payload = llm_responses.build_tools_payload(tools)
+        if tool_payload:
+            body["tools"] = tool_payload
+        return body
+
+    def _invoke_responses(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]],
+        stop: Optional[list[str]],
+        stream: bool,
+        headers: dict[str, str],
+    ):
+        body = self._build_responses_body(
+            model, credentials, prompt_messages, model_parameters, tools, stream
         )
+        try:
+            response = requests.post(
+                self._responses_url(credentials),
+                headers=self._responses_headers(credentials, headers),
+                json=body,
+                stream=stream,
+                timeout=(10, 600),
+            )
+        except requests.RequestException as ex:
+            raise InvokeError(f"OpenCode Responses connection error: {ex}") from ex
+
+        if response.status_code != 200:
+            raise llm_responses.map_http_error(response, response.text)
+
+        if stream:
+            return self._wrap_responses_stream(model, credentials, prompt_messages, response)
+
+        data = response.json()
+        text, tool_calls, in_tok, out_tok, status = llm_responses.parse_non_stream_response(data)
+        assistant = AssistantPromptMessage(content=text, tool_calls=tool_calls or [])
+        usage = self._calc_response_usage(model, credentials, in_tok, out_tok)
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=assistant,
+            usage=usage,
+            system_fingerprint=data.get("id"),
+        )
+
+    def _wrap_responses_stream(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        response: requests.Response,
+    ) -> Generator[LLMResultChunk, None, None]:
+        tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        tool_arg_buffers: dict[int, str] = {}
+        usage_in = 0
+        usage_out = 0
+
+        for event in llm_responses.parse_stream_response(response):
+            kind = event.get("kind")
+            if kind == "error":
+                raise InvokeError(str(event.get("message") or "Responses stream error"))
+            if kind == "usage":
+                usage_in = int(event.get("input_tokens") or usage_in)
+                usage_out = int(event.get("output_tokens") or usage_out)
+            if kind == "text_delta":
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=event.get("text") or ""),
+                    ),
+                )
+            elif kind == "tool_call_delta":
+                idx = int(event.get("index") or 0)
+                while len(tool_calls) <= idx:
+                    tool_calls.append(
+                        AssistantPromptMessage.ToolCall(
+                            id="",
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name="", arguments=""
+                            ),
+                        )
+                    )
+                if event.get("id"):
+                    tool_calls[idx].id = event["id"]
+                if event.get("name"):
+                    tool_calls[idx].function.name = event["name"]
+                arg_delta = event.get("arguments_delta") or ""
+                if arg_delta:
+                    tool_arg_buffers[idx] = tool_arg_buffers.get(idx, "") + arg_delta
+                    tool_calls[idx].function.arguments = tool_arg_buffers[idx]
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=idx,
+                        message=AssistantPromptMessage(
+                            content="",
+                            tool_calls=[tool_calls[idx]],
+                        ),
+                    ),
+                )
+            elif kind == "stop":
+                usage = None
+                if usage_in or usage_out:
+                    usage = self._calc_response_usage(
+                        model, credentials, usage_in, usage_out
+                    )
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=""),
+                        finish_reason=(
+                            "tool_calls"
+                            if any(t.id or t.function.name for t in tool_calls)
+                            else "stop"
+                        ),
+                        usage=usage,
+                    ),
+                )
+
+    def _validate_responses_credentials(self, model: str, credentials: dict) -> None:
+        body = {
+            "model": credentials.get("endpoint_model_name") or model,
+            "input": [{"role": "user", "content": "ping"}],
+            "max_output_tokens": 16,
+        }
+        try:
+            response = requests.post(
+                self._responses_url(credentials),
+                headers=self._responses_headers(credentials, credentials.get("extra_headers") or {}),
+                json=body,
+                timeout=(10, 60),
+            )
+        except requests.RequestException as ex:
+            raise CredentialsValidateFailedError(
+                f"OpenCode Responses connection error: {ex}"
+            ) from ex
+        if response.status_code != 200:
+            raise CredentialsValidateFailedError(
+                f"Responses validate failed ({response.status_code}): {response.text[:400]}"
+            )

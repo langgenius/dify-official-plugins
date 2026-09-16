@@ -1,0 +1,31 @@
+model: gpt-5.6-luna
+label:
+  en_US: GPT 5.6 Luna
+  zh_Hans: GPT 5.6 Luna
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 272000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 32768
+    help:
+      en_US: Maps to Responses API max_output_tokens.
+      zh_Hans: 映射到 Responses API 的 max_output_tokens。
+pricing:
+  input: "0.20"
+  output: "1.20"
+  unit: "0.000001"
+  currency: USD

@@ -87,6 +87,44 @@ model_credential_schema:
       show_on:
         - variable: __model_type
           value: llm
+    - variable: api_protocol
+      label:
+        en_US: API Protocol
+        zh_Hans: API 协议
+      type: select
+      required: false
+      default: chat
+      options:
+        - label:
+            en_US: Chat Completions (/chat/completions)
+            zh_Hans: Chat Completions（/chat/completions）
+          value: chat
+        - label:
+            en_US: Anthropic Messages (/messages)
+            zh_Hans: Anthropic Messages（/messages）
+          value: anthropic
+        - label:
+            en_US: OpenAI Responses (/responses)
+            zh_Hans: OpenAI Responses（/responses）
+          value: responses
+      show_on:
+        - variable: __model_type
+          value: llm
+      help:
+        title:
+          en_US: Upstream protocol
+          zh_Hans: 上游协议
+        text:
+          en_US: |-
+            Chat (default) works for most OpenCode Go models.
+            Choose Anthropic Messages for models that only expose /messages
+            (e.g. union-alpha) and OpenAI Responses for models that only
+            expose /responses (e.g. grok-4.6, gpt-5.6-luna, muse-spark-*).
+          zh_Hans: |-
+            Chat（默认）适用于大多数 OpenCode Go 模型。
+            仅支持 /messages 的模型（如 union-alpha）请选择 Anthropic Messages；
+            仅支持 /responses 的模型（如 grok-4.6、gpt-5.6-luna、muse-spark-*）
+            请选择 OpenAI Responses。
     - variable: vision_support
       label:
         en_US: Vision support
@@ -139,10 +177,10 @@ provider_credential_schema:
         zh_Hans: User-Agent
       type: text-input
       required: false
-      default: dify-opencode-go-plugin/0.1.0
+      default: dify-opencode-go-plugin/0.2.0
       placeholder:
-        en_US: dify-opencode-go-plugin/0.1.0
-        zh_Hans: dify-opencode-go-plugin/0.1.0
+        en_US: dify-opencode-go-plugin/0.2.0
+        zh_Hans: dify-opencode-go-plugin/0.2.0
     - variable: session_id
       label:
         en_US: Session ID (optional)

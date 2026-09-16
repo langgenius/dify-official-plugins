@@ -1,0 +1,31 @@
+model: union-alpha
+label:
+  en_US: Union Alpha Free (Limited Time)
+  zh_Hans: Union Alpha 免费（限时）
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 32768
+    help:
+      en_US: Maximum tokens to generate. Anthropic Messages requires this field.
+      zh_Hans: 生成 token 上限。Anthropic Messages 协议必填。
+pricing:
+  input: "0.00"
+  output: "0.00"
+  unit: "0.000001"
+  currency: USD
