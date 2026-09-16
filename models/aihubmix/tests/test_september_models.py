@@ -26,7 +26,7 @@ def test_september_model_facts() -> None:
     assert gemini["pricing"]["input"] == "0.75"
     assert gemini["pricing"]["output"] == "3.75"
     assert doubao["model_properties"]["context_size"] == 256_000
-    assert doubao_rules["max_tokens"]["max"] == 32_000
+    assert doubao_rules["max_tokens"]["max"] == 128_000
     assert doubao["pricing"]["input"] == "0.0282"
     assert doubao["pricing"]["output"] == "0.282"
 
