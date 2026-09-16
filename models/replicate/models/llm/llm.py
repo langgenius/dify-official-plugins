@@ -24,7 +24,6 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from replicate import Client as ReplicateClient
 from replicate.exceptions import ReplicateError
 from replicate.prediction import Prediction
 from models._common import _CommonReplicate
@@ -45,9 +44,7 @@ class ReplicateLargeLanguageModel(_CommonReplicate, LargeLanguageModel):
         model_version = ""
         if "model_version" in credentials:
             model_version = credentials["model_version"]
-        client = ReplicateClient(
-            api_token=credentials["replicate_api_token"], timeout=30
-        )
+        client = self._build_replicate_client(credentials)
         model_info = client.models.get(model)
         if model_version:
             model_info_version = model_info.versions.get(model_version)
@@ -97,9 +94,7 @@ class ReplicateLargeLanguageModel(_CommonReplicate, LargeLanguageModel):
                 "Replicate Model Name must be provided, format: {user_name}/{model_name}"
             )
         try:
-            client = ReplicateClient(
-                api_token=credentials["replicate_api_token"], timeout=30
-            )
+            client = self._build_replicate_client(credentials)
             model_info = client.models.get(model)
             if model_version:
                 model_info_version = model_info.versions.get(model_version)
@@ -162,9 +157,7 @@ class ReplicateLargeLanguageModel(_CommonReplicate, LargeLanguageModel):
         model_version = ""
         if "model_version" in credentials:
             model_version = credentials["model_version"]
-        client = ReplicateClient(
-            api_token=credentials["replicate_api_token"], timeout=30
-        )
+        client = cls._build_replicate_client(credentials)
         model_info = client.models.get(model)
         if model_version:
             model_info_version = model_info.versions.get(model_version)
