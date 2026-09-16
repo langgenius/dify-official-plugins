@@ -26,7 +26,7 @@ def test_header_prefers_real_session_conversation() -> None:
     with patch("models.llm.llm.get_current_session", return_value=session):
         OpenCodeGoLargeLanguageModel._add_custom_parameters(credentials, user="user-9")
     sid = credentials["extra_headers"]["x-opencode-session"]
-    assert sid.endswith("/11111111-2222-3333-4444-555555555555")
+    assert sid == "11111111-2222-3333-4444-555555555555"
     assert "user-9" not in sid
     assert credentials["extra_headers"]["User-Agent"].startswith("dify-opencode-go-plugin/")
 
@@ -59,19 +59,24 @@ def test_two_conversations_different_sessions() -> None:
     )
 
 
-def test_empty_conversation_falls_back_to_user() -> None:
-    session = make_real_session("")  # completion apps / missing context
+def test_empty_conversation_falls_back_to_rpc_session() -> None:
+    session = make_real_session("")  # Agent / completion without conversation
     credentials: dict = {}
     with patch("models.llm.llm.get_current_session", return_value=session):
         OpenCodeGoLargeLanguageModel._add_custom_parameters(credentials, user="20162097")
-    assert credentials["extra_headers"]["x-opencode-session"].endswith("/20162097")
+    sid = credentials["extra_headers"]["x-opencode-session"]
+    # Prefer per-invocation RPC session over sticky user so new chats isolate.
+    assert sid == "plugin-rpc-session"
+    assert "20162097" not in sid
 
 
-def test_none_session_falls_back_to_user() -> None:
+def test_none_session_falls_back_to_random() -> None:
     credentials: dict = {}
     with patch("models.llm.llm.get_current_session", return_value=None):
         OpenCodeGoLargeLanguageModel._add_custom_parameters(credentials, user="abc-user")
-    assert credentials["extra_headers"]["x-opencode-session"].endswith("/abc-user")
+    sid = credentials["extra_headers"]["x-opencode-session"]
+    assert sid != "abc-user"
+    assert sid
 
 
 def test_explicit_credential_overrides_everything() -> None:
@@ -97,9 +102,7 @@ def test_validate_credentials_path_no_crash() -> None:
     credentials: dict = {"api_key": "sk-test"}
     with patch("models.llm.llm.get_current_session", return_value=None):
         OpenCodeGoLargeLanguageModel._add_custom_parameters(credentials, user=None)
-    assert credentials["extra_headers"]["x-opencode-session"].startswith(
-        "dify-opencode-go/"
-    )
+    assert credentials["extra_headers"]["x-opencode-session"]
 
 
 def test_dify_session_context_var_integration() -> None:
@@ -111,9 +114,7 @@ def test_dify_session_context_var_integration() -> None:
     # Do not patch get_current_session — rely on real ContextVar wiring
     with use_current_session(session):
         OpenCodeGoLargeLanguageModel._add_custom_parameters(credentials, user="u")
-    assert credentials["extra_headers"]["x-opencode-session"].endswith(
-        "/ctxvar-conv-42"
-    )
+    assert credentials["extra_headers"]["x-opencode-session"] == "ctxvar-conv-42"
 
 
 if __name__ == "__main__":
@@ -121,8 +122,8 @@ if __name__ == "__main__":
         test_header_prefers_real_session_conversation,
         test_same_conversation_stable_across_calls,
         test_two_conversations_different_sessions,
-        test_empty_conversation_falls_back_to_user,
-        test_none_session_falls_back_to_user,
+        test_empty_conversation_falls_back_to_rpc_session,
+        test_none_session_falls_back_to_random,
         test_explicit_credential_overrides_everything,
         test_special_chars_in_conversation_sanitized,
         test_validate_credentials_path_no_crash,

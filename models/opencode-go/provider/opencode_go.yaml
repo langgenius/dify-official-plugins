@@ -150,21 +150,24 @@ provider_credential_schema:
       type: text-input
       required: false
       placeholder:
-        en_US: Leave empty to auto-generate dify-opencode-go/<client>/<conversation>
-        zh_Hans: 留空则自动生成 dify-opencode-go/<client>/<conversation>
+        en_US: Leave empty (recommended) — sessions are isolated automatically
+        zh_Hans: 留空即可（推荐）— 会按对话/按次自动隔离
       help:
         title:
           en_US: x-opencode-session header
           zh_Hans: x-opencode-session 请求头
         text:
           en_US: |-
-            OpenCode Go uses this header for routing and prompt-cache affinity.
-            Leave blank — the plugin sends a collision-resistant id:
-            dify-opencode-go/<client-id>/<dify-conversation-id>.
-            Same conversation keeps the same id; different conversations differ.
+            Usually leave empty. By default the plugin already sends a
+            per-conversation session (Chatflow) or a per-run session (Workflow).
+            Fill this only if you need ONE fixed session id for the whole
+            workspace (e.g. debugging or a shared cache). A value here is
+            ignored when the LLM node already sets x-opencode-session via
+            extra_headers.
           zh_Hans: |-
-            OpenCode Go 用该请求头做路由与 prompt cache。建议留空，插件会自动发送
-            dify-opencode-go/<client-id>/<dify-conversation-id>，
-            同一对话稳定、不同对话不同，避免与他人短 ID 冲突。
+            一般无需填写。插件默认已按对话（Chatflow）或按次运行（工作流）
+            自动隔离会话。仅在需要整个工作空间共用一个固定会话 ID 时才填写
+            （例如调试或共享缓存）。若 LLM 节点已通过 extra_headers 指定
+            x-opencode-session，则本凭证项不会生效。
 supported_model_types:
   - llm

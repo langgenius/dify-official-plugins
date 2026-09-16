@@ -10,9 +10,23 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 - Customizable model support for newly added model IDs
 - Sends OpenCode-required headers:
   - `User-Agent`: `dify-opencode-go-plugin/0.1.0` (not a generic SDK name)
-  - `x-opencode-session`: `dify-opencode-go/<client-id>/<dify-conversation-id>`  
-    Collision-resistant and stable **per conversation** (falls back to per-user only when Dify provides no conversation id). Optional override: provider credential `session_id`.
-- Default base URL: `https://opencode.ai/zen/go/v1`
+  - `x-opencode-session`: stable id for routing / prompt-cache affinity
+- Session isolation (recommended): enable the LLM-node model parameter `extra_headers` and keep the default JSON. Dify resolves `{{#sys.*#}}` before invoke; the plugin then picks:
+  - Chatflow / chat apps: conversation id → one session per conversation
+  - Workflow apps: `workflow_run_id` (via the internal helper header) → one session per run, shared by LLM nodes in that run
+
+```json
+{
+  "x-opencode-session": "{{#sys.conversation_id#}}",
+  "x-dify-run-id": "{{#sys.workflow_run_id#}}"
+}
+```
+
+- Fallbacks when `extra_headers` is absent or leaves session empty:
+  1. Provider credential `session_id` (optional static override)
+  2. Plugin Session `conversation_id` when Dify provides it
+  3. Per-invoke isolation (RPC session id or a random UUID) — never sticky on Dify user id
+- Unresolved Dify templates (`{{#sys.*#}}`) are never sent as session values.
 
 ## Setup
 
@@ -53,7 +67,7 @@ Grok / GPT 5.6 Luna / Muse Spark are **not** included as predefined models becau
 ## Development / debug
 
 ```bash
-pip install -r requirements.txt  # or: pip install "dify_plugin>=0.10.0"
+pip install "dify_plugin>=0.10.0"
 ```
 
 Copy `.env.example` to `.env` and set your Dify debug key from **Plugins → debug**.
@@ -62,10 +76,19 @@ Copy `.env.example` to `.env` and set your Dify debug key from **Plugins → deb
 python -m main
 ```
 
+Local unit tests (no network):
+
+```bash
+python test_session_id.py
+python test_session_runtime.py
+python test_extra_headers.py
+python test_backward_compat_002.py
+```
+
 Package:
 
 ```bash
-dify plugin package .
+dify plugin package models/opencode-go -o dist/opencode_go-0.1.0.difypkg
 ```
 
 ## Links

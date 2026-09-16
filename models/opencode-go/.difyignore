@@ -1,8 +1,12 @@
 test_local.py
 test_session_id.py
 test_session_runtime.py
+test_extra_headers.py
+test_backward_compat_002.py
+debug_remote.py
 __pycache__/
 *.pyc
 .venv/
 .env
 .env.*
+uv.lock
