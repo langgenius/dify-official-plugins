@@ -1,0 +1,8 @@
+test_local.py
+test_session_id.py
+test_session_runtime.py
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
