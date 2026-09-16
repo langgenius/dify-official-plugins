@@ -11,7 +11,7 @@ features:
   - video
 model_properties:
   mode: chat
-  context_size: 262144
+  context_size: 256000
 parameter_rules:
   - name: reasoning_effort
     label:
@@ -40,7 +40,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '1.35'
-  output: '8.1'
+  input: '0.22'
+  output: '1.32'
   unit: '0.000001'
   currency: RMB

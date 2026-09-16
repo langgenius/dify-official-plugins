@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +23,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 128000
+    max: 65536
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -37,7 +37,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.822'
-  output: '3.288'
+  input: '0.4508'
+  output: '1.8032'
   unit: '0.000001'
-  currency: USD 
+  currency: USD

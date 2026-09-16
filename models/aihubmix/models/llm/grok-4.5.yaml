@@ -10,7 +10,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 500000
 parameter_rules:
   - name: reasoning_effort
     label:
@@ -38,7 +38,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 131072
+    max: 500000
   - name: response_format
     label:
       zh_Hans: 回复格式
