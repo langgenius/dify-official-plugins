@@ -366,6 +366,22 @@ def test_responses_stream_synthetic_stop_when_missing() -> None:
     assert events[-1]["kind"] == "stop"
 
 
+def test_anthropic_stream_synthetic_stop_when_missing() -> None:
+    lines = [
+        'event: message_start',
+        'data: {"type":"message_start","message":{"usage":{"input_tokens":4,"output_tokens":0}}}',
+        "",
+        "event: content_block_delta",
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"x"}}',
+        "",
+    ]
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse(lines), []))
+    kinds = [e["kind"] for e in events]
+    assert kinds.count("stop") == 1
+    assert kinds[-1] == "stop"
+    assert any(e["kind"] == "usage" for e in events)
+
+
 def test_responses_body_includes_stop_sequences() -> None:
     model = OpenCodeGoLargeLanguageModel(model_schemas=[])
     body = model._build_responses_body(

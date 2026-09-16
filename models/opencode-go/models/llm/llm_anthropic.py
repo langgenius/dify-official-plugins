@@ -125,17 +125,20 @@ def _normalize_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 )
             ]
         if not content:
-            # Tool-only assistant messages still need a non-empty content list.
-            if msg.get("role") == "assistant":
-                content = [{"type": "text", "text": " "}]
-            else:
-                content = [{"type": "text", "text": " "}]
+            content = [{"type": "text", "text": " "}]
         msg = {**msg, "content": content}
 
         if normalized and normalized[-1]["role"] == msg["role"]:
             prev = normalized[-1]["content"]
             if isinstance(prev, list) and isinstance(msg["content"], list):
-                # Placeholder " " text is replaced by real blocks when folding.
+                # Drop pure-placeholder empty turns instead of appending a space block.
+                is_placeholder = (
+                    len(msg["content"]) == 1
+                    and msg["content"][0].get("type") == "text"
+                    and msg["content"][0].get("text") == " "
+                )
+                if is_placeholder:
+                    continue
                 if (
                     len(prev) == 1
                     and prev[0].get("type") == "text"

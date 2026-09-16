@@ -1,14 +1,20 @@
 ---
 feature: opencode-go-protocol-0.2.0
-status: designed
-updated: 2026-09-12
+status: delivered
+updated: 2026-09-17
 branch: feat/opencode-go-protocol-0.2.0
-commits: 13d6d563..HEAD
+commits: 13d6d563..b468c156
 ---
 
 # OpenCode Go 全协议适配 0.2.0
 
 ## Report
+
+**What was built** — OpenCode Go 0.2.0 在单一供应商内支持三类上游协议：Chat Completions（默认）、Anthropic Messages（`union-alpha`）、OpenAI Responses（`grok-4.6` / `gpt-5.6-luna` / `muse-spark-*`）。因 dify_plugin 每个 ModelType 只保留一个 LLM 实现类，架构改为单入口路由，而非三个 model_sources。共用 `session_headers.py`，三条线均强制 UA + `x-opencode-session`，Anthropic 使用 `x-api-key` 且不发送 Authorization。自定义模型可通过 `api_protocol` 选择协议。0.1.0 会话隔离行为保持不变。
+
+**Verification** — 单测：`test_session_id` / `test_session_runtime` / `test_extra_headers` / `test_backward_compat_002` / `test_protocol_routing`（含 SSE fixture）全绿。实测：glm/qwen/minimax/kimi/mimo chat OK；union-alpha `/messages` OK；grok-4.6 `/responses` OK；union-alpha chat 500（预期）；gpt-5.6-luna 本机区域受限 403（环境问题，错误信息清晰）。打包 `dist/opencode_go-0.2.0.difypkg` 成功。
+
+**Journey log** — 1) 三 model_sources 被 SDK last-wins 语义否决，改为单入口路由。2) Windows + dify_plugin gevent ssl monkeypatch 会导致 requests 递归；冒烟脚本需先 import dify_plugin 并清代理。3) Anthropic SSE `message_delta` 与 `message_stop` 双 finish，需只在 message_stop 发 stop 且 usage 先于 stop。4) 连续同 role 消息与空 text block 会让 Messages 400，需规范化。5) 多轮审查后补齐 stop 参数映射与 SSE 回归测试。
 
 ## [S1] Problem
 
@@ -119,10 +125,10 @@ context_size / max_tokens / features / pricing：以 OpenCode 文档与 `/models
 
 ## Tasks
 
-- [ ] T1: 抽取 `session_headers.py`，`llm.py` 改为 import — acceptance: 既有 4 套单测全绿 (covers: S2)
-- [ ] T2: Anthropic Messages 适配器 + `union-alpha` 预置 + 路由 — acceptance: union-alpha `/messages` 实测 200（stream + non-stream）(covers: S2; depends: T1)
-- [ ] T3: Responses 适配器 + grok/gpt/muse 预置 + 路由 — acceptance: grok-4.6 或 gpt-5.6-luna 实测 200 (covers: S2; depends: T1)
-- [ ] T4: provider yaml `api_protocol` + schema 注入三线 — acceptance: 自定义模型可按协议校验 (covers: S2; depends: T2, T3)
-- [ ] T5: README 中英协议矩阵 + 版本 0.2.0 + `.difyignore` — acceptance: 文档与版本一致 (covers: S2)
-- [ ] T6: 单测（无网）+ 冒烟矩阵 + 打包 difypkg — acceptance: 单测全绿；既有模型不回归；包可生成 (covers: S2; depends: T2, T3, T4, T5)
-- [ ] T7: 多轮代码审查 + 模型元数据核对 — acceptance: 无 critical；元数据与文档/API 一致 (covers: S2; depends: T6)
+- [x] T1: 抽取 `session_headers.py`，`llm.py` 改为 import — acceptance: 既有 4 套单测全绿 (covers: S2)
+- [x] T2: Anthropic Messages 适配器 + `union-alpha` 预置 + 路由 — acceptance: union-alpha `/messages` 实测 200（stream + non-stream）(covers: S2; depends: T1)
+- [x] T3: Responses 适配器 + grok/gpt/muse 预置 + 路由 — acceptance: grok-4.6 或 gpt-5.6-luna 实测 200 (covers: S2; depends: T1)
+- [x] T4: provider yaml `api_protocol` + schema 注入三线 — acceptance: 自定义模型可按协议校验 (covers: S2; depends: T2, T3)
+- [x] T5: README 中英协议矩阵 + 版本 0.2.0 + `.difyignore` — acceptance: 文档与版本一致 (covers: S2)
+- [x] T6: 单测（无网）+ 冒烟矩阵 + 打包 difypkg — acceptance: 单测全绿；既有模型不回归；包可生成 (covers: S2; depends: T2, T3, T4, T5)
+- [x] T7: 多轮代码审查 + 模型元数据核对 — acceptance: 无 critical；元数据与文档/API 一致 (covers: S2; depends: T6)
