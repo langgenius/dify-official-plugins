@@ -3,7 +3,7 @@ feature: opencode-go-protocol-0.2.0
 status: delivered
 updated: 2026-09-17
 branch: feat/opencode-go-protocol-0.2.0
-commits: 13d6d563..b468c156
+commits: 13d6d563..dd1068d2
 ---
 
 # OpenCode Go 全协议适配 0.2.0
