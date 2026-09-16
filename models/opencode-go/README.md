@@ -10,8 +10,8 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 - Customizable model support for newly added model IDs
 - Sends OpenCode-required headers:
   - `User-Agent`: `dify-opencode-go-plugin/0.1.0` (not a generic SDK name)
-  - `x-opencode-session`: `dify-opencode-go/<client-id>/<dify-user>`  
-    Collision-resistant and stable per Dify user (not bare `est-user` / numeric ids). Optional override: provider credential `session_id`.
+  - `x-opencode-session`: `dify-opencode-go/<client-id>/<dify-conversation-id>`  
+    Collision-resistant and stable **per conversation** (falls back to per-user only when Dify provides no conversation id). Optional override: provider credential `session_id`.
 - Default base URL: `https://opencode.ai/zen/go/v1`
 
 ## Setup
