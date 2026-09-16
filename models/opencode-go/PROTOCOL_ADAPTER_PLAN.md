@@ -1,5 +1,10 @@
 # OpenCode Go 全协议适配方案（0.2.0）
 
+> **Superseded:** multi-`model_sources` design is invalid under dify_plugin 0.10.2
+> (one LargeLanguageModel class per ModelType, last wins). Implemented design:
+> single-entry routing in `models/llm/llm.py`. See
+> `docs/compose/spec/opencode-go-protocol-0.2.0.md`.
+
 > 交接文档：供新会话以 compose-next（编排模式）实施。
 > 基线：`feat/opencode-go-session-isolation-0.1.0`（会话隔离已合入待 PR）。
 > 仓库：`D:\Mimo-workspace\dify-official-plugins`，插件目录 `models/opencode-go/`。

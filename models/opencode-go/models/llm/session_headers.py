@@ -239,18 +239,6 @@ def add_custom_parameters(credentials: dict, user: Optional[str]) -> dict[str, s
     return headers
 
 
-def resolve_protocol(model: str, credentials: dict) -> str:
-    """Return 'chat' | 'anthropic' | 'responses'."""
-    explicit = str(credentials.get("api_protocol") or "").strip().lower()
-    if explicit in {"chat", "anthropic", "responses"}:
-        return explicit
-    if model in ANTHROPIC_MODELS:
-        return "anthropic"
-    if model in RESPONSES_MODELS:
-        return "responses"
-    return "chat"
-
-
 # Predefined models that only work on Anthropic Messages / OpenAI Responses.
 ANTHROPIC_MODELS = frozenset({"union-alpha"})
 RESPONSES_MODELS = frozenset(
@@ -261,6 +249,18 @@ RESPONSES_MODELS = frozenset(
         "muse-spark-1.2-contributor",
     }
 )
+
+
+def resolve_protocol(model: str, credentials: dict) -> str:
+    """Return 'chat' | 'anthropic' | 'responses'."""
+    explicit = str(credentials.get("api_protocol") or "").strip().lower()
+    if explicit in {"chat", "anthropic", "responses"}:
+        return explicit
+    if model in ANTHROPIC_MODELS:
+        return "anthropic"
+    if model in RESPONSES_MODELS:
+        return "responses"
+    return "chat"
 
 
 def join_endpoint_url(base: str, path: str) -> str:

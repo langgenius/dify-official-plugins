@@ -154,16 +154,6 @@ def test_session_shared_across_protocols() -> None:
     session = MagicMock()
     session.conversation_id = "conv-protocol-share"
     session.session_id = "rpc-1"
-    model = OpenCodeGoLargeLanguageModel(model_schemas=[])
-
-    captured: dict = {}
-
-    def fake_anthropic(self, *args, **kwargs):
-        # args order after self in _invoke_anthropic
-        captured["anthropic_headers"] = kwargs.get("headers") or (
-            args[6] if len(args) > 6 else None
-        )
-        return iter([])
 
     with patch("models.llm.llm.get_current_session", return_value=session):
         creds = {"api_key": "sk-test"}
@@ -282,6 +272,135 @@ def test_tools_payload_shapes() -> None:
     assert a_tools[0]["input_schema"]["type"] == "object"
     assert r_tools[0]["type"] == "function"
     assert r_tools[0]["name"] == "get_weather"
+
+
+def test_anthropic_normalizes_roles_and_empty_text() -> None:
+    _, messages = llm_anthropic.build_messages_payload(
+        [
+            UserPromptMessage(content="a"),
+            UserPromptMessage(content="b"),
+            AssistantPromptMessage(content=""),
+            AssistantPromptMessage(
+                content="hi",
+                tool_calls=[
+                    AssistantPromptMessage.ToolCall(
+                        id="t1",
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name="fn", arguments="{}"
+                        ),
+                    )
+                ],
+            ),
+        ]
+    )
+    assert messages[0]["role"] == "user"
+    assert len(messages[0]["content"]) == 2  # folded consecutive user turns
+    assert messages[1]["role"] == "assistant"
+    texts = [b for b in messages[1]["content"] if b.get("type") == "text"]
+    tools = [b for b in messages[1]["content"] if b.get("type") == "tool_use"]
+    assert tools and tools[0]["id"] == "t1"
+    assert all((t.get("text") or "").strip() for t in texts)
+
+
+class _FakeSSEResponse:
+    def __init__(self, lines: list[str]) -> None:
+        self._lines = lines
+
+    def iter_lines(self, decode_unicode: bool = True):
+        for line in self._lines:
+            yield line
+
+
+def test_anthropic_stream_emits_single_stop_with_usage() -> None:
+    lines = [
+        'event: message_start',
+        'data: {"type":"message_start","message":{"usage":{"input_tokens":10,"output_tokens":1}}}',
+        "",
+        "event: content_block_delta",
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"OK"}}',
+        "",
+        "event: message_delta",
+        'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}',
+        "",
+        "event: message_stop",
+        'data: {"type":"message_stop"}',
+        "",
+    ]
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse(lines), []))
+    kinds = [e["kind"] for e in events]
+    assert kinds.count("stop") == 1
+    assert kinds.count("usage") == 1
+    assert any(e.get("kind") == "text_delta" and e.get("text") == "OK" for e in events)
+    stop = next(e for e in events if e["kind"] == "stop")
+    usage = next(e for e in events if e["kind"] == "usage")
+    assert stop["stop_reason"] == "end_turn"
+    assert usage["input_tokens"] == 10
+    assert usage["output_tokens"] == 5
+    # usage must precede stop
+    assert kinds.index("usage") < kinds.index("stop")
+
+
+def test_responses_stream_events_and_single_stop() -> None:
+    lines = [
+        'data: {"type":"response.output_text.delta","delta":"Hi"}',
+        "",
+        'data: {"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","call_id":"c1","name":"fn"}}',
+        "",
+        'data: {"type":"response.function_call_arguments.delta","output_index":0,"call_id":"c1","delta":"{\\"a\\":1}"}',
+        "",
+        'data: {"type":"response.completed","response":{"status":"completed","usage":{"input_tokens":3,"output_tokens":4}}}',
+        "",
+    ]
+    events = list(llm_responses.parse_stream_response(_FakeSSEResponse(lines)))
+    kinds = [e["kind"] for e in events]
+    assert kinds.count("stop") == 1
+    assert "usage" in kinds
+    assert any(e["kind"] == "text_delta" and e["text"] == "Hi" for e in events)
+    assert any(e["kind"] == "tool_call_delta" and e.get("arguments_delta") for e in events)
+
+
+def test_responses_stream_synthetic_stop_when_missing() -> None:
+    lines = ['data: {"type":"response.output_text.delta","delta":"x"}', ""]
+    events = list(llm_responses.parse_stream_response(_FakeSSEResponse(lines)))
+    assert events[-1]["kind"] == "stop"
+
+
+def test_responses_body_includes_stop_sequences() -> None:
+    model = OpenCodeGoLargeLanguageModel(model_schemas=[])
+    body = model._build_responses_body(
+        "grok-4.6",
+        {"api_key": "sk-test"},
+        [UserPromptMessage(content="hi")],
+        {},
+        None,
+        False,
+    )
+    # stop is applied in _invoke_responses; simulate that contract here
+    assert "text" not in body or "stop" not in body.get("text", {})
+    # direct builder path used by invoke
+    creds = {"api_key": "sk-test"}
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, stream=False, timeout=None):
+        captured["json"] = json
+        raise RuntimeError("stop-after-capture")
+
+    with patch("models.llm.llm.requests.post", side_effect=fake_post):
+        try:
+            model._invoke_responses(
+                "grok-4.6",
+                creds,
+                [UserPromptMessage(content="hi")],
+                {},
+                None,
+                ["STOP"],
+                False,
+                {"User-Agent": "t"},
+            )
+        except RuntimeError:
+            pass
+    assert captured["json"]["text"]["stop"] == ["STOP"]
 
 
 if __name__ == "__main__":

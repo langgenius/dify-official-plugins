@@ -21,13 +21,11 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
-    UserPromptMessage,
     VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
     InvokeBadRequestError,
-    InvokeConnectionError,
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
@@ -108,33 +106,50 @@ def _content_to_anthropic_blocks(content: Any) -> list[dict[str, Any]]:
     return blocks
 
 
-def _merge_tool_results(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Anthropic requires tool_result blocks inside a user message, consecutive."""
-    merged: list[dict[str, Any]] = []
+def _normalize_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Fold consecutive same-role turns and drop empty text blocks.
+
+    Anthropic Messages requires alternating roles and rejects empty text blocks.
+    """
+    normalized: list[dict[str, Any]] = []
     for msg in messages:
-        if (
-            msg.get("role") == "user"
-            and merged
-            and isinstance(msg.get("content"), list)
-            and any(
-                isinstance(b, dict) and b.get("type") == "tool_result"
-                for b in msg["content"]
-            )
-            and merged[-1].get("role") == "user"
-            and isinstance(merged[-1].get("content"), list)
-        ):
-            prev_has_result = any(
-                isinstance(b, dict) and b.get("type") == "tool_result"
-                for b in merged[-1]["content"]
-            )
-            if prev_has_result:
-                merged[-1]["content"] = [
-                    *merged[-1]["content"],
-                    *msg["content"],
-                ]
+        content = msg.get("content") or []
+        if isinstance(content, list):
+            content = [
+                b
+                for b in content
+                if not (
+                    isinstance(b, dict)
+                    and b.get("type") == "text"
+                    and not (b.get("text") or "").strip()
+                )
+            ]
+        if not content:
+            # Tool-only assistant messages still need a non-empty content list.
+            if msg.get("role") == "assistant":
+                content = [{"type": "text", "text": " "}]
+            else:
+                content = [{"type": "text", "text": " "}]
+        msg = {**msg, "content": content}
+
+        if normalized and normalized[-1]["role"] == msg["role"]:
+            prev = normalized[-1]["content"]
+            if isinstance(prev, list) and isinstance(msg["content"], list):
+                # Placeholder " " text is replaced by real blocks when folding.
+                if (
+                    len(prev) == 1
+                    and prev[0].get("type") == "text"
+                    and prev[0].get("text") == " "
+                ):
+                    normalized[-1] = msg
+                else:
+                    normalized[-1] = {
+                        **normalized[-1],
+                        "content": [*prev, *msg["content"]],
+                    }
                 continue
-        merged.append(msg)
-    return merged
+        normalized.append(msg)
+    return normalized
 
 
 def build_messages_payload(
@@ -192,19 +207,15 @@ def build_messages_payload(
                         "input": parsed,
                     }
                 )
-            if not blocks:
-                blocks = [{"type": "text", "text": ""}]
             messages.append({"role": "assistant", "content": blocks})
             continue
 
         # user (default)
         blocks = _content_to_anthropic_blocks(message.content)
-        if not blocks:
-            blocks = [{"type": "text", "text": ""}]
         messages.append({"role": "user", "content": blocks})
 
     system = "\n\n".join(p for p in system_parts if p) or None
-    return system, _merge_tool_results(messages)
+    return system, _normalize_messages(messages)
 
 
 def build_tools_payload(
@@ -264,8 +275,7 @@ def map_http_error(response: requests.Response, body_text: str) -> Exception:
         )
     if status >= 500:
         return InvokeServerUnavailableError(
-            f"OpenCode Anthropic Messages server error ({status}): {snippet}. "
-            "This model may not be available on /messages (oa-compat)."
+            f"OpenCode Anthropic Messages server error ({status}): {snippet}"
         )
     return InvokeBadRequestError(
         f"OpenCode Anthropic Messages HTTP {status}: {snippet}"
@@ -345,11 +355,94 @@ def parse_stream_response(
       {"kind": "stop", "stop_reason"}
       {"kind": "error", "message"}
     """
-    buffer = ""
-    input_tokens = 0
-    output_tokens = 0
-    tool_index_state: dict[int, dict[str, str]] = {}
+    del prompt_messages  # kept for API symmetry with callers
+    state: dict[str, Any] = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "tool_index_state": {},
+        "stopped": False,
+    }
 
+    def dispatch(etype: str, data: dict[str, Any]) -> Generator[dict[str, Any], None, None]:
+        if etype == "message_start":
+            usage = (data.get("message") or {}).get("usage") or {}
+            state["input_tokens"] = int(usage.get("input_tokens") or state["input_tokens"])
+            state["output_tokens"] = int(
+                usage.get("output_tokens") or state["output_tokens"]
+            )
+            return
+        if etype == "content_block_delta":
+            delta = data.get("delta") or {}
+            dtype = delta.get("type")
+            if dtype == "text_delta":
+                text = delta.get("text") or ""
+                if text:
+                    yield {"kind": "text_delta", "text": text}
+            elif dtype == "input_json_delta":
+                idx = int(data.get("index") or 0)
+                tool_state = state["tool_index_state"].setdefault(
+                    idx, {"id": "", "name": "", "arguments": ""}
+                )
+                tool_state["arguments"] += delta.get("partial_json") or ""
+                yield {
+                    "kind": "tool_call_delta",
+                    "index": idx,
+                    "id": tool_state["id"],
+                    "name": tool_state["name"],
+                    "arguments_delta": delta.get("partial_json") or "",
+                }
+            return
+        if etype == "content_block_start":
+            block = data.get("content_block") or {}
+            idx = int(data.get("index") or 0)
+            if block.get("type") == "tool_use":
+                state["tool_index_state"][idx] = {
+                    "id": block.get("id") or "",
+                    "name": block.get("name") or "",
+                    "arguments": "",
+                }
+                yield {
+                    "kind": "tool_call_delta",
+                    "index": idx,
+                    "id": block.get("id") or "",
+                    "name": block.get("name") or "",
+                    "arguments_delta": "",
+                }
+            return
+        if etype == "message_delta":
+            usage = data.get("usage") or {}
+            state["output_tokens"] = int(
+                usage.get("output_tokens") or state["output_tokens"]
+            )
+            # Capture stop_reason here but only emit finish on message_stop
+            # so usage is finalized first and we never double-stop.
+            stop_reason = (data.get("delta") or {}).get("stop_reason")
+            if stop_reason:
+                state["pending_stop_reason"] = stop_reason
+            return
+        if etype == "message_stop":
+            if state.get("stopped"):
+                return
+            if state["input_tokens"] or state["output_tokens"]:
+                yield {
+                    "kind": "usage",
+                    "input_tokens": state["input_tokens"],
+                    "output_tokens": state["output_tokens"],
+                }
+            state["stopped"] = True
+            yield {
+                "kind": "stop",
+                "stop_reason": state.get("pending_stop_reason") or "end_turn",
+            }
+            return
+        if etype == "error":
+            err = data.get("error") or {}
+            yield {
+                "kind": "error",
+                "message": err.get("message") or data.get("message") or str(data),
+            }
+
+    buffer = ""
     for chunk in response.iter_lines(decode_unicode=True):
         if chunk is None:
             continue
@@ -364,92 +457,22 @@ def parse_stream_response(
             events = list(_iter_sse_json_lines(buffer))
             buffer = ""
             for etype, data in events:
-                if etype == "message_start":
-                    usage = (data.get("message") or {}).get("usage") or {}
-                    input_tokens = int(usage.get("input_tokens") or input_tokens)
-                    output_tokens = int(usage.get("output_tokens") or output_tokens)
-                elif etype == "content_block_delta":
-                    delta = data.get("delta") or {}
-                    dtype = delta.get("type")
-                    if dtype == "text_delta":
-                        text = delta.get("text") or ""
-                        if text:
-                            yield {"kind": "text_delta", "text": text}
-                    elif dtype == "input_json_delta":
-                        idx = int(data.get("index") or 0)
-                        state = tool_index_state.setdefault(
-                            idx, {"id": "", "name": "", "arguments": ""}
-                        )
-                        state["arguments"] += delta.get("partial_json") or ""
-                        yield {
-                            "kind": "tool_call_delta",
-                            "index": idx,
-                            "id": state["id"],
-                            "name": state["name"],
-                            "arguments_delta": delta.get("partial_json") or "",
-                        }
-                elif etype == "content_block_start":
-                    block = data.get("content_block") or {}
-                    idx = int(data.get("index") or 0)
-                    if block.get("type") == "tool_use":
-                        tool_index_state[idx] = {
-                            "id": block.get("id") or "",
-                            "name": block.get("name") or "",
-                            "arguments": "",
-                        }
-                        yield {
-                            "kind": "tool_call_delta",
-                            "index": idx,
-                            "id": block.get("id") or "",
-                            "name": block.get("name") or "",
-                            "arguments_delta": "",
-                        }
-                elif etype == "message_delta":
-                    usage = data.get("usage") or {}
-                    output_tokens = int(usage.get("output_tokens") or output_tokens)
-                    stop_reason = (data.get("delta") or {}).get("stop_reason")
-                    if stop_reason:
-                        yield {"kind": "stop", "stop_reason": stop_reason}
-                    if input_tokens or output_tokens:
-                        yield {
-                            "kind": "usage",
-                            "input_tokens": input_tokens,
-                            "output_tokens": output_tokens,
-                        }
-                elif etype == "message_stop":
-                    if input_tokens or output_tokens:
-                        yield {
-                            "kind": "usage",
-                            "input_tokens": input_tokens,
-                            "output_tokens": output_tokens,
-                        }
-                    yield {"kind": "stop", "stop_reason": "end_turn"}
-                elif etype == "error":
-                    err = data.get("error") or {}
-                    yield {
-                        "kind": "error",
-                        "message": err.get("message") or data.get("message") or str(data),
-                    }
+                yield from dispatch(etype, data)
             continue
         buffer += chunk + "\n"
 
-    # trailing buffer without final blank line
     if buffer.strip():
         for etype, data in _iter_sse_json_lines(buffer):
-            if etype == "content_block_delta":
-                delta = data.get("delta") or {}
-                if delta.get("type") == "text_delta" and delta.get("text"):
-                    yield {"kind": "text_delta", "text": delta["text"]}
-            elif etype == "message_delta":
-                usage = data.get("usage") or {}
-                yield {
-                    "kind": "usage",
-                    "input_tokens": int(usage.get("input_tokens") or input_tokens),
-                    "output_tokens": int(usage.get("output_tokens") or output_tokens),
-                }
-            elif etype == "error":
-                err = data.get("error") or {}
-                yield {
-                    "kind": "error",
-                    "message": err.get("message") or str(data),
-                }
+            yield from dispatch(etype, data)
+
+    if not state.get("stopped"):
+        if state["input_tokens"] or state["output_tokens"]:
+            yield {
+                "kind": "usage",
+                "input_tokens": state["input_tokens"],
+                "output_tokens": state["output_tokens"],
+            }
+        yield {
+            "kind": "stop",
+            "stop_reason": state.get("pending_stop_reason") or "end_turn",
+        }

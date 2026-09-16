@@ -21,7 +21,6 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
-    UserPromptMessage,
     VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import (
@@ -232,12 +231,15 @@ def parse_non_stream_response(
     text = "".join(_text_from_output_item(item) for item in output if isinstance(item, dict))
     tool_calls = _tool_calls_from_output(output)
     usage = data.get("usage") or {}
+    status = data.get("status")
+    if not status and data.get("incomplete_details"):
+        status = "incomplete"
     return (
         text,
         tool_calls,
         int(usage.get("input_tokens") or usage.get("prompt_tokens") or 0),
         int(usage.get("output_tokens") or usage.get("completion_tokens") or 0),
-        data.get("status") or data.get("incomplete_details") and "incomplete",
+        status,
     )
 
 
@@ -253,6 +255,84 @@ def parse_stream_response(
       {"kind": "stop", "stop_reason"}
       {"kind": "error", "message"}
     """
+    state: dict[str, Any] = {
+        "stopped": False,
+        "usage": None,
+    }
+
+    def parse_sse_data(raw: str) -> Optional[dict[str, Any]]:
+        data_payload = None
+        for line in raw.splitlines():
+            if line.startswith("data:"):
+                data_payload = line[5:].lstrip()
+        if data_payload is None:
+            data_payload = raw.strip()
+        if not data_payload:
+            return None
+        try:
+            return json.loads(data_payload)
+        except json.JSONDecodeError:
+            return None
+
+    def dispatch(data: dict[str, Any]) -> Generator[dict[str, Any], None, None]:
+        etype = data.get("type") or ""
+        if etype in {"response.output_text.delta", "response.text.delta"}:
+            text = data.get("delta") or data.get("text") or ""
+            if text:
+                yield {"kind": "text_delta", "text": text}
+            return
+        if etype == "response.output_item.added":
+            item = data.get("item") or {}
+            if item.get("type") in {"function_call", "tool_call"}:
+                yield {
+                    "kind": "tool_call_delta",
+                    "index": data.get("output_index") or 0,
+                    "id": item.get("call_id") or item.get("id") or "",
+                    "name": item.get("name") or "",
+                    "arguments_delta": "",
+                }
+            return
+        if etype == "response.function_call_arguments.delta":
+            yield {
+                "kind": "tool_call_delta",
+                "index": data.get("output_index") or 0,
+                "id": data.get("call_id") or "",
+                "name": "",
+                "arguments_delta": data.get("delta") or "",
+            }
+            return
+        if etype in {"response.completed", "response.incomplete", "response.failed"}:
+            if state.get("stopped"):
+                return
+            resp = data.get("response") or {}
+            usage = resp.get("usage") or {}
+            in_tok = int(usage.get("input_tokens") or 0)
+            out_tok = int(usage.get("output_tokens") or 0)
+            state["usage"] = {"input_tokens": in_tok, "output_tokens": out_tok}
+            if in_tok or out_tok:
+                yield {
+                    "kind": "usage",
+                    "input_tokens": in_tok,
+                    "output_tokens": out_tok,
+                }
+            stop_reason = (
+                resp.get("status")
+                or ("incomplete" if etype == "response.incomplete" else "completed")
+            )
+            if etype == "response.failed":
+                err = data.get("error") or resp.get("error") or {}
+                message = err.get("message") if isinstance(err, dict) else str(err or data)
+                yield {"kind": "error", "message": message}
+            state["stopped"] = True
+            yield {"kind": "stop", "stop_reason": stop_reason}
+            return
+        if etype == "error":
+            err = data.get("error") or data.get("response", {}).get("error") or {}
+            yield {
+                "kind": "error",
+                "message": err.get("message") if isinstance(err, dict) else str(err or data),
+            }
+
     buffer = ""
     for chunk in response.iter_lines(decode_unicode=True):
         if chunk is None:
@@ -265,92 +345,25 @@ def parse_stream_response(
         if chunk == "":
             if not buffer.strip():
                 continue
-            raw = buffer.strip()
+            raw = buffer
             buffer = ""
-            # SSE: optional "event: ..." then "data: {...}"
-            data_payload = None
-            for line in raw.splitlines():
-                if line.startswith("data:"):
-                    data_payload = line[5:].lstrip()
-            if data_payload is None:
-                data_payload = raw
-            try:
-                data = json.loads(data_payload)
-            except json.JSONDecodeError:
-                continue
-
-            etype = data.get("type") or ""
-            if etype in {"response.output_text.delta", "response.text.delta"}:
-                text = data.get("delta") or data.get("text") or ""
-                if text:
-                    yield {"kind": "text_delta", "text": text}
-            elif etype == "response.output_item.added":
-                item = data.get("item") or {}
-                if item.get("type") in {"function_call", "tool_call"}:
-                    yield {
-                        "kind": "tool_call_delta",
-                        "index": data.get("output_index") or 0,
-                        "id": item.get("call_id") or item.get("id") or "",
-                        "name": item.get("name") or "",
-                        "arguments_delta": "",
-                    }
-            elif etype == "response.function_call_arguments.delta":
-                yield {
-                    "kind": "tool_call_delta",
-                    "index": data.get("output_index") or 0,
-                    "id": data.get("call_id") or "",
-                    "name": "",
-                    "arguments_delta": data.get("delta") or "",
-                }
-            elif etype == "response.completed":
-                resp = data.get("response") or {}
-                usage = resp.get("usage") or {}
-                yield {
-                    "kind": "usage",
-                    "input_tokens": int(usage.get("input_tokens") or 0),
-                    "output_tokens": int(usage.get("output_tokens") or 0),
-                }
-                yield {"kind": "stop", "stop_reason": resp.get("status") or "completed"}
-            elif etype in {"response.failed", "error"}:
-                err = data.get("error") or data.get("response", {}).get("error") or {}
-                yield {
-                    "kind": "error",
-                    "message": err.get("message") if isinstance(err, dict) else str(err or data),
-                }
-            elif etype == "response.incomplete":
-                resp = data.get("response") or {}
-                usage = resp.get("usage") or {}
-                yield {
-                    "kind": "usage",
-                    "input_tokens": int(usage.get("input_tokens") or 0),
-                    "output_tokens": int(usage.get("output_tokens") or 0),
-                }
-                yield {"kind": "stop", "stop_reason": "incomplete"}
+            data = parse_sse_data(raw)
+            if data is not None:
+                yield from dispatch(data)
             continue
         buffer += chunk + "\n"
 
     if buffer.strip():
-        raw = buffer.strip()
-        data_payload = None
-        for line in raw.splitlines():
-            if line.startswith("data:"):
-                data_payload = line[5:].lstrip()
-        if data_payload:
-            try:
-                data = json.loads(data_payload)
-            except json.JSONDecodeError:
-                return
-            etype = data.get("type") or ""
-            if etype in {"response.output_text.delta", "response.text.delta"}:
-                text = data.get("delta") or ""
-                if text:
-                    yield {"kind": "text_delta", "text": text}
-            elif etype == "response.completed":
-                resp = data.get("response") or {}
-                usage = resp.get("usage") or {}
-                yield {
-                    "kind": "usage",
-                    "input_tokens": int(usage.get("input_tokens") or 0),
-                    "output_tokens": int(usage.get("output_tokens") or 0),
-                }
-                yield {"kind": "stop", "stop_reason": "completed"}
+        data = parse_sse_data(buffer)
+        if data is not None:
+            yield from dispatch(data)
+
+    if not state.get("stopped"):
+        usage = state.get("usage")
+        if usage and (usage.get("input_tokens") or usage.get("output_tokens")):
+            yield {
+                "kind": "usage",
+                "input_tokens": usage["input_tokens"],
+                "output_tokens": usage["output_tokens"],
+            }
+        yield {"kind": "stop", "stop_reason": "completed"}

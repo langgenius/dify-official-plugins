@@ -7,8 +7,7 @@ model_sources.
 
 from __future__ import annotations
 
-import logging
-from collections.abc import Generator, Mapping
+from collections.abc import Generator
 from typing import Any, Optional, Union
 
 import requests
@@ -43,19 +42,9 @@ try:
     from models.llm import llm_anthropic, llm_responses, session_headers
     from models.llm.session_headers import (
         DEFAULT_ENDPOINT_URL,
-        DEFAULT_USER_AGENT,
-        ANTHROPIC_MODELS,
-        RESPONSES_MODELS,
-        _RUN_ID_HEADER,
         add_custom_parameters,
-        apply_extra_headers,
-        build_session_id,
-        current_conversation_id,
-        current_rpc_session_id,
         extra_headers_rule,
-        is_resolved_id,
         join_endpoint_url,
-        parse_extra_headers,
         public_headers_for_protocol,
         resolve_protocol,
     )
@@ -65,24 +54,12 @@ except ImportError:  # pragma: no cover - importlib standalone load
     import session_headers
     from session_headers import (
         DEFAULT_ENDPOINT_URL,
-        DEFAULT_USER_AGENT,
-        ANTHROPIC_MODELS,
-        RESPONSES_MODELS,
-        _RUN_ID_HEADER,
         add_custom_parameters,
-        apply_extra_headers,
-        build_session_id,
-        current_conversation_id,
-        current_rpc_session_id,
         extra_headers_rule,
-        is_resolved_id,
         join_endpoint_url,
-        parse_extra_headers,
         public_headers_for_protocol,
         resolve_protocol,
     )
-
-logger = logging.getLogger(__name__)
 
 # Back-compat aliases (tests and older imports).
 _extra_headers_rule = extra_headers_rule
@@ -107,31 +84,31 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
     # --- session helpers kept as classmethods so existing tests can call them ---
     @staticmethod
     def _parse_extra_headers(raw: Any) -> dict[str, str]:
-        return parse_extra_headers(raw)
+        return session_headers.parse_extra_headers(raw)
 
     @classmethod
     def _apply_extra_headers(cls, credentials: dict, model_parameters: dict) -> None:
-        apply_extra_headers(credentials, model_parameters)
+        session_headers.apply_extra_headers(credentials, model_parameters)
 
     @classmethod
     def _current_conversation_id(cls) -> Optional[str]:
-        return current_conversation_id()
+        return session_headers.current_conversation_id()
 
     @classmethod
     def _current_rpc_session_id(cls) -> Optional[str]:
-        return current_rpc_session_id()
+        return session_headers.current_rpc_session_id()
 
     @staticmethod
     def _is_resolved_id(value: str) -> bool:
-        return is_resolved_id(value)
+        return session_headers.is_resolved_id(value)
 
     @classmethod
     def _build_session_id(cls, user: Optional[str], credentials: dict) -> str:
-        return build_session_id(user, credentials)
+        return session_headers.build_session_id(user, credentials)
 
     @classmethod
     def _add_custom_parameters(cls, credentials: dict, user: Optional[str]) -> None:
-        add_custom_parameters(credentials, user)
+        session_headers.add_custom_parameters(credentials, user)
 
     @classmethod
     def _resolve_protocol(cls, model: str, credentials: dict) -> str:
@@ -335,25 +312,27 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
             prompt_messages=prompt_messages,
             message=assistant,
             usage=usage,
-            system_fingerprint=data.get("id"),
+            system_fingerprint=None,
         )
 
-    def _wrap_anthropic_stream(
+    def _emit_stream_events(
         self,
+        events,
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        response: requests.Response,
+        error_label: str,
     ) -> Generator[LLMResultChunk, None, None]:
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
         tool_arg_buffers: dict[int, str] = {}
         usage_in = 0
         usage_out = 0
+        finished = False
 
-        for event in llm_anthropic.parse_stream_response(response, prompt_messages):
+        for event in events:
             kind = event.get("kind")
             if kind == "error":
-                raise InvokeError(str(event.get("message") or "Anthropic stream error"))
+                raise InvokeError(str(event.get("message") or f"{error_label} stream error"))
             if kind == "usage":
                 usage_in = int(event.get("input_tokens") or usage_in)
                 usage_out = int(event.get("output_tokens") or usage_out)
@@ -398,6 +377,9 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                     ),
                 )
             elif kind == "stop":
+                if finished:
+                    continue
+                finished = True
                 usage = None
                 if usage_in or usage_out:
                     usage = self._calc_response_usage(
@@ -417,6 +399,21 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                         usage=usage,
                     ),
                 )
+
+    def _wrap_anthropic_stream(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        response: requests.Response,
+    ) -> Generator[LLMResultChunk, None, None]:
+        yield from self._emit_stream_events(
+            llm_anthropic.parse_stream_response(response, prompt_messages),
+            model,
+            credentials,
+            prompt_messages,
+            "Anthropic",
+        )
 
     def _validate_anthropic_credentials(self, model: str, credentials: dict) -> None:
         body = {
@@ -485,6 +482,11 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         body = self._build_responses_body(
             model, credentials, prompt_messages, model_parameters, tools, stream
         )
+        if stop:
+            # OpenAI Responses text config; accepted by OpenCode /responses gateways.
+            text_cfg = dict(body.get("text") or {})
+            text_cfg["stop"] = list(stop)
+            body["text"] = text_cfg
         try:
             response = requests.post(
                 self._responses_url(credentials),
@@ -511,7 +513,7 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
             prompt_messages=prompt_messages,
             message=assistant,
             usage=usage,
-            system_fingerprint=data.get("id"),
+            system_fingerprint=None,
         )
 
     def _wrap_responses_stream(
@@ -521,78 +523,13 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         prompt_messages: list[PromptMessage],
         response: requests.Response,
     ) -> Generator[LLMResultChunk, None, None]:
-        tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        tool_arg_buffers: dict[int, str] = {}
-        usage_in = 0
-        usage_out = 0
-
-        for event in llm_responses.parse_stream_response(response):
-            kind = event.get("kind")
-            if kind == "error":
-                raise InvokeError(str(event.get("message") or "Responses stream error"))
-            if kind == "usage":
-                usage_in = int(event.get("input_tokens") or usage_in)
-                usage_out = int(event.get("output_tokens") or usage_out)
-            if kind == "text_delta":
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=0,
-                        message=AssistantPromptMessage(content=event.get("text") or ""),
-                    ),
-                )
-            elif kind == "tool_call_delta":
-                idx = int(event.get("index") or 0)
-                while len(tool_calls) <= idx:
-                    tool_calls.append(
-                        AssistantPromptMessage.ToolCall(
-                            id="",
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name="", arguments=""
-                            ),
-                        )
-                    )
-                if event.get("id"):
-                    tool_calls[idx].id = event["id"]
-                if event.get("name"):
-                    tool_calls[idx].function.name = event["name"]
-                arg_delta = event.get("arguments_delta") or ""
-                if arg_delta:
-                    tool_arg_buffers[idx] = tool_arg_buffers.get(idx, "") + arg_delta
-                    tool_calls[idx].function.arguments = tool_arg_buffers[idx]
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=idx,
-                        message=AssistantPromptMessage(
-                            content="",
-                            tool_calls=[tool_calls[idx]],
-                        ),
-                    ),
-                )
-            elif kind == "stop":
-                usage = None
-                if usage_in or usage_out:
-                    usage = self._calc_response_usage(
-                        model, credentials, usage_in, usage_out
-                    )
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=0,
-                        message=AssistantPromptMessage(content=""),
-                        finish_reason=(
-                            "tool_calls"
-                            if any(t.id or t.function.name for t in tool_calls)
-                            else "stop"
-                        ),
-                        usage=usage,
-                    ),
-                )
+        yield from self._emit_stream_events(
+            llm_responses.parse_stream_response(response),
+            model,
+            credentials,
+            prompt_messages,
+            "Responses",
+        )
 
     def _validate_responses_credentials(self, model: str, credentials: dict) -> None:
         body = {
