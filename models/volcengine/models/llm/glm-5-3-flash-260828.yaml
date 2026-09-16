@@ -1,0 +1,38 @@
+model: glm-5-3-flash-260828
+label:
+  en_US: glm-5-3-flash-260828
+  zh_Hans: glm-5-3-flash-260828
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: max
+    options:
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制思维链长度以平衡质量、延迟与成本。low 快速响应；high 深度分析；max 为最难任务最大化推理。
+      en_US: Controls chain-of-thought length to balance quality, latency, and cost. low favors fast response; high enables deep analysis; max maximizes reasoning for hardest tasks.
+  - name: max_tokens
+    use_template: max_tokens
+    max: 131072
+    default: 32768
+pricing:
+  input: "0.8"
+  output: "2.8"
+  unit: "0.000001"
+  currency: RMB

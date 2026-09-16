@@ -55,6 +55,19 @@ parameters:
       en_US: "Supports http/https/socks proxies. Example: http://user:pass@example.com:3128."
       zh_Hans: "支持 http/https/socks 代理。示例：http://user:pass@example.com:3128。"
     form: form
+  - name: backend
+    type: string
+    required: false
+    placeholder:
+      en_US: "duckduckgo,brave,yahoo"
+      zh_Hans: "duckduckgo,brave,yahoo"
+    label:
+      en_US: Search engines
+      zh_Hans: 搜索引擎
+    human_description:
+      en_US: "Comma-separated engines to query, in order. Leave empty to rotate through all of them. Available: duckduckgo, brave, yahoo, google, startpage, mojeek, wikipedia, grokipedia. Pin this to the engines that still answer if this server gets rate-limited."
+      zh_Hans: "逗号分隔的搜索引擎列表，按顺序查询。留空则轮询全部引擎。可选：duckduckgo, brave, yahoo, google, startpage, mojeek, wikipedia, grokipedia。当服务器被限流时可固定为仍能返回结果的引擎。"
+    form: form
 extra:
   python:
     source: tools/ddgo_search.py

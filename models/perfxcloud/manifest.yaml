@@ -1,6 +1,7 @@
 author: langgenius
 created_at: 2024-10-09T15:14:37.903898-04:00
-icon: icon_s_en.svg
+icon: icon.png
+icon_dark: icon-dark.png
 label:
   en_US: perfxcloud
 description:
@@ -32,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.13
+version: 0.1.1

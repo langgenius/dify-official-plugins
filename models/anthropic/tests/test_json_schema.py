@@ -85,6 +85,74 @@ def test_json_schema_uses_native_structured_output(monkeypatch) -> None:
     }
 
 
+@pytest.mark.parametrize("as_text", [True, False])
+def test_json_schema_unwraps_dify_format(monkeypatch, as_text) -> None:
+    wrapper = {"schema": json.loads(SCHEMA), "name": "llm_response"}
+    original = json.loads(json.dumps(wrapper))
+    payload = _capture_payload(
+        monkeypatch,
+        {
+            "max_tokens": 1024,
+            "json_schema": json.dumps(wrapper) if as_text else wrapper,
+            "thinking": True,
+            "effort": "max",
+        },
+    )
+
+    assert payload["output_config"] == {
+        "effort": "max",
+        "format": {"type": "json_schema", "schema": PARSED_SCHEMA},
+    }
+    assert "json_schema" not in payload
+    assert wrapper == original
+
+
+@pytest.mark.parametrize("as_text", [True, False])
+@pytest.mark.parametrize(
+    "schema",
+    [
+        PARSED_SCHEMA,
+        {
+            "type": "object",
+            "properties": {"schema": {"type": "string"}, "name": {"type": "string"}},
+            "required": ["schema", "name"],
+            "additionalProperties": False,
+        },
+        {"type": "object", "schema": {"type": "string"}, "name": "custom"},
+        {"schema": {"type": "string"}, "name": "custom"},
+        {
+            "$ref": "#/$defs/result",
+            "$defs": {"result": PARSED_SCHEMA},
+            "schema": {"type": "string"},
+            "name": "custom",
+        },
+        {"schema": {"type": "string"}},
+    ],
+)
+def test_json_schema_preserves_raw_schema(monkeypatch, schema, as_text) -> None:
+    original = json.loads(json.dumps(schema))
+    payload = _capture_payload(
+        monkeypatch,
+        {"max_tokens": 1024, "json_schema": json.dumps(schema) if as_text else schema},
+    )
+
+    assert payload["output_config"]["format"]["schema"] == original
+    assert schema == original
+
+
+@pytest.mark.parametrize("as_text", [True, False])
+@pytest.mark.parametrize("inner", [None, {}, [], "", False])
+def test_json_schema_rejects_invalid_dify_inner_schema(monkeypatch, inner, as_text) -> None:
+    wrapper = {"schema": inner, "name": "llm_response"}
+    with pytest.raises(ValueError, match="non-empty JSON object"):
+        _capture_payload(
+            monkeypatch,
+            {"max_tokens": 1024, "json_schema": json.dumps(wrapper) if as_text else wrapper},
+        )
+
+    assert not _Anthropic.instances or not _Anthropic.instances[0].messages.calls
+
+
 def test_json_schema_merges_with_adaptive_effort(monkeypatch) -> None:
     payload = _capture_payload(
         monkeypatch,
