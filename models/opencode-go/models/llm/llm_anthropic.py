@@ -278,7 +278,8 @@ def map_http_error(response: requests.Response, body_text: str) -> Exception:
         )
     if status >= 500:
         return InvokeServerUnavailableError(
-            f"OpenCode Anthropic Messages server error ({status}): {snippet}"
+            f"OpenCode Anthropic Messages server error ({status}): {snippet}. "
+            "This is often a temporary upstream outage (e.g. union-alpha busy) — retry shortly."
         )
     return InvokeBadRequestError(
         f"OpenCode Anthropic Messages HTTP {status}: {snippet}"
@@ -292,9 +293,15 @@ def parse_non_stream_response(
     text_parts: list[str] = []
     tool_calls: list[AssistantPromptMessage.ToolCall] = []
     for block in data.get("content") or []:
+        if not isinstance(block, dict):
+            continue
         btype = block.get("type")
         if btype == "text":
             text_parts.append(block.get("text") or "")
+        elif btype == "thinking":
+            thinking = block.get("thinking") or block.get("text") or ""
+            if thinking:
+                text_parts.append(thinking)
         elif btype == "tool_use":
             tool_calls.append(
                 AssistantPromptMessage.ToolCall(
@@ -364,37 +371,10 @@ def parse_stream_response(
         "output_tokens": 0,
         "tool_index_state": {},
         "stopped": False,
+        "saw_content": False,
     }
 
     def dispatch(etype: str, data: dict[str, Any]) -> Generator[dict[str, Any], None, None]:
-        if etype == "message_start":
-            usage = (data.get("message") or {}).get("usage") or {}
-            state["input_tokens"] = int(usage.get("input_tokens") or state["input_tokens"])
-            state["output_tokens"] = int(
-                usage.get("output_tokens") or state["output_tokens"]
-            )
-            return
-        if etype == "content_block_delta":
-            delta = data.get("delta") or {}
-            dtype = delta.get("type")
-            if dtype == "text_delta":
-                text = delta.get("text") or ""
-                if text:
-                    yield {"kind": "text_delta", "text": text}
-            elif dtype == "input_json_delta":
-                idx = int(data.get("index") or 0)
-                tool_state = state["tool_index_state"].setdefault(
-                    idx, {"id": "", "name": "", "arguments": ""}
-                )
-                tool_state["arguments"] += delta.get("partial_json") or ""
-                yield {
-                    "kind": "tool_call_delta",
-                    "index": idx,
-                    "id": tool_state["id"],
-                    "name": tool_state["name"],
-                    "arguments_delta": delta.get("partial_json") or "",
-                }
-            return
         if etype == "content_block_start":
             block = data.get("content_block") or {}
             idx = int(data.get("index") or 0)
@@ -411,14 +391,50 @@ def parse_stream_response(
                     "name": block.get("name") or "",
                     "arguments_delta": "",
                 }
+            elif block.get("type") == "thinking":
+                # thinking deltas arrive as thinking_delta below
+                state.setdefault("thinking_indexes", set()).add(idx)
             return
-        if etype == "message_delta":
-            usage = data.get("usage") or {}
+        if etype == "content_block_delta":
+            delta = data.get("delta") or {}
+            dtype = delta.get("type")
+            if dtype == "text_delta":
+                text = delta.get("text") or ""
+                if text:
+                    yield {"kind": "text_delta", "text": text}
+            elif dtype == "thinking_delta":
+                text = delta.get("thinking") or ""
+                if text:
+                    yield {"kind": "text_delta", "text": text}
+            elif dtype == "input_json_delta":
+                idx = int(data.get("index") or 0)
+                tool_state = state["tool_index_state"].setdefault(
+                    idx, {"id": "", "name": "", "arguments": ""}
+                )
+                tool_state["arguments"] += delta.get("partial_json") or ""
+                yield {
+                    "kind": "tool_call_delta",
+                    "index": idx,
+                    "id": tool_state["id"],
+                    "name": tool_state["name"],
+                    "arguments_delta": delta.get("partial_json") or "",
+                }
+            return
+        if etype == "message_start":
+            usage = (data.get("message") or {}).get("usage") or {}
+            state["input_tokens"] = int(usage.get("input_tokens") or state["input_tokens"])
             state["output_tokens"] = int(
                 usage.get("output_tokens") or state["output_tokens"]
             )
-            # Capture stop_reason here but only emit finish on message_stop
-            # so usage is finalized first and we never double-stop.
+            return
+        if etype == "message_delta":
+            usage = data.get("usage") or {}
+            # OpenCode/union-alpha reports zeros on message_start and real
+            # token counts only here — accept both fields.
+            if usage.get("input_tokens") is not None:
+                state["input_tokens"] = int(usage.get("input_tokens") or 0)
+            if usage.get("output_tokens") is not None:
+                state["output_tokens"] = int(usage.get("output_tokens") or 0)
             stop_reason = (data.get("delta") or {}).get("stop_reason")
             if stop_reason:
                 state["pending_stop_reason"] = stop_reason
@@ -426,7 +442,7 @@ def parse_stream_response(
         if etype == "message_stop":
             if state.get("stopped"):
                 return
-            if state["input_tokens"] or state["output_tokens"]:
+            if state["input_tokens"] or state["output_tokens"] or state.get("saw_content"):
                 yield {
                     "kind": "usage",
                     "input_tokens": state["input_tokens"],
@@ -446,30 +462,63 @@ def parse_stream_response(
             }
 
     buffer = ""
-    for chunk in response.iter_lines(decode_unicode=True):
+    # Force UTF-8: requests may default to ISO-8859-1 when Content-Type has no charset.
+    iter_lines = response.iter_lines(decode_unicode=False)
+    saw_any_event = False
+    for chunk in iter_lines:
         if chunk is None:
             continue
         if isinstance(chunk, bytes):
-            try:
-                chunk = chunk.decode("utf-8")
-            except UnicodeDecodeError:
-                chunk = chunk.decode("utf-8", errors="replace")
+            chunk = chunk.decode("utf-8", errors="replace")
+        else:
+            chunk = str(chunk)
         if chunk == "":
             if not buffer.strip():
                 continue
             events = list(_iter_sse_json_lines(buffer))
             buffer = ""
             for etype, data in events:
+                saw_any_event = True
+                if etype == "content_block_delta":
+                    state["saw_content"] = True
                 yield from dispatch(etype, data)
             continue
         buffer += chunk + "\n"
 
     if buffer.strip():
-        for etype, data in _iter_sse_json_lines(buffer):
+        events = list(_iter_sse_json_lines(buffer))
+        if not events:
+            # Non-SSE JSON error body (e.g. {"type":"error",...} with HTTP 200).
+            try:
+                parsed = json.loads(buffer.strip())
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, dict) and (
+                parsed.get("type") == "error" or parsed.get("error")
+            ):
+                err = parsed.get("error") or {}
+                message = (
+                    err.get("message")
+                    if isinstance(err, dict)
+                    else str(err or parsed)
+                )
+                yield {"kind": "error", "message": message or str(parsed)}
+                return
+        for etype, data in events:
+            saw_any_event = True
+            if etype == "content_block_delta":
+                state["saw_content"] = True
             yield from dispatch(etype, data)
 
+    if not saw_any_event:
+        yield {
+            "kind": "error",
+            "message": "Empty Anthropic stream (no SSE events). Upstream may be unavailable — retry.",
+        }
+        return
+
     if not state.get("stopped"):
-        if state["input_tokens"] or state["output_tokens"]:
+        if state["input_tokens"] or state["output_tokens"] or state.get("saw_content"):
             yield {
                 "kind": "usage",
                 "input_tokens": state["input_tokens"],

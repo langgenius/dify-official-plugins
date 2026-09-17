@@ -3,7 +3,7 @@ feature: opencode-go-protocol-0.2.0
 status: delivered
 updated: 2026-09-17
 branch: feat/opencode-go-protocol-0.2.0
-commits: 13d6d563..dd1068d2
+commits: 13d6d563..c8e20e27 + live-debug fixes (pending)
 ---
 
 # OpenCode Go 全协议适配 0.2.0
@@ -12,9 +12,9 @@ commits: 13d6d563..dd1068d2
 
 **What was built** — OpenCode Go 0.2.0 在单一供应商内支持三类上游协议：Chat Completions（默认）、Anthropic Messages（`union-alpha`）、OpenAI Responses（`grok-4.6` / `gpt-5.6-luna` / `muse-spark-*`）。因 dify_plugin 每个 ModelType 只保留一个 LLM 实现类，架构改为单入口路由，而非三个 model_sources。共用 `session_headers.py`，三条线均强制 UA + `x-opencode-session`，Anthropic 使用 `x-api-key` 且不发送 Authorization。自定义模型可通过 `api_protocol` 选择协议。0.1.0 会话隔离行为保持不变。
 
-**Verification** — 单测：`test_session_id` / `test_session_runtime` / `test_extra_headers` / `test_backward_compat_002` / `test_protocol_routing`（含 SSE fixture）全绿。实测：glm/qwen/minimax/kimi/mimo chat OK；union-alpha `/messages` OK；grok-4.6 `/responses` OK；union-alpha chat 500（预期）；gpt-5.6-luna 本机区域受限 403（环境问题，错误信息清晰）。打包 `dist/opencode_go-0.2.0.difypkg` 成功。
+**Verification** — 单测：`test_session_id` / `test_session_runtime` / `test_extra_headers` / `test_backward_compat_002` / `test_protocol_routing`（26 项，含 SSE fixture / UTF-8 / 参数覆盖与剥离 / union-alpha 非流式仿真）全绿。实测：全部 chat 线模型 OK；`union-alpha` `/messages` OK（限时，流式易 503，已强制非流式仿真）；`minimax-m2.7` 仅 `/messages` 可用；`grok-4.6` / `gpt-5.6-luna` / `muse-spark-1.3` 经代理 `/responses` OK；12 个 vision 模型用户侧 Dify 实测通过。打包 `dist/opencode_go-0.2.0.difypkg` 成功。
 
-**Journey log** — 1) 三 model_sources 被 SDK last-wins 语义否决，改为单入口路由。2) Windows + dify_plugin gevent ssl monkeypatch 会导致 requests 递归；冒烟脚本需先 import dify_plugin 并清代理。3) Anthropic SSE `message_delta` 与 `message_stop` 双 finish，需只在 message_stop 发 stop 且 usage 先于 stop。4) 连续同 role 消息与空 text block 会让 Messages 400，需规范化。5) 多轮审查后补齐 stop 参数映射与 SSE 回归测试。
+**Journey log** — 1) 三 model_sources 被 SDK last-wins 语义否决，改为单入口路由。2) Windows + dify_plugin gevent ssl monkeypatch 会导致 requests 递归；冒烟脚本需先 import dify_plugin 并清代理。3) Anthropic SSE `message_delta` 与 `message_stop` 双 finish，需只在 message_stop 发 stop 且 usage 先于 stop。4) 连续同 role 消息与空 text block 会让 Messages 400，需规范化。5) 多轮审查后补齐 stop 参数映射与 SSE 回归测试。6) 实测：kimi-k2.7-code 仅允许 temperature=1/top_p=0.95（参数覆盖）；gpt-5.6-luna 拒绝 temperature/top_p（参数剥离）且需代理；union-alpha 流式易空/503，强制非流式仿真并从 message_delta 取 usage；SSE 需强制 UTF-8；瞬时 502/503/529 重试且 `trust_env=True` 走系统代理。
 
 ## [S1] Problem
 
@@ -52,7 +52,7 @@ models[model_cls.model_type] = model_cls  # last wins
 
 1. `credentials["api_protocol"]`（自定义模型）
 2. 预置 model id 白名单：
-   - `ANTHROPIC_MODELS = {"union-alpha"}`
+   - `ANTHROPIC_MODELS = {"union-alpha", "minimax-m2.7"}`（m2.7 chat 500，仅 `/messages` 可用）
    - `RESPONSES_MODELS = {"grok-4.6", "gpt-5.6-luna", "muse-spark-1.3-contributor", "muse-spark-1.2-contributor"}`
 3. 默认 `chat`
 

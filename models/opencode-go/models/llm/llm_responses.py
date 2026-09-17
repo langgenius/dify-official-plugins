@@ -334,14 +334,14 @@ def parse_stream_response(
             }
 
     buffer = ""
-    for chunk in response.iter_lines(decode_unicode=True):
+    # Force UTF-8: requests may default to ISO-8859-1 when Content-Type has no charset.
+    for chunk in response.iter_lines(decode_unicode=False):
         if chunk is None:
             continue
         if isinstance(chunk, bytes):
-            try:
-                chunk = chunk.decode("utf-8")
-            except UnicodeDecodeError:
-                chunk = chunk.decode("utf-8", errors="replace")
+            chunk = chunk.decode("utf-8", errors="replace")
+        else:
+            chunk = str(chunk)
         if chunk == "":
             if not buffer.strip():
                 continue

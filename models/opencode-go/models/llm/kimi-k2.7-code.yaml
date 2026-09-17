@@ -15,8 +15,20 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1
+    min: 0
+    max: 2
+    help:
+      en_US: OpenCode Go only accepts temperature=1 for this model. The plugin forces 1 regardless of the UI value.
+      zh_Hans: 该模型在 OpenCode Go 仅接受 temperature=1。插件会强制覆盖为你在界面填写的其他值。
   - name: top_p
     use_template: top_p
+    default: 0.95
+    min: 0
+    max: 1
+    help:
+      en_US: OpenCode Go only accepts top_p=0.95 for this model. The plugin forces 0.95 regardless of the UI value.
+      zh_Hans: 该模型在 OpenCode Go 仅接受 top_p=0.95。插件会强制覆盖为你在界面填写的其他值。
   - name: max_tokens
     use_template: max_tokens
     type: int

@@ -1,4 +1,5 @@
 """Protocol routing + Anthropic/Responses payload unit tests (no network)."""
+import json
 from unittest.mock import MagicMock, patch
 
 from dify_plugin.entities.model.message import (
@@ -11,7 +12,7 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
 from models.llm import llm_anthropic, llm_responses
-from models.llm.llm import OpenCodeGoLargeLanguageModel
+from models.llm.llm import OpenCodeGoLargeLanguageModel, apply_model_parameter_constraints
 from models.llm.session_headers import (
     public_headers_for_protocol,
     resolve_protocol,
@@ -21,6 +22,9 @@ from models.llm.session_headers import (
 def test_resolve_protocol_defaults_and_whitelists() -> None:
     assert resolve_protocol("glm-5.3-flash", {}) == "chat"
     assert resolve_protocol("union-alpha", {}) == "anthropic"
+    assert resolve_protocol("minimax-m2.7", {}) == "anthropic"
+    assert resolve_protocol("minimax-m3", {}) == "chat"
+    assert resolve_protocol("minimax-m2.5", {}) == "chat"
     assert resolve_protocol("grok-4.6", {}) == "responses"
     assert resolve_protocol("gpt-5.6-luna", {}) == "responses"
     assert resolve_protocol("muse-spark-1.3-contributor", {}) == "responses"
@@ -259,6 +263,114 @@ def test_invoke_chat_default_still_uses_oai_compat() -> None:
     assert captured["model"] == "glm-5.3-flash"
 
 
+def test_anthropic_stream_usage_from_message_delta() -> None:
+    lines = [
+        'event: message_start',
+        'data: {"type":"message_start","message":{"usage":{"input_tokens":0,"output_tokens":0}}}',
+        "",
+        "event: content_block_delta",
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"OK"}}',
+        "",
+        "event: message_delta",
+        'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":10,"output_tokens":5}}',
+        "",
+        "event: message_stop",
+        'data: {"type":"message_stop"}',
+        "",
+    ]
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse(lines), []))
+    usage = next(e for e in events if e["kind"] == "usage")
+    assert usage["input_tokens"] == 10
+    assert usage["output_tokens"] == 5
+    assert any(e["kind"] == "text_delta" and e["text"] == "OK" for e in events)
+
+
+def test_anthropic_stream_raw_error_body() -> None:
+    lines = [
+        b'{"type":"error","error":{"type":"api_error","message":"Endpoint is unavailable."}}',
+        b"",
+    ]
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse(lines), []))
+    assert events and events[0]["kind"] == "error"
+    assert "unavailable" in events[0]["message"].lower()
+
+
+def test_anthropic_stream_empty_raises_error() -> None:
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse([b""]), []))
+    assert events and events[0]["kind"] == "error"
+
+
+def test_anthropic_stream_utf8_chinese() -> None:
+    payload = json.dumps(
+        {
+            "type": "content_block_delta",
+            "index": 0,
+            "delta": {"type": "text_delta", "text": "用户您好"},
+        },
+        ensure_ascii=False,
+    )
+    lines = [f"data: {payload}".encode("utf-8"), b"", b""]
+    events = list(llm_anthropic.parse_stream_response(_FakeSSEResponse(lines), []))
+    texts = [e["text"] for e in events if e["kind"] == "text_delta"]
+    assert texts == ["用户您好"]
+
+
+def test_kimi_k27_code_parameter_overrides() -> None:
+    params = apply_model_parameter_constraints(
+        "kimi-k2.7-code", {"temperature": 0.7, "top_p": 0.9, "max_tokens": 128}
+    )
+    assert params["temperature"] == 1.0
+    assert params["top_p"] == 0.95
+    assert params["max_tokens"] == 128
+    other = apply_model_parameter_constraints("kimi-k3", {"temperature": 0.7})
+    assert other["temperature"] == 0.7
+
+
+def test_gpt_luna_strips_temperature_and_top_p() -> None:
+    params = apply_model_parameter_constraints(
+        "gpt-5.6-luna",
+        {"temperature": 0.7, "top_p": 0.9, "max_tokens": 64},
+    )
+    assert "temperature" not in params
+    assert "top_p" not in params
+    assert params["max_tokens"] == 64
+
+
+def test_union_alpha_forces_nonstream_emulation() -> None:
+    model = OpenCodeGoLargeLanguageModel(model_schemas=[])
+    captured = {}
+
+    def fake_session_post(self, url, headers=None, json=None, stream=False, timeout=None):
+        captured["stream"] = stream
+        captured["json"] = json
+        class R:
+            status_code = 200
+            encoding = "utf-8"
+            text = ""
+            def json(self):
+                return {
+                    "content": [{"type": "text", "text": "OK"}],
+                    "usage": {"input_tokens": 3, "output_tokens": 1},
+                }
+        return R()
+
+    with patch("requests.Session.post", new=fake_session_post):
+        result = model._invoke(
+            model="union-alpha",
+            credentials={"api_key": "sk-test"},
+            prompt_messages=[UserPromptMessage(content="hi")],
+            model_parameters={"max_tokens": 8},
+            stream=True,
+            user=None,
+        )
+    assert captured["stream"] is False
+    assert captured["json"]["stream"] is False
+    chunks = list(result)
+    assert len(chunks) == 1
+    assert chunks[0].delta.message.content == "OK"
+    assert chunks[0].delta.finish_reason == "stop"
+
+
 def test_tools_payload_shapes() -> None:
     tools = [
         PromptMessageTool(
@@ -398,24 +510,32 @@ def test_responses_body_includes_stop_sequences() -> None:
     creds = {"api_key": "sk-test"}
     captured = {}
 
-    def fake_post(url, headers=None, json=None, stream=False, timeout=None):
-        captured["json"] = json
-        raise RuntimeError("stop-after-capture")
+    class _FakeResp:
+        status_code = 200
+        encoding = "utf-8"
+        text = ""
+        def json(self):
+            return {
+                "output": [{"type": "message", "content": [{"type": "output_text", "text": "OK"}]}],
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+                "status": "completed",
+            }
 
-    with patch("models.llm.llm.requests.post", side_effect=fake_post):
-        try:
-            model._invoke_responses(
-                "grok-4.6",
-                creds,
-                [UserPromptMessage(content="hi")],
-                {},
-                None,
-                ["STOP"],
-                False,
-                {"User-Agent": "t"},
-            )
-        except RuntimeError:
-            pass
+    def fake_session_post(self, url, headers=None, json=None, stream=False, timeout=None):
+        captured["json"] = json
+        return _FakeResp()
+
+    with patch("requests.Session.post", new=fake_session_post):
+        model._invoke_responses(
+            "grok-4.6",
+            creds,
+            [UserPromptMessage(content="hi")],
+            {},
+            None,
+            ["STOP"],
+            False,
+            {"User-Agent": "t"},
+        )
     assert captured["json"]["text"]["stop"] == ["STOP"]
 
 

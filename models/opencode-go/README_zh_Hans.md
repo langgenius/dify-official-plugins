@@ -10,11 +10,18 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 - 自定义模型支持，并提供 **API 协议** 选择（`chat` / `anthropic` / `responses`）
 - 同一供应商内完整支持三类上游协议：
   - **Chat Completions**（`{base}/chat/completions` + `Authorization: Bearer`）— 多数模型默认
-  - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `union-alpha`）
+  - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `union-alpha`、`minimax-m2.7`）
   - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
 - **三条协议路径都会**发送 OpenCode 必需请求头：
   - `User-Agent`（默认 `dify-opencode-go-plugin/0.2.0`）
   - `x-opencode-session`（会话路由 / prompt cache）
+- 上游怪癖已自动处理：
+  - `kimi-k2.7-code` — 强制 `temperature=1` / `top_p=0.95`（网关仅接受这两组值）
+  - `gpt-5.6-luna` — 剥离 `temperature` / `top_p`（上游直接拒绝）
+  - `union-alpha` — 原生流式易空响应 / 503；插件用非流式 `/messages` 结果仿真流式输出
+  - 瞬时 `502` / `503` / `529` 自动退避重试；空 SSE / 裸错误 JSON 会映射为 Dify `InvokeError`（不会静默返回空文本）
+  - SSE 强制按 UTF-8 解码（OpenCode 常不声明 charset）
+  - 出站请求遵循进程 / 系统代理（`trust_env`）
 - **会话隔离（推荐）**：开启 LLM 节点模型参数 `extra_headers` 并保留默认 JSON。Dify 会在调用前解析 `{{#sys.*#}}`；插件随后选择：
   - Chatflow / 对话应用：会话 ID → 同一对话共用一个 session
   - 工作流应用：通过内部辅助头取 `workflow_run_id` → 同一次运行共用一个 session
@@ -49,7 +56,7 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 2. 模型名称填写 [Go 文档](https://opencode.ai/docs/go/) 中的 model id（例如 `kimi-k2.6`）。
 3. 设置 **API 协议** 与模型端点一致：
    - `chat`（默认）→ `/chat/completions`
-   - `anthropic` → `/messages`（`union-alpha` 等仅 Messages 可用的模型）
+   - `anthropic` → `/messages`（`union-alpha`、`minimax-m2.7` 等仅 Messages 可用的模型）
    - `responses` → `/responses`（`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
 4. 可按需设置上下文长度、最大 token、Function Calling、视觉能力。
 
@@ -65,24 +72,48 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 
 | 模型 | 协议 | 说明 |
 | --- | --- | --- |
-| Union Alpha Free（`union-alpha`） | anthropic | 免费 / 限时；走 oa-compat `/chat/completions` 会 500 |
-| Grok 4.6（`grok-4.6`） | responses | 文档标明仅 Responses |
-| GPT 5.6 Luna（`gpt-5.6-luna`） | responses | 文档标明仅 Responses；**部分地区受限** |
+| Union Alpha Free（`union-alpha`） | anthropic | **限时免费体验，可能随时下线**；oa-compat `/chat/completions` 会 500；原生流式不稳定（插件用非流式仿真流式）。请勿作为生产长期依赖。 |
+| MiniMax M2.7（`minimax-m2.7`） | anthropic | oa-compat `/chat/completions` 会 500；`/messages` 可用 |
+| Grok 4.6（`grok-4.6`） | responses | 文档标明仅 Responses。**部分区域（含中国大陆）可能需代理出境** |
+| GPT 5.6 Luna（`gpt-5.6-luna`） | responses | 文档标明仅 Responses；**部分地区受限**（通常需代理）。插件会剥离 `temperature` / `top_p` |
 | Muse Spark 1.3 Contributor | responses | **区域限制**（Meta 地理政策）；Contributor 档可能用于训练 |
 | Muse Spark 1.2 Contributor | responses | 同上 |
 
-Qwen / MiniMax 继续走 Chat Completions（oa-compat）。OpenCode 文档虽列出 `/messages`，但 oa-compat 实测 200，保持可避免回归。
+> **代理说明：** Responses 线模型常见地域限制。在中国大陆使用时，请先设置
+> `HTTP_PROXY` / `HTTPS_PROXY`（或打开系统代理），再启动插件 / Dify 运行时。
+> 插件会遵循进程 / 系统代理环境变量（`trust_env`）。
 
-本地实测矩阵（2026-09-16，0.2.0）：
+Qwen 以及 MiniMax M3 / M2.5 继续走 Chat Completions（oa-compat）。OpenCode 文档虽列出 `/messages`，但 oa-compat 实测 200，保持可避免回归。MiniMax M2.7 是例外（chat 500 → 走 anthropic）。
+
+### 模型参数约束
+
+| 模型 | 行为 |
+| --- | --- |
+| `kimi-k2.7-code` | 网关仅接受 `temperature=1` 与 `top_p=0.95`；插件会覆盖其他取值 |
+| `gpt-5.6-luna` | 上游拒绝 `temperature` 与 `top_p`；插件会剥离这两个参数 |
+
+### 多模态能力标记
+
+能力开关（vision / video / document / audio）对齐**官方模型能力**，因为 OpenCode Go 实际是转发上游官方 API。并非每个模型的每种模态都在网关上单独复测过。
+
+本地实测矩阵（2026-09-17，0.2.0 + 实测修复）。所有标记 vision 的模型均已在用户侧 Dify 工作流中验证通过：
 
 | 模型 | 状态 |
 | --- | --- |
-| glm-5.3-flash 等 chat 模型 | OK（流式 + 非流式） |
-| union-alpha 经 anthropic `/messages` | OK（流式 + 非流式） |
+| glm-5.3-flash / glm-5.x | OK（流式 + 非流式） |
+| glm-5.1 / glm-5.2 | OK |
+| mimo-v2.5 / mimo-v2.5-pro | OK |
+| kimi-k2.6 / kimi-k2.7-code / kimi-k3 | OK |
+| qwen3.6-plus / qwen3.7-plus / qwen3.7-max / qwen3.8-flash / qwen3.8-max | OK |
+| minimax-m3 / minimax-m2.5 | OK（chat） |
+| minimax-m2.7 | OK（anthropic `/messages`） |
+| deepseek-v4-pro / v4-flash / v4.1-flash / flash-vision-exp | OK |
+| longcat-2.0 / hy3 / hy4-preview | OK |
+| union-alpha 经 anthropic `/messages` | OK（插件非流式仿真流式；原生流式常空/503） |
 | union-alpha 经 chat `/chat/completions` | 500（预期失败） |
-| grok-4.6 经 responses `/responses` | OK（流式 + 非流式） |
-| gpt-5.6-luna 经 responses | **区域受限**（`unsupported_country_region_territory`） |
-| muse-spark-* | 区域限制，视网络环境而定 |
+| grok-4.6 经 responses `/responses` | 代理下 OK |
+| gpt-5.6-luna 经 responses | 代理下 OK |
+| muse-spark-1.3 经 responses | HTTP 200（内容质量可能波动；区域受限） |
 
 ## 开发 / 调试
 

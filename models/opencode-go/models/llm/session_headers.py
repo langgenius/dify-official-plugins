@@ -240,7 +240,7 @@ def add_custom_parameters(credentials: dict, user: Optional[str]) -> dict[str, s
 
 
 # Predefined models that only work on Anthropic Messages / OpenAI Responses.
-ANTHROPIC_MODELS = frozenset({"union-alpha"})
+ANTHROPIC_MODELS = frozenset({"union-alpha", "minimax-m2.7"})
 RESPONSES_MODELS = frozenset(
     {
         "grok-4.6",

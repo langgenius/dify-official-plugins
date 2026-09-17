@@ -7,6 +7,7 @@ model_sources.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Generator
 from typing import Any, Optional, Union
 
@@ -63,6 +64,76 @@ except ImportError:  # pragma: no cover - importlib standalone load
 
 # Back-compat aliases (tests and older imports).
 _extra_headers_rule = extra_headers_rule
+
+
+# OpenCode Go gateway hard-pins sampling params for some models.
+# Overrides survive stale Dify UI defaults after schema updates.
+MODEL_PARAMETER_OVERRIDES: dict[str, dict[str, Any]] = {
+    "kimi-k2.7-code": {"temperature": 1.0, "top_p": 0.95},
+}
+
+# Parameters these models reject entirely (400 Unsupported parameter).
+MODEL_PARAMETER_STRIP: dict[str, frozenset[str]] = {
+    "gpt-5.6-luna": frozenset({"temperature", "top_p"}),
+}
+
+# union-alpha SSE frequently 503s / returns empty bodies while non-stream is
+# stable. Dify still asks for a generator, so we emulate one chunk.
+FORCE_NONSTREAM_MODELS = frozenset({"union-alpha"})
+
+
+def apply_model_parameter_constraints(model: str, model_parameters: dict) -> dict:
+    updated = dict(model_parameters)
+    for key in MODEL_PARAMETER_STRIP.get(model, ()):
+        updated.pop(key, None)
+    overrides = MODEL_PARAMETER_OVERRIDES.get(model)
+    if overrides:
+        updated.update(overrides)
+    return updated
+
+
+_RETRYABLE_STATUS = {502, 503, 529}
+
+
+def _post_with_retry(
+    url: str,
+    headers: dict,
+    body: dict,
+    stream: bool,
+    *,
+    attempts: int = 4,
+    backoff: float = 1.2,
+) -> requests.Response:
+    """POST with retries on transient upstream unavailability.
+
+    OpenCode free models (especially union-alpha) 503 intermittently even when
+    healthy — a few short retries hide most of that from Dify workflows.
+    """
+    session = requests.Session()
+    # Honor HTTP(S)_PROXY / system proxy. Responses-line models (grok / gpt-luna
+    # / muse) are region-restricted and usually need an outbound proxy from CN.
+    session.trust_env = True
+    last: Optional[requests.Response] = None
+    attempts = max(1, attempts)
+    for attempt in range(attempts):
+        response = session.post(
+            url,
+            headers=headers,
+            json=body,
+            stream=stream,
+            timeout=(10, 600),
+        )
+        last = response
+        if response.status_code not in _RETRYABLE_STATUS or attempt == attempts - 1:
+            return response
+        # Drain connection body so the socket can be reused.
+        try:
+            response.close()
+        except Exception:
+            pass
+        time.sleep(backoff * (attempt + 1))
+    assert last is not None
+    return last
 
 
 class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -126,6 +197,7 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._apply_extra_headers(credentials, model_parameters)
+        model_parameters = apply_model_parameter_constraints(model, model_parameters)
         headers = add_custom_parameters(credentials, user)
         protocol = self._resolve_protocol(model, credentials)
         if protocol == "anthropic":
@@ -277,18 +349,20 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool,
         headers: dict[str, str],
     ):
+        force_nonstream = model in FORCE_NONSTREAM_MODELS
+        use_stream = bool(stream) and not force_nonstream
         body = self._build_anthropic_body(
-            model, credentials, prompt_messages, model_parameters, tools, stream
+            model, credentials, prompt_messages, model_parameters, tools, use_stream
         )
         if stop:
             body["stop_sequences"] = list(stop)
         try:
-            response = requests.post(
+            response = _post_with_retry(
                 self._anthropic_url(credentials),
-                headers=self._anthropic_headers(credentials, headers),
-                json=body,
-                stream=stream,
-                timeout=(10, 600),
+                self._anthropic_headers(credentials, headers),
+                body,
+                use_stream,
+                attempts=5 if force_nonstream else 4,
             )
         except requests.RequestException as ex:
             raise InvokeError(
@@ -298,7 +372,15 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         if response.status_code != 200:
             raise llm_anthropic.map_http_error(response, response.text)
 
-        if stream:
+        # OpenCode often omits charset; requests then defaults to ISO-8859-1 and
+        # corrupts Chinese text in stream/json decoding.
+        if not response.encoding or response.encoding.lower() in {
+            "iso-8859-1",
+            "latin-1",
+        }:
+            response.encoding = "utf-8"
+
+        if use_stream:
             return self._wrap_anthropic_stream(model, credentials, prompt_messages, response)
 
         data = response.json()
@@ -307,12 +389,28 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         )
         assistant = AssistantPromptMessage(content=text, tool_calls=tool_calls or [])
         usage = self._calc_response_usage(model, credentials, in_tok, out_tok)
-        return LLMResult(
+        result = LLMResult(
             model=model,
             prompt_messages=prompt_messages,
             message=assistant,
             usage=usage,
             system_fingerprint=None,
+        )
+        if stream:
+            # Dify asked for a stream; emulate a single-chunk generator.
+            return self._result_as_stream(result)
+        return result
+
+    def _result_as_stream(self, result: LLMResult) -> Generator[LLMResultChunk, None, None]:
+        yield LLMResultChunk(
+            model=result.model,
+            prompt_messages=result.prompt_messages,
+            delta=LLMResultChunkDelta(
+                index=0,
+                message=result.message,
+                finish_reason="stop",
+                usage=result.usage,
+            ),
         )
 
     def _emit_stream_events(
@@ -488,18 +586,23 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
             text_cfg["stop"] = list(stop)
             body["text"] = text_cfg
         try:
-            response = requests.post(
+            response = _post_with_retry(
                 self._responses_url(credentials),
-                headers=self._responses_headers(credentials, headers),
-                json=body,
-                stream=stream,
-                timeout=(10, 600),
+                self._responses_headers(credentials, headers),
+                body,
+                stream,
             )
         except requests.RequestException as ex:
             raise InvokeError(f"OpenCode Responses connection error: {ex}") from ex
 
         if response.status_code != 200:
             raise llm_responses.map_http_error(response, response.text)
+
+        if not response.encoding or response.encoding.lower() in {
+            "iso-8859-1",
+            "latin-1",
+        }:
+            response.encoding = "utf-8"
 
         if stream:
             return self._wrap_responses_stream(model, credentials, prompt_messages, response)

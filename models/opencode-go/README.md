@@ -10,11 +10,18 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 - Customizable model support with an **API Protocol** selector (`chat` / `anthropic` / `responses`)
 - Three upstream protocols in one provider:
   - **Chat Completions** (`{base}/chat/completions` + `Authorization: Bearer`) — default for most models
-  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `union-alpha`)
+  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `union-alpha`, `minimax-m2.7`)
   - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
   - `User-Agent`: `dify-opencode-go-plugin/0.2.0` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
+- Upstream quirks handled automatically:
+  - `kimi-k2.7-code` — forces `temperature=1` / `top_p=0.95` (gateway only accepts these)
+  - `gpt-5.6-luna` — strips `temperature` / `top_p` (upstream rejects them)
+  - `union-alpha` — stream is flaky (empty / 503); the plugin emulates streaming from a non-stream `/messages` call
+  - Transient `502` / `503` / `529` are retried with backoff; empty SSE / raw error JSON surface as Dify `InvokeError` (never silent empty text)
+  - SSE is always decoded as UTF-8 (OpenCode often omits charset)
+  - Outbound requests honor the process / system proxy (`trust_env`)
 - Session isolation (recommended): enable the LLM-node model parameter `extra_headers` and keep the default JSON. Dify resolves `{{#sys.*#}}` before invoke; the plugin then picks:
   - Chatflow / chat apps: conversation id → one session per conversation
   - Workflow apps: `workflow_run_id` (via the internal helper header) → one session per run, shared by LLM nodes in that run
@@ -48,7 +55,7 @@ If OpenCode adds a new model before this plugin is updated:
 2. Model name = model id from the [Go docs](https://opencode.ai/docs/go/) (e.g. `kimi-k2.6`).
 3. Set **API Protocol** to match the model’s endpoint:
    - `chat` (default) → `/chat/completions`
-   - `anthropic` → `/messages` (`union-alpha` and other Messages-only ids)
+   - `anthropic` → `/messages` (`union-alpha`, `minimax-m2.7`, other Messages-only ids)
    - `responses` → `/responses` (`grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 4. Optionally set context size / max tokens / function calling / vision.
 
@@ -66,28 +73,49 @@ Base URL default: `https://opencode.ai/zen/go/v1`.
 
 | Model | Protocol | Notes |
 | --- | --- | --- |
-| Union Alpha Free (`union-alpha`) | anthropic | Free / limited time; oa-compat `/chat/completions` returns 500 |
-| Grok 4.6 (`grok-4.6`) | responses | Documented Responses-only |
-| GPT 5.6 Luna (`gpt-5.6-luna`) | responses | Documented Responses-only; **region-restricted** in some territories |
+| Union Alpha Free (`union-alpha`) | anthropic | **Limited-time free trial — may be removed anytime**; oa-compat `/chat/completions` returns 500; native stream is flaky (plugin emulates stream from non-stream). Do not rely on it for production. |
+| MiniMax M2.7 (`minimax-m2.7`) | anthropic | oa-compat `/chat/completions` returns 500; `/messages` works |
+| Grok 4.6 (`grok-4.6`) | responses | Documented Responses-only. **May require outbound proxy from some regions (e.g. CN).** |
+| GPT 5.6 Luna (`gpt-5.6-luna`) | responses | Documented Responses-only; **region-restricted** in some territories (often needs proxy). Plugin strips `temperature` / `top_p` for this model. |
 | Muse Spark 1.3 Contributor | responses | **Region-limited** (Meta geographic policy); contributor tier may use prompts for training |
 | Muse Spark 1.2 Contributor | responses | Same as above |
 
-Qwen / MiniMax remain on Chat Completions (oa-compat) even though OpenCode docs list `/messages` as the preferred endpoint — oa-compat is verified 200 and avoids regressions.
+> **Proxy note:** Responses-line models are frequently blocked or geo-restricted.
+> From mainland China, set `HTTP_PROXY` / `HTTPS_PROXY` (or enable system proxy)
+> before starting the plugin / Dify runtime so outbound HTTPS can leave the region.
+> The plugin honors the process / system proxy environment (`trust_env`).
 
-Local smoke test against a real OpenCode Go key (2026-09-16, 0.2.0):
+Qwen and MiniMax M3 / M2.5 remain on Chat Completions (oa-compat) even though OpenCode docs list `/messages` as preferred — oa-compat is verified 200 and avoids regressions. MiniMax M2.7 is the exception (chat 500 → routed to anthropic).
+
+### Model parameter constraints
+
+| Model | Behavior |
+| --- | --- |
+| `kimi-k2.7-code` | Gateway only accepts `temperature=1` and `top_p=0.95`; the plugin overrides other values. |
+| `gpt-5.6-luna` | Upstream rejects `temperature` and `top_p`; the plugin strips them. |
+
+### Multimodal flags
+
+Feature flags (vision / video / document / audio) follow the **official** model capabilities, because OpenCode Go proxies those upstream APIs. Not every modality is re-tested on the gateway for every model.
+
+Local smoke matrix (2026-09-17, 0.2.0 + live-debug fixes). Vision for all vision-flagged models was verified in a Dify workflow by the user:
 
 | Model | Status |
 | --- | --- |
 | glm-5.3-flash / glm-5.x | OK (stream + non-stream) |
-| mimo-v2.5 | OK |
-| kimi-k2.6 | OK |
-| qwen3.8-flash | OK |
-| minimax-m3 | OK |
-| union-alpha via anthropic `/messages` | OK (stream + non-stream) |
+| glm-5.1 / glm-5.2 | OK |
+| mimo-v2.5 / mimo-v2.5-pro | OK |
+| kimi-k2.6 / kimi-k2.7-code / kimi-k3 | OK |
+| qwen3.6-plus / qwen3.7-plus / qwen3.7-max / qwen3.8-flash / qwen3.8-max | OK |
+| minimax-m3 / minimax-m2.5 | OK (chat) |
+| minimax-m2.7 | OK (anthropic `/messages`) |
+| deepseek-v4-pro / v4-flash / v4.1-flash / flash-vision-exp | OK |
+| longcat-2.0 / hy3 / hy4-preview | OK |
+| union-alpha via anthropic `/messages` | OK (plugin emulates stream from non-stream; native stream often empty/503) |
 | union-alpha via chat `/chat/completions` | 500 (expected) |
-| grok-4.6 via responses `/responses` | OK (stream + non-stream) |
-| gpt-5.6-luna via responses | **Region blocked** from some hosts (`unsupported_country_region_territory`) |
-| muse-spark-* | Region restricted (not always callable) |
+| grok-4.6 via responses `/responses` | OK with outbound proxy |
+| gpt-5.6-luna via responses | OK with outbound proxy |
+| muse-spark-1.3 via responses | HTTP 200 (content quality may vary; region-limited) |
 
 ## Development / debug
 
