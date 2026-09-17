@@ -1,0 +1,123 @@
+background: "#0B0F14"
+configurate_methods:
+  - predefined-model
+  - customizable-model
+description:
+  en_US: IO Intelligence is io.net's OpenAI-compatible model platform serving open models (Llama, DeepSeek, GLM, Qwen, Kimi and more). Model IDs are org/name style, e.g. meta-llama/Llama-3.3-70B-Instruct.
+  zh_Hans: IO Intelligence 是 io.net 的 OpenAI 兼容模型平台，提供开源模型（Llama、DeepSeek、GLM、Qwen、Kimi 等）。模型 ID 为 org/name 格式，例如 meta-llama/Llama-3.3-70B-Instruct。
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+    provider_source: provider/ionet.py
+help:
+  title:
+    en_US: Get your API Key from io.net
+    zh_Hans: 从 io.net 获取 API Key
+  url:
+    en_US: https://cloud.io.net
+icon_large:
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+label:
+  en_US: IO Intelligence
+  zh_Hans: IO Intelligence
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter model id, e.g. meta-llama/Llama-3.3-70B-Instruct
+      zh_Hans: 输入模型 ID，例如 meta-llama/Llama-3.3-70B-Instruct
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your IO Intelligence API Key
+        zh_Hans: 在此输入你的 IO Intelligence API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: text-input
+      required: false
+      default: https://api.intelligence.io.solutions/api/v1
+    - variable: context_size
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: false
+      default: "128000"
+    - variable: max_tokens
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      required: false
+      default: "32768"
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: function_calling_type
+      label:
+        en_US: Function calling
+        zh_Hans: Function Calling
+      type: select
+      required: false
+      default: tool_call
+      options:
+        - label:
+            en_US: Support
+            zh_Hans: 支持
+          value: tool_call
+        - label:
+            en_US: Not Support
+            zh_Hans: 不支持
+          value: no_call
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: vision_support
+      label:
+        en_US: Vision support
+        zh_Hans: 视觉支持
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+provider: ionet
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
