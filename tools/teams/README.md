@@ -15,6 +15,7 @@ Post messages into Microsoft Teams **channels** and **chats**, and list your tea
 - **Send Chat Message** — post a message to a 1:1 or group chat (`POST /chats/{chat-id}/messages`).
 - **List Chats** — your recent chats (`GET /me/chats`).
 - **List Channel Messages** — recent messages in a channel.
+- **List Group Calendar Events** — events from a team's Microsoft 365 group calendar, optionally within a start/end date range (`GET /groups/{team-id}/calendarView`); returns subject, start/end, organizer, attendees and Teams meeting info.
 
 Typical flow: **List Teams** → **List Channels** (grab the channel id) → **Send Channel Message**.
 
@@ -26,6 +27,7 @@ Typical flow: **List Teams** → **List Channels** (grab the channel id) → **S
    - `Team.ReadBasic.All`, `Channel.ReadBasic.All` — list teams/channels
    - `ChannelMessage.Send` — post channel messages
    - `Chat.ReadWrite`, `ChatMessage.Send` — list/post chats
+   - `Group.Read.All` — read a team's group calendar (List Group Calendar Events; admin consent required)
    - `User.Read`, `offline_access`
 4. Add the redirect URI shown by Dify when you connect the plugin.
 5. In Dify, configure the plugin with **Client ID**, **Client Secret** and (optional) **Tenant ID** — leave Tenant ID blank / `common` for personal or multi-tenant apps — then complete the OAuth sign-in.

@@ -1,0 +1,90 @@
+identity:
+  name: list_group_calendar_events
+  author: langgenius
+  label:
+    en_US: List Group Calendar Events
+    zh_Hans: 列出群组日历事件
+    pt_BR: Listar Eventos do Calendário do Grupo
+    ja_JP: グループカレンダーの予定一覧
+    zh_Hant: 列出群組行事曆事件
+description:
+  human:
+    en_US: List events from the Microsoft 365 group calendar of a Team, optionally within a date range
+    zh_Hans: 列出团队所属 Microsoft 365 群组日历中的事件，可选按日期范围
+    pt_BR: Listar eventos do calendário do grupo do Microsoft 365 de uma equipe, opcionalmente dentro de um período
+    ja_JP: チームの Microsoft 365 グループカレンダーの予定を一覧表示します（期間指定は任意）
+    zh_Hant: 列出團隊所屬 Microsoft 365 群組行事曆中的事件，可選按日期範圍
+  llm: List events from the Microsoft 365 group calendar backing a Microsoft Teams team, via the Microsoft Graph API. If both start_datetime and end_datetime are given it uses calendarView (expanding recurring events) to return only events in that window; otherwise it lists the group's events. Returns subject, start, end, organizer, attendees and Teams online-meeting info. Requires the Group.Read.All permission.
+parameters:
+  - name: team_id
+    type: string
+    required: true
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チーム ID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: The ID of the team whose group calendar to read (same ID used by List Channels)
+      zh_Hans: 要读取其群组日历的团队 ID（与"列出频道"使用的 ID 相同）
+      pt_BR: O ID da equipe cujo calendário do grupo será lido (o mesmo ID usado em Listar Canais)
+      ja_JP: グループカレンダーを読み取るチームの ID（「チャネル一覧」で使う ID と同じ）
+      zh_Hant: 要讀取其群組行事曆的團隊 ID（與「列出頻道」使用的 ID 相同）
+    llm_description: The ID of the Microsoft Teams team (its backing Microsoft 365 group) whose calendar to list
+    form: llm
+  - name: start_datetime
+    type: string
+    required: false
+    label:
+      en_US: Start Time
+      zh_Hans: 开始时间
+      pt_BR: Hora de Início
+      ja_JP: 開始時刻
+      zh_Hant: 開始時間
+    human_description:
+      en_US: Start of the date range, ISO 8601 (e.g. 2026-09-07T11:30:00+09:00). Provide with End Time.
+      zh_Hans: 日期范围的开始，ISO 8601 格式（如 2026-09-07T11:30:00+09:00），需与结束时间成对提供
+      pt_BR: Início do período, ISO 8601 (ex. 2026-09-07T11:30:00+09:00). Forneça junto com a Hora de Término.
+      ja_JP: 期間の開始（ISO 8601、例 2026-09-07T11:30:00+09:00）。終了時刻とセットで指定します。
+      zh_Hant: 日期範圍的開始，ISO 8601 格式（如 2026-09-07T11:30:00+09:00），需與結束時間成對提供
+    llm_description: Optional start of the date range in ISO 8601. When both start_datetime and end_datetime are set, only events within the window are returned (calendarView). Must be paired with end_datetime.
+    form: llm
+  - name: end_datetime
+    type: string
+    required: false
+    label:
+      en_US: End Time
+      zh_Hans: 结束时间
+      pt_BR: Hora de Término
+      ja_JP: 終了時刻
+      zh_Hant: 結束時間
+    human_description:
+      en_US: End of the date range, ISO 8601 (e.g. 2026-09-07T13:30:00+09:00). Provide with Start Time.
+      zh_Hans: 日期范围的结束，ISO 8601 格式（如 2026-09-07T13:30:00+09:00），需与开始时间成对提供
+      pt_BR: Fim do período, ISO 8601 (ex. 2026-09-07T13:30:00+09:00). Forneça junto com a Hora de Início.
+      ja_JP: 期間の終了（ISO 8601、例 2026-09-07T13:30:00+09:00）。開始時刻とセットで指定します。
+      zh_Hant: 日期範圍的結束，ISO 8601 格式（如 2026-09-07T13:30:00+09:00），需與開始時間成對提供
+    llm_description: Optional end of the date range in ISO 8601. Must be paired with start_datetime.
+    form: llm
+  - name: top
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Top
+      zh_Hans: 数量
+      pt_BR: Quantidade
+      ja_JP: 件数
+      zh_Hant: 數量
+    human_description:
+      en_US: The maximum number of events to return
+      zh_Hans: 要返回的最大事件数
+      pt_BR: O número máximo de eventos a retornar
+      ja_JP: 返す予定の最大数
+      zh_Hant: 要返回的最大事件數
+    llm_description: The maximum number of events to return, default is 20
+    form: llm
+extra:
+  python:
+    source: tools/list_group_calendar_events.py
