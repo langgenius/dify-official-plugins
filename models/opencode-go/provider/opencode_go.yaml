@@ -87,6 +87,44 @@ model_credential_schema:
       show_on:
         - variable: __model_type
           value: llm
+    - variable: api_protocol
+      label:
+        en_US: API Protocol
+        zh_Hans: API 协议
+      type: select
+      required: false
+      default: chat
+      options:
+        - label:
+            en_US: Chat Completions (/chat/completions)
+            zh_Hans: Chat Completions（/chat/completions）
+          value: chat
+        - label:
+            en_US: Anthropic Messages (/messages)
+            zh_Hans: Anthropic Messages（/messages）
+          value: anthropic
+        - label:
+            en_US: OpenAI Responses (/responses)
+            zh_Hans: OpenAI Responses（/responses）
+          value: responses
+      show_on:
+        - variable: __model_type
+          value: llm
+      help:
+        title:
+          en_US: Upstream protocol
+          zh_Hans: 上游协议
+        text:
+          en_US: |-
+            Chat (default) works for most OpenCode Go models.
+            Choose Anthropic Messages for models that only expose /messages
+            (e.g. union-alpha) and OpenAI Responses for models that only
+            expose /responses (e.g. grok-4.6, gpt-5.6-luna, muse-spark-*).
+          zh_Hans: |-
+            Chat（默认）适用于大多数 OpenCode Go 模型。
+            仅支持 /messages 的模型（如 union-alpha）请选择 Anthropic Messages；
+            仅支持 /responses 的模型（如 grok-4.6、gpt-5.6-luna、muse-spark-*）
+            请选择 OpenAI Responses。
     - variable: vision_support
       label:
         en_US: Vision support
@@ -139,10 +177,10 @@ provider_credential_schema:
         zh_Hans: User-Agent
       type: text-input
       required: false
-      default: dify-opencode-go-plugin/0.1.0
+      default: dify-opencode-go-plugin/0.2.0
       placeholder:
-        en_US: dify-opencode-go-plugin/0.1.0
-        zh_Hans: dify-opencode-go-plugin/0.1.0
+        en_US: dify-opencode-go-plugin/0.2.0
+        zh_Hans: dify-opencode-go-plugin/0.2.0
     - variable: session_id
       label:
         en_US: Session ID (optional)
@@ -150,21 +188,24 @@ provider_credential_schema:
       type: text-input
       required: false
       placeholder:
-        en_US: Leave empty to auto-generate dify-opencode-go/<client>/<conversation>
-        zh_Hans: 留空则自动生成 dify-opencode-go/<client>/<conversation>
+        en_US: Leave empty (recommended) — sessions are isolated automatically
+        zh_Hans: 留空即可（推荐）— 会按对话/按次自动隔离
       help:
         title:
           en_US: x-opencode-session header
           zh_Hans: x-opencode-session 请求头
         text:
           en_US: |-
-            OpenCode Go uses this header for routing and prompt-cache affinity.
-            Leave blank — the plugin sends a collision-resistant id:
-            dify-opencode-go/<client-id>/<dify-conversation-id>.
-            Same conversation keeps the same id; different conversations differ.
+            Usually leave empty. By default the plugin already sends a
+            per-conversation session (Chatflow) or a per-run session (Workflow).
+            Fill this only if you need ONE fixed session id for the whole
+            workspace (e.g. debugging or a shared cache). A value here is
+            ignored when the LLM node already sets x-opencode-session via
+            extra_headers.
           zh_Hans: |-
-            OpenCode Go 用该请求头做路由与 prompt cache。建议留空，插件会自动发送
-            dify-opencode-go/<client-id>/<dify-conversation-id>，
-            同一对话稳定、不同对话不同，避免与他人短 ID 冲突。
+            一般无需填写。插件默认已按对话（Chatflow）或按次运行（工作流）
+            自动隔离会话。仅在需要整个工作空间共用一个固定会话 ID 时才填写
+            （例如调试或共享缓存）。若 LLM 节点已通过 extra_headers 指定
+            x-opencode-session，则本凭证项不会生效。
 supported_model_types:
   - llm

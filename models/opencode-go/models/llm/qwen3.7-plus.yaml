@@ -7,9 +7,11 @@ features:
   - agent-thought
   - tool-call
   - stream-tool-call
+  - vision
+  - video
 model_properties:
   mode: chat
-  context_size: 262144
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +22,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 32768
+    max: 65536
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.

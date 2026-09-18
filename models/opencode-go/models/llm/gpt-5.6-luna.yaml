@@ -1,0 +1,51 @@
+model: gpt-5.6-luna
+label:
+  en_US: GPT 5.6 Luna
+  zh_Hans: GPT 5.6 Luna
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 272000
+parameter_rules:
+  - name: temperature
+    label:
+      en_US: Temperature (not supported upstream — ignored)
+      zh_Hans: 温度（上游不支持，将被忽略）
+    type: float
+    default: 1
+    min: 0
+    max: 2
+    required: false
+    help:
+      en_US: OpenCode / OpenAI reject temperature for gpt-5.6-luna. The plugin strips this field.
+      zh_Hans: gpt-5.6-luna 上游不接受 temperature，插件会自动剥离该参数。
+  - name: top_p
+    label:
+      en_US: Top P (not supported upstream — ignored)
+      zh_Hans: Top P（上游不支持，将被忽略）
+    type: float
+    default: 1
+    min: 0
+    max: 1
+    required: false
+    help:
+      en_US: OpenCode / OpenAI reject top_p for gpt-5.6-luna. The plugin strips this field.
+      zh_Hans: gpt-5.6-luna 上游不接受 top_p，插件会自动剥离该参数。
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 32768
+    help:
+      en_US: Maps to Responses API max_output_tokens. May require outbound proxy from some regions.
+      zh_Hans: 映射到 Responses API 的 max_output_tokens。部分地区可能需要代理。
+pricing:
+  input: "0.20"
+  output: "1.20"
+  unit: "0.000001"
+  currency: USD
