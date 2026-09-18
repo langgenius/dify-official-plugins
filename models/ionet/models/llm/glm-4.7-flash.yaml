@@ -1,7 +1,7 @@
-model: deepseek-ai/DeepSeek-V4.1-Flash
+model: zai-org/GLM-4.7-Flash
 label:
-  en_US: DeepSeek V4.1 Flash
-  zh_Hans: DeepSeek V4.1 Flash
+  en_US: GLM 4.7 Flash
+  zh_Hans: GLM 4.7 Flash
 model_type: llm
 features:
   - agent-thought
@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 262124
+  context_size: 200000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -21,14 +21,14 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 131072
+    max: 32768
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
   - name: frequency_penalty
     use_template: frequency_penalty
 pricing:
-  input: "0.306"
-  output: "1.224"
+  input: "0.0635"
+  output: "0.4"
   unit: "0.000001"
   currency: USD

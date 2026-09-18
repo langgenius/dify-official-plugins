@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 32 32" fill="none">
   <!-- IO Intelligence (io.net) mark -->
-  <rect width="32" height="32" rx="6" fill="#FFFFFF" />
-  <g transform="translate(2 8.63) scale(0.736842)" fill="#0A0A0A">
+  <rect width="32" height="32" rx="6" fill="#0A0A0A" />
+  <g transform="translate(2 8.63) scale(0.736842)" fill="#FFFFFF">
     <path
       d="M34.4049 0.483334C34.0795 0.166667 33.6514 0 33.189 0H11.8338C11.3714 0 10.9433 0.183334 10.6179 0.483334L8.20321 2.83333C7.87783 3.15 7.70657 3.56667 7.70657 4.01667V5H32.1957V12.5H37.3333V4.01667C37.3333 3.56667 37.145 3.15 36.8367 2.83333L34.422 0.483334H34.4049Z"
     />

@@ -5,10 +5,10 @@ label:
 model_type: llm
 features:
   - agent-thought
-  - vision
   - tool-call
   - multi-tool-call
   - stream-tool-call
+  - vision
 model_properties:
   mode: chat
   context_size: 65536
@@ -28,3 +28,8 @@ parameter_rules:
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
   - name: frequency_penalty
     use_template: frequency_penalty
+pricing:
+  input: "0.3028"
+  output: "2.405"
+  unit: "0.000001"
+  currency: USD

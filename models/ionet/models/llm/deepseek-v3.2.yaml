@@ -1,15 +1,16 @@
-model: meta-llama/Llama-3.3-70B-Instruct
+model: deepseek-ai/DeepSeek-V3.2
 label:
-  en_US: Llama 3.3 70B Instruct
-  zh_Hans: Llama 3.3 70B Instruct
+  en_US: DeepSeek V3.2
+  zh_Hans: DeepSeek V3.2
 model_type: llm
 features:
+  - agent-thought
   - tool-call
   - multi-tool-call
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 163840
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -26,3 +27,8 @@ parameter_rules:
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
   - name: frequency_penalty
     use_template: frequency_penalty
+pricing:
+  input: "1.4301"
+  output: "2.4063"
+  unit: "0.000001"
+  currency: USD

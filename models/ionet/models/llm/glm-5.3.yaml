@@ -1,7 +1,7 @@
 model: zai-org/GLM-5.3
 label:
-  en_US: GLM-5.3
-  zh_Hans: GLM-5.3
+  en_US: GLM 5.3
+  zh_Hans: GLM 5.3
 model_type: llm
 features:
   - agent-thought
@@ -27,3 +27,8 @@ parameter_rules:
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
   - name: frequency_penalty
     use_template: frequency_penalty
+pricing:
+  input: "1.334"
+  output: "4.3384"
+  unit: "0.000001"
+  currency: USD
