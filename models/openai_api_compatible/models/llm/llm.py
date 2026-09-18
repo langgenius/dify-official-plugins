@@ -620,13 +620,14 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["reasoning_format"] = reasoning_format_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
-        if enable_thinking_value is True and reasoning_effort_value is not None:
+        if enable_thinking_value is not False and reasoning_effort_value is not None:
             # Propagate reasoning_effort to both:
             # - top-level OpenAI Chat Completions param, and
             # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
-            # Only apply when thinking mode is explicitly enabled.
+            # reasoning_effort is a standard OpenAI Chat Completions parameter and should
+            # not be gated on the non-standard enable_thinking toggle.
             model_parameters["reasoning_effort"] = reasoning_effort_value
-            if strict_compatibility_value is False:
+            if enable_thinking_value is True and strict_compatibility_value is False:
                 # Only apply when `strict_compatibility_value` is False since
                 # `chat_template_kwargs` is a non-standard parameter.
                 chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
