@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.1
 type: plugin
 author: langgenius
 name: onedrive_datasource
@@ -9,6 +9,7 @@ description:
   en_US: OneDrive Datasource
   zh_Hans: OneDrive 数据源
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

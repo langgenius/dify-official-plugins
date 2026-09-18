@@ -7,3 +7,6 @@
 - qwen3-reranker-0.6b
 - gte-rerank-v2
 - jina-colbert-v2
+- jina-reranker-v3.5
+- cohere-rerank-v4.0-fast
+- cohere-rerank-v4.0-pro

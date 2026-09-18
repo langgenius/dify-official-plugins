@@ -1,7 +1,7 @@
 model: claude-4-7-opus
 label:
   en_US: Claude 4.7 Opus
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

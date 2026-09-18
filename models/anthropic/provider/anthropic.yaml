@@ -17,9 +17,9 @@ help:
   url:
     en_US: https://console.anthropic.com/account/keys
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: Anthropic
 model_credential_schema:

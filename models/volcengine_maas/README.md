@@ -17,6 +17,27 @@ If you want to call Ark **base models directly** without creating endpoints, use
 3. In Dify, go to **Settings -> Model Provider -> Volcengine Ark (Endpoint)**.
 4. Click **Add Model**, fill in the fields, and save.
 
+### Seed 2.1 and DeepSeek V4 GA
+
+Select the base model matching your deployed endpoint:
+
+| Base Model | Model version | Context / max output tokens |
+| --- | --- | --- |
+| Doubao-Seed-2.1-pro | doubao-seed-2-1-pro-260628 | 256K / 256K |
+| Doubao-Seed-2.1-turbo | doubao-seed-2-1-turbo-260628 | 256K / 256K |
+| DeepSeek-V4-Pro-GA | deepseek-v4-pro-ga-260813 | 1M / 384K |
+| DeepSeek-V4-Flash-GA | deepseek-v4-flash-ga-260731 | 1M / 384K |
+
+Continue to enter your `ep-...` Endpoint ID. Seed 2.1 supports image/video input,
+structured output, and reasoning effort from `minimal` to `high` (default `high`).
+DeepSeek V4 GA supports text input and reasoning effort up to `max`.
+
+Specifications and standard online token prices checked on 2026-09-07:
+[Seed 2.1 Pro](https://console.volcengine.com/ark/region:cn-beijing/model/detail?name=doubao-seed-2-1-pro),
+[Seed 2.1 Turbo](https://console.volcengine.com/ark/region:cn-beijing/model/detail?name=doubao-seed-2-1-turbo),
+[DeepSeek V4 Pro GA](https://console.volcengine.com/ark/region:cn-beijing/model/detail?name=deepseek-v4-pro-ga),
+[DeepSeek V4 Flash GA](https://console.volcengine.com/ark/region:cn-beijing/model/detail?name=deepseek-v4-flash-ga).
+
 ![img.png](_assets/img.png)
 
 ## Troubleshooting | 常见问题

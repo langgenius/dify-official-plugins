@@ -1,5 +1,6 @@
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
@@ -12,7 +13,10 @@ class ConfluenceProvider(ToolProvider):
 
         try:
             confluence = auth(credentials)
-            confluence.get_all_spaces(limit=1)
+            if isinstance(confluence, ConfluenceV2):
+                confluence.get(confluence.get_endpoint("spaces"), params={"limit": 1})
+            else:
+                confluence.get_all_spaces(limit=1)
 
         except Exception as e:
             raise ToolProviderCredentialValidationError(

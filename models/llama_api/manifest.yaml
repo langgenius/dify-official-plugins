@@ -1,4 +1,4 @@
-version: 0.0.8
+version: 0.0.9
 type: plugin
 author: langgenius
 name: llama-api
@@ -13,6 +13,7 @@ description:
   zh_Hans: Llama API
   pt_BR: Llama API
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

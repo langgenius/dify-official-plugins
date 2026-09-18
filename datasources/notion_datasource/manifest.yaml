@@ -1,4 +1,4 @@
-version: 0.1.21
+version: 0.1.22
 type: plugin
 author: langgenius
 name: notion_datasource
@@ -13,6 +13,7 @@ description:
   zh_Hans: Notion Datasource
   pt_BR: Notion Datasource
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

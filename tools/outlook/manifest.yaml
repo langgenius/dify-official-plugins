@@ -1,4 +1,4 @@
-version: 0.5.0
+version: 0.5.1
 type: plugin
 author: langgenius
 name: outlook
@@ -15,6 +15,7 @@ description:
   zh_Hans: 将 Microsoft Outlook 集成到 Dify - 读取、发送和整理邮件，并管理日历事件。
   pt_BR: Integre o Microsoft Outlook ao Dify - leia, envie e organize e-mails e gerencie eventos de calendário.
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

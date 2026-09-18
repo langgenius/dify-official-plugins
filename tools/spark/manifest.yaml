@@ -5,6 +5,7 @@ description:
   pt_BR: Pacote de Ferramentas da Plataforma Spark
   zh_Hans: 讯飞星火平台工具
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Spark
   pt_BR: Spark
@@ -33,4 +34,4 @@ resource:
 tags:
 - image
 type: plugin
-version: 0.0.7
+version: 0.0.8

@@ -15,6 +15,7 @@ class SmartsheetProvider(ToolProvider):
             # Attempt to initialize the Smartsheet client and make a simple API call to validate
             api_key = credentials.get("api_key")
             client = smartsheet.Smartsheet(api_key)
+            client.errors_as_exceptions(True)
             
             # Get user info as a simple validation test
             user_info = client.Users.get_current_user()

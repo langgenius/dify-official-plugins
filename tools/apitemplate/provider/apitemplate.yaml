@@ -13,7 +13,7 @@ identity:
     zh_Hans: "使用 APITemplate.io 从模板生成 PDF 和图像"
     pt_BR: "Gere PDFs e imagens usando APITemplate.io"
     zh_Hant: "使用 APITemplate.io 生成 PDF 和圖像"
-  icon: icon.png
+  icon: icon.svg
 
 credentials_for_provider:
   api_key:

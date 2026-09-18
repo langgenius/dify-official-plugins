@@ -9,9 +9,9 @@ description:
   zh_Hans: OCI 提供的模型，例如 Grok、Cohere Command 和 Llama。
 
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
 
 background: '#FFFFFF'
 

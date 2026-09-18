@@ -31,7 +31,8 @@ identity:
     zh_Hans: 'Lark 多维表格，需要开通以下权限: bitable:app。
 
       '
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Lark Base
     zh_Hans: Lark 多维表格

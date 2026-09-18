@@ -7,7 +7,8 @@ description:
   zh_Hans: "飞书知识库，需要开通以下权限: wiki:wiki:readonly。
 
     "
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu Wiki
   zh_Hans: 飞书知识库
@@ -36,4 +37,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

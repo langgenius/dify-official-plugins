@@ -5,9 +5,9 @@ description:
   en_US: Models provided by Aihubmix.
   zh_Hans: Aihubmix 提供的模型。
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
 background: "#E5E7EB"
 help:
   title:

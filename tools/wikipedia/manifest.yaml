@@ -7,6 +7,7 @@ description:
     around the world.
   zh_Hans: 维基百科是一个由全世界的志愿者创建和编辑的免费在线百科全书。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Wikipedia
   pt_BR: Wikipedia
@@ -35,4 +36,4 @@ resource:
 tags:
 - social
 type: plugin
-version: 0.0.8
+version: 0.0.9

@@ -8,14 +8,14 @@ requires-python = ">=3.12"
 dependencies = [
   # 0.10.0 introduces get_current_session(), required to resolve the
   # current Dify app_id for Ark request metadata.
-  "dify-plugin>=0.10.0",
-  "pydantic>=2.13.0,<3.0.0",
-  "volcengine-python-sdk[ark]>=5.0.28",
+  "dify-plugin>=0.10.2",
+  "pydantic>=2.13.5",
+  "volcengine-python-sdk[ark]>=5.0.48",
 ]
 
 [dependency-groups]
 dev = [
-  "pyrefly>=1.0.0",
-  "pytest",
-  "pyyaml",
+  "pyrefly>=1.2.0",
+  "pytest>=9.1.1",
+  "pyyaml>=6.0.3",
 ]

@@ -9,7 +9,8 @@ description:
     "飞书任务，需要开通以下权限: task:task:write、contact:user.id:readonly。
 
     "
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu Task
   zh_Hans: 飞书任务
@@ -38,4 +39,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

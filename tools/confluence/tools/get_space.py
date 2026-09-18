@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -16,10 +17,7 @@ class GetSpaceTool(Tool):
 
         space_key = tool_parameters.get("space_key")
 
-        space = confluence.get_space(
-            space_key=space_key,
-            expand=None,
-        )
+        space = confluence.get_space_by_key(space_key) if isinstance(confluence, ConfluenceV2) else confluence.get_space(space_key)
 
         if not space:
             yield self.create_text_message("Space not found")

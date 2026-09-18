@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 author: langgenius
 name: baserow
@@ -12,7 +12,8 @@ description:
   ja_JP: Baserow はオープンソースのオンラインデータベースツールです。このプラグインを使用すると、Baserow の API を使用して行を作成および管理できます。
   zh_Hans: Baserow 是一个开源的在线数据库工具。该插件允许您使用 Baserow 的 API 创建和管理行。
   pt_BR: Baserow é uma ferramenta de banco de dados online de código aberto. Este plugin permite que você crie e gerencie linhas usando a API do Baserow.
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

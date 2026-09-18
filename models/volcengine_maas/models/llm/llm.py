@@ -629,6 +629,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             "doubao-seed-2.0-lite",
             "doubao-seed-2.0-mini",
             "doubao-seed-2.0-code",
+            "doubao-seed-2.1-pro",
+            "doubao-seed-2.1-turbo",
+            "deepseek-v4-pro-ga",
+            "deepseek-v4-flash-ga",
         ):
             rules.append(
                 ParameterRule(
@@ -657,6 +661,24 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["minimal", "low", "medium", "high"],
                 )
             )
+        if base_model.lower() in (
+            "doubao-seed-2.1-pro",
+            "doubao-seed-2.1-turbo",
+            "deepseek-v4-pro-ga",
+            "deepseek-v4-flash-ga",
+        ):
+            is_deepseek = base_model.lower().startswith("deepseek-")
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="medium" if is_deepseek else "high",
+                    label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
+                    options=["minimal", "low", "medium", "high", "max"]
+                    if is_deepseek else ["minimal", "low", "medium", "high"],
+                )
+            )
+
         # Add structured output parameters for supported models
         if ModelFeature.STRUCTURED_OUTPUT in model_config.features:
             rules.extend([

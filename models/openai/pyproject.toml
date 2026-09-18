@@ -1,6 +1,6 @@
 [project]
 name = "dify-openai"
-version = "1.0.4"
+version = "1.0.5"
 description = "OpenAI models for Dify"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,14 +8,14 @@ requires-python = ">=3.12"
 dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for OpenAI request metadata.
-    "dify_plugin>=0.10.0",
-    "openai>=2.45.0",
-    "tiktoken>=0.13.0",
+    "dify_plugin>=0.10.2",
+    "openai>=3.8.0",
+    "tiktoken>=0.14.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.1.1",
     "pytest-mock>=3.15.1",
 ]
 

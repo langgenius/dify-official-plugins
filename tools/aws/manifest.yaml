@@ -1,4 +1,4 @@
-version: 0.0.30
+version: 0.0.31
 type: plugin
 author: langgenius
 name: aws_tools
@@ -13,6 +13,7 @@ description:
   zh_Hans: The tools based on the AWS Services
   pt_BR: The tools based on the AWS Services
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

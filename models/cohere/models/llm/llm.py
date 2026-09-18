@@ -5,20 +5,20 @@ from typing import Optional, Union, cast
 import cohere
 from cohere import (
     ChatMessage,
-    ChatStreamRequestToolResultsItem,
     GenerateStreamedResponse,
-    GenerateStreamedResponse_StreamEnd,
-    GenerateStreamedResponse_StreamError,
-    GenerateStreamedResponse_TextGeneration,
     Generation,
     NonStreamedChatResponse,
+    StreamEndGenerateStreamedResponse,
+    StreamEndStreamedChatResponse,
+    StreamErrorGenerateStreamedResponse,
     StreamedChatResponse,
-    StreamedChatResponse_StreamEnd,
-    StreamedChatResponse_TextGeneration,
-    StreamedChatResponse_ToolCallsGeneration,
+    TextGenerationGenerateStreamedResponse,
+    TextGenerationStreamedChatResponse,
     Tool,
     ToolCall,
+    ToolCallsGenerationStreamedChatResponse,
     ToolParameterDefinitionsValue,
+    ToolResult,
 )
 from cohere.core import RequestOptions
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
@@ -260,8 +260,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         index = 1
         full_assistant_content = ""
         for chunk in response:
-            if isinstance(chunk, GenerateStreamedResponse_TextGeneration):
-                chunk = cast(GenerateStreamedResponse_TextGeneration, chunk)
+            if isinstance(chunk, TextGenerationGenerateStreamedResponse):
+                chunk = cast(TextGenerationGenerateStreamedResponse, chunk)
                 text = chunk.text
                 if text is None:
                     continue
@@ -275,8 +275,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 index += 1
-            elif isinstance(chunk, GenerateStreamedResponse_StreamEnd):
-                chunk = cast(GenerateStreamedResponse_StreamEnd, chunk)
+            elif isinstance(chunk, StreamEndGenerateStreamedResponse):
+                chunk = cast(StreamEndGenerateStreamedResponse, chunk)
                 prompt_tokens = self._num_tokens_from_messages(
                     model, credentials, prompt_messages
                 )
@@ -299,8 +299,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 break
-            elif isinstance(chunk, GenerateStreamedResponse_StreamError):
-                chunk = cast(GenerateStreamedResponse_StreamError, chunk)
+            elif isinstance(chunk, StreamErrorGenerateStreamedResponse):
+                chunk = cast(StreamErrorGenerateStreamedResponse, chunk)
                 raise InvokeBadRequestError(chunk.err)
 
     def _chat_generate(
@@ -470,8 +470,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         full_assistant_content = ""
         tool_calls = []
         for chunk in response:
-            if isinstance(chunk, StreamedChatResponse_TextGeneration):
-                chunk = cast(StreamedChatResponse_TextGeneration, chunk)
+            if isinstance(chunk, TextGenerationStreamedChatResponse):
+                chunk = cast(TextGenerationStreamedChatResponse, chunk)
                 text = chunk.text
                 if text is None:
                     continue
@@ -485,8 +485,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 index += 1
-            elif isinstance(chunk, StreamedChatResponse_ToolCallsGeneration):
-                chunk = cast(StreamedChatResponse_ToolCallsGeneration, chunk)
+            elif isinstance(chunk, ToolCallsGenerationStreamedChatResponse):
+                chunk = cast(ToolCallsGenerationStreamedChatResponse, chunk)
                 if chunk.tool_calls:
                     for cohere_tool_call in chunk.tool_calls:
                         tool_call = AssistantPromptMessage.ToolCall(
@@ -498,8 +498,8 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                         tool_calls.append(tool_call)
-            elif isinstance(chunk, StreamedChatResponse_StreamEnd):
-                chunk = cast(StreamedChatResponse_StreamEnd, chunk)
+            elif isinstance(chunk, StreamEndStreamedChatResponse):
+                chunk = cast(StreamEndStreamedChatResponse, chunk)
                 yield final_response(
                     full_assistant_content, tool_calls, index, chunk.finish_reason
                 )
@@ -507,7 +507,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
 
     def _convert_prompt_messages_to_message_and_chat_histories(
         self, prompt_messages: list[PromptMessage]
-    ) -> tuple[str, list[ChatMessage], list[ChatStreamRequestToolResultsItem]]:
+    ) -> tuple[str, list[ChatMessage], list[ToolResult]]:
         """
         Convert prompt messages to message and chat histories
         :param prompt_messages: prompt messages
@@ -521,7 +521,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 if prompt_message.tool_calls:
                     for tool_call in prompt_message.tool_calls:
                         latest_tool_call_n_outputs.append(
-                            ChatStreamRequestToolResultsItem(
+                            ToolResult(
                                 call=ToolCall(
                                     name=tool_call.function.name,
                                     parameters=json.loads(tool_call.function.arguments),
@@ -542,7 +542,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                     for tool_call_n_outputs in latest_tool_call_n_outputs:
                         if tool_call_n_outputs.call.name == prompt_message.tool_call_id:
                             latest_tool_call_n_outputs[i] = (
-                                ChatStreamRequestToolResultsItem(
+                                ToolResult(
                                     call=ToolCall(
                                         name=tool_call_n_outputs.call.name,
                                         parameters=tool_call_n_outputs.call.parameters,

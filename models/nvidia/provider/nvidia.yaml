@@ -18,9 +18,13 @@ help:
   url:
     en_US: https://build.nvidia.com/explore/discover
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: API Catalog
 models:

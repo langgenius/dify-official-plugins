@@ -1,4 +1,4 @@
-version: 0.4.7
+version: 0.4.8
 type: plugin
 author: langgenius
 name: github_datasource
@@ -9,6 +9,7 @@ description:
   en_US: GitHub Repository Datasource - Access repositories, issues, PRs, and wiki pages
   zh_Hans: GitHub 仓库数据源 - 访问仓库、问题、拉取请求和 Wiki 页面
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

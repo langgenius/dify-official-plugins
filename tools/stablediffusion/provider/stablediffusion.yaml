@@ -37,7 +37,8 @@ identity:
     pt_BR: Stable Diffusion is a tool for generating images which can be deployed
       locally.
     zh_Hans: Stable Diffusion 是一个可以在本地部署的图片生成的工具。
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Stable Diffusion
     pt_BR: Stable Diffusion

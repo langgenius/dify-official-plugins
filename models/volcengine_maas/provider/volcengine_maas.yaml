@@ -19,10 +19,15 @@ help:
     en_US: https://console.volcengine.com/iam/keymanage/
     zh_Hans: https://console.volcengine.com/iam/keymanage/
 icon_large:
-  en_US: icon_l_en.svg
-  zh_Hans: icon_l_zh.svg
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Volcengine Ark (Endpoint)
   zh_Hans: 火山方舟（接入点）
@@ -113,6 +118,32 @@ model_credential_schema:
       en_US: Base Model
       zh_Hans: 基础模型
     options:
+    - label:
+        en_US: Doubao-Seed-2.1-pro
+      value: Doubao-Seed-2.1-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-2.1-turbo
+      value: Doubao-Seed-2.1-turbo
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: DeepSeek-V4-Pro-GA
+        zh_Hans: DeepSeek-V4-Pro 正式版
+      value: DeepSeek-V4-Pro-GA
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: DeepSeek-V4-Flash-GA
+        zh_Hans: DeepSeek-V4-Flash 正式版
+      value: DeepSeek-V4-Flash-GA
+      show_on:
+        - variable: __model_type
+          value: llm
     - label:
         en_US: Doubao-Seed-2.0-pro
       value: Doubao-Seed-2.0-pro

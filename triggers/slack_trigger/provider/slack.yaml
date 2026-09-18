@@ -5,6 +5,7 @@ identity:
     ja_JP: Slack トリガープラグイン、Slack イベントを Dify AI ワークフローに接続
     zh_Hans: 为 Slack App 设计的触发器插件，将 Slack 中的各类事件与 Dify 的 AI 工作流连接起来
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Slack Triggers
     zh_Hans: Slack 触发器

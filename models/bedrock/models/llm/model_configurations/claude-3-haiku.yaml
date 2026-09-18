@@ -1,7 +1,7 @@
 model: claude-3-haiku
 label:
   en_US: Claude 3 Haiku
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

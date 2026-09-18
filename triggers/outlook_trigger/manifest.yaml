@@ -5,6 +5,7 @@ description:
   ja_JP: Outlook Triggerは、Outlook イベントに基づいてアクションをトリガーするトリガープラグインです。
   zh_Hans: Outlook Trigger是一个触发器插件，支持在收到 Outlook 邮件时触发操作。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Outlook Trigger
   ja_JP: Outlook Trigger
@@ -31,4 +32,4 @@ resource:
       size: 1048576
 tags: []
 type: plugin
-version: 1.0.1
+version: 1.0.2

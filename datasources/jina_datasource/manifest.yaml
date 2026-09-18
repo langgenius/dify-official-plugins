@@ -1,4 +1,4 @@
-version: 0.0.10
+version: 0.0.11
 type: plugin
 author: langgenius
 name: jina_datasource
@@ -13,6 +13,7 @@ description:
   zh_Hans: Jina Reader Datasource
   pt_BR: Jina Reader Datasource
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

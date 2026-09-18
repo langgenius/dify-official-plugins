@@ -30,6 +30,7 @@ identity:
     en_US: Firecrawl API integration for web crawling and scraping.
     zh_Hans: Firecrawl API 集成，用于网页爬取和数据抓取。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Firecrawl
     zh_CN: Firecrawl

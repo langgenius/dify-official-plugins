@@ -1,4 +1,4 @@
-version: 0.0.18
+version: 0.0.19
 type: plugin
 author: langgenius
 name: sagemaker
@@ -12,7 +12,7 @@ description:
   ja_JP: Self deployed model provider - Amazon SageMaker
   zh_Hans: Self deployed model provider - Amazon SageMaker
   pt_BR: Self deployed model provider - Amazon SageMaker
-icon: icon_s_en.png
+icon: icon.svg
 resource:
   memory: 268435456
   permission:

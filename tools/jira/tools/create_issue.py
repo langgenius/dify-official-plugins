@@ -30,7 +30,7 @@ class CreateIssueTool(Tool):
         }
 
         if description:
-            fields["description"] = markdown_to_adf(description)
+            fields["description"] = markdown_to_adf(description) if jira.cloud else description
 
         yield self.create_json_message(
             jira.issue_create(

@@ -12,10 +12,10 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
+    UserPromptMessage,
 )
-from requests import Response
-
 from models.llm._metadata import apply_dify_headers_if_enabled
+from requests import Response
 
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -24,10 +24,14 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         rf"<think>\n{re.escape(_THINK_MARKER)}(.*?)\n</think>",
         re.DOTALL | re.IGNORECASE,
     )
-    _V4_MODELS = ("deepseek-v4-flash", "deepseek-v4-pro")
+    _THINKING_MODELS = (
+        "deepseek-flash",
+        "deepseek-v4-flash",
+        "deepseek-v4-flash-vision-exp",
+        "deepseek-v4-pro",
+    )
     _THINKING_UNSUPPORTED_PARAMETERS = (
         "temperature",
-        "top_p",
         "presence_penalty",
         "frequency_penalty",
     )
@@ -129,7 +133,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @classmethod
     def _normalize_model_parameters(cls, model: str, model_parameters: dict) -> None:
-        if model not in cls._V4_MODELS:
+        if model not in cls._THINKING_MODELS:
             return
 
         thinking = model_parameters.get("thinking", True)
@@ -141,10 +145,14 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             return
         if thinking.get("type") == "disabled":
             model_parameters.pop("reasoning_effort", None)
+            if model == "deepseek-flash":
+                model_parameters.pop("top_p", None)
             return
         if thinking.get("type") == "enabled":
             for parameter in cls._THINKING_UNSUPPORTED_PARAMETERS:
                 model_parameters.pop(parameter, None)
+            if model != "deepseek-flash":
+                model_parameters.pop("top_p", None)
 
     @staticmethod
     def _add_custom_parameters(credentials: dict) -> None:
@@ -214,6 +222,10 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> dict:
         credentials = credentials or {}
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
+        if isinstance(message, ToolPromptMessage) and isinstance(message.content, list):
+            message_dict["content"] = super()._convert_prompt_message_to_dict(
+                UserPromptMessage(content=message.content), credentials
+            )["content"]
         if not isinstance(message, AssistantPromptMessage):
             return message_dict
 
@@ -230,7 +242,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
                 reasoning_content = extracted_reasoning
 
         if (
-            credentials.get("_current_model", "").lower() in self._V4_MODELS
+            credentials.get("_current_model", "").lower() in self._THINKING_MODELS
             or reasoning_content is not None
         ):
             message_dict["reasoning_content"] = reasoning_content or ""

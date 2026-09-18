@@ -9,7 +9,8 @@ description:
     "Lark 日历，需要开通以下权限: calendar:calendar:read、calendar:calendar、contact:user.id:readonly。
 
     "
-icon: icon.png
+icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Lark Calendar
   zh_Hans: Lark 日历
@@ -38,4 +39,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

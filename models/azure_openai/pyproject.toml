@@ -11,10 +11,10 @@ dependencies = [
     # get_current_session(), used to resolve the current Dify app_id for
     # request metadata, needs >=0.10.0. main already requires a newer pin.
     "dify_plugin>=0.10.2",
-    "numpy>=2.5.2",
-    "openai>=3.3.0",
+    "numpy>=2.5.3",
+    "openai>=3.8.0",
     "pillow>=12.3.0",
-    "pydantic>=2.13.4",
+    "pydantic>=2.13.5",
     "tiktoken>=0.14.0",
 ]
 

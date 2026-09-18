@@ -5,7 +5,7 @@ identity:
     en_US: OpenSearch Retrieve
     zh_Hans: OpenSearch检索
     pt_BR: OpenSearch Retrieve
-  icon: _assets/icon.svg
+  icon: icon.svg
 description:
   human:
     en_US: A tool for retrieving relevant information from Amazon OpenSearch.

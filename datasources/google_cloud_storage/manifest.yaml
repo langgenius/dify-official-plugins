@@ -1,4 +1,4 @@
-version: 0.2.13
+version: 0.2.14
 type: plugin
 author: langgenius
 name: google_cloud_storage
@@ -9,6 +9,7 @@ description:
   en_US: Google Cloud Storage Datasource
   zh_Hans: Google Cloud Storage 数据源
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission: {}

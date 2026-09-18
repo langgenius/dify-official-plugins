@@ -14,6 +14,7 @@ identity:
     ja_JP: Teams のチャネルやチャットにメッセージを投稿し、チームやチャネルを一覧表示します
     zh_Hant: 向 Teams 頻道和聊天發送訊息，並列出團隊和頻道
   icon: icon.svg
+  icon_dark: icon-dark.svg
 oauth_schema:
   client_schema:
     - name: "client_id"

@@ -21,7 +21,6 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from requests import Response
@@ -260,17 +259,6 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         model_name = credentials.get("_current_model", "").lower()
         is_thinking_model = model_name in self._THINKING_MODELS
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
-
-        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
-            for index, content in enumerate(message.content):
-                if isinstance(content, VideoPromptMessageContent):
-                    message_dict["content"].insert(
-                        index,
-                        {
-                            "type": "video_url",
-                            "video_url": {"url": content.data},
-                        },
-                    )
 
         if isinstance(message, AssistantPromptMessage):
             content = message.content or ""

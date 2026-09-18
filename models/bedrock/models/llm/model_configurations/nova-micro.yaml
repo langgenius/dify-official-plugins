@@ -1,7 +1,7 @@
 model: nova-micro
 label:
   en_US: Nova Micro
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

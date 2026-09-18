@@ -9,23 +9,23 @@ requires-python = ">=3.12"
 dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Vertex AI request labels.
-    "dify_plugin>=0.10.0",
-    "anthropic[vertex]>=0.104.0",
-    "google-genai>=2.6.0",
-    "google-api-core>=2.30.3",
-    "google-auth>=2.53.0",
-    "google-cloud-aiplatform>=1.153.1",
+    "dify_plugin>=0.10.2",
+    "anthropic[vertex]>=1.4.0",
+    "google-genai>=2.22.0",
+    "google-api-core>=2.36.0",
+    "google-auth>=2.57.1",
+    "google-cloud-aiplatform>=2.1.0",
     "pillow>=12.3.0",
     "requests>=2.34.2",
-    "sentencepiece>=0.2.1",
-    "tiktoken>=0.13.0",
-    "mistralai[gcp]>=2.7.1",
+    "sentencepiece>=0.2.2",
+    "tiktoken>=0.14.0",
+    "mistralai[gcp]>=2.9.4",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
 ]
 
 [tool.pytest.ini_options]

@@ -5,6 +5,7 @@ description:
   pt_BR: Feishu group bot
   zh_Hans: 飞书群机器人
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Feishu
   pt_BR: Feishu
@@ -34,4 +35,4 @@ tags:
   - social
   - productivity
 type: plugin
-version: 0.0.7
+version: 0.0.8

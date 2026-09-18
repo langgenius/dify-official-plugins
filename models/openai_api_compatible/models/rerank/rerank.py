@@ -1,9 +1,7 @@
 import base64
 import ipaddress
-import json
 import logging
-import re
-from typing import Mapping, Optional, Union, Any
+from typing import Mapping, Optional
 from urllib.parse import urlparse
 
 import requests
@@ -27,6 +25,26 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIRerankModel(OAICompatRerankModel):
+    @staticmethod
+    def _resolve_rerank_endpoint_url(credentials: Mapping) -> str:
+        rerank_endpoint_url = (credentials.get("rerank_endpoint_url") or "").strip()
+        if rerank_endpoint_url:
+            return rerank_endpoint_url
+
+        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        return f"{endpoint_url}/rerank"
+
+    @staticmethod
+    def _safe_request_error_detail(
+        error: requests.exceptions.RequestException,
+    ) -> str:
+        if (
+            isinstance(error, requests.exceptions.HTTPError)
+            and error.response is not None
+        ):
+            return f"HTTP {error.response.status_code}"
+        return type(error).__name__
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -91,7 +109,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
             return RerankResult(model=model, docs=[])
 
         # Build API request
-        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        rerank_endpoint_url = self._resolve_rerank_endpoint_url(credentials)
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
@@ -112,19 +130,14 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         try:
-            logger.info(f"Rerank API Request (text mode) to {endpoint_url}/rerank")
+            logger.info("Rerank API Request (text mode)")
 
             response = requests.post(
-                f"{endpoint_url}/rerank",
+                rerank_endpoint_url,
                 headers=headers,
                 json=payload,
                 timeout=60,
             )
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Rerank API Error {response.status_code}: {response.text[:1000]}"
-                )
 
             response.raise_for_status()
 
@@ -164,9 +177,12 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
 
         except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
-        except Exception as ex:
-            raise InvokeError(str(ex))
+            detail = self._safe_request_error_detail(ex)
+            raise InvokeServerUnavailableError(
+                f"Rerank API request failed ({detail})"
+            ) from None
+        except Exception:
+            raise InvokeError("Rerank API returned an invalid response") from None
 
     def _invoke_multimodal(
         self,
@@ -216,7 +232,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
 
         # Build API request
-        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        rerank_endpoint_url = self._resolve_rerank_endpoint_url(credentials)
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
@@ -228,13 +244,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
             headers["Authorization"] = f"Bearer {api_key}"
 
         # Convert documents to ScoreMultiModalParam format
-        documents_params = []
-        for i, doc in enumerate(docs):
-            doc_param = self._to_score_multimodal_param(doc)
-            documents_params.append(doc_param)
-            logger.debug(
-                f"Document {i}: {json.dumps(doc_param, ensure_ascii=False)[:200]}"
-            )
+        documents_params = [self._to_score_multimodal_param(doc) for doc in docs]
 
         # Build payload according to vLLM/Qwen3 format
         # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
@@ -247,23 +257,16 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         try:
             logger.info(
-                f"Rerank API Request (multimodal mode) to {endpoint_url}/rerank"
+                "Rerank API Request (multimodal mode): %d documents",
+                len(documents_params),
             )
-            logger.info(f"Query: {query_text[:100]}")
-            logger.info(f"Documents count: {len(documents_params)}")
-            logger.debug(f"Payload: {json.dumps(payload, ensure_ascii=False)[:1000]}")
 
             response = requests.post(
-                f"{endpoint_url}/rerank",
+                rerank_endpoint_url,
                 headers=headers,
                 json=payload,
                 timeout=60,
             )
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Rerank API Error {response.status_code}: {response.text[:1000]}"
-                )
 
             response.raise_for_status()
 
@@ -308,9 +311,12 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
 
         except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
-        except Exception as ex:
-            raise InvokeError(str(ex))
+            detail = self._safe_request_error_detail(ex)
+            raise InvokeServerUnavailableError(
+                f"Rerank API request failed ({detail})"
+            ) from None
+        except Exception:
+            raise InvokeError("Rerank API returned an invalid response") from None
 
     def _validate_image_url(self, url: str) -> str:
         """
@@ -330,7 +336,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         # Only allow http/https URLs
         if not (url.startswith("http://") or url.startswith("https://")):
-            logger.warning(f"Blocked non-HTTP URL: {url[:50]}...")
+            logger.warning("Blocked non-HTTP image URL")
             return ""
 
         # Parse URL to check for SSRF attempts
@@ -343,7 +349,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
             # Block localhost
             if hostname in ("localhost", "127.0.0.1", "::1"):
-                logger.warning(f"Blocked localhost URL: {url[:50]}...")
+                logger.warning("Blocked localhost image URL")
                 return ""
 
             # Block private IP ranges
@@ -356,15 +362,15 @@ class OpenAIRerankModel(OAICompatRerankModel):
                     or ip.is_link_local
                     or ip.is_reserved
                 ):
-                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
+                    logger.warning("Blocked private IP image URL")
                     return ""
             except ValueError:
                 # Not an IP address, it's a hostname - allow it
                 pass
 
             return url
-        except Exception as e:
-            logger.warning(f"URL validation failed: {e}")
+        except Exception:
+            logger.warning("Image URL validation failed")
             return ""
 
     def _to_score_multimodal_param(self, content: MultiModalContent) -> dict:

@@ -25,7 +25,7 @@ class GetRecentProjectsTool(Tool):
             if properties:
                 params["properties"] = properties
 
-            recent_projects = jira.get("project/recent", params=params)
+            recent_projects = jira.get(jira.resource_url("project/recent"), params=params)
 
             if not recent_projects:
                 yield self.create_json_message(

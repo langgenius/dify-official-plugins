@@ -1,0 +1,29 @@
+model: muse-spark-1.2-contributor
+label:
+  en_US: Muse Spark 1.2 Contributor (Region Limited)
+  zh_Hans: Muse Spark 1.2 Contributor（区域限制）
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 16384
+    help:
+      en_US: Maps to Responses API max_output_tokens. Availability may be region-restricted.
+      zh_Hans: 映射到 Responses API 的 max_output_tokens。可用性可能受区域限制。
+pricing:
+  input: "0.10"
+  output: "0.20"
+  unit: "0.000001"
+  currency: USD

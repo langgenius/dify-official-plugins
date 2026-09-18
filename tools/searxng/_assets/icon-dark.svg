@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="searxng_dark">
+<rect width="40" height="40" fill="#3A3A40"/>
+<rect width="40" height="40" fill="#3050FF"/>
+<g id="searxng-wordmark.svg" clip-path="url(#clip0_18015_5351)">
+<g id="layer1">
+<path id="path834" d="M17.5111 26.0669C22.0134 26.0669 25.6632 22.4171 25.6632 17.9147C25.6632 13.4124 22.0134 9.76257 17.5111 9.76257C13.0087 9.76257 9.35889 13.4124 9.35889 17.9147C9.35889 22.4171 13.0087 26.0669 17.5111 26.0669Z" stroke="white" stroke-width="2.71739"/>
+<path id="path852" d="M15.2266 13.5704C16.1517 13.0918 17.2054 12.921 18.2343 13.0829C19.2633 13.2448 20.2136 13.7309 20.9471 14.4705C21.6805 15.21 22.1587 16.1644 22.3121 17.1947C22.4654 18.2249 22.2859 19.2772 21.7996 20.1983" stroke="white" stroke-width="1.3587"/>
+<path id="rect912" d="M25.0786 21.7899L21.5361 25.4884L29.3787 33L32.9211 29.3016L25.0786 21.7899Z" fill="white"/>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_18015_5351">
+<rect width="25" height="25" fill="white" transform="translate(8 8)"/>
+</clipPath>
+</defs>
+</svg>

@@ -18,6 +18,8 @@ def auth(credential: dict[str, Any]) -> Jira:
     jira = Jira(
         url=url,
         header=header,
+        cloud=token_type == "Basic",
+        api_version="3" if token_type == "Basic" else "2",
     )
 
     return jira

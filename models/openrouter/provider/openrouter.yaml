@@ -16,9 +16,13 @@ help:
   url:
     en_US: https://openrouter.ai/keys
 icon_large:
-  en_US: openrouter.svg
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: openrouter_square.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: OpenRouter
 model_credential_schema:

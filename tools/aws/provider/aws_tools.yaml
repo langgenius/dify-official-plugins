@@ -10,6 +10,7 @@ identity:
     zh_Hans: the tools based on the aws services
     pt_BR: the tools based on the aws services
   icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - productivity
 tools:

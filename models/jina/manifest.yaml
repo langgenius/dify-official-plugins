@@ -1,4 +1,4 @@
-version: 0.0.23
+version: 0.0.24
 type: plugin
 author: "langgenius"
 name: "jina"
@@ -7,7 +7,8 @@ description:
 label:
   en_US: "Jina"
 created_at: "2024-07-12T08:03:44.658609186Z"
-icon: "icon_s_en.svg"
+icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 1048576
   permission:

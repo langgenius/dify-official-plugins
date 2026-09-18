@@ -13,10 +13,10 @@ help:
   url:
     en_US: https://cloud.tencent.com/product/asr
 icon_large:
-  en_US: icon_l_en.svg
-  zh_Hans: icon_l_zh.svg
+  en_US: icon.svg
+  zh_Hans: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: Tencent
   zh_Hans: 腾讯云

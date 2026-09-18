@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="youtube_dark" clip-path="url(#clip0_18015_5351)">
+<rect width="40" height="40" fill="#3A3A40"/>
+<g id="Dark Icon BG">
+<rect id="BG" width="40" height="40" fill="url(#paint0_linear_18015_5351)"/>
+<g id="Ellipse 1" opacity="0.1" filter="url(#filter0_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle r="20" fill="white" fill-opacity="0.8"/>
+</g>
+<g id="Ellipse 2" opacity="0.12" filter="url(#filter1_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle cx="48" cy="48" r="20" fill="black" fill-opacity="0.8"/>
+</g>
+</g>
+<g id="youtube">
+<path id="bg" d="M6.24451 13.9411C6.37304 11.9623 7.96395 10.4116 9.94447 10.3134C12.8124 10.1714 16.9115 10 20 10C23.0885 10 27.1876 10.1714 30.0555 10.3134C32.0361 10.4116 33.627 11.9623 33.7555 13.9411C33.8786 15.8369 34 18.1697 34 20C34 21.8303 33.8786 24.1631 33.7555 26.0589C33.627 28.0377 32.0361 29.5884 30.0555 29.6866C27.1876 29.8286 23.0885 30 20 30C16.9115 30 12.8124 29.8286 9.94447 29.6866C7.96395 29.5884 6.37304 28.0377 6.24451 26.0589C6.12136 24.1631 6 21.8303 6 20C6 18.1697 6.12136 15.8369 6.24451 13.9411Z" fill="#FC0D1B"/>
+<path id="play" d="M17 16V24L25 20L17 16Z" fill="white"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_f_18015_5351" x="-60" y="-60" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<filter id="filter1_f_18015_5351" x="-12" y="-12" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<linearGradient id="paint0_linear_18015_5351" x1="40" y1="40" x2="-3.57628e-06" y2="3.57628e-06" gradientUnits="userSpaceOnUse">
+<stop stop-color="#303036"/>
+<stop offset="1" stop-color="#3A3A40"/>
+</linearGradient>
+<clipPath id="clip0_18015_5351">
+<rect width="40" height="40" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -4,6 +4,7 @@ description:
   en_US: Get official developer documentations on DevDocs.
   zh_Hans: 从DevDocs获取官方开发者文档。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: DevDocs
   zh_Hans: DevDocs
@@ -32,4 +33,4 @@ tags:
   - search
   - productivity
 type: plugin
-version: 0.0.8
+version: 0.0.9

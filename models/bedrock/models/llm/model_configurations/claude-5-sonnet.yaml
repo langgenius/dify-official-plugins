@@ -1,7 +1,7 @@
 model: claude-5-sonnet
 label:
   en_US: Claude Sonnet 5
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

@@ -4,6 +4,7 @@ description:
   en_US: Quickly experience large models and explore the leading AI open source world
   zh_Hans: 快速体验大模型，领先探索 AI 开源世界
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Gitee AI Tool
   zh_Hans: 模力方舟工具
@@ -31,4 +32,4 @@ resource:
 tags:
 - image
 type: plugin
-version: 0.0.8
+version: 0.0.9

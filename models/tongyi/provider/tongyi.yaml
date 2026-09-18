@@ -18,10 +18,15 @@ help:
   url:
     en_US: https://bailian.console.aliyun.com/?apiKey=1#/api-key
 icon_large:
-  en_US: icon_l_en.png
-  zh_Hans: icon_l_zh.png
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Tongyi
   zh_Hans: 通义
@@ -35,6 +40,24 @@ model_credential_schema:
     required: true
     type: secret-input
     variable: dashscope_api_key
+  - label:
+      en_US: API Host
+      zh_Hans: 接入域名
+    help:
+      text:
+        en_US: >-
+          Optional. Workspace-specific host such as
+          llm-xxx.cn-beijing.maas.aliyuncs.com, copied from the Model Studio
+          console. Leave empty to keep using the shared DashScope host.
+        zh_Hans: >-
+          可选。业务空间专属域名，如 llm-xxx.cn-beijing.maas.aliyuncs.com，
+          可从百炼控制台的 API Host 复制。留空则继续使用共享的 DashScope 域名。
+    placeholder:
+      en_US: e.g. llm-xxx.cn-beijing.maas.aliyuncs.com
+      zh_Hans: 例如 llm-xxx.cn-beijing.maas.aliyuncs.com
+    required: false
+    type: text-input
+    variable: api_host
   - default: '4096'
     label:
       en_US: Model context size
@@ -109,8 +132,41 @@ provider_credential_schema:
     type: secret-input
     variable: dashscope_api_key
   - label:
+      en_US: API Host
+      zh_Hans: 接入域名
+    help:
+      text:
+        en_US: >-
+          Optional. Workspace-specific host such as
+          llm-xxx.cn-beijing.maas.aliyuncs.com, copied from the API Host field in
+          the Model Studio console. Recommended for production: it raises the
+          request timeout to 3600s and isolates traffic per workspace, and it is
+          the only way to reach the Frankfurt and Tokyo regions. Overrides the
+          option below when set. Leave empty to keep using the shared DashScope
+          host, which stops receiving new features after 2026-09-30.
+        zh_Hans: >-
+          可选。业务空间专属域名，如 llm-xxx.cn-beijing.maas.aliyuncs.com，
+          可从百炼控制台的 API Host 处复制。推荐用于生产环境：请求超时提升至
+          3600 秒并按业务空间隔离流量，也是访问法兰克福、东京地域的唯一方式。
+          填写后将覆盖下方选项。留空则继续使用共享的 DashScope 域名，
+          该域名自 2026-09-30 起不再支持新特性。
+    placeholder:
+      en_US: e.g. llm-xxx.cn-beijing.maas.aliyuncs.com
+      zh_Hans: 例如 llm-xxx.cn-beijing.maas.aliyuncs.com
+    required: false
+    type: text-input
+    variable: api_host
+  - label:
       en_US: Use International Endpoint
       zh_Hans: 使用国际端点
+    help:
+      text:
+        en_US: >-
+          Selects between the shared hosts dashscope.aliyuncs.com and
+          dashscope-intl.aliyuncs.com. Ignored when API Host is set.
+        zh_Hans: >-
+          在共享域名 dashscope.aliyuncs.com 与 dashscope-intl.aliyuncs.com
+          之间切换。当填写了「接入域名」时此项无效。
     type: radio
     required: true
     default: "false"

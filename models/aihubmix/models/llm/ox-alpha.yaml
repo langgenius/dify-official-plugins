@@ -1,0 +1,56 @@
+model: ox-alpha
+label:
+  en_US: Ox Alpha
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+  - video
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+      - max
+    help:
+      zh_Hans: 控制推理努力程度，取值来自 AiHubMix 公网投影中该模型的官方枚举。
+      en_US: Controls reasoning effort. The values come from this model's official enum in the AiHubMix public projection.
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 131072
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    help:
+      zh_Hans: 线上实测只支持 json_object；传 json_schema 时服务端静默忽略、照样回散文，所以不提供该选项。
+      en_US: Verified on the gateway - only json_object works. A json_schema request is silently ignored and still answered in prose, so that option is not offered.
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0'
+  output: '0'
+  unit: '0.000001'
+  currency: USD

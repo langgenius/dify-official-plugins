@@ -13,7 +13,7 @@ identity:
     ja_JP: コンテンツを簡単に公開できるTelegraphプラグイン
     zh_Hans: 一个让您轻松发布内容的Telegraph插件
     pt_BR: Um plugin do Telegraph que permite publicar seu conteúdo facilmente
-  icon: icon.jpg
+  icon: icon.svg
 credentials_for_provider:
   telegraph_access_token:
     type: secret-input

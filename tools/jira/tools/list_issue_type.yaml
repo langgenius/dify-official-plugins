@@ -27,4 +27,4 @@ parameters:
     form: llm
 extra:
   python:
-    source: tools/get_project.py
+    source: tools/list_issue_type.py

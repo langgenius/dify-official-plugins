@@ -7,8 +7,8 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.9.0",
-    "azure-storage-blob>=12.29.0",
+    "dify_plugin>=0.10.2",
+    "azure-storage-blob>=12.30.1",
     "azure-identity>=1.25.3",
     "azure-core>=1.41.0",
     "flask>=3.1.3",

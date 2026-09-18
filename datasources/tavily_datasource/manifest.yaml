@@ -1,4 +1,4 @@
-version: 0.1.10
+version: 0.1.11
 type: plugin
 author: langgenius
 name: tavily_datasource
@@ -14,6 +14,7 @@ description:
   pt_BR: Fonte de dados de pesquisa e extração Tavily
   zh_Hant: Tavily 搜索提取數據源
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

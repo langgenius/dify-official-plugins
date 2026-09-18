@@ -16,9 +16,9 @@ help:
   url:
     en_US: https://console.huaweicloud.com/modelarts/?locale=zh-cn&region=cn-southwest-2#/model-studio/authmanage
 icon_large:
-  en_US: maas_square.svg
+  en_US: icon.svg
 icon_small:
-  en_US: maas_square.svg
+  en_US: icon.svg
 label:
   en_US: Huawei Cloud MaaS
   zh_Hans: 华为云MaaS平台

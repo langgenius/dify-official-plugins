@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="vanna_dark">
+<rect width="40" height="40" fill="#3A3A40"/>
+<rect width="40" height="40" fill="#0F172A"/>
+<path id="Vector" d="M8 8.0369C8.01071 10.6814 8.03213 15.9704 8.03213 15.9704C8.03213 15.9704 19.9803 31.8233 20.0799 31.8804C24.0478 26.5909 31.9834 16.012 31.9834 16.012C31.9834 16.012 31.9945 10.6707 32 8C26.0208 13.9626 26.0208 13.9626 20.0416 19.9252C14.0208 13.9811 14.0208 13.9811 8 8.0369Z" fill="url(#paint0_linear_18015_5351)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_18015_5351" x1="7.99997" y1="19.9401" x2="31.9999" y2="19.9401" gradientUnits="userSpaceOnUse">
+<stop stop-color="#009EFD"/>
+<stop offset="1" stop-color="#2AF598"/>
+</linearGradient>
+</defs>
+</svg>

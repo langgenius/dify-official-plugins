@@ -4,6 +4,7 @@ description:
   en_US: Access questions and answers from the Stack Exchange and its sub-sites.
   zh_Hans: 从 Stack Exchange 和其子论坛获取问题和答案。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Stack Exchange
   zh_Hans: Stack Exchange
@@ -32,4 +33,4 @@ tags:
 - search
 - utilities
 type: plugin
-version: 0.0.7
+version: 0.0.8

@@ -1,4 +1,4 @@
-version: 0.0.15
+version: 0.0.16
 type: plugin
 author: langgenius
 name: gemini_video
@@ -8,8 +8,8 @@ label:
 description:
   en_US: gemini video generation support for Veo 3.1
   zh_Hans: gemini video 支持，当前仅适用于 VEO 3.1
-icon: icon.jpg
-icon_dark: icon.jpg
+icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

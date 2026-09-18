@@ -2,7 +2,8 @@ author: langgenius
 created_at: '2024-09-20T08:03:44.658609186Z'
 description:
   en_US: GetImg API integration for image generation and scraping.
-icon: icon.svg
+icon: icon.png
+icon_dark: icon-dark.png
 label:
   en_US: getimg.ai
   zh_CN: getimg.ai
@@ -30,4 +31,4 @@ resource:
 tags:
 - image
 type: plugin
-version: 0.0.7
+version: 0.1.1

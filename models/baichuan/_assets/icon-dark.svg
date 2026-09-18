@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1112 -1472)"><g id="baichuan_dark" clip-path="url(#clip107_18015_5351)">
+<rect width="40" height="40" transform="translate(1112 1472)" fill="#3A3A40"/>
+<g id="Dark Icon BG_34">
+<rect id="BG_34" x="1112" y="1472" width="40" height="40" fill="url(#paint198_linear_18015_5351)"/>
+<g id="Ellipse 1_34" opacity="0.1" filter="url(#filter94_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle cx="1112" cy="1472" r="20" fill="white" fill-opacity="0.8"/>
+</g>
+<g id="Ellipse 2_34" opacity="0.12" filter="url(#filter95_f_18015_5351)" style="mix-blend-mode:luminosity">
+<circle cx="1160" cy="1520" r="20" fill="black" fill-opacity="0.8"/>
+</g>
+</g>
+<g id="Layer_1_4" clip-path="url(#clip108_18015_5351)">
+<path id="Vector_780" d="M1128 1481H1124.51L1122.33 1485.73V1498.24L1120 1502.82H1125.67L1127.89 1498.24L1128 1481ZM1136 1481H1130.33V1502.82H1136V1481ZM1138.33 1487.26H1144V1502.82H1138.33V1487.26ZM1144 1481H1138.33V1485.51H1144V1481Z" fill="url(#paint199_linear_18015_5351)"/>
+</g>
+</g>
+</g>
+  <defs><clipPath id="clip107_18015_5351">
+<rect width="40" height="40" fill="white" transform="translate(1112 1472)"/>
+</clipPath>
+<clipPath id="clip108_18015_5351">
+<rect width="24" height="21.8182" fill="white" transform="translate(1120 1481)"/>
+</clipPath>
+<filter id="filter94_f_18015_5351" x="1052" y="1412" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<filter id="filter95_f_18015_5351" x="1100" y="1460" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="20" result="effect1_foregroundBlur_18015_5351"/>
+</filter>
+<linearGradient id="paint198_linear_18015_5351" x1="1152" y1="1512" x2="1112" y2="1472" gradientUnits="userSpaceOnUse">
+<stop stop-color="#303036"/>
+<stop offset="1" stop-color="#3A3A40"/>
+</linearGradient>
+<linearGradient id="paint199_linear_18015_5351" x1="1123.12" y1="1483.95" x2="1141.17" y2="1503.56" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFB81E"/>
+<stop offset="1" stop-color="#FF5A1F"/>
+</linearGradient>
+</defs>
+</svg>

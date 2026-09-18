@@ -5,9 +5,13 @@ description:
   en_US: Models provided by Llama API.
   zh_Hans: LlamaApi 提供的模型。
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 background: "#E5E7EB"
 help:
   title:

@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -16,8 +17,10 @@ class ListPageofSpaceTool(Tool):
 
         space_key = tool_parameters.get("space_key")
 
-        pages = confluence.get_all_pages_from_space(
-            space_key, start=0, limit=100, status=None, expand=None, content_type="page"
-        )
+        if isinstance(confluence, ConfluenceV2):
+            space = confluence.get_space_by_key(space_key)
+            pages = confluence.get_pages(space_id=space["id"], limit=100, get_body=True)
+        else:
+            pages = list(confluence.get_all_pages_from_space(space_key, limit=100))
 
         yield self.create_json_message({"pages": pages})

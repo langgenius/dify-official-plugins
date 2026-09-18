@@ -11,7 +11,8 @@ identity:
     zh_Hans: "与 Salesforce CRM 交互以进行案例管理和消息传递"
     pt_BR: "Interaja com o Salesforce CRM para gerenciamento de casos e mensagens"
     ja_JP: "Salesforce CRM と連携してケース管理とメッセージングを行います"
-  icon: "icon.svg"
+  icon: icon.svg
+  icon_dark: icon-dark.svg
 
 credentials_for_provider:
   username:

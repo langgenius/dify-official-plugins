@@ -10,6 +10,7 @@ identity:
     zh_CN: 用于与 Monday.com 的看板、项目和更新进行交互的插件。
     ja_JP: Monday.com のボード、アイテム、更新と連携するためのプラグイン。
   icon: icon.svg
+  icon_dark: icon-dark.svg
 credentials_for_provider:
   token:
     type: secret-input

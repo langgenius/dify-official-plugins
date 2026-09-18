@@ -311,7 +311,7 @@ def test_json_schema_is_sent_to_api():
             ),
         )
 
-    request = post.call_args.kwargs["json"]
+    request = json.loads(post.call_args.kwargs["data"])
     assert request["max_completion_tokens"] == 128
     assert request["response_format"] == {
         "type": "json_schema",

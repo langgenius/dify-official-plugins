@@ -98,7 +98,7 @@ class MetaInfo(BaseModel):
     label: str = str(name)
     description: str
 
-    icon: str = "icon.png"
+    icon: str = "icon.svg"
 
 
 class BasePlugin(BaseModel):

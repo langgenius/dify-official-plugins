@@ -1,4 +1,4 @@
-version: 0.0.9
+version: 0.0.10
 type: plugin
 author: langgenius
 name: aws_bedrock_knowledge_base
@@ -13,6 +13,7 @@ description:
   zh_Hans: AWS Bedrock Knowledge Base API Endpoint for Dify External Knowledge Base
   pt_BR: AWS Bedrock Knowledge Base API Endpoint for Dify External Knowledge Base
 icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:

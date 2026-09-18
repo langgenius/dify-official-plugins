@@ -66,7 +66,11 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
-from models._common import get_http_base_address
+from models._common import (
+    get_compatible_base_url,
+    get_http_base_address,
+    has_custom_api_host,
+)
 
 from ..constant import BURY_POINT_HEADER
 from .qwen_long import MAX_DOCUMENT_INPUT_BASE64_BYTES, QwenLongFiles
@@ -252,7 +256,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # Qwen3.5/3.6/3.7/3.8 series
             "qwen3.8-max",
             "qwen3.8-flash",
-            "qwen3.8-flash-next",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",
@@ -301,7 +304,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-omni-flash-2025-12-01",
             "qwen3.8-max",
             "qwen3.8-flash",
-            "qwen3.8-flash-next",
             "qwen3.7-max",
             "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.7-flash", "qwen3.7-flash-2026-07-15",
@@ -320,7 +322,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         ) or model == "kimi-k2-thinking"
 
         thinking_deepseek_v4 = (
-            model in ("deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v4-flash-0731")
+            model in (
+                "deepseek-v4.1-flash",
+                "deepseek-v4-pro",
+                "deepseek-v4-flash",
+                "deepseek-v4-flash-0731",
+            )
             and model_parameters.get("enable_thinking", True)
         )
 
@@ -363,7 +370,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
             else:
                 if model.startswith("qwen-long"):
-                    if credentials.get("use_international_endpoint", "false") == "true":
+                    # A workspace-specific host pins its own region, so only guard
+                    # the shared international host that is known to lack Qwen-Long.
+                    if (
+                        not has_custom_api_host(credentials)
+                        and credentials.get("use_international_endpoint", "false") == "true"
+                    ):
                         raise InvokeBadRequestError(
                             "Qwen-Long is only available in the Beijing region."
                         )
@@ -372,7 +384,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     qwen_long_files = QwenLongFiles(
                         openai.OpenAI(
                             api_key=credentials["dashscope_api_key"],
-                            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            base_url=get_compatible_base_url(credentials),
                             max_retries=0,
                             timeout=120,
                         )

@@ -5,6 +5,7 @@ description:
   ja_JP: Webhook チャンネルを介して Google Drive の変更通知を受信します。
   zh_Hans: 通过 Webhook 通道接收 Google 云端硬盘的更改通知。
 icon: icon.svg
+icon_dark: icon-dark.svg
 label:
   en_US: Google Drive
   ja_JP: Google Drive
@@ -30,4 +31,4 @@ resource:
       enabled: true
       size: 1048576
 type: plugin
-version: 1.4.0
+version: 1.4.1

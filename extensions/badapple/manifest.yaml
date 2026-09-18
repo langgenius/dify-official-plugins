@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 description:
   en_US: Why not play Bad Apple with Dify?
@@ -12,7 +12,7 @@ label:
   pt_BR: Bad Apple
 author: langgenius
 name: badapple
-icon: icon.jpeg
+icon: icon.svg
 created_at: 2024-11-21T01:58:04.183102+08:00
 resource:
   memory: 268435456

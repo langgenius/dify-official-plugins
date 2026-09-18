@@ -23,6 +23,32 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-2.1-pro": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=262144, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL,
+                  ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
+        pricing=PriceConfig(input=Decimal("0.0060"), output=Decimal("0.0300"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.1-turbo": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=262144, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL,
+                  ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
+        pricing=PriceConfig(input=Decimal("0.0030"), output=Decimal("0.0150"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "DeepSeek-V4-Pro-GA": ModelConfig(
+        properties=ModelProperties(context_size=1048576, max_tokens=393216, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL,
+                  ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0090"), output=Decimal("0.0270"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "DeepSeek-V4-Flash-GA": ModelConfig(
+        properties=ModelProperties(context_size=1048576, max_tokens=393216, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL,
+                  ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0030"), output=Decimal("0.0090"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "Doubao-Seed-2.0-pro": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,

@@ -18,6 +18,7 @@ identity:
     en_US: A free internet metasearch engine.
     zh_Hans: 开源免费的互联网元搜索引擎
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: SearXNG
     zh_Hans: SearXNG

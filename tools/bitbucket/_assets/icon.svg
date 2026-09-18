@@ -1,17 +1,20 @@
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Uploaded to: SVG Repo, www.svgrepo.com, Transformed by: SVG Repo Mixer Tools -->
-<svg xmlns="http://www.w3.org/2000/svg" aria-label="Bitbucket" role="img" viewBox="-51.2 -51.2 614.40 614.40" width="800px" height="800px" fill="#000000">
-<g id="SVGRepo_bgCarrier" stroke-width="0">
-<rect x="-51.2" y="-51.2" width="614.40" height="614.40" rx="0" fill="#ffffff" strokewidth="0"/>
-</g>
-<g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/>
-<g id="SVGRepo_iconCarrier">
-<rect width="512" height="512" rx="15%" fill="#ffffff"/>
-<path fill="#2684ff" d="M422 130a10 10 0 00-9.9-11.7H100.5a10 10 0 00-10 11.7L136 409a10 10 0 009.9 8.4h221c5 0 9.2-3.5 10 -8.4L422 130zM291 316.8h-69.3l-18.7-98h104.8z"/>
-<path fill="url(#a)" d="M59.632 25.2H40.94l-3.1 18.3h-13v18.9H52c1 0 1.7-.7 1.8-1.6l5.8-35.6z" transform="translate(89.8 85) scale(5.3285)"/>
-<linearGradient id="a" x2="1" gradientTransform="rotate(141 22.239 22.239) scale(31.4)" gradientUnits="userSpaceOnUse">
-<stop offset="0" stop-color="#0052cc"/>
-<stop offset="1" stop-color="#2684ff"/>
-</linearGradient>
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1808 -754)"><g id="bitbucket_light">
+<rect width="40" height="40" transform="translate(1808 754)" fill="white"/>
+<g id="Group 19">
+<g id="Isolation_Mode" clip-path="url(#clip50_18015_5351)">
+<path id="Vector_508" d="M1839.99 763.847C1840.06 763.453 1839.79 763.079 1839.4 763.011C1839.36 763.004 1839.32 763.001 1839.27 763.001H1816.73C1816.33 762.994 1816.01 763.313 1816 763.713C1816 763.758 1816 763.802 1816.01 763.846L1819.3 784.027C1819.36 784.378 1819.66 784.636 1820.02 784.635H1836C1836.37 784.635 1836.67 784.382 1836.73 784.027L1839.99 763.847ZM1830.51 777.358H1825.5L1824.15 770.27H1831.73L1830.51 777.358H1830.51Z" fill="#2684FF"/>
+<path id="Vector_509" d="M1838.94 770.304H1831.74L1830.54 777.358H1825.53V784.642H1836C1836.39 784.642 1836.66 784.372 1836.7 784.026L1838.93 770.304H1838.94H1838.94Z" fill="url(#paint128_linear_18015_5351)"/>
+</g>
+</g>
+</g>
+</g>
+  <defs><clipPath id="clip50_18015_5351">
+<rect width="24" height="21.6423" fill="white" transform="translate(1816 763)"/>
+</clipPath>
+<linearGradient id="paint128_linear_18015_5351" x1="1839.22" y1="773.419" x2="1829.81" y2="781.035" gradientUnits="userSpaceOnUse">
+<stop stop-color="#0052CC"/>
+<stop offset="1" stop-color="#2684FF"/>
+</linearGradient>
+</defs>
+</svg>

@@ -52,7 +52,7 @@ class AddRowsTool(Tool):
             client.errors_as_exceptions(True)
             
             # Get sheet information to get column map
-            sheet = client.Sheets.get_sheet(sheet_id, include="columnIds")
+            sheet = client.Sheets.get_sheet(sheet_id)
             
             # Create column map: name -> id
             column_map = {col.title: col.id for col in sheet.columns}
@@ -73,7 +73,7 @@ class AddRowsTool(Tool):
                 
                 # Create row
                 if cells:
-                    new_rows.append(smartsheet.models.Row(to_top=to_top, cells=cells))
+                    new_rows.append(smartsheet.models.Row({"toTop": to_top, "cells": cells}))
             
             # Add rows
             if new_rows:
@@ -103,4 +103,4 @@ class AddRowsTool(Tool):
             yield self.create_text_message(error_message)
         except Exception as e:
             error_message = f"Error: {str(e)}"
-            yield self.create_text_message(error_message) 
+            yield self.create_text_message(error_message)

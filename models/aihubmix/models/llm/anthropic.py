@@ -17,7 +17,6 @@ from anthropic.types import (
     MessageStartEvent,
     MessageStopEvent,
     MessageStreamEvent,
-    completion_create_params,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -437,9 +436,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
-            extra_model_kwargs["metadata"] = completion_create_params.Metadata(
-                user_id=user
-            )
+            extra_model_kwargs["metadata"] = {"user_id": user}
         self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
         self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)

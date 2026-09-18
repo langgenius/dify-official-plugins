@@ -1,7 +1,7 @@
 model: anthropic claude 5
 label:
   en_US: Anthropic Claude 5
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

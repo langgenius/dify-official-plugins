@@ -15,6 +15,7 @@ identity:
     ja_JP: Outlook メールと連携する
     zh_Hant: 與 Outlook 郵件互動
   icon: icon.svg
+  icon_dark: icon-dark.svg
 oauth_schema:
   client_schema:
     - name: "client_id"
