@@ -1,0 +1,15 @@
+model: jev-1.13.0-only-for-question-classifier
+label:
+  en_US: jev-1.13.0-only-for-question-classifier
+  zh_Hans: jev-1.13.0-only-for-question-classifier
+model_type: llm
+features: []
+model_properties:
+  mode: chat
+  context_size: 32000
+parameter_rules: []
+pricing:
+  input: '0.042'
+  output: '0'
+  unit: '0.000001'
+  currency: USD
