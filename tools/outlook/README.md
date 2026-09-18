@@ -6,7 +6,8 @@ Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and 
 
 ### Email
 - **List Messages** — list messages from your Outlook inbox.
-- **Get Message** — detailed info about a specific email by its ID.
+- **Get Message** — detailed info about a specific email by its ID (including attachment ids).
+- **Download Attachment** — download an email attachment as a file (from a `message_id` + `attachment_id`); Dify serves it over a public HTTPS URL.
 - **Send Message** — send an email through Outlook, with optional file attachments.
 - **Send Draft** — send a draft email (needs a draft ID from Draft Email).
 - **Draft Email** — create a draft email.

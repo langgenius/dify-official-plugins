@@ -121,6 +121,7 @@ oauth_schema:
 tools:
   - tools/list_messages.yaml
   - tools/get_message.yaml
+  - tools/download_attachment.yaml
   - tools/send_message.yaml
   - tools/send_draft.yaml
   - tools/draft_message.yaml
