@@ -19,17 +19,19 @@ description:
     zh_Hant: 列出您的 Outlook 帳戶中的行事曆事件
   llm: List calendar events from the users Outlook account using Microsoft Graph API, ordered by start time
 parameters:
-  - name: top
+  - name: limit
     type: number
     required: false
     default: 25
+    min: 1
+    max: 100
     label:
-      en_US: Top
-      ko_KR: 개수
-      zh_Hans: 数量
-      pt_BR: Quantidade
-      ja_JP: 件数
-      zh_Hant: 數量
+      en_US: Limit
+      ko_KR: 제한
+      zh_Hans: 限制
+      pt_BR: Limite
+      ja_JP: 制限
+      zh_Hant: 限制
     human_description:
       en_US: Maximum number of events to return
       ko_KR: 반환할 최대 이벤트 수
@@ -37,44 +39,7 @@ parameters:
       pt_BR: Número máximo de eventos a retornar
       ja_JP: 返すイベントの最大数
       zh_Hant: 要返回的最大事件數
-    llm_description: Maximum number of events to return, default is 25
-    form: llm
-  - name: order
-    type: select
-    required: false
-    default: desc
-    options:
-      - value: desc
-        label:
-          en_US: Descending (latest first)
-          ko_KR: 내림차순(최신순)
-          zh_Hans: 降序（最新在前）
-          pt_BR: Decrescente (mais recentes primeiro)
-          ja_JP: 降順（最新が先頭）
-          zh_Hant: 降序（最新在前）
-      - value: asc
-        label:
-          en_US: Ascending (oldest first)
-          ko_KR: 오름차순(오래된순)
-          zh_Hans: 升序（最早在前）
-          pt_BR: Crescente (mais antigos primeiro)
-          ja_JP: 昇順（古い順）
-          zh_Hant: 升序（最早在前）
-    label:
-      en_US: Sort Order
-      ko_KR: 정렬 순서
-      zh_Hans: 排序
-      pt_BR: Ordem de classificação
-      ja_JP: 並び順
-      zh_Hant: 排序
-    human_description:
-      en_US: Sort events by start time - descending (latest first) or ascending (oldest first)
-      ko_KR: 시작 시간을 기준으로 이벤트 정렬 - 내림차순(최신순) 또는 오름차순(오래된순)
-      zh_Hans: 按开始时间排序 - 降序（最新在前）或升序（最早在前）
-      pt_BR: Ordenar eventos por horário de início - decrescente (mais recentes primeiro) ou crescente (mais antigos primeiro)
-      ja_JP: 開始時刻でイベントを並べ替え - 降順（最新が先頭）または昇順（古い順）
-      zh_Hant: 按開始時間排序 - 降序（最新在前）或升序（最早在前）
-    llm_description: Sort order by event start time. Use 'desc' for latest first (default) or 'asc' for oldest first.
+    llm_description: Maximum number of events to return, between 1 and 100, default is 25
     form: llm
   - name: calendar_id
     type: string

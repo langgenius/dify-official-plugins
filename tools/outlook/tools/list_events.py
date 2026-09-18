@@ -12,11 +12,8 @@ class ListEventsTool(Tool):
         List calendar events from Outlook using Microsoft Graph API
         """
         try:
-            top = tool_parameters.get("top") or 25
+            limit = tool_parameters.get("limit") or 25
             calendar_id = tool_parameters.get("calendar_id")
-            order = (tool_parameters.get("order") or "desc").lower()
-            if order not in ("asc", "desc"):
-                order = "desc"
 
             access_token = self.runtime.credentials.get("access_token")
             if not access_token:
@@ -34,8 +31,8 @@ class ListEventsTool(Tool):
                 url = "https://graph.microsoft.com/v1.0/me/events"
 
             params = {
-                "$top": int(top),
-                "$orderby": f"start/dateTime {order}",
+                "$top": int(limit),
+                "$orderby": "start/dateTime desc",
                 "$select": "id,subject,start,end,organizer,webLink"
             }
 

@@ -121,6 +121,7 @@ oauth_schema:
 tools:
   - tools/list_messages.yaml
   - tools/get_message.yaml
+  - tools/download_attachment.yaml
   - tools/send_message.yaml
   - tools/send_draft.yaml
   - tools/draft_message.yaml
@@ -130,6 +131,7 @@ tools:
   - tools/flag_message.yaml
   - tools/list_calendars.yaml
   - tools/list_events.yaml
+  - tools/search_events.yaml
   - tools/create_event.yaml
   - tools/get_event.yaml
   - tools/update_event.yaml
