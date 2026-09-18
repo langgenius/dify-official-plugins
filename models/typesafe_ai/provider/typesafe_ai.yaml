@@ -1,0 +1,38 @@
+provider: typesafe_ai
+label:
+  en_US: TypeSafe AI
+description:
+  en_US: Jev for Graphon 0.7.0 text Chat question classifiers only.
+  zh_Hans: 仅支持 Graphon 0.7.0 文本 Chat 问题分类器的 Jev 模型。
+icon_small:
+  en_US: icon.svg
+icon_large:
+  en_US: icon.svg
+background: "#E5E7EB"
+help:
+  title:
+    en_US: Get your TypeSafe AI API key
+  url:
+    en_US: https://console.typesafe.ai
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your TypeSafe AI API key
+models:
+  llm:
+    predefined:
+      - models/llm/*.yaml
+extra:
+  python:
+    provider_source: provider/typesafe_ai.py
+    model_sources:
+      - models/llm/llm.py
