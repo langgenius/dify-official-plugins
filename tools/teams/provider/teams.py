@@ -10,7 +10,7 @@ from dify_plugin.entities.oauth import ToolOAuthCredentials
 
 
 class TeamsProvider(ToolProvider):
-    _SCOPE = "User.Read Team.ReadBasic.All Channel.ReadBasic.All ChannelMessage.Send Chat.ReadWrite ChatMessage.Send offline_access"
+    _SCOPE = "User.Read Team.ReadBasic.All Channel.ReadBasic.All ChannelMessage.Send Chat.ReadWrite ChatMessage.Send Group.Read.All offline_access"
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate access token by calling Microsoft Graph API."""

@@ -112,6 +112,7 @@ tools:
   - tools/send_chat_message.yaml
   - tools/list_chats.yaml
   - tools/list_channel_messages.yaml
+  - tools/list_group_calendar_events.yaml
 extra:
   python:
     source: provider/teams.py
