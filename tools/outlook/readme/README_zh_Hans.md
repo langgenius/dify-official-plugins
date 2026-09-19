@@ -1,7 +1,7 @@
 # Outlook Plugin for Dify
 
 **Author:** langgenius
-**Version:** 0.5.0
+**Version:** 0.6.0
 **Type:** Plugin
 
 ---
@@ -13,7 +13,8 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 
 ### Features
 - List messages from your Outlook inbox or other folders
-- Get detailed information about specific messages
+- Get detailed information about specific messages (including attachment ids)
+- Download email attachments as files
 - Send new email messages directly, with optional file attachments
 - Create draft emails
 - List draft emails
@@ -26,7 +27,8 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 | Tool Name                | Description |
 |------------------------- |-------------|
 | list_messages            | List messages from your Outlook inbox or other folders. Supports filtering, search, and pagination. |
-| get_message              | Get detailed information about a specific email message, including content, attachments, and metadata. |
+| get_message              | Get detailed information about a specific email message, including content, attachments, and metadata (including attachment ids). |
+| download_attachment      | Download an email attachment as a file using message_id and attachment_id. Dify serves it over a public HTTPS URL. |
 | draft_email              | Create a draft email in Outlook. Supports to/cc/bcc, subject, body (text or HTML), and importance. |
 | list_draft_emails        | List your draft emails. Supports filtering, search, and attachment info. |
 | send_message             | Send an email message directly through Outlook, with optional file attachments. Can also send existing drafts by providing a draft ID. |
@@ -178,7 +180,8 @@ The plugin requires the following Microsoft Graph API permissions:
 
 ### 機能
 - Outlookの受信トレイやその他のフォルダーからメッセージを一覧表示
-- 特定のメッセージの詳細情報を取得
+- 特定のメッセージの詳細情報を取得（添付ファイルIDを含む）
+- メール添付ファイルをファイルとしてダウンロード
 - 新しいメールメッセージを直接送信、オプションのファイル添付をサポート
 - ドラフトメールを作成
 - ドラフトメールを一覧表示
@@ -191,7 +194,8 @@ The plugin requires the following Microsoft Graph API permissions:
 | ツール名                | 説明 |
 |------------------------- |-------------|
 | list_messages            | Outlookの受信トレイやその他のフォルダーからメッセージを一覧表示。フィルタリング、検索、ページネーションをサポート。 |
-| get_message              | 特定のメールメッセージの詳細情報を取得。コンテンツ、添付ファイル、メタデータを含む。 |
+| get_message              | 特定のメールメッセージの詳細情報を取得。コンテンツ、添付ファイル、メタデータ（添付ファイルIDを含む）を含む。 |
+| download_attachment      | message_idとattachment_idを使用してメール添付ファイルをファイルとしてダウンロード。DifyはパブリックHTTPS URLで提供。 |
 | draft_email              | Outlookでドラフトメールを作成。to/cc/bcc、件名、本文（テキストまたはHTML）、重要度をサポート。 |
 | list_draft_emails        | ドラフトメールを一覧表示。フィルタリング、検索、添付ファイル情報をサポート。 |
 | send_message             | Outlookを通じて直接メールメッセージを送信、オプションのファイル添付をサポート。ドラフトIDを提供することで既存のドラフトを送信することも可能。 |
@@ -343,7 +347,8 @@ ID draft123のドラフトを送信
 
 ### 功能
 - 列出Outlook收件箱或其他文件夹中的消息
-- 获取特定消息的详细信息
+- 获取特定消息的详细信息（包括附件ID）
+- 下载邮件附件文件
 - 直接发送新邮件消息，支持可选的文件附件
 - 创建草稿邮件
 - 列出草稿邮件
@@ -356,7 +361,8 @@ ID draft123のドラフトを送信
 | 工具名称                | 描述 |
 |------------------------- |-------------|
 | list_messages            | 列出Outlook收件箱或其他文件夹中的消息。支持过滤、搜索和分页。 |
-| get_message              | 获取特定邮件消息的详细信息，包括内容、附件和元数据。 |
+| get_message              | 获取特定邮件消息的详细信息，包括内容、附件和元数据（包括附件ID）。 |
+| download_attachment      | 使用message_id和attachment_id下载邮件附件文件。Dify通过公共HTTPS URL提供。 |
 | draft_email              | 在Outlook中创建草稿邮件。支持收件人/抄送/密送、主题、正文（文本或HTML）和重要性。 |
 | list_draft_emails        | 列出您的草稿邮件。支持过滤、搜索和附件信息。 |
 | send_message             | 直接通过Outlook发送邮件消息，支持可选的文件附件。也可以通过提供草稿ID来发送现有草稿。 |
