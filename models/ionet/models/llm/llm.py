@@ -35,6 +35,7 @@ class IonetLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        self._add_function_call(model, credentials)
         return super()._invoke(
             model,
             credentials,
@@ -48,6 +49,7 @@ class IonetLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        self._add_function_call(model, credentials)
         super().validate_credentials(model, credentials)
 
     def get_customizable_model_schema(
@@ -105,5 +107,14 @@ class IonetLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
-        credentials.setdefault("endpoint_url", DEFAULT_ENDPOINT_URL)
+        if not credentials.get("endpoint_url"):
+            credentials["endpoint_url"] = DEFAULT_ENDPOINT_URL
         credentials.setdefault("mode", "chat")
+
+    def _add_function_call(self, model: str, credentials: dict) -> None:
+        model_schema = self.get_model_schema(model, credentials)
+        if model_schema and {
+            ModelFeature.TOOL_CALL,
+            ModelFeature.MULTI_TOOL_CALL,
+        }.intersection(model_schema.features or []):
+            credentials["function_calling_type"] = "tool_call"

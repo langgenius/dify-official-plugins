@@ -28,7 +28,7 @@ parameter_rules:
   - name: frequency_penalty
     use_template: frequency_penalty
 pricing:
-  input: "2.1"
-  output: "6.72"
+  input: "2.13"
+  output: "6.88"
   unit: "0.000001"
   currency: USD

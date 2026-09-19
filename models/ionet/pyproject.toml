@@ -1,6 +1,6 @@
 [project]
 name = "ionet"
-version = "0.1.0"
+version = "0.0.1"
 description = "Dify model provider plugin for IO Intelligence (io.net)"
 readme = "README.md"
 requires-python = ">=3.12"
