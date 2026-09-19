@@ -111,7 +111,7 @@ class IonetLargeLanguageModel(OAICompatLargeLanguageModel):
         if not endpoint_url:
             endpoint_url = DEFAULT_ENDPOINT_URL
         credentials["endpoint_url"] = endpoint_url
-        credentials.setdefault("mode", "chat")
+        credentials["mode"] = "chat"
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
