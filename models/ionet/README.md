@@ -8,7 +8,7 @@ Model IDs are `org/name` style, e.g. `meta-llama/Llama-3.3-70B-Instruct`.
 
 ## Features
 
-- All 35 predefined models from the IO Intelligence catalog (GLM, DeepSeek, Kimi, Qwen, Llama, MiniMax, MiMo, Gemma, Mistral, gpt-oss), with context windows, tool/reasoning/vision capabilities, and per-model pricing from the public `/models` endpoint
+- All 35 predefined models from the IO Intelligence catalog (GLM, DeepSeek, Kimi, Qwen, Llama, MiniMax, MiMo, Gemma, Mistral, gpt-oss), with context windows, tool/reasoning/vision/video capabilities, and per-model pricing from the public `/models` endpoint
 - Customizable model support for newly added model IDs
 - Default base URL: `https://api.intelligence.io.solutions/api/v1`
 

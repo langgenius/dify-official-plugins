@@ -8,7 +8,7 @@ IO Intelligence 提供 OpenAI 兼容的 **Chat Completions** API：
 
 ## 功能
 
-- 预置 IO Intelligence 目录中的全部 35 个模型（GLM、DeepSeek、Kimi、Qwen、Llama、MiniMax、MiMo、Gemma、Mistral、gpt-oss），包含上下文窗口、工具/推理/视觉能力，以及来自公开 `/models` 接口的逐模型定价
+- 预置 IO Intelligence 目录中的全部 35 个模型（GLM、DeepSeek、Kimi、Qwen、Llama、MiniMax、MiMo、Gemma、Mistral、gpt-oss），包含上下文窗口、工具/推理/视觉/视频能力，以及来自公开 `/models` 接口的逐模型定价
 - 支持自定义模型（可输入新上线的模型 ID）
 - 默认 API 地址：`https://api.intelligence.io.solutions/api/v1`
 
