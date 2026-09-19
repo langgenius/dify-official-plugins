@@ -107,8 +107,10 @@ class IonetLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
-        if not credentials.get("endpoint_url"):
-            credentials["endpoint_url"] = DEFAULT_ENDPOINT_URL
+        endpoint_url = (credentials.get("endpoint_url") or "").strip()
+        if not endpoint_url:
+            endpoint_url = DEFAULT_ENDPOINT_URL
+        credentials["endpoint_url"] = endpoint_url
         credentials.setdefault("mode", "chat")
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
