@@ -1,7 +1,7 @@
 model: MiniMaxAI/MiniMax-M2.7
 label:
-  en_US: DeepSeek V4 Flash 0731
-  zh_Hans: DeepSeek V4 Flash 0731
+  en_US: MiniMax M2.7
+  zh_Hans: MiniMax M2.7
 model_type: llm
 features:
   - agent-thought
