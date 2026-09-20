@@ -10,6 +10,22 @@ from .._audio import StepAudioTransport
 
 
 class StepfunText2SpeechModel(StepAudioTransport, TTSModel):
+    def get_tts_model_voices(
+        self, model: str, credentials: dict, language: str | None = None
+    ) -> list:
+        # The SDK filters language tags by exact equality. Accept common locale
+        # spellings while retaining the catalog's canonical Dify language tags.
+        if language:
+            normalized = language.strip().replace("_", "-").lower()
+            language = {
+                "en": "en-US",
+                "en-us": "en-US",
+                "zh": "zh-Hans",
+                "zh-cn": "zh-Hans",
+                "zh-hans": "zh-Hans",
+            }.get(normalized, language)
+        return super().get_tts_model_voices(model, credentials, language) or []
+
     def _invoke(
         self,
         model: str,
