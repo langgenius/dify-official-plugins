@@ -49,3 +49,48 @@ TTS uses HTTP audio streaming (`/audio/speech`, `stream_format=audio`), not a bi
 StepAudio 3 Realtime, Music, and Gen have separate session or generation APIs. They are not registered as TTS or speech-to-text models: Dify's native interfaces accept text for speech synthesis or an uploaded audio file for transcription, not bidirectional sessions or music/sound-effect generation requests.
 
 References: [StepAudio 3](https://static.stepfun.com/blog/stepaudio3/), [TTS model](https://platform.stepfun.com/docs/zh/guides/models/stepaudio-3-tts), [speech synthesis API](https://platform.stepfun.com/docs/zh/api-reference/audio/create-audio), [official voices](https://platform.stepfun.com/docs/zh/guides/developer/tts), [ASR model](https://platform.stepfun.com/docs/zh/guides/models/stepaudio-3-asr), and [ASR SSE API](https://platform.stepfun.com/docs/zh/api-reference/audio/asr-sse).
+
+### Official voice catalog (0.2.1)
+
+The voice picker reads the following 36 voices from the bundled model schema; listing them requires no API call. English (`en-US`, `en_US`, `en`) and Chinese (`zh-Hans`, `zh_Hans`, `zh-CN`, `zh_CN`, `zh`) locale spellings resolve to the same catalog. Previously, the SDK's exact language comparison returned an empty list for aliases such as `en` and `en_US`. Unsupported languages still return no voices.
+
+Source: [StepFun official voice catalog](https://platform.stepfun.com/docs/zh/guides/developer/tts#官方音色清单), checked 2026-09-20. The [StepAudio 3 TTS model page](https://platform.stepfun.com/docs/zh/guides/models/stepaudio-3-tts) links to this shared catalog; the catalog's model-compatibility column currently lists older TTS models. The IDs below match the documented catalog, but each voice's live StepAudio 3 synthesis compatibility has not been independently verified.
+
+| Voice | Voice ID |
+| --- | --- |
+| Vibrant Youth | `vibrant-youth` |
+| Lively Girl | `lively-girl` |
+| Soft-spoken Gentleman | `soft-spoken-gentleman` |
+| Magnetic-voiced Male | `magnetic-voiced-male` |
+| 自信男声 | `zixinnansheng` |
+| 气质温婉 | `elegantgentle-female` |
+| 活力轻快 | `livelybreezy-female` |
+| 温柔男声 | `wenrounansheng` |
+| 温柔公子 | `wenrougongzi` |
+| 元气男声 | `yuanqinansheng` |
+| 经典女声 | `jingdiannvsheng` |
+| 温柔熟女 | `wenroushunv` |
+| 甜美女声 | `tianmeinvsheng` |
+| 清纯少女 | `qingchunshaonv` |
+| 磁性男声 | `cixingnansheng` |
+| 元气少女 | `yuanqishaonv` |
+| 邻家姐姐 | `linjiajiejie` |
+| 正派青年 | `zhengpaiqingnian` |
+| 青年大学生 | `qingniandaxuesheng` |
+| 播音男声 | `boyinnansheng` |
+| 儒雅男士 | `ruyananshi` |
+| 深沉男音 | `shenchennanyin` |
+| 亲切女声 | `qinqienvsheng` |
+| 温柔女声 | `wenrounvsheng` |
+| 机灵少女 | `jilingshaonv` |
+| 软萌女声 | `ruanmengnvsheng` |
+| 优雅女声 | `youyanvsheng` |
+| 冷艳御姐 | `lengyanyujie` |
+| 爽快姐姐 | `shuangkuaijiejie` |
+| 文静学姐 | `wenjingxuejie` |
+| 邻家妹妹 | `linjiameimei` |
+| 知性姐姐 | `zhixingjiejie` |
+| 爽快男声 | `shuangkuainansheng` |
+| 干练女声 | `ganliannvsheng` |
+| 亲和女声 | `qinhenvsheng` |
+| 活力女声 | `huolinvsheng` |

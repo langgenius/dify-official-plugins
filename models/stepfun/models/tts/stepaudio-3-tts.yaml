@@ -1,3 +1,5 @@
+# Official voice catalog: https://platform.stepfun.com/docs/zh/guides/developer/tts#官方音色清单
+# StepAudio 3 TTS links to this shared catalog; checked 2026-09-20.
 model: stepaudio-3-tts
 label:
   en_US: StepAudio 3 TTS
