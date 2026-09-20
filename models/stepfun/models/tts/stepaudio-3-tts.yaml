@@ -1,0 +1,195 @@
+model: stepaudio-3-tts
+label:
+  en_US: StepAudio 3 TTS
+  zh_Hans: StepAudio 3 TTS
+model_type: tts
+model_properties:
+  default_voice: cixingnansheng
+  voices:
+  - mode: vibrant-youth
+    name: Vibrant Youth
+    language:
+    - zh-Hans
+    - en-US
+  - mode: lively-girl
+    name: Lively Girl
+    language:
+    - zh-Hans
+    - en-US
+  - mode: soft-spoken-gentleman
+    name: Soft-spoken Gentleman
+    language:
+    - zh-Hans
+    - en-US
+  - mode: magnetic-voiced-male
+    name: Magnetic-voiced Male
+    language:
+    - zh-Hans
+    - en-US
+  - mode: zixinnansheng
+    name: 自信男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: elegantgentle-female
+    name: 气质温婉
+    language:
+    - zh-Hans
+    - en-US
+  - mode: livelybreezy-female
+    name: 活力轻快
+    language:
+    - zh-Hans
+    - en-US
+  - mode: wenrounansheng
+    name: 温柔男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: wenrougongzi
+    name: 温柔公子
+    language:
+    - zh-Hans
+    - en-US
+  - mode: yuanqinansheng
+    name: 元气男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: jingdiannvsheng
+    name: 经典女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: wenroushunv
+    name: 温柔熟女
+    language:
+    - zh-Hans
+    - en-US
+  - mode: tianmeinvsheng
+    name: 甜美女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: qingchunshaonv
+    name: 清纯少女
+    language:
+    - zh-Hans
+    - en-US
+  - mode: cixingnansheng
+    name: 磁性男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: yuanqishaonv
+    name: 元气少女
+    language:
+    - zh-Hans
+    - en-US
+  - mode: linjiajiejie
+    name: 邻家姐姐
+    language:
+    - zh-Hans
+    - en-US
+  - mode: zhengpaiqingnian
+    name: 正派青年
+    language:
+    - zh-Hans
+    - en-US
+  - mode: qingniandaxuesheng
+    name: 青年大学生
+    language:
+    - zh-Hans
+    - en-US
+  - mode: boyinnansheng
+    name: 播音男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: ruyananshi
+    name: 儒雅男士
+    language:
+    - zh-Hans
+    - en-US
+  - mode: shenchennanyin
+    name: 深沉男音
+    language:
+    - zh-Hans
+    - en-US
+  - mode: qinqienvsheng
+    name: 亲切女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: wenrounvsheng
+    name: 温柔女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: jilingshaonv
+    name: 机灵少女
+    language:
+    - zh-Hans
+    - en-US
+  - mode: ruanmengnvsheng
+    name: 软萌女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: youyanvsheng
+    name: 优雅女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: lengyanyujie
+    name: 冷艳御姐
+    language:
+    - zh-Hans
+    - en-US
+  - mode: shuangkuaijiejie
+    name: 爽快姐姐
+    language:
+    - zh-Hans
+    - en-US
+  - mode: wenjingxuejie
+    name: 文静学姐
+    language:
+    - zh-Hans
+    - en-US
+  - mode: linjiameimei
+    name: 邻家妹妹
+    language:
+    - zh-Hans
+    - en-US
+  - mode: zhixingjiejie
+    name: 知性姐姐
+    language:
+    - zh-Hans
+    - en-US
+  - mode: shuangkuainansheng
+    name: 爽快男声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: ganliannvsheng
+    name: 干练女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: qinhenvsheng
+    name: 亲和女声
+    language:
+    - zh-Hans
+    - en-US
+  - mode: huolinvsheng
+    name: 活力女声
+    language:
+    - zh-Hans
+    - en-US
+  word_limit: 1000
+  audio_type: mp3
+pricing:
+  input: '2.5'
+  output: '0'
+  unit: '0.0001'
+  currency: RMB

@@ -1,8 +1,8 @@
 author: langgenius
 created_at: "2024-09-20T00:13:50.29298939-04:00"
 description:
-  en_US: Models provided by StepFun, including Step 5 Preview and Step 3.7 Flash.
-  zh_Hans: 阶跃星辰提供的模型，包括 Step 5 Preview 和 Step 3.7 Flash。
+  en_US: Models provided by StepFun, including Step 5 Preview and StepAudio 3.
+  zh_Hans: 阶跃星辰提供的模型，包括 Step 5 Preview 和 StepAudio 3。
 icon: icon.svg
 icon_dark: icon-dark.svg
 label:
@@ -29,10 +29,10 @@ resource:
       llm: true
       moderation: false
       rerank: true
-      speech2text: false
+      speech2text: true
       text_embedding: true
-      tts: false
+      tts: true
     tool:
       enabled: true
 type: plugin
-version: 0.1.4
+version: 0.2.0
