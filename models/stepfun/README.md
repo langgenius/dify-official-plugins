@@ -4,8 +4,8 @@ Official StepFun model provider plugin for Dify.
 
 ## Features
 - Provides llm models in Dify.
-- Adds predefined support for `step-3.7-flash`.
-- Supports tool calling, reasoning controls, structured output, and multimodal input for Step 3.7 Flash.
+- Adds predefined support for `step-5-preview` and `step-3.7-flash`.
+- Supports tool calling, reasoning controls, structured output, and multimodal input for Step 5 Preview and Step 3.7 Flash.
 - Supports predefined model and customizable model configuration.
 
 ## Setup
@@ -26,3 +26,11 @@ Select **Stepfun** as the model provider in Dify, choose an available model, and
 
 ## Privacy
 This plugin sends the inputs required by the selected operation to the upstream service. Review the upstream service's privacy policy before use.
+
+## Step 5 Preview
+
+Supports a 1M-token context window and up to 1M output tokens (input and output share the context budget), text/image/video input, tool calling, JSON output, and low/medium/high reasoning effort. Reasoning is displayed in both streaming and non-streaming responses.
+
+The listed price is the standard platform's uncached rate: RMB 7 per million input tokens and RMB 20 per million output tokens. Cached input and international pricing may differ.
+
+Sources: [model specifications](https://platform.stepfun.com/docs/zh/guides/models/step-5-preview), [Chat Completions API](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create), and [pricing](https://platform.stepfun.com/docs/zh/guides/pricing/details).
