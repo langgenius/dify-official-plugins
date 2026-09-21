@@ -12,6 +12,9 @@ on:
       - ".github/scripts/check-plugin-icons.sh"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: check-plugin-icons-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
