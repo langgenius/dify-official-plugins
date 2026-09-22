@@ -1,6 +1,6 @@
 from typing import Any, Generator
 import httpx
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
@@ -9,7 +9,7 @@ class CogVideoJobTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        client = ZhipuAI(
+        client = ZhipuAiClient(
             api_key=self.runtime.credentials["zhipuai_api_key"],
             base_url=self.runtime.credentials["zhipuai_base_url"],
         )
