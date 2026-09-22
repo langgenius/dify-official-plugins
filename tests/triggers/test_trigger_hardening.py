@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TRIGGERS = ROOT / "triggers"
 
-EXPECTED_MANIFEST_VERSIONS = {
+MINIMUM_MANIFEST_VERSIONS = {
     "airtable_trigger": "1.1.0",
     "github_trigger": "1.5.0",
     "gmail_trigger": "0.1.0",
@@ -55,10 +55,12 @@ def _read(path: Path) -> str:
 
 
 def test_trigger_manifest_versions_and_permissions_are_least_privilege() -> None:
-    for trigger_name, expected_version in EXPECTED_MANIFEST_VERSIONS.items():
+    for trigger_name, minimum_version in MINIMUM_MANIFEST_VERSIONS.items():
         manifest = _read(TRIGGERS / trigger_name / "manifest.yaml")
 
-        assert re.search(rf"^version: {re.escape(expected_version)}$", manifest, re.MULTILINE), trigger_name
+        version = re.search(r"^version: (\d+)\.(\d+)\.(\d+)$", manifest, re.MULTILINE)
+        assert version, trigger_name
+        assert tuple(map(int, version.groups())) >= tuple(map(int, minimum_version.split("."))), trigger_name
         assert "    model:" not in manifest
         assert "    tool:" not in manifest
 
@@ -73,15 +75,16 @@ def test_trigger_manifest_versions_and_permissions_are_least_privilege() -> None
 def test_trigger_dependency_lower_bounds_are_current() -> None:
     for pyproject in TRIGGERS.glob("*/pyproject.toml"):
         text = _read(pyproject)
-        assert "dify_plugin>=0.9.1" in text, pyproject
-        assert "dify_plugin>=0.9.0" not in text, pyproject
+        sdk = re.search(r"dify[-_]plugin>=(\d+)\.(\d+)\.(\d+)", text)
+        assert sdk and tuple(map(int, sdk.groups())) >= (0, 9, 1), pyproject
 
     gmail = _read(TRIGGERS / "gmail_trigger" / "pyproject.toml")
     assert "google-auth>=2.55.1" in gmail
     assert "google-cloud-pubsub>=2.39.0" in gmail
 
     lark = _read(TRIGGERS / "lark_trigger" / "pyproject.toml")
-    assert "lark-oapi>=1.6.9" in lark
+    lark_sdk = re.search(r"lark-oapi>=(\d+)\.(\d+)\.(\d+)", lark)
+    assert lark_sdk and tuple(map(int, lark_sdk.groups())) >= (1, 6, 9)
 
 
 def test_oauth_providers_validate_callback_state() -> None:

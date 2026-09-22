@@ -27,4 +27,4 @@ resource:
   memory: 1048576
   permission: {}
 type: plugin
-version: 1.1.0
+version: 1.1.1
