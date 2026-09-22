@@ -1,5 +1,5 @@
 [project]
-name = "unstructured"
+name = "dify-unstructured"
 version = "0.0.11"
 description = "Dify tools for Unstructured Transform and the legacy Partition API"
 readme = "README.md"

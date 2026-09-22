@@ -161,7 +161,7 @@ def test_manifest_version_is_bumped_without_changing_meta_version():
     with open(os.path.join(PLUGIN_DIR, "manifest.yaml"), encoding="utf-8") as file:
         manifest = yaml.safe_load(file)
 
-    assert manifest["version"] == "0.0.4"
+    assert manifest["version"] == "0.0.5"
     assert manifest["meta"]["version"] == "0.0.1"
 
 

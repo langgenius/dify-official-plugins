@@ -1,23 +1,12 @@
-# Privacy Policy for Dingo Data Quality Evaluator Plugin
+# Privacy Policy for Dingo
 
 ## Data Processing
 
-This plugin processes text data locally within your Dify environment for quality evaluation purposes. 
+Dingo Scout and Resume Optimizer send supplied reports, profiles, and resume content to the DeepSeek model provider through Dify.
+Keyword Matcher also uses this model provider when its `use_llm` option is enabled.
+Disable `use_llm` to perform keyword matching locally within the plugin.
 
-## Data Collection
+The plugin returns analysis results to the Dify workflow that invoked it.
+Data handling by Dify and the model provider is governed by their policies and your deployment settings.
 
-- We do not collect or store any user data
-- All text evaluation is performed locally
-- No data is transmitted to external servers
-
-## Data Usage
-
-- Text content is only used for quality assessment
-- Results are returned directly to the user
-- No persistent storage of user content
-
-## Contact
-
-For privacy-related questions, please contact: [your-email@example.com]
-
-Last updated: 2025-01-02
+Last updated: 2026-09-22.
