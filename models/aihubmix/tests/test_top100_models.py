@@ -32,7 +32,6 @@ NEW_MODELS = (
     "agnes-2.5-flash",
     "agnes-2.5-pro",
     "agnes-2.5-pro-alpha",
-    "ox-alpha",
     "longcat-2.0",
     "muse-spark-1.1",
     "muse-spark-1.2",
@@ -60,8 +59,8 @@ def test_every_new_model_is_registered() -> None:
 
     # Pinned so the PR's stated totals stay checkable: the top-100 branch left 214 registered
     # ids; the 2026-09 aihubmix-canon sync then adds 70 and retires 15, leaving 269.
-    assert len(NEW_MODELS) == 31
-    assert len(positions) == 269
+    assert len(NEW_MODELS) == 30
+    assert len(positions) == 266
     assert len(positions) == len(set(positions))
     # Every registered id must have a schema behind it and every schema must be registered.
     # The comparison is on the declared `model:` id, not the filename - several schemas are
@@ -260,7 +259,6 @@ PROJECTION_REASONING_EFFORT = {
     "muse-spark-1.1": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
     "muse-spark-1.2": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
     "muse-spark-1.3": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
-    "ox-alpha": (["low", "medium", "high", "max"], "medium"),
     "qwen3.8-flash": (["low", "medium", "xhigh"], "medium"),
     "qwen3.8-max-2026-09-02": (["none", "minimal", "low", "medium", "high", "xhigh", "max"], "xhigh"),
 }
@@ -426,10 +424,6 @@ def test_json_schema_is_offered_only_where_the_gateway_honours_it() -> None:
     # decoding to the schema, so the knob stays.
     for model in ("glm-5.2", "glm-5.2-fast-preview", "deepseek-v4-flash-0731-fast"):
         assert "json_schema" in _rule(model, "response_format")["options"], model
-    # ox-alpha answers a schema-constrained request in prose, exactly like ernie-5.1.
-    ox_rules = {rule["name"] for rule in _schema("ox-alpha")["parameter_rules"]}
-    assert "json_schema" not in ox_rules
-    assert _rule("ox-alpha", "response_format")["options"] == ["text", "json_object"]
     # mai-thinking-1 rejects every structured format with 400 "Structured `response_format`
     # is not enabled for model", so it gets no response_format knob at all.
     mai = _schema("mai-thinking-1")

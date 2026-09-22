@@ -24,18 +24,6 @@ parameter_rules:
     help:
       zh_Hans: 思考开关。插件会把这个布尔值翻译成上游要求的对象形式再发出。
       en_US: Thinking switch. The plugin translates this boolean into the object form the upstream expects.
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理强度
-      en_US: Reasoning Effort
-    type: string
-    required: false
-    options:
-      - none
-      - high
-    help:
-      zh_Hans: 推理投入档位，取值来自公开投影收录的官方枚举。
-      en_US: Reasoning effort level; the enum comes from the official values recorded in the public projection.
   - name: thinking_budget
     label:
       zh_Hans: 推理预算
