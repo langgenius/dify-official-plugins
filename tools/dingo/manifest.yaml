@@ -6,8 +6,8 @@ label:
   en_US: Dingo
   zh_Hans: Dingo
 description:
-  en_US: A Comprehensive AI Data, Model and Application Quality Evaluation Tool
-  zh_Hans: 一个综合的AI数据、模型和应用质量评估工具
+  en_US: Tools for job search, resume optimization, and matching resumes to job descriptions
+  zh_Hans: 用于求职分析、简历优化以及简历与职位描述匹配的工具集
 icon: icon.svg
 resource:
   memory: 536870912
