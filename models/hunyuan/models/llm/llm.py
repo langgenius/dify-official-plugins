@@ -22,6 +22,8 @@ from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.hunyuan.v20230901 import hunyuan_client, models
 
+from ._metadata import apply_dify_metadata_if_enabled
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,6 +62,13 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
                 for tool in tools
             ]
         request.from_json_string(json.dumps(params))
+        # Attach Dify observability headers (opt-in) onto the request.
+        # ``HunyuanClient.ChatCompletions`` forwards ``request.headers``
+        # as the per-call HTTP headers via
+        # ``_call_and_deserialize(..., headers=request.headers)``.
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            request.headers = extra_headers
         response = client.ChatCompletions(request)
         if stream:
             return self._handle_stream_chat_response(model, credentials, prompt_messages, response)
@@ -80,6 +89,9 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
                 "Stream": False,
             }
             req.from_json_string(json.dumps(params))
+            extra_headers = credentials.get("extra_headers")
+            if extra_headers:
+                req.headers = extra_headers
             client.ChatCompletions(req)
         except Exception as e:
             raise CredentialsValidateFailedError(f"Credentials validation failed: {e}")
@@ -93,6 +105,16 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
         clientProfile = ClientProfile()
         clientProfile.httpProfile = httpProfile
         client = hunyuan_client.HunyuanClient(cred, "", clientProfile)
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the call sites below
+        # copy them onto ``request.headers``. The Tencent SDK's
+        # ``HunyuanClient.ChatCompletions`` forwards ``request.headers``
+        # via ``_call_and_deserialize(..., headers=request.headers)``
+        # on each outbound request, which is the carrier for the Dify
+        # observability headers.
+        apply_dify_metadata_if_enabled(credentials)
         return client
 
     def _convert_prompt_messages_to_dicts(self, prompt_messages: list[PromptMessage]) -> list[dict]:
