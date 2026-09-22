@@ -825,7 +825,7 @@ def test_manifest_version_is_bumped():
     with open(os.path.join(PLUGIN_DIR, "manifest.yaml"), encoding="utf-8") as manifest_file:
         manifest = yaml.safe_load(manifest_file)
 
-    assert manifest["version"] == "0.3.0"
+    assert manifest["version"] == "0.3.1"
 
 
 def test_provider_validation_uses_latest_default_model(monkeypatch):

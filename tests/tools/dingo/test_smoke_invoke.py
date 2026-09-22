@@ -19,9 +19,13 @@ def test_provider_python_loadable_and_tool_present():
     mod = load_module_from_path('dingo_provider', provider_py)
     assert hasattr(mod, 'DingoProvider')
 
-    # tool python should be importable and define expected class and _invoke
-    tool_py = os.path.join(PLUGIN_DIR, 'tools', 'keyword_matcher.py')
-    tmod = load_module_from_path('dingo_keyword_matcher', tool_py)
-    tool_cls = getattr(tmod, 'KeywordMatcher')
-    assert callable(getattr(tool_cls, '_invoke'))
-
+    # All tools must load with the plugin's declared dependencies.
+    for filename, class_name in (
+        ('keyword_matcher', 'KeywordMatcher'),
+        ('resume_optimizer', 'ResumeOptimizerTool'),
+        ('dingo_scout', 'DingoScout'),
+    ):
+        tool_py = os.path.join(PLUGIN_DIR, 'tools', f'{filename}.py')
+        tmod = load_module_from_path(f'dingo_{filename}', tool_py)
+        tool_cls = getattr(tmod, class_name)
+        assert callable(getattr(tool_cls, '_invoke'))
