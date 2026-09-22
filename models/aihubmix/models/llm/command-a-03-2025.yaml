@@ -4,7 +4,6 @@ label:
   en_US: Command A 03 2025
 model_type: llm
 features:
-  - agent-thought
   - tool-call
   - multi-tool-call
   - stream-tool-call
@@ -13,18 +12,6 @@ model_properties:
   mode: chat
   context_size: 256000
 parameter_rules:
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理强度
-      en_US: Reasoning Effort
-    type: string
-    required: false
-    options:
-      - none
-      - high
-    help:
-      zh_Hans: 推理投入档位，取值来自公开投影收录的官方枚举。
-      en_US: Reasoning effort level; the enum comes from the official values recorded in the public projection.
   - name: temperature
     use_template: temperature
   - name: top_p

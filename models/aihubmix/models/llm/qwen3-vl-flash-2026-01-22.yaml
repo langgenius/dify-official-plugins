@@ -4,23 +4,12 @@ label:
   en_US: Qwen3 VL Flash 2026 01-22
 model_type: llm
 features:
-  - agent-thought
   - vision
   - video
 model_properties:
   mode: chat
   context_size: 262144
 parameter_rules:
-  - name: thinking
-    label:
-      zh_Hans: 推理模式
-      en_US: Thinking Mode
-    type: boolean
-    default: false
-    required: false
-    help:
-      zh_Hans: 思考开关。插件会把这个布尔值翻译成上游要求的对象形式再发出。
-      en_US: Thinking switch. The plugin translates this boolean into the object form the upstream expects.
   - name: temperature
     use_template: temperature
   - name: top_p
