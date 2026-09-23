@@ -5,6 +5,7 @@ plugin venv — run via `uv run`). Pure methods are exercised without
 instantiating the model class.
 """
 import importlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -97,6 +98,17 @@ class TestClaude5RegionResolutionInGetModelInfo:
         info, _ = self._get_model_info("Opus 5", "global", "ap-northeast-1")
         assert info["model"] == "global.anthropic.claude-opus-5"
 
+    @pytest.mark.parametrize("cross_region,region,expected", [
+        ("global", "us-east-1", "global.anthropic.claude-opus-5-5"),
+        ("geographic", "us-east-1", "us.anthropic.claude-opus-5-5"),
+        ("geographic", "eu-west-1", "eu.anthropic.claude-opus-5-5"),
+        ("geographic", "ap-southeast-2", "au.anthropic.claude-opus-5-5"),
+    ])
+    def test_opus55_resolution(self, cross_region, region, expected):
+        info, _ = self._get_model_info("Opus 5.5", cross_region, region)
+        assert info["model"] == expected
+        assert info["support_tool_use"] is True
+
     def test_geographic_us(self):
         info, _ = self._get_model_info("Fable 5", "geographic", "us-west-2")
         assert info["model"] == "us.anthropic.claude-fable-5"
@@ -128,3 +140,26 @@ class TestClaude5RegionResolutionInGetModelInfo:
     def test_cross_region_param_is_consumed(self):
         _, params = self._get_model_info("Sonnet 5", "global", "us-east-1")
         assert "cross-region" not in params
+
+
+class TestOpus55CustomProfileSchema:
+    """Custom models (Inference Profile ID) inherit parameters and pricing
+    from the matching predefined family. Opus 5.5 must get the Claude 5
+    surface (effort, no temperature/top_p/top_k/reasoning budget) — the
+    legacy one sends fields Opus 5.5 rejects with ValidationException."""
+
+    @pytest.mark.parametrize("family,expected", [
+        ("anthropic claude 5", True),
+        ("anthropic claude", False),
+    ])
+    def test_opus55_matches_claude5_family_not_legacy(self, family, expected):
+        schema = SimpleNamespace(model=family)
+        matched = BedrockLLM._model_id_matches_schema(None, "anthropic.claude-opus-5-5", schema)
+        assert matched is expected
+
+    def test_opus55_pricing(self):
+        name = BedrockLLM._map_model_id_to_name(None, "anthropic.claude-opus-5-5")
+        assert name == "Opus 5.5"
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
+        assert pricing["input"] == "0.004"
+        assert pricing["output"] == "0.02"

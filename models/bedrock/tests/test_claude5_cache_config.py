@@ -11,6 +11,14 @@ _spec.loader.exec_module(cache_config)
 
 
 class TestClaude5CacheRegistration:
+    def test_opus55_supported_with_min_512(self):
+        # Opus 5.5 model card: min 512 tokens per cache checkpoint
+        assert cache_config.is_cache_supported("anthropic.claude-opus-5-5")
+        assert cache_config.is_cache_supported("global.anthropic.claude-opus-5-5")
+        cfg = cache_config.get_cache_config("us.anthropic.claude-opus-5-5")
+        assert cfg["min_tokens"] == 512
+        assert cfg["supported_fields"] == ["system", "messages", "tools"]
+
     def test_opus5_supported_with_min_512(self):
         # Opus 5 model card: min 512 tokens per cache checkpoint
         assert cache_config.is_cache_supported("anthropic.claude-opus-5")
