@@ -400,7 +400,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 _candidate_id = model_ids.get_model_id(model, _model_name)
                 if _candidate_id and self._is_bedrock_mantle_model(_candidate_id):
                     return self._generate_with_responses_api(
-                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user
+                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user, tools
                     )
 
             # Traditional model - try converse API first, then fall back if needed
@@ -2156,7 +2156,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     content = self._convert_responses_api_user_content(message.content)
                 result.append({"role": "user", "content": content})
             elif isinstance(message, AssistantPromptMessage):
-                result.append({"role": "assistant", "content": message.content or ""})
+                if message.content or not message.tool_calls:
+                    result.append({"role": "assistant", "content": message.content or ""})
+                result.extend(
+                    {
+                        "type": "function_call",
+                        "call_id": call.id,
+                        "name": call.function.name,
+                        "arguments": call.function.arguments,
+                    }
+                    for call in message.tool_calls
+                )
+            elif isinstance(message, ToolPromptMessage):
+                result.append({
+                    "type": "function_call_output",
+                    "call_id": message.tool_call_id,
+                    "output": message.content or "",
+                })
         return result
 
     @staticmethod
@@ -2205,6 +2221,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke GPT-5.5 / GPT-5.4 via bedrock-mantle endpoint using the OpenAI Responses API.
@@ -2254,6 +2271,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         reasoning_effort = model_parameters.get("reasoning_effort")
         if reasoning_effort:
             params["reasoning"] = {"effort": reasoning_effort}
+        if tools:
+            # Same function-tool shape as models/openai (responses.py).
+            params["tools"] = [
+                {
+                    "type": "function",
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                    "strict": False,
+                }
+                for tool in tools
+            ]
 
         # Store model_name for pricing calculation, deriving it from model_id if not set.
         credentials_for_pricing = credentials.copy()
@@ -2300,12 +2329,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         prompt_tokens = getattr(usage, "input_tokens", 0) if usage else 0
         completion_tokens = getattr(usage, "output_tokens", 0) if usage else 0
         dify_usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        tool_calls = [
+            self._responses_api_tool_call(item)
+            for item in (getattr(response, "output", None) or [])
+            if getattr(item, "type", None) == "function_call"
+        ]
 
         return LLMResult(
             model=model,
             prompt_messages=prompt_messages,
-            message=AssistantPromptMessage(content=text),
+            message=AssistantPromptMessage(content=text, tool_calls=tool_calls),
             usage=dify_usage,
+        )
+
+    @staticmethod
+    def _responses_api_tool_call(item) -> AssistantPromptMessage.ToolCall:
+        """Convert a Responses API ``function_call`` output item to a Dify tool call."""
+        return AssistantPromptMessage.ToolCall(
+            id=item.call_id,
+            type="function",
+            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                name=item.name, arguments=item.arguments
+            ),
         )
 
     def _handle_responses_api_stream(
@@ -2356,5 +2401,20 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             usage=dify_usage,
                         ),
                     )
+
+                elif event_type == "ResponseOutputItemDoneEvent":
+                    item = getattr(event, "item", None)
+                    if getattr(item, "type", None) == "function_call":
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(
+                                    content="", tool_calls=[self._responses_api_tool_call(item)]
+                                ),
+                            ),
+                        )
+                        index += 1
         except Exception as ex:
             self._map_openai_exception(ex)
