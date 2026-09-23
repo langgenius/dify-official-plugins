@@ -99,7 +99,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
         {"prefix": "qwen.qwen3", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "deepseek.v3-v1:0", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "deepseek.v3.2", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
