@@ -13,7 +13,7 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
   - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `minimax-m2.7`）
   - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.7`、`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
 - **三条协议路径都会**发送 OpenCode 必需请求头：
-  - `User-Agent`（默认 `dify-opencode-go-plugin/0.3.0`）
+  - `User-Agent`（默认 `dify-opencode-go-plugin/0.4.0`）
   - `x-opencode-session`（会话路由 / prompt cache）
 - 上游怪癖已自动处理：
   - `kimi-k2.7-code` — 强制 `temperature=1` / `top_p=0.95`（网关仅接受这两组值）
@@ -52,12 +52,17 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 若 OpenCode 新增模型而插件尚未收录：
 
 1. 在 OpenCode Go 下添加自定义模型。
-2. 模型名称填写 [Go 文档](https://opencode.ai/docs/go/) 中的 model id（例如 `kimi-k2.6`）。
-3. 设置 **API 协议** 与模型端点一致：
+2. **模型 ID** 填写 [Go 文档](https://opencode.ai/docs/go/) 中的 model id（例如 `kimi-k2.6`）。
+3. **显示名称**（可选）= 模型列表中展示的名称，默认与模型 ID 相同。
+4. 设置 **API 协议** 与模型端点一致：
    - `chat`（默认）→ `/chat/completions`
    - `anthropic` → `/messages`（`minimax-m2.7` 等仅 Messages 可用的模型）
    - `responses` → `/responses`（`grok-4.7`、`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
-4. 可按需设置上下文长度、最大 token、Function Calling、视觉能力。
+5. 按需配置能力开关：
+   - **思考模式**（默认开启）— 暴露思考参数（`enable_thinking`、`thinking_budget`、`reasoning_effort`）
+   - **视觉 / 音频 / 视频 / 文档** — 多模态输入
+   - **结构化输出** — 暴露 `response_format` / `json_schema`
+6. 可按需设置上下文长度、最大 token、Function Calling。
 
 ## 协议矩阵
 
@@ -66,6 +71,34 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 | chat | `{base}/chat/completions` | `Authorization: Bearer` | 必须 | 必须 |
 | anthropic | `{base}/messages` | `x-api-key` + `anthropic-version: 2023-06-01` | 必须 | 必须 |
 | responses | `{base}/responses` | `Authorization: Bearer` | 必须 | 必须 |
+
+### 自定义模型表单（0.4.0）
+
+添加自定义模型时可配置：
+
+| 字段 | 作用 |
+| --- | --- |
+| **模型 ID** | 上游模型 id（必填） |
+| **显示名称** | 列表中展示名称（可选，默认同模型 ID） |
+| **思考模式** | 默认开启。启用 `agent-thought` 并暴露思考参数 |
+| **视觉 / 音频 / 视频 / 文档** | 多模态输入 |
+| **结构化输出** | 暴露 `response_format` / `json_schema` |
+| **API 协议** | `chat` / `anthropic` / `responses` |
+| Function Calling / 上下文 / 最大 token | 同前 |
+
+### 自定义模型表单（0.4.0）
+
+添加自定义模型时可配置：
+
+| 字段 | 作用 |
+| --- | --- |
+| **模型 ID** | 上游模型 id（必填） |
+| **显示名称** | 列表中展示名称（可选，默认同模型 ID） |
+| **思考模式** | 默认开启。启用 `agent-thought` 并暴露思考参数 |
+| **视觉 / 音频 / 视频 / 文档** | 多模态输入 |
+| **结构化输出** | 暴露 `response_format` / `json_schema` |
+| **API 协议** | `chat` / `anthropic` / `responses` |
+| Function Calling / 上下文 / 最大 token | 同前 |
 
 ### 0.3.0 新增预置模型
 
@@ -148,6 +181,7 @@ python test_session_runtime.py
 python test_extra_headers.py
 python test_backward_compat_002.py
 python test_protocol_routing.py
+python test_custom_model_features.py
 ```
 
 在线冒烟（需 `OPENCODE_GO_API_KEY`）：
@@ -159,7 +193,7 @@ python test_smoke_live.py
 打包：
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.3.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.4.0.difypkg
 ```
 
 ## 链接

@@ -30,12 +30,21 @@ label:
 model_credential_schema:
   model:
     label:
-      en_US: Model Name
-      zh_Hans: 模型名称
+      en_US: Model ID
+      zh_Hans: 模型 ID
     placeholder:
       en_US: Enter model id, e.g. kimi-k2.6
       zh_Hans: 输入模型 ID，例如 kimi-k2.6
   credential_form_schemas:
+    - variable: display_name
+      label:
+        en_US: Display Name
+        zh_Hans: 显示名称
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Optional. Shown in the model list. Defaults to Model ID.
+        zh_Hans: 可选。模型列表中显示的名称，默认与模型 ID 相同。
     - variable: api_key
       label:
         en_US: API Key
@@ -125,6 +134,36 @@ model_credential_schema:
             仅支持 /messages 的模型（如 minimax-m2.7）请选择 Anthropic Messages；
             仅支持 /responses 的模型（如 grok-4.7、grok-4.6、gpt-5.6-luna、muse-spark-*）
             请选择 OpenAI Responses。
+    - variable: thinking_support
+      label:
+        en_US: Thinking / Agent Thought
+        zh_Hans: 思考模式
+      type: select
+      required: false
+      default: "true"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+      help:
+        title:
+          en_US: Agent thought
+          zh_Hans: 思考模式
+        text:
+          en_US: |-
+            Enable when the model returns reasoning / thinking content.
+            Adds the agent-thought feature and thinking parameters.
+          zh_Hans: |-
+            模型会输出思考 / 推理内容时开启。将启用 agent-thought 能力
+            并暴露思考相关参数。
     - variable: vision_support
       label:
         en_US: Vision support
@@ -144,6 +183,93 @@ model_credential_schema:
       show_on:
         - variable: __model_type
           value: llm
+    - variable: audio_support
+      label:
+        en_US: Audio support
+        zh_Hans: 音频支持
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: video_support
+      label:
+        en_US: Video support
+        zh_Hans: 视频支持
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: document_support
+      label:
+        en_US: Document support
+        zh_Hans: 文档支持
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+    - variable: structured_output_support
+      label:
+        en_US: Structured output
+        zh_Hans: 结构化输出
+      type: select
+      required: false
+      default: "false"
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
+      show_on:
+        - variable: __model_type
+          value: llm
+      help:
+        title:
+          en_US: Structured output
+          zh_Hans: 结构化输出
+        text:
+          en_US: |-
+            Enable when the model supports JSON schema / structured responses.
+            Adds response_format and json_schema parameters.
+          zh_Hans: |-
+            模型支持 JSON Schema / 结构化回复时开启。将暴露
+            response_format 与 json_schema 参数。
 models:
   llm:
     position: models/llm/_position.yaml
@@ -177,10 +303,10 @@ provider_credential_schema:
         zh_Hans: User-Agent
       type: text-input
       required: false
-      default: dify-opencode-go-plugin/0.3.0
+      default: dify-opencode-go-plugin/0.4.0
       placeholder:
-        en_US: dify-opencode-go-plugin/0.3.0
-        zh_Hans: dify-opencode-go-plugin/0.3.0
+        en_US: dify-opencode-go-plugin/0.4.0
+        zh_Hans: dify-opencode-go-plugin/0.4.0
     - variable: session_id
       label:
         en_US: Session ID (optional)

@@ -134,6 +134,11 @@ def filter_model_parameters(model_parameters: dict) -> dict[str, Any]:
     allowed = {
         "temperature": "temperature",
         "top_p": "top_p",
+        "enable_thinking": "enable_thinking",
+        "thinking_budget": "thinking_budget",
+        "reasoning_effort": "reasoning_effort",
+        "response_format": "response_format",
+        "json_schema": "json_schema",
         "max_tokens": "max_output_tokens",
         "max_output_tokens": "max_output_tokens",
     }

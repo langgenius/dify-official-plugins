@@ -13,7 +13,7 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
   - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`)
   - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
-  - `User-Agent`: `dify-opencode-go-plugin/0.3.0` (not a generic SDK name)
+  - `User-Agent`: `dify-opencode-go-plugin/0.4.0` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
 - Upstream quirks handled automatically:
   - `kimi-k2.7-code` — forces `temperature=1` / `top_p=0.95` (gateway only accepts these)
@@ -51,12 +51,17 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 If OpenCode adds a new model before this plugin is updated:
 
 1. Add a custom model under OpenCode Go.
-2. Model name = model id from the [Go docs](https://opencode.ai/docs/go/) (e.g. `kimi-k2.6`).
-3. Set **API Protocol** to match the model’s endpoint:
+2. **Model ID** = model id from the [Go docs](https://opencode.ai/docs/go/) (e.g. `kimi-k2.6`).
+3. **Display Name** (optional) = label shown in the model list. Defaults to the Model ID.
+4. Set **API Protocol** to match the model’s endpoint:
    - `chat` (default) → `/chat/completions`
    - `anthropic` → `/messages` (`minimax-m2.7`, other Messages-only ids)
    - `responses` → `/responses` (`grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
-4. Optionally set context size / max tokens / function calling / vision.
+5. Configure capability toggles as needed:
+   - **Thinking / Agent Thought** (default on) — exposes thinking parameters (`enable_thinking`, `thinking_budget`, `reasoning_effort`)
+   - **Vision / Audio / Video / Document** — multimodal file support
+   - **Structured output** — exposes `response_format` / `json_schema`
+6. Optionally set context size / max tokens / function calling.
 
 ## Protocol matrix
 
@@ -67,6 +72,34 @@ If OpenCode adds a new model before this plugin is updated:
 | responses | `{base}/responses` | `Authorization: Bearer` | required | required |
 
 Base URL default: `https://opencode.ai/zen/go/v1`.
+
+### Custom model form (0.4.0)
+
+When adding a custom model you can now set:
+
+| Field | Purpose |
+| --- | --- |
+| **Model ID** | Upstream model id (required) |
+| **Display Name** | Label in the model list (optional; defaults to Model ID) |
+| **Thinking / Agent Thought** | Default on. Adds `agent-thought` + thinking parameters |
+| **Vision / Audio / Video / Document** | Multimodal file support |
+| **Structured output** | Adds `response_format` / `json_schema` |
+| **API Protocol** | `chat` / `anthropic` / `responses` |
+| Function calling / context / max tokens | As before |
+
+### Custom model form (0.4.0)
+
+When adding a custom model you can now set:
+
+| Field | Purpose |
+| --- | --- |
+| **Model ID** | Upstream model id (required) |
+| **Display Name** | Label in the model list (optional; defaults to Model ID) |
+| **Thinking / Agent Thought** | Default on. Adds `agent-thought` + thinking parameters |
+| **Vision / Audio / Video / Document** | Multimodal file support |
+| **Structured output** | Adds `response_format` / `json_schema` |
+| **API Protocol** | `chat` / `anthropic` / `responses` |
+| Function calling / context / max tokens | As before |
 
 ### Predefined models added in 0.3.0
 
@@ -150,6 +183,7 @@ python test_session_runtime.py
 python test_extra_headers.py
 python test_backward_compat_002.py
 python test_protocol_routing.py
+python test_custom_model_features.py
 ```
 
 Live smoke (needs `OPENCODE_GO_API_KEY`):
@@ -161,7 +195,7 @@ python test_smoke_live.py
 Package:
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.3.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.4.0.difypkg
 ```
 
 ## Links

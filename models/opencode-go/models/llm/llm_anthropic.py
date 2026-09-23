@@ -244,6 +244,11 @@ def filter_model_parameters(model_parameters: dict) -> dict[str, Any]:
         "temperature": "temperature",
         "top_p": "top_p",
         "top_k": "top_k",
+        "enable_thinking": "enable_thinking",
+        "thinking_budget": "thinking_budget",
+        "reasoning_effort": "reasoning_effort",
+        "response_format": "response_format",
+        "json_schema": "json_schema",
         "max_tokens": "max_tokens",
         "stop_sequences": "stop_sequences",
     }
