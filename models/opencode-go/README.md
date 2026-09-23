@@ -133,6 +133,15 @@ Qwen and MiniMax M3 remain on Chat Completions (oa-compat) even though OpenCode 
 | Union Alpha Free (`union-alpha`) | No longer listed in the OpenCode Go catalog (was a limited-time free trial). Custom models can still target the id if the gateway accepts it. |
 | MiniMax M2.5 (`minimax-m2.5`) | No longer in the Go "current model list" / usage tables. Removed from predefined models. |
 
+### Deprecation notices
+
+| Model | Offline at (UTC+8) | Migration |
+| --- | --- | --- |
+| `mimo-v2.5` | **2026-10-21 10:00** | Switch to `mimo-v2.6-flash` |
+| `mimo-v2.5-pro` | **2026-10-21 10:00** | Switch to `mimo-v2.6-pro` |
+
+Both models are marked `deprecated: true`. Please migrate before the offline date.
+
 ### Model parameter constraints
 
 | Model | Behavior |

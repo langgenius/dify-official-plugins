@@ -131,6 +131,15 @@ Qwen 以及 MiniMax M3 继续走 Chat Completions（oa-compat）。OpenCode 文�
 | Union Alpha Free（`union-alpha`） | 已不在 OpenCode Go 模型目录中（原限时免费体验）。如网关仍接受该 id，可作为自定义模型继续使用。 |
 | MiniMax M2.5（`minimax-m2.5`） | 已从 Go「当前模型列表」/ 用量表中移除，故取消预置。 |
 
+### 下线提醒
+
+| 模型 | 下线时间（北京时间） | 迁移建议 |
+| --- | --- | --- |
+| `mimo-v2.5` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-flash` |
+| `mimo-v2.5-pro` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-pro` |
+
+两个模型已标记 `deprecated: true`，请在下线前完成迁移。
+
 ### 模型参数约束
 
 | 模型 | 行为 |
