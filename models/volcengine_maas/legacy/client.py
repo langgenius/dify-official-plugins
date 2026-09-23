@@ -38,7 +38,7 @@ class MaaSClient(MaasService):
         client.set_sk(sk)
         return client
 
-    def chat(self, params: dict, messages: list[PromptMessage], stream=False, **extra_model_kwargs) -> Generator | dict:
+    def chat(self, params: dict, messages: list[PromptMessage], stream=False, extra_headers=None, **extra_model_kwargs) -> Generator | dict:
         req = {
             "parameters": params,
             "messages": [self.convert_prompt_message_to_maas_message(prompt) for prompt in messages],
@@ -48,10 +48,12 @@ class MaaSClient(MaasService):
             return super().chat(
                 self.endpoint_id,
                 req,
+                extra_headers=extra_headers,
             )
         return super().stream_chat(
             self.endpoint_id,
             req,
+            extra_headers=extra_headers,
         )
 
     def embeddings(self, texts: list[str]) -> dict:
