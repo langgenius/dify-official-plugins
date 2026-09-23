@@ -6,19 +6,18 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 
 ## Features
 
-- Predefined models from the OpenCode Go catalog (GLM, Kimi, DeepSeek, MiMo, MiniMax, Qwen, LongCat, Hy, Grok, GPT Luna, Muse Spark, Union Alpha)
+- Predefined models from the OpenCode Go catalog (GLM, Kimi, DeepSeek, MiMo, MiniMax, Qwen, LongCat, Hy, Grok, GPT Luna, Muse Spark)
 - Customizable model support with an **API Protocol** selector (`chat` / `anthropic` / `responses`)
 - Three upstream protocols in one provider:
   - **Chat Completions** (`{base}/chat/completions` + `Authorization: Bearer`) — default for most models
-  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `union-alpha`, `minimax-m2.7`)
-  - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
+  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`)
+  - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
-  - `User-Agent`: `dify-opencode-go-plugin/0.2.0` (not a generic SDK name)
+  - `User-Agent`: `dify-opencode-go-plugin/0.3.0` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
 - Upstream quirks handled automatically:
   - `kimi-k2.7-code` — forces `temperature=1` / `top_p=0.95` (gateway only accepts these)
   - `gpt-5.6-luna` — strips `temperature` / `top_p` (upstream rejects them)
-  - `union-alpha` — stream is flaky (empty / 503); the plugin emulates streaming from a non-stream `/messages` call
   - Transient `502` / `503` / `529` are retried with backoff; empty SSE / raw error JSON surface as Dify `InvokeError` (never silent empty text)
   - SSE is always decoded as UTF-8 (OpenCode often omits charset)
   - Outbound requests honor the process / system proxy (`trust_env`)
@@ -55,8 +54,8 @@ If OpenCode adds a new model before this plugin is updated:
 2. Model name = model id from the [Go docs](https://opencode.ai/docs/go/) (e.g. `kimi-k2.6`).
 3. Set **API Protocol** to match the model’s endpoint:
    - `chat` (default) → `/chat/completions`
-   - `anthropic` → `/messages` (`union-alpha`, `minimax-m2.7`, other Messages-only ids)
-   - `responses` → `/responses` (`grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
+   - `anthropic` → `/messages` (`minimax-m2.7`, other Messages-only ids)
+   - `responses` → `/responses` (`grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 4. Optionally set context size / max tokens / function calling / vision.
 
 ## Protocol matrix
@@ -69,11 +68,18 @@ If OpenCode adds a new model before this plugin is updated:
 
 Base URL default: `https://opencode.ai/zen/go/v1`.
 
+### Predefined models added in 0.3.0
+
+| Model | Protocol | Notes |
+| --- | --- | --- |
+| Grok 4.7 (`grok-4.7`) | responses | Same Responses-only path as Grok 4.6. **May require outbound proxy from some regions (e.g. CN).** |
+| MiMo-V2.6-Flash (`mimo-v2.6-flash`) | chat | Aligns with MiMo-V2.5 multimodal flags (vision / video / audio) |
+| MiMo-V2.6-Pro (`mimo-v2.6-pro`) | chat | Aligns with MiMo-V2.5-Pro |
+
 ### Predefined models added in 0.2.0
 
 | Model | Protocol | Notes |
 | --- | --- | --- |
-| Union Alpha Free (`union-alpha`) | anthropic | **Limited-time free trial — may be removed anytime**; oa-compat `/chat/completions` returns 500; native stream is flaky (plugin emulates stream from non-stream). Do not rely on it for production. |
 | MiniMax M2.7 (`minimax-m2.7`) | anthropic | oa-compat `/chat/completions` returns 500; `/messages` works |
 | Grok 4.6 (`grok-4.6`) | responses | Documented Responses-only. **May require outbound proxy from some regions (e.g. CN).** |
 | GPT 5.6 Luna (`gpt-5.6-luna`) | responses | Documented Responses-only; **region-restricted** in some territories (often needs proxy). Plugin strips `temperature` / `top_p` for this model. |
@@ -85,7 +91,14 @@ Base URL default: `https://opencode.ai/zen/go/v1`.
 > before starting the plugin / Dify runtime so outbound HTTPS can leave the region.
 > The plugin honors the process / system proxy environment (`trust_env`).
 
-Qwen and MiniMax M3 / M2.5 remain on Chat Completions (oa-compat) even though OpenCode docs list `/messages` as preferred — oa-compat is verified 200 and avoids regressions. MiniMax M2.7 is the exception (chat 500 → routed to anthropic).
+Qwen and MiniMax M3 remain on Chat Completions (oa-compat) even though OpenCode docs list `/messages` as preferred — oa-compat is verified 200 and avoids regressions. MiniMax M2.7 is the exception (chat 500 → routed to anthropic).
+
+### Predefined models removed in 0.3.0
+
+| Model | Reason |
+| --- | --- |
+| Union Alpha Free (`union-alpha`) | No longer listed in the OpenCode Go catalog (was a limited-time free trial). Custom models can still target the id if the gateway accepts it. |
+| MiniMax M2.5 (`minimax-m2.5`) | No longer in the Go "current model list" / usage tables. Removed from predefined models. |
 
 ### Model parameter constraints
 
@@ -104,15 +117,15 @@ Local smoke matrix (2026-09-17, 0.2.0 + live-debug fixes). Vision for all vision
 | --- | --- |
 | glm-5.3-flash / glm-5.x | OK (stream + non-stream) |
 | glm-5.1 / glm-5.2 | OK |
+| mimo-v2.6-flash / mimo-v2.6-pro | Not smoke-tested yet (added in 0.3.0) |
 | mimo-v2.5 / mimo-v2.5-pro | OK |
 | kimi-k2.6 / kimi-k2.7-code / kimi-k3 | OK |
 | qwen3.6-plus / qwen3.7-plus / qwen3.7-max / qwen3.8-flash / qwen3.8-max | OK |
-| minimax-m3 / minimax-m2.5 | OK (chat) |
+| minimax-m3 | OK (chat) |
 | minimax-m2.7 | OK (anthropic `/messages`) |
 | deepseek-v4-pro / v4-flash / v4.1-flash / flash-vision-exp | OK |
 | longcat-2.0 / hy3 / hy4-preview | OK |
-| union-alpha via anthropic `/messages` | OK (plugin emulates stream from non-stream; native stream often empty/503) |
-| union-alpha via chat `/chat/completions` | 500 (expected) |
+| grok-4.7 via responses `/responses` | Not smoke-tested yet (added in 0.3.0) |
 | grok-4.6 via responses `/responses` | OK with outbound proxy |
 | gpt-5.6-luna via responses | OK with outbound proxy |
 | muse-spark-1.3 via responses | HTTP 200 (content quality may vary; region-limited) |
@@ -148,7 +161,7 @@ python test_smoke_live.py
 Package:
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.2.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.3.0.difypkg
 ```
 
 ## Links

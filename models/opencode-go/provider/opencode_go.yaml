@@ -118,12 +118,12 @@ model_credential_schema:
           en_US: |-
             Chat (default) works for most OpenCode Go models.
             Choose Anthropic Messages for models that only expose /messages
-            (e.g. union-alpha) and OpenAI Responses for models that only
-            expose /responses (e.g. grok-4.6, gpt-5.6-luna, muse-spark-*).
+            (e.g. minimax-m2.7) and OpenAI Responses for models that only
+            expose /responses (e.g. grok-4.7, grok-4.6, gpt-5.6-luna, muse-spark-*).
           zh_Hans: |-
             Chat（默认）适用于大多数 OpenCode Go 模型。
-            仅支持 /messages 的模型（如 union-alpha）请选择 Anthropic Messages；
-            仅支持 /responses 的模型（如 grok-4.6、gpt-5.6-luna、muse-spark-*）
+            仅支持 /messages 的模型（如 minimax-m2.7）请选择 Anthropic Messages；
+            仅支持 /responses 的模型（如 grok-4.7、grok-4.6、gpt-5.6-luna、muse-spark-*）
             请选择 OpenAI Responses。
     - variable: vision_support
       label:
@@ -177,10 +177,10 @@ provider_credential_schema:
         zh_Hans: User-Agent
       type: text-input
       required: false
-      default: dify-opencode-go-plugin/0.2.0
+      default: dify-opencode-go-plugin/0.3.0
       placeholder:
-        en_US: dify-opencode-go-plugin/0.2.0
-        zh_Hans: dify-opencode-go-plugin/0.2.0
+        en_US: dify-opencode-go-plugin/0.3.0
+        zh_Hans: dify-opencode-go-plugin/0.3.0
     - variable: session_id
       label:
         en_US: Session ID (optional)

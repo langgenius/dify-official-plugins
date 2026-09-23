@@ -32,10 +32,12 @@ CHAT_MODELS = [
     "qwen3.8-flash",
     "minimax-m3",
     "kimi-k2.6",
+    "mimo-v2.6-flash",
+    "mimo-v2.6-pro",
     "mimo-v2.5",
 ]
-ANTHROPIC_MODELS = ["union-alpha"]
-RESPONSES_MODELS = ["grok-4.6", "gpt-5.6-luna"]
+ANTHROPIC_MODELS = []
+RESPONSES_MODELS = ["grok-4.7", "grok-4.6", "gpt-5.6-luna"]
 
 
 def make_model() -> OpenCodeGoLargeLanguageModel:
@@ -118,24 +120,6 @@ def main() -> int:
             ok, detail = run_one(model_id, stream)
             matrix.append((model_id, "stream" if stream else "sync", ok, detail))
             print(f"{'OK' if ok else 'FAIL':4} {model_id:28} {'stream' if stream else 'sync':6} {detail}")
-
-    # union-alpha must fail on chat (documented)
-    print("--- union-alpha via chat (expect fail) ---")
-    try:
-        llm = make_model()
-        llm._invoke(
-            model="union-alpha",
-            credentials={"api_key": API_KEY, "api_protocol": "chat"},
-            prompt_messages=[UserPromptMessage(content="hi")],
-            model_parameters={"max_tokens": 16},
-            stream=False,
-            user="smoke-test",
-        )
-        print("UNEXPECTED: union-alpha chat succeeded")
-        matrix.append(("union-alpha", "chat-should-fail", False, "unexpected success"))
-    except Exception as ex:
-        print(f"EXPECTED FAIL union-alpha chat: {type(ex).__name__}: {str(ex)[:160]}")
-        matrix.append(("union-alpha", "chat-should-fail", True, type(ex).__name__))
 
     failed = [row for row in matrix if not row[2]]
     # Region-restricted upstreams from this host are environmental, not plugin bugs.

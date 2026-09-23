@@ -1,7 +1,7 @@
-model: minimax-m2.5
+model: mimo-v2.6-pro
 label:
-  en_US: MiniMax M2.5
-  zh_Hans: MiniMax M2.5
+  en_US: MiMo-V2.6-Pro
+  zh_Hans: MiMo-V2.6-Pro
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,14 +20,14 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 65536
+    max: 128000
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
   - name: frequency_penalty
     use_template: frequency_penalty
 pricing:
-  input: "0.30"
-  output: "1.20"
+  input: "0.435"
+  output: "0.87"
   unit: "0.000001"
   currency: USD

@@ -1,6 +1,6 @@
 """OpenAI Responses (/responses) protocol helpers for OpenCode Go.
 
-Models like grok-4.6 / gpt-5.6-luna / muse-spark-* reject oa-compat and only
+Models like grok-4.7 / grok-4.6 / gpt-5.6-luna / muse-spark-* reject oa-compat and only
 work on the Responses endpoint. Auth is Authorization Bearer + session + UA.
 """
 
