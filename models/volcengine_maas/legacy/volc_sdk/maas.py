@@ -37,18 +37,27 @@ class MaasService(Service):
         }
         return api_info
 
-    def chat(self, endpoint_id, req):
+    def chat(self, endpoint_id, req, extra_headers=None):
         req["stream"] = False
-        return self._request(endpoint_id, "chat", req)
+        return self._request(endpoint_id, "chat", req, extra_headers=extra_headers)
 
-    def stream_chat(self, endpoint_id, req):
+    def stream_chat(self, endpoint_id, req, extra_headers=None):
         req_id = gen_req_id()
         self._validate("chat", req_id)
         apikey = self._apikey
 
         try:
             req["stream"] = True
-            res = self._call(endpoint_id, "chat", req_id, {}, json.dumps(req).encode("utf-8"), apikey, stream=True)
+            res = self._call(
+                endpoint_id,
+                "chat",
+                req_id,
+                {},
+                json.dumps(req).encode("utf-8"),
+                apikey,
+                stream=True,
+                extra_headers=extra_headers,
+            )
 
             decoder = SSEDecoder(res)
 
@@ -77,10 +86,10 @@ class MaasService(Service):
         except Exception as e:
             raise new_client_sdk_request_error(str(e))
 
-    def embeddings(self, endpoint_id, req):
-        return self._request(endpoint_id, "embeddings", req)
+    def embeddings(self, endpoint_id, req, extra_headers=None):
+        return self._request(endpoint_id, "embeddings", req, extra_headers=extra_headers)
 
-    def _request(self, endpoint_id, api, req, params={}):
+    def _request(self, endpoint_id, api, req, params={}, extra_headers=None):
         req_id = gen_req_id()
 
         self._validate(api, req_id)
@@ -88,7 +97,15 @@ class MaasService(Service):
         apikey = self._apikey
 
         try:
-            res = self._call(endpoint_id, api, req_id, params, json.dumps(req).encode("utf-8"), apikey)
+            res = self._call(
+                endpoint_id,
+                api,
+                req_id,
+                params,
+                json.dumps(req).encode("utf-8"),
+                apikey,
+                extra_headers=extra_headers,
+            )
             resp = dict_to_object(res.json())
             if resp and isinstance(resp, dict):
                 resp["req_id"] = req_id
@@ -112,13 +129,22 @@ class MaasService(Service):
         if api not in self.api_info:
             raise new_client_sdk_request_error("no such api", req_id)
 
-    def _call(self, endpoint_id, api, req_id, params, body, apikey=None, stream=False):
+    def _call(self, endpoint_id, api, req_id, params, body, apikey=None, stream=False, extra_headers=None):
         api_info = copy.deepcopy(self.api_info[api])
         api_info.path = api_info.path.format(endpoint_id=endpoint_id)
 
         r = self.prepare_request(api_info, params)
         r.headers["x-tt-logid"] = req_id
         r.headers["Content-Type"] = "application/json"
+        # Merge any caller-supplied ``extra_headers`` (e.g. the opt-in
+        # Dify ``X-Dify-App-Id`` / ``X-Dify-Source`` headers). Caller
+        # keys do not override the SDK's required ``x-tt-logid`` and
+        # ``Content-Type`` headers because those were set first.
+        if extra_headers:
+            for k, v in extra_headers.items():
+                if k in r.headers:
+                    continue
+                r.headers[k] = v
         r.body = body
 
         if apikey is None:
