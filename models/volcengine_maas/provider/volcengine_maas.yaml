@@ -460,6 +460,51 @@ model_credential_schema:
       variable: base_model_name
     type: text-input
     variable: max_tokens
+  - default: disabled
+    label:
+      en_US: Attach Dify app_id as request headers
+      zh_Hans: 附加 Dify app_id 作为请求头
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+          every Volcengine MAAS API call. The headers are written into the
+          `extra_headers` credential. For the v3 (Ark) path, the headers are
+          forwarded as the OpenAI SDK's `extra_headers=` on each outbound
+          request. For the legacy v2 path, the plugin's vendored
+          `MaasService._call` merges them into the HTTP request headers
+          before the SDK signs the request. The headers are used for
+          observability / proxy-side propagation. Volcengine MAAS does not
+          document them. Default is `disabled`, so the request shape is
+          unchanged unless you opt in. This opt-in applies to the LLM
+          endpoint only.
+        zh_Hans: |-
+          启用后，插件会通过 `extra_headers` 凭据在每次 Volcengine MAAS 调用中附加当前
+          Dify app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source` 请求头。
+          在 v3（Ark）路径下，这些头会通过 OpenAI SDK 的 `extra_headers=` 随每个出站
+          请求一并转发；在 v2（legacy）路径下，插件内置的 `MaasService._call` 会在
+          SDK 签名之前将其合并到 HTTP 请求头中。整体用于可观测性与代理侧传播。
+          Volcengine MAAS API 不会消费它们。默认值为 `disabled`，即未开启时请求结构
+          保持不变。该选项仅作用于 LLM 端点。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on:
+    - variable: __model_type
+      value: llm
+    type: select
+    variable: enable_request_metadata
   model:
     label:
       en_US: Model Name
