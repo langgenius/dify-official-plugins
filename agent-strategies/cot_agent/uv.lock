@@ -240,7 +240,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dify-plugin", specifier = ">=0.9.0" }]
+requires-dist = [{ name = "dify-plugin", git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=658c64e24dc7e452ef8a2951bb696bf2ce85bed6" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]
@@ -248,7 +248,7 @@ dev = [{ name = "pytest", specifier = ">=8.0" }]
 [[package]]
 name = "dify-plugin"
 version = "0.10.2"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=658c64e24dc7e452ef8a2951bb696bf2ce85bed6#658c64e24dc7e452ef8a2951bb696bf2ce85bed6" }
 dependencies = [
     { name = "flask" },
     { name = "gevent" },
@@ -263,10 +263,6 @@ dependencies = [
     { name = "tiktoken" },
     { name = "werkzeug" },
     { name = "yarl" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/16/5a/885909338df3e32604f45c579457c5dcfe982d35857994805735e5487d4b/dify_plugin-0.10.2.tar.gz", hash = "sha256:e37e707b3903c439cd09924b2125ba794ffdc886bfdbcb8f75db28ba64cb795b", size = 320685, upload-time = "2026-08-10T07:04:08.454Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/26/5897c50381eb23a10fd7ab770288d8656f3325d3407e4ee4f6fb7e70f76a/dify_plugin-0.10.2-py3-none-any.whl", hash = "sha256:5a30db98cc4c3f36bdcc70ecd217b6bb37279c39fc0a843a985b05581dc461d3", size = 379282, upload-time = "2026-08-10T07:04:07.068Z" },
 ]
 
 [[package]]
