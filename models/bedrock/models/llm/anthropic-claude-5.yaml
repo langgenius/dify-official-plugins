@@ -12,7 +12,7 @@ features:
 model_properties:
   mode: chat
   context_size: 1000000
-# Claude 5 generation models (Opus 5 / Sonnet 5 / Fable 5).
+# Claude 5 generation models (Opus 5.5 / Opus 5 / Sonnet 5 / Fable 5).
 # - Invocable ONLY via inference profiles (us. / eu. / au. / global., varies
 #   per model); no on-demand bare-ID calls.
 # - Adaptive thinking is on by default; depth is controlled by the effort
@@ -20,6 +20,7 @@ model_properties:
 # - Sampling parameters (temperature / top_p / top_k) are NOT configurable:
 #   non-default values are rejected by the API, so they are not exposed here.
 # docs:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
@@ -35,6 +36,7 @@ parameter_rules:
     required: true
     default: Sonnet 5
     options:
+      - Opus 5.5
       - Opus 5
       - Sonnet 5
       - Fable 5
@@ -49,8 +51,8 @@ parameter_rules:
       - global
       - geographic
     help:
-      zh_Hans: Claude 5 模型仅支持通过推理配置文件调用。Global 可从几乎所有区域调用（推荐）；Geographic 使用地理配置文件（Opus 5 / Sonnet 5 支持 us./eu./au.，Fable 5 仅支持 us.），不支持的区域请选择 Global。
-      en_US: Claude 5 models can only be invoked through inference profiles. Global works from virtually all regions (recommended); Geographic uses geo profiles (us./eu./au. for Opus 5 and Sonnet 5, us. only for Fable 5) — use Global elsewhere.
+      zh_Hans: Claude 5 模型仅支持通过推理配置文件调用。Global 可从几乎所有区域调用（推荐）；Geographic 使用地理配置文件（Opus 5.5 / Opus 5 / Sonnet 5 支持 us./eu./au.，Fable 5 仅支持 us.），不支持的区域请选择 Global。
+      en_US: Claude 5 models can only be invoked through inference profiles. Global works from virtually all regions (recommended); Geographic uses geo profiles (us./eu./au. for Opus 5.5, Opus 5 and Sonnet 5, us. only for Fable 5) — use Global elsewhere.
   - name: max_tokens
     use_template: max_tokens
     required: true
