@@ -167,6 +167,74 @@ class TestEmbedContentRequestShape:
 
 
 # ================================================================
+# Test: _invoke — token counting without model metadata requests
+# ================================================================
+
+
+@pytest.mark.parametrize(
+    "model", ["gemini-embedding-001", "gemini-embedding-2-preview"]
+)
+@pytest.mark.parametrize(
+    "texts",
+    [[f"Document {i}" for i in range(16)], ["0123456789" * 16]],
+    ids=["short-batch", "recursive-split"],
+)
+def test_token_counting_uses_embedding_model_without_metadata(
+    embedding_model, model, texts
+):
+    """Batches and recursive splits must not consume the model-read quota."""
+    client = Mock()
+    client.models.count_tokens.side_effect = lambda *, model, contents: Mock(
+        total_tokens=len(contents[0])
+    )
+
+    def embed_content(*, model, contents, config):
+        return Mock(
+            embeddings=[
+                _mock_embedding(
+                    values=[float(i + 1), 1.0],
+                    token_count=len(content.parts[0].text),
+                )
+                for i, content in enumerate(contents)
+            ]
+        )
+
+    client.models.embed_content.side_effect = embed_content
+    with (
+        patch("models.text_embedding.text_embedding.genai.Client", return_value=client),
+        patch.object(embedding_model, "_get_context_size", return_value=64),
+        patch.object(embedding_model, "_get_max_chunks", return_value=100),
+        patch.object(embedding_model, "_calc_response_usage", return_value=_make_usage()),
+    ):
+        result = embedding_model._invoke(
+            model=model,
+            credentials={"google_api_key": "fake-key"},
+            texts=texts,
+        )
+
+    client.models.get.assert_not_called()
+    count_calls = client.models.count_tokens.call_args_list
+    assert all(call.kwargs["model"] == model for call in count_calls)
+    if len(texts) == 16:
+        assert len(count_calls) == 16
+    else:
+        assert len(count_calls) > 1
+
+    client.models.embed_content.assert_called_once()
+    embed_call = client.models.embed_content.call_args
+    assert embed_call.kwargs["model"] == model
+    embedded_texts = [
+        content.parts[0].text for content in embed_call.kwargs["contents"]
+    ]
+    assert "".join(embedded_texts) == "".join(texts)
+    assert all(len(text) < 64 for text in embedded_texts)
+    assert len(result.embeddings) == len(texts)
+    if len(texts) == 16:
+        assert embedded_texts == texts
+        assert result.embeddings == [[float(i + 1), 1.0] for i in range(16)]
+
+
+# ================================================================
 # Test: _detect_image_mime_type
 # ================================================================
 
