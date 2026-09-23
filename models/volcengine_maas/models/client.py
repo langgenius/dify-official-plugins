@@ -227,8 +227,19 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        extra_headers: Optional[dict] = None,
     ) -> ChatCompletion:
         """Block chat"""
+        # Merge caller-supplied ``extra_headers`` (e.g. the opt-in Dify
+        # ``X-Dify-App-Id`` / ``X-Dify-Source`` headers) with the
+        # existing ``x-ark-moderation-scene`` header. Dify keys win on
+        # collision so the opt-in helper always controls its own
+        # observability markers.
+        merged_extra_headers: dict = {}
+        if extra_headers:
+            merged_extra_headers.update(extra_headers)
+        if skip_moderation:
+            merged_extra_headers["x-ark-moderation-scene"] = "skip-ark-moderation"
         return self.ark.chat.completions.create(
             model=self.endpoint_id,
             messages=[self.convert_prompt_message(message) for message in messages],
@@ -242,7 +253,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
-            extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
+            extra_headers=merged_extra_headers or None,
         )
 
     def stream_chat(
@@ -259,8 +270,14 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        extra_headers: Optional[dict] = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
+        merged_extra_headers: dict = {}
+        if extra_headers:
+            merged_extra_headers.update(extra_headers)
+        if skip_moderation:
+            merged_extra_headers["x-ark-moderation-scene"] = "skip-ark-moderation"
         chunks = self.ark.chat.completions.create(
             stream=True,
             model=self.endpoint_id,
@@ -276,7 +293,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
-            extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
+            extra_headers=merged_extra_headers or None,
         )
         yield from chunks
 
