@@ -43,6 +43,7 @@ from legacy.errors import (
     ServerUnavailableErrors,
 )
 from models.client import ArkClientV3
+from models.llm._metadata import apply_dify_metadata_if_enabled
 from models.llm.models import (
     get_model_config,
     get_v2_req_params,
@@ -97,17 +98,24 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
 
     @staticmethod
     def _validate_credentials_v2(credentials: dict) -> None:
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into ``credentials['extra_headers']``
+        # before the chat call reads it back below.
+        apply_dify_metadata_if_enabled(credentials)
         client = MaaSClient.from_credential(credentials)
         try:
             client.chat(
                 {"max_new_tokens": 16, "temperature": 0.7, "top_p": 0.9, "top_k": 15},
                 [UserPromptMessage(content="ping\nAnswer: ")],
+                extra_headers=credentials.get("extra_headers"),
             )
         except MaasError as e:
             raise CredentialsValidateFailedError(e.message)
 
     @staticmethod
     def _validate_credentials_v3(credentials: dict) -> None:
+        apply_dify_metadata_if_enabled(credentials)
         client = ArkClientV3.from_credentials(credentials)
         try:
             client.chat(
@@ -115,6 +123,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 temperature=0.7,
                 top_p=0.9,
                 messages=[UserPromptMessage(content="ping\nAnswer: ")],
+                extra_headers=credentials.get("extra_headers"),
             )
         except Exception as e:
             raise CredentialsValidateFailedError(e)
@@ -173,6 +182,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        apply_dify_metadata_if_enabled(credentials)
         client = MaaSClient.from_credential(credentials)
         req_params = get_v2_req_params(credentials, model_parameters, stop)
         extra_model_kwargs = {}
@@ -182,7 +192,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             ]
         resp = MaaSClient.wrap_exception(
             lambda: client.chat(
-                req_params, prompt_messages, stream, **extra_model_kwargs
+                req_params,
+                prompt_messages,
+                stream,
+                extra_headers=credentials.get("extra_headers"),
+                **extra_model_kwargs,
             )
         )
 
@@ -303,6 +317,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        apply_dify_metadata_if_enabled(credentials)
         client = ArkClientV3.from_credentials(credentials)
 
         # Process structured output parameters
@@ -430,10 +445,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             )
 
         if not stream:
-            resp = client.chat(prompt_messages, **req_params)
+            resp = client.chat(prompt_messages, extra_headers=credentials.get("extra_headers"), **req_params)
             return _handle_chat_response(resp)
 
-        chunks = client.stream_chat(prompt_messages, **req_params)
+        chunks = client.stream_chat(prompt_messages, extra_headers=credentials.get("extra_headers"), **req_params)
         return _handle_stream_chat_response(chunks)
 
     def _create_final_llm_result_chunk(
