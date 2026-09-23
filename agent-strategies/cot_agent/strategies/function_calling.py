@@ -213,14 +213,16 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         self.query = query
         self.instruction = fc_params.instruction
         self.files = fc_params.files or []
-        history_prompt_messages = fc_params.model.history_prompt_messages
-        history_prompt_messages.insert(0, self._system_prompt_message)
-        history_prompt_messages.append(self._user_prompt_message)
+        history_prompt_messages = [
+            self._system_prompt_message,
+            *fc_params.model.history_prompt_messages,
+            self._user_prompt_message,
+        ]
 
         # convert tool messages
         tools = filter_allowed_tools(fc_params.tools, fc_params.allowed_tools)
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
-        prompt_messages_tools = self._init_prompt_tools(tools)
+        prompt_messages_tools = deepcopy(self._init_prompt_tools(tools))
 
         # init model parameters
         stream = (
@@ -687,11 +689,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             if tool_calls:
                 yield self.create_text_message("\n")
 
-            # update prompt tool
-            for prompt_tool in prompt_messages_tools:
-                self.update_prompt_message_tool(
-                    tool_instances[prompt_tool.name], prompt_tool
-                )
             yield self.finish_log_message(
                 log=round_log,
                 data={
