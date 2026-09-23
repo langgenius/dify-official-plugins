@@ -2337,7 +2337,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         )
                         index += 1
 
-                elif event_type == "ResponseCompletedEvent":
+                elif event_type in ("ResponseCompletedEvent", "ResponseIncompleteEvent"):
+                    # A stream cut off by max_output_tokens ends with
+                    # response.incomplete instead of response.completed; it
+                    # still carries usage, so close the stream the same way.
                     resp = getattr(event, "response", None)
                     usage = getattr(resp, "usage", None) if resp else None
                     if usage:
@@ -2346,13 +2349,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     dify_usage = self._calc_response_usage(
                         model, credentials, input_tokens, output_tokens
                     )
+                    finish_reason = "stop"
+                    if event_type == "ResponseIncompleteEvent":
+                        # Same mapping as models/openai (stream.py).
+                        reason = getattr(getattr(resp, "incomplete_details", None), "reason", None)
+                        finish_reason = {
+                            "max_output_tokens": "length",
+                            "content_filter": "content_filter",
+                        }.get(reason, "incomplete")
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=AssistantPromptMessage(content=""),
-                            finish_reason="stop",
+                            finish_reason=finish_reason,
                             usage=dify_usage,
                         ),
                     )
