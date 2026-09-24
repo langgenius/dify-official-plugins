@@ -13,6 +13,7 @@ from output_parser.cot_output_parser import (
     CotAgentOutputParser,
     ReactChunk,
     ReactState,
+    is_final_action,
     parse_action,
 )
 
@@ -262,13 +263,15 @@ class TestReActStreamParsing(unittest.TestCase):
         actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
         self.assertEqual([a.action_name for a in actions], ["first", "second"])
 
-    def test_adjacent_non_action_blobs_are_both_flagged(self):
+    def test_adjacent_non_action_blobs_are_not_flagged(self):
+        # issue #3699+regression: innocent JSON (citations, arbitrary objects)
+        # must NOT be flagged as parse failures; the round continues normally.
         results = _parse('{"foo": 1}{"bar": 2}')
         self.assertEqual(
             [r for r in results if isinstance(r, AgentScratchpadUnit.Action)], []
         )
         failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
-        self.assertEqual(len(failed), 2)
+        self.assertEqual(failed, [])
 
     def test_think_tags_are_stripped(self):
         # The tags are built via chr() to keep this test file free of raw tag
@@ -321,6 +324,144 @@ class TestReActStreamParsing(unittest.TestCase):
 
     def test_parse_failed_defaults_to_false(self):
         self.assertFalse(ReactChunk(ReactState.THINKING, "x").parse_failed)
+
+
+class TestIsFinalAction(unittest.TestCase):
+    def test_spaced_spelling(self):
+        self.assertTrue(is_final_action("final answer"))
+        self.assertTrue(is_final_action("Final Answer"))
+
+    def test_compact_spelling(self):
+        self.assertTrue(is_final_action("FinalAnswer"))
+        self.assertTrue(is_final_action("FINALANSWER"))
+
+    def test_underscore_spelling(self):
+        self.assertTrue(is_final_action("final_answer"))
+
+    def test_non_final_names(self):
+        self.assertFalse(is_final_action("web_search"))
+        self.assertFalse(is_final_action(""))
+        self.assertFalse(is_final_action(None))
+
+
+class TestReActParserFixes(unittest.TestCase):
+    def test_citation_array_is_not_flagged(self):
+        # [1] style citations are not tool-call attempts
+        results = _parse('Thought: see [1]\nAction: {"action": "t", "action_input": {}}')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["t"])
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(failed, [])
+
+    def test_markdown_link_is_not_flagged(self):
+        # markdown links contain [] pairs but are not tool-call attempts
+        results = _parse(
+            'Thought: see [link](http://x)\nAction: {"action": "t", "action_input": {}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["t"])
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(failed, [])
+
+    def test_empty_object_is_not_flagged(self):
+        results = _parse('Thought: {}\nAction: {"action": "t", "action_input": {}}')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["t"])
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(failed, [])
+
+    def test_arbitrary_object_is_not_flagged(self):
+        results = _parse('{"a": 1}')
+        self.assertEqual(
+            [r for r in results if isinstance(r, AgentScratchpadUnit.Action)], []
+        )
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(failed, [])
+
+    def test_arbitrary_json_before_and_after_real_action(self):
+        # a real action must win even when innocent JSON surrounds it
+        results = _parse(
+            '{"a": 1}{"action": "real", "action_input": {}}{"b": 2}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["real"])
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(failed, [])
+
+    def test_json_after_action_prefix_invalid_content_is_flagged(self):
+        # Action: followed by a non-action JSON blob is a genuine attempt
+        results = _parse('Action: {"a": 1}')
+        self.assertEqual(
+            [r for r in results if isinstance(r, AgentScratchpadUnit.Action)], []
+        )
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(len(failed), 1)
+
+    def test_action_prefix_after_json_blob_is_not_leaked(self):
+        # issue: stale last_character after a JSON flush leaked "Action:" as
+        # thought text and dropped the prefix (so the tool call was lost)
+        results = _parse(
+            '{"action": "first", "action_input": {}}'
+            'Action: {"action": "second", "action_input": {}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["first", "second"])
+        text = "".join(
+            r.content for r in results if isinstance(r, ReactChunk)
+        )
+        self.assertNotIn("Action:", text)
+
+    def test_final_answer_prefix_after_json_blob_streams_answer(self):
+        # }FinalAnswer: used to leak as thought and block live answer streaming
+        results = _parse(
+            '{"action": "t", "action_input": {}}FinalAnswer: done'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["t"])
+        chunks = [r for r in results if isinstance(r, ReactChunk)]
+        self.assertEqual(chunks[-1].state, ReactState.ANSWER)
+        answer = "".join(c.content for c in chunks if c.state is ReactState.ANSWER)
+        self.assertEqual(answer.strip(), "done")
+        text = "".join(r.content for r in chunks)
+        self.assertNotIn("FinalAnswer:", text)
+
+    def test_tab_before_action_prefix(self):
+        results = _parse('Thought: x\tAction: {"action": "t", "action_input": {}}')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual([a.action_name for a in actions], ["t"])
+        text = "".join(
+            r.content for r in results if isinstance(r, ReactChunk)
+        )
+        self.assertNotIn("Action:", text)
+
+    def test_carriage_return_before_final_answer_prefix(self):
+        results = _parse('Thought: x\rFinalAnswer: done')
+        chunks = [r for r in results if isinstance(r, ReactChunk)]
+        self.assertEqual(chunks[-1].state, ReactState.ANSWER)
+        answer = "".join(c.content for c in chunks if c.state is ReactState.ANSWER)
+        self.assertEqual(answer.strip(), "done")
+
+    def test_truncated_prefix_at_eof_is_flushed(self):
+        # a stream cut mid-"FinalAnswer:" must not drop the buffered chars
+        results = _parse('Thought: abc\nFinalAns')
+        text = "".join(r.content for r in results if isinstance(r, ReactChunk))
+        self.assertIn("FinalAns", text)
+
+    def test_malformed_action_input_list_never_raises(self):
+        # a list action_input must not raise out of the parser; it is kept as
+        # a JSON string so the strategy can surface the failure
+        results = _parse('{"action": "t", "action_input": [1, 2]}')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_input, "[1, 2]")
+
+    def test_truncated_flat_action_json_is_flagged_not_raised(self):
+        results = _parse('{"action": "t", "action_input": {"q"')
+        self.assertEqual(
+            [r for r in results if isinstance(r, AgentScratchpadUnit.Action)], []
+        )
+        failed = [r for r in results if isinstance(r, ReactChunk) and r.parse_failed]
+        self.assertEqual(len(failed), 1)
 
 
 if __name__ == "__main__":

@@ -218,5 +218,119 @@ class TestReActSilentRoundTermination(unittest.TestCase):
         self.assertEqual(self._texts(messages)[-1], "The capital of France is Paris.")
 
 
+
+
+class TestReActFinalAnswerVariants(unittest.TestCase):
+    """Regression tests: {"action": "FinalAnswer"} / "final_answer" JSON
+    action names must end the round with the final answer instead of being
+    treated as an unknown tool ("there is not a tool named ...")."""
+
+    @staticmethod
+    def _tool() -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": "getfile",
+                    "label": {"en_US": "getfile"},
+                    "provider": "workflow-provider",
+                },
+                "provider_type": "workflow",
+                "runtime_parameters": {},
+                "parameters": [
+                    {
+                        "name": "q",
+                        "label": {"en_US": "q"},
+                        "human_description": {"en_US": "query"},
+                        "type": "string",
+                        "form": "llm",
+                        "required": True,
+                    }
+                ],
+            }
+        )
+
+    @staticmethod
+    def _model() -> AgentModelConfig:
+        return AgentModelConfig(
+            provider="test-provider",
+            model="test-model",
+            mode="chat",
+            completion_params={},
+            history_prompt_messages=[],
+        )
+
+    @staticmethod
+    def _llm_chunks(*contents: str) -> list[LLMResultChunk]:
+        return [
+            LLMResultChunk(
+                model="test-model",
+                delta=LLMResultChunkDelta(
+                    index=0,
+                    message=AssistantPromptMessage(content=content),
+                    usage=None,
+                ),
+            )
+            for content in contents
+        ]
+
+    @staticmethod
+    def _texts(messages: list) -> list[str]:
+        return [
+            message.message.text
+            for message in messages
+            if message.type == AgentInvokeMessage.MessageType.TEXT
+        ]
+
+    def _strategy(self, llm_rounds: list[list[LLMResultChunk]]) -> ReActAgentStrategy:
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            iter(round_chunks) for round_chunks in llm_rounds
+        ]
+        session.tool.invoke.return_value = iter(
+            [
+                ToolInvokeMessage(
+                    type=ToolInvokeMessage.MessageType.TEXT,
+                    message=ToolInvokeMessage.TextMessage(text="file-content"),
+                )
+            ]
+        )
+        return ReActAgentStrategy(runtime=Mock(), session=session)
+
+    def _run_once(self, raw: str) -> tuple[ReActAgentStrategy, list]:
+        strategy = self._strategy([self._llm_chunks(raw)])
+        messages = list(
+            strategy._invoke(
+                {
+                    "query": "answer me",
+                    "instruction": "you are a helpful agent",
+                    "model": self._model(),
+                    "tools": [self._tool()],
+                    "maximum_iterations": 1,
+                }
+            )
+        )
+        return strategy, messages
+
+    def test_compact_spelling_ends_round(self):
+        strategy, messages = self._run_once('{"action": "FinalAnswer", "action_input": "done"}')
+
+        strategy.session.tool.invoke.assert_not_called()
+        self.assertEqual("".join(self._texts(messages)).strip(), "done")
+
+    def test_underscore_spelling_ends_round(self):
+        strategy, messages = self._run_once('{"action": "final_answer", "action_input": "done"}')
+
+        strategy.session.tool.invoke.assert_not_called()
+        self.assertEqual("".join(self._texts(messages)).strip(), "done")
+
+    def test_spaced_spelling_still_ends_round(self):
+        # canonical spelling must keep working (pre-existing behavior)
+        strategy, messages = self._run_once('{"action": "final answer", "action_input": "done"}')
+
+        strategy.session.tool.invoke.assert_not_called()
+        self.assertEqual("".join(self._texts(messages)).strip(), "done")
+
+
 if __name__ == "__main__":
     unittest.main()
