@@ -24,4 +24,4 @@ dev = [
 
 [tool.uv.sources]
 # Use the reviewed replay fix until a containing SDK release is published.
-dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "658c64e24dc7e452ef8a2951bb696bf2ce85bed6" }
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "5d5799eeceb938eda4337bcd229f3dcf41b27596" }

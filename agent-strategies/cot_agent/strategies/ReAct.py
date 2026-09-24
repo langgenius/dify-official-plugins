@@ -176,11 +176,11 @@ class ReActAgentStrategy(AgentStrategy):
             # not be parsed as a valid Action (issue #3699).
             round_parse_failed = False
 
-            # recalc llm max tokens
+            # Check capacity without changing the configured output budget.
             prompt_messages = self._organize_prompt_messages(
                 agent_scratchpad, self.query
             )
-            if model.entity and model.completion_params:
+            if model.entity:
                 self.recalc_llm_max_tokens(
                     model.entity, prompt_messages, model.completion_params
                 )

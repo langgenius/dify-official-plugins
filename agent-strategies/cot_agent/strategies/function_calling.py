@@ -259,13 +259,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             yield round_log
 
-            # recalc llm max tokens
+            # Check capacity without changing the configured output budget.
             prompt_messages = self._organize_prompt_messages(
                 history_prompt_messages=history_prompt_messages,
                 current_thoughts=current_thoughts,
                 model=model,
             )
-            if model.entity and model.completion_params:
+            if model.entity:
                 self.recalc_llm_max_tokens(
                     model.entity, prompt_messages, model.completion_params
                 )
