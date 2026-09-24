@@ -73,6 +73,11 @@ class ResponseCompletedEvent:
         self.response = response
 
 
+class ResponseIncompleteEvent:
+    def __init__(self, response=None) -> None:
+        self.response = response
+
+
 def _make_instance() -> BedrockLLM:
     """Construct a BedrockLargeLanguageModel without the plugin runtime's
     ``__init__`` (mirrors test_legacy_generate_undefined_runtime_client.py).
@@ -843,6 +848,38 @@ class TestHandleResponsesApiStream:
         assert final.delta.index == 1  # counted from the yielded delta, not the event
         instance._calc_response_usage.assert_called_once_with(
             "openai.gpt-5.5", {"aws_region": "us-west-2"}, 3, 5
+        )
+
+    @pytest.mark.parametrize(
+        ("reason", "expected"),
+        [
+            ("max_output_tokens", "length"),
+            ("content_filter", "content_filter"),
+            (None, "incomplete"),
+        ],
+    )
+    def test_incomplete_event_yields_final_chunk_with_usage(
+        self, reason, expected
+    ) -> None:
+        # Live: a GPT-6 / GPT-5.6 stream stopped by max_output_tokens ends with
+        # ResponseIncompleteEvent (status "incomplete", usage attached).
+        instance, usage = self._make_instance()
+        incomplete = ResponseIncompleteEvent(
+            response=SimpleNamespace(
+                usage=SimpleNamespace(input_tokens=13, output_tokens=20),
+                incomplete_details=SimpleNamespace(reason=reason),
+            )
+        )
+        chunks = list(
+            instance._handle_responses_api_stream(
+                "openai.gpt-5.5", {}, [ResponseTextDeltaEvent("Hi"), incomplete], []
+            )
+        )
+        assert len(chunks) == 2
+        assert chunks[-1].delta.finish_reason == expected
+        assert chunks[-1].delta.usage is usage
+        instance._calc_response_usage.assert_called_once_with(
+            "openai.gpt-5.5", {}, 13, 20
         )
 
     def test_empty_deltas_and_unknown_events_are_skipped(self) -> None:
