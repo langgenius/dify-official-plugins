@@ -341,6 +341,32 @@ def test_multimodal_input_array_sends_one_request_per_image(mock_post, _mock_ope
 
 
 @patch("models.text_embedding.text_embedding.OpenAI")
+@patch("models.text_embedding.text_embedding.create_chat_embeddings")
+@patch("models.text_embedding.text_embedding.requests.post")
+def test_multimodal_embedding_rejects_undetectable_image_format(
+    mock_post, mock_create, _mock_openai
+):
+    # An undetected format used to produce "data:image;base64,...", a data URI with no
+    # subtype, which strict providers reject with an unrelated-looking error.
+    model = OpenAITextEmbeddingModel(model_schemas=[])
+
+    with pytest.raises(InvokeError, match="Could not detect the image format"):
+        model._invoke_multimodal(
+            model="display-name",
+            credentials=_credentials(vision_support="support"),
+            documents=[
+                MultiModalContent(
+                    content_type=MultiModalContentType.IMAGE,
+                    content="dGhpcyBpcyBub3QgYW4gaW1hZ2U=",
+                )
+            ],
+        )
+
+    mock_post.assert_not_called()
+    mock_create.assert_not_called()
+
+
+@patch("models.text_embedding.text_embedding.OpenAI")
 @patch("models.text_embedding.text_embedding.requests.post")
 def test_multimodal_input_array_rejects_fused_response(mock_post, _mock_openai):
     # A provider answering one embedding for two inputs would otherwise shift every
