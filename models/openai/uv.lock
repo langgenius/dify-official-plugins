@@ -244,7 +244,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=658c64e24dc7e452ef8a2951bb696bf2ce85bed6" },
+    { name = "dify-plugin", git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=5d5799eeceb938eda4337bcd229f3dcf41b27596" },
     { name = "openai", specifier = ">=3.18.0" },
     { name = "tiktoken", specifier = ">=0.14.0" },
 ]
@@ -258,7 +258,7 @@ dev = [
 [[package]]
 name = "dify-plugin"
 version = "0.10.2"
-source = { git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=658c64e24dc7e452ef8a2951bb696bf2ce85bed6#658c64e24dc7e452ef8a2951bb696bf2ce85bed6" }
+source = { git = "https://github.com/langgenius/dify-plugin-sdks.git?rev=5d5799eeceb938eda4337bcd229f3dcf41b27596#5d5799eeceb938eda4337bcd229f3dcf41b27596" }
 dependencies = [
     { name = "flask" },
     { name = "gevent" },
