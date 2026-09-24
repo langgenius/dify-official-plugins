@@ -23,6 +23,9 @@ parameter_rules:
     required: true
     default: GPT OSS 20B
     options:
+      - GPT-6 Sol
+      - GPT-6 Luna
+      - GPT-6 Astra
       - GPT-5.6 Sol
       - GPT-5.6 Terra
       - GPT-5.6 Luna
@@ -42,8 +45,8 @@ parameter_rules:
       - geographic
       - global
     help:
-      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域，全球跨区域可跨所有区域。
-      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography, Global spans all regions.
+      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域，全球跨区域可跨所有区域。GPT-6 模型需选择 Geographic（us. 配置文件，美国和加拿大区域）或 Global。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography, Global spans all regions. GPT-6 models need Geographic (us. profile; US and Canada regions) or Global.
   - name: max_tokens
     use_template: max_tokens
     required: true
@@ -98,8 +101,8 @@ parameter_rules:
       - xhigh
       - max
     help:
-      zh_Hans: 仅对 GPT-5.6 / GPT-5.5 / GPT-5.4（bedrock-mantle Responses API）生效，控制推理投入程度，默认 medium。GPT OSS 等模型会忽略此参数。
-      en_US: Applies only to GPT-5.6 / GPT-5.5 / GPT-5.4 (bedrock-mantle Responses API) to control reasoning effort, defaulting to medium. Ignored by other models such as GPT OSS.
+      zh_Hans: 仅对 GPT-6 / GPT-5.6 / GPT-5.5 / GPT-5.4（OpenAI Responses API）生效，控制推理投入程度，默认 medium。GPT-6 Astra 不支持 none。GPT OSS 等模型会忽略此参数。
+      en_US: Applies only to GPT-6 / GPT-5.6 / GPT-5.5 / GPT-5.4 (OpenAI Responses API) to control reasoning effort, defaulting to medium. GPT-6 Astra does not accept none. Ignored by other models such as GPT OSS.
   - name: response_format
     use_template: response_format
 pricing:
