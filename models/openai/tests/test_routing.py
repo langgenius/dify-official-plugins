@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+from copy import deepcopy
 
 import httpx
 import openai
 import pytest
-
 from dify_plugin.entities.model.message import PromptMessageTool
 from dify_plugin.errors.model import InvokeBadRequestError
-from models.llm import chat, responses, stream as response_stream
-from models.llm.llm import _base_model, _uses_responses
 
+from models.llm import chat, responses
+from models.llm import stream as response_stream
+from models.llm.llm import _base_model, _uses_responses
 
 _CHAT_TOOLS_REASONING_ERROR = (
     "Function tools with reasoning_effort are not supported for gpt-5.6-sol in "
@@ -35,7 +36,8 @@ def _bad_request_error(body: object) -> openai.BadRequestError:
     )
 
 
-def test_reasoning_parameters_are_merged_without_mutating_the_caller() -> None:
+@pytest.mark.parametrize("model", ["gpt-5.6", "gpt-6-sol", "gpt-6-luna"])
+def test_reasoning_parameters_are_merged_without_mutating_the_caller(model) -> None:
     source = {
         "reasoning": {"effort": "low"},
         "reasoning_effort": "none",
@@ -44,7 +46,7 @@ def test_reasoning_parameters_are_merged_without_mutating_the_caller() -> None:
         "reasoning_context": "all_turns",
     }
 
-    result = responses.parameters("gpt-5.6", source, None, None)
+    result = responses.parameters(model, source, None, None)
 
     assert result["reasoning"] == {
         "effort": "none",
@@ -186,6 +188,9 @@ def test_tool_shape_and_named_choice_match_responses() -> None:
     ("model", "expected"),
     [
         ("gpt-5.6", True),
+        ("gpt-6-astra", True),
+        ("gpt-6-sol", True),
+        ("gpt-6-luna", True),
         ("o3", True),
         ("chat-latest", False),
         ("gpt-4.1", False),
@@ -208,6 +213,10 @@ def test_only_reasoning_models_request_encrypted_reasoning(model, expected) -> N
         ("gpt-5.6", {}, True),
         ("gpt-5.6", {"api_protocol": "responses"}, True),
         ("gpt-5.6", {"api_protocol": "chat"}, False),
+        ("gpt-6-astra", {}, True),
+        ("gpt-6-sol", {}, True),
+        ("gpt-6-luna", {}, True),
+        ("gpt-6-astra", {"api_protocol": "chat"}, False),
         ("gpt-audio-1.5", {"api_protocol": "responses"}, False),
         ("gpt-5.5-pro", {"api_protocol": "chat"}, True),
         ("o3-pro", {"api_protocol": "chat"}, True),
@@ -375,3 +384,86 @@ def test_unrelated_bad_request_keeps_standard_error_mapping(llm) -> None:
     assert isinstance(transformed, InvokeBadRequestError)
     assert "Bad Request Error" in str(transformed)
     assert "API Key Authorization Configuration" not in str(transformed)
+
+
+@pytest.mark.parametrize("model", ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])
+@pytest.mark.parametrize("effort", [None, "none", "max"])
+@pytest.mark.parametrize("protocol", ["chat", "responses"])
+@pytest.mark.parametrize("with_tools", [False, True])
+def test_gpt6_requests_follow_reasoning_and_tool_constraints(
+    model, effort, protocol, with_tools, llm, mocker, prompt_messages
+) -> None:
+    source = {
+        "max_tokens": 128,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "top_logprobs": 2,
+        "reasoning_mode": "standard",
+        "reasoning_context": "auto",
+        "prompt_cache_options": {"ttl": "30m"},
+    }
+    if protocol == "responses":
+        source["include"] = [
+            "message.output_text.logprobs",
+            "web_search_call.action.sources",
+        ]
+        if effort is not None:
+            source["reasoning"] = {"effort": effort}
+    else:
+        source["logprobs"] = True
+        if effort is not None:
+            source["reasoning_effort"] = effort
+    original = deepcopy(source)
+    tools = (
+        [PromptMessageTool(name="lookup", description="Look up", parameters={})]
+        if with_tools
+        else None
+    )
+    client = mocker.Mock()
+    mocker.patch.object(chat, "_chat_result")
+
+    def invoke():
+        if protocol == "responses":
+            return responses.parameters(model, source, tools, None)
+        chat.generate_chat(
+            llm, client, model, {}, prompt_messages, source, tools, None, False, None
+        )
+        return client.chat.completions.create.call_args.kwargs
+
+    if model == "gpt-6-astra" and effort == "none":
+        with pytest.raises(
+            InvokeBadRequestError, match="does not support reasoning effort none"
+        ):
+            invoke()
+    elif (
+        protocol == "chat"
+        and with_tools
+        and (model == "gpt-6-astra" or effort != "none")
+    ):
+        with pytest.raises(InvokeBadRequestError, match="require the Responses API"):
+            invoke()
+        client.chat.completions.create.assert_not_called()
+    else:
+        result = invoke()
+        assert result["prompt_cache_options"] == {"ttl": "30m"}
+        limit = (
+            "max_output_tokens" if protocol == "responses" else "max_completion_tokens"
+        )
+        assert result[limit] == 128
+        assert "max_tokens" not in result
+        sampling = {"temperature", "top_p", "top_logprobs"}
+        if protocol == "chat":
+            sampling.add("logprobs")
+            assert not {"reasoning_mode", "reasoning_context"} & result.keys()
+        else:
+            assert "reasoning.encrypted_content" in result["include"]
+            assert ("message.output_text.logprobs" in result["include"]) is (
+                effort == "none"
+            )
+        if effort == "none":
+            assert sampling <= result.keys()
+        else:
+            assert not sampling & result.keys()
+        if with_tools:
+            assert result["tools"][0]["type"] == "function"
+    assert source == original
