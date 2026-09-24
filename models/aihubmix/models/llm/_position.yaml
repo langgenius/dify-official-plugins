@@ -32,10 +32,10 @@
 - gpt-5.6-sol-disc
 - gpt-5.6-luna
 - gpt-5.6-sol
-- qwen3.8-max
 - gpt-5.6-terra
-- grok-4.5
+- qwen3.8-max
 - qwen3.8-2.4t-a95b
+- grok-4.5
 - agnes-2.5-flash
 - agnes-2.5-pro
 - agnes-2.5-pro-alpha
@@ -50,8 +50,8 @@
 - gemini-3.5-flash-lite
 - glm-5.2-fast-preview
 - claude-fable-5
-- claude-opus-4-8
 - hy3
+- claude-opus-4-8
 - doubao-seed-2-1-pro
 - doubao-seed-2-1-turbo
 - grok-build-0.1
@@ -122,7 +122,6 @@
 - qwen3-coder-next
 - coding-glm-5.1
 - claude-opus-4-6
-- glm-5
 - glm-5v-turbo
 - minimax-m2.7
 - claude-opus-4-6-think
@@ -259,11 +258,10 @@
 - Qwen/Qwen2.5-VL-72B-Instruct
 - gpt-4o
 - ERNIE-X1.1-Preview
-- minimax-m2
 - ernie-4.5-0.3b
 - ernie-4.5-turbo-128k-preview
-- Qwen/Qwen2.5-VL-32B-Instruct
 - nvidia-nemotron-3-super-120b-a12b
+- Qwen/Qwen2.5-VL-32B-Instruct
 - qwen-plus-latest
 - claude-3-opus-20240229
 - command-a-03-2025
@@ -272,4 +270,5 @@
 - grok-4.20-multi-agent-beta-0309
 - llama2-70b-4096
 - llama2-70b-40960
+- qwen3.8-27b
 - aihubmix-Llama-3-1-405B-Instruct
