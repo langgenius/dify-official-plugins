@@ -129,7 +129,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
     # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
     # These do NOT go through the standard Converse API path.
+    # GPT-6 takes the same Responses API path, sent to bedrock-runtime with an
+    # inference profile instead (see _generate_with_responses_api).
     _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-6-sol",
+        "openai.gpt-6-luna",
+        "openai.gpt-6-astra",
         "openai.gpt-5.6-sol",
         "openai.gpt-5.6-terra",
         "openai.gpt-5.6-luna",
@@ -2238,6 +2243,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         region = credentials.get("aws_region", "us-east-2")
         token = self._get_mantle_auth_token(credentials)
         base_url = f"https://bedrock-mantle.{region}.api.aws/openai/v1"
+        if model_id in model_ids.GPT6_MODEL_IDS:
+            # bedrock-mantle serves GPT-6 in few regions (see
+            # model_ids.GPT6_MODEL_IDS); bedrock-runtime's OpenAI-compatible
+            # endpoint takes their us./global. inference profiles instead.
+            try:
+                model_id = model_ids.resolve_gpt6_profile_id(
+                    model_id, model_parameters.get("cross-region", "disabled"), region
+                )
+            except ValueError as e:
+                raise InvokeBadRequestError(str(e))
+            base_url = f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
 
         client = OpenAI(api_key=token, base_url=base_url)
         input_messages = self._build_responses_api_input(prompt_messages)
@@ -2288,6 +2304,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         credentials_for_pricing = credentials.copy()
         if model_name:
             resolved_model_name = model_name
+        elif "gpt-6-sol" in model_id:
+            resolved_model_name = "GPT-6 Sol"
+        elif "gpt-6-luna" in model_id:
+            resolved_model_name = "GPT-6 Luna"
+        elif "gpt-6-astra" in model_id:
+            resolved_model_name = "GPT-6 Astra"
         elif "gpt-5.6-sol" in model_id:
             resolved_model_name = "GPT-5.6 Sol"
         elif "gpt-5.6-terra" in model_id:
