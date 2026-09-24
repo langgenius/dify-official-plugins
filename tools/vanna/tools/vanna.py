@@ -1,104 +1,112 @@
-from typing import Any, Generator
-from vanna.legacy.remote import VannaDefault
+from collections.abc import Generator
+from typing import Any, Literal
+
+import httpx2
+from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin import Tool
+from pydantic import BaseModel, ConfigDict, Field
+
+from client.database import connect_database
+from client.vanna import VannaClient, extract_sql, looks_like_sql, metadata_documents, sql_prompt
+
+
+class Parameters(BaseModel):
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+    model: str = Field(min_length=1)
+    prompt: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+    db_type: Literal[
+        "SQLite", "Postgres", "DuckDB", "SQLServer", "MySQL", "Oracle", "Hive", "ClickHouse"
+    ] = "SQLite"
+    db_name: str = ""
+    username: str = ""
+    password: str = ""
+    port: int = Field(default=0, ge=0, le=65535)
+    ddl: str = ""
+    question: str = ""
+    sql: str = ""
+    memos: str = ""
+    enable_training: bool = False
+    reset_training_data: bool = False
+    training_metadata: bool = False
+    allow_llm_to_see_data: bool = False
 
 
 class VannaTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        invoke tools
-        """
-        api_key = self.runtime.credentials.get("api_key", None)
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+        api_key = self.runtime.credentials.get("api_key")
         if not api_key:
             raise ToolProviderCredentialValidationError("Please input api key")
-        model = tool_parameters.get("model", "")
-        if not model:
-            yield self.create_text_message("Please input RAG model")
-        prompt = tool_parameters.get("prompt", "")
-        if not prompt:
-            yield self.create_text_message("Please input prompt")
-        url = tool_parameters.get("url", "")
-        if not url:
-            yield self.create_text_message("Please input URL/Host/DSN")
-        db_name = tool_parameters.get("db_name", "")
-        username = tool_parameters.get("username", "")
-        password = tool_parameters.get("password", "")
-        port = tool_parameters.get("port", 0)
-        base_url = self.runtime.credentials.get("base_url", None)
-        if not base_url:
-            base_url = "https://ask.vanna.ai/rpc"
-        else:
-            base_url = base_url.removesuffix("/")
-        vn = VannaDefault(model=model, api_key=api_key, config={"endpoint": base_url})
-        db_type = tool_parameters.get("db_type", "")
-        if db_type in {"Postgres", "MySQL", "Hive", "ClickHouse"}:
-            if not db_name:
-                yield self.create_text_message("Please input database name")
-            if not username:
-                yield self.create_text_message("Please input username")
-            if port < 1:
-                yield self.create_text_message("Please input port")
-        schema_sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS"
-        match db_type:
-            case "SQLite":
-                schema_sql = "SELECT type, sql FROM sqlite_master WHERE sql is not null"
-                vn.connect_to_sqlite(url)
-            case "Postgres":
-                vn.connect_to_postgres(host=url, dbname=db_name, user=username, password=password, port=port)
-            case "DuckDB":
-                vn.connect_to_duckdb(url=url)
-            case "SQLServer":
-                vn.connect_to_mssql(url)
-            case "MySQL":
-                vn.connect_to_mysql(host=url, dbname=db_name, user=username, password=password, port=port)
-            case "Oracle":
-                vn.connect_to_oracle(user=username, password=password, dsn=url)
-            case "Hive":
-                vn.connect_to_hive(host=url, dbname=db_name, user=username, password=password, port=port)
-            case "ClickHouse":
-                vn.connect_to_clickhouse(host=url, dbname=db_name, user=username, password=password, port=port)
-        enable_training = tool_parameters.get("enable_training", False)
-        reset_training_data = tool_parameters.get("reset_training_data", False)
-        if enable_training:
-            if reset_training_data:
-                existing_training_data = vn.get_training_data()
-                if len(existing_training_data) > 0:
-                    for _, training_data in existing_training_data.iterrows():
-                        vn.remove_training_data(training_data["id"])
-            ddl = tool_parameters.get("ddl", "")
-            question = tool_parameters.get("question", "")
-            sql = tool_parameters.get("sql", "")
-            memos = tool_parameters.get("memos", "")
-            training_metadata = tool_parameters.get("training_metadata", False)
-            if training_metadata:
-                if db_type == "SQLite":
-                    df_ddl = vn.run_sql(schema_sql)
-                    for ddl in df_ddl["sql"].to_list():
-                        vn.train(ddl=ddl)
-                else:
-                    df_information_schema = vn.run_sql(schema_sql)
-                    plan = vn.get_training_plan_generic(df_information_schema)
-                    vn.train(plan=plan)
-            if ddl:
-                vn.train(ddl=ddl)
-            if sql:
-                if question:
-                    vn.train(question=question, sql=sql)
-                else:
-                    vn.train(sql=sql)
-            if memos:
-                vn.train(documentation=memos)
-        allow_llm_to_see_data = tool_parameters.get("allow_llm_to_see_data", False)
-        res = vn.ask(
-            prompt, print_results=False, auto_train=True, visualize=False, allow_llm_to_see_data=allow_llm_to_see_data
+        params = Parameters.model_validate(
+            {key: value for key, value in tool_parameters.items() if value is not None}
         )
-        if res and res[0] is not None:
-            yield self.create_text_message(res[0])
-            if len(res) > 1 and res[1] is not None:
-                yield self.create_text_message(res[1].to_markdown())
-            if len(res) > 2 and res[2] is not None:
-                yield self.create_blob_message(blob=res[2].to_image(format="svg"), meta={"mime_type": "image/svg+xml"})
+        if params.db_type in {"Postgres", "MySQL", "Hive", "ClickHouse"} and (
+            not params.db_name or not params.username or not params.port
+        ):
+            raise ValueError("Please input database name, username and port")
+
+        with httpx2.Client(timeout=httpx2.Timeout(120, connect=10)) as http:
+            client = VannaClient(
+                http, api_key, params.model, self.runtime.credentials.get("base_url")
+            )
+            with connect_database(params.model_dump(), http) as database:
+                if params.enable_training:
+                    if params.reset_training_data:
+                        existing = client.training_data()
+                        if not existing.empty:
+                            for training_id in existing["id"]:
+                                client.remove_training(str(training_id))
+                    if params.training_metadata:
+                        if params.db_type == "SQLite":
+                            schema = database.run_sql(
+                                "SELECT type, sql FROM sqlite_master WHERE sql is not null"
+                            )
+                            for ddl in schema["sql"]:
+                                client.add_ddl(ddl)
+                        else:
+                            schema = database.run_sql("SELECT * FROM INFORMATION_SCHEMA.COLUMNS")
+                            for document in metadata_documents(schema):
+                                client.add_documentation(document)
+                    if params.ddl:
+                        client.add_ddl(params.ddl)
+                    if params.sql:
+                        question = params.question or client.question_for_sql(params.sql)
+                        client.add_sql(question, params.sql)
+                    if params.memos:
+                        client.add_documentation(params.memos)
+
+                training = client.related_training(params.prompt)
+                response = client.submit_prompt(
+                    sql_prompt(params.prompt, database.dialect, training)
+                )
+                if "intermediate_sql" in response:
+                    if not params.allow_llm_to_see_data:
+                        yield self.create_text_message(
+                            "The LLM is not allowed to see the data in your database. Your question requires "
+                            "database introspection to generate the necessary SQL. Please set "
+                            "allow_llm_to_see_data=True to enable this."
+                        )
+                        return
+                    intermediate_sql = extract_sql(response)
+                    if not looks_like_sql(intermediate_sql):
+                        yield self.create_text_message(response)
+                        return
+                    intermediate = database.run_sql(intermediate_sql)
+                    training.documentation.append(
+                        f"The following is a pandas DataFrame with the results of the intermediate SQL query "
+                        f"{intermediate_sql}: \n" + intermediate.to_markdown()
+                    )
+                    response = client.submit_prompt(
+                        sql_prompt(params.prompt, database.dialect, training)
+                    )
+
+                sql = extract_sql(response)
+                yield self.create_text_message(sql)
+                if not looks_like_sql(sql):
+                    return
+                result = database.run_sql(sql)
+                if not result.empty:
+                    client.add_sql(params.prompt, sql)
+                yield self.create_text_message(result.to_markdown())
