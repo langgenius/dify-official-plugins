@@ -65,6 +65,73 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
     return output.getvalue()
 
 
+class _StreamingWavMerger:
+    """Incrementally merges per-sentence WAVE segments into one playable stream.
+
+    Writes a single WAVE header as soon as the first segment's format is known
+    (using a placeholder size, since the total length isn't known yet), then
+    returns each following segment's raw PCM frames as they arrive — instead
+    of waiting for every sentence before producing anything.
+    """
+
+    _PLACEHOLDER_SIZE = 0x7FFFFFFF
+
+    def __init__(self):
+        self._expected_format: tuple[int, int, int, str] | None = None
+        self._header_written = False
+
+    def feed(self, segment: bytes, index: int) -> bytes:
+        format_, frames = self._read_segment(segment, index)
+
+        if self._expected_format is None:
+            self._expected_format = format_
+        elif format_ != self._expected_format:
+            raise InvokeBadRequestError(
+                "DashScope returned WAVE segments with incompatible audio formats"
+            )
+
+        if not self._header_written:
+            self._header_written = True
+            return self._build_header(format_) + frames
+        return frames
+
+    def _read_segment(self, segment: bytes, index: int) -> tuple[tuple[int, int, int, str], bytes]:
+        try:
+            with wave.open(io.BytesIO(segment), "rb") as reader:
+                format_ = (
+                    reader.getnchannels(),
+                    reader.getsampwidth(),
+                    reader.getframerate(),
+                    reader.getcomptype(),
+                )
+                if format_[3] != "NONE":
+                    raise InvokeBadRequestError(
+                        f"DashScope returned unsupported compressed WAVE segment {index}"
+                    )
+                frame_count = reader.getnframes()
+                frames = reader.readframes(frame_count)
+                expected_frame_bytes = frame_count * reader.getnchannels() * reader.getsampwidth()
+                if len(frames) != expected_frame_bytes:
+                    raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+        except (EOFError, wave.Error) as ex:
+            raise InvokeBadRequestError(f"DashScope returned an invalid WAVE segment: {ex}") from ex
+        return format_, frames
+
+    def _build_header(self, format_: tuple[int, int, int, str]) -> bytes:
+        nchannels, sampwidth, framerate, _ = format_
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as writer:
+            writer.setnchannels(nchannels)
+            writer.setsampwidth(sampwidth)
+            writer.setframerate(framerate)
+            writer.setcomptype("NONE", "not compressed")
+            writer.writeframes(b"")
+        header = bytearray(buf.getvalue())
+        header[4:8] = self._PLACEHOLDER_SIZE.to_bytes(4, "little")    # RIFF size
+        header[40:44] = self._PLACEHOLDER_SIZE.to_bytes(4, "little")  # data size
+        return bytes(header)
+
+
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
     """
     Model class for Tongyi Speech to text model.
@@ -139,14 +206,14 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
 
             def invoke_remote(content, m, api_key, wl, base_address):
                 try:
-                    audio_segments: list[bytes] = []
+                    merger = _StreamingWavMerger()
                     if len(content) < wl:
                         sentences = [content]
                     else:
                         sentences = list(
                             self._split_text_into_sentences(org_text=content, max_length=wl)
                         )
-                    for sentence in sentences:
+                    for sentence_index, sentence in enumerate(sentences, start=1):
                         response_stream = MultiModalConversation.call(
                             model=m,
                             api_key=api_key,
@@ -172,12 +239,17 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                         try:
                             with urlopen(audio_url, timeout=30) as response:
                                 audio_data = response.read()
-                            audio_segments.append(audio_data)
                         except Exception as e:
                             error_queue.put(InvokeBadRequestError(f"Failed to download audio: {e!s}"))
                             audio_queue.put(None)
                             return
-                    audio_queue.put(merge_wav_segments(audio_segments))
+                        try:
+                            out_bytes = merger.feed(audio_data, sentence_index)
+                        except InvokeBadRequestError as e:
+                            error_queue.put(e)
+                            audio_queue.put(None)
+                            return
+                        audio_queue.put(out_bytes)
                     audio_queue.put(None)
                 except Exception as e:
                     error_queue.put(self._map_invoke_error(e))
