@@ -1345,6 +1345,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         system_fingerprint = None
         completion = ""
         tool_calls = []
+        tool_calls_emitted = False
         prompt_tokens = 0
         completion_tokens = 0
         has_usage = False
@@ -1414,15 +1415,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     ),
                 )
                 index += 1
-            if (
-                delta.finish_reason is None
-                and not any(p for p in pieces)
-                and not new_tools
-            ):
+            if delta.finish_reason is None and not any(p for p in pieces):
                 continue
             content = "".join(pieces)
+            # Tool calls are emitted once, complete, on the finishing chunk.
+            # Consumers such as the agent strategies collect tool calls from
+            # every chunk, so sending the accumulating list earlier produced
+            # duplicate and half-streamed calls in the next request.
+            emit_tool_calls = delta.finish_reason is not None and not tool_calls_emitted
+            if emit_tool_calls and tool_calls:
+                tool_calls_emitted = True
             assistant_prompt_message = AssistantPromptMessage(
-                content=content, tool_calls=tool_calls
+                content=content, tool_calls=list(tool_calls) if emit_tool_calls else []
             )
             real_model = chunk.model
             system_fingerprint = chunk.system_fingerprint
@@ -1446,6 +1450,22 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 delta=LLMResultChunkDelta(
                     index=index,
                     message=AssistantPromptMessage(content=closing_content),
+                ),
+            )
+            index += 1
+        if tool_calls and not tool_calls_emitted:
+            # The stream ended without a finish_reason chunk; still hand the
+            # accumulated tool calls over exactly once.
+            tool_calls_emitted = True
+            yield LLMResultChunk(
+                model=real_model,
+                prompt_messages=prompt_messages,
+                system_fingerprint=system_fingerprint,
+                delta=LLMResultChunkDelta(
+                    index=index,
+                    message=AssistantPromptMessage(
+                        content="", tool_calls=list(tool_calls)
+                    ),
                 ),
             )
             index += 1

@@ -1203,3 +1203,63 @@ class TestGaBoundaryComparison(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStreamedToolCallsEmittedOnce(unittest.TestCase):
+    """Tool calls reach consumers once, with complete arguments (#3921)."""
+
+    def _collect(self, deltas):
+        llm = make_llm()
+        mock_calc(llm)
+        llm._num_tokens_from_messages = MagicMock(return_value=2)
+
+        def stream():
+            for d, finish in deltas:
+                yield SimpleNamespace(
+                    choices=[SimpleNamespace(delta=d, finish_reason=finish)],
+                    usage=None,
+                    model="gpt-4.1-mini",
+                    system_fingerprint="fp",
+                )
+
+        chunks = llm._handle_chat_generate_stream_response(
+            model="gpt-4.1-mini",
+            credentials={"base_model_name": "gpt-4.1-mini"},
+            response=stream(),
+            prompt_messages=[UserPromptMessage(content="hi")],
+        )
+        return [
+            (tc.id, tc.function.name, tc.function.arguments)
+            for chunk in chunks
+            for tc in (chunk.delta.message.tool_calls or [])
+        ]
+
+    @staticmethod
+    def _delta(tool_calls=None):
+        return SimpleNamespace(content=None, tool_calls=tool_calls, reasoning_content=None)
+
+    def _parallel_deltas(self):
+        return [
+            (self._delta([ChoiceDeltaToolCall(index=0, id="call_a", type="function",
+                function=ChoiceDeltaToolCallFunction(name="f", arguments=""))]), None),
+            (self._delta([ChoiceDeltaToolCall(index=0,
+                function=ChoiceDeltaToolCallFunction(arguments='{"x": 1}'))]), None),
+            (self._delta([ChoiceDeltaToolCall(index=1, id="call_b", type="function",
+                function=ChoiceDeltaToolCallFunction(name="g", arguments=""))]), None),
+            (self._delta([ChoiceDeltaToolCall(index=1,
+                function=ChoiceDeltaToolCallFunction(arguments='{"y": 2}'))]), None),
+        ]
+
+    def test_parallel_tool_calls_are_not_duplicated(self):
+        collected = self._collect(self._parallel_deltas() + [(self._delta(), "tool_calls")])
+        self.assertEqual(
+            collected,
+            [("call_a", "f", '{"x": 1}'), ("call_b", "g", '{"y": 2}')],
+        )
+
+    def test_tool_calls_emitted_when_stream_ends_without_finish_reason(self):
+        collected = self._collect(self._parallel_deltas())
+        self.assertEqual(
+            collected,
+            [("call_a", "f", '{"x": 1}'), ("call_b", "g", '{"y": 2}')],
+        )
