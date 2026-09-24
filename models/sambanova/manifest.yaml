@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 type: plugin
 author: langgenius
 name: sambanova
@@ -32,7 +32,7 @@ plugins:
   models:
     - provider/sambanova.yaml
 meta:
-  version: 0.0.1
+  version: 0.0.2
   arch:
     - amd64
     - arm64
