@@ -27,9 +27,11 @@ def test_resolve_protocol_defaults_and_whitelists() -> None:
     assert resolve_protocol("minimax-m3", {}) == "chat"
     assert resolve_protocol("grok-4.7", {}) == "responses"
     assert resolve_protocol("grok-4.6", {}) == "responses"
+    assert resolve_protocol("gpt-6-luna", {}) == "responses"
     assert resolve_protocol("gpt-5.6-luna", {}) == "responses"
     assert resolve_protocol("mimo-v2.6-flash", {}) == "chat"
     assert resolve_protocol("mimo-v2.6-pro", {}) == "chat"
+    assert resolve_protocol("space-bunny-free", {}) == "chat"
     assert resolve_protocol("muse-spark-1.3-contributor", {}) == "responses"
     # explicit credential wins
     assert resolve_protocol("union-alpha", {"api_protocol": "chat"}) == "chat"

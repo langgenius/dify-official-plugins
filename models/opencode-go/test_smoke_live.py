@@ -37,7 +37,7 @@ CHAT_MODELS = [
     "mimo-v2.5",
 ]
 ANTHROPIC_MODELS = []
-RESPONSES_MODELS = ["grok-4.7", "grok-4.6", "gpt-5.6-luna"]
+RESPONSES_MODELS = ["grok-4.7", "grok-4.6", "gpt-6-luna", "gpt-5.6-luna"]
 
 
 def make_model() -> OpenCodeGoLargeLanguageModel:

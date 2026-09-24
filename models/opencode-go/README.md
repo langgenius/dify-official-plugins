@@ -11,7 +11,7 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 - Three upstream protocols in one provider:
   - **Chat Completions** (`{base}/chat/completions` + `Authorization: Bearer`) — default for most models
   - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`)
-  - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
+  - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-6-luna`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
   - `User-Agent`: `dify-opencode-go-plugin/0.4.0` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
@@ -108,6 +108,8 @@ When adding a custom model you can now set:
 | Grok 4.7 (`grok-4.7`) | responses | Same Responses-only path as Grok 4.6. **May require outbound proxy from some regions (e.g. CN).** |
 | MiMo-V2.6-Flash (`mimo-v2.6-flash`) | chat | Aligns with MiMo-V2.5 multimodal flags (vision / video / audio) |
 | MiMo-V2.6-Pro (`mimo-v2.6-pro`) | chat | Aligns with MiMo-V2.5-Pro |
+| GPT 6 Luna (`gpt-6-luna`) | responses | Documented Responses-only. **Region-restricted** in some territories. |
+| Space Bunny Free (`space-bunny-free`) | chat | **Free for a limited time** — may be removed anytime. Do not rely on it for production. |
 
 ### Predefined models added in 0.2.0
 

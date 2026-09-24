@@ -11,7 +11,7 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 - 同一供应商内完整支持三类上游协议：
   - **Chat Completions**（`{base}/chat/completions` + `Authorization: Bearer`）— 多数模型默认
   - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `minimax-m2.7`）
-  - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.7`、`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
+  - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.7`、`grok-4.6`、`gpt-6-luna`、`gpt-5.6-luna`、`muse-spark-*`）
 - **三条协议路径都会**发送 OpenCode 必需请求头：
   - `User-Agent`（默认 `dify-opencode-go-plugin/0.4.0`）
   - `x-opencode-session`（会话路由 / prompt cache）
@@ -107,6 +107,8 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 | Grok 4.7（`grok-4.7`） | responses | 与 Grok 4.6 同为仅 Responses。**部分区域（含中国大陆）可能需代理出境** |
 | MiMo-V2.6-Flash（`mimo-v2.6-flash`） | chat | 多模态标记对齐 MiMo-V2.5（vision / video / audio） |
 | MiMo-V2.6-Pro（`mimo-v2.6-pro`） | chat | 对齐 MiMo-V2.5-Pro |
+| GPT 6 Luna（`gpt-6-luna`） | responses | 文档标明仅 Responses。**部分地区受限** |
+| Space Bunny Free（`space-bunny-free`） | chat | **限时免费，可能随时下线**。请勿作为生产长期依赖。 |
 
 ### 0.2.0 新增预置模型
 

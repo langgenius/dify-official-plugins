@@ -806,7 +806,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.10.0" },
+    { name = "dify-plugin", specifier = ">=0.3.0,<0.11.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "openai", specifier = ">=1.50.0" },
 ]

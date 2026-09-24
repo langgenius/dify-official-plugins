@@ -246,6 +246,7 @@ RESPONSES_MODELS = frozenset(
     {
         "grok-4.7",
         "grok-4.6",
+        "gpt-6-luna",
         "gpt-5.6-luna",
         "muse-spark-1.3-contributor",
         "muse-spark-1.2-contributor",
