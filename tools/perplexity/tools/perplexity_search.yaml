@@ -1,7 +1,7 @@
 description:
   human:
-    en_US: Search information using Perplexity AI's language models.
-  llm: This tool is used to search information using Perplexity AI's language models.
+    en_US: Search information using Perplexity AI's Agent API.
+  llm: This tool is used to search information using Perplexity AI's Agent API.
 extra:
   python:
     source: tools/perplexity_search.py
@@ -21,36 +21,40 @@ parameters:
   name: query
   required: true
   type: string
-- default: sonar
+- default: fast
   form: form
   human_description:
-    en_US: The Perplexity AI model to use for generating the response.
-    zh_Hans: 用于生成响应的 Perplexity AI 模型。
+    en_US: The Agent API preset to use for generating the response. Presets roughly
+      correspond to the former Sonar models -  fast ~ Sonar, low ~ Sonar Pro, medium
+      ~ Sonar Reasoning Pro, high ~ Sonar Deep Research, xhigh is a new, more thorough
+      preset.
+    zh_Hans: 用于生成响应的 Agent API 预设。预设大致对应于以前的 Sonar 模型：fast ~ Sonar，low ~ Sonar
+      Pro，medium ~ Sonar Reasoning Pro，high ~ Sonar Deep Research，xhigh 是一个新的、更彻底的预设。
   label:
-    en_US: Model Name
-    zh_Hans: 模型名称
-  name: model
+    en_US: Preset
+    zh_Hans: 预设
+  name: preset
   options:
   - label:
-      en_US: sonar
-      zh_Hans: sonar
-    value: sonar
+      en_US: fast
+      zh_Hans: fast
+    value: fast
   - label:
-      en_US: sonar-pro
-      zh_Hans: sonar-pro
-    value: sonar-pro
+      en_US: low
+      zh_Hans: low
+    value: low
   - label:
-      en_US: sonar-reasoning
-      zh_Hans: sonar-reasoning
-    value: sonar-reasoning
+      en_US: medium
+      zh_Hans: medium
+    value: medium
   - label:
-      en_US: sonar-reasoning-pro
-      zh_Hans: sonar-reasoning-pro
-    value: sonar-reasoning-pro
+      en_US: high
+      zh_Hans: high
+    value: high
   - label:
-      en_US: sonar-deep-research
-      zh_Hans: sonar-deep-research
-    value: sonar-deep-research
+      en_US: xhigh
+      zh_Hans: xhigh
+    value: xhigh
   required: false
   type: select
 - default: 4096
@@ -83,16 +87,17 @@ parameters:
   name: temperature
   required: false
   type: number
-- default: 5
+- default: 0
   form: form
   human_description:
-    en_US: The number of top results to consider for response generation.
-    zh_Hans: 用于生成响应的顶部结果数量。
+    en_US: The number of top results to consider for response generation. 0 disables
+      top-k sampling.
+    zh_Hans: 用于生成响应的顶部结果数量。0 表示禁用 top-k 采样。
   label:
     en_US: Top K
     zh_Hans: 取样数量
   max: 100
-  min: 1
+  min: 0
   name: top_k
   required: false
   type: number
@@ -140,33 +145,11 @@ parameters:
   required: false
   step: 0.1
   type: number
-- default: false
-  form: form
-  human_description:
-    en_US: Whether to return images in the response.
-    zh_Hans: 是否在响应中返回图像。
-  label:
-    en_US: Return Images
-    zh_Hans: 返回图像
-  name: return_images
-  required: false
-  type: boolean
-- default: false
-  form: form
-  human_description:
-    en_US: Whether to return related questions in the response.
-    zh_Hans: 是否在响应中返回相关问题。
-  label:
-    en_US: Return Related Questions
-    zh_Hans: 返回相关问题
-  name: return_related_questions
-  required: false
-  type: boolean
 - default: ''
   form: form
   human_description:
-    en_US: Domain to filter the search results. Use comma to separate multiple domains. Up to 3 domains are supported.
-    zh_Hans: 用于过滤搜索结果的域名。使用逗号分隔多个域名。最多支持3个域名。
+    en_US: Domain to filter the search results. Use comma to separate multiple domains. Up to 20 domains are supported.
+    zh_Hans: 用于过滤搜索结果的域名。使用逗号分隔多个域名。最多支持20个域名。
   label:
     en_US: Search Domain Filter
     zh_Hans: 搜索域过滤器
@@ -183,6 +166,10 @@ parameters:
     zh_Hans: 搜索时间过滤器
   name: search_recency_filter
   options:
+  - label:
+      en_US: Hour
+      zh_Hans: 小时
+    value: hour
   - label:
       en_US: Day
       zh_Hans: 天
