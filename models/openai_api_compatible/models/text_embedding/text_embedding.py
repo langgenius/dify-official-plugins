@@ -829,8 +829,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 multimodal_flags.append(False)
             elif document.content_type == MultiModalContentType.IMAGE:
                 image_format = self._detect_image_format_from_base64(document.content)
-                mime_type = f"image/{image_format}" if image_format else "image"
-                inputs.append(f"{IMAGE_MARKER}data:{mime_type};base64,{document.content}")
+                if not image_format:
+                    # Without a subtype the data URI is malformed ("data:image;base64,"),
+                    # which strict providers reject with an unrelated-looking error.
+                    raise InvokeError(
+                        "Could not detect the image format of a multimodal embedding input. "
+                        "Supported formats: jpeg, png, gif, webp, bmp."
+                    )
+                inputs.append(
+                    f"{IMAGE_MARKER}data:image/{image_format};base64,{document.content}"
+                )
                 multimodal_flags.append(True)
             else:
                 raise InvokeError(
