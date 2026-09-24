@@ -43,7 +43,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
-    _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
+    # Dotted provider/geo prefixes are allowed because Amazon Bedrock's
+    # OpenAI-compatible endpoints take IDs like openai.gpt-6-sol / us.openai.gpt-6-sol.
+    _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(
+        r"^(?:[\w-]+\.)*(o1|o3|gpt-5|gpt-6)", re.IGNORECASE
+    )
 
     def _wrap_thinking_by_reasoning_content(
         self, delta: dict, is_reasoning: bool
