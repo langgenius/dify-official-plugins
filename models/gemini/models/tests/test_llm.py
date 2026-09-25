@@ -1614,6 +1614,7 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 10
 
@@ -1661,6 +1662,7 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 5
 
@@ -1715,6 +1717,7 @@ class TestHandleGenerateResponse:
 
         mock_usage = Mock()
         mock_usage.prompt_tokens_details = []
+        mock_usage.prompt_token_count = 0
         mock_usage.thoughts_token_count = 0
         mock_usage.candidates_token_count = 15
 

@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+import threading
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
@@ -43,6 +44,28 @@ from google.genai import errors, types
 from .file_parts import GeminiFileMode, GeminiFilePartFactory
 from .model_schema import with_inline_file_parameter
 from .utils import FileCache
+
+_genai_client_cache: dict[tuple[str, Optional[str]], genai.Client] = {}
+_genai_client_cache_lock = threading.Lock()
+
+
+def _get_genai_client(api_key: str, base_url: Optional[str] = None) -> genai.Client:
+    """Return a cached genai.Client for the given credentials, creating one if needed.
+
+    Reusing the client (and its underlying httpx connection pool) avoids a fresh
+    TCP+TLS handshake to generativelanguage.googleapis.com on every LLM node call.
+    """
+    cache_key = (api_key, base_url)
+    with _genai_client_cache_lock:
+        client = _genai_client_cache.get(cache_key)
+        if client is None:
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(base_url=base_url),
+            )
+            _genai_client_cache[cache_key] = client
+        return client
+
 
 file_cache = FileCache()
 
@@ -221,7 +244,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # The reasoning content and final answer of the Gemini model are priced using the same standard.
         completion_tokens = thoughts_token_count + candidates_token_count
         # The `prompt_tokens` includes the historical conversation QA plus the current input.
-        prompt_tokens = prompt_tokens_standard
+        prompt_tokens = prompt_tokens_standard or usage_metadata.prompt_token_count or 0
 
         return prompt_tokens, completion_tokens
 
@@ -1234,11 +1257,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        genai_client = genai.Client(
-            api_key=credentials["google_api_key"],
-            http_options=types.HttpOptions(
-                base_url=credentials.get("google_base_url", None)
-            ),
+        genai_client = _get_genai_client(
+            credentials["google_api_key"], credentials.get("google_base_url", None)
         )
 
         # == ChatConfig == #
@@ -1378,11 +1398,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ``generateContent`` endpoint does not — it silently drops grounding
         (google-gemini/cookbook#1274).
         """
-        genai_client = genai.Client(
-            api_key=credentials["google_api_key"],
-            http_options=types.HttpOptions(
-                base_url=credentials.get("google_base_url", None)
-            ),
+        genai_client = _get_genai_client(
+            credentials["google_api_key"], credentials.get("google_base_url", None)
         )
 
         # Build contents via existing method. ``config`` is only needed so
