@@ -37,6 +37,45 @@ provider_credential_schema:
       required: true
       type: secret-input
       variable: api_key
+    - variable: enable_request_metadata
+      label:
+        en_US: Attach Dify app_id as request headers
+        zh_Hans: 附加 Dify app_id 作为请求头
+      help:
+        title:
+          en_US: How does this work?
+          zh_Hans: 这是如何工作的？
+        text:
+          en_US: |-
+            When enabled, the plugin attaches the current Dify app_id and a `dify`
+            source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+            every xAI Grok API call. The headers are written into the
+            `extra_headers` credential, which the underlying OpenAI SDK
+            forwards on every outbound request via the `default_headers`
+            client constructor argument. The headers are used for
+            observability / proxy-side propagation. xAI does not document
+            them. Default is `disabled`, so the request shape is unchanged
+            unless you opt in. This opt-in applies to the LLM endpoint
+            only.
+          zh_Hans: |-
+            启用后，插件会通过 `extra_headers` 凭据在每次 xAI Grok 调用中附加当前 Dify
+            app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source` 请求头。
+            底层 OpenAI SDK 会通过 `default_headers` 客户端构造参数将其随每个出站
+            请求一并转发，用于可观测性与代理侧传播。xAI API 不会消费它们。
+            默认值为 `disabled`，即未开启时请求结构保持不变。该选项仅作用于 LLM
+            端点。
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 禁用
     - default: grok-4.6
       label:
         en_US: Model
