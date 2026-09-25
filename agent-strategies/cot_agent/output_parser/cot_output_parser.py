@@ -22,17 +22,50 @@ IGNORED_KEYS = frozenset({"thought", "reasoning", "id", "type"})
 WRAPPER_KEYS = frozenset({"tool_call", "tool_calling", "tool_calls", "function"})
 
 
-def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
+def _has_explicit_input_key(payload: dict) -> bool:
+    lowered = {key.lower(): value for key, value in payload.items()}
+    if any(key in lowered for key in ACTION_INPUT_KEYS):
+        return True
+    return any("input" in key.lower() for key in payload)
+
+
+def _json_blob_suggests_action_attempt(blob: str) -> bool:
+    try:
+        payload = json.loads(blob, strict=False)
+    except (TypeError, ValueError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    lowered = {key.lower() for key in payload}
+    if lowered & set(ACTION_INPUT_KEYS) or any("input" in key.lower() for key in payload):
+        return True
+    return bool(lowered & {"action", "tool", "tool_name", "function"})
+
+
+def _extract_action(
+    payload: dict,
+    *,
+    allow_legacy_name_fallback: bool = True,
+    reject_name_only_without_input: bool = False,
+) -> "AgentScratchpadUnit.Action | None":
     """Extract a canonical Action from a flat dict, or None when it is not one."""
     lowered = {key.lower(): value for key, value in payload.items()}
     action_name = None
+    name_key_used: str | None = None
     for key in ACTION_NAME_KEYS:
         # non-string values (e.g. an OpenAI-style nested "function" dict) are
         # skipped so a following known key can still provide the name
         if isinstance(lowered.get(key), str):
             action_name = lowered[key]
+            name_key_used = key
             break
-    if action_name is None and any("input" in key for key in lowered):
+    if (
+        reject_name_only_without_input
+        and name_key_used == "name"
+        and not _has_explicit_input_key(payload)
+    ):
+        return None
+    if action_name is None and allow_legacy_name_fallback and any("input" in key for key in lowered):
         # Legacy fallback: when no known name key is present, a remaining
         # string-valued key may carry the tool name - but only if the payload
         # also carries an input-like key, so arbitrary JSON blobs inside a
@@ -63,7 +96,12 @@ def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
     return AgentScratchpadUnit.Action(action_name=action_name.strip(), action_input=action_input)
 
 
-def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
+def parse_action(
+    json_str: str,
+    *,
+    allow_legacy_name_fallback: bool = True,
+    reject_name_only_without_input: bool = False,
+) -> "AgentScratchpadUnit.Action | None":
     """Parse a JSON blob into an Action, or return None when it is not one.
 
     Returns None (instead of the raw string, as the previous in-place
@@ -109,7 +147,11 @@ def parse_action(json_str: str) -> "AgentScratchpadUnit.Action | None":
             if arguments is None:
                 arguments = {}
             payload = {"action": function["name"], "action_input": arguments}
-    return _extract_action(payload)
+    return _extract_action(
+        payload,
+        allow_legacy_name_fallback=allow_legacy_name_fallback,
+        reject_name_only_without_input=reject_name_only_without_input,
+    )
 
 
 # Maximum number of trailing characters that could still be the start of a
@@ -163,25 +205,76 @@ class CotAgentOutputParser:
         json_in_string = False
         json_escape = False
         pending_action_json = False
+        json_promote_as_action = False
+        json_after_action_prefix = False
+        json_blob_at_line_start = False
+        saw_thought_prefix = False
         json_stack: list[str] = []
 
         cur_state = ReactState.THINKING
         last_character = ""
 
-        def emit_json_blob(blob: str):
+        def _action_for_json_blob(
+            blob: str, *, promote_as_action: bool, after_action_prefix: bool, at_line_start: bool
+        ) -> "AgentScratchpadUnit.Action | None":
+            if after_action_prefix:
+                return parse_action(blob)
+            if promote_as_action and not saw_thought_prefix:
+                return parse_action(
+                    blob,
+                    allow_legacy_name_fallback=False,
+                    reject_name_only_without_input=True,
+                )
+            if at_line_start and saw_thought_prefix:
+                return parse_action(
+                    blob,
+                    allow_legacy_name_fallback=False,
+                    reject_name_only_without_input=True,
+                )
+            return parse_action(blob)
+
+        def emit_json_blob(
+            blob: str,
+            *,
+            promote_as_action: bool,
+            after_action_prefix: bool,
+            at_line_start: bool,
+        ):
             """Yield a completed JSON blob as an Action or as (flagged) text."""
-            action = parse_action(blob)
-            if action is not None and cur_state is ReactState.THINKING:
-                yield action
-            elif action is None and cur_state is ReactState.THINKING:
-                # JSON that is not a valid action: keep it as thought text
-                # but flag the parse failure so the strategy can surface it
-                # instead of ending the round silently.
-                yield ReactChunk(cur_state, blob, parse_failed=True)
+            effective_promote = promote_as_action
+            if (
+                not effective_promote
+                and saw_thought_prefix
+                and at_line_start
+                and cur_state is ReactState.THINKING
+            ):
+                line_action = _action_for_json_blob(
+                    blob,
+                    promote_as_action=False,
+                    after_action_prefix=False,
+                    at_line_start=True,
+                )
+                if line_action is not None:
+                    effective_promote = True
+
+            action = _action_for_json_blob(
+                blob,
+                promote_as_action=effective_promote,
+                after_action_prefix=after_action_prefix,
+                at_line_start=at_line_start,
+            )
+            if effective_promote and cur_state is ReactState.THINKING:
+                if action is not None:
+                    yield action
+                else:
+                    yield ReactChunk(cur_state, blob, parse_failed=True)
             else:
-                # In the answer state a JSON blob is part of the final answer
-                # and can never become a tool call.
-                yield ReactChunk(cur_state, blob)
+                parse_failed = (
+                    cur_state is ReactState.THINKING
+                    and action is None
+                    and _json_blob_suggests_action_attempt(blob)
+                )
+                yield ReactChunk(cur_state, blob, parse_failed=parse_failed)
 
         class PrefixMatcher:
             __slots__ = ("prefix", "state_on_full_match", "cache", "idx")
@@ -306,7 +399,12 @@ class CotAgentOutputParser:
                 # overwrite an unprocessed blob in json_cache.
                 if got_json:
                     got_json = False
-                    yield from emit_json_blob(json_cache)
+                    yield from emit_json_blob(
+                        json_cache,
+                        promote_as_action=json_promote_as_action,
+                        after_action_prefix=json_after_action_prefix,
+                        at_line_start=json_blob_at_line_start,
+                    )
                     json_cache = ""
                     in_json = False
                     json_in_string = False
@@ -333,10 +431,14 @@ class CotAgentOutputParser:
                         continue
 
                     if cur_state is not ReactState.ANSWER:
-                        yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
+                        yield_raw_delta, emitted_chunk, delta_consumed, matched_thought_prefix = (
+                            thought_matcher.step(delta)
+                        )
                         if emitted_chunk is not None:
                             yield emitted_chunk
                         yield_delta = yield_delta or yield_raw_delta
+                        if matched_thought_prefix:
+                            saw_thought_prefix = True
                         if delta_consumed:
                             index += steps
                             continue
@@ -354,6 +456,11 @@ class CotAgentOutputParser:
                 if not in_json and delta in {"{", "["}:
                     in_json = True
                     got_json = False
+                    # Only JSON after an explicit Action: (or bare JSON at the
+                    # very start before Thought:) may become a tool call.
+                    json_after_action_prefix = pending_action_json
+                    json_promote_as_action = pending_action_json or not saw_thought_prefix
+                    json_blob_at_line_start = last_character in {"\n", ""}
                     json_cache = delta
                     json_in_string = False
                     json_escape = False
@@ -398,7 +505,12 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            yield from emit_json_blob(json_cache)
+            yield from emit_json_blob(
+                json_cache,
+                promote_as_action=json_promote_as_action,
+                after_action_prefix=json_after_action_prefix,
+                at_line_start=json_blob_at_line_start,
+            )
 
         # Flush the chunk tail held back as a possible partial think tag.
         # (If the stream ended inside an unclosed think block, the buffered

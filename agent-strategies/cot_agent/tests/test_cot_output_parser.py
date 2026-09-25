@@ -220,6 +220,56 @@ class TestReActStreamParsing(unittest.TestCase):
         self.assertEqual(len(failed), 1)
         self.assertEqual(failed[0].content, '{"input": "x"}')
 
+    def test_action_like_json_inside_thought_is_not_an_action(self):
+        # Issue #3861: JSON quoted inside Thought: must not overwrite a real Action.
+        results = _parse(
+            'Thought: For example {"action": "fake_tool", "action_input": {"q": "x"}} '
+            'before deciding.\nAction: {"action": "real_search", "action_input": {"q": "actual"}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "real_search")
+        thought = "".join(
+            r.content for r in results if isinstance(r, ReactChunk) and r.state == ReactState.THINKING
+        )
+        self.assertIn("fake_tool", thought)
+        self.assertIn("before deciding.", thought)
+
+    def test_action_like_json_inside_thought_without_action_line(self):
+        results = _parse(
+            'Thought: Example call {"action": "fake_tool", "action_input": {"q": "x"}} end.'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(actions, [])
+        thought = "".join(
+            r.content for r in results if isinstance(r, ReactChunk) and r.state == ReactState.THINKING
+        )
+        self.assertIn("fake_tool", thought)
+        self.assertIn("end.", thought)
+
+    def test_real_action_not_overwritten_by_later_thought_json(self):
+        results = _parse(
+            'Thought: planning\nAction: {"action": "real_search", "action_input": {"q": "actual"}}\n'
+            'Thought: follow-up {"action": "fake_tool", "action_input": {}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "real_search")
+
+    def test_canonical_json_on_new_line_after_thought_still_works(self):
+        results = _parse(
+            'Thought: Let me look that up.\n'
+            '{"action": "search", "action_input": {"q": "x"}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "search")
+
+    def test_json_before_thought_without_action_keys_is_not_promoted(self):
+        results = _parse('{"name": "张三", "city": "北京"}\nThought: noted')
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(actions, [])
+
     def test_json_after_final_answer_is_not_an_action(self):
         results = _parse('FinalAnswer: {"action": "webSearch", "action_input": {"q": 1}}')
         actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
