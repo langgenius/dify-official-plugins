@@ -31,7 +31,7 @@ def _get_current_session():
     return _default()
 
 DEFAULT_ENDPOINT_URL = "https://opencode.ai/zen/go/v1"
-DEFAULT_USER_AGENT = "dify-opencode-go-plugin/0.4.0"
+DEFAULT_USER_AGENT = "dify-opencode-go-plugin/0.4.1"
 # Internal only — consumed by the plugin, never sent upstream.
 _RUN_ID_HEADER = "x-dify-run-id"
 ANTHROPIC_VERSION = "2023-06-01"

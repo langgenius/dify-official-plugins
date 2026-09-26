@@ -29,6 +29,10 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+try:
+    from models.llm import friendly_errors
+except ImportError:  # pragma: no cover - importlib standalone load
+    import friendly_errors
 
 DEFAULT_MAX_OUTPUT_TOKENS = 4096
 
@@ -153,30 +157,9 @@ def filter_model_parameters(model_parameters: dict) -> dict[str, Any]:
 
 
 def map_http_error(response: requests.Response, body_text: str) -> Exception:
-    status = response.status_code
-    snippet = (body_text or "")[:500]
-    lowered = snippet.lower()
-    if "unsupported_country_region_territory" in lowered or (
-        "region" in lowered and "not supported" in lowered
-    ):
-        return InvokeAuthorizationError(
-            f"OpenCode Responses blocked by region policy ({status}): {snippet}"
-        )
-    if status in (401, 403):
-        return InvokeAuthorizationError(
-            f"OpenCode Responses auth failed ({status}): {snippet}"
-        )
-    if status == 429:
-        return InvokeRateLimitError(f"OpenCode Responses rate limited: {snippet}")
-    if status == 400:
-        return InvokeBadRequestError(
-            f"OpenCode Responses bad request ({status}): {snippet}"
-        )
-    if status >= 500:
-        return InvokeServerUnavailableError(
-            f"OpenCode Responses server error ({status}): {snippet}"
-        )
-    return InvokeBadRequestError(f"OpenCode Responses HTTP {status}: {snippet}")
+    return friendly_errors.map_http_error(
+        response.status_code, body_text, protocol="Responses"
+    )
 
 
 def _text_from_output_item(item: dict[str, Any]) -> str:

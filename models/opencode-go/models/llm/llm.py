@@ -40,7 +40,7 @@ from dify_plugin.errors.model import (
 )
 
 try:
-    from models.llm import llm_anthropic, llm_responses, session_headers
+    from models.llm import friendly_errors, llm_anthropic, llm_responses, session_headers
     from models.llm.session_headers import (
         DEFAULT_ENDPOINT_URL,
         add_custom_parameters,
@@ -50,6 +50,7 @@ try:
         resolve_protocol,
     )
 except ImportError:  # pragma: no cover - importlib standalone load
+    import friendly_errors
     import llm_anthropic
     import llm_responses
     import session_headers
@@ -285,16 +286,22 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 stream,
                 headers,
             )
-        return super()._invoke(
-            model,
-            credentials,
-            prompt_messages,
-            model_parameters,
-            tools,
-            stop,
-            stream,
-            user,
-        )
+        try:
+            result = super()._invoke(
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                stream,
+                user,
+            )
+        except InvokeError as ex:
+            raise friendly_errors.rewrite_invoke_error(ex) from ex
+        if isinstance(result, Generator):
+            return self._wrap_chat_stream(result)
+        return result
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         credentials = dict(credentials)
@@ -447,8 +454,10 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 attempts=5 if force_nonstream else 4,
             )
         except requests.RequestException as ex:
-            raise InvokeError(
+            raise friendly_errors.rewrite_invoke_error(
+                InvokeError(
                 f"OpenCode Anthropic Messages connection error: {ex}"
+                )
             ) from ex
 
         if response.status_code != 200:
@@ -512,7 +521,9 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         for event in events:
             kind = event.get("kind")
             if kind == "error":
-                raise InvokeError(str(event.get("message") or f"{error_label} stream error"))
+                raise friendly_errors.wrap_stream_error(
+                    str(event.get("message") or f"{error_label} stream error")
+                )
             if kind == "usage":
                 usage_in = int(event.get("input_tokens") or usage_in)
                 usage_out = int(event.get("output_tokens") or usage_out)
@@ -579,6 +590,13 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                         usage=usage,
                     ),
                 )
+
+    def _wrap_chat_stream(self, stream: Generator) -> Generator:
+        """Rewrite raw OAICompat stream errors into user-facing messages."""
+        try:
+            yield from stream
+        except InvokeError as ex:
+            raise friendly_errors.rewrite_invoke_error(ex) from ex
 
     def _wrap_anthropic_stream(
         self,
@@ -675,7 +693,9 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 stream,
             )
         except requests.RequestException as ex:
-            raise InvokeError(f"OpenCode Responses connection error: {ex}") from ex
+            raise friendly_errors.rewrite_invoke_error(
+                InvokeError(f"OpenCode Responses connection error: {ex}")
+            ) from ex
 
         if response.status_code != 200:
             raise llm_responses.map_http_error(response, response.text)
