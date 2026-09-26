@@ -25,12 +25,14 @@ from __future__ import annotations
 
 import importlib
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import httpx
 import openai
 import pytest
+import yaml
 from dify_plugin.entities.model.llm import LLMUsage
 
 llm_mod = importlib.import_module("models.llm.llm")
@@ -47,12 +49,16 @@ UserPromptMessage = llm_mod.UserPromptMessage
 # the elif chain in _generate_with_responses_api and the openai.yaml
 # model_name options.
 MANTLE_MODELS = [
+    ("openai.gpt-6-sol", "GPT-6 Sol"),
+    ("openai.gpt-6-luna", "GPT-6 Luna"),
+    ("openai.gpt-6-astra", "GPT-6 Astra"),
     ("openai.gpt-5.6-sol", "GPT-5.6 Sol"),
     ("openai.gpt-5.6-terra", "GPT-5.6 Terra"),
     ("openai.gpt-5.6-luna", "GPT-5.6 Luna"),
     ("openai.gpt-5.5", "GPT-5.5"),
     ("openai.gpt-5.4", "GPT-5.4"),
 ]
+GPT6_MODEL_IDS = [m[0] for m in MANTLE_MODELS if m[0].startswith("openai.gpt-6")]
 
 
 # Minimal stand-ins for the openai Responses API stream events. The handlers
@@ -63,6 +69,11 @@ class ResponseTextDeltaEvent:
 
 
 class ResponseCompletedEvent:
+    def __init__(self, response=None) -> None:
+        self.response = response
+
+
+class ResponseIncompleteEvent:
     def __init__(self, response=None) -> None:
         self.response = response
 
@@ -118,7 +129,20 @@ class TestIsBedrockMantleModel:
     def test_other_models_are_not_in_set(self, model_id: str) -> None:
         assert BedrockLLM._is_bedrock_mantle_model(model_id) is False
 
-    def test_set_is_exactly_the_five_documented_models(self) -> None:
+    @pytest.mark.parametrize(
+        "model_id, name", MANTLE_MODELS, ids=[m[0] for m in MANTLE_MODELS]
+    )
+    def test_model_is_selectable_in_openai_family(self, model_id: str, name: str) -> None:
+        # invoke() rejects a model_name that is not an openai.yaml option before
+        # the request reaches the mantle path, so both lists must know the model.
+        schema = yaml.safe_load(
+            (Path(__file__).resolve().parent.parent / "models" / "llm" / "openai.yaml").read_text()
+        )
+        rule = next(r for r in schema["parameter_rules"] if r["name"] == "model_name")
+        assert name in rule["options"]
+        assert llm_mod.model_ids.get_model_id("openai", name) == model_id
+
+    def test_set_is_exactly_the_documented_models(self) -> None:
         # Belt-and-braces: a new mantle model must be added here deliberately
         # (and covered by the tests above), not accidentally.
         assert BedrockLLM._BEDROCK_MANTLE_MODEL_IDS == frozenset(
@@ -536,7 +560,9 @@ class TestGenerateWithResponsesApi:
         # GPT-5.5/5.6 reject top_p outright and GPT-5.4 rejects it once
         # reasoning is active — the mantle path must never forward it.
         _, _, mock_client = self._invoke(
-            self._make_instance(), model_id=model_id, model_parameters={"top_p": 0.9}
+            self._make_instance(),
+            model_id=model_id,
+            model_parameters={"top_p": 0.9, "cross-region": "global"},
         )
         assert "top_p" not in mock_client.responses.create.call_args.kwargs
 
@@ -589,9 +615,66 @@ class TestGenerateWithResponsesApi:
         self, model_id: str, expected_name: str
     ) -> None:
         instance = self._make_instance()
-        self._invoke(instance, model_id=model_id)
+        self._invoke(
+            instance, model_id=model_id, model_parameters={"cross-region": "global"}
+        )
         pricing_credentials = instance._handle_responses_api_response.call_args[0][1]
         assert pricing_credentials["model_parameters"]["model_name"] == expected_name
+
+    @pytest.mark.parametrize("model_id", GPT6_MODEL_IDS)
+    @pytest.mark.parametrize(
+        ("cross_region", "region", "prefix"),
+        [
+            ("geographic", "us-east-1", "us"),
+            ("geographic", "ca-central-1", "us"),
+            ("global", "eu-west-1", "global"),
+        ],
+    )
+    def test_gpt6_goes_to_bedrock_runtime_with_inference_profile(
+        self, model_id: str, cross_region: str, region: str, prefix: str
+    ) -> None:
+        # bedrock-mantle serves GPT-6 in few regions, so GPT-6 uses
+        # bedrock-runtime's OpenAI-compatible endpoint with a us./global.
+        # profile (the bare ID is rejected there: on-demand not supported).
+        _, openai_ctor, mock_client = self._invoke(
+            self._make_instance(),
+            model_id=model_id,
+            credentials={"aws_region": region},
+            model_parameters={"cross-region": cross_region},
+        )
+        assert openai_ctor.call_args.kwargs["base_url"] == (
+            f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
+        )
+        assert mock_client.responses.create.call_args.kwargs["model"] == (
+            f"{prefix}.{model_id}"
+        )
+
+    @pytest.mark.parametrize(
+        ("cross_region", "region"),
+        [("disabled", "us-east-1"), ("geographic", "eu-west-1")],
+    )
+    def test_gpt6_without_a_profile_for_the_region_raises_bad_request(
+        self, cross_region: str, region: str
+    ) -> None:
+        with pytest.raises(llm_mod.InvokeBadRequestError, match="Cross-Region Inference"):
+            self._invoke(
+                self._make_instance(),
+                model_id="openai.gpt-6-sol",
+                credentials={"aws_region": region},
+                model_parameters={"cross-region": cross_region},
+            )
+
+    def test_gpt5_models_stay_on_mantle_with_the_bare_id(self) -> None:
+        _, openai_ctor, mock_client = self._invoke(
+            self._make_instance(),
+            model_id="openai.gpt-5.6-sol",
+            credentials={"aws_region": "us-east-2"},
+            model_parameters={"cross-region": "global"},
+        )
+        assert openai_ctor.call_args.kwargs["base_url"] == (
+            "https://bedrock-mantle.us-east-2.api.aws/openai/v1"
+        )
+        assert mock_client.responses.create.call_args.kwargs["model"] == "openai.gpt-5.6-sol"
 
     def test_explicit_model_name_overrides_resolution(self) -> None:
         instance = self._make_instance()
@@ -765,6 +848,38 @@ class TestHandleResponsesApiStream:
         assert final.delta.index == 1  # counted from the yielded delta, not the event
         instance._calc_response_usage.assert_called_once_with(
             "openai.gpt-5.5", {"aws_region": "us-west-2"}, 3, 5
+        )
+
+    @pytest.mark.parametrize(
+        ("reason", "expected"),
+        [
+            ("max_output_tokens", "length"),
+            ("content_filter", "content_filter"),
+            (None, "incomplete"),
+        ],
+    )
+    def test_incomplete_event_yields_final_chunk_with_usage(
+        self, reason, expected
+    ) -> None:
+        # Live: a GPT-6 / GPT-5.6 stream stopped by max_output_tokens ends with
+        # ResponseIncompleteEvent (status "incomplete", usage attached).
+        instance, usage = self._make_instance()
+        incomplete = ResponseIncompleteEvent(
+            response=SimpleNamespace(
+                usage=SimpleNamespace(input_tokens=13, output_tokens=20),
+                incomplete_details=SimpleNamespace(reason=reason),
+            )
+        )
+        chunks = list(
+            instance._handle_responses_api_stream(
+                "openai.gpt-5.5", {}, [ResponseTextDeltaEvent("Hi"), incomplete], []
+            )
+        )
+        assert len(chunks) == 2
+        assert chunks[-1].delta.finish_reason == expected
+        assert chunks[-1].delta.usage is usage
+        instance._calc_response_usage.assert_called_once_with(
+            "openai.gpt-5.5", {}, 13, 20
         )
 
     def test_empty_deltas_and_unknown_events_are_skipped(self) -> None:

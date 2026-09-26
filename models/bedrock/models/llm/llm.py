@@ -99,7 +99,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
         {"prefix": "qwen.qwen3", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "deepseek.v3-v1:0", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "deepseek.v3.2", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
@@ -129,7 +129,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
     # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
     # These do NOT go through the standard Converse API path.
+    # GPT-6 takes the same Responses API path, sent to bedrock-runtime with an
+    # inference profile instead (see _generate_with_responses_api).
     _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-6-sol",
+        "openai.gpt-6-luna",
+        "openai.gpt-6-astra",
         "openai.gpt-5.6-sol",
         "openai.gpt-5.6-terra",
         "openai.gpt-5.6-luna",
@@ -400,7 +405,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 _candidate_id = model_ids.get_model_id(model, _model_name)
                 if _candidate_id and self._is_bedrock_mantle_model(_candidate_id):
                     return self._generate_with_responses_api(
-                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user
+                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user, tools
                     )
 
             # Traditional model - try converse API first, then fall back if needed
@@ -2156,7 +2161,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     content = self._convert_responses_api_user_content(message.content)
                 result.append({"role": "user", "content": content})
             elif isinstance(message, AssistantPromptMessage):
-                result.append({"role": "assistant", "content": message.content or ""})
+                if message.content or not message.tool_calls:
+                    result.append({"role": "assistant", "content": message.content or ""})
+                result.extend(
+                    {
+                        "type": "function_call",
+                        "call_id": call.id,
+                        "name": call.function.name,
+                        "arguments": call.function.arguments,
+                    }
+                    for call in message.tool_calls
+                )
+            elif isinstance(message, ToolPromptMessage):
+                result.append({
+                    "type": "function_call_output",
+                    "call_id": message.tool_call_id,
+                    "output": message.content or "",
+                })
         return result
 
     @staticmethod
@@ -2205,6 +2226,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke GPT-5.5 / GPT-5.4 via bedrock-mantle endpoint using the OpenAI Responses API.
@@ -2221,6 +2243,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         region = credentials.get("aws_region", "us-east-2")
         token = self._get_mantle_auth_token(credentials)
         base_url = f"https://bedrock-mantle.{region}.api.aws/openai/v1"
+        if model_id in model_ids.GPT6_MODEL_IDS:
+            # bedrock-mantle serves GPT-6 in few regions (see
+            # model_ids.GPT6_MODEL_IDS); bedrock-runtime's OpenAI-compatible
+            # endpoint takes their us./global. inference profiles instead.
+            try:
+                model_id = model_ids.resolve_gpt6_profile_id(
+                    model_id, model_parameters.get("cross-region", "disabled"), region
+                )
+            except ValueError as e:
+                raise InvokeBadRequestError(str(e))
+            base_url = f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
 
         client = OpenAI(api_key=token, base_url=base_url)
         input_messages = self._build_responses_api_input(prompt_messages)
@@ -2254,11 +2287,29 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         reasoning_effort = model_parameters.get("reasoning_effort")
         if reasoning_effort:
             params["reasoning"] = {"effort": reasoning_effort}
+        if tools:
+            # Same function-tool shape as models/openai (responses.py).
+            params["tools"] = [
+                {
+                    "type": "function",
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                    "strict": False,
+                }
+                for tool in tools
+            ]
 
         # Store model_name for pricing calculation, deriving it from model_id if not set.
         credentials_for_pricing = credentials.copy()
         if model_name:
             resolved_model_name = model_name
+        elif "gpt-6-sol" in model_id:
+            resolved_model_name = "GPT-6 Sol"
+        elif "gpt-6-luna" in model_id:
+            resolved_model_name = "GPT-6 Luna"
+        elif "gpt-6-astra" in model_id:
+            resolved_model_name = "GPT-6 Astra"
         elif "gpt-5.6-sol" in model_id:
             resolved_model_name = "GPT-5.6 Sol"
         elif "gpt-5.6-terra" in model_id:
@@ -2300,12 +2351,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         prompt_tokens = getattr(usage, "input_tokens", 0) if usage else 0
         completion_tokens = getattr(usage, "output_tokens", 0) if usage else 0
         dify_usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        tool_calls = [
+            self._responses_api_tool_call(item)
+            for item in (getattr(response, "output", None) or [])
+            if getattr(item, "type", None) == "function_call"
+        ]
 
         return LLMResult(
             model=model,
             prompt_messages=prompt_messages,
-            message=AssistantPromptMessage(content=text),
+            message=AssistantPromptMessage(content=text, tool_calls=tool_calls),
             usage=dify_usage,
+        )
+
+    @staticmethod
+    def _responses_api_tool_call(item) -> AssistantPromptMessage.ToolCall:
+        """Convert a Responses API ``function_call`` output item to a Dify tool call."""
+        return AssistantPromptMessage.ToolCall(
+            id=item.call_id,
+            type="function",
+            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                name=item.name, arguments=item.arguments
+            ),
         )
 
     def _handle_responses_api_stream(
@@ -2337,7 +2404,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         )
                         index += 1
 
-                elif event_type == "ResponseCompletedEvent":
+                elif event_type in ("ResponseCompletedEvent", "ResponseIncompleteEvent"):
+                    # A stream cut off by max_output_tokens ends with
+                    # response.incomplete instead of response.completed; it
+                    # still carries usage, so close the stream the same way.
                     resp = getattr(event, "response", None)
                     usage = getattr(resp, "usage", None) if resp else None
                     if usage:
@@ -2346,15 +2416,38 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     dify_usage = self._calc_response_usage(
                         model, credentials, input_tokens, output_tokens
                     )
+                    finish_reason = "stop"
+                    if event_type == "ResponseIncompleteEvent":
+                        # Same mapping as models/openai (stream.py).
+                        reason = getattr(getattr(resp, "incomplete_details", None), "reason", None)
+                        finish_reason = {
+                            "max_output_tokens": "length",
+                            "content_filter": "content_filter",
+                        }.get(reason, "incomplete")
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=AssistantPromptMessage(content=""),
-                            finish_reason="stop",
+                            finish_reason=finish_reason,
                             usage=dify_usage,
                         ),
                     )
+
+                elif event_type == "ResponseOutputItemDoneEvent":
+                    item = getattr(event, "item", None)
+                    if getattr(item, "type", None) == "function_call":
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(
+                                    content="", tool_calls=[self._responses_api_tool_call(item)]
+                                ),
+                            ),
+                        )
+                        index += 1
         except Exception as ex:
             self._map_openai_exception(ex)
