@@ -13,7 +13,7 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
   - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`)
   - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-6-luna`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
-  - `User-Agent`: `dify-opencode-go-plugin/0.4.0` (not a generic SDK name)
+  - `User-Agent`: `dify-opencode-go-plugin/0.4.2` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
 - Upstream quirks handled automatically:
   - `kimi-k2.7-code` — forces `temperature=1` / `top_p=0.95` (gateway only accepts these)
@@ -151,6 +151,52 @@ Both models **remain fully usable** (not disabled) — only the name and descrip
 | `kimi-k2.7-code` | Gateway only accepts `temperature=1` and `top_p=0.95`; the plugin overrides other values. |
 | `gpt-5.6-luna` | Upstream rejects `temperature` and `top_p`; the plugin strips them. |
 
+### Cache & tier pricing (reference)
+
+Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M tokens). The OpenCode Go catalog also lists cache read/write prices and long-context tiers; those are **not** enforced by the plugin UI or billing fields, but are listed here for cost planning. Source: [models.dev OpenCode Go](https://models.dev/providers/opencode-go) (2026-09 snapshot).
+
+**Cache pricing** (when the gateway applies prompt caching):
+
+| Model | Cache read | Cache write |
+| --- | ---: | ---: |
+| `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` / `deepseek-v4.1-flash` | $0.003 | — |
+| `deepseek-v4-pro` | $0.022 | — |
+| `glm-5.1` / `glm-5.2` / `glm-5.3` | $0.26 | — |
+| `glm-5.3-flash` | $0.03 | — |
+| `gpt-5.6-luna` | $0.02 | $0.25 |
+| `gpt-6-luna` | $0.01 | $0.125 |
+| `grok-4.6` / `grok-4.7` | $0.50 | — |
+| `hy3` | $0.035 | — |
+| `hy4-preview` | $0.042 | — |
+| `kimi-k2.6` | $0.16 | — |
+| `kimi-k2.7-code` | $0.19 | — |
+| `kimi-k3` | $0.30 | — |
+| `longcat-2.0` | $0.006 | — |
+| `mimo-v2.5` / `mimo-v2.6-flash` | $0.0028 | — |
+| `mimo-v2.5-pro` / `mimo-v2.6-pro` | $0.003625 | — |
+| `minimax-m2.7` | $0.06 | $0.375 |
+| `minimax-m3` | $0.06 | — |
+| `muse-spark-1.2-contributor` / `muse-spark-1.3-contributor` | $0.002 | — |
+| `qwen3.6-plus` | $0.05 | $0.625 |
+| `qwen3.7-plus` | $0.04 | $0.50 |
+| `qwen3.7-max` | $0.50 | $3.125 |
+| `qwen3.8-flash` | $0.016 | $0.20 |
+| `qwen3.8-max` | $0.25 | $2.50 |
+| `space-bunny-free` | $0 | $0 |
+
+**Long-context tiers** (higher unit price once input exceeds the threshold; YAML always records the base tier):
+
+| Model | Threshold | Tier input / output | Tier cache read / write |
+| --- | ---: | ---: | ---: |
+| `gpt-5.6-luna` | > 272,000 | $0.40 / $1.80 | $0.04 / $0.50 |
+| `gpt-6-luna` | > 272,000 | $0.20 / $0.75 | $0.02 / $0.25 |
+| `grok-4.6` / `grok-4.7` | > 200,000 | $4.00 / $12.00 | $1.00 / — |
+| `minimax-m3` | > 512,000 | $0.60 / $2.40 | $0.12 / — |
+| `qwen3.6-plus` | > 256,000 | $2.00 / $6.00 | $0.20 / $2.50 |
+| `qwen3.7-plus` | > 256,000 | $1.20 / $4.80 | $0.12 / $1.50 |
+
+Models not listed above have no cache or tier rows in the catalog (flat base price only).
+
 ### Multimodal flags
 
 Feature flags (vision / video / document / audio) follow the **official** model capabilities, because OpenCode Go proxies those upstream APIs. Not every modality is re-tested on the gateway for every model.
@@ -206,7 +252,7 @@ python test_smoke_live.py
 Package:
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.4.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.4.2.difypkg
 ```
 
 ## Links

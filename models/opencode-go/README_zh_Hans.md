@@ -13,7 +13,7 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
   - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `minimax-m2.7`）
   - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.7`、`grok-4.6`、`gpt-6-luna`、`gpt-5.6-luna`、`muse-spark-*`）
 - **三条协议路径都会**发送 OpenCode 必需请求头：
-  - `User-Agent`（默认 `dify-opencode-go-plugin/0.4.0`）
+  - `User-Agent`（默认 `dify-opencode-go-plugin/0.4.2`）
   - `x-opencode-session`（会话路由 / prompt cache）
 - 上游怪癖已自动处理：
   - `kimi-k2.7-code` — 强制 `temperature=1` / `top_p=0.95`（网关仅接受这两组值）
@@ -149,6 +149,52 @@ Qwen 以及 MiniMax M3 继续走 Chat Completions（oa-compat）。OpenCode 文�
 | `kimi-k2.7-code` | 网关仅接受 `temperature=1` 与 `top_p=0.95`；插件会覆盖其他取值 |
 | `gpt-5.6-luna` | 上游拒绝 `temperature` 与 `top_p`；插件会剥离这两个参数 |
 
+### 缓存价与阶梯价（参考）
+
+Dify 的 `PriceConfig` 只记录**基础输入 / 输出**单价（USD / 1M tokens）。OpenCode Go 目录还包含缓存读写价与长上下文阶梯价；这些**不会**进入插件 UI 或计费字段，仅供成本评估参考。数据来源：[models.dev OpenCode Go](https://models.dev/providers/opencode-go)（2026-09 快照）。
+
+**缓存价**（网关启用 prompt caching 时）：
+
+| 模型 | 缓存读 | 缓存写 |
+| --- | ---: | ---: |
+| `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` / `deepseek-v4.1-flash` | $0.003 | — |
+| `deepseek-v4-pro` | $0.022 | — |
+| `glm-5.1` / `glm-5.2` / `glm-5.3` | $0.26 | — |
+| `glm-5.3-flash` | $0.03 | — |
+| `gpt-5.6-luna` | $0.02 | $0.25 |
+| `gpt-6-luna` | $0.01 | $0.125 |
+| `grok-4.6` / `grok-4.7` | $0.50 | — |
+| `hy3` | $0.035 | — |
+| `hy4-preview` | $0.042 | — |
+| `kimi-k2.6` | $0.16 | — |
+| `kimi-k2.7-code` | $0.19 | — |
+| `kimi-k3` | $0.30 | — |
+| `longcat-2.0` | $0.006 | — |
+| `mimo-v2.5` / `mimo-v2.6-flash` | $0.0028 | — |
+| `mimo-v2.5-pro` / `mimo-v2.6-pro` | $0.003625 | — |
+| `minimax-m2.7` | $0.06 | $0.375 |
+| `minimax-m3` | $0.06 | — |
+| `muse-spark-1.2-contributor` / `muse-spark-1.3-contributor` | $0.002 | — |
+| `qwen3.6-plus` | $0.05 | $0.625 |
+| `qwen3.7-plus` | $0.04 | $0.50 |
+| `qwen3.7-max` | $0.50 | $3.125 |
+| `qwen3.8-flash` | $0.016 | $0.20 |
+| `qwen3.8-max` | $0.25 | $2.50 |
+| `space-bunny-free` | $0 | $0 |
+
+**长上下文阶梯价**（输入超过阈值后单价上浮；YAML 始终记录基础档）：
+
+| 模型 | 阈值 | 阶梯 输入 / 输出 | 阶梯 缓存读 / 写 |
+| --- | ---: | ---: | ---: |
+| `gpt-5.6-luna` | > 272,000 | $0.40 / $1.80 | $0.04 / $0.50 |
+| `gpt-6-luna` | > 272,000 | $0.20 / $0.75 | $0.02 / $0.25 |
+| `grok-4.6` / `grok-4.7` | > 200,000 | $4.00 / $12.00 | $1.00 / — |
+| `minimax-m3` | > 512,000 | $0.60 / $2.40 | $0.12 / — |
+| `qwen3.6-plus` | > 256,000 | $2.00 / $6.00 | $0.20 / $2.50 |
+| `qwen3.7-plus` | > 256,000 | $1.20 / $4.80 | $0.12 / $1.50 |
+
+上表未列出的模型在目录中没有缓存或阶梯行（仅有统一基础价）。
+
 ### 多模态能力标记
 
 能力开关（vision / video / document / audio）对齐**官方模型能力**，因为 OpenCode Go 实际是转发上游官方 API。并非每个模型的每种模态都在网关上单独复测过。
@@ -204,7 +250,7 @@ python test_smoke_live.py
 打包：
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.4.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.4.2.difypkg
 ```
 
 ## 链接

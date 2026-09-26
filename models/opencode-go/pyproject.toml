@@ -1,6 +1,6 @@
 [project]
 name = "opencode-go"
-version = "0.4.1"
+version = "0.4.2"
 description = "Dify model provider plugin for OpenCode Go"
 readme = "README.md"
 requires-python = ">=3.12"
