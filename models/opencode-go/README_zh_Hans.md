@@ -6,19 +6,18 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 
 ## 功能
 
-- 预置 OpenCode Go 目录中的模型（GLM、Kimi、DeepSeek、MiMo、MiniMax、Qwen、LongCat、Hy、Grok、GPT Luna、Muse Spark、Union Alpha）
+- 预置 OpenCode Go 目录中的模型（GLM、Kimi、DeepSeek、MiMo、MiniMax、Qwen、LongCat、Hy、Grok、GPT Luna、Muse Spark）
 - 自定义模型支持，并提供 **API 协议** 选择（`chat` / `anthropic` / `responses`）
 - 同一供应商内完整支持三类上游协议：
   - **Chat Completions**（`{base}/chat/completions` + `Authorization: Bearer`）— 多数模型默认
-  - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `union-alpha`、`minimax-m2.7`）
-  - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
+  - **Anthropic Messages**（`{base}/messages` + `x-api-key`）— 仅 `/messages` 可用的模型（如 `minimax-m2.7`）
+  - **OpenAI Responses**（`{base}/responses` + `Authorization: Bearer`）— 仅 `/responses` 可用的模型（如 `grok-4.7`、`grok-4.6`、`gpt-6-luna`、`gpt-5.6-luna`、`muse-spark-*`）
 - **三条协议路径都会**发送 OpenCode 必需请求头：
-  - `User-Agent`（默认 `dify-opencode-go-plugin/0.2.0`）
+  - `User-Agent`（默认 `dify-opencode-go-plugin/0.4.2`）
   - `x-opencode-session`（会话路由 / prompt cache）
 - 上游怪癖已自动处理：
   - `kimi-k2.7-code` — 强制 `temperature=1` / `top_p=0.95`（网关仅接受这两组值）
   - `gpt-5.6-luna` — 剥离 `temperature` / `top_p`（上游直接拒绝）
-  - `union-alpha` — 原生流式易空响应 / 503；插件用非流式 `/messages` 结果仿真流式输出
   - 瞬时 `502` / `503` / `529` 自动退避重试；空 SSE / 裸错误 JSON 会映射为 Dify `InvokeError`（不会静默返回空文本）
   - SSE 强制按 UTF-8 解码（OpenCode 常不声明 charset）
   - 出站请求遵循进程 / 系统代理（`trust_env`）
@@ -53,12 +52,17 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 若 OpenCode 新增模型而插件尚未收录：
 
 1. 在 OpenCode Go 下添加自定义模型。
-2. 模型名称填写 [Go 文档](https://opencode.ai/docs/go/) 中的 model id（例如 `kimi-k2.6`）。
-3. 设置 **API 协议** 与模型端点一致：
+2. **模型 ID** 填写 [Go 文档](https://opencode.ai/docs/go/) 中的 model id（例如 `kimi-k2.6`）。
+3. **显示名称**（可选）= 模型列表中展示的名称，默认与模型 ID 相同。
+4. 设置 **API 协议** 与模型端点一致：
    - `chat`（默认）→ `/chat/completions`
-   - `anthropic` → `/messages`（`union-alpha`、`minimax-m2.7` 等仅 Messages 可用的模型）
-   - `responses` → `/responses`（`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
-4. 可按需设置上下文长度、最大 token、Function Calling、视觉能力。
+   - `anthropic` → `/messages`（`minimax-m2.7` 等仅 Messages 可用的模型）
+   - `responses` → `/responses`（`grok-4.7`、`grok-4.6`、`gpt-5.6-luna`、`muse-spark-*`）
+5. 按需配置能力开关：
+   - **思考模式**（默认开启）— 暴露思考参数（`enable_thinking`、`thinking_budget`、`reasoning_effort`）
+   - **视觉 / 音频 / 视频 / 文档** — 多模态输入
+   - **结构化输出** — 暴露 `response_format` / `json_schema`
+6. 可按需设置上下文长度、最大 token、Function Calling。
 
 ## 协议矩阵
 
@@ -68,11 +72,48 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 | anthropic | `{base}/messages` | `x-api-key` + `anthropic-version: 2023-06-01` | 必须 | 必须 |
 | responses | `{base}/responses` | `Authorization: Bearer` | 必须 | 必须 |
 
+### 自定义模型表单（0.4.0）
+
+添加自定义模型时可配置：
+
+| 字段 | 作用 |
+| --- | --- |
+| **模型 ID** | 上游模型 id（必填） |
+| **显示名称** | 列表中展示名称（可选，默认同模型 ID） |
+| **思考模式** | 默认开启。启用 `agent-thought` 并暴露思考参数 |
+| **视觉 / 音频 / 视频 / 文档** | 多模态输入 |
+| **结构化输出** | 暴露 `response_format` / `json_schema` |
+| **API 协议** | `chat` / `anthropic` / `responses` |
+| Function Calling / 上下文 / 最大 token | 同前 |
+
+### 自定义模型表单（0.4.0）
+
+添加自定义模型时可配置：
+
+| 字段 | 作用 |
+| --- | --- |
+| **模型 ID** | 上游模型 id（必填） |
+| **显示名称** | 列表中展示名称（可选，默认同模型 ID） |
+| **思考模式** | 默认开启。启用 `agent-thought` 并暴露思考参数 |
+| **视觉 / 音频 / 视频 / 文档** | 多模态输入 |
+| **结构化输出** | 暴露 `response_format` / `json_schema` |
+| **API 协议** | `chat` / `anthropic` / `responses` |
+| Function Calling / 上下文 / 最大 token | 同前 |
+
+### 0.3.0 新增预置模型
+
+| 模型 | 协议 | 说明 |
+| --- | --- | --- |
+| Grok 4.7（`grok-4.7`） | responses | 与 Grok 4.6 同为仅 Responses。**部分区域（含中国大陆）可能需代理出境** |
+| MiMo-V2.6-Flash（`mimo-v2.6-flash`） | chat | 多模态标记对齐 MiMo-V2.5（vision / video / audio） |
+| MiMo-V2.6-Pro（`mimo-v2.6-pro`） | chat | 对齐 MiMo-V2.5-Pro |
+| GPT 6 Luna（`gpt-6-luna`） | responses | 文档标明仅 Responses。**部分地区受限** |
+| Space Bunny Free（`space-bunny-free`） | chat | **限时免费，可能随时下线**。请勿作为生产长期依赖。 |
+
 ### 0.2.0 新增预置模型
 
 | 模型 | 协议 | 说明 |
 | --- | --- | --- |
-| Union Alpha Free（`union-alpha`） | anthropic | **限时免费体验，可能随时下线**；oa-compat `/chat/completions` 会 500；原生流式不稳定（插件用非流式仿真流式）。请勿作为生产长期依赖。 |
 | MiniMax M2.7（`minimax-m2.7`） | anthropic | oa-compat `/chat/completions` 会 500；`/messages` 可用 |
 | Grok 4.6（`grok-4.6`） | responses | 文档标明仅 Responses。**部分区域（含中国大陆）可能需代理出境** |
 | GPT 5.6 Luna（`gpt-5.6-luna`） | responses | 文档标明仅 Responses；**部分地区受限**（通常需代理）。插件会剥离 `temperature` / `top_p` |
@@ -83,7 +124,23 @@ OpenCode Go 是 $10/月 的订阅网关，提供精选开源编码模型。本�
 > `HTTP_PROXY` / `HTTPS_PROXY`（或打开系统代理），再启动插件 / Dify 运行时。
 > 插件会遵循进程 / 系统代理环境变量（`trust_env`）。
 
-Qwen 以及 MiniMax M3 / M2.5 继续走 Chat Completions（oa-compat）。OpenCode 文档虽列出 `/messages`，但 oa-compat 实测 200，保持可避免回归。MiniMax M2.7 是例外（chat 500 → 走 anthropic）。
+Qwen 以及 MiniMax M3 继续走 Chat Completions（oa-compat）。OpenCode 文档虽列出 `/messages`，但 oa-compat 实测 200，保持可避免回归。MiniMax M2.7 是例外（chat 500 → 走 anthropic）。
+
+### 0.3.0 移除的预置模型
+
+| 模型 | 原因 |
+| --- | --- |
+| Union Alpha Free（`union-alpha`） | 已不在 OpenCode Go 模型目录中（原限时免费体验）。如网关仍接受该 id，可作为自定义模型继续使用。 |
+| MiniMax M2.5（`minimax-m2.5`） | 已从 Go「当前模型列表」/ 用量表中移除，故取消预置。 |
+
+### 下线提醒
+
+| 模型 | 下线时间（北京时间） | 迁移建议 |
+| --- | --- | --- |
+| `mimo-v2.5` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-flash` |
+| `mimo-v2.5-pro` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-pro` |
+
+两个模型**仍可正常使用**（未禁用），仅在名称与描述中提示下线时间，避免影响存量业务。请在下线前完成迁移。
 
 ### 模型参数约束
 
@@ -91,6 +148,52 @@ Qwen 以及 MiniMax M3 / M2.5 继续走 Chat Completions（oa-compat）。OpenCo
 | --- | --- |
 | `kimi-k2.7-code` | 网关仅接受 `temperature=1` 与 `top_p=0.95`；插件会覆盖其他取值 |
 | `gpt-5.6-luna` | 上游拒绝 `temperature` 与 `top_p`；插件会剥离这两个参数 |
+
+### 缓存价与阶梯价（参考）
+
+Dify 的 `PriceConfig` 只记录**基础输入 / 输出**单价（USD / 1M tokens）。OpenCode Go 目录还包含缓存读写价与长上下文阶梯价；这些**不会**进入插件 UI 或计费字段，仅供成本评估参考。数据来源：[models.dev OpenCode Go](https://models.dev/providers/opencode-go)（2026-09 快照）。
+
+**缓存价**（网关启用 prompt caching 时）：
+
+| 模型 | 缓存读 | 缓存写 |
+| --- | ---: | ---: |
+| `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` / `deepseek-v4.1-flash` | $0.003 | — |
+| `deepseek-v4-pro` | $0.022 | — |
+| `glm-5.1` / `glm-5.2` / `glm-5.3` | $0.26 | — |
+| `glm-5.3-flash` | $0.03 | — |
+| `gpt-5.6-luna` | $0.02 | $0.25 |
+| `gpt-6-luna` | $0.01 | $0.125 |
+| `grok-4.6` / `grok-4.7` | $0.50 | — |
+| `hy3` | $0.035 | — |
+| `hy4-preview` | $0.042 | — |
+| `kimi-k2.6` | $0.16 | — |
+| `kimi-k2.7-code` | $0.19 | — |
+| `kimi-k3` | $0.30 | — |
+| `longcat-2.0` | $0.006 | — |
+| `mimo-v2.5` / `mimo-v2.6-flash` | $0.0028 | — |
+| `mimo-v2.5-pro` / `mimo-v2.6-pro` | $0.003625 | — |
+| `minimax-m2.7` | $0.06 | $0.375 |
+| `minimax-m3` | $0.06 | — |
+| `muse-spark-1.2-contributor` / `muse-spark-1.3-contributor` | $0.002 | — |
+| `qwen3.6-plus` | $0.05 | $0.625 |
+| `qwen3.7-plus` | $0.04 | $0.50 |
+| `qwen3.7-max` | $0.50 | $3.125 |
+| `qwen3.8-flash` | $0.016 | $0.20 |
+| `qwen3.8-max` | $0.25 | $2.50 |
+| `space-bunny-free` | $0 | $0 |
+
+**长上下文阶梯价**（输入超过阈值后单价上浮；YAML 始终记录基础档）：
+
+| 模型 | 阈值 | 阶梯 输入 / 输出 | 阶梯 缓存读 / 写 |
+| --- | ---: | ---: | ---: |
+| `gpt-5.6-luna` | > 272,000 | $0.40 / $1.80 | $0.04 / $0.50 |
+| `gpt-6-luna` | > 272,000 | $0.20 / $0.75 | $0.02 / $0.25 |
+| `grok-4.6` / `grok-4.7` | > 200,000 | $4.00 / $12.00 | $1.00 / — |
+| `minimax-m3` | > 512,000 | $0.60 / $2.40 | $0.12 / — |
+| `qwen3.6-plus` | > 256,000 | $2.00 / $6.00 | $0.20 / $2.50 |
+| `qwen3.7-plus` | > 256,000 | $1.20 / $4.80 | $0.12 / $1.50 |
+
+上表未列出的模型在目录中没有缓存或阶梯行（仅有统一基础价）。
 
 ### 多模态能力标记
 
@@ -102,15 +205,15 @@ Qwen 以及 MiniMax M3 / M2.5 继续走 Chat Completions（oa-compat）。OpenCo
 | --- | --- |
 | glm-5.3-flash / glm-5.x | OK（流式 + 非流式） |
 | glm-5.1 / glm-5.2 | OK |
+| mimo-v2.6-flash / mimo-v2.6-pro | 0.3.0 新增，尚未冒烟 |
 | mimo-v2.5 / mimo-v2.5-pro | OK |
 | kimi-k2.6 / kimi-k2.7-code / kimi-k3 | OK |
 | qwen3.6-plus / qwen3.7-plus / qwen3.7-max / qwen3.8-flash / qwen3.8-max | OK |
-| minimax-m3 / minimax-m2.5 | OK（chat） |
+| minimax-m3 | OK（chat） |
 | minimax-m2.7 | OK（anthropic `/messages`） |
 | deepseek-v4-pro / v4-flash / v4.1-flash / flash-vision-exp | OK |
 | longcat-2.0 / hy3 / hy4-preview | OK |
-| union-alpha 经 anthropic `/messages` | OK（插件非流式仿真流式；原生流式常空/503） |
-| union-alpha 经 chat `/chat/completions` | 500（预期失败） |
+| grok-4.7 经 responses `/responses` | 0.3.0 新增，尚未冒烟 |
 | grok-4.6 经 responses `/responses` | 代理下 OK |
 | gpt-5.6-luna 经 responses | 代理下 OK |
 | muse-spark-1.3 经 responses | HTTP 200（内容质量可能波动；区域受限） |
@@ -135,6 +238,7 @@ python test_session_runtime.py
 python test_extra_headers.py
 python test_backward_compat_002.py
 python test_protocol_routing.py
+python test_custom_model_features.py
 ```
 
 在线冒烟（需 `OPENCODE_GO_API_KEY`）：
@@ -146,7 +250,7 @@ python test_smoke_live.py
 打包：
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.2.0.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.4.2.difypkg
 ```
 
 ## 链接

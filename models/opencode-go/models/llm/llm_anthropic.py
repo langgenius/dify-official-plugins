@@ -29,6 +29,10 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+try:
+    from models.llm import friendly_errors
+except ImportError:  # pragma: no cover - importlib standalone load
+    import friendly_errors
 
 DEFAULT_MAX_TOKENS = 4096
 
@@ -244,6 +248,11 @@ def filter_model_parameters(model_parameters: dict) -> dict[str, Any]:
         "temperature": "temperature",
         "top_p": "top_p",
         "top_k": "top_k",
+        "enable_thinking": "enable_thinking",
+        "thinking_budget": "thinking_budget",
+        "reasoning_effort": "reasoning_effort",
+        "response_format": "response_format",
+        "json_schema": "json_schema",
         "max_tokens": "max_tokens",
         "stop_sequences": "stop_sequences",
     }
@@ -257,32 +266,8 @@ def filter_model_parameters(model_parameters: dict) -> dict[str, Any]:
 
 
 def map_http_error(response: requests.Response, body_text: str) -> Exception:
-    status = response.status_code
-    snippet = (body_text or "")[:500]
-    lowered = snippet.lower()
-    if "unsupported_country_region_territory" in lowered or "region" in lowered and "not supported" in lowered:
-        return InvokeAuthorizationError(
-            f"OpenCode Anthropic Messages blocked by region policy ({status}): {snippet}"
-        )
-    if status in (401, 403):
-        return InvokeAuthorizationError(
-            f"OpenCode Anthropic Messages auth failed ({status}): {snippet}"
-        )
-    if status == 429:
-        return InvokeRateLimitError(
-            f"OpenCode Anthropic Messages rate limited: {snippet}"
-        )
-    if status == 400:
-        return InvokeBadRequestError(
-            f"OpenCode Anthropic Messages bad request ({status}): {snippet}"
-        )
-    if status >= 500:
-        return InvokeServerUnavailableError(
-            f"OpenCode Anthropic Messages server error ({status}): {snippet}. "
-            "This is often a temporary upstream outage (e.g. union-alpha busy) — retry shortly."
-        )
-    return InvokeBadRequestError(
-        f"OpenCode Anthropic Messages HTTP {status}: {snippet}"
+    return friendly_errors.map_http_error(
+        response.status_code, body_text, protocol="Anthropic Messages"
     )
 
 

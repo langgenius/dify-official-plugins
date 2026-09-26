@@ -1,19 +1,17 @@
-model: muse-spark-1.3-contributor
+model: gpt-6-luna
 label:
-  en_US: Muse Spark 1.3 Contributor (Region Limited)
-  zh_Hans: Muse Spark 1.3 Contributor（区域限制）
+  en_US: GPT 6 Luna
+  zh_Hans: GPT 6 Luna
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
   - vision
-  - video
-  - audio
   - document
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 1050000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -24,12 +22,12 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 131072
+    max: 128000
     help:
-      en_US: Maps to Responses API max_output_tokens. Availability may be region-restricted.
-      zh_Hans: 映射到 Responses API 的 max_output_tokens。可用性可能受区域限制。
+      en_US: Maps to Responses API max_output_tokens.
+      zh_Hans: 映射到 Responses API 的 max_output_tokens。
 pricing:
   input: "0.10"
-  output: "0.20"
+  output: "0.50"
   unit: "0.000001"
   currency: USD
