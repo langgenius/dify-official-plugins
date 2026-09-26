@@ -1,9 +1,11 @@
 model: mimo-v2.5
 label:
-  en_US: MiMo-V2.5 (deprecated — offline 2026-10-21)
-  zh_Hans: MiMo-V2.5（已弃用 — 2026-10-21 下线）
+  en_US: MiMo-V2.5 (offline 2026-10-21)
+  zh_Hans: MiMo-V2.5（2026-10-21 下线）
+description:
+  en_US: This model goes offline on 2026-10-21 10:00 (UTC+8). It remains usable until then. Migrate to mimo-v2.6-flash.
+  zh_Hans: 该模型将于 2026-10-21 10:00（北京时间）下线，下线前仍可正常使用。请迁移至 mimo-v2.6-flash。
 model_type: llm
-deprecated: true
 features:
   - agent-thought
   - tool-call
@@ -13,7 +15,7 @@ features:
   - audio
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature

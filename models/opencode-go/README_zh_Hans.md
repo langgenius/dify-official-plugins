@@ -140,7 +140,7 @@ Qwen 以及 MiniMax M3 继续走 Chat Completions（oa-compat）。OpenCode 文�
 | `mimo-v2.5` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-flash` |
 | `mimo-v2.5-pro` | **2026-10-21 10:00** | 请切换至 `mimo-v2.6-pro` |
 
-两个模型已标记 `deprecated: true`，请在下线前完成迁移。
+两个模型**仍可正常使用**（未禁用），仅在名称与描述中提示下线时间，避免影响存量业务。请在下线前完成迁移。
 
 ### 模型参数约束
 

@@ -142,7 +142,7 @@ Qwen and MiniMax M3 remain on Chat Completions (oa-compat) even though OpenCode 
 | `mimo-v2.5` | **2026-10-21 10:00** | Switch to `mimo-v2.6-flash` |
 | `mimo-v2.5-pro` | **2026-10-21 10:00** | Switch to `mimo-v2.6-pro` |
 
-Both models are marked `deprecated: true`. Please migrate before the offline date.
+Both models **remain fully usable** (not disabled) — only the name and description carry an offline notice so existing workloads keep running. Please migrate before the offline date.
 
 ### Model parameter constraints
 
