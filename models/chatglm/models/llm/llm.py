@@ -38,6 +38,8 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.chat_completion_message import FunctionCall
 from yarl import URL
 
+from ._metadata import apply_dify_headers_if_enabled
+
 logger = logging.getLogger(__name__)
 
 
@@ -251,6 +253,18 @@ class ChatGLMLargeLanguageModel(LargeLanguageModel):
             "api_key": "1",
             "base_url": str(URL(credentials["api_base"]) / "v1"),
         }
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OpenAI client is
+        # constructed. Forward ``extra_headers`` as ``default_headers=``
+        # on the OpenAI client constructor so the OpenAI SDK sends
+        # every entry of ``default_headers`` on each outbound request,
+        # which is the carrier for the Dify observability headers.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            client_kwargs["default_headers"] = extra_headers
         return client_kwargs
 
     def _handle_chat_generate_stream_response(
