@@ -34,5 +34,41 @@ provider_credential_schema:
       required: true
       type: text-input
       variable: api_base
+    - variable: enable_request_metadata
+      label:
+        en_US: Attach Dify app_id as request headers
+        zh_Hans: 附加 Dify app_id 作为请求头
+      help:
+        title:
+          en_US: How does this work?
+          zh_Hans: 这是如何工作的？
+        text:
+          en_US: |-
+            When enabled, the plugin attaches the current Dify app_id and a `dify`
+            source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+            every ChatGLM call. The headers are written into the `extra_headers`
+            credential and forwarded as `default_headers` on the OpenAI SDK
+            client constructor, which the OpenAI SDK sends on every outbound
+            request. The headers are used for observability / proxy-side
+            propagation. ChatGLM does not document them. Default is `disabled`,
+            so the request shape is unchanged unless you opt in.
+          zh_Hans: |-
+            启用后，插件会通过 `extra_headers` 凭据在每次 ChatGLM 调用中附加当前
+            Dify app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source`
+            请求头。底层 OpenAI SDK 会通过 `default_headers` 客户端构造参数将其
+            随每个出站请求一并转发，用于可观测性与代理侧传播。ChatGLM API 不
+            会消费它们。默认值为 `disabled`，即未开启时请求结构保持不变。
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 禁用
 supported_model_types:
   - llm
