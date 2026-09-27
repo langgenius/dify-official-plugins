@@ -6,12 +6,24 @@ from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 from ..oaiapi import OAIAPICompatLargeLanguageModel
+from ._metadata import apply_dify_headers_if_enabled
 
 
 class NovitaLargeLanguageModel(OAIAPICompatLargeLanguageModel):
     def _update_endpoint_url(self, credentials: dict):
         credentials["endpoint_url"] = "https://api.novita.ai/openai/v1"
-        credentials["extra_headers"] = {"X-Novita-Source": "dify.ai"}
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` BEFORE we read it back below
+        # to merge in the existing ``X-Novita-Source`` marker. The
+        # OpenAI SDK forwards every entry of ``default_headers`` on
+        # each outbound request, which is the carrier for both the
+        # Dify observability headers and the existing Novita source
+        # marker.
+        apply_dify_headers_if_enabled(credentials)
+        existing = credentials.get("extra_headers") or {}
+        credentials["extra_headers"] = {**existing, "X-Novita-Source": "dify.ai"}
         return credentials
 
     def _invoke(
