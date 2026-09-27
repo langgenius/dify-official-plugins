@@ -25,6 +25,8 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
 )
 
+from ._metadata import apply_dify_headers_if_enabled
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +47,15 @@ class RegoloLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OAICompat base
+        # class builds the OpenAI client. The OAICompat base class
+        # forwards ``extra_headers`` as ``default_headers=`` on the
+        # OpenAI client constructor, which the OpenAI SDK sends on
+        # every outbound request.
+        apply_dify_headers_if_enabled(credentials)
         # Workaround: disable streaming for models affected by LiteLLM streaming bug
         # gpt-oss-120b returns non-JSON chunks with 'thinking' key that break parser
         if isinstance(model, str) and (model.lower().startswith("gpt-oss") or model.lower() == "gpt-oss-120b"):
@@ -58,6 +69,7 @@ class RegoloLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
+        apply_dify_headers_if_enabled(credentials)
         super().validate_credentials(model, credentials)
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
