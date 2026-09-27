@@ -1,3 +1,5 @@
+from collections.abc import Generator
+from typing import Optional, Union
 from decimal import Decimal
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -10,11 +12,40 @@ from dify_plugin.entities.model import (
     ParameterType,
     PriceConfig,
 )
-from dify_plugin.entities.model.llm import LLMMode
+from dify_plugin.entities.model.llm import LLMMode, LLMResult
+from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
+
+from ._metadata import apply_dify_headers_if_enabled
 
 
 class VesslAILargeLanguageModel(OAICompatLargeLanguageModel):
+    def _invoke(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OAICompat base
+        # class builds the OpenAI client. The OAICompat base class
+        # forwards ``extra_headers`` as ``default_headers=`` on the
+        # OpenAI client constructor, which the OpenAI SDK sends on
+        # every outbound request.
+        apply_dify_headers_if_enabled(credentials)
+        return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        apply_dify_headers_if_enabled(credentials)
+        super().validate_credentials(model, credentials)
+
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         features = []
         entity = AIModelEntity(
