@@ -8,6 +8,8 @@ from dify_plugin.errors.model import (InvokeAuthorizationError,
                                       InvokeServerUnavailableError)
 from httpx import Timeout
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class _CommonOpenAI:
     def _to_credential_kwargs(self, credentials: Mapping) -> dict:
@@ -29,6 +31,17 @@ class _CommonOpenAI:
 
         if 'openai_organization' in credentials:
             credentials_kwargs['organization'] = credentials['openai_organization']
+
+        # Run the opt-in helper so any caller-supplied
+        # ``extra_headers`` (or the Dify default headers when
+        # ``enable_request_metadata`` is ``"enabled"``) are written
+        # into ``credentials['extra_headers']`` BEFORE we read it
+        # back below to populate ``default_headers=`` on the OpenAI
+        # client constructor. The OpenAI SDK sends every entry of
+        # ``default_headers`` on each outbound request, which is the
+        # carrier for the Dify observability headers.
+        apply_dify_headers_if_enabled(credentials)  # type: ignore[arg-type]
+        credentials_kwargs["default_headers"] = credentials.get("extra_headers", {})
 
         return credentials_kwargs
 
