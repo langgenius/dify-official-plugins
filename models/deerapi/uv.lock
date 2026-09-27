@@ -245,7 +245,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.10.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openai", specifier = ">=2.38.0" },

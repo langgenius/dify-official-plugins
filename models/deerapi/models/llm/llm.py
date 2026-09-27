@@ -5,6 +5,8 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultC
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class DeerAPILargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
@@ -22,6 +24,19 @@ class DeerAPILargeLanguageModel(OAICompatLargeLanguageModel):
             "HTTP-Referer": "https://dify.ai/",
             "X-Title": "Dify"
         }
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OAICompat base
+        # class builds the OpenAI client. The helper MERGES on top of
+        # the HTTP-Referer / X-Title markers above; on collision the
+        # Dify keys win so the helper always controls its own
+        # observability markers. The OAICompat base class forwards
+        # ``extra_headers`` as ``default_headers=`` on the OpenAI
+        # client constructor, which the OpenAI SDK sends on every
+        # outbound request.
+        apply_dify_headers_if_enabled(credentials)
 
     def _invoke(
         self,
