@@ -14,6 +14,8 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from yarl import URL
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class NVIDIALargeLanguageModel(OAICompatLargeLanguageModel):
     MODEL_SUFFIX_MAP = {
@@ -82,6 +84,16 @@ class NVIDIALargeLanguageModel(OAICompatLargeLanguageModel):
         else:
             credentials["endpoint_url"] = "https://integrate.api.nvidia.com/v1"
         credentials["stream_mode_delimiter"] = "\n"
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OAICompat base
+        # class builds the OpenAI client. The OAICompat base class
+        # forwards ``extra_headers`` as ``default_headers=`` on the
+        # OpenAI client constructor, which the OpenAI SDK sends on
+        # every outbound request.
+        apply_dify_headers_if_enabled(credentials)
 
     def _validate_credentials(self, model: str, credentials: dict) -> None:
         """
