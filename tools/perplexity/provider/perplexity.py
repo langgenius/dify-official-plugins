@@ -13,15 +13,13 @@ class PerplexityProvider(ToolProvider):
             "X-Pplx-Integration": "dify",
         }
         payload = {
-            "model": "sonar",
-            "messages": [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Hello"},
-            ],
-            "max_tokens": 16,
+            "preset": "fast",
+            "input": "Hello",
+            "instructions": "You are a helpful assistant.",
+            "max_output_tokens": 16,
             "temperature": 0.1,
             "top_p": 0.9,
-            "stream": False,
+            "streaming": False,
         }
         try:
             response = requests.post(PERPLEXITY_API_URL, json=payload, headers=headers)
