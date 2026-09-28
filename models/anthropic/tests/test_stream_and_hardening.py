@@ -23,6 +23,7 @@ from anthropic.types import (
     MessageDeltaEvent,
     MessageStartEvent,
     MessageStopEvent,
+    RedactedThinkingBlock,
     TextBlock,
     TextDelta,
     ThinkingBlock,
@@ -31,7 +32,11 @@ from anthropic.types import (
     Usage,
 )
 from anthropic.types.raw_message_delta_event import Delta as MessageDelta
-from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    ToolPromptMessage,
+    UserPromptMessage,
+)
 from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
@@ -123,6 +128,11 @@ def test_thinking_then_tool_use_closes_think_tag_once() -> None:
     assert len(tool_calls) == 1
     assert tool_calls[0].function.name == "get_weather"
     assert tool_calls[0].function.arguments == '{"city": "Lisbon"}'
+    assert last.delta.message.opaque_body == {
+        "anthropic_thinking_blocks": [
+            {"type": "thinking", "thinking": "hmm", "signature": ""}
+        ]
+    }
 
 
 def test_thinking_then_text_closes_think_tag_once() -> None:
@@ -297,6 +307,66 @@ def test_thinking_then_empty_tool_input_closes_think_tag_once() -> None:
     assert len(tool_calls) == 1
     assert tool_calls[0].function.name == "noop"
     assert tool_calls[0].function.arguments == "{}"
+
+
+def test_stream_terminal_preserves_redacted_thinking_data_in_opaque_body() -> None:
+    events = [
+        _message_start(),
+        ContentBlockStartEvent(
+            type="content_block_start",
+            index=0,
+            content_block=RedactedThinkingBlock(
+                type="redacted_thinking", data="opaque-data"
+            ),
+        ),
+        ContentBlockStartEvent(
+            type="content_block_start",
+            index=1,
+            content_block=ToolUseBlock(id="toolu_1", input={}, name="noop", type="tool_use"),
+        ),
+        _message_delta("tool_use"),
+        MessageStopEvent(type="message_stop"),
+    ]
+
+    chunks = _run_stream(events)
+
+    assert chunks[-1].delta.message.opaque_body == {
+        "anthropic_thinking_blocks": [
+            {"type": "redacted_thinking", "data": "opaque-data"}
+        ]
+    }
+
+
+def test_fresh_model_replays_opaque_thinking_blocks_for_tool_turn() -> None:
+    assistant = AssistantPromptMessage(
+        content="",
+        tool_calls=[
+            AssistantPromptMessage.ToolCall(
+                id="toolu_1",
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name="noop", arguments="{}"
+                ),
+            )
+        ],
+        opaque_body={
+            "anthropic_thinking_blocks": [
+                {"type": "thinking", "thinking": "plan", "signature": "sig"},
+                {"type": "redacted_thinking", "data": "opaque-data"},
+            ]
+        },
+    )
+
+    payload = AnthropicLargeLanguageModel()._process_assistant_message(
+        assistant,
+        [assistant, ToolPromptMessage(content="done", tool_call_id="toolu_1")],
+    )
+
+    assert payload["content"] == [
+        {"type": "thinking", "thinking": "plan", "signature": "sig"},
+        {"type": "redacted_thinking", "data": "opaque-data"},
+        {"type": "tool_use", "id": "toolu_1", "name": "noop", "input": {}},
+    ]
 
 
 def _status_error(cls: type, status_code: int):
