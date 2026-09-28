@@ -30,6 +30,8 @@ from huggingface_hub.utils import BadRequestError
 from dify_plugin.entities.model import PARAMETER_RULE_TEMPLATE
 from models.common import _CommonHuggingfaceHub
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class HuggingfaceHubLargeLanguageModel(_CommonHuggingfaceHub, LargeLanguageModel):
     def _invoke(
@@ -43,7 +45,20 @@ class HuggingfaceHubLargeLanguageModel(_CommonHuggingfaceHub, LargeLanguageModel
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        client = InferenceClient(token=credentials["huggingfacehub_api_token"])
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']``. Forward them to the
+        # ``InferenceClient`` constructor as ``headers=...`` so the
+        # huggingface_hub SDK sends every entry on each outbound
+        # request, which is the carrier for the Dify observability
+        # headers.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        inference_client_kwargs: dict = {"token": credentials["huggingfacehub_api_token"]}
+        if extra_headers:
+            inference_client_kwargs["headers"] = extra_headers
+        client = InferenceClient(**inference_client_kwargs)
         if credentials["huggingfacehub_api_type"] == "inference_endpoints":
             model = credentials["huggingfacehub_endpoint_url"]
         if "baichuan" in model.lower():
