@@ -41,6 +41,8 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class ModelScopeLargeLanguageModel(LargeLanguageModel):
 
@@ -213,6 +215,19 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
             "api_key": credentials.get('api_key', 'ollama'),
             "base_url": credentials.get('base_url', 'https://api-inference.modelscope.cn/v1'),
         }
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OpenAI client is
+        # constructed. Forward ``extra_headers`` as ``default_headers=``
+        # on the OpenAI client constructor so the OpenAI SDK sends
+        # every entry of ``default_headers`` on each outbound request,
+        # which is the carrier for the Dify observability headers.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            client_kwargs["default_headers"] = extra_headers
 
         return client_kwargs
 
