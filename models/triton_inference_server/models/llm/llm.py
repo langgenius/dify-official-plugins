@@ -30,6 +30,8 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from httpx import Response, post
 from yarl import URL
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
     def _invoke(
@@ -174,6 +176,16 @@ class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
         if "stream" in credentials and (not bool(credentials["stream"])) and stream:
             raise ValueError(f"stream is not supported by model {model}")
         try:
+            # Run the opt-in helper so any caller-supplied
+            # ``extra_headers`` (or the Dify default headers when
+            # ``enable_request_metadata`` is ``"enabled"``) are
+            # written into ``credentials['extra_headers']`` before
+            # the httpx post call. The opt-in headers are forwarded
+            # as ``headers=...`` on the post call only when
+            # non-empty, so the original request shape is preserved
+            # exactly when the opt-in is disabled.
+            apply_dify_headers_if_enabled(credentials)
+            extra_headers = credentials.get("extra_headers")
             parameters = {}
             if "temperature" in model_parameters:
                 parameters["temperature"] = model_parameters["temperature"]
@@ -185,14 +197,19 @@ class TritonInferenceAILargeLanguageModel(LargeLanguageModel):
                 parameters["presence_penalty"] = model_parameters["presence_penalty"]
             if "frequency_penalty" in model_parameters:
                 parameters["frequency_penalty"] = model_parameters["frequency_penalty"]
-            response = post(
-                str(URL(credentials["server_url"]) / "v2" / "models" / model / "generate"),
-                json={
+            post_kwargs: dict = {
+                "json": {
                     "text_input": self._convert_prompt_message_to_text(prompt_messages),
                     "max_tokens": model_parameters.get("max_tokens", 512),
                     "parameters": {"stream": False, **parameters},
                 },
-                timeout=(10, 120),
+                "timeout": (10, 120),
+            }
+            if extra_headers:
+                post_kwargs["headers"] = extra_headers
+            response = post(
+                str(URL(credentials["server_url"]) / "v2" / "models" / model / "generate"),
+                **post_kwargs,
             )
             response.raise_for_status()
             if response.status_code != 200:
