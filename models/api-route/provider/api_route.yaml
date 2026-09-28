@@ -1,0 +1,98 @@
+provider: api_route
+label:
+  en_US: API Route
+  zh_Hans: API Route
+description:
+  en_US: Access GPT, Claude, DeepSeek, Grok and other models with one API Route key.
+  zh_Hans: 使用一个 API Route 密钥访问 GPT、Claude、DeepSeek、Grok 等模型。
+icon_small:
+  en_US: icon.png
+icon_large:
+  en_US: icon.png
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+    provider_source: provider/api_route.py
+help:
+  title:
+    en_US: Get an API key from API Route
+    zh_Hans: 获取 API Route 密钥
+  url:
+    en_US: https://www.api-route.com/
+models:
+  llm:
+    predefined:
+      - models/llm/*.yaml
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API 密钥
+      type: secret-input
+      required: true
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API 基础地址
+      type: text-input
+      required: false
+      default: https://global.api-route.com/v1
+model_credential_schema:
+  model:
+    label:
+      en_US: Model ID
+      zh_Hans: 模型 ID
+    placeholder:
+      en_US: Enter an exact model ID from API Route
+      zh_Hans: 输入 API Route 上的准确模型 ID
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API 密钥
+      type: secret-input
+      required: true
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API 基础地址
+      type: text-input
+      required: false
+      default: https://global.api-route.com/v1
+    - variable: context_size
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: "32768"
+    - variable: max_tokens
+      label:
+        en_US: Maximum output tokens
+        zh_Hans: 最大输出 Token 数
+      type: text-input
+      required: false
+      default: "4096"
+    - variable: function_calling_type
+      label:
+        en_US: Function calling
+        zh_Hans: 函数调用
+      type: select
+      required: false
+      default: tool_call
+      options:
+        - value: tool_call
+          label:
+            en_US: Supported
+            zh_Hans: 支持
+        - value: no_call
+          label:
+            en_US: Not supported
+            zh_Hans: 不支持

@@ -1,0 +1,22 @@
+model: glm-5.3-flash
+label:
+  en_US: GLM-5.3-Flash
+model_type: llm
+features:
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 32768
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 8192
+pricing:
+  input: "0.008603"
+  output: "0.028677"
+  unit: "0.000001"
+  currency: USD

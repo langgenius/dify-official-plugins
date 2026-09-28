@@ -1,0 +1,22 @@
+model: grok-4.5
+label:
+  en_US: Grok 4.5
+model_type: llm
+features:
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 32768
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 8192
+pricing:
+  input: "0.100368"
+  output: "0.301104"
+  unit: "0.000001"
+  currency: USD

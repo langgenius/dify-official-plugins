@@ -1,0 +1,33 @@
+version: 0.1.0
+type: plugin
+author: DennyHo0917
+name: api_route
+description:
+  en_US: Access multiple AI models through one API Route key and OpenAI-compatible endpoint.
+  zh_Hans: 通过一个 API Route 密钥和 OpenAI 兼容端点访问多种 AI 模型。
+label:
+  en_US: API Route
+  zh_Hans: API Route
+icon: icon.png
+created_at: "2026-09-28T00:00:00.000000000Z"
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+network:
+  domains:
+    - global.api-route.com
+plugins:
+  models:
+    - provider/api_route.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
