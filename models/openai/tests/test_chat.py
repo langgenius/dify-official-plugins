@@ -1,9 +1,7 @@
+import hashlib
 from types import SimpleNamespace
 
-import hashlib
-
 import pytest
-
 from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
@@ -16,6 +14,7 @@ from dify_plugin.errors.model import (
     InvokeBadRequestError,
     InvokeConnectionError,
 )
+
 from models.llm import chat
 
 
@@ -161,7 +160,14 @@ def test_chat_builds_structured_json_schema():
 
 @pytest.mark.parametrize(
     "model",
-    ["gpt-5.6", "o3", "ft:gpt-5-mini:organization:custom"],
+    [
+        "gpt-5.6",
+        "gpt-6-astra",
+        "gpt-6-sol",
+        "gpt-6-luna",
+        "o3",
+        "ft:gpt-5-mini:organization:custom",
+    ],
 )
 def test_reasoning_models_use_max_completion_tokens(model):
     assert chat.uses_max_completion_tokens(model)

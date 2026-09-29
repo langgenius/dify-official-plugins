@@ -4,9 +4,6 @@ import json
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
-from openai import OpenAI
-from openai.types.chat import ChatCompletion
-
 from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
@@ -27,15 +24,17 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import InvokeBadRequestError, InvokeConnectionError
+from openai import OpenAI
+from openai.types.chat import ChatCompletion
 
-from ..common_openai import _user_digest
+from ..common_openai import _normalize_gpt6_parameters, _user_digest
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
 
 if TYPE_CHECKING:
     from .llm import OpenAILargeLanguageModel
 
-THINKING_PREFIXES = ("o", "gpt-5")
+THINKING_PREFIXES = ("o", "gpt-5", "gpt-6")
 
 
 def generate_chat(
@@ -51,6 +50,16 @@ def generate_chat(
     user: str | None,
 ) -> LLMResult | Generator[LLMResultChunk, None, None]:
     params = _chat_params(model_parameters)
+    effort = params.get("reasoning_effort")
+    _normalize_gpt6_parameters(model, params, effort)
+    if (
+        model.startswith("gpt-6-")
+        and (tools or params.get("tools"))
+        and (model == "gpt-6-astra" or effort != "none")
+    ):
+        raise InvokeBadRequestError(
+            f"{model} function tools require the Responses API with this reasoning effort"
+        )
     if uses_max_completion_tokens(model) and "max_tokens" in params:
         params["max_completion_tokens"] = params.pop("max_tokens")
     if tools:
@@ -135,8 +144,12 @@ def _chat_params(model_parameters: dict) -> dict:
     params = model_parameters.copy()
     unsupported = [
         name
-        for name in ("reasoning_summary", "reasoning_mode", "reasoning_context")
-        if params.pop(name, None) not in (None, "")
+        for name, default in (
+            ("reasoning_summary", None),
+            ("reasoning_mode", "standard"),
+            ("reasoning_context", "auto"),
+        )
+        if params.pop(name, None) not in (None, "", default)
     ]
     if unsupported:
         raise InvokeBadRequestError(
