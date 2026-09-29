@@ -38,6 +38,8 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
+
+from ._metadata import apply_dify_headers_if_enabled
 from openai import (
     APIConnectionError,
     APITimeoutError,
@@ -479,12 +481,26 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
             )
         credentials["server_url"] = credentials["server_url"].removesuffix("/")
         api_key = credentials.get("api_key") or "abc"
-        client = OpenAI(
-            base_url=f"{credentials['server_url']}/v1",
-            api_key=api_key,
-            max_retries=int(credentials.get("max_retries") or DEFAULT_MAX_RETRIES),
-            timeout=int(credentials.get("invoke_timeout") or DEFAULT_INVOKE_TIMEOUT),
-        )
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OpenAI client is
+        # constructed. Forward ``extra_headers`` as ``default_headers=``
+        # on the OpenAI client constructor so the OpenAI SDK sends
+        # every entry of ``default_headers`` on each outbound request,
+        # which is the carrier for the Dify observability headers.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        client_kwargs: dict = {
+            "base_url": f"{credentials['server_url']}/v1",
+            "api_key": api_key,
+            "max_retries": int(credentials.get("max_retries") or DEFAULT_MAX_RETRIES),
+            "timeout": int(credentials.get("invoke_timeout") or DEFAULT_INVOKE_TIMEOUT),
+        }
+        if extra_headers:
+            client_kwargs["default_headers"] = extra_headers
+        client = OpenAI(**client_kwargs)
         xinference_client = Client(
             base_url=credentials["server_url"], api_key=credentials.get("api_key")
         )
