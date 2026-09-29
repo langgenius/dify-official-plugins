@@ -100,8 +100,10 @@ parameter_rules:
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/changelog (gemini-3.5-flash-lite GA as of 2026-07-21)
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3.5-flash-lite
 pricing:
-  input: '0.10'
-  output: '0.40'
+  input: '0.30'
+  output: '2.50'
   unit: '0.000001'
   currency: USD
