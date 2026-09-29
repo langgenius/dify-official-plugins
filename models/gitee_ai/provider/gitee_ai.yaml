@@ -105,6 +105,45 @@ model_credential_schema:
       variable: __model_type
     type: select
     variable: function_calling_type
+  - label:
+      en_US: Attach Dify app_id as request headers
+      zh_Hans: 附加 Dify app_id 作为请求头
+    help:
+      title:
+        en_US: How does this work?
+        zh_Hans: 这是如何工作的？
+      text:
+        en_US: |-
+          When enabled, the plugin attaches the current Dify app_id and a `dify`
+          source marker as `X-Dify-App-Id` / `X-Dify-Source` request headers on
+          every Gitee AI call. The headers are written into the `extra_headers`
+          credential, which the plugin's `_generate` merges into the outbound
+          `headers` dict on every request. The headers are used for
+          observability / proxy-side propagation. Gitee AI does not document
+          them. Default is `disabled`, so the request shape is unchanged
+          unless you opt in. This opt-in applies to the LLM endpoint only.
+        zh_Hans: |-
+          启用后，插件会通过 `extra_headers` 凭据在每次 Gitee AI 调用中附加当前
+          Dify app_id 与 `dify` 源标记，作为 `X-Dify-App-Id` / `X-Dify-Source`
+          请求头。插件的 `_generate` 会将 `extra_headers` 合并到每个出站
+          请求的 `headers` 字典中，用于可观测性与代理侧传播。Gitee AI API
+          不会消费它们。默认值为 `disabled`，即未开启时请求结构保持不变。
+          该选项仅作用于 LLM 端点。
+    type: select
+    required: false
+    default: disabled
+    options:
+    - value: enabled
+      label:
+        en_US: Enabled
+        zh_Hans: 启用
+    - value: disabled
+      label:
+        en_US: Disabled
+        zh_Hans: 禁用
+    show_on:
+    - value: llm
+      variable: __model_type
   model:
     label:
       en_US: Model Name

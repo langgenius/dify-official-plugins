@@ -39,6 +39,8 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.openai_compatible.common import _CommonOaiApiCompat
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
 
@@ -76,6 +78,18 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         assert schema.features is not None, f"Model features not found for model {model}"
         if ModelFeature.TOOL_CALL in schema.features or ModelFeature.MULTI_TOOL_CALL in schema.features or ModelFeature.STREAM_TOOL_CALL in schema.features:
             credentials["function_calling_type"] = "tool_call"
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the Gitee AI request
+        # is built. The plugin's existing ``_generate`` already reads
+        # ``credentials.get("extra_headers")`` and merges it into the
+        # outbound ``headers`` dict on every request, so wiring the
+        # helper at the end of ``_add_custom_parameters`` means the
+        # Dify observability headers are forwarded on every outbound
+        # request automatically with no per-call-site duplication.
+        apply_dify_headers_if_enabled(credentials)
 
     def get_num_tokens(
         self,
