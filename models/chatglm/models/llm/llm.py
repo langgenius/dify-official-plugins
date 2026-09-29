@@ -38,6 +38,8 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai.types.chat.chat_completion_message import FunctionCall
 from yarl import URL
 
+from ._metadata import apply_dify_headers_if_enabled
+
 logger = logging.getLogger(__name__)
 
 
@@ -251,6 +253,10 @@ class ChatGLMLargeLanguageModel(LargeLanguageModel):
             "api_key": "1",
             "base_url": str(URL(credentials["api_base"]) / "v1"),
         }
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            client_kwargs["default_headers"] = extra_headers
         return client_kwargs
 
     def _handle_chat_generate_stream_response(
