@@ -462,8 +462,26 @@ class NotionClient:
 
     def get_authorized_pages(self) -> list[OnlineDocumentPage]:
         items = self._search_all()
-        worker_count = self._resolve_worker_count()
+        return self._build_page_entries(items)
 
+    def get_authorized_pages_batch(
+        self,
+        page_size: int,
+        start_cursor: str | None = None,
+    ) -> tuple[list[OnlineDocumentPage], str | None]:
+        payload: dict[str, Any] = {"page_size": min(page_size, 100)}
+        if start_cursor:
+            payload["start_cursor"] = start_cursor
+        data = self._make_request("post", "/search", json_data=payload) or {}
+        items = data.get("results", [])
+        pages = self._build_page_entries(items)
+        next_cursor = data.get("next_cursor") if data.get("has_more") else None
+        if isinstance(next_cursor, str) and next_cursor:
+            return pages, next_cursor
+        return pages, None
+
+    def _build_page_entries(self, items: list[dict[str, Any]]) -> list[OnlineDocumentPage]:
+        worker_count = self._resolve_worker_count()
         pages: list[OnlineDocumentPage] = []
         if worker_count <= 1:
             for item in items:
