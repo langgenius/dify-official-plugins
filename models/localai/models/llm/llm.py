@@ -52,6 +52,8 @@ from openai.types.chat.chat_completion_message import FunctionCall
 from openai.types.completion import Completion
 from yarl import URL
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class LocalAILanguageModel(LargeLanguageModel):
     def _invoke(
@@ -345,6 +347,19 @@ class LocalAILanguageModel(LargeLanguageModel):
             "api_key": "1",
             "base_url": str(URL(credentials["server_url"]) / "v1"),
         }
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OpenAI client is
+        # constructed. Forward ``extra_headers`` as ``default_headers=``
+        # on the OpenAI client constructor so the OpenAI SDK sends
+        # every entry of ``default_headers`` on each outbound request,
+        # which is the carrier for the Dify observability headers.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            client_kwargs["default_headers"] = extra_headers
         return client_kwargs
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
