@@ -83,6 +83,14 @@ oauth_schema:
         zh_Hans: "Access Token"
         pt_BR: "Access Token"
         zh_Hant: "Access Token"
+    - name: refresh_token
+      type: secret-input
+      label:
+        en_US: "Refresh Token"
+        ja_JP: "Refresh Token"
+        zh_Hans: "Refresh Token"
+        pt_BR: "Refresh Token"
+        zh_Hant: "Refresh Token"
     - name: client_id
       type: secret-input
       label:

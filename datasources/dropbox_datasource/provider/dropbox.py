@@ -1,4 +1,5 @@
 import secrets
+import time
 import urllib.parse
 from typing import Any, Mapping
 
@@ -46,6 +47,7 @@ class DropboxDatasourceProvider(DatasourceProvider):
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "state": state,
+            "token_access_type": "offline",
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
 
@@ -93,8 +95,8 @@ class DropboxDatasourceProvider(DatasourceProvider):
             return DatasourceOAuthCredentials(
                 name=user_name or user_email or "Dropbox User",
                 avatar_url=user_avatar,
-                credentials={"access_token": access_token},
-                expires_at=-1  # Dropbox tokens don't expire
+                credentials={"access_token": access_token, "refresh_token": response_json.get("refresh_token", "")},
+                expires_at=int(time.time()) + int(response_json["expires_in"]) if response_json.get("expires_in") else -1
             )
             
         except requests.RequestException as e:
@@ -105,28 +107,29 @@ class DropboxDatasourceProvider(DatasourceProvider):
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
     ) -> DatasourceOAuthCredentials:
-        """
-        Dropbox access tokens don't expire, so we just return the existing credentials.
-        """
-        access_token = credentials.get("access_token")
-        if not access_token:
-            raise DatasourceOAuthError("No access token available. Please re-authorize.")
-        
-        # Validate the token is still working
+        """Exchange the stored refresh token for a new short-lived access token."""
+        refresh_token = credentials.get("refresh_token")
+        if not refresh_token:
+            raise DatasourceOAuthError("No refresh token available. Please re-authorize.")
         try:
-            dbx = dropbox.Dropbox(access_token)
-            account_info = dbx.users_get_current_account()
-            user_name = account_info.name.display_name
-            user_email = account_info.email
-            user_avatar = account_info.profile_photo_url if hasattr(account_info, 'profile_photo_url') else None
-        except AuthError:
-            raise DatasourceOAuthError("Access token is no longer valid. Please re-authorize.")
+            response = requests.post(
+                self._TOKEN_URL,
+                data={"grant_type": "refresh_token", "refresh_token": refresh_token,
+                      "client_id": system_credentials["client_id"],
+                      "client_secret": system_credentials["client_secret"]},
+                timeout=30,
+            )
+            response.raise_for_status()
+            token = response.json()
+            access_token = token.get("access_token")
+            if not access_token:
+                raise DatasourceOAuthError("Dropbox returned no access token")
+            account = dropbox.Dropbox(access_token).users_get_current_account()
+            return DatasourceOAuthCredentials(
+                name=account.name.display_name or account.email or "Dropbox User",
+                avatar_url=getattr(account, "profile_photo_url", None),
+                credentials={"access_token": access_token, "refresh_token": refresh_token},
+                expires_at=int(time.time()) + int(token["expires_in"]),
+            )
         except Exception as e:
-            raise DatasourceOAuthError(f"Failed to validate token: {str(e)}")
-        
-        return DatasourceOAuthCredentials(
-            name=user_name or user_email or "Dropbox User",
-            avatar_url=user_avatar,
-            credentials={"access_token": access_token},
-            expires_at=-1  # Dropbox tokens don't expire
-        )
+            raise DatasourceOAuthError(f"Failed to refresh Dropbox token: {str(e)}") from e
