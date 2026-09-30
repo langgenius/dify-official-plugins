@@ -1,13 +1,16 @@
-model: Meta-Llama-3.1-8B-Instruct
+model: gemma-4-31B-it
 label:
-  zh_Hans: Meta-Llama-3.1-8B-Instruct
-  en_US: Meta-Llama-3.1-8B-Instruct
+  zh_Hans: gemma-4-31B-it
+  en_US: gemma-4-31B-it
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
 model_properties:
   mode: chat
-  context_size: 16384
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -17,11 +20,11 @@ parameter_rules:
     use_template: top_k
   - name: max_tokens
     use_template: max_tokens
-    default: 512
+    default: 4096
     min: 1
-    max: 4096
+    max: 262144
 pricing:
-  input: '0.01'
-  output: '0.02'
-  unit: '0.00001'
+  input: '0.38'
+  output: '1.15'
+  unit: '0.000001'
   currency: USD

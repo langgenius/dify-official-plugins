@@ -1,16 +1,15 @@
-model: Llama-4-Maverick-17B-128E-Instruct
+model: DeepSeek-V3.2
 label:
-  zh_Hans: Llama-4-Maverick-17B-128E-Instruct
-  en_US: Llama-4-Maverick-17B-128E-Instruct
+  zh_Hans: DeepSeek-V3.2
+  en_US: DeepSeek-V3.2
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
-  - vision
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 32768
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -22,9 +21,9 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 32768
+    max: 7168
 pricing:
-  input: '0.063'
-  output: '0.18'
-  unit: '0.00001'
+  input: '3'
+  output: '4.5'
+  unit: '0.000001'
   currency: USD

@@ -1,4 +1,4 @@
-version: 0.1.7
+version: 0.2.0
 type: plugin
 author: langgenius
 name: sambanova
@@ -9,13 +9,13 @@ label:
   pt_BR: SambaCloud
 description:
   en_US: SambaCloud provides access to the SambaCloud API, which hosts
-    LLama4, Qwen and DeepSeek Models.
+    DeepSeek, MiniMax, Gemma, Llama and gpt-oss models.
   ja_JP: SambaCloud provides access to the SambaCloud API, which hosts
-    LLama4, Qwen and DeepSeek Models.
+    DeepSeek, MiniMax, Gemma, Llama and gpt-oss models.
   zh_Hans: SambaCloud provides access to the SambaCloud API, which hosts
-    LLama4, Qwen and DeepSeek Models.
+    DeepSeek, MiniMax, Gemma, Llama and gpt-oss models.
   pt_BR: SambaCloud provides access to the SambaCloud API, which hosts
-    LLama4, Qwen and DeepSeek Models.
+    DeepSeek, MiniMax, Gemma, Llama and gpt-oss models.
 icon: icon.png
 icon_dark: icon-dark.png
 resource:

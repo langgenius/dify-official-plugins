@@ -1,16 +1,15 @@
-model: DeepSeek-V3-0324
+model: MiniMax-M2.7
 label:
-  zh_Hans: DeepSeek-V3-0324
-  en_US: DeepSeek-V3-0324
+  zh_Hans: MiniMax-M2.7
+  en_US: MiniMax-M2.7
 model_type: llm
 features:
   - agent-thought
   - tool-call
-  - multi-tool-call
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 196608
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -22,9 +21,9 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 16384
+    max: 196608
 pricing:
-  input: '0.3'
-  output: '0.45'
-  unit: '0.00001'
+  input: '0.6'
+  output: '2.4'
+  unit: '0.000001'
   currency: USD
