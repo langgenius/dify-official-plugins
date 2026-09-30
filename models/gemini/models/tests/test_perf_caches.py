@@ -607,6 +607,109 @@ def test_splitter_cjk_dense_text_terminates_with_model_count(monkeypatch):
     assert total == len(text)
 
 
+def test_splitter_backward_snap_keeps_head_in_budget(monkeypatch):
+    """Regression: a punctuation boundary found ahead of the cutoff must never
+    push the head past the verified budget. The snap is backward-only, so a
+    forward-only snap (the previous behavior) could accept an oversized head
+    via the GPT-2 fast path when the local estimate undercounts."""
+    model = _make_embedding_model()
+    # GPT-2 estimate undercounts by 2x; the model count is exact (1 token/char).
+    monkeypatch.setattr(
+        model, "_get_num_tokens_by_gpt2", lambda text: max(1, len(text) // 2)
+    )
+    monkeypatch.setattr(model, "_count_tokens", lambda c, m, text: len(text))
+    # 167 chars: initial estimate (83) is >= 0.8*100 so the model count runs;
+    # cutoff lands near ~95, and the only "!" sits at ~150. A forward snap
+    # would make the head ~151 chars (real 151 > 100) while its GPT-2 estimate
+    # (75) would fast-path it; the backward snap keeps the head within budget.
+    text = ("word " * 30) + "! tail" + "x" * 10
+    result = model._split_texts_to_fit_model_specs(
+        client=None, model="m", texts=[text], context_size=100
+    )
+    assert "".join(c for c, _ in result) == text
+    for chunk, _ in result:
+        # Real token count (1/char) of every emitted chunk fits the budget.
+        assert len(chunk) <= 100
+
+
+def test_emb_client_cache_busy_evicted_deferred_close(monkeypatch):
+    """Mirror of the LLM busy-eviction test for the embedding cache."""
+    closed = []
+    real_client_cls = gemini_llm.genai.Client
+    from models.text_embedding import text_embedding as emb_mod
+
+    class _CountingClient(real_client_cls):
+        def close(self):
+            closed.append(self)
+            super().close()
+
+    monkeypatch.setattr(emb_mod.genai, "Client", _CountingClient)
+    max_entries = emb_mod._GENAI_CLIENT_CACHE_MAX
+
+    with _acquire_emb_client("busy") as busy_client:
+        for i in range(max_entries):
+            with _acquire_emb_client(f"key-{i}"):
+                pass
+        assert ("busy", None) not in _genai_emb_client_cache
+        assert closed == []
+    assert len(closed) == 1
+    assert closed[0] is busy_client
+
+
+def test_validate_credentials_closes_and_honors_base_url(monkeypatch):
+    """validate_credentials must close its temporary client and forward
+    google_base_url (it is outside the shared cache)."""
+    created = []
+
+    class _FakeClient:
+        def __init__(self, api_key=None, http_options=None):
+            self.api_key = api_key
+            self.http_options = http_options
+            self.models = Mock()
+            self.closed = False
+            created.append(self)
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(gemini_llm.genai, "Client", _FakeClient)
+    model = gemini_llm.GoogleLargeLanguageModel([])
+    model.validate_credentials(
+        "gemini-2.5-flash",
+        {"google_api_key": "k", "google_base_url": "https://alt.example"},
+    )
+    assert len(created) == 1
+    assert created[0].closed
+    assert created[0].http_options.base_url == "https://alt.example"
+
+
+def test_emb_validate_credentials_closes_and_honors_base_url(monkeypatch):
+    created = []
+
+    class _FakeClient:
+        def __init__(self, api_key=None, http_options=None):
+            self.api_key = api_key
+            self.http_options = http_options
+            self.models = Mock()
+            self.closed = False
+            created.append(self)
+
+        def close(self):
+            self.closed = True
+
+    from models.text_embedding import text_embedding as emb_mod
+
+    monkeypatch.setattr(emb_mod.genai, "Client", _FakeClient)
+    model = _make_embedding_model()
+    model.validate_credentials(
+        "gemini-embedding-001",
+        {"google_api_key": "k", "google_base_url": "https://alt.example"},
+    )
+    assert len(created) == 1
+    assert created[0].closed
+    assert created[0].http_options.base_url == "https://alt.example"
+
+
 def test_gpt2_counter_sanity():
     model = _make_embedding_model()
     n = model._get_num_tokens_by_gpt2("The quick brown fox jumps over the lazy dog.")

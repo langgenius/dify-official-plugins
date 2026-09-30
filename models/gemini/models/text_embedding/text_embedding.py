@@ -69,9 +69,19 @@ def _acquire_genai_client(
                 evicted.evicted = True
                 if evicted.active_count == 0:
                     close_now = evicted.client
-            entry = _ClientEntry(
-                genai.Client(api_key=api_key, http_options=types.HttpOptions(base_url=base_url))
-            )
+            try:
+                new_client = genai.Client(
+                    api_key=api_key,
+                    http_options=types.HttpOptions(base_url=base_url),
+                )
+            except Exception:
+                # A failed construction must not leak the just-evicted client
+                # (it can never be acquired again).
+                if close_now is not None:
+                    with suppress(Exception):
+                        close_now.close()
+                raise
+            entry = _ClientEntry(new_client)
             _genai_emb_client_cache[cache_key] = entry
         else:
             _genai_emb_client_cache.move_to_end(cache_key)
@@ -264,18 +274,18 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             cutoff = max(1, len(text) * int(context_size * self._CUTOFF_MARGIN) // max(1, num_tokens))
             cutoff = min(cutoff, len(text) - 1)
             # prefer to split on the closest punctuation mark, then comma, then
-            # whitespace, searching forward from the estimated cutoff. The search
-            # is windowed so a far-away punctuation mark cannot inflate the head
-            # past the budget (which would only force another recursion level).
-            # Never let the boundary reach the end of the text, which would empty
-            # the tail.
+            # whitespace, searching BACKWARD from the estimated cutoff. A forward
+            # snap could push the head past the verified budget; a backward snap
+            # can only shrink it (the recursion then re-verifies the tail). The
+            # search is windowed so a far-away punctuation mark cannot pull the
+            # cutoff back arbitrarily. Never let the boundary reach the end of
+            # the text, which would empty the tail.
             for pattern in [r"[.!?]", r",", r"\s"]:
-                match = re.search(
-                    pattern, text[cutoff : cutoff + self._CUTOFF_SEARCH_WINDOW]
-                )
-                if match:
-                    boundary = cutoff + match.start() + 1
-                    if boundary < len(text):
+                start = max(0, cutoff - self._CUTOFF_SEARCH_WINDOW)
+                matches = list(re.finditer(pattern, text[start:cutoff]))
+                if matches:
+                    boundary = start + matches[-1].start() + 1
+                    if boundary < cutoff:
                         cutoff = boundary
                     break
             splitted_text.extend(

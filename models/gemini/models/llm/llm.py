@@ -89,12 +89,19 @@ def _acquire_genai_client(
                 evicted.evicted = True
                 if evicted.active_count == 0:
                     close_now = evicted.client
-            entry = _ClientEntry(
-                genai.Client(
+            try:
+                new_client = genai.Client(
                     api_key=api_key,
                     http_options=types.HttpOptions(base_url=base_url),
                 )
-            )
+            except Exception:
+                # A failed construction must not leak the just-evicted client
+                # (it can never be acquired again).
+                if close_now is not None:
+                    with suppress(Exception):
+                        close_now.close()
+                raise
+            entry = _ClientEntry(new_client)
             _genai_client_cache[cache_key] = entry
         else:
             _genai_client_cache.move_to_end(cache_key)
