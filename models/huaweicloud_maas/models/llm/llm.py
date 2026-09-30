@@ -10,6 +10,8 @@ from dify_plugin.entities.model.message import (
     PromptMessageTool,
 )
 
+from ._metadata import apply_dify_headers_if_enabled
+
 
 class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     _BASE_URL_V2 = "https://api.modelarts-maas.com/v2"
@@ -75,6 +77,16 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     def _add_custom_parameters(self, model: str, credentials: dict) -> None:
         credentials["mode"] = "chat"
         credentials["endpoint_url"] = str(credentials.get("endpoint_url", self._BASE_URL_V2))
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the OAICompat base
+        # class builds the OpenAI client. The OAICompat base class
+        # forwards ``extra_headers`` as ``default_headers=`` on the
+        # OpenAI client constructor, which the OpenAI SDK sends on
+        # every outbound request.
+        apply_dify_headers_if_enabled(credentials)
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
