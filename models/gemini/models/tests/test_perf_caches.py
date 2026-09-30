@@ -618,11 +618,12 @@ def test_splitter_backward_snap_keeps_head_in_budget(monkeypatch):
         model, "_get_num_tokens_by_gpt2", lambda text: max(1, len(text) // 2)
     )
     monkeypatch.setattr(model, "_count_tokens", lambda c, m, text: len(text))
-    # 167 chars: initial estimate (83) is >= 0.8*100 so the model count runs;
-    # cutoff lands near ~95, and the only "!" sits at ~150. A forward snap
-    # would make the head ~151 chars (real 151 > 100) while its GPT-2 estimate
-    # (75) would fast-path it; the backward snap keeps the head within budget.
-    text = ("word " * 30) + "! tail" + "x" * 10
+    # 160 chars: initial estimate (80) is >= 0.8*100 so the model count runs;
+    # cutoff lands near ~95. "?" at ~60 exercises a real BACKWARD shrink; "!"
+    # at ~152 is ahead of the cutoff, so a forward snap (the previous bug)
+    # would make the head ~153 chars (real 153 > 100) while its GPT-2 estimate
+    # (76) would fast-path it. The backward snap keeps the head within budget.
+    text = ("word " * 12) + "? " + ("word " * 18) + "! tail" + "x" * 2
     result = model._split_texts_to_fit_model_specs(
         client=None, model="m", texts=[text], context_size=100
     )
@@ -708,6 +709,39 @@ def test_emb_validate_credentials_closes_and_honors_base_url(monkeypatch):
     assert len(created) == 1
     assert created[0].closed
     assert created[0].http_options.base_url == "https://alt.example"
+
+
+def test_client_construction_failure_closes_evicted(monkeypatch):
+    """If a replacement genai.Client fails right after an idle eviction, the
+    just-evicted client must be closed (not leaked) and the error propagates."""
+    calls = {"n": 0}
+    closed = []
+
+    class _FakeClient:
+        instances = []
+
+        def __init__(self, api_key=None, http_options=None):
+            calls["n"] += 1
+            if calls["n"] > gemini_llm._GENAI_CLIENT_CACHE_MAX:
+                raise RuntimeError("construction failed")
+            self.closed = False
+            _FakeClient.instances.append(self)
+
+        def close(self):
+            self.closed = True
+            closed.append(self)
+
+    monkeypatch.setattr(gemini_llm.genai, "Client", _FakeClient)
+    max_entries = gemini_llm._GENAI_CLIENT_CACHE_MAX
+    for i in range(max_entries):
+        with gemini_llm._acquire_genai_client(f"key-{i}", None):
+            pass
+    evicted = _FakeClient.instances[0]
+    with pytest.raises(RuntimeError, match="construction failed"):
+        with gemini_llm._acquire_genai_client("overflow", None):
+            pass
+    assert closed == [evicted]
+    assert evicted.closed
 
 
 def test_gpt2_counter_sanity():
