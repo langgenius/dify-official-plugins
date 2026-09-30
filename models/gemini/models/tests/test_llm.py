@@ -818,8 +818,19 @@ class TestBuildGeminiContents:
     def test_system_only_text_parts_reach_generation(self):
         mock_client = Mock()
 
-        with patch("models.llm.llm.genai.Client", return_value=mock_client):
-            self.llm._generate(
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            # The stream path is lazy (the generator is returned before the
+            # API call happens); stub the stream handler so consuming the
+            # generator reaches the generate_content_stream call without
+            # iterating a Mock response.
+            patch.object(
+                self.llm,
+                "_handle_generate_stream_response",
+                side_effect=lambda *a, **k: iter(()),
+            ),
+        ):
+            result = self.llm._generate(
                 model="gemini-2.0-flash",
                 credentials={"google_api_key": "test-key"},
                 prompt_messages=[
@@ -832,6 +843,7 @@ class TestBuildGeminiContents:
                 ],
                 model_parameters={},
             )
+            list(result)
 
         contents = mock_client.models.generate_content_stream.call_args.kwargs[
             "contents"

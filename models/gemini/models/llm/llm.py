@@ -5,7 +5,8 @@ import re
 import threading
 import time
 from collections.abc import Generator, Iterator, Sequence
-from contextlib import suppress
+from collections import OrderedDict
+from contextlib import contextmanager, suppress
 from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Union
 
@@ -45,26 +46,74 @@ from .file_parts import GeminiFileMode, GeminiFilePartFactory
 from .model_schema import with_inline_file_parameter
 from .utils import FileCache
 
-_genai_client_cache: dict[tuple[str, Optional[str]], genai.Client] = {}
+_GENAI_CLIENT_CACHE_MAX = 16
+
+
+class _ClientEntry:
+    """A cached genai.Client with a lease count for safe eviction."""
+
+    __slots__ = ("client", "active_count", "evicted")
+
+    def __init__(self, client: genai.Client) -> None:
+        self.client = client
+        self.active_count = 0
+        self.evicted = False
+
+
+_genai_client_cache: "OrderedDict[tuple[str, Optional[str]], _ClientEntry]" = OrderedDict()
 _genai_client_cache_lock = threading.Lock()
 
 
-def _get_genai_client(api_key: str, base_url: Optional[str] = None) -> genai.Client:
-    """Return a cached genai.Client for the given credentials, creating one if needed.
+@contextmanager
+def _acquire_genai_client(
+    api_key: str, base_url: Optional[str] = None
+) -> Generator[genai.Client, None, None]:
+    """Yield a cached genai.Client for the given credentials, creating one if needed.
 
     Reusing the client (and its underlying httpx connection pool) avoids a fresh
     TCP+TLS handshake to generativelanguage.googleapis.com on every LLM node call.
+
+    The cache is bounded (``_GENAI_CLIENT_CACHE_MAX`` entries, LRU). When a new
+    credential set forces an eviction, the evicted client is only closed once no
+    lease is active on it: if it is idle it is closed immediately, otherwise it
+    is closed by the last releasing caller. This prevents severing an in-flight
+    request or stream (Gemini streams can run for tens of seconds).
     """
     cache_key = (api_key, base_url)
+    close_now: Optional[genai.Client] = None
     with _genai_client_cache_lock:
-        client = _genai_client_cache.get(cache_key)
-        if client is None:
-            client = genai.Client(
-                api_key=api_key,
-                http_options=types.HttpOptions(base_url=base_url),
+        entry = _genai_client_cache.get(cache_key)
+        if entry is None:
+            if len(_genai_client_cache) >= _GENAI_CLIENT_CACHE_MAX:
+                _, evicted = _genai_client_cache.popitem(last=False)
+                evicted.evicted = True
+                if evicted.active_count == 0:
+                    close_now = evicted.client
+            entry = _ClientEntry(
+                genai.Client(
+                    api_key=api_key,
+                    http_options=types.HttpOptions(base_url=base_url),
+                )
             )
-            _genai_client_cache[cache_key] = client
-        return client
+            _genai_client_cache[cache_key] = entry
+        else:
+            _genai_client_cache.move_to_end(cache_key)
+        entry.active_count += 1
+        client = entry.client
+    try:
+        if close_now is not None:
+            with suppress(Exception):
+                close_now.close()
+        yield client
+    finally:
+        deferred: Optional[genai.Client] = None
+        with _genai_client_cache_lock:
+            entry.active_count -= 1
+            if entry.evicted and entry.active_count == 0:
+                deferred = entry.client
+        if deferred is not None:
+            with suppress(Exception):
+                deferred.close()
 
 
 file_cache = FileCache()
@@ -1257,126 +1306,137 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        genai_client = _get_genai_client(
+        with _acquire_genai_client(
             credentials["google_api_key"], credentials.get("google_base_url", None)
-        )
+        ) as genai_client:
 
-        # == ChatConfig == #
+            # == ChatConfig == #
 
-        self._set_chat_parameters(
-            config=config, model_parameters=model_parameters, stop=stop
-        )
-        self._set_service_tier(config=config, model_parameters=model_parameters)
+            self._set_chat_parameters(
+                config=config, model_parameters=model_parameters, stop=stop
+            )
+            self._set_service_tier(config=config, model_parameters=model_parameters)
 
-        # Build contents from prompt messages
-        file_server_url_prefix = credentials.get("file_url") or None
-        contents = self._build_gemini_contents(
-            prompt_messages=prompt_messages,
-            genai_client=genai_client,
-            config=config,
-            file_server_url_prefix=file_server_url_prefix,
-            model_parameters=model_parameters,
-        )
+            # Build contents from prompt messages
+            file_server_url_prefix = credentials.get("file_url") or None
+            contents = self._build_gemini_contents(
+                prompt_messages=prompt_messages,
+                genai_client=genai_client,
+                config=config,
+                file_server_url_prefix=file_server_url_prefix,
+                model_parameters=model_parameters,
+            )
 
-        # == ImageConfig == #
+            # == ImageConfig == #
 
-        self._set_image_config(
-            config=config, model_parameters=model_parameters, model=model
-        )
+            self._set_image_config(
+                config=config, model_parameters=model_parameters, model=model
+            )
 
-        # == ThinkingConfig == #
+            # == ThinkingConfig == #
 
-        # To reduce ambiguity, when both configurable parameters are not specified,
-        # this configuration should not be explicitly declared.
+            # To reduce ambiguity, when both configurable parameters are not specified,
+            # this configuration should not be explicitly declared.
 
-        # For models that do not support the reasoning mode (such as gemini-2.0-flash),
-        # incorrectly setting include_thoughts to True will not cause a system error.
+            # For models that do not support the reasoning mode (such as gemini-2.0-flash),
+            # incorrectly setting include_thoughts to True will not cause a system error.
 
-        # When include_thoughts is True, thinking_budget must not be None to obtain valid thinking content.
+            # When include_thoughts is True, thinking_budget must not be None to obtain valid thinking content.
 
-        # However, setting thinking_budget for models that do not support the thinking mode
-        # will result in a 400 INVALID_ARGUMENT error.
+            # However, setting thinking_budget for models that do not support the thinking mode
+            # will result in a 400 INVALID_ARGUMENT error.
 
-        self._set_thinking_config(
-            config=config, model_parameters=model_parameters, model_name=model
-        )
+            self._set_thinking_config(
+                config=config, model_parameters=model_parameters, model_name=model
+            )
 
-        # == ResponseModalitiesConfig == #
+            # == ResponseModalitiesConfig == #
 
-        # The Gemini part of the model can output mixed-modal responses,
-        # e.g. generate images, generate audio.
+            # The Gemini part of the model can output mixed-modal responses,
+            # e.g. generate images, generate audio.
 
-        self._set_response_modalities(config=config, model_name=model)
+            self._set_response_modalities(config=config, model_name=model)
 
-        # == ToolUseConfig == #
+            # == ToolUseConfig == #
 
-        # Must be executed after `_validate_feature_compatibility`
-        self._set_tool_calling(
-            config=config, model_parameters=model_parameters, tools=tools
-        )
+            # Must be executed after `_validate_feature_compatibility`
+            self._set_tool_calling(
+                config=config, model_parameters=model_parameters, tools=tools
+            )
 
-        # == InvokeModel == #
+            # == InvokeModel == #
 
-        # Handle empty contents scenario (e.g., only system instruction provided)
-        # Gemini API requires at least one content in the conversation
-        if not contents:
-            if config.system_instruction:
-                # When only system instruction is provided, add it as a user message
-                instruction_parts = (
-                    config.system_instruction.parts
-                    if isinstance(config.system_instruction, types.Content)
-                    else [types.Part.from_text(text=config.system_instruction)]
-                )
-                if isinstance(config.system_instruction, types.Content):
-                    config.system_instruction = None
-                contents = [
-                    types.Content(
-                        role="user",
-                        parts=instruction_parts,
+            # Handle empty contents scenario (e.g., only system instruction provided)
+            # Gemini API requires at least one content in the conversation
+            if not contents:
+                if config.system_instruction:
+                    # When only system instruction is provided, add it as a user message
+                    instruction_parts = (
+                        config.system_instruction.parts
+                        if isinstance(config.system_instruction, types.Content)
+                        else [types.Part.from_text(text=config.system_instruction)]
                     )
-                ]
-            else:
-                raise InvokeBadRequestError(
-                    "No valid content to send to Gemini API. "
-                    "Please provide at least one user message with content."
-                )
+                    if isinstance(config.system_instruction, types.Content):
+                        config.system_instruction = None
+                    contents = [
+                        types.Content(
+                            role="user",
+                            parts=instruction_parts,
+                        )
+                    ]
+                else:
+                    raise InvokeBadRequestError(
+                        "No valid content to send to Gemini API. "
+                        "Please provide at least one user message with content."
+                    )
 
-        last_nonempty_content = next(
-            (content for content in reversed(contents) if content.parts), None
-        )
-        self._validate_no_assistant_prefill(
-            model,
-            last_nonempty_content.role if last_nonempty_content else None,
-        )
+            last_nonempty_content = next(
+                (content for content in reversed(contents) if content.parts), None
+            )
+            self._validate_no_assistant_prefill(
+                model,
+                last_nonempty_content.role if last_nonempty_content else None,
+            )
 
-        # Optional: attach Dify app_id as Gemini labels for Cloud Billing
-        # breakdown. Default disabled; opt-in via the enable_request_metadata
-        # credential. Scoped to the generate_content route only; the
-        # Interactions API below does not surface labels in its billing
-        # breakdown, so it is intentionally left untouched.
-        from ._labels import apply_dify_labels_if_enabled
+            # Optional: attach Dify app_id as Gemini labels for Cloud Billing
+            # breakdown. Default disabled; opt-in via the enable_request_metadata
+            # credential. Scoped to the generate_content route only; the
+            # Interactions API below does not surface labels in its billing
+            # breakdown, so it is intentionally left untouched.
+            from ._labels import apply_dify_labels_if_enabled
 
-        apply_dify_labels_if_enabled(config, credentials)
+            apply_dify_labels_if_enabled(config, credentials)
 
-        if stream:
-            response = genai_client.models.generate_content_stream(
+            if stream:
+                def _stream():
+                    # Hold the client lease for the whole stream lifetime. The
+                    # outer with is released when this generator is returned
+                    # (before it is consumed), and an eviction could otherwise
+                    # close the client mid-stream.
+                    with _acquire_genai_client(
+                        credentials["google_api_key"],
+                        credentials.get("google_base_url", None),
+                    ) as stream_client:
+                        response = stream_client.models.generate_content_stream(
+                            model=model, contents=contents, config=config
+                        )
+                        yield from self._handle_generate_stream_response(
+                            model,
+                            credentials,
+                            response,
+                            prompt_messages,
+                            stream_client,
+                            config.service_tier,
+                        )
+
+                return _stream()
+
+            response = genai_client.models.generate_content(
                 model=model, contents=contents, config=config
             )
-            return self._handle_generate_stream_response(
-                model,
-                credentials,
-                response,
-                prompt_messages,
-                genai_client,
-                config.service_tier,
+            return self._handle_generate_response(
+                model, credentials, response, prompt_messages, config.service_tier
             )
-
-        response = genai_client.models.generate_content(
-            model=model, contents=contents, config=config
-        )
-        return self._handle_generate_response(
-            model, credentials, response, prompt_messages, config.service_tier
-        )
 
     # ---- Interactions API (Gemini 3+ json_schema + native tools) ---- #
 
@@ -1398,230 +1458,241 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ``generateContent`` endpoint does not — it silently drops grounding
         (google-gemini/cookbook#1274).
         """
-        genai_client = _get_genai_client(
+        with _acquire_genai_client(
             credentials["google_api_key"], credentials.get("google_base_url", None)
-        )
+        ) as genai_client:
 
-        # Build contents via existing method. ``config`` is only needed so
-        # that ``_build_gemini_contents`` can capture ``system_instruction``
-        # as a side-effect.
-        config = types.GenerateContentConfig()
-        self._set_service_tier(config=config, model_parameters=model_parameters)
-        requested_service_tier = config.service_tier
-        file_server_url_prefix = credentials.get("file_url") or None
-        contents = self._build_gemini_contents(
-            prompt_messages=prompt_messages,
-            genai_client=genai_client,
-            config=config,
-            file_server_url_prefix=file_server_url_prefix,
-            model_parameters=model_parameters,
-        )
-
-        # Extract system_instruction defensively (str or Content -> str)
-        system_instruction = None
-        if config.system_instruction:
-            if isinstance(config.system_instruction, str):
-                system_instruction = config.system_instruction
-            elif (
-                hasattr(config.system_instruction, "parts")
-                and config.system_instruction.parts
-            ):
-                _parts_text = [
-                    p.text
-                    for p in config.system_instruction.parts
-                    if hasattr(p, "text") and p.text
-                ]
-                system_instruction = "\n".join(_parts_text) if _parts_text else None
-
-        # Build tools in Interactions API dict format
-        interactions_tools = []
-        if model_parameters.get("grounding"):
-            interactions_tools.append({"type": "google_search"})
-        if model_parameters.get("url_context"):
-            interactions_tools.append({"type": "url_context"})
-        if model_parameters.get("code_execution"):
-            interactions_tools.append({"type": "code_execution"})
-
-        # Build response_format from json_schema.
-        # The Interactions API expects a single dict (not a list) with
-        # mime_type INSIDE it. Do NOT pass response_mime_type as a
-        # separate top-level kwarg.
-        response_format = None
-        if schema := model_parameters.get("json_schema"):
-            if isinstance(schema, str):
-                try:
-                    schema = json.loads(schema)
-                except (TypeError, ValueError) as exc:
-                    raise InvokeError("Invalid JSON Schema format") from exc
-            response_format = {
-                "type": "text",
-                "mime_type": "application/json",
-                "schema": schema,
-            }
-
-        # Build generation_config (Interactions API subset). Sampling fields and
-        # thinking budgets are unavailable here. Media resolution belongs on
-        # individual Interactions image/video content blocks.
-        gen_config: dict = {}
-        if model_parameters.get("max_output_tokens") is not None:
-            gen_config["max_output_tokens"] = int(model_parameters["max_output_tokens"])
-        if stop:
-            gen_config["stop_sequences"] = stop
-        if _tl := model_parameters.get("thinking_level"):
-            _level_map = {
-                "minimal": "minimal",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-            }
-            gen_config["thinking_level"] = _level_map.get(
-                str(_tl).strip().lower(), "medium"
-            )
-        if (include_thoughts := model_parameters.get("include_thoughts")) is not None:
-            gen_config["thinking_summaries"] = (
-                "auto" if include_thoughts else "none"
+            # Build contents via existing method. ``config`` is only needed so
+            # that ``_build_gemini_contents`` can capture ``system_instruction``
+            # as a side-effect.
+            config = types.GenerateContentConfig()
+            self._set_service_tier(config=config, model_parameters=model_parameters)
+            requested_service_tier = config.service_tier
+            file_server_url_prefix = credentials.get("file_url") or None
+            contents = self._build_gemini_contents(
+                prompt_messages=prompt_messages,
+                genai_client=genai_client,
+                config=config,
+                file_server_url_prefix=file_server_url_prefix,
+                model_parameters=model_parameters,
             )
 
-        media_resolution = str(
-            model_parameters.get("media_resolution", "")
-        ).strip().lower()
-        if media_resolution not in {"low", "medium", "high"}:
-            media_resolution = ""
+            # Extract system_instruction defensively (str or Content -> str)
+            system_instruction = None
+            if config.system_instruction:
+                if isinstance(config.system_instruction, str):
+                    system_instruction = config.system_instruction
+                elif (
+                    hasattr(config.system_instruction, "parts")
+                    and config.system_instruction.parts
+                ):
+                    _parts_text = [
+                        p.text
+                        for p in config.system_instruction.parts
+                        if hasattr(p, "text") and p.text
+                    ]
+                    system_instruction = "\n".join(_parts_text) if _parts_text else None
 
-        # Handle empty contents (system-instruction-only)
-        if not contents and system_instruction:
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[types.Part.from_text(text=system_instruction)],
+            # Build tools in Interactions API dict format
+            interactions_tools = []
+            if model_parameters.get("grounding"):
+                interactions_tools.append({"type": "google_search"})
+            if model_parameters.get("url_context"):
+                interactions_tools.append({"type": "url_context"})
+            if model_parameters.get("code_execution"):
+                interactions_tools.append({"type": "code_execution"})
+
+            # Build response_format from json_schema.
+            # The Interactions API expects a single dict (not a list) with
+            # mime_type INSIDE it. Do NOT pass response_mime_type as a
+            # separate top-level kwarg.
+            response_format = None
+            if schema := model_parameters.get("json_schema"):
+                if isinstance(schema, str):
+                    try:
+                        schema = json.loads(schema)
+                    except (TypeError, ValueError) as exc:
+                        raise InvokeError("Invalid JSON Schema format") from exc
+                response_format = {
+                    "type": "text",
+                    "mime_type": "application/json",
+                    "schema": schema,
+                }
+
+            # Build generation_config (Interactions API subset). Sampling fields and
+            # thinking budgets are unavailable here. Media resolution belongs on
+            # individual Interactions image/video content blocks.
+            gen_config: dict = {}
+            if model_parameters.get("max_output_tokens") is not None:
+                gen_config["max_output_tokens"] = int(model_parameters["max_output_tokens"])
+            if stop:
+                gen_config["stop_sequences"] = stop
+            if _tl := model_parameters.get("thinking_level"):
+                _level_map = {
+                    "minimal": "minimal",
+                    "low": "low",
+                    "medium": "medium",
+                    "high": "high",
+                }
+                gen_config["thinking_level"] = _level_map.get(
+                    str(_tl).strip().lower(), "medium"
                 )
-            ]
+            if (include_thoughts := model_parameters.get("include_thoughts")) is not None:
+                gen_config["thinking_summaries"] = (
+                    "auto" if include_thoughts else "none"
+                )
 
-        # Convert generateContent Content objects to Interactions API Step
-        # format. The Interactions API rejects types.Content with
-        # "Unknown parameter 'parts'" — it expects:
-        #   [{"type": "user_input"/"model_output",
-        #     "content": [{"type": "text", "text": "..."}]}]
-        _interactions_input = []
-        for _content in contents:
-            _step_type = "model_output" if _content.role == "model" else "user_input"
-            _step_content = []
-            for _part in _content.parts:
-                if hasattr(_part, "text") and _part.text:
-                    _step_content.append({"type": "text", "text": _part.text})
-                elif hasattr(_part, "inline_data") and _part.inline_data:
-                    _inline = _part.inline_data
-                    _mime = (_inline.mime_type or "").lower()
-                    _b64 = (
-                        base64.b64encode(_inline.data).decode() if _inline.data else ""
+            media_resolution = str(
+                model_parameters.get("media_resolution", "")
+            ).strip().lower()
+            if media_resolution not in {"low", "medium", "high"}:
+                media_resolution = ""
+
+            # Handle empty contents (system-instruction-only)
+            if not contents and system_instruction:
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=system_instruction)],
                     )
-                    if _mime.startswith("image/"):
-                        _step_content.append(
-                            {"type": "image", "mime_type": _mime, "data": _b64}
+                ]
+
+            # Convert generateContent Content objects to Interactions API Step
+            # format. The Interactions API rejects types.Content with
+            # "Unknown parameter 'parts'" — it expects:
+            #   [{"type": "user_input"/"model_output",
+            #     "content": [{"type": "text", "text": "..."}]}]
+            _interactions_input = []
+            for _content in contents:
+                _step_type = "model_output" if _content.role == "model" else "user_input"
+                _step_content = []
+                for _part in _content.parts:
+                    if hasattr(_part, "text") and _part.text:
+                        _step_content.append({"type": "text", "text": _part.text})
+                    elif hasattr(_part, "inline_data") and _part.inline_data:
+                        _inline = _part.inline_data
+                        _mime = (_inline.mime_type or "").lower()
+                        _b64 = (
+                            base64.b64encode(_inline.data).decode() if _inline.data else ""
                         )
-                    elif _mime.startswith("audio/"):
-                        _step_content.append(
-                            {"type": "audio", "mime_type": _mime, "data": _b64}
-                        )
-                    elif _mime.startswith("video/"):
-                        _step_content.append(
-                            {"type": "video", "mime_type": _mime, "data": _b64}
-                        )
-                    elif _mime == "application/pdf":
-                        _step_content.append(
-                            {"type": "document", "mime_type": _mime, "data": _b64}
-                        )
-                    elif _mime.startswith("text/") and _inline.data:
-                        with suppress(Exception):
+                        if _mime.startswith("image/"):
+                            _step_content.append(
+                                {"type": "image", "mime_type": _mime, "data": _b64}
+                            )
+                        elif _mime.startswith("audio/"):
+                            _step_content.append(
+                                {"type": "audio", "mime_type": _mime, "data": _b64}
+                            )
+                        elif _mime.startswith("video/"):
+                            _step_content.append(
+                                {"type": "video", "mime_type": _mime, "data": _b64}
+                            )
+                        elif _mime == "application/pdf":
+                            _step_content.append(
+                                {"type": "document", "mime_type": _mime, "data": _b64}
+                            )
+                        elif _mime.startswith("text/") and _inline.data:
+                            with suppress(Exception):
+                                _step_content.append(
+                                    {
+                                        "type": "text",
+                                        "text": _inline.data.decode("utf-8"),
+                                    }
+                                )
+                    elif hasattr(_part, "file_data") and _part.file_data:
+                        # Files API uploads are referenced by URI, not embedded data
+                        _fd = _part.file_data
+                        _file_uri = getattr(_fd, "file_uri", None) or ""
+                        _fd_mime = (getattr(_fd, "mime_type", None) or "").lower()
+                        if _fd_mime.startswith("image/"):
+                            _step_content.append(
+                                {"type": "image", "mime_type": _fd_mime, "uri": _file_uri}
+                            )
+                        elif _fd_mime == "application/pdf":
                             _step_content.append(
                                 {
-                                    "type": "text",
-                                    "text": _inline.data.decode("utf-8"),
+                                    "type": "document",
+                                    "mime_type": _fd_mime,
+                                    "uri": _file_uri,
                                 }
                             )
-                elif hasattr(_part, "file_data") and _part.file_data:
-                    # Files API uploads are referenced by URI, not embedded data
-                    _fd = _part.file_data
-                    _file_uri = getattr(_fd, "file_uri", None) or ""
-                    _fd_mime = (getattr(_fd, "mime_type", None) or "").lower()
-                    if _fd_mime.startswith("image/"):
-                        _step_content.append(
-                            {"type": "image", "mime_type": _fd_mime, "uri": _file_uri}
+                        elif _fd_mime.startswith("audio/"):
+                            _step_content.append(
+                                {"type": "audio", "mime_type": _fd_mime, "uri": _file_uri}
+                            )
+                        elif _fd_mime.startswith("video/"):
+                            _step_content.append(
+                                {"type": "video", "mime_type": _fd_mime, "uri": _file_uri}
+                            )
+                if media_resolution:
+                    if any(part["type"] == "document" for part in _step_content):
+                        raise InvokeError(
+                            "media_resolution is not supported for document inputs "
+                            "on the Gemini Interactions API"
                         )
-                    elif _fd_mime == "application/pdf":
-                        _step_content.append(
-                            {
-                                "type": "document",
-                                "mime_type": _fd_mime,
-                                "uri": _file_uri,
-                            }
-                        )
-                    elif _fd_mime.startswith("audio/"):
-                        _step_content.append(
-                            {"type": "audio", "mime_type": _fd_mime, "uri": _file_uri}
-                        )
-                    elif _fd_mime.startswith("video/"):
-                        _step_content.append(
-                            {"type": "video", "mime_type": _fd_mime, "uri": _file_uri}
-                        )
-            if media_resolution:
-                if any(part["type"] == "document" for part in _step_content):
-                    raise InvokeError(
-                        "media_resolution is not supported for document inputs "
-                        "on the Gemini Interactions API"
+                    for part in _step_content:
+                        if part["type"] in {"image", "video"}:
+                            part["resolution"] = media_resolution
+                if _step_content:
+                    _interactions_input.append(
+                        {"type": _step_type, "content": _step_content}
                     )
-                for part in _step_content:
-                    if part["type"] in {"image", "video"}:
-                        part["resolution"] = media_resolution
-            if _step_content:
-                _interactions_input.append(
-                    {"type": _step_type, "content": _step_content}
-                )
 
-        self._validate_no_assistant_prefill(
-            model,
-            _interactions_input[-1]["type"] if _interactions_input else None,
-        )
-
-        # Assemble kwargs for interactions.create()
-        kwargs: dict = {
-            "model": model,
-            "input": _interactions_input,
-            "store": False,  # Dify manages conversation history
-        }
-        if system_instruction:
-            kwargs["system_instruction"] = system_instruction
-        if interactions_tools:
-            kwargs["tools"] = interactions_tools
-        if response_format:
-            kwargs["response_format"] = response_format
-        if gen_config:
-            kwargs["generation_config"] = gen_config
-        if (
-            requested_service_tier
-            and requested_service_tier != types.ServiceTier.UNSPECIFIED
-        ):
-            kwargs["service_tier"] = requested_service_tier.value
-
-        if stream:
-            _response = genai_client.interactions.create(stream=True, **kwargs)
-            return self._handle_interactions_stream_response(
+            self._validate_no_assistant_prefill(
                 model,
-                credentials,
-                _response,
-                prompt_messages,
-                genai_client,
-                requested_service_tier,
+                _interactions_input[-1]["type"] if _interactions_input else None,
             )
 
-        _interaction = genai_client.interactions.create(**kwargs)
-        return self._handle_interactions_response(
-            model,
-            credentials,
-            _interaction,
-            prompt_messages,
-            requested_service_tier,
-        )
+            # Assemble kwargs for interactions.create()
+            kwargs: dict = {
+                "model": model,
+                "input": _interactions_input,
+                "store": False,  # Dify manages conversation history
+            }
+            if system_instruction:
+                kwargs["system_instruction"] = system_instruction
+            if interactions_tools:
+                kwargs["tools"] = interactions_tools
+            if response_format:
+                kwargs["response_format"] = response_format
+            if gen_config:
+                kwargs["generation_config"] = gen_config
+            if (
+                requested_service_tier
+                and requested_service_tier != types.ServiceTier.UNSPECIFIED
+            ):
+                kwargs["service_tier"] = requested_service_tier.value
+
+            if stream:
+                def _stream():
+                    # Hold the client lease for the whole stream lifetime (see
+                    # the comment on the generate_content stream path).
+                    with _acquire_genai_client(
+                        credentials["google_api_key"],
+                        credentials.get("google_base_url", None),
+                    ) as stream_client:
+                        _response = stream_client.interactions.create(
+                            stream=True, **kwargs
+                        )
+                        yield from self._handle_interactions_stream_response(
+                            model,
+                            credentials,
+                            _response,
+                            prompt_messages,
+                            stream_client,
+                            requested_service_tier,
+                        )
+
+                return _stream()
+
+            _interaction = genai_client.interactions.create(**kwargs)
+            return self._handle_interactions_response(
+                model,
+                credentials,
+                _interaction,
+                prompt_messages,
+                requested_service_tier,
+            )
 
     def _handle_interactions_response(
         self,
@@ -1842,6 +1913,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        genai_client = None
         try:
             genai_client = genai.Client(
                 api_key=credentials["google_api_key"],
@@ -1858,3 +1930,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+        finally:
+            # The validation client is not part of the shared cache (a broken
+            # credential must not evict warm connections), so close it here to
+            # avoid leaking its connection pool. A close failure must not mask
+            # the validation result.
+            if genai_client is not None:
+                with suppress(Exception):
+                    genai_client.close()

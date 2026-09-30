@@ -5,8 +5,10 @@ import re
 import threading
 import time
 import numpy as np
+from collections import OrderedDict
+from contextlib import contextmanager, suppress
 from typing import Optional, Union
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 
 from google import genai
 from google.genai import types
@@ -27,22 +29,68 @@ from ..common_gemini import _CommonGemini
 
 logger = logging.getLogger(__name__)
 
-_genai_emb_client_cache: dict[str, genai.Client] = {}
+_GENAI_CLIENT_CACHE_MAX = 16
+
+
+class _ClientEntry:
+    """A cached genai.Client with a lease count for safe eviction."""
+
+    __slots__ = ("client", "active_count", "evicted")
+
+    def __init__(self, client: genai.Client) -> None:
+        self.client = client
+        self.active_count = 0
+        self.evicted = False
+
+
+_genai_emb_client_cache: "OrderedDict[tuple[str, Optional[str]], _ClientEntry]" = OrderedDict()
 _genai_emb_client_cache_lock = threading.Lock()
 
 
-def _get_genai_client(api_key: str) -> genai.Client:
-    """Return a cached genai.Client for the given API key, creating one if needed.
+@contextmanager
+def _acquire_genai_client(
+    api_key: str, base_url: Optional[str] = None
+) -> Generator[genai.Client, None, None]:
+    """Yield a cached genai.Client for the given API key, creating one if needed.
 
     Distinct cache/name from the LLM module's client cache to avoid collisions
     if both modules are loaded in the same process.
+
+    Bounded LRU with lease-based deferred close (see the LLM module's docstring
+    for the eviction/close policy).
     """
+    cache_key = (api_key, base_url)
+    close_now: Optional[genai.Client] = None
     with _genai_emb_client_cache_lock:
-        client = _genai_emb_client_cache.get(api_key)
-        if client is None:
-            client = genai.Client(api_key=api_key)
-            _genai_emb_client_cache[api_key] = client
-        return client
+        entry = _genai_emb_client_cache.get(cache_key)
+        if entry is None:
+            if len(_genai_emb_client_cache) >= _GENAI_CLIENT_CACHE_MAX:
+                _, evicted = _genai_emb_client_cache.popitem(last=False)
+                evicted.evicted = True
+                if evicted.active_count == 0:
+                    close_now = evicted.client
+            entry = _ClientEntry(
+                genai.Client(api_key=api_key, http_options=types.HttpOptions(base_url=base_url))
+            )
+            _genai_emb_client_cache[cache_key] = entry
+        else:
+            _genai_emb_client_cache.move_to_end(cache_key)
+        entry.active_count += 1
+        client = entry.client
+    try:
+        if close_now is not None:
+            with suppress(Exception):
+                close_now.close()
+        yield client
+    finally:
+        deferred: Optional[genai.Client] = None
+        with _genai_emb_client_cache_lock:
+            entry.active_count -= 1
+            if entry.evicted and entry.active_count == 0:
+                deferred = entry.client
+        if deferred is not None:
+            with suppress(Exception):
+                deferred.close()
 
 
 # Embedding and number of tokens used
@@ -93,75 +141,81 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :param user: unique user id
         :return: embeddings result
         """
-        client = _get_genai_client(credentials["google_api_key"])
+        with _acquire_genai_client(
+            credentials["google_api_key"], credentials.get("google_base_url", None)
+        ) as client:
 
-        # get model properties
-        context_size = self._get_context_size(model, credentials)
-        max_chunks = self._get_max_chunks(model, credentials)
+            # get model properties
+            context_size = self._get_context_size(model, credentials)
+            max_chunks = self._get_max_chunks(model, credentials)
 
-        # splitted texts in case the chunks are bigger than the context size
-        splitted_texts = [
-            self._split_texts_to_fit_model_specs(client, model, [text], context_size)
-            for text in texts
-        ]
+            # splitted texts in case the chunks are bigger than the context size
+            splitted_texts = [
+                self._split_texts_to_fit_model_specs(client, model, [text], context_size)
+                for text in texts
+            ]
 
-        # list batched texts of size <= max_chunks containing (text index, text)
-        batched_texts: list[list[tuple[int, str]]] = [[]]
-        for i, splitted_text in enumerate(splitted_texts):
-            for text, _ in splitted_text:
-                if len(batched_texts[-1]) >= max_chunks:
-                    batched_texts.append([])
-                batched_texts[-1].append((i, text))
+            # list batched texts of size <= max_chunks containing (text index, text)
+            batched_texts: list[list[tuple[int, str]]] = [[]]
+            for i, splitted_text in enumerate(splitted_texts):
+                for text, _ in splitted_text:
+                    if len(batched_texts[-1]) >= max_chunks:
+                        batched_texts.append([])
+                    batched_texts[-1].append((i, text))
 
-        # list of embeddings following the same arrangement as splitted_texts
-        splitted_embeddings: list[list[EmbeddingTokenPair]] = []
-        for batch in batched_texts:
-            embeddings_batch = self._embedding_invoke(
-                model=model,
-                client=client,
-                texts=[text for _, text in batch],
-                input_type=input_type,
+            # list of embeddings following the same arrangement as splitted_texts
+            splitted_embeddings: list[list[EmbeddingTokenPair]] = []
+            for batch in batched_texts:
+                embeddings_batch = self._embedding_invoke(
+                    model=model,
+                    client=client,
+                    texts=[text for _, text in batch],
+                    input_type=input_type,
+                )
+                for i, (j, _) in enumerate(batch):
+                    if j >= len(splitted_embeddings):
+                        splitted_embeddings.append([])
+                    splitted_embeddings[j].append(embeddings_batch[i])
+
+            # merge embeddings by averaging them
+            merged_embeddings: list[list[float]] = []
+            used_tokens = 0
+            for i, embeddings in enumerate(splitted_embeddings):
+                embeddings, num_tokens = zip(*embeddings)
+                if len(embeddings) == 1:
+                    embedding = embeddings[0]
+                else:
+                    # `num_tokens` may contain ``None`` when the Gemini API omits token
+                    # usage for a chunk. ``np.average`` cannot use ``None`` weights, so
+                    # fall back to an unweighted average in that case.
+                    weights = num_tokens if all(t is not None for t in num_tokens) else None
+                    average = np.average(embeddings, axis=0, weights=weights)
+                    embedding = (average / np.linalg.norm(average)).tolist()
+                    if np.isnan(embedding).any():
+                        raise ValueError("Normalized embedding is nan please try again")
+                merged_embeddings.append(embedding)
+                # sum up the number of tokens used if available or the count estimation from the text chunking
+                used_tokens += sum(
+                    [
+                        used_token or chunk_size
+                        for used_token, [_, chunk_size] in zip(
+                            num_tokens, splitted_texts[i]
+                        )
+                    ]
+                )
+
+            # calc usage
+            usage = self._calc_response_usage(
+                model=model, credentials=credentials, tokens=used_tokens
             )
-            for i, (j, _) in enumerate(batch):
-                if j >= len(splitted_embeddings):
-                    splitted_embeddings.append([])
-                splitted_embeddings[j].append(embeddings_batch[i])
 
-        # merge embeddings by averaging them
-        merged_embeddings: list[list[float]] = []
-        used_tokens = 0
-        for i, embeddings in enumerate(splitted_embeddings):
-            embeddings, num_tokens = zip(*embeddings)
-            if len(embeddings) == 1:
-                embedding = embeddings[0]
-            else:
-                # `num_tokens` may contain ``None`` when the Gemini API omits token
-                # usage for a chunk. ``np.average`` cannot use ``None`` weights, so
-                # fall back to an unweighted average in that case.
-                weights = num_tokens if all(t is not None for t in num_tokens) else None
-                average = np.average(embeddings, axis=0, weights=weights)
-                embedding = (average / np.linalg.norm(average)).tolist()
-                if np.isnan(embedding).any():
-                    raise ValueError("Normalized embedding is nan please try again")
-            merged_embeddings.append(embedding)
-            # sum up the number of tokens used if available or the count estimation from the text chunking
-            used_tokens += sum(
-                [
-                    used_token or chunk_size
-                    for used_token, [_, chunk_size] in zip(
-                        num_tokens, splitted_texts[i]
-                    )
-                ]
+            return TextEmbeddingResult(
+                embeddings=merged_embeddings, usage=usage, model=model
             )
 
-        # calc usage
-        usage = self._calc_response_usage(
-            model=model, credentials=credentials, tokens=used_tokens
-        )
-
-        return TextEmbeddingResult(
-            embeddings=merged_embeddings, usage=usage, model=model
-        )
+    _NEAR_LIMIT_RATIO = 0.8
+    _CUTOFF_MARGIN = 0.95
+    _CUTOFF_SEARCH_WINDOW = 256
 
     def _split_texts_to_fit_model_specs(
         self, client: genai.Client, model: str, texts: list[str], context_size: int
@@ -169,53 +223,71 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         Split text to fit model specs based on the model context size
 
-        Token counting is local (GPT-2 estimate), so ``client`` and ``model``
-        are no longer used here; they are kept for signature compatibility.
+        Token counting is local (GPT-2 estimate) for text clearly below the
+        context budget. Near the budget (``>= _NEAR_LIMIT_RATIO * context_size``)
+        the model-specific ``count_tokens`` API is used instead, because the
+        GPT-2 estimate is not an upper bound for Gemini (it can underestimate
+        CJK/emoji/code-heavy text and send an oversized chunk).
 
-        :param client: model client (unused, kept for signature compatibility)
-        :param model: model name (unused, kept for signature compatibility)
+        :param client: model client (used for the near-limit verification count)
+        :param model: model name (used for the near-limit verification count)
         :param text: text to truncate
-        :return: list of tuples (text, estimated chunk size)
+        :return: list of tuples (text, chunk size)
         """
         splitted_text = []
         for text in texts:
-            # Local GPT-2 estimate instead of an API round-trip (_count_tokens).
-            # Heuristic: GPT-2 typically overestimates vs Gemini's tokenizer so
-            # chunks tend conservatively smaller; NOT a formal upper bound for
-            # CJK/emoji/code-heavy text (an accepted trade-off for the ~150-400ms per-level saving),
-            # it just avoids a ~150-400ms HTTP call per recursion level.
-            num_tokens = self._get_num_tokens_by_gpt2(text)
-            if num_tokens >= context_size and len(text) > 1:
-                # `context_size` is a token budget, not a character index. Estimate a
-                # character cutoff from the token-to-character ratio so the head is
-                # likely to fit, then clamp it to ``[1, len(text) - 1]`` so both the
-                # head and the tail are strictly shorter than ``text``. This guarantees
-                # progress and terminates the recursion even for token-dense content
-                # (e.g. CJK, code, base64) where ``len(text)`` may be <= ``context_size``.
-                cutoff = max(1, len(text) * context_size // max(1, num_tokens))
-                cutoff = min(cutoff, len(text) - 1)
-                # prefer to split on the closest punctuation mark, then comma, then
-                # whitespace, searching forward from the estimated cutoff. Never let the
-                # boundary reach the end of the text, which would empty the tail.
-                for pattern in [r"[.!?]", r",", r"\s"]:
-                    match = re.search(pattern, text[cutoff:])
-                    if match:
-                        boundary = cutoff + match.start() + 1
-                        if boundary < len(text):
-                            cutoff = boundary
-                        break
-                splitted_text.extend(
-                    self._split_texts_to_fit_model_specs(
-                        client, model, [text[:cutoff]], context_size
-                    )
-                )
-                splitted_text.extend(
-                    self._split_texts_to_fit_model_specs(
-                        client, model, [text[cutoff:]], context_size
-                    )
-                )
-            else:
+            # Local GPT-2 estimate for the common case (well below the budget),
+            # avoiding the ~150-400ms HTTP round-trip of _count_tokens per
+            # recursion level. GPT-2 typically overestimates vs Gemini's
+            # tokenizer, so chunks tend conservatively smaller.
+            estimate = self._get_num_tokens_by_gpt2(text)
+            if estimate < self._NEAR_LIMIT_RATIO * context_size:
+                splitted_text.append((text, estimate))
+                continue
+            # Near the budget: verify with the model's own counter. Fail closed:
+            # if the count call fails, propagating the error is correct (the
+            # subsequent embed call would fail with the same root cause) and
+            # avoids sending an unverified near-limit chunk.
+            num_tokens = self._count_tokens(client, model, text)
+            if num_tokens < context_size or len(text) <= 1:
                 splitted_text.append((text, num_tokens))
+                continue
+            # `context_size` is a token budget, not a character index. Estimate a
+            # character cutoff from the token-to-character ratio so the head is
+            # likely to fit, then clamp it to ``[1, len(text) - 1]`` so both the
+            # head and the tail are strictly shorter than ``text``. This guarantees
+            # progress and terminates the recursion even for token-dense content
+            # (e.g. CJK, code, base64) where ``len(text)`` may be <= ``context_size``.
+            # The 0.95 margin leaves breathing room for the punctuation search
+            # below, avoiding a head that just barely exceeds the budget and has
+            # to be re-verified (and re-split) on the next recursion level.
+            cutoff = max(1, len(text) * int(context_size * self._CUTOFF_MARGIN) // max(1, num_tokens))
+            cutoff = min(cutoff, len(text) - 1)
+            # prefer to split on the closest punctuation mark, then comma, then
+            # whitespace, searching forward from the estimated cutoff. The search
+            # is windowed so a far-away punctuation mark cannot inflate the head
+            # past the budget (which would only force another recursion level).
+            # Never let the boundary reach the end of the text, which would empty
+            # the tail.
+            for pattern in [r"[.!?]", r",", r"\s"]:
+                match = re.search(
+                    pattern, text[cutoff : cutoff + self._CUTOFF_SEARCH_WINDOW]
+                )
+                if match:
+                    boundary = cutoff + match.start() + 1
+                    if boundary < len(text):
+                        cutoff = boundary
+                    break
+            splitted_text.extend(
+                self._split_texts_to_fit_model_specs(
+                    client, model, [text[:cutoff]], context_size
+                )
+            )
+            splitted_text.extend(
+                self._split_texts_to_fit_model_specs(
+                    client, model, [text[cutoff:]], context_size
+                )
+            )
         return splitted_text
 
     def get_num_tokens(
@@ -258,11 +330,24 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :param credentials: model credentials
         :return:
         """
+        client = None
         try:
-            client = genai.Client(api_key=credentials["google_api_key"])
+            client = genai.Client(
+                api_key=credentials["google_api_key"],
+                http_options=types.HttpOptions(
+                    base_url=credentials.get("google_base_url", None)
+                ),
+            )
             client.models.embed_content(model=model, contents=["ping"])
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+        finally:
+            # Not part of the shared cache (see the LLM module); close to avoid
+            # leaking the validation client's connection pool. A close failure
+            # must not mask the validation result.
+            if client is not None:
+                with suppress(Exception):
+                    client.close()
 
     def _embedding_invoke(
         self,
@@ -423,109 +508,111 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :return: embeddings result
         """
         self.started_at = time.perf_counter()
-        client = _get_genai_client(credentials["google_api_key"])
+        with _acquire_genai_client(
+            credentials["google_api_key"], credentials.get("google_base_url", None)
+        ) as client:
 
-        # Convert MultiModalContent to Google Genai format, tracking content types
-        contents = []  # converted content for API call
-        content_is_image = []  # parallel list: True if image, False if text
-        original_texts = []  # parallel list: original text string (or None for images)
-        for document in documents:
-            if document.content_type == MultiModalContentType.TEXT:
-                contents.append(self._as_user_content(document.content))
-                content_is_image.append(False)
-                original_texts.append(document.content)
-            elif document.content_type == MultiModalContentType.IMAGE:
-                # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
-                mime_type = self._detect_image_mime_type(
-                    document.content, validate_format=True
+            # Convert MultiModalContent to Google Genai format, tracking content types
+            contents = []  # converted content for API call
+            content_is_image = []  # parallel list: True if image, False if text
+            original_texts = []  # parallel list: original text string (or None for images)
+            for document in documents:
+                if document.content_type == MultiModalContentType.TEXT:
+                    contents.append(self._as_user_content(document.content))
+                    content_is_image.append(False)
+                    original_texts.append(document.content)
+                elif document.content_type == MultiModalContentType.IMAGE:
+                    # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
+                    mime_type = self._detect_image_mime_type(
+                        document.content, validate_format=True
+                    )
+                    # Decode base64 and create Part object
+                    base64_str = document.content
+                    if "," in base64_str:
+                        base64_str = base64_str.split(",", 1)[1]
+                    image_data = base64.b64decode(base64_str)
+                    part = types.Part.from_bytes(data=image_data, mime_type=mime_type)
+                    contents.append(self._as_user_content(part))
+                    content_is_image.append(True)
+                    original_texts.append(None)
+                else:
+                    raise ValueError(
+                        f"Unsupported content type: {document.content_type}. "
+                        f"Gemini Embedding 2 currently supports TEXT and IMAGE."
+                    )
+
+            max_chunks = self._get_max_chunks(model, credentials)
+
+            # Batch processing if needed
+            embeddings = []
+            used_tokens = 0
+
+            # Process in batches
+            for i in range(0, len(contents), max_chunks):
+                batch_contents = contents[i : i + max_chunks]
+
+                # Validate per-batch image count limit
+                # Gemini Embedding 2 supports at most 6 images per API request
+                batch_image_count = sum(content_is_image[i : i + max_chunks])
+                if batch_image_count > self.MAX_IMAGES_PER_REQUEST:
+                    raise ValueError(
+                        f"Too many images in batch: {batch_image_count}. "
+                        f"Gemini Embedding 2 supports at most {self.MAX_IMAGES_PER_REQUEST} images per request."
+                    )
+
+                # Prepare config with optional output_dimension (MRL support)
+                task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+                output_dimension = self._get_output_dimension(model, credentials)
+
+                config_kwargs = {}
+                if task_type:
+                    config_kwargs["task_type"] = task_type
+                if output_dimension:
+                    config_kwargs["output_dimensionality"] = output_dimension
+
+                config = EmbedContentConfig(**config_kwargs) if config_kwargs else None
+
+                # Call embedding API
+                response = client.models.embed_content(
+                    model=model, contents=batch_contents, config=config
                 )
-                # Decode base64 and create Part object
-                base64_str = document.content
-                if "," in base64_str:
-                    base64_str = base64_str.split(",", 1)[1]
-                image_data = base64.b64decode(base64_str)
-                part = types.Part.from_bytes(data=image_data, mime_type=mime_type)
-                contents.append(self._as_user_content(part))
-                content_is_image.append(True)
-                original_texts.append(None)
-            else:
-                raise ValueError(
-                    f"Unsupported content type: {document.content_type}. "
-                    f"Gemini Embedding 2 currently supports TEXT and IMAGE."
-                )
 
-        max_chunks = self._get_max_chunks(model, credentials)
+                if response.embeddings is None:
+                    raise InvokeError(f"Unable to get embeddings from '{model}' model")
 
-        # Batch processing if needed
-        embeddings = []
-        used_tokens = 0
+                if len(response.embeddings) != len(batch_contents):
+                    raise InvokeError(
+                        f"Expected {len(batch_contents)} embeddings from '{model}' model, "
+                        f"got {len(response.embeddings)}"
+                    )
 
-        # Process in batches
-        for i in range(0, len(contents), max_chunks):
-            batch_contents = contents[i : i + max_chunks]
+                # Process embeddings
+                batch_original_texts = original_texts[i : i + max_chunks]
+                batch_is_image = content_is_image[i : i + max_chunks]
+                for j, embedding in enumerate(response.embeddings):
+                    embedding_values = embedding.values or []
+                    embeddings.append(embedding_values)
 
-            # Validate per-batch image count limit
-            # Gemini Embedding 2 supports at most 6 images per API request
-            batch_image_count = sum(content_is_image[i : i + max_chunks])
-            if batch_image_count > self.MAX_IMAGES_PER_REQUEST:
-                raise ValueError(
-                    f"Too many images in batch: {batch_image_count}. "
-                    f"Gemini Embedding 2 supports at most {self.MAX_IMAGES_PER_REQUEST} images per request."
-                )
+                    # Count tokens: prefer API statistics, then estimate by content type
+                    if embedding.statistics and embedding.statistics.token_count:
+                        used_tokens += embedding.statistics.token_count
+                    elif batch_is_image[j]:
+                        # Image: use fixed estimate
+                        used_tokens += self.IMAGE_TOKEN_ESTIMATE
+                    elif batch_original_texts[j] is not None:
+                        # Text: estimate using GPT-2 tokenizer
+                        used_tokens += self._get_num_tokens_by_gpt2(batch_original_texts[j])
+                    else:
+                        # Final fallback
+                        used_tokens += self.IMAGE_TOKEN_ESTIMATE
 
-            # Prepare config with optional output_dimension (MRL support)
-            task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
-            output_dimension = self._get_output_dimension(model, credentials)
-
-            config_kwargs = {}
-            if task_type:
-                config_kwargs["task_type"] = task_type
-            if output_dimension:
-                config_kwargs["output_dimensionality"] = output_dimension
-
-            config = EmbedContentConfig(**config_kwargs) if config_kwargs else None
-
-            # Call embedding API
-            response = client.models.embed_content(
-                model=model, contents=batch_contents, config=config
+            # Calculate usage
+            usage = self._calc_response_usage(
+                model=model, credentials=credentials, tokens=used_tokens
             )
 
-            if response.embeddings is None:
-                raise InvokeError(f"Unable to get embeddings from '{model}' model")
-
-            if len(response.embeddings) != len(batch_contents):
-                raise InvokeError(
-                    f"Expected {len(batch_contents)} embeddings from '{model}' model, "
-                    f"got {len(response.embeddings)}"
-                )
-
-            # Process embeddings
-            batch_original_texts = original_texts[i : i + max_chunks]
-            batch_is_image = content_is_image[i : i + max_chunks]
-            for j, embedding in enumerate(response.embeddings):
-                embedding_values = embedding.values or []
-                embeddings.append(embedding_values)
-
-                # Count tokens: prefer API statistics, then estimate by content type
-                if embedding.statistics and embedding.statistics.token_count:
-                    used_tokens += embedding.statistics.token_count
-                elif batch_is_image[j]:
-                    # Image: use fixed estimate
-                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
-                elif batch_original_texts[j] is not None:
-                    # Text: estimate using GPT-2 tokenizer
-                    used_tokens += self._get_num_tokens_by_gpt2(batch_original_texts[j])
-                else:
-                    # Final fallback
-                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
-
-        # Calculate usage
-        usage = self._calc_response_usage(
-            model=model, credentials=credentials, tokens=used_tokens
-        )
-
-        return MultiModalEmbeddingResult(
-            model=model,
-            embeddings=embeddings,
-            usage=usage,
-        )
+            return MultiModalEmbeddingResult(
+                model=model,
+                embeddings=embeddings,
+                usage=usage,
+            )
