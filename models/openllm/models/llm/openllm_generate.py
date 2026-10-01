@@ -40,6 +40,7 @@ class OpenLLMGenerate:
         stop: list[str] | None = None,
         prompt_messages: list[OpenLLMGenerateMessage],
         user: str | None = None,
+        extra_headers: dict[str, str] | None = None,
     ) -> Union[Generator[OpenLLMGenerateMessage, None, None], OpenLLMGenerateMessage]:
         if not server_url:
             raise InvalidAuthenticationError("Invalid server URL")
@@ -86,6 +87,13 @@ class OpenLLMGenerate:
         if "use_cache" in model_parameters and type(model_parameters["use_cache"]) == bool:
             default_llm_config["use_cache"] = model_parameters["use_cache"]
         headers = {"Content-Type": "application/json", "accept": "application/json"}
+        # Merge any caller-supplied extra_headers (e.g., Dify observability
+        # headers from the opt-in ``enable_request_metadata`` credential)
+        # into the outbound headers dict. extra_headers wins on collision
+        # with the default Content-Type / accept headers so the caller
+        # can override them when needed.
+        if extra_headers:
+            headers.update(extra_headers)
         if stream:
             url = f"{server_url}/v1/generate_stream"
             timeout = 10

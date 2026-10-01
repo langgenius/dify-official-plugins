@@ -27,6 +27,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from .openllm_generate import OpenLLMGenerate, OpenLLMGenerateMessage
+from ._metadata import apply_dify_headers_if_enabled
 from .openllm_generate_errors import (
     BadRequestError,
     InsufficientAccountBalanceError,
@@ -100,6 +101,17 @@ class OpenLLMLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         client = OpenLLMGenerate()
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the ``requests.post()``
+        # call. The plugin's existing ``OpenLLMGenerate.generate(...)``
+        # method accepts an ``extra_headers=`` kwarg which it merges
+        # into the outbound ``headers`` dict on every request. The
+        # helper forwards the dict via that kwarg only when non-empty,
+        # so the original request shape is preserved exactly when the
+        # opt-in is disabled.
+        apply_dify_headers_if_enabled(credentials)
         response = client.generate(
             model_name=model,
             server_url=credentials["server_url"],
@@ -108,6 +120,7 @@ class OpenLLMLargeLanguageModel(LargeLanguageModel):
             stop=stop,
             stream=stream,
             user=user,
+            extra_headers=credentials.get("extra_headers"),
         )
         if stream:
             return self._handle_chat_generate_stream_response(
