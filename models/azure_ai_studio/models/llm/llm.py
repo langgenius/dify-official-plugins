@@ -55,6 +55,8 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+
+from ._metadata import apply_dify_headers_if_enabled
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 logger = logging.getLogger(__name__)
@@ -282,6 +284,19 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
 
         if tools:
             payload["tools"] = self._convert_tools(tools)
+
+        # Run the opt-in helper so any caller-supplied ``extra_headers``
+        # (or the Dify default headers when ``enable_request_metadata``
+        # is ``"enabled"``) are written into
+        # ``credentials['extra_headers']`` before the Azure SDK call.
+        # Forward ``extra_headers`` as ``headers=`` on
+        # ``client.complete(...)`` only when it is non-empty, so the
+        # original request shape is preserved exactly when the
+        # opt-in is disabled.
+        apply_dify_headers_if_enabled(credentials)
+        extra_headers = credentials.get("extra_headers")
+        if extra_headers:
+            payload["headers"] = extra_headers
 
         try:
             response = client.complete(**payload)

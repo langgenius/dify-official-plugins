@@ -11,7 +11,7 @@ dependencies = [
     "azure-ai-ml>=1.33.0",
     "azure-core>=1.41.0",
     "azure-identity>=1.25.3",
-    "dify_plugin>=0.9.0",
+    "dify_plugin>=0.10.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
