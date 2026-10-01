@@ -31,7 +31,7 @@ socksio==1.0.0
 tiktoken==0.14.0
 typing-extensions==4.16.0
 typing-inspection==0.4.4
-urllib3==2.7.0
+urllib3==2.8.0
 werkzeug==3.1.8
 yarl==1.24.5
 zope-event==6.2
