@@ -14,6 +14,7 @@ The Notion Plugin for Dify provides integration with Notion workspaces, allowing
 - **Retrieve Database**: Get database structure and schema information
 - **Create Database**: Create a new database with custom properties and schema
 - **Update Database**: Modify an existing database's title or properties
+- **Update Database Record**: Update property values of an existing record (row) in a database
 - **Retrieve Comments**: Get comments from a specific page or block
 - **Create Comment**: Add a new comment to a Notion page
 
@@ -108,6 +109,21 @@ Create a new database in Notion page "abc123" titled "Project Tasks" with proper
 Update the Notion database "abc123" to rename the "Status" property to "Progress"
 ```
 
+### Update a Database Record
+```
+In Notion database "abc123", set Name to "D" for the record whose No is 2
+```
+
+`update_database_record` finds the record either by `page_id` or by `database_id` + `match_property` + `match_value`, and takes the new values as a simple JSON object such as `{"Name": "D", "Status": "Done"}`. Each value is converted to the Notion format for that property's type.
+
+- Matching is an exact match. `match_property` supports title, text, number, unique ID (`2` or `TASK-2`), select, status, checkbox, date, URL, email and phone properties. Only the database's first data source is searched.
+- If more than one record matches, nothing is updated and up to 10 candidates are returned. Enable `update_all_matches` (a node setting) to update every match, up to `max_updates` (default 10, max 1000); if more records match, nothing is updated.
+- List values (multi-select, people, relation, files) replace the current value rather than adding to it. `null` or `""` clears a value, except for the title (cannot be cleared) and checkboxes (send `false`). People values must be user IDs; `query_database` returns people as names, so send the complete list of IDs to keep.
+- The JSON result has a `status` of `updated`, `partially_updated`, `not_found` (no record matches), `not_accessible` (the database or page is not shared with the integration), `ambiguous`, `too_many_matches`, `invalid_input` or `error`, so later workflow nodes can branch on it.
+- The integration needs the **Update content** capability.
+
+Note that `update_database` changes the database schema (property definitions), not record values.
+
 ### Retrieve Comments
 ```
 Get all comments from the Notion page "abc123"
@@ -128,9 +144,10 @@ Add a comment "Great progress on this task!" to Notion page "abc123"
 6. **Retrieve Database**: Get database structure, schema and property types
 7. **Create Database**: Create new databases with custom properties
 8. **Update Database**: Update database title or modify properties
-9. **Retrieve Comments**: Get comments from a page or block
-10. **Create Comment**: Add comments to a page
-11. **Extract Data**: Process various Notion property types including rich text, select, multi-select, etc.
+9. **Update Database Record**: Update property values of existing records
+10. **Retrieve Comments**: Get comments from a page or block
+11. **Create Comment**: Add comments to a page
+12. **Extract Data**: Process various Notion property types including rich text, select, multi-select, etc.
 
 ## Troubleshooting
 
