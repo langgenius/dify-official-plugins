@@ -284,9 +284,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         model_parameters = dict(model_parameters)
         extra_model_kwargs = {}
-        extra_headers = {}
-
-        extra_headers["APP-Code"] = "Dify2025"
+        # Initialize extra_headers from credentials, which preserves the
+        # ``APP-Code: Dify2025`` marker that ``AihubmixLargeLanguageModel
+        # ._update_credential`` writes, plus any Dify opt-in headers
+        # (``X-Dify-App-Id`` / ``X-Dify-Source``) attached by the helper in
+        # the same call site. Fall back to ``{"APP-Code": "Dify2025"}`` if
+        # the credentials dict has not been seeded (defensive only — the
+        # top-level ``_invoke`` runs ``_update_credential`` first).
+        extra_headers = dict(credentials.get("extra_headers", {"APP-Code": "Dify2025"}))
 
         credentials_kwargs = self._to_credential_kwargs(credentials)
 

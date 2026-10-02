@@ -521,10 +521,15 @@ class AihubmixOpenAIResponses:
         wrapped = parameters(model, params, tools, user)
         logger.info("Aihubmix Responses API request: model=%s", model)
 
+        # Merge the ``APP-Code: Dify2025`` marker with any opt-in Dify
+        # headers (``X-Dify-App-Id`` / ``X-Dify-Source``) attached by
+        # ``AihubmixLargeLanguageModel._update_credential`` via the
+        # helper, so they ride on the Responses API call.
+        extra_headers = {**APP_CODE_HEADER, **self.credentials.get("extra_headers", {})}
         response = self.client.responses.create(
             model=model,
             input=cast(Any, input_items(list(prompt_messages))),
-            extra_headers=APP_CODE_HEADER,
+            extra_headers=extra_headers,
             **wrapped,
         )
         raise_for_status(response, allow_incomplete=True)
@@ -563,11 +568,16 @@ class AihubmixOpenAIResponses:
         wrapped = parameters(model, params, tools, user)
         logger.info("Aihubmix Responses API stream request: model=%s", model)
 
+        # Merge ``APP-Code: Dify2025`` with any opt-in Dify headers
+        # (``X-Dify-App-Id`` / ``X-Dify-Source``) attached by the helper
+        # in ``AihubmixLargeLanguageModel._update_credential``. Mirrors
+        # the non-streaming path in ``create_llm_result``.
+        extra_headers = {**APP_CODE_HEADER, **self.credentials.get("extra_headers", {})}
         events = self.client.responses.create(
             model=model,
             input=cast(Any, input_items(list(prompt_messages))),
             stream=True,
-            extra_headers=APP_CODE_HEADER,
+            extra_headers=extra_headers,
             **wrapped,
         )
         buffer = StopBuffer(stop)

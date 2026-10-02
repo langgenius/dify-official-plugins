@@ -17,6 +17,7 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+from ._metadata import apply_dify_headers_if_enabled
 from .anthropic import AnthropicLargeLanguageModel
 from .google import GoogleLargeLanguageModel
 from .openai_response import AihubmixOpenAIResponses
@@ -41,6 +42,13 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials["extra_headers"] = {
             "APP-Code": "Dify2025"
         }
+        # Opt-in: when ``enable_request_metadata`` is enabled, attach the
+        # Dify app_id (X-Dify-App-Id) and source (X-Dify-Source) headers
+        # to ``credentials['extra_headers']`` so they are merged into the
+        # outbound headers dict in each of the four dispatch submodules
+        # (anthropic, google, openai_response, OAICompat default).
+        # Default ``disabled`` keeps existing behaviour identical.
+        apply_dify_headers_if_enabled(credentials)
 
     def _prepare_model_parameters(
         self,
