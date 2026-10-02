@@ -1082,11 +1082,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         config = types.GenerateContentConfig()
         api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
+        # Build the outbound ``headers`` dict from credentials so it picks
+        # up the ``APP-Code: Dify2025`` marker written by
+        # ``AihubmixLargeLanguageModel._update_credential`` plus any Dify
+        # opt-in headers (``X-Dify-App-Id`` / ``X-Dify-Source``) attached
+        # by the helper. Fall back to the original ``{"APP-Code": ...}``
+        # if neither path populated the credential (defensive only).
         genai_client = genai.Client(api_key=credentials["api_key"], http_options={
             "base_url": f"{api_url}/gemini",
-            "headers": {
-                "APP-Code": "Dify2025"
-            }
+            "headers": dict(credentials.get("extra_headers", {"APP-Code": "Dify2025"}))
         })
 
         # == ChatConfig == #

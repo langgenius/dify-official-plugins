@@ -70,6 +70,28 @@ provider_credential_schema:
       help:
         zh_Hans: "选择自定义时在此填写。填裸 host，不要带 /v1 等后缀，插件会自动追加（/v1、/gemini 等）。"
         en_US: "Fill this when Custom is selected. Bare host, no /v1 suffix; the plugin appends it automatically."
+    - variable: enable_request_metadata
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Enable request metadata (optional)
+        zh_Hans: 启用请求元数据（可选）
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 已启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+      help:
+        en_US: "When enabled, attaches dify_app_id and dify_source as `X-Dify-App-Id` and `X-Dify-Source` request headers on every chat call across all four dispatch paths (claude -> Anthropic SDK, gemini -> google-genai SDK, gpt-5-codex / gpt-5-pro / gpt-5.6 / o3-pro -> Responses API, otherwise -> OAICompat). The pre-existing `APP-Code: Dify2025` marker is preserved on every dispatch path. Default disabled."
+        zh_Hans: "启用后，在 chat 调用的全部四条分发路径上附加 dify_app_id 和 dify_source 作为 `X-Dify-App-Id` 和 `X-Dify-Source` 请求头：claude 走 Anthropic SDK、gemini 走 google-genai SDK、gpt-5-codex / gpt-5-pro / gpt-5.6 / o3-pro 走 Responses API，其余走 OAICompat。原有的 `APP-Code: Dify2025` 标记在所有路径上都会保留。默认禁用。"
 model_credential_schema:
   model:
     label:
@@ -122,6 +144,28 @@ model_credential_schema:
       help:
         zh_Hans: "选择自定义时在此填写。填裸 host，不要带 /v1 等后缀，插件会自动追加（/v1、/gemini 等）。"
         en_US: "Fill this when Custom is selected. Bare host, no /v1 suffix; the plugin appends it automatically."
+    - variable: enable_request_metadata
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Enable request metadata (optional)
+        zh_Hans: 启用请求元数据（可选）
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 已启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+      help:
+        en_US: "When enabled, attaches dify_app_id and dify_source as `X-Dify-App-Id` and `X-Dify-Source` request headers on every chat call across all four dispatch paths (claude -> Anthropic SDK, gemini -> google-genai SDK, gpt-5-codex / gpt-5-pro / gpt-5.6 / o3-pro -> Responses API, otherwise -> OAICompat). The pre-existing `APP-Code: Dify2025` marker is preserved on every dispatch path. Default disabled."
+        zh_Hans: "启用后，在 chat 调用的全部四条分发路径上附加 dify_app_id 和 dify_source 作为 `X-Dify-App-Id` 和 `X-Dify-Source` 请求头：claude 走 Anthropic SDK、gemini 走 google-genai SDK、gpt-5-codex / gpt-5-pro / gpt-5.6 / o3-pro 走 Responses API，其余走 OAICompat。原有的 `APP-Code: Dify2025` 标记在所有路径上都会保留。默认禁用。"
     - variable: mode
       show_on:
         - variable: __model_type
