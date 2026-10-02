@@ -1,0 +1,142 @@
+identity:
+  name: update_database_record
+  author: langgenius
+  label:
+    en_US: Update Notion Database Record
+    zh_Hans: 更新 Notion 数据库记录
+    pt_BR: Atualizar Registro do Banco de Dados do Notion
+    ja_JP: Notion データベースのレコードを更新
+    zh_Hant: 更新 Notion 資料庫記錄
+description:
+  human:
+    en_US: Update property values of an existing record (row) in a Notion database
+    zh_Hans: 更新 Notion 数据库中现有记录（行）的属性值
+    pt_BR: Atualizar os valores das propriedades de um registro (linha) existente em um banco de dados do Notion
+    ja_JP: Notion データベースの既存レコード（行）のプロパティ値を更新します
+    zh_Hant: 更新 Notion 資料庫中現有記錄（列）的屬性值
+  llm: Update property values of an existing record (row) in a Notion database. Identify the record either by page_id, or by database_id plus a match_property / match_value pair (exact match, e.g. the record whose "No" equals 2). Values are given as a simple JSON object and converted to the right Notion format based on each property's type. If several records match, nothing is updated and the candidates are returned so you can retry with page_id. The JSON result has a "status" of updated, partially_updated, not_found (no record matches), not_accessible (the database or page does not exist or is not shared with the integration), ambiguous, too_many_matches, invalid_input or error.
+parameters:
+  - name: page_id
+    type: string
+    required: false
+    label:
+      en_US: Record (Page) ID
+      zh_Hans: 记录（页面）ID
+      pt_BR: ID do Registro (Página)
+      ja_JP: レコード（ページ）ID
+      zh_Hant: 記錄（頁面）ID
+    human_description:
+      en_US: 'ID of the record to update. Takes priority over the match settings.'
+      zh_Hans: '要更新的记录 ID。优先于匹配条件。'
+      pt_BR: 'ID do registro a atualizar. Tem prioridade sobre a correspondência.'
+      ja_JP: '更新するレコードの ID。指定すると照合条件より優先されます。'
+      zh_Hant: '要更新的記錄 ID。優先於比對條件。'
+    llm_description: The ID of the database record (page) to update, e.g. the "id" returned by query_database or a candidate returned by this tool. When provided, match_property / match_value are ignored; if database_id is also given, the record must belong to it.
+    form: llm
+  - name: database_id
+    type: string
+    required: false
+    label:
+      en_US: Database ID
+      zh_Hans: 数据库 ID
+      pt_BR: ID do Banco de Dados
+      ja_JP: データベース ID
+      zh_Hant: 資料庫 ID
+    human_description:
+      en_US: 'Database containing the record. Required if Record ID is empty.'
+      zh_Hans: '记录所在的数据库。未填写记录 ID 时必填。'
+      pt_BR: 'Banco de dados do registro. Obrigatório sem ID do Registro.'
+      ja_JP: 'レコードがあるデータベース。レコード ID が空の場合は必須。'
+      zh_Hant: '記錄所在的資料庫。未填寫記錄 ID 時必填。'
+    llm_description: The ID of the Notion database that contains the record. Required when page_id is not provided. Only the database's first data source is searched.
+    form: llm
+  - name: match_property
+    type: string
+    required: false
+    label:
+      en_US: Match Property
+      zh_Hans: 匹配属性
+      pt_BR: Propriedade de Correspondência
+      ja_JP: 照合プロパティ
+      zh_Hant: 比對屬性
+    human_description:
+      en_US: 'Property used to find the record, e.g. "No".'
+      zh_Hans: '用于查找记录的属性，例如 "No"。'
+      pt_BR: 'Propriedade usada para localizar o registro, ex. "No".'
+      ja_JP: '検索に使うプロパティ名。例："No"'
+      zh_Hant: '用於查找記錄的屬性，例如 "No"。'
+    llm_description: 'Name of the property used to find the record to update; the record whose value exactly equals match_value is updated. Required when page_id is not provided. Supported property types: title, rich_text, number, unique_id, select, status, checkbox, date, url, email, phone_number (multi_select, people, relation, files, formula and rollup cannot be used).'
+    form: llm
+  - name: match_value
+    type: string
+    required: false
+    label:
+      en_US: Match Value
+      zh_Hans: 匹配值
+      pt_BR: Valor de Correspondência
+      ja_JP: 照合値
+      zh_Hant: 比對值
+    human_description:
+      en_US: 'Value to match exactly, e.g. "2".'
+      zh_Hans: '完全匹配的值，例如 "2"。'
+      pt_BR: 'Valor de correspondência exata, ex. "2".'
+      ja_JP: '完全一致で検索する値。例："2"'
+      zh_Hant: '完全符合的值，例如 "2"。'
+    llm_description: 'The value match_property must exactly equal. Required when page_id is not provided. Format by type - number: a number; unique_id: the number or the displayed ID such as TASK-2; checkbox: true or false; date: ISO date such as 2026-10-01; others: the exact text or option name.'
+    form: llm
+  - name: properties
+    type: string
+    required: true
+    label:
+      en_US: Properties to Update
+      zh_Hans: 要更新的属性
+      pt_BR: Propriedades a Atualizar
+      ja_JP: 更新するプロパティ
+      zh_Hant: 要更新的屬性
+    human_description:
+      en_US: 'New values as JSON, e.g. {"Name": "D", "Tags": ["a"]}. Lists replace current values; null clears.'
+      zh_Hans: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。列表会替换现有值，null 为清空。'
+      pt_BR: 'Novos valores em JSON, ex. {"Name": "D", "Tags": ["a"]}. Listas substituem o valor atual; null limpa.'
+      ja_JP: '新しい値を JSON で指定。例：{"名前": "D", "タグ": ["a"]}。リストは置き換え、null で消去。'
+      zh_Hant: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。清單會取代現有值，null 為清除。'
+    llm_description: 'JSON object mapping property names to new values, e.g. {"Name": "D", "Count": 3, "Done": true}. Only include properties that should change - omit the others; null or "" CLEARS a value (the title cannot be cleared). Values by property type - title/rich_text/url/email/phone_number: string; number: number; checkbox: true or false; select/status: option name (an unknown select option is created by Notion); multi_select: list of option names; date: ISO 8601 string (e.g. "2026-10-01" or "2026-10-01T09:00:00+09:00") or {"start": ..., "end": ...}; people: list of user IDs; relation: list of page IDs; files: list of external file URLs. List values (multi_select, people, relation, files) REPLACE the current value; to add an item, first read the current value (e.g. with query_database) and send the full list. Text values replace existing formatting. Formula, rollup, unique_id and created/last-edited properties are read-only. A value given as a dict keyed by the property type (raw Notion format, e.g. {"rich_text": [...]}) is sent as-is.'
+    form: llm
+  - name: update_all_matches
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Update All Matches
+      zh_Hans: 更新所有匹配记录
+      pt_BR: Atualizar Todas as Correspondências
+      ja_JP: 一致したレコードをすべて更新
+      zh_Hant: 更新所有符合的記錄
+    human_description:
+      en_US: 'Update every matching record. When off, nothing is updated if several match.'
+      zh_Hans: '更新所有匹配记录。关闭时，多条匹配则不更新。'
+      pt_BR: 'Atualiza todos os registros correspondentes. Desativado, nada muda se vários corresponderem.'
+      ja_JP: '一致したレコードをすべて更新。オフの場合、複数一致すると更新しません。'
+      zh_Hant: '更新所有符合的記錄。關閉時，多筆符合則不更新。'
+    form: form
+  - name: max_updates
+    type: number
+    required: false
+    default: 10
+    min: 1
+    max: 1000
+    label:
+      en_US: Max Updates
+      zh_Hans: 最大更新数
+      pt_BR: Máximo de Atualizações
+      ja_JP: 最大更新件数
+      zh_Hant: 最大更新數
+    human_description:
+      en_US: 'Upper limit for Update All Matches. Nothing is updated if exceeded.'
+      zh_Hans: '批量更新的上限。超过时不更新。'
+      pt_BR: 'Limite para Atualizar Todas. Nada é atualizado se excedido.'
+      ja_JP: '一括更新の上限件数。超えた場合は更新しません。'
+      zh_Hant: '批次更新的上限。超過時不更新。'
+    form: form
+extra:
+  python:
+    source: tools/update_database_record.py
