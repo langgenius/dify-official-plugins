@@ -144,6 +144,16 @@ def test_converts_simple_values_by_property_type():
     }
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("9007199254740991", 9007199254740991), (9007199254740991, 9007199254740991), ("-12", -12),
+     ("2.50", 2.5), (3.0, 3), ("1e3", 1000)],
+)
+def test_numbers_are_parsed_without_precision_loss(value, expected):
+    result = _to_property_value("No", "number", value)["number"]
+    assert result == expected and type(result) is type(expected)
+
+
 def test_comma_separated_string_is_split_for_multi_select():
     assert _to_property_value("Tags", "multi_select", "a, b") == {"multi_select": [{"name": "a"}, {"name": "b"}]}
 
@@ -179,6 +189,10 @@ def test_raw_notion_format_is_passed_through():
         ({"No": "abc"}, "numeric value"),
         ({"No": "inf"}, "finite number"),
         ({"No": True}, "numeric value"),
+        ({"No": 9007199254740993}, "exactly"),
+        ({"No": "9007199254740993"}, "exactly"),
+        ({"No": 1e20}, "exactly"),
+        ({"No": [1]}, "numeric value"),
         ({"Done": "はい"}, "true or false"),
         ({"Done": None}, "true or false"),
         ({"Name": ""}, "cannot be cleared"),
@@ -207,6 +221,8 @@ def test_rejects_invalid_values(values, message):
     ("prop", "value", "expected"),
     [
         ("No", "2", {"property": "No", "number": {"equals": 2}}),
+        ("No", "9007199254740991", {"property": "No", "number": {"equals": 9007199254740991}}),
+        ("No", "2.5", {"property": "No", "number": {"equals": 2.5}}),
         ("Ticket", "TASK-2", {"property": "Ticket", "unique_id": {"equals": 2}}),
         ("Ticket", "7", {"property": "Ticket", "unique_id": {"equals": 7}}),
         ("Ticket", "task-7", {"property": "Ticket", "unique_id": {"equals": 7}}),
@@ -230,6 +246,8 @@ def test_builds_exact_match_filter(prop, value, expected):
         ("Ticket", "BUG-2", "expects TASK-<number>"),
         ("Seq", "TASK-3", "without a prefix"),
         ("No", "two", "numeric value"),
+        ("No", "9007199254740993", "exactly"),
+        ("Ticket", "TASK-9007199254740993", "too large"),
         ("Done", "maybe", "true or false"),
     ],
 )
