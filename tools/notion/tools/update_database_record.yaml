@@ -94,12 +94,12 @@ parameters:
       ja_JP: 更新するプロパティ
       zh_Hant: 要更新的屬性
     human_description:
-      en_US: 'New values as JSON, e.g. {"Name": "D", "Tags": ["a"]}. Lists replace current values; null clears.'
-      zh_Hans: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。列表会替换现有值，null 为清空。'
-      pt_BR: 'Novos valores em JSON, ex. {"Name": "D", "Tags": ["a"]}. Listas substituem o valor atual; null limpa.'
-      ja_JP: '新しい値を JSON で指定。例：{"名前": "D", "タグ": ["a"]}。リストは置き換え、null で消去。'
-      zh_Hant: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。清單會取代現有值，null 為清除。'
-    llm_description: 'JSON object mapping property names to new values, e.g. {"Name": "D", "Count": 3, "Done": true}. Only include properties that should change - omit the others; null or "" CLEARS a value (the title cannot be cleared). Values by property type - title/rich_text/url/email/phone_number: string; number: number; checkbox: true or false; select/status: option name (an unknown select option is created by Notion); multi_select: list of option names; date: ISO 8601 string (e.g. "2026-10-01" or "2026-10-01T09:00:00+09:00") or {"start": ..., "end": ...}; people: list of user IDs; relation: list of page IDs; files: list of external file URLs. List values (multi_select, people, relation, files) REPLACE the current value; to add an item, first read the current value (e.g. with query_database) and send the full list. Text values replace existing formatting. Formula, rollup, unique_id and created/last-edited properties are read-only. A value given as a dict keyed by the property type (raw Notion format, e.g. {"rich_text": [...]}) is sent as-is.'
+      en_US: 'New values as JSON, e.g. {"Name": "D", "Tags": ["a"]}. Lists replace current values; null clears (not title/checkbox).'
+      zh_Hans: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。列表会替换现有值，null 为清空（标题、复选框除外）。'
+      pt_BR: 'Novos valores em JSON, ex. {"Name": "D", "Tags": ["a"]}. Listas substituem o valor atual; null limpa (exceto título/caixa de seleção).'
+      ja_JP: '新しい値を JSON で指定。例：{"名前": "D", "タグ": ["a"]}。リストは置き換え、null で消去（タイトル・チェックボックス以外）。'
+      zh_Hant: '以 JSON 指定新值，例如 {"Name": "D", "Tags": ["a"]}。清單會取代現有值，null 為清除（標題、核取方塊除外）。'
+    llm_description: 'JSON object mapping property names to new values, e.g. {"Name": "D", "Count": 3, "Done": true}. Only include properties that should change - omit the others; null or "" CLEARS a value, except for the title (cannot be cleared) and checkbox (send false). Values by property type - title/rich_text/url/email/phone_number: string; number: number; checkbox: true or false; select/status: option name (an unknown select option is created by Notion); multi_select: list of option names; date: ISO 8601 string (e.g. "2026-10-01" or "2026-10-01T09:00:00+09:00") or {"start": ..., "end": ...}; people: list of user IDs; relation: list of page IDs; files: list of external file URLs. List values (multi_select, people, relation, files) REPLACE the current value. To add a multi_select option or a relation, first read the current list with query_database (it returns option names and page IDs) and send the full list. query_database returns people as names, not IDs, so a people value must be the complete list of user IDs you want to keep. Text values replace existing formatting. Formula, rollup, unique_id and created/last-edited properties are read-only. A value given as a dict keyed by the property type (raw Notion format, e.g. {"rich_text": [...]}) is sent as-is.'
     form: llm
   - name: update_all_matches
     type: boolean

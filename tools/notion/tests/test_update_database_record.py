@@ -35,7 +35,8 @@ SCHEMA = {
     "Related": {"type": "relation"},
     "Docs": {"type": "files"},
     "Total": {"type": "formula"},
-    "Ticket": {"type": "unique_id"},
+    "Ticket": {"type": "unique_id", "unique_id": {"prefix": "TASK"}},
+    "Seq": {"type": "unique_id", "unique_id": {"prefix": None}},
 }
 TYPES = {name: data["type"] for name, data in SCHEMA.items()}
 
@@ -188,6 +189,10 @@ def test_raw_notion_format_is_passed_through():
         ({"Owner": ["taro@example.com"]}, "user IDs"),
         ({"Related": ["not-an-id"]}, "page IDs"),
         ({"Memo": "x" * 200_001}, "too long"),
+        ({"Due": 20261001}, "date string"),
+        ({"Due": {"start": 20261001}}, "date string"),
+        ({"Name": {"title": []}}, "cannot be cleared"),
+        ({"Name": {"title": [{"type": "text", "text": {"content": ""}}]}}, "cannot be cleared"),
     ],
 )
 def test_rejects_invalid_values(values, message):
@@ -204,6 +209,8 @@ def test_rejects_invalid_values(values, message):
         ("No", "2", {"property": "No", "number": {"equals": 2}}),
         ("Ticket", "TASK-2", {"property": "Ticket", "unique_id": {"equals": 2}}),
         ("Ticket", "7", {"property": "Ticket", "unique_id": {"equals": 7}}),
+        ("Ticket", "task-7", {"property": "Ticket", "unique_id": {"equals": 7}}),
+        ("Seq", "3", {"property": "Seq", "unique_id": {"equals": 3}}),
         ("Done", "True", {"property": "Done", "checkbox": {"equals": True}}),
         ("Name", "A", {"property": "Name", "title": {"equals": "A"}}),
         ("Due", "2026-10-01", {"property": "Due", "date": {"equals": "2026-10-01"}}),
@@ -220,6 +227,8 @@ def test_builds_exact_match_filter(prop, value, expected):
         ("Owner", USER_ID, "cannot be used as match_property"),
         ("Total", "2", "cannot be used as match_property"),
         ("Ticket", "TASK-X", "ID number"),
+        ("Ticket", "BUG-2", "expects TASK-<number>"),
+        ("Seq", "TASK-3", "without a prefix"),
         ("No", "two", "numeric value"),
         ("Done", "maybe", "true or false"),
     ],
@@ -365,6 +374,17 @@ def test_page_id_must_belong_to_given_database(monkeypatch):
 
     assert result["status"] == "invalid_input"
     assert client.updates == []
+
+
+def test_page_ownership_check_ignores_id_case_and_hyphens(monkeypatch):
+    client = _FakeClient(pages={"page-2": _db_page("page-2", database_id="3ed2f3c8-c252-8000-b0df-d5f7c47e7d6d")})
+
+    result = _run(
+        client, monkeypatch, page_id="page-2", database_id="3ED2F3C8C2528000B0DFD5F7C47E7D6D",
+        properties=json.dumps({"Memo": "x"}),
+    )
+
+    assert result["status"] == "updated"
 
 
 def test_page_id_must_be_a_database_record(monkeypatch):
