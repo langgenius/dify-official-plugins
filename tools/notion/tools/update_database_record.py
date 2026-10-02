@@ -41,7 +41,7 @@ TRUE_STRINGS = {"true", "yes", "1"}
 FALSE_STRINGS = {"false", "no", "0"}
 
 UUID_PATTERN = re.compile(r"^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$")
-UNIQUE_ID_PATTERN = re.compile(r"^(?:\S+-)?(\d+)$")
+UNIQUE_ID_PATTERN = re.compile(r"^(?:(\S+)-)?(\d+)$")
 
 
 class InvalidPropertyValueError(ValueError):
@@ -83,7 +83,11 @@ def _parse_date(prop_name: str, value: Any) -> dict:
             if value.get(key):
                 _parse_date(prop_name, value[key])
         return value
-    text = str(value).strip()
+    if not isinstance(value, str):
+        raise InvalidPropertyValueError(
+            f"Property '{prop_name}' (type: date) requires an ISO 8601 date string (got: {value!r})."
+        )
+    text = value.strip()
     try:
         if len(text) == 10:
             date.fromisoformat(text)
@@ -165,6 +169,11 @@ def _to_property_value(prop_name: str, prop_type: str, value: Any) -> dict:
         raise InvalidPropertyValueError(f"Property '{prop_name}' (type: {prop_type}) is read-only and cannot be updated.")
 
     if isinstance(value, dict) and prop_type in value:
+        if prop_type == "title" and not any(
+            (item.get("text") or {}).get("content") or item.get("plain_text") or item.get("mention") or item.get("equation")
+            for item in value["title"] or [] if isinstance(item, dict)
+        ):
+            raise InvalidPropertyValueError(f"Property '{prop_name}' is the title and cannot be cleared.")
         return value
 
     empty = _is_empty(value)
@@ -228,7 +237,14 @@ def _build_match_filter(match_property: str, match_value: str, prop_data: dict) 
             raise InvalidPropertyValueError(
                 f"Property '{match_property}' (type: unique_id) requires an ID number such as 2 or TASK-2 (got: {match_value!r})."
             )
-        match_value = found.group(1)
+        prefix = found.group(1)
+        expected_prefix = (prop_data.get("unique_id") or {}).get("prefix") or ""
+        if prefix is not None and prefix.lower() != expected_prefix.lower():
+            expected = f"{expected_prefix}-<number>" if expected_prefix else "a number without a prefix"
+            raise InvalidPropertyValueError(
+                f"Property '{match_property}' (type: unique_id) expects {expected} (got: {match_value!r})."
+            )
+        match_value = found.group(2)
     elif prop_type == "number":
         match_value = str(_parse_number(match_property, match_value))
     elif prop_type == "checkbox":
@@ -243,7 +259,7 @@ def _is_database_record(page_data: dict) -> bool:
 
 
 def _parent_database_id(page_data: dict) -> str:
-    return (page_data.get("parent", {}).get("database_id") or "").replace("-", "")
+    return (page_data.get("parent", {}).get("database_id") or "").replace("-", "").lower()
 
 
 def _record(client: NotionClient, page_id: str) -> dict:
@@ -303,7 +319,7 @@ class UpdateDatabaseRecordTool(Tool):
                 if not _is_database_record(page_data):
                     yield from self._result("invalid_input", f"Page {page_id} is not a database record.")
                     return
-                if database_id and _parent_database_id(page_data) != database_id.replace("-", ""):
+                if database_id and _parent_database_id(page_data) != database_id.replace("-", "").lower():
                     yield from self._result(
                         "invalid_input", f"Page {page_id} does not belong to database {database_id}."
                     )
