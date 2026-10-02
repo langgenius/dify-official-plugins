@@ -118,7 +118,7 @@ In Notion database "abc123", set Name to "D" for the record whose No is 2
 
 - Matching is an exact match. `match_property` supports title, text, number, unique ID (`2` or `TASK-2`), select, status, checkbox, date, URL, email and phone properties. Only the database's first data source is searched.
 - If more than one record matches, nothing is updated and up to 10 candidates are returned. Enable `update_all_matches` (a node setting) to update every match, up to `max_updates` (default 10, max 1000); if more records match, nothing is updated.
-- List values (multi-select, people, relation, files) replace the current value rather than adding to it. `null` or `""` clears a value; the title cannot be cleared.
+- List values (multi-select, people, relation, files) replace the current value rather than adding to it. `null` or `""` clears a value, except for the title (cannot be cleared) and checkboxes (send `false`). People values must be user IDs; `query_database` returns people as names, so send the complete list of IDs to keep.
 - The JSON result has a `status` of `updated`, `partially_updated`, `not_found` (no record matches), `not_accessible` (the database or page is not shared with the integration), `ambiguous`, `too_many_matches`, `invalid_input` or `error`, so later workflow nodes can branch on it.
 - The integration needs the **Update content** capability.
 

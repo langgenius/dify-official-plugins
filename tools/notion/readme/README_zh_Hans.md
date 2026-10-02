@@ -106,7 +106,7 @@ Dify 的 Notion 插件提供与 Notion 工作区的集成，允许您直接从 D
 
 - 匹配为完全一致。`match_property` 支持的类型：标题、文本、数字、唯一 ID（`2` 或 `TASK-2`）、单选、状态、复选框、日期、URL、电子邮件、电话。仅搜索数据库的第一个数据源。
 - 如有多条记录匹配，则不会更新任何记录，并返回最多 10 个候选记录。启用 `update_all_matches`（节点设置）可更新所有匹配记录，最多 `max_updates` 条（默认 10，最大 1000）；匹配记录超过该数量时不会更新任何记录。
-- 列表类型的值（多选、人员、关联、文件）会替换现有值，而不是追加。`null` 或 `""` 会清空该值；标题不能清空。
+- 列表类型的值（多选、人员、关联、文件）会替换现有值，而不是追加。`null` 或 `""` 会清空该值，但标题不能清空，复选框请使用 `false`。人员的值需为用户 ID；`query_database` 返回的是姓名，因此请提供要保留的完整用户 ID 列表。
 - 结果 JSON 的 `status` 为 `updated`、`partially_updated`、`not_found`（没有匹配的记录）、`not_accessible`（数据库或页面未与集成共享）、`ambiguous`、`too_many_matches`、`invalid_input` 或 `error` 之一，后续工作流节点可据此分支。
 - 集成需要 **Update content**（更新内容）权限。
 
