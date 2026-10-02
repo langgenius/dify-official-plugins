@@ -40,6 +40,10 @@ MATCHABLE_PROPERTY_TYPES = {
 TRUE_STRINGS = {"true", "yes", "1"}
 FALSE_STRINGS = {"false", "no", "0"}
 
+# Notion stores numbers as IEEE 754 doubles, so integers beyond this cannot be represented exactly
+MAX_SAFE_INTEGER = 2**53 - 1
+
+INTEGER_PATTERN = re.compile(r"^[+-]?\d+$")
 UUID_PATTERN = re.compile(r"^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$")
 UNIQUE_ID_PATTERN = re.compile(r"^(?:(\S+)-)?(\d+)$")
 
@@ -64,15 +68,37 @@ def _parse_bool(prop_name: str, value: Any) -> bool:
 
 
 def _parse_number(prop_name: str, value: Any) -> int | float:
+    """Parse a number without lossy conversion: integers (and integer strings) stay exact,
+    and integers Notion cannot store exactly are rejected instead of being rounded."""
+    invalid = InvalidPropertyValueError(f"Property '{prop_name}' (type: number) requires a numeric value (got: {value!r}).")
     if isinstance(value, bool):
-        raise InvalidPropertyValueError(f"Property '{prop_name}' (type: number) requires a numeric value (got: {value!r}).")
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        raise InvalidPropertyValueError(f"Property '{prop_name}' (type: number) requires a numeric value (got: {value!r}).")
-    if not math.isfinite(number):
-        raise InvalidPropertyValueError(f"Property '{prop_name}' (type: number) requires a finite number (got: {value!r}).")
-    return int(number) if number.is_integer() else number
+        raise invalid
+    if isinstance(value, str):
+        text = value.strip()
+        if INTEGER_PATTERN.match(text):
+            value = int(text)
+        else:
+            try:
+                value = float(text)
+            except ValueError:
+                raise invalid
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise InvalidPropertyValueError(f"Property '{prop_name}' (type: number) requires a finite number (got: {value!r}).")
+        if not value.is_integer():
+            return value
+        if abs(value) > MAX_SAFE_INTEGER:
+            raise InvalidPropertyValueError(
+                f"Property '{prop_name}' (type: number) cannot store {value!r} exactly (integers must be within ±{MAX_SAFE_INTEGER})."
+            )
+        return int(value)
+    if not isinstance(value, int):
+        raise invalid
+    if abs(value) > MAX_SAFE_INTEGER:
+        raise InvalidPropertyValueError(
+            f"Property '{prop_name}' (type: number) cannot store {value!r} exactly (integers must be within ±{MAX_SAFE_INTEGER})."
+        )
+    return value
 
 
 def _parse_date(prop_name: str, value: Any) -> dict:
@@ -244,10 +270,14 @@ def _build_match_filter(match_property: str, match_value: str, prop_data: dict) 
             raise InvalidPropertyValueError(
                 f"Property '{match_property}' (type: unique_id) expects {expected} (got: {match_value!r})."
             )
-        match_value = found.group(2)
-    elif prop_type == "number":
-        match_value = str(_parse_number(match_property, match_value))
-    elif prop_type == "checkbox":
+        number = int(found.group(2))
+        if number > MAX_SAFE_INTEGER:
+            raise InvalidPropertyValueError(f"Property '{match_property}' (type: unique_id) ID is too large (got: {match_value!r}).")
+        # Built directly: build_filter's number coercion goes through float and would round large values
+        return {"property": match_property, "unique_id": {"equals": number}}
+    if prop_type == "number":
+        return {"property": match_property, "number": {"equals": _parse_number(match_property, match_value)}}
+    if prop_type == "checkbox":
         match_value = str(_parse_bool(match_property, match_value)).lower()
     elif prop_type == "date":
         _parse_date(match_property, match_value)
