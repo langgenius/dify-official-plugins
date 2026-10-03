@@ -624,11 +624,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["reasoning_format"] = reasoning_format_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
-        if enable_thinking_value is True and reasoning_effort_value is not None:
-            # Propagate reasoning_effort to both:
-            # - top-level OpenAI Chat Completions param, and
-            # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
-            # Only apply when thinking mode is explicitly enabled.
+        if reasoning_effort_value is not None and enable_thinking_value is not False:
+            # Propagate `reasoning_effort` to both:
+            # - top-level OpenAI Chat Completions param (when thinking mode is not
+            #   explicitly disabled), and
+            # - `chat_template_kwargs` for runtimes that read template kwargs
+            #   (e.g., llama.cpp) — gated on extended compatibility mode below.
+            #
+            # Gate is `enable_thinking_value is not False` rather than `is True`
+            # so the parameter is forwarded when the user leaves the thinking
+            # toggle at its default (None) under `agent_thought_support:
+            # supported`. The Responses API path at line ~1157 already forwards
+            # `reasoning_effort` without a thinking-mode gate, so the strict
+            # Chat Completions path now matches.
             model_parameters["reasoning_effort"] = reasoning_effort_value
             if strict_compatibility_value is False:
                 # Only apply when `strict_compatibility_value` is False since
