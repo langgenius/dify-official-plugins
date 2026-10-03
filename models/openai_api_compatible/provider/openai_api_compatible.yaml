@@ -526,6 +526,28 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: video_transfer_format
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 视频传输格式（可选）
+        en_US: Video transfer format (optional)
+      type: select
+      required: false
+      default: image_url_data_uri
+      options:
+        - value: image_url_data_uri
+          label:
+            en_US: image_url data URI (default, LiteLLM / Vertex Gemini compatibility)
+            zh_Hans: image_url data URI（默认，兼容 LiteLLM / Vertex Gemini）
+        - value: video_url
+          label:
+            en_US: video_url (OpenAI multimodal, vLLM-compatible)
+            zh_Hans: video_url（OpenAI 多模态，兼容 vLLM）
+      help:
+        en_US: "Wire format used for VIDEO content parts. ``image_url_data_uri`` (default) preserves the legacy behaviour: the data URI is carried on an ``image_url`` part, which LiteLLM dispatches into Vertex Gemini's ``inline_data``. ``video_url`` is the OpenAI multimodal shape OpenAI-compatible servers that define a ``video_url`` content part (e.g. vLLM) expect. Default ``image_url_data_uri``."
+        zh_Hans: "VIDEO 内容部分使用的传输格式。``image_url_data_uri``（默认）保留旧版行为：data URI 放在 ``image_url`` 部分，由 LiteLLM 转发到 Vertex Gemini 的 ``inline_data``。``video_url`` 是 OpenAI 多模态标准格式，定义了 ``video_url`` 内容部分的 OpenAI 兼容服务（如 vLLM）使用。默认 ``image_url_data_uri``。"
     - variable: audio_support
       show_on:
         - variable: __model_type

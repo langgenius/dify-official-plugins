@@ -503,12 +503,32 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 elif c.type == PromptMessageContentType.VIDEO:
                     video_c: VideoPromptMessageContent = c
-                    sub_messages.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": video_c.data},
-                        }
+                    # Wire format is selectable via the
+                    # ``video_transfer_format`` model credential:
+                    # - ``image_url_data_uri`` (default) preserves the
+                    #   pre-existing behaviour for providers that accept
+                    #   video as a data URI on the image_url part (e.g.
+                    #   LiteLLM dispatching into Vertex Gemini's inline_data).
+                    # - ``video_url`` is the wire format OpenAI-compatible
+                    #   servers that implement the multimodal
+                    #   ``video_url`` content part expect (e.g. vLLM).
+                    video_transfer_format = (credentials or {}).get(
+                        "video_transfer_format", "image_url_data_uri"
                     )
+                    if video_transfer_format == "video_url":
+                        sub_messages.append(
+                            {
+                                "type": "video_url",
+                                "video_url": {"url": video_c.data},
+                            }
+                        )
+                    else:
+                        sub_messages.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": video_c.data},
+                            }
+                        )
                 elif c.type == PromptMessageContentType.AUDIO:
                     audio_c: AudioPromptMessageContent = c
                     sub_messages.append(
