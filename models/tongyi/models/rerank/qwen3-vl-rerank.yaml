@@ -1,0 +1,7 @@
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models#3383780daf8hw
+# Qwen3-VL-Reranker — multimodal reranker from the Qwen3-VL family.
+# Exposed via DashScope under the `qwen3-vl-rerank` model identifier.
+model: qwen3-vl-rerank
+model_type: rerank
+model_properties:
+  context_size: 4000

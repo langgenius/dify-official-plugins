@@ -171,7 +171,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         embedding_used_tokens = 0
         
         def call_embedding_api(text):
-            if model in ["multimodal-embedding-v1"]:
+            if model in ["multimodal-embedding-v1", "qwen3-vl-embedding"]:
                 return dashscope.MultiModalEmbedding.call(
                     api_key=credentials_kwargs["dashscope_api_key"],
                     model=model,
@@ -242,9 +242,10 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                             isinstance(yaml_content['features'], list) and
                             'vision' in yaml_content['features']):
                         vision_models[model] = True
+                        return True
+                vision_models[model] = False
             except Exception:
-                pass
-            vision_models[model] = False
+                vision_models[model] = False
         return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
