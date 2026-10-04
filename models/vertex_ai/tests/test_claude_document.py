@@ -74,19 +74,19 @@ def test_pdf_url_is_downloaded_because_vertex_only_accepts_base64(monkeypatch):
 
     requested = []
 
-    def fake_get(url):
-        requested.append(url)
+    def fake_get(url, timeout=None):
+        requested.append((url, timeout))
         return FakeResponse()
 
     monkeypatch.setattr(llm_module.requests, "get", fake_get)
     messages = _convert([UserPromptMessage(content=[_pdf(url="https://files.example/a.pdf")])])
-    assert requested == ["https://files.example/a.pdf"]
+    assert requested == [("https://files.example/a.pdf", llm_module.DOCUMENT_FETCH_TIMEOUT_SECONDS)]
     assert messages[0]["content"][0]["source"]["data"] == PDF_BASE64
 
 
 def test_pdf_url_fetch_failure_raises(monkeypatch):
-    def fake_get(url):
-        raise requests.ConnectionError("boom")
+    def fake_get(url, timeout=None):
+        raise requests.Timeout("timed out")
 
     monkeypatch.setattr(llm_module.requests, "get", fake_get)
     with pytest.raises(ValueError, match="Failed to fetch document data"):

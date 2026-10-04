@@ -151,6 +151,10 @@ def _extract_thought_signature(part) -> Optional[str]:
     return None
 
 
+# Keep well under the plugin's MAX_REQUEST_TIMEOUT (120s) so a stalled file server fails fast
+DOCUMENT_FETCH_TIMEOUT_SECONDS = 30
+
+
 class VertexAiLargeLanguageModel(LargeLanguageModel):
     def _invoke(
         self,
@@ -467,7 +471,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             base64_data = content.base64_data
         else:
             try:
-                response = requests.get(content.url)
+                response = requests.get(content.url, timeout=DOCUMENT_FETCH_TIMEOUT_SECONDS)
                 response.raise_for_status()
                 base64_data = base64.b64encode(response.content).decode("utf-8")
             except requests.RequestException as ex:
