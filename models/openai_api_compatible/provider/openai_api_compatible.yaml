@@ -550,6 +550,28 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: audio_transfer_format
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 音频传输格式（可选）
+        en_US: Audio transfer format (optional)
+      type: select
+      required: false
+      default: image_url_data_uri
+      options:
+        - value: image_url_data_uri
+          label:
+            en_US: image_url data URI (default, LiteLLM / Vertex Gemini compatibility)
+            zh_Hans: image_url data URI（默认，兼容 LiteLLM / Vertex Gemini）
+        - value: input_audio
+          label:
+            en_US: input_audio (OpenAI multimodal, gpt-4o-audio)
+            zh_Hans: input_audio（OpenAI 多模态，gpt-4o-audio）
+      help:
+        en_US: "Wire format used for AUDIO content parts. ``image_url_data_uri`` (default) preserves the legacy behaviour: the data URI is carried on an ``image_url`` part, which LiteLLM dispatches into Vertex Gemini's ``inline_data``. ``input_audio`` is the OpenAI multimodal shape (introduced with gpt-4o-audio-preview): the raw base64 is carried on ``input_audio.data`` and the audio format on ``input_audio.format`` (e.g. ``wav`` / ``mp3``). Default ``image_url_data_uri``."
+        zh_Hans: "AUDIO 内容部分使用的传输格式。``image_url_data_uri``（默认）保留旧版行为：data URI 放在 ``image_url`` 部分，由 LiteLLM 转发到 Vertex Gemini 的 ``inline_data``。``input_audio`` 是 OpenAI 多模态标准格式（gpt-4o-audio-preview 引入）：原始 base64 放在 ``input_audio.data``，音频格式放在 ``input_audio.format``（如 ``wav`` / ``mp3``）。默认 ``image_url_data_uri``。"
     - variable: document_support
       show_on:
         - variable: __model_type

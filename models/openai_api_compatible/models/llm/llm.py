@@ -511,12 +511,38 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 elif c.type == PromptMessageContentType.AUDIO:
                     audio_c: AudioPromptMessageContent = c
-                    sub_messages.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": audio_c.data},
-                        }
+                    # Wire format is selectable via the
+                    # ``audio_transfer_format`` model credential:
+                    # - ``image_url_data_uri`` (default) preserves the
+                    #   pre-existing behaviour for providers that accept
+                    #   audio as a data URI on the image_url part (e.g.
+                    #   LiteLLM dispatching into Vertex Gemini's
+                    #   inline_data).
+                    # - ``input_audio`` is the OpenAI multimodal shape
+                    #   (introduced with gpt-4o-audio-preview), with
+                    #   ``input_audio.data`` carrying the raw base64 and
+                    #   ``input_audio.format`` carrying the audio format
+                    #   (e.g. ``wav`` / ``mp3``).
+                    audio_transfer_format = (credentials or {}).get(
+                        "audio_transfer_format", "image_url_data_uri"
                     )
+                    if audio_transfer_format == "input_audio":
+                        sub_messages.append(
+                            {
+                                "type": "input_audio",
+                                "input_audio": {
+                                    "data": audio_c.base64_data,
+                                    "format": audio_c.format,
+                                },
+                            }
+                        )
+                    else:
+                        sub_messages.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": audio_c.data},
+                            }
+                        )
                 elif c.type == PromptMessageContentType.DOCUMENT:
                     doc_c: DocumentPromptMessageContent = c
                     sub_messages.append(
