@@ -576,6 +576,31 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        # Merge any per-model ``extra_headers`` JSON object into a copy of
+        # credentials. The merge runs FIRST so both dispatch paths (the
+        # Responses API path below and the Chat Completions path via
+        # ``super()._invoke()`` later) see the merged headers. Dify resolves
+        # any template variables (e.g. ``{{#sys.conversation_id#}}``)
+        # upstream before the plugin sees the value. On JSON parse error,
+        # fall back to no extra headers (matches the broader plugin
+        # pattern of never raising on user-supplied parameter values).
+        extra_headers_value = model_parameters.pop("extra_headers", None)
+        if extra_headers_value:
+            try:
+                parsed = (
+                    json.loads(extra_headers_value)
+                    if isinstance(extra_headers_value, str)
+                    else extra_headers_value
+                )
+            except (json.JSONDecodeError, TypeError):
+                parsed = None
+            if isinstance(parsed, dict) and parsed:
+                existing = credentials.get("extra_headers") or {}
+                credentials = {
+                    **credentials,
+                    "extra_headers": {**existing, **parsed},
+                }
+
         if credentials.get("api_type") == "responses":
             return self._chat_generate_with_responses(
                 model=model,
@@ -732,31 +757,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         include_usage = credentials.get("stream_include_usage", "enabled") != "disabled"
         if stream and include_usage and "stream_options" not in model_parameters:
             model_parameters["stream_options"] = {"include_usage": True}
-
-        # Merge any per-model ``extra_headers`` JSON object into a copy of
-        # credentials so the OAICompat base picks them up via the existing
-        # ``credentials['extra_headers']`` thread. Dify resolves any
-        # template variables (e.g. ``{{#sys.conversation_id#}}``) upstream
-        # before the plugin sees the value, so the value here is already a
-        # plain string. On JSON parse error, fall back to no extra headers
-        # (matches the broader plugin pattern of never raising on user-
-        # supplied parameter values).
-        extra_headers_value = model_parameters.pop("extra_headers", None)
-        if extra_headers_value:
-            try:
-                parsed = (
-                    json.loads(extra_headers_value)
-                    if isinstance(extra_headers_value, str)
-                    else extra_headers_value
-                )
-            except (json.JSONDecodeError, TypeError):
-                parsed = None
-            if isinstance(parsed, dict) and parsed:
-                existing = credentials.get("extra_headers") or {}
-                credentials = {
-                    **credentials,
-                    "extra_headers": {**existing, **parsed},
-                }
 
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
