@@ -109,6 +109,17 @@ class TestClaude5RegionResolutionInGetModelInfo:
         assert info["model"] == expected
         assert info["support_tool_use"] is True
 
+    @pytest.mark.parametrize("model_name,cross_region,region,expected", [
+        ("Sonnet 5.5", "global", "us-east-1", "global.anthropic.claude-sonnet-5-5"),
+        ("Sonnet 5.5", "geographic", "eu-west-1", "eu.anthropic.claude-sonnet-5-5"),
+        ("Fable 5.1", "global", "eu-west-1", "global.anthropic.claude-fable-5-1"),
+        ("Fable 5.1", "geographic", "ca-central-1", "us.anthropic.claude-fable-5-1"),
+    ])
+    def test_sonnet55_fable51_resolution(self, model_name, cross_region, region, expected):
+        info, _ = self._get_model_info(model_name, cross_region, region)
+        assert info["model"] == expected
+        assert info["support_tool_use"] is True
+
     def test_geographic_us(self):
         info, _ = self._get_model_info("Fable 5", "geographic", "us-west-2")
         assert info["model"] == "us.anthropic.claude-fable-5"
@@ -163,3 +174,19 @@ class TestOpus55CustomProfileSchema:
         pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
         assert pricing["input"] == "0.004"
         assert pricing["output"] == "0.02"
+
+
+class TestSonnet55Fable51CustomProfileSchema:
+    """Same as Opus 5.5 above: custom profiles on Sonnet 5.5 / Fable 5.1 must
+    get the Claude 5 surface and their own (global-rate) pricing."""
+
+    @pytest.mark.parametrize("model_id,name,price_in,price_out", [
+        ("anthropic.claude-sonnet-5-5", "Sonnet 5.5", "0.002", "0.01"),
+        ("anthropic.claude-fable-5-1", "Fable 5.1", "0.01", "0.05"),
+    ])
+    def test_claude5_schema_and_pricing(self, model_id, name, price_in, price_out):
+        assert BedrockLLM._model_id_matches_schema(None, model_id, SimpleNamespace(model="anthropic claude 5"))
+        assert not BedrockLLM._model_id_matches_schema(None, model_id, SimpleNamespace(model="anthropic claude"))
+        assert BedrockLLM._map_model_id_to_name(None, model_id) == name
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
+        assert (pricing["input"], pricing["output"]) == (price_in, price_out)
