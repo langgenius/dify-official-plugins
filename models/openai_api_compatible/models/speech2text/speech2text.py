@@ -23,6 +23,14 @@ class OpenAISpeech2TextModel(OAICompatSpeech2TextModel):
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
+        # Merge any provider-credential-level extra headers. The LLM
+        # module already threads ``credentials['extra_headers']`` via the
+        # OAICompat base class; this is the symmetric fix for the
+        # speech2text path (which builds its own headers dict).
+        extra_headers = credentials.get("extra_headers") or {}
+        if extra_headers:
+            headers.update(extra_headers)
+
         endpoint_url = credentials.get("endpoint_url", "https://api.openai.com/v1/")
         if not endpoint_url.endswith("/"):
             endpoint_url += "/"

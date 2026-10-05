@@ -120,6 +120,14 @@ class OpenAIRerankModel(OAICompatRerankModel):
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
+        # Merge any provider-credential-level extra headers. The LLM
+        # module already threads ``credentials['extra_headers']`` via the
+        # OAICompat base class; this is the symmetric fix for the
+        # rerank path (which builds its own headers dict).
+        extra_headers = credentials.get("extra_headers") or {}
+        if extra_headers:
+            headers.update(extra_headers)
+
         # Simple string format for text-only mode
         # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
         payload = {
@@ -242,6 +250,14 @@ class OpenAIRerankModel(OAICompatRerankModel):
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
+
+        # Merge any provider-credential-level extra headers. The LLM
+        # module already threads ``credentials['extra_headers']`` via the
+        # OAICompat base class; this is the symmetric fix for the
+        # rerank path (which builds its own headers dict).
+        extra_headers = credentials.get("extra_headers") or {}
+        if extra_headers:
+            headers.update(extra_headers)
 
         # Convert documents to ScoreMultiModalParam format
         documents_params = [self._to_score_multimodal_param(doc) for doc in docs]

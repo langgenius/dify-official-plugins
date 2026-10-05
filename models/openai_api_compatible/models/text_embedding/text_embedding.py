@@ -187,6 +187,13 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {api_key}" if api_key else "",
                 }
+                # Merge any provider-credential-level extra headers. The LLM
+                # module already threads ``credentials['extra_headers']`` via the
+                # OAICompat base class; this is the symmetric fix for the
+                # text-embedding path (which builds its own headers dict).
+                extra_headers = credentials.get("extra_headers") or {}
+                if extra_headers:
+                    headers.update(extra_headers)
                 text_embeddings = []
 
                 encoding_format = _get_encoding_format(credentials)
@@ -296,7 +303,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         # Dify display/registration name (which would 404 upstream).
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
 
-        client = OpenAI(api_key=api_key, base_url=endpoint_url)
+        client = OpenAI(
+            api_key=api_key,
+            base_url=endpoint_url,
+            default_headers=credentials.get("extra_headers") or None,
+        )
 
         batched_embeddings = []
         used_tokens = 0

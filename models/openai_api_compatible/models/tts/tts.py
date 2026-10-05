@@ -97,6 +97,14 @@ class OpenAIText2SpeechModel(OAICompatText2SpeechModel):
             "Connection": "keep-alive",
         }
 
+        # Merge any provider-credential-level extra headers. The LLM
+        # module already threads ``credentials['extra_headers']`` via the
+        # OAICompat base class; this is the symmetric fix for the
+        # tts path (which builds its own headers dict).
+        extra_headers = credentials.get("extra_headers") or {}
+        if extra_headers:
+            headers.update(extra_headers)
+
         # Additions config (enables language detection, markdown filter, caching)
         additions = {
             "disable_markdown_filter": True,
