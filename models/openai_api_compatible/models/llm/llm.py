@@ -298,6 +298,37 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 )
             )
 
+        # Per-model extra HTTP headers. The user supplies a JSON object
+        # string (e.g. ``{"x-opencode-session": "{{#sys.conversation_id#}}"}``)
+        # which the plugin parses and merges into ``credentials['extra_headers']``
+        # for this request only. Dify resolves any template variables
+        # (e.g. ``{{#sys.conversation_id#}}``) upstream before the plugin
+        # sees the value. The OAICompat base then threads the merged
+        # headers into the outbound ``requests.post`` call.
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="extra_headers",
+                label=I18nObject(
+                    en_us="Extra HTTP Headers",
+                    zh_hans="额外 HTTP 请求头",
+                ),
+                help=I18nObject(
+                    en_us=(
+                        "Optional JSON object of HTTP headers to send on every "
+                        "request, e.g. ``{\"x-opencode-session\": \"{{#sys.conversation_id#}}\"}``. "
+                        "Dify template variables are resolved before the plugin sees "
+                        "the value. Merged on top of any existing ``credential['extra_headers']``."
+                    ),
+                    zh_hans=(
+                        "可选的 HTTP 请求头 JSON 对象，例如 ``{\"x-opencode-session\": \"{{#sys.conversation_id#}}\"}``。 "
+                        "Dify 模板变量会在插件看到值之前解析。会与现有 ``credential['extra_headers']`` 合并。"
+                    ),
+                ),
+                type=ParameterType.STRING,
+                required=False,
+            )
+        )
+
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
                 en_us=credentials["display_name"], zh_hans=credentials["display_name"]
@@ -701,6 +732,31 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         include_usage = credentials.get("stream_include_usage", "enabled") != "disabled"
         if stream and include_usage and "stream_options" not in model_parameters:
             model_parameters["stream_options"] = {"include_usage": True}
+
+        # Merge any per-model ``extra_headers`` JSON object into a copy of
+        # credentials so the OAICompat base picks them up via the existing
+        # ``credentials['extra_headers']`` thread. Dify resolves any
+        # template variables (e.g. ``{{#sys.conversation_id#}}``) upstream
+        # before the plugin sees the value, so the value here is already a
+        # plain string. On JSON parse error, fall back to no extra headers
+        # (matches the broader plugin pattern of never raising on user-
+        # supplied parameter values).
+        extra_headers_value = model_parameters.pop("extra_headers", None)
+        if extra_headers_value:
+            try:
+                parsed = (
+                    json.loads(extra_headers_value)
+                    if isinstance(extra_headers_value, str)
+                    else extra_headers_value
+                )
+            except (json.JSONDecodeError, TypeError):
+                parsed = None
+            if isinstance(parsed, dict) and parsed:
+                existing = credentials.get("extra_headers") or {}
+                credentials = {
+                    **credentials,
+                    "extra_headers": {**existing, **parsed},
+                }
 
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
