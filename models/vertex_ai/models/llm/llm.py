@@ -23,6 +23,7 @@ from dify_plugin.entities.model import PriceType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -414,6 +415,34 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         sub_message_dict = {
                             "type": "image",
                             "source": {"type": "base64", "media_type": mime_type, "data": base64_data},
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        # Claude on Vertex AI only accepts base64-encoded PDF documents.
+                        # See https://platform.claude.com/docs/en/build-with-claude/pdf-support
+                        message_content = cast(DocumentPromptMessageContent, message_content)
+                        if message_content.url:
+                            raise ValueError(
+                                "URL-based document sources are not supported by Claude on Vertex AI; "
+                                "only base64-encoded PDFs can be forwarded."
+                            )
+                        if not message_content.base64_data:
+                            raise ValueError(
+                                "Document content has no base64 payload; cannot forward to Claude on Vertex AI."
+                            )
+                        mime_type = message_content.mime_type or "application/pdf"
+                        if mime_type != "application/pdf":
+                            raise ValueError(
+                                f"Unsupported document mime type {mime_type!r}; "
+                                "Claude on Vertex AI only accepts application/pdf."
+                            )
+                        sub_message_dict = {
+                            "type": "document",
+                            "source": {
+                                "type": "base64",
+                                "media_type": mime_type,
+                                "data": message_content.base64_data,
+                            },
                         }
                         sub_messages.append(sub_message_dict)
                 message_dict = {"role": "user", "content": sub_messages}
