@@ -212,7 +212,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         project_id = credentials["vertex_project_id"]
         SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
         token = ""
-        vertex_anthropic_location = credentials["vertex_anthropic_location"]
+        vertex_anthropic_location = credentials.get("vertex_anthropic_location")
         vertex_location = credentials["vertex_location"]
         if service_account_info:
             credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
