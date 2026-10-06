@@ -48,7 +48,7 @@ parameters:
       pt_BR: 'Banco de dados do registro. Obrigatório sem ID do Registro.'
       ja_JP: 'レコードがあるデータベース。レコード ID が空の場合は必須。'
       zh_Hant: '記錄所在的資料庫。未填寫記錄 ID 時必填。'
-    llm_description: The ID of the Notion database that contains the record. Required when page_id is not provided. Only the database's first data source is searched.
+    llm_description: The ID (or URL) of the Notion database that contains the record, or of one of its data sources (search_notion returns databases as data sources). Required when page_id is not provided. For a database ID, only its first data source is searched.
     form: llm
   - name: match_property
     type: string
