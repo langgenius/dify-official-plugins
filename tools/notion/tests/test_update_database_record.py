@@ -9,13 +9,8 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools import update_database_record as module
-from tools.update_database_record import (
-    InvalidPropertyValueError,
-    UpdateDatabaseRecordTool,
-    _build_match_filter,
-    _build_properties_payload,
-    _to_property_value,
-)
+from tools.notion_properties import InvalidPropertyValueError, build_properties_payload, to_property_value
+from tools.update_database_record import UpdateDatabaseRecordTool, _build_match_filter
 
 DATABASE_ID = "db1"
 USER_ID = "1b2c3d4e-0000-4000-8000-000000000001"
@@ -70,13 +65,10 @@ class _FakeClient:
             raise self.lookup_error
         return self.pages[page_id]
 
-    def get_default_data_source_id(self, database_id):
+    def resolve_data_source(self, database_id):
         if self.lookup_error:
             raise self.lookup_error
-        return "ds-1"
-
-    def retrieve_data_source(self, data_source_id):
-        return {"properties": SCHEMA}
+        return {"id": "ds-1", "properties": SCHEMA}
 
     def query_data_source(self, data_source_id, filter_obj=None, page_size=10, start_cursor=None):
         index = int(start_cursor or 0)
@@ -117,7 +109,7 @@ def _match(**params):
 
 
 def test_converts_simple_values_by_property_type():
-    payload = _build_properties_payload(
+    payload = build_properties_payload(
         {
             "Name": "D", "No": "3", "Status": "Done", "Stage": None, "Tags": ["a", None, "b"],
             "Due": "2026-10-01", "Done": "Yes", "Memo": "", "Link": "",
@@ -150,34 +142,37 @@ def test_converts_simple_values_by_property_type():
      ("2.50", 2.5), (3.0, 3), ("1e3", 1000)],
 )
 def test_numbers_are_parsed_without_precision_loss(value, expected):
-    result = _to_property_value("No", "number", value)["number"]
+    result = to_property_value("No", "number", value)["number"]
     assert result == expected and type(result) is type(expected)
 
 
 def test_comma_separated_string_is_split_for_multi_select():
-    assert _to_property_value("Tags", "multi_select", "a, b") == {"multi_select": [{"name": "a"}, {"name": "b"}]}
+    assert to_property_value("Tags", "multi_select", "a, b") == {"multi_select": [{"name": "a"}, {"name": "b"}]}
 
 
 def test_date_accepts_datetime_and_range():
-    assert _to_property_value("Due", "date", "2026-10-01T09:00:00+09:00") == {"date": {"start": "2026-10-01T09:00:00+09:00"}}
+    assert to_property_value("Due", "date", "2026-10-01T09:00:00+09:00") == {"date": {"start": "2026-10-01T09:00:00+09:00"}}
     value = {"start": "2026-10-01", "end": "2026-10-03"}
-    assert _to_property_value("Due", "date", {"date": value}) == {"date": value}
+    assert to_property_value("Due", "date", {"date": value}) == {"date": value}
+    assert to_property_value("Due", "date", {"start": " 2026-10-01 ", "end": None, "time_zone": "Asia/Tokyo"}) == {
+        "date": {"start": "2026-10-01", "end": None, "time_zone": "Asia/Tokyo"}
+    }
 
 
 def test_long_text_is_split_into_notion_sized_chunks():
-    value = _to_property_value("Memo", "rich_text", "x" * 4500)
+    value = to_property_value("Memo", "rich_text", "x" * 4500)
     assert [len(item["text"]["content"]) for item in value["rich_text"]] == [2000, 2000, 500]
 
 
 def test_chunks_count_utf16_code_units():
     # Each emoji is 2 UTF-16 code units, so only 1000 fit in one Notion text object
-    value = _to_property_value("Memo", "rich_text", "😀" * 1500)
+    value = to_property_value("Memo", "rich_text", "😀" * 1500)
     assert [len(item["text"]["content"]) for item in value["rich_text"]] == [1000, 500]
 
 
 def test_raw_notion_format_is_passed_through():
     raw = {"rich_text": [{"type": "text", "text": {"content": "hi"}, "annotations": {"bold": True}}]}
-    assert _to_property_value("Memo", "rich_text", raw) is raw
+    assert to_property_value("Memo", "rich_text", raw) is raw
 
 
 @pytest.mark.parametrize(
@@ -195,7 +190,7 @@ def test_raw_notion_format_is_passed_through():
         ({"No": [1]}, "numeric value"),
         ({"Done": "はい"}, "true or false"),
         ({"Done": None}, "true or false"),
-        ({"Name": ""}, "cannot be cleared"),
+        ({"Name": ""}, "cannot be empty"),
         ({"Name": ["a"]}, "text value"),
         ({"Stage": ["a"]}, "single text value"),
         ({"Due": "2026/10/01"}, "ISO 8601"),
@@ -205,13 +200,16 @@ def test_raw_notion_format_is_passed_through():
         ({"Memo": "x" * 200_001}, "too long"),
         ({"Due": 20261001}, "date string"),
         ({"Due": {"start": 20261001}}, "date string"),
-        ({"Name": {"title": []}}, "cannot be cleared"),
-        ({"Name": {"title": [{"type": "text", "text": {"content": ""}}]}}, "cannot be cleared"),
+        ({"Due": {"start": {"start": "2026-10-01"}}}, "date string"),
+        ({"Due": {"start": "2026-10-01", "end": ""}}, "ISO 8601"),
+        ({"Due": {"start": "  "}}, "'start'"),
+        ({"Name": {"title": []}}, "cannot be empty"),
+        ({"Name": {"title": [{"type": "text", "text": {"content": ""}}]}}, "cannot be empty"),
     ],
 )
 def test_rejects_invalid_values(values, message):
     with pytest.raises(InvalidPropertyValueError, match=message):
-        _build_properties_payload(values, TYPES)
+        build_properties_payload(values, TYPES)
 
 
 # --- match filter -----------------------------------------------------------------------
@@ -403,6 +401,25 @@ def test_page_ownership_check_ignores_id_case_and_hyphens(monkeypatch):
     )
 
     assert result["status"] == "updated"
+
+
+def test_page_ownership_check_accepts_data_source_id_or_url(monkeypatch):
+    page = _db_page("page-2", database_id="3ed2f3c8c2528000b0dfd5f7c47e7d6d")
+    page["parent"]["data_source_id"] = "1b2c3d4e-0000-4000-8000-0000000000ff"
+    client = _FakeClient(pages={"page-2": page})
+
+    by_data_source = _run(
+        client, monkeypatch, page_id="page-2", database_id="1B2C3D4E0000400080000000000000FF",
+        properties=json.dumps({"Memo": "x"}),
+    )
+    by_url = _run(
+        client, monkeypatch, page_id="page-2",
+        database_id="https://www.notion.so/team/Tasks-3ed2f3c8c2528000b0dfd5f7c47e7d6d?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        properties=json.dumps({"Memo": "x"}),
+    )
+
+    assert by_data_source["status"] == "updated"
+    assert by_url["status"] == "updated"
 
 
 def test_page_id_must_be_a_database_record(monkeypatch):

@@ -47,6 +47,7 @@ tools:
   - tools/retrieve_database.yaml
   - tools/create_database.yaml
   - tools/update_database.yaml
+  - tools/create_database_record.yaml
   - tools/update_database_record.yaml
   - tools/retrieve_comments.yaml
   - tools/create_comment.yaml
