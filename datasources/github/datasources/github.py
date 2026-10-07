@@ -107,15 +107,21 @@ class GitHubDataSource(OnlineDocumentDatasource):
             # Add README file (if exists)
             try:
                 readme_info = self._make_request(f"{self.base_url}/repos/{repo['full_name']}/readme")
+                # GitHub returns the actual repo-relative path of the README
+                # (e.g. "docs/README.rst" when the repo's default README lives
+                # there). Forward that path so the page_id and metadata.file_path
+                # match what _get_file_content expects downstream.
+                readme_path = readme_info.get("path", "README.md")
+                readme_name = readme_info.get("name", "README.md")
                 pages.append({
-                    "page_id": f"file:{repo['full_name']}:README.md",
-                    "page_name": f"{repo['name']} - README",
+                    "page_id": f"file:{repo['full_name']}:{readme_path}",
+                    "page_name": f"{repo['name']} - {readme_name}",
                     "last_edited_time": repo.get("updated_at", ""),
                     "type": "file",
                     "url": readme_info.get('html_url', ''),
                     "metadata": {
                         "repository": repo['full_name'],
-                        "file_path": "README.md",
+                        "file_path": readme_path,
                         "size": readme_info.get('size', 0)
                     }
                 })
