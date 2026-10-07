@@ -3,27 +3,47 @@ identity:
   author: langgenius
   label:
     en_US: Parse File
-    zh_Hans: Parse File
-    ja_JP: Parse File
+    zh_Hans: 解析文件
+    ja_JP: ファイルを解析
+    pt_BR: Analisar arquivo
 description:
   human:
-    en_US: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
-    zh_Hans: 一个用于解析文本，表格和图片的工具，支持pdf,pptx,docx等多种格式。支持英语，中文等多种语言
-    ja_JP: テキスト、テーブル、画像を解析するツールです。pdf、pptx、docxなどの複数の形式をサポートしています。英語、中国語などの複数の言語をサポートしています。
-  llm: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
+    en_US: Parse a document (pdf, Office, images, html, etc.) into Markdown and structured JSON with MinerU, extracting text, tables, formulas and images. Works with the MinerU official API and self-hosted MinerU 1.x-4.x.
+    zh_Hans: 使用 MinerU 将文档（pdf、Office、图片、html 等）解析为 Markdown 和结构化 JSON，提取文本、表格、公式和图片。支持 MinerU 官方 API 和本地部署的 MinerU 1.x～4.x。
+    ja_JP: MinerU でドキュメント（pdf、Office、画像、html など）を Markdown と構造化 JSON に解析し、テキスト・表・数式・画像を抽出します。MinerU 公式 API とセルフホストの MinerU 1.x〜4.x に対応しています。
+    pt_BR: Analisa um documento (pdf, Office, imagens, html etc.) em Markdown e JSON estruturado com o MinerU, extraindo texto, tabelas, fórmulas e imagens. Funciona com a API oficial do MinerU e com o MinerU 1.x-4.x auto-hospedado.
+  llm: Parse a document file into Markdown text (plus structured JSON and extracted images) with MinerU. Use it when you need the readable content of a pdf, Office file, image or html file. Large documents may take minutes; if the result is not ready within the timeout, the tool returns a task_id or batch_id that can be passed to get-parse-result later.
 parameters:
   - name: file
     type: file
     required: true
     label:
-      en_US: file
-      zh_Hans: file
-      ja_JP: file
+      en_US: File
+      zh_Hans: 文件
+      ja_JP: ファイル
+      pt_BR: Arquivo
     human_description:
-      en_US:  The file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
-      zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
-      ja_JP: 解析するファイル(pdf、ppt、pptx、doc、docx、png、jpg、jpegをサポート)
-    llm_description: The file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      en_US: The file to parse (pdf, doc, docx, ppt, pptx, xls, xlsx, images, html and more; support depends on the MinerU version)
+      zh_Hans: 要解析的文件（pdf、doc、docx、ppt、pptx、xls、xlsx、图片、html 等，具体取决于 MinerU 版本）
+      ja_JP: 解析するファイル（pdf、doc、docx、ppt、pptx、xls、xlsx、画像、html など。対応形式は MinerU のバージョンによります）
+      pt_BR: O arquivo a analisar (pdf, doc, docx, ppt, pptx, xls, xlsx, imagens, html e outros; o suporte depende da versão do MinerU)
+    llm_description: The document file to parse.
+    form: llm
+
+  - name: page_ranges
+    type: string
+    required: false
+    label:
+      en_US: Page ranges
+      zh_Hans: 页码范围
+      ja_JP: ページ範囲
+      pt_BR: Intervalo de páginas
+    human_description:
+      en_US: Parse only these pages of a PDF, e.g. 1-10 or 2,4-6 (1-based). Empty parses the whole file. MinerU 2.x/3.x only accept a single range such as 3-10.
+      zh_Hans: 只解析 PDF 的这些页，例如 1-10 或 2,4-6（从 1 开始）。留空则解析全部。MinerU 2.x/3.x 只支持单个连续范围，如 3-10。
+      ja_JP: PDF のこのページだけを解析します。例 1-10 や 2,4-6（1 始まり）。空欄の場合は全ページを解析します。MinerU 2.x/3.x は 3-10 のような単一の範囲のみ対応します。
+      pt_BR: Analisa apenas estas páginas de um PDF, ex. 1-10 ou 2,4-6 (começando em 1). Vazio analisa o arquivo inteiro. O MinerU 2.x/3.x aceita apenas um intervalo contínuo, como 3-10.
+    llm_description: Optional 1-based PDF page ranges to parse, e.g. "1-10" or "2,4-6". Leave empty to parse all pages.
     form: llm
 
   - name: parse_method
@@ -31,14 +51,16 @@ parameters:
     required: false
     default: auto
     label:
-      en_US: parse method
+      en_US: Parse method
       zh_Hans: 解析方法
       ja_JP: 解析方法
+      pt_BR: Método de análise
     human_description:
-      en_US: (For local deployment v1 and v2) Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
-      zh_Hans: （用于本地部署v1和v2版本）解析方法，可以是auto, ocr, 或 txt。默认是auto。如果结果不理想，请尝试ocr
-      ja_JP: （ローカルデプロイメントv1とv2用）解析方法は、auto、ocr、またはtxtのいずれかです。デフォルトはautoです。結果が満足できない場合は、ocrを試してください
-    llm_description: (For local deployment v1 and v2) Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+      en_US: (Local deployment) auto, ocr (force OCR) or txt (use the text layer). Default is auto. If results are not satisfactory, try ocr.
+      zh_Hans: （本地部署）auto、ocr（强制 OCR）或 txt（使用文本层）。默认 auto。如果结果不理想，请尝试 ocr。
+      ja_JP: （ローカルデプロイ）auto、ocr（OCR を強制）または txt（テキスト層を使用）。デフォルトは auto です。結果が満足できない場合は ocr を試してください。
+      pt_BR: (Implantação local) auto, ocr (forçar OCR) ou txt (usar a camada de texto). O padrão é auto. Se os resultados não forem satisfatórios, tente ocr.
+    llm_description: (Local deployment) Parsing method, auto, ocr or txt. Default is auto.
     form: form
     options:
       - value: auto
@@ -46,20 +68,67 @@ parameters:
           en_US: auto
           zh_Hans: auto
           ja_JP: auto
+          pt_BR: auto
       - value: ocr
         label:
           en_US: ocr
           zh_Hans: ocr
           ja_JP: ocr
+          pt_BR: ocr
       - value: txt
         label:
           en_US: txt
           zh_Hans: txt
           ja_JP: txt
-    placeholder:
-      en_US: Please select a parse method
-      zh_Hans: 请选择解析方法
-      ja_JP: 解析方法を選択してください
+          pt_BR: txt
+
+  - name: tier
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: Parsing tier (MinerU 4.x)
+      zh_Hans: 解析档位（MinerU 4.x）
+      ja_JP: 解析ティア（MinerU 4.x）
+      pt_BR: Nível de análise (MinerU 4.x)
+    human_description:
+      en_US: (Local deployment, MinerU 4.x) Quality/speed tier. auto lets the server choose. flash is fastest and needs no models; standard and advanced use a VLM.
+      zh_Hans: （本地部署，MinerU 4.x）质量/速度档位。auto 由服务端选择。flash 最快且无需模型；standard 和 advanced 使用 VLM。
+      ja_JP: （ローカルデプロイ、MinerU 4.x）品質と速度のティア。auto の場合はサーバーが選択します。flash は最速でモデル不要、standard と advanced は VLM を使用します。
+      pt_BR: (Implantação local, MinerU 4.x) Nível de qualidade/velocidade. auto deixa o servidor escolher. flash é o mais rápido e não precisa de modelos; standard e advanced usam um VLM.
+    llm_description: (Local deployment, MinerU 4.x) Parsing tier, auto for the server default.
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: Server default
+          zh_Hans: 服务端默认
+          ja_JP: サーバー既定
+          pt_BR: Padrão do servidor
+      - value: flash
+        label:
+          en_US: flash
+          zh_Hans: flash
+          ja_JP: flash
+          pt_BR: flash
+      - value: basic
+        label:
+          en_US: basic
+          zh_Hans: basic
+          ja_JP: basic
+          pt_BR: basic
+      - value: standard
+        label:
+          en_US: standard
+          zh_Hans: standard
+          ja_JP: standard
+          pt_BR: standard
+      - value: advanced
+        label:
+          en_US: advanced
+          zh_Hans: advanced
+          ja_JP: advanced
+          pt_BR: advanced
 
   - name: enable_formula
     type: boolean
@@ -69,11 +138,13 @@ parameters:
       zh_Hans: 开启公式识别
       en_US: Enable formula recognition
       ja_JP: 数式認識を有効にする
+      pt_BR: Ativar reconhecimento de fórmulas
     human_description:
-      zh_Hans: （用于官方API和本地部署v2版本）是否开启公式识别
-      en_US: (For official API and local deployment v2) Whether to enable formula recognition
-      ja_JP: （公式API用とローカルデプロイメントv2用）数式認識を有効にするかどうか
-    llm_description: (For official API and local deployment v2) Whether to enable formula recognition
+      zh_Hans: （官方API和本地部署 MinerU 2.x/3.x）是否开启公式识别
+      en_US: (Official API and local MinerU 2.x/3.x) Whether to enable formula recognition
+      ja_JP: （公式API とローカルの MinerU 2.x/3.x）数式認識を有効にするかどうか
+      pt_BR: (API oficial e MinerU 2.x/3.x local) Se o reconhecimento de fórmulas deve ser ativado
+    llm_description: (Official API and local MinerU 2.x/3.x) Whether to enable formula recognition
     form: form
 
   - name: enable_table
@@ -84,11 +155,13 @@ parameters:
       zh_Hans: 开启表格识别
       en_US: Enable table recognition
       ja_JP: 表認識を有効にする
+      pt_BR: Ativar reconhecimento de tabelas
     human_description:
-      zh_Hans: （用于官方API和本地部署v2版本）是否开启表格识别
-      en_US: (For official API and local deployment v2) Whether to enable table recognition
-      ja_JP: （公式API用とローカルデプロイメントv2用）表認識を有効にするかどうか
-    llm_description: (For official API and local deployment v2) Whether to enable table recognition
+      zh_Hans: （官方API和本地部署 MinerU 2.x/3.x）是否开启表格识别
+      en_US: (Official API and local MinerU 2.x/3.x) Whether to enable table recognition
+      ja_JP: （公式API とローカルの MinerU 2.x/3.x）表認識を有効にするかどうか
+      pt_BR: (API oficial e MinerU 2.x/3.x local) Se o reconhecimento de tabelas deve ser ativado
+    llm_description: (Official API and local MinerU 2.x/3.x) Whether to enable table recognition
     form: form
 
   - name: language
@@ -99,15 +172,18 @@ parameters:
       zh_Hans: 文档语言
       en_US: Document language
       ja_JP: ドキュメント言語
+      pt_BR: Idioma do documento
     human_description:
-      zh_Hans: "（仅限官方api和本地部署v2版本）指定文档语言，默认 ch，可以设置为auto，当为auto时模型会自动识别文档语言（本地部署需要指定明确的语言，默认ch），其他可选值列表详见：https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
-      en_US: "(For official API and local deployment v2) Specify document language, default ch, can be set to auto(local deployment need to specify the language, default ch), other optional value list see: https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
-      ja_JP: "（公式API用とローカルデプロイメントv2用）ドキュメント言語を指定します。デフォルトはchで、autoに設定できます。autoの場合（ローカルデプロイメントでは言語を指定する必要があります。デフォルトはchです）、モデルはドキュメント言語を自動的に識別します。他のオプション値リストについては、次を参照してください：https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
+      zh_Hans: "（官方API和本地部署 MinerU 2.x/3.x）文档语言，如 ch、en、japan、korean。官方API可设为 auto 自动识别；本地部署留空或 auto 时使用 ch。可选值见 https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
+      en_US: "(Official API and local MinerU 2.x/3.x) Document language, e.g. ch, en, japan, korean. The official API accepts auto; local deployment uses ch when empty or auto. Values: https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
+      ja_JP: "（公式API とローカルの MinerU 2.x/3.x）ドキュメント言語。例 ch、en、japan、korean。公式API では auto を指定できます。ローカルでは空欄または auto の場合 ch を使用します。指定可能な値 https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
+      pt_BR: "(API oficial e MinerU 2.x/3.x local) Idioma do documento, ex. ch, en, japan, korean. A API oficial aceita auto; a implantação local usa ch quando vazio ou auto. Valores em https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
     placeholder:
       en_US: Please input document language
       zh_Hans: 请输入文档语言
       ja_JP: ドキュメント言語を入力してください
-    llm_description: "(For official API and local deployment v2) Specify document language, default ch, can be set to auto(local deployment need to specify the language, default ch), other optional value list see: https://paddlepaddle.github.io/PaddleOCR/latest/version3.x/pipeline_usage/OCR.html#5"
+      pt_BR: Informe o idioma do documento
+    llm_description: (Official API and local MinerU 2.x/3.x) Document language code such as ch, en, japan, or auto.
     form: form
 
   - name: enable_ocr
@@ -118,11 +194,13 @@ parameters:
       zh_Hans: 开启OCR识别
       en_US: Enable OCR recognition
       ja_JP: OCR認識を有効にする
+      pt_BR: Ativar OCR
     human_description:
-      zh_Hans: （用于官方API）是否开启OCR识别
-      en_US: (For official API) Whether to enable OCR recognition
-      ja_JP: （公式API用）OCR認識を有効にするかどうか
-    llm_description: (For official API) Whether to enable OCR recognition
+      zh_Hans: （官方API）是否开启OCR识别
+      en_US: (Official API) Whether to enable OCR recognition
+      ja_JP: （公式API）OCR認識を有効にするかどうか
+      pt_BR: (API oficial) Se o OCR deve ser ativado
+    llm_description: (Official API) Whether to enable OCR recognition
     form: form
 
   - name: extra_formats
@@ -133,11 +211,13 @@ parameters:
       zh_Hans: 额外导出格式
       en_US: Extra export formats
       ja_JP: 追加のエクスポート形式
+      pt_BR: Formatos extras de exportação
     human_description:
-      zh_Hans: '（用于官方API）示例：["docx","html"],markdown、json为默认导出格式，无须设置，该参数仅支持docx、html、latex三种格式中的一个或多个'
-      en_US: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
-      ja_JP: '（公式API用）例：["docx","html"]、markdown、jsonはデフォルトのエクスポート形式であり、設定する必要はありません。このパラメータは、docx、html、latexの3つの形式のいずれかまたは複数のみをサポートします'
-    llm_description: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
+      zh_Hans: '（官方API和本地部署 MinerU 4.x）示例：["docx","html"]。markdown 和 json 默认导出，无须设置；仅支持 docx、html、latex。MinerU 4.x 需以 --api-key 启动。'
+      en_US: '(Official API and local MinerU 4.x) Example: ["docx","html"]. Markdown and JSON are always exported; only docx, html and latex are accepted. MinerU 4.x must be started with --api-key.'
+      ja_JP: '（公式API とローカルの MinerU 4.x）例：["docx","html"]。markdown と json は常に出力されます。docx、html、latex のみ指定できます。MinerU 4.x は --api-key 付きで起動する必要があります。'
+      pt_BR: '(API oficial e MinerU 4.x local) Exemplo: ["docx","html"]. Markdown e JSON são sempre exportados; apenas docx, html e latex são aceitos. O MinerU 4.x deve ser iniciado com --api-key.'
+    llm_description: '(Official API and local MinerU 4.x) Extra export formats as a JSON list, e.g. ["docx","html"]; only docx, html, latex.'
     form: form
 
   - name: model_version
@@ -148,19 +228,33 @@ parameters:
       en_US: Model version
       zh_Hans: 模型版本
       ja_JP: モデルバージョン
+      pt_BR: Versão do modelo
     human_description:
-      en_US: '(For official API) MinerU model version; options: pipeline or vlm, default is pipeline.'
-      zh_Hans: '（用于官方API）MinerU模型版本，两个选项:pipeline、vlm，默认pipeline。'
-      ja_JP: '（公式API用）MinerUモデルのバージョン; オプション: pipelineまたはvlm、デフォルトはpipeline'
-    llm_description: '(For official API) MinerU model version; options: pipeline or vlm, default is pipeline.'
+      en_US: '(Official API) MinerU model, pipeline (default), vlm, or MinerU-HTML for html files.'
+      zh_Hans: '（官方API）MinerU 模型，pipeline（默认）、vlm，或用于 html 文件的 MinerU-HTML。'
+      ja_JP: '（公式API）MinerU モデル。pipeline（デフォルト）、vlm、または html ファイル用の MinerU-HTML。'
+      pt_BR: '(API oficial) Modelo do MinerU, pipeline (padrão), vlm ou MinerU-HTML para arquivos html.'
+    llm_description: '(Official API) MinerU model version, pipeline, vlm or MinerU-HTML.'
     form: form
     options:
       - value: pipeline
         label:
           en_US: pipeline
+          zh_Hans: pipeline
+          ja_JP: pipeline
+          pt_BR: pipeline
       - value: vlm
         label:
           en_US: vlm
+          zh_Hans: vlm
+          ja_JP: vlm
+          pt_BR: vlm
+      - value: MinerU-HTML
+        label:
+          en_US: MinerU-HTML
+          zh_Hans: MinerU-HTML
+          ja_JP: MinerU-HTML
+          pt_BR: MinerU-HTML
 
   - name: backend
     type: select
@@ -172,55 +266,66 @@ parameters:
           zh_Hans: pipeline
           en_US: pipeline
           ja_JP: pipeline
+          pt_BR: pipeline
       - value: vlm-transformers
         label:
           zh_Hans: vlm-transformers
           en_US: vlm-transformers
           ja_JP: vlm-transformers
+          pt_BR: vlm-transformers
       - value: vlm-sglang-engine
         label:
           zh_Hans: vlm-sglang-engine (v2.0~v2.6)
           en_US: vlm-sglang-engine (v2.0~v2.6)
           ja_JP: vlm-sglang-engine (v2.0~v2.6)
+          pt_BR: vlm-sglang-engine (v2.0~v2.6)
       - value: vlm-sglang-client
         label:
           zh_Hans: vlm-sglang-client (v2.0~v2.6)
           en_US: vlm-sglang-client (v2.0~v2.6)
           ja_JP: vlm-sglang-client (v2.0~v2.6)
+          pt_BR: vlm-sglang-client (v2.0~v2.6)
       - value: vlm-http-client
         label:
           zh_Hans: vlm-http-client (v2.5)
           en_US: vlm-http-client (v2.5)
           ja_JP: vlm-http-client (v2.5)
+          pt_BR: vlm-http-client (v2.5)
       - value: vlm-vllm-async-engine
         label:
           zh_Hans: vlm-vllm-async-engine (v2.5)
           en_US: vlm-vllm-async-engine (v2.5)
           ja_JP: vlm-vllm-async-engine (v2.5)
+          pt_BR: vlm-vllm-async-engine (v2.5)
       - value: vlm-auto-engine
         label:
           zh_Hans: vlm-auto-engine (v2.7)
           en_US: vlm-auto-engine (v2.7)
           ja_JP: vlm-auto-engine (v2.7)
+          pt_BR: vlm-auto-engine (v2.7)
       - value: hybrid-auto-engine
         label:
           zh_Hans: hybrid-auto-engine (v2.7, 推荐)
           en_US: hybrid-auto-engine (v2.7, recommended)
           ja_JP: hybrid-auto-engine (v2.7, 推奨)
+          pt_BR: hybrid-auto-engine (v2.7, recomendado)
       - value: hybrid-http-client
         label:
           zh_Hans: hybrid-http-client (v2.7)
           en_US: hybrid-http-client (v2.7)
           ja_JP: hybrid-http-client (v2.7)
+          pt_BR: hybrid-http-client (v2.7)
     label:
       zh_Hans: 解析后端
       en_US: Backend type
       ja_JP: バックエンドタイプ
+      pt_BR: Tipo de backend
     human_description:
-      zh_Hans: '（用于本地部署）示例：pipeline（默认）、vlm-auto-engine、hybrid-auto-engine'
-      en_US: '(For local deployment) Example: pipeline (default), vlm-auto-engine, hybrid-auto-engine'
-      ja_JP: '（ローカルデプロイメント用）例：pipeline（デフォルト）、vlm-auto-engine、hybrid-auto-engine'
-    llm_description: '(For local deployment) Example: pipeline (default), vlm-auto-engine, hybrid-auto-engine'
+      zh_Hans: '（本地部署 MinerU 2.x/3.x）示例：pipeline（默认）、vlm-auto-engine、hybrid-auto-engine。MinerU 4.x 请改用解析档位。'
+      en_US: '(Local MinerU 2.x/3.x) Example: pipeline (default), vlm-auto-engine, hybrid-auto-engine. For MinerU 4.x use the parsing tier instead.'
+      ja_JP: '（ローカルの MinerU 2.x/3.x）例：pipeline（デフォルト）、vlm-auto-engine、hybrid-auto-engine。MinerU 4.x では解析ティアを使用してください。'
+      pt_BR: '(MinerU 2.x/3.x local) Exemplo: pipeline (padrão), vlm-auto-engine, hybrid-auto-engine. No MinerU 4.x use o nível de análise.'
+    llm_description: '(Local MinerU 2.x/3.x) Backend, e.g. pipeline (default), vlm-auto-engine, hybrid-auto-engine.'
     form: form
 
   - name: server_url
@@ -231,24 +336,73 @@ parameters:
       zh_Hans: server地址
       en_US: server url
       ja_JP: serverアドレス
+      pt_BR: URL do servidor
     human_description:
-      zh_Hans: '（用于本地部署 解析后端为 vlm-sglang-client、vlm-http-client 或 hybrid-http-client 时需要配置）示例：http://127.0.0.1:30000，默认值为空'
-      en_US: '(For local deployment, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000, default is empty'
-      ja_JP: '（ローカルデプロイメント用 解析後端が vlm-sglang-client、vlm-http-client 又は hybrid-http-client の場合）例：http://127.0.0.1:30000、デフォルトは空'
-    llm_description: '(For local deployment, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000, default is empty' 
+      zh_Hans: '（本地部署 MinerU 2.x/3.x，解析后端为 vlm-sglang-client、vlm-http-client 或 hybrid-http-client 时需要配置）示例：http://127.0.0.1:30000，默认值为空'
+      en_US: '(Local MinerU 2.x/3.x, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000, default is empty'
+      ja_JP: '（ローカルの MinerU 2.x/3.x、バックエンドが vlm-sglang-client、vlm-http-client 又は hybrid-http-client の場合に必要）例：http://127.0.0.1:30000、デフォルトは空'
+      pt_BR: '(MinerU 2.x/3.x local, obrigatório quando o backend é vlm-sglang-client, vlm-http-client ou hybrid-http-client) Exemplo: http://127.0.0.1:30000, padrão vazio'
+    llm_description: '(Local MinerU 2.x/3.x, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000'
+    form: form
+
+  - name: wait_for_result
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Wait for result
+      zh_Hans: 等待解析结果
+      ja_JP: 結果を待つ
+      pt_BR: Aguardar resultado
+    human_description:
+      en_US: (Official API and MinerU 4.x) Wait for parsing to finish. If off, or if the timeout is reached, the tool returns a task_id / batch_id for get-parse-result.
+      zh_Hans: （官方API和 MinerU 4.x）是否等待解析完成。关闭或超时时，返回 task_id / batch_id，供「查询解析结果」使用。
+      ja_JP: （公式API と MinerU 4.x）解析の完了を待つかどうか。オフの場合やタイムアウトした場合は、解析結果の取得に使う task_id / batch_id を返します。
+      pt_BR: (API oficial e MinerU 4.x) Aguardar o fim da análise. Se desativado, ou se o tempo limite for atingido, a ferramenta retorna um task_id / batch_id para get-parse-result.
+    llm_description: Whether to wait for parsing to finish. Set false to only submit the job and get a task_id or batch_id back.
+    form: form
+
+  - name: timeout_seconds
+    type: number
+    required: false
+    default: 540
+    min: 10
+    label:
+      en_US: Timeout (seconds)
+      zh_Hans: 超时时间（秒）
+      ja_JP: タイムアウト（秒）
+      pt_BR: Tempo limite (segundos)
+    human_description:
+      en_US: How long to wait for the result. Keep it below Dify's tool limit (PLUGIN_MAX_EXECUTION_TIMEOUT, 600 by default).
+      zh_Hans: 最多等待多久。请小于 Dify 的工具执行上限（PLUGIN_MAX_EXECUTION_TIMEOUT，默认 600）。
+      ja_JP: 結果を待つ最大時間。Dify のツール実行上限（PLUGIN_MAX_EXECUTION_TIMEOUT、デフォルト 600）より短くしてください。
+      pt_BR: Quanto tempo aguardar o resultado. Mantenha abaixo do limite de ferramentas do Dify (PLUGIN_MAX_EXECUTION_TIMEOUT, 600 por padrão).
+    llm_description: Maximum seconds to wait for the result.
     form: form
 
 output_schema:
-    type: object
-    properties:
-      images:
-        type: array
-        items:
-          type: object
-        description: The images extracted from the file
-      full_zip_url:
-        type: string
-        description: The zip URL of the complete parsed result
+  type: object
+  properties:
+    images:
+      type: array
+      items:
+        type: object
+      description: The images extracted from the file
+    full_zip_url:
+      type: string
+      description: (Official API) The zip URL of the complete parsed result
+    task_id:
+      type: string
+      description: Task id of the parse job (official API URL tasks and MinerU 4.x); pass it to get-parse-result
+    batch_id:
+      type: string
+      description: (Official API) Batch id of an uploaded file; pass it to get-parse-result
+    state:
+      type: string
+      description: pending, running or done
+    server_type:
+      type: string
+      description: remote (official API) or local (self-hosted)
 extra:
   python:
     source: tools/parse.py
