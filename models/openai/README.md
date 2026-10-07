@@ -47,6 +47,32 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 <img src="./_assets/openai-01.png" width="400" alt="OpenAI provider configuration" />
 
+## Question classification with Decisions
+
+Select `gpt-6-luna-only-for-question-classifier` in a Dify Question Classifier
+node to use OpenAI's Decisions API with the upstream `gpt-6-luna` model. It uses
+your existing OpenAI credentials and API base, regardless of the API Protocol
+setting; no additional switch or model parameters are needed.
+
+This adapter supports the six-message text Chat classifier template from
+Graphon 0.7.0. It preserves the query, conversation history, category IDs and
+custom instructions, and returns the existing category JSON for workflow
+routing. Ordinary chat prompts, images, tools, stop sequences and generation
+parameters are unsupported. Dify does not restrict this model to classifier
+selectors, so its label states the intended use and the plugin validates the
+message protocol. Unknown templates, invalid category results and refusals
+raise errors instead of selecting a default branch. Confidence and option
+probabilities are not exposed by the current classifier contract.
+
+Decisions returns a complete result, which Dify's plugin SDK wraps into one
+chunk when streaming is requested. Billing uses the API's actual token usage
+at the base Decisions rate of USD 0.10 per million input tokens and zero output
+cost. Regional and long-context premiums are not represented by Dify's static
+pricing. Request metadata and storage options apply only to Chat/Responses,
+and are not sent to Decisions.
+
+See the [official Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
+
 ## Reasoning state
 
 The plugin sends `store=false` by default and requests encrypted reasoning content when it uses the Responses API. Enabling `Enable request metadata` switches `store` to `true`, but encrypted reasoning content is still requested, so reasoning replay behaves the same either way.

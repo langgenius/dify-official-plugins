@@ -13,7 +13,7 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
 from ..common_openai import _CommonOpenAI
-from . import chat, responses, stream as response_stream, tokens
+from . import chat, decisions, responses, stream as response_stream, tokens
 
 CHAT_ONLY_PREFIXES = ("gpt-audio",)
 RESPONSES_ONLY_PREFIXES = (
@@ -71,6 +71,18 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator[LLMResultChunk, None, None]:
         client = OpenAI(**self._to_credential_kwargs(credentials))
+        if model == decisions.MODEL:
+            return decisions.generate(
+                self,
+                client,
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                user,
+            )
         if _uses_responses(model, credentials):
             if stream:
                 return self._stream_with_error_mapping(
@@ -123,7 +135,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     f"Fine-tuned model {model} not found"
                 )
 
-            if _uses_responses(model, credentials):
+            if model == decisions.MODEL:
+                client.decisions.create(
+                    model=decisions.UPSTREAM_MODEL,
+                    input="ping",
+                    questions=[
+                        {"type": "predicate", "instructions": "Is the input a ping?"}
+                    ],
+                )
+            elif _uses_responses(model, credentials):
                 client.responses.create(
                     model=model,
                     input="ping",
