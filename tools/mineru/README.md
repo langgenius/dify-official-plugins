@@ -62,6 +62,8 @@ Go to "Tools" → "Plugin Market", add the "MinerU" plugin and fill in its crede
 
 Saving the credentials checks them with a read-only request.
 
+![MinerU credentials for a self-hosted server](./_assets/mineru-0.6-credentials.jpg)
+
 **Network notes for self-hosted servers**
 
 - Dify must be able to reach the Base URL. Do not use `127.0.0.1` or `localhost` unless MinerU runs on the same host as the Dify plugin daemon.
@@ -90,7 +92,7 @@ Saving the credentials checks them with a read-only request.
 | wait_for_result | official API, self-hosted 4.x | Wait until parsing finishes (default). If off, the tool returns a `task_id` / `batch_id` immediately. |
 | timeout_seconds | all | How long to wait (default 540). Keep it below Dify's `PLUGIN_MAX_EXECUTION_TIMEOUT` (600 by default). If parsing is not finished in time, the tool returns the job id instead of failing. |
 
-![](./_assets/mineru3.jpg)
+![Parse File node settings](./_assets/mineru-0.6-node-settings.jpg)
 
 ## Output Variables
 
@@ -105,12 +107,14 @@ Saving the credentials checks them with a read-only request.
 | state | `done`, or `pending` / `running` when the tool returned before parsing finished. Failed jobs raise an error. |
 | server_type | `remote` (official API) or `local` (self-hosted). |
 
-![](./_assets/mineru4.jpg)
+![Parse File output: Markdown with image links stored in Dify](./_assets/mineru-0.6-output.jpg)
 
 ### Long documents
 
 1. Run Parse File (or Parse URL) with `wait_for_result` off, or let it reach `timeout_seconds`.
 2. Pass its `task_id` and `batch_id` outputs to Get Parse Result, e.g. inside a Loop node, until `state` is `done`.
+
+![Parse File, then Submit and Query with Get Parse Result, then Parse URL](./_assets/mineru-0.6-workflow.jpg)
 
 Use the same credential for both tools – job ids only exist on the server that created them. A self-hosted MinerU 4.x server keeps jobs in memory, so job ids do not survive a server restart.
 
