@@ -26,8 +26,6 @@ class _Credentials(dict[str, str]):
 
 def _model_names(model_type: str) -> list[str]:
     directory = MODEL_ROOT / model_type
-    if model_type == "llm":
-        return yaml.safe_load((directory / "_position.yaml").read_text())
     return sorted(
         path.stem for path in directory.glob("*.yaml") if not path.name.startswith("_")
     )
