@@ -6,7 +6,7 @@ from typing import Union
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
 
-PREFIX_DELIMITERS = frozenset({"\n", " ", ""})
+PREFIX_DELIMITERS = frozenset({"\n", "\t", "\r", " ", ""})
 # Tags injected by Gemini when include_thoughts=True; stripped so ReAct sees only Thought:/Action:/FinalAnswer:
 THINK_START = "<think>"
 THINK_END = "</think>"
@@ -20,6 +20,43 @@ ACTION_INPUT_KEYS = ("action_input", "tool_input", "input", "arguments", "parame
 IGNORED_KEYS = frozenset({"thought", "reasoning", "id", "type"})
 # Single-key wrappers some models use around the whole payload, e.g. {"tool_call": {...}}.
 WRAPPER_KEYS = frozenset({"tool_call", "tool_calling", "tool_calls", "function"})
+# Keys that mark a JSON blob as an attempted Action (tool-call shape).
+ACTION_ISH_KEYS = frozenset(
+    {
+        *ACTION_NAME_KEYS,
+        *ACTION_INPUT_KEYS,
+        *WRAPPER_KEYS,
+    }
+)
+
+
+def _is_action_shaped(blob: str) -> bool:
+    """True when a JSON blob looks like an attempted Action.
+
+    Used to flag only genuine parse failures (a tool-call attempt that could
+    not be turned into an Action) and not innocent JSON such as citations,
+    markdown links, or arbitrary objects the model puts inside a thought.
+    """
+    try:
+        payload = json.loads(blob, strict=False)
+    except (TypeError, ValueError):
+        # Unparseable (e.g. truncated) JSON: fall back to a key-name scan so
+        # a cut-off action attempt is still surfaced as a failure.
+        lowered = blob.lower()
+        return any(f'"{key}"' in lowered for key in ACTION_ISH_KEYS)
+    if not isinstance(payload, dict):
+        return False
+    return any(str(key).lower() in ACTION_ISH_KEYS for key in payload)
+
+
+def is_final_action(name: str | None) -> bool:
+    """True when a tool name is a final-answer marker.
+
+    Accepts the spellings seen in the wild: "Final Answer" (canonical, also
+    what the SDK ``AgentScratchpadUnit.is_final()`` checks), the compact
+    "FinalAnswer" and the underscore "final_answer" JSON action names.
+    """
+    return (name or "").strip().lower().replace("_", "").replace(" ", "") == "finalanswer"
 
 
 def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
@@ -60,6 +97,14 @@ def _extract_action(payload: dict) -> "AgentScratchpadUnit.Action | None":
     if action_input is None:
         # Tools without parameters may legitimately omit the input.
         action_input = {}
+    elif not isinstance(action_input, (dict, str)):
+        # Malformed input (e.g. an array or a scalar) must never raise out of
+        # the parser; keep it as a JSON string so the strategy can still
+        # surface the failure (strategy-side policy is a follow-up).
+        try:
+            action_input = json.dumps(action_input)
+        except (TypeError, ValueError):
+            action_input = "{}"
     return AgentScratchpadUnit.Action(action_name=action_name.strip(), action_input=action_input)
 
 
@@ -173,10 +218,17 @@ class CotAgentOutputParser:
             action = parse_action(blob)
             if action is not None and cur_state is ReactState.THINKING:
                 yield action
-            elif action is None and cur_state is ReactState.THINKING:
-                # JSON that is not a valid action: keep it as thought text
-                # but flag the parse failure so the strategy can surface it
-                # instead of ending the round silently.
+            elif (
+                action is None
+                and cur_state is ReactState.THINKING
+                and (pending_action_json or _is_action_shaped(blob))
+            ):
+                # JSON that looks like an attempted Action but could not be
+                # parsed (e.g. an unexpected wrapper or a malformed input):
+                # keep it as thought text but flag the parse failure so the
+                # strategy can surface it instead of ending the round
+                # silently. Innocent JSON (citations, links, arbitrary
+                # objects) is yielded as plain text with no flag.
                 yield ReactChunk(cur_state, blob, parse_failed=True)
             else:
                 # In the answer state a JSON blob is part of the final answer
@@ -312,6 +364,12 @@ class CotAgentOutputParser:
                     json_in_string = False
                     json_escape = False
                     json_stack = []
+                    # The blob's closing bracket must not act as the previous
+                    # character for a prefix that starts right after it
+                    # ({...}Action: {...}); reset to a delimiter so the
+                    # PrefixMatcher accepts the first char.
+                    last_character = "\n"
+                    pending_action_json = False
 
                 if not in_json:
                     yield_raw_delta, emitted_chunk, delta_consumed, matched_action_prefix = action_matcher.step(delta)
@@ -387,7 +445,6 @@ class CotAgentOutputParser:
                             if not json_stack:
                                 in_json = False
                                 got_json = True
-                                pending_action_json = False
                                 index += steps
                                 continue
 
@@ -399,6 +456,15 @@ class CotAgentOutputParser:
 
         if json_cache:
             yield from emit_json_blob(json_cache)
+
+        # Flush any partial prefix held by the state matchers (e.g. a stream
+        # cut mid-"FinalAnswer:") so those characters are not silently
+        # dropped; they belong to the current state as plain text.
+        for matcher in (action_matcher, answer_matcher, thought_matcher):
+            if matcher.cache:
+                yield ReactChunk(cur_state, matcher.cache)
+                matcher.cache = ""
+                matcher.idx = 0
 
         # Flush the chunk tail held back as a possible partial think tag.
         # (If the stream ended inside an unclosed think block, the buffered

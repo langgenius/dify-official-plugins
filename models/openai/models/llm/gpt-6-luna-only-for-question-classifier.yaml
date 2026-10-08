@@ -1,0 +1,18 @@
+# https://developers.openai.com/api/docs/guides/decisions
+model: gpt-6-luna-only-for-question-classifier
+label:
+  en_US: GPT-6 Luna (Question Classifier · Decisions)
+  zh_Hans: GPT-6 Luna（问题分类 · Decisions）
+model_type: llm
+features: []
+model_properties:
+  mode: chat
+  context_size: 1050000
+parameter_rules: []
+# Decisions charges only for input tokens; regional/long-context premiums are
+# not representable by PriceConfig.
+pricing:
+  input: '0.10'
+  output: '0'
+  unit: '0.000001'
+  currency: USD

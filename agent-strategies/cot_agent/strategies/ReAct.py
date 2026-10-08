@@ -24,7 +24,12 @@ from dify_plugin.interfaces.agent import (
     AgentStrategy,
     ToolEntity,
 )
-from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutputParser
+from output_parser.cot_output_parser import (
+    CotAgentOutputParser,
+    ReactChunk,
+    ReactState,
+    is_final_action,
+)
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field, field_validator
 
@@ -299,7 +304,7 @@ class ReActAgentStrategy(AgentStrategy):
                             status=ToolInvokeMessage.LogMessage.LogStatus.ERROR,
                         )
             else:
-                if scratchpad.action.action_name.lower() == "final answer":
+                if is_final_action(scratchpad.action.action_name):
                     try:
                         if isinstance(scratchpad.action.action_input, dict):
                             final_answer = json.dumps(scratchpad.action.action_input)
@@ -523,7 +528,7 @@ class ReActAgentStrategy(AgentStrategy):
         else:
             assistant_message = AssistantPromptMessage(content="")
             for unit in agent_scratchpad:
-                if unit.is_final():
+                if unit.action is not None and is_final_action(unit.action.action_name):
                     assert isinstance(assistant_message.content, str)
                     assistant_message.content += f"Final Answer: {unit.agent_response}"
                 else:
@@ -677,7 +682,7 @@ class ReActAgentStrategy(AgentStrategy):
         """
         message = ""
         for scratchpad in agent_scratchpad:
-            if scratchpad.is_final():
+            if scratchpad.action is not None and is_final_action(scratchpad.action.action_name):
                 message += f"Final Answer: {scratchpad.agent_response}"
             else:
                 message += f"Thought: {scratchpad.thought}\n\n"

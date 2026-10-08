@@ -86,12 +86,12 @@ def test_every_model_filename_matches_its_identifier() -> None:
         assert data["model_type"] == path.parent.name.replace("_", "-")
 
 
-def test_llm_position_is_complete_and_has_no_duplicates() -> None:
+def test_llm_position_covers_standard_models_and_has_no_duplicates() -> None:
     position = _load(LLM / "_position.yaml")
     files = {path.stem for path in LLM.glob("*.yaml") if path.stem != "_position"}
 
     assert len(position) == len(set(position))
-    assert set(position) == files
+    assert set(position) == files - {"gpt-6-luna-only-for-question-classifier"}
 
 
 def test_catalog_adds_current_models_and_removes_retired_models() -> None:

@@ -10,6 +10,13 @@ dependencies = [
     "dify_plugin>=0.10.2",
 ]
 
-# uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+# uv run black . -C -l 100 && uv run ruff check --fix

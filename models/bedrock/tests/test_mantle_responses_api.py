@@ -49,6 +49,7 @@ UserPromptMessage = llm_mod.UserPromptMessage
 # the elif chain in _generate_with_responses_api and the openai.yaml
 # model_name options.
 MANTLE_MODELS = [
+    ("openai.gpt-6.1-sol", "GPT-6.1 Sol"),
     ("openai.gpt-6-sol", "GPT-6 Sol"),
     ("openai.gpt-6-luna", "GPT-6 Luna"),
     ("openai.gpt-6-astra", "GPT-6 Astra"),
@@ -675,6 +676,11 @@ class TestGenerateWithResponsesApi:
             "https://bedrock-mantle.us-east-2.api.aws/openai/v1"
         )
         assert mock_client.responses.create.call_args.kwargs["model"] == "openai.gpt-5.6-sol"
+
+    def test_gpt61_sol_has_global_pricing(self) -> None:
+        # Model card: Global CRIS $2.00 / $10.00 per 1M tokens (272K input or fewer)
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", "GPT-6.1 Sol", [])
+        assert (pricing["input"], pricing["output"]) == ("0.002", "0.01")
 
     def test_explicit_model_name_overrides_resolution(self) -> None:
         instance = self._make_instance()

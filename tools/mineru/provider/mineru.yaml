@@ -1,36 +1,15 @@
 credentials_for_provider:
-  base_url:
-    label:
-      en_US: Base URL
-      ja_JP: MinerUのBase URL
-      zh_Hans: MinerU服务的Base URL
-    placeholder:
-      en_US: Please input your MinerU server's Base URL
-      ja_JP: MinerUサーバのBase URLを入力してください
-      zh_Hans: 请输入你的 MinerU 服务的 Base URL
-    required: true
-    type: text-input
-  token:
-    label:
-      en_US: Token
-      ja_JP: トークン
-      zh_Hans: 令牌
-    placeholder:
-      en_US: Please input your MinerU server's token
-      ja_JP: MinerUサーバのトークンを入力してください
-      zh_Hans: 请输入你的 MinerU 服务的令牌
-    required: false
-    type: secret-input
-    url: https://mineru.net/apiManage/token
   server_type:
     label:
       en_US: Server Type
       ja_JP: サーバータイプ
       zh_Hans: 服务类型
+      pt_BR: Tipo de servidor
     placeholder:
       en_US: Please select MinerU service type, local deployment or official API
       ja_JP: MinerUサービスのタイプを選択してください、ローカルデプロイまたは公式API
       zh_Hans: 请选择MinerU服务类型,本地部署或官方API
+      pt_BR: Selecione o tipo de serviço MinerU, implantação local ou API oficial
     required: true
     type: select
     options:
@@ -39,11 +18,81 @@ credentials_for_provider:
           en_US: Local Deployment
           ja_JP: ローカルデプロイ
           zh_Hans: 本地部署
+          pt_BR: Implantação local
       - value: remote
         label:
           en_US: MinerU Official API
           ja_JP: MinerU公式API
           zh_Hans: MinerU官方API
+          pt_BR: API oficial do MinerU
+  base_url:
+    label:
+      en_US: Base URL
+      ja_JP: MinerUのBase URL
+      zh_Hans: MinerU服务的Base URL
+      pt_BR: URL base
+    placeholder:
+      en_US: Self-hosted e.g. http://10.0.0.5:8000; official API https://mineru.net
+      ja_JP: セルフホストの例 http://10.0.0.5:8000、公式API https://mineru.net
+      zh_Hans: 本地部署如 http://10.0.0.5:8000；官方API为 https://mineru.net
+      pt_BR: Auto-hospedado, ex. http://10.0.0.5:8000; API oficial https://mineru.net
+    help:
+      en_US: Required for local deployment (MinerU 1.x-4.x, the version is detected automatically). Defaults to https://mineru.net for the official API.
+      ja_JP: ローカルデプロイでは必須です（MinerU 1.x〜4.x、バージョンは自動検出）。公式APIの場合は既定で https://mineru.net を使用します。
+      zh_Hans: 本地部署时必填（支持 MinerU 1.x～4.x，自动识别版本）。官方API可留空，默认 https://mineru.net。
+      pt_BR: Obrigatório para implantação local (MinerU 1.x-4.x, a versão é detectada automaticamente). Para a API oficial, o padrão é https://mineru.net.
+    required: false
+    type: text-input
+  token:
+    label:
+      en_US: API Token
+      ja_JP: APIトークン
+      zh_Hans: API 令牌
+      pt_BR: Token da API
+    placeholder:
+      en_US: Required for the official API; for MinerU 4.x only if started with --api-key
+      ja_JP: 公式APIでは必須。MinerU 4.xでは --api-key で起動した場合のみ
+      zh_Hans: 官方API必填；MinerU 4.x 仅在以 --api-key 启动时需要
+      pt_BR: Obrigatório para a API oficial; no MinerU 4.x apenas se iniciado com --api-key
+    help:
+      en_US: Sent as "Authorization Bearer token". Official API tokens expire; generate a new one on mineru.net when it does.
+      ja_JP: 「Authorization Bearer トークン」として送信されます。公式APIのトークンには有効期限があり、期限切れの場合は mineru.net で再発行してください。
+      zh_Hans: 以「Authorization Bearer 令牌」形式发送。官方API令牌会过期，过期后请在 mineru.net 重新生成。
+      pt_BR: Enviado como "Authorization Bearer token". Os tokens da API oficial expiram; gere um novo em mineru.net quando isso acontecer.
+    required: false
+    type: secret-input
+    url: https://mineru.net/apiManage/token
+  gateway_header_name:
+    label:
+      en_US: Gateway Header Name
+      ja_JP: ゲートウェイヘッダー名
+      zh_Hans: 网关请求头名称
+      pt_BR: Nome do cabeçalho do gateway
+    placeholder:
+      en_US: e.g. X-API-Key (local deployment only)
+      ja_JP: 例 X-API-Key（ローカルデプロイのみ）
+      zh_Hans: 例如 X-API-Key（仅本地部署）
+      pt_BR: ex. X-API-Key (somente implantação local)
+    help:
+      en_US: Optional. If a gateway or reverse proxy in front of a self-hosted MinerU requires a fixed header, set its name here and its value below. Sent in addition to the API token.
+      ja_JP: 任意。セルフホストの MinerU の前段にあるゲートウェイやリバースプロキシが固定ヘッダーを要求する場合、ここに名前を、下に値を入力します。APIトークンとは別に送信されます。
+      zh_Hans: 选填。如果本地部署的 MinerU 前面有网关或反向代理要求固定请求头，在这里填写名称，在下方填写值。与 API 令牌分别发送。
+      pt_BR: Opcional. Se um gateway ou proxy reverso na frente do MinerU auto-hospedado exigir um cabeçalho fixo, informe o nome aqui e o valor abaixo. É enviado além do token da API.
+    required: false
+    type: text-input
+  gateway_header_value:
+    label:
+      en_US: Gateway Header Value
+      ja_JP: ゲートウェイヘッダー値
+      zh_Hans: 网关请求头的值
+      pt_BR: Valor do cabeçalho do gateway
+    placeholder:
+      en_US: Sent as-is; include any prefix the gateway expects
+      ja_JP: そのまま送信されます。ゲートウェイが求める接頭辞も含めてください
+      zh_Hans: 原样发送；如网关需要前缀请一并填写
+      pt_BR: Enviado como está; inclua qualquer prefixo que o gateway espere
+    required: false
+    type: secret-input
 
 identity:
   author: langgenius
@@ -52,10 +101,12 @@ identity:
     en_US: MinerU
     zh_Hans: MinerU
     ja_JP: MinerU
+    pt_BR: MinerU
   description:
     en_US: MinerU is a tool that converts FILES into machine-readable formats (e.g., markdown, JSON), allowing for easy extraction into any format. MinerU was born during the pre-training process of InternLM. We focus on solving symbol conversion issues in scientific literature and hope to contribute to technological development in the era of large models.https://github.com/opendatalab/MinerU
     ja_JP: MinerU は、FILES を機械可読な形式（例えば、マークダウン、JSON）に変換するツールで、どんな形式にも簡単に抽出することができます。MinerU は InternLM の事前トレーニングプロセス中に生まれました。私たちは科学文献における記号変換の問題を解決することに集中し、大規模モデルの時代における技術開発に貢献することを目指しています。https://github.com/opendatalab/MinerU
     zh_Hans: MinerU是一款可以在本地部署的将FILES转化为机器可读格式的工具（如markdown、json），可以很方便地抽取为任意格式。MinerU诞生于书生-浦语的预训练过程中，我们将会集中精力解决科技文献中的符号转化问题，希望在大模型时代为科技发展做出贡献。https://github.com/opendatalab/MinerU
+    pt_BR: O MinerU é uma ferramenta que converte ARQUIVOS em formatos legíveis por máquina (por exemplo, markdown, JSON), facilitando a extração para qualquer formato. O MinerU nasceu durante o pré-treinamento do InternLM. Focamos em resolver problemas de conversão de símbolos em literatura científica e esperamos contribuir para o desenvolvimento tecnológico na era dos grandes modelos. https://github.com/opendatalab/MinerU
   icon: icon.svg
 
 extra:
@@ -63,5 +114,6 @@ extra:
     source: provider/mineru.py
 
 tools:
-- tools/parse.yaml
-
+  - tools/parse.yaml
+  - tools/parse_url.yaml
+  - tools/get_parse_result.yaml
