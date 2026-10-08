@@ -1,0 +1,38 @@
+model: claude-haiku-5-5
+label:
+  en_US: Claude Haiku 5.5
+  zh_Hans: Claude Haiku 5.5
+description:
+  en_US: Listed in the official catalog, but the gateway /v1/models endpoint does not return it yet (2026-10-08). Billing may need to be enabled first. Not smoke-tested yet.
+  zh_Hans: 官网目录已列出，但网关 /v1/models 尚未返回该模型（2026-10-08），可能需绑定计费后才可用，尚未冒烟测试。
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 128000
+    help:
+      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
+      en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
+  - name: frequency_penalty
+    use_template: frequency_penalty
+pricing:
+  input: "0.10"
+  output: "0.50"
+  unit: "0.000001"
+  currency: USD

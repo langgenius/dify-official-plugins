@@ -1,7 +1,10 @@
-model: space-bunny-free
+model: space-bunny
 label:
-  en_US: Space Bunny Free (limited time)
-  zh_Hans: Space Bunny Free（限时）
+  en_US: Space Bunny
+  zh_Hans: Space Bunny
+description:
+  en_US: Renamed from space-bunny-free (the upstream gateway no longer returns space-bunny-free). $30 monthly quota.
+  zh_Hans: 由 space-bunny-free 更名而来（上游网关已不再返回 space-bunny-free）。月限额 $30。
 model_type: llm
 features:
   - agent-thought
@@ -27,7 +30,7 @@ parameter_rules:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If truncated, increase this parameter.
 pricing:
-  input: "0"
-  output: "0"
+  input: "0.15"
+  output: "0.60"
   unit: "0.000001"
   currency: USD
