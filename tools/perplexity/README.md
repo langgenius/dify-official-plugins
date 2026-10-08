@@ -31,3 +31,18 @@ Both Chatflow and Workflow applications support adding `Perplexity Search` tool 
 ![](path_to_agent_application_image.png)
 
 Add the `Perplexity Search` tool in the Agent application, then enter relevant commands to invoke this tool.
+## Migration Notice
+
+As of version 1.1.0, this plugin has been migrated from Perplexity's Sonar Chat Completions API to the new [Agent API](https://docs.perplexity.ai/docs/agent-api/quickstart), ahead of the Sonar API's retirement on September 27, 2026.
+
+The "Model Name" parameter has been replaced by "Preset", which roughly maps to the previous Sonar models:
+
+| Previous Sonar model | New Agent API preset |
+| --- | --- |
+| Sonar | fast |
+| Sonar Pro | low |
+| Sonar Reasoning / Reasoning Pro | medium |
+| Sonar Deep Research | high |
+| N/A | xhigh |
+
+"Return Images" and "Return Related Questions" are no longer available, as the Agent API does not expose equivalent options.
