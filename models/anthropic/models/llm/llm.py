@@ -189,6 +189,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-mythos-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-opus-5-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -292,6 +293,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         if model_id == "claude-fable-5-1":
             return 0.025
+        if model_id == "claude-opus-5-5":
+            return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
     @staticmethod
@@ -355,7 +358,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     name="effort",
                     label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
-                    default="high",
+                    default="medium" if model.lower() == "claude-opus-5-5" else "high",
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
@@ -480,7 +483,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             disabling_thinking = False
             if always_on_adaptive_thinking:
-                # Fable/Mythos: adaptive thinking is always on and cannot be disabled.
+                # Opus 5.5/Fable/Mythos: adaptive thinking cannot be disabled.
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",

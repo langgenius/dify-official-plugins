@@ -4,8 +4,6 @@ import copy
 import json
 from typing import TYPE_CHECKING, Any, cast
 
-from openai import OpenAI
-
 from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -26,8 +24,9 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+from openai import OpenAI
 
-from ..common_openai import _user_digest
+from ..common_openai import _normalize_gpt6_parameters, _user_digest
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
 
@@ -119,6 +118,7 @@ def parameters(
             reasoning[target] = value
     if reasoning:
         params["reasoning"] = reasoning
+    _normalize_gpt6_parameters(model, params, reasoning.get("effort"))
 
     response_format = params.pop("response_format", None)
     schema = params.pop("json_schema", None)
@@ -202,7 +202,8 @@ def parameters(
 def _supports_encrypted_reasoning(model: str) -> bool:
     base_model = model.split(":", 2)[1] if model.startswith("ft:") else model
     return (
-        base_model.startswith("gpt-5") and not base_model.endswith("-chat-latest")
+        base_model.startswith(("gpt-5", "gpt-6"))
+        and not base_model.endswith("-chat-latest")
     ) or (len(base_model) > 1 and base_model[0] == "o" and base_model[1].isdigit())
 
 

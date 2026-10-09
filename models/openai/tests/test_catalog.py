@@ -1,7 +1,8 @@
+import tomllib
 from decimal import Decimal
 from pathlib import Path
-import tomllib
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,6 +10,9 @@ MODELS = ROOT / "models"
 LLM = MODELS / "llm"
 
 ADDED_MODELS = {
+    "gpt-6-astra",
+    "gpt-6-sol",
+    "gpt-6-luna",
     "chat-latest",
     "gpt-5.1-2025-11-13",
     "gpt-5.2-2025-12-11",
@@ -114,6 +118,42 @@ def test_llm_parameters_and_prices_are_well_formed() -> None:
         assert Decimal(data["pricing"]["input"]) >= 0
         assert Decimal(data["pricing"]["output"]) >= 0
         assert Decimal(data["pricing"]["unit"]) > 0
+
+
+@pytest.mark.parametrize(
+    ("model", "supports_none", "input_price", "output_price"),
+    [
+        ("gpt-6-astra", False, "10.00", "50.00"),
+        ("gpt-6-sol", True, "2.00", "10.00"),
+        ("gpt-6-luna", True, "0.10", "0.50"),
+    ],
+)
+def test_gpt_6_catalog_matches_the_api_contract(
+    model: str, supports_none: bool, input_price: str, output_price: str
+) -> None:
+    data = _load(LLM / f"{model}.yaml")
+    rules = {rule["name"]: rule for rule in data["parameter_rules"]}
+    effort = rules["reasoning_effort"]
+
+    assert data["model_properties"]["context_size"] == 1050000
+    assert rules["max_tokens"]["max"] == 128000
+    assert effort["options"] == (
+        (["none"] if supports_none else []) + ["low", "medium", "high", "xhigh", "max"]
+    )
+    assert effort["default"] == "medium"
+    assert rules["enable_stream"]["default"] is True
+    assert {
+        "vision",
+        "structured-output",
+        "multi-tool-call",
+        "stream-tool-call",
+    } <= set(data["features"])
+    assert data["pricing"] == {
+        "input": input_price,
+        "output": output_price,
+        "unit": "0.000001",
+        "currency": "USD",
+    }
 
 
 def test_audio_model_limits_match_the_api_contract() -> None:
