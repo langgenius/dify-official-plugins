@@ -1,9 +1,7 @@
+import hashlib
 from types import SimpleNamespace
 
-import hashlib
-
 import pytest
-
 from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
@@ -16,6 +14,7 @@ from dify_plugin.errors.model import (
     InvokeBadRequestError,
     InvokeConnectionError,
 )
+
 from models.llm import chat
 
 
@@ -141,10 +140,11 @@ def test_chat_rejects_invalid_multimodal_data(content, match):
 
 def test_chat_builds_structured_json_schema():
     assert chat._chat_params(
+        "gpt-5.6",
         {
             "response_format": "json_schema",
             "json_schema": '{"type":"object","properties":{"answer":{"type":"string"}}}',
-        }
+        },
     ) == {
         "response_format": {
             "type": "json_schema",
@@ -161,7 +161,14 @@ def test_chat_builds_structured_json_schema():
 
 @pytest.mark.parametrize(
     "model",
-    ["gpt-5.6", "o3", "ft:gpt-5-mini:organization:custom"],
+    [
+        "gpt-5.6",
+        "gpt-6-astra",
+        "gpt-6-sol",
+        "gpt-6-luna",
+        "o3",
+        "ft:gpt-5-mini:organization:custom",
+    ],
 )
 def test_reasoning_models_use_max_completion_tokens(model):
     assert chat.uses_max_completion_tokens(model)
@@ -196,7 +203,16 @@ def test_chat_hashes_user_for_official_and_compatible_endpoints(credentials, exp
 )
 def test_chat_rejects_responses_only_reasoning_parameters(parameter):
     with pytest.raises(InvokeBadRequestError, match=parameter):
-        chat._chat_params({parameter: "enabled"})
+        chat._chat_params("gpt-5.6", {parameter: "enabled"})
+
+
+@pytest.mark.parametrize(
+    ("parameter", "value"),
+    [("reasoning_mode", "standard"), ("reasoning_context", "auto")],
+)
+def test_chat_keeps_existing_models_reasoning_parameter_validation(parameter, value):
+    with pytest.raises(InvokeBadRequestError, match=parameter):
+        chat._chat_params("gpt-5.6", {parameter: value})
 
 
 def test_nonstream_chat_returns_refusal_and_tool_call(mocker):
