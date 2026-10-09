@@ -10,7 +10,7 @@ dependencies = [
     "anthropic>=1.4.0",
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Anthropic request metadata.
-    "dify_plugin>=0.10.2",
+    "dify_plugin>=0.10.2,<0.11",
     "pillow>=12.3.0",
     "requests>=2.34.2",
 ]
@@ -21,3 +21,7 @@ dev = [
     "pyrefly>=1.2.0",
     "pytest>=9.1.1",
 ]
+
+[tool.uv.sources]
+# Use the replay fix until a containing SDK release is published.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "5d5799eeceb938eda4337bcd229f3dcf41b27596" }
