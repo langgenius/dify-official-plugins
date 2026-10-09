@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [[package]]
@@ -264,7 +264,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=1.4.0" },
-    { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "requests", specifier = ">=2.34.2" },
 ]
