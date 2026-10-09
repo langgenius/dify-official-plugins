@@ -197,6 +197,37 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: multimodal_embedding_format
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+        - variable: vision_support
+          value: support
+      label:
+        zh_Hans: 多模态嵌入请求格式
+        en_US: Multimodal embedding request format
+      type: select
+      required: false
+      default: chat_embeddings
+      options:
+        - value: chat_embeddings
+          label:
+            en_US: vLLM chat embeddings (messages)
+            zh_Hans: vLLM chat embeddings (messages)
+        - value: input_array
+          label:
+            en_US: OpenAI standard (input with data URI)
+            zh_Hans: OpenAI 标准 (input 传 data URI)
+      help:
+        en_US: >
+          Wire format used to send images. Keep vLLM chat embeddings for servers that
+          implement that extension. Choose the OpenAI standard format for providers that
+          take image data URIs as plain input elements, such as Gemini embedding endpoints
+          and OpenAI-compatible gateways like LiteLLM, which reject the "messages" payload.
+        zh_Hans: >
+          发送图片时使用的请求格式。对实现了该扩展的 vLLM 服务请保持 vLLM chat embeddings。
+          对于将图片 data URI 作为普通 input 元素处理的服务（如 Gemini 嵌入端点，以及
+          LiteLLM 等 OpenAI 兼容网关，它们会拒绝 "messages" 负载），请选择 OpenAI 标准格式。
     - variable: context_size
       label:
         zh_Hans: 模型上下文长度
