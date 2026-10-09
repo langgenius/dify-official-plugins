@@ -213,14 +213,16 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         self.query = query
         self.instruction = fc_params.instruction
         self.files = fc_params.files or []
-        history_prompt_messages = fc_params.model.history_prompt_messages
-        history_prompt_messages.insert(0, self._system_prompt_message)
-        history_prompt_messages.append(self._user_prompt_message)
+        history_prompt_messages = [
+            self._system_prompt_message,
+            *fc_params.model.history_prompt_messages,
+            self._user_prompt_message,
+        ]
 
         # convert tool messages
         tools = filter_allowed_tools(fc_params.tools, fc_params.allowed_tools)
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
-        prompt_messages_tools = self._init_prompt_tools(tools)
+        prompt_messages_tools = deepcopy(self._init_prompt_tools(tools))
 
         # init model parameters
         stream = (
@@ -257,13 +259,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             yield round_log
 
-            # recalc llm max tokens
+            # Check capacity without changing the configured output budget.
             prompt_messages = self._organize_prompt_messages(
                 history_prompt_messages=history_prompt_messages,
                 current_thoughts=current_thoughts,
                 model=model,
             )
-            if model.entity and model.completion_params:
+            if model.entity:
                 self.recalc_llm_max_tokens(
                     model.entity, prompt_messages, model.completion_params
                 )
@@ -295,6 +297,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             # save full response
             response = ""
+            opaque_body = None
             thinking_started = False
 
             # save tool call names and inputs
@@ -304,6 +307,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             if isinstance(chunks, Generator):
                 for chunk in chunks:
+                    if chunk.delta.message.opaque_body is not None:
+                        opaque_body = chunk.delta.message.opaque_body
                     # check if there is any tool call
                     if self.check_tool_calls(chunk):
                         function_call_state = True
@@ -349,6 +354,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             else:
                 result = chunks
                 result = cast(LLMResult, result)
+                opaque_body = result.message.opaque_body
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
@@ -420,13 +426,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 ]
                 assistant_message = AssistantPromptMessage(
                     content=response,  # Preserve LLM returned content, even if empty
-                    tool_calls=tool_call_objects
+                    tool_calls=tool_call_objects,
+                    opaque_body=opaque_body,
                 )
                 current_thoughts.append(assistant_message)
             elif response.strip():
                 # If no tool calls but has response, add a regular assistant message
                 assistant_message = AssistantPromptMessage(
-                    content=response, tool_calls=[]
+                    content=response, tool_calls=[], opaque_body=opaque_body
                 )
                 current_thoughts.append(assistant_message)
 
@@ -682,11 +689,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             if tool_calls:
                 yield self.create_text_message("\n")
 
-            # update prompt tool
-            for prompt_tool in prompt_messages_tools:
-                self.update_prompt_message_tool(
-                    tool_instances[prompt_tool.name], prompt_tool
-                )
             yield self.finish_log_message(
                 log=round_log,
                 data={
@@ -849,10 +851,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         Clear image messages from prompt messages.
         Converts image content to "[image]" placeholder text.
 
-        This is needed because:
-        1. Some models don't support vision at all
-        2. Some models support vision in the first iteration but not in subsequent iterations
-            (when tool calls are involved)
+        Use only for models without vision support.
         """
         prompt_messages = deepcopy(prompt_messages)
 
@@ -891,8 +890,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             else False
         )
 
-        # Clear images if: model doesn't support vision OR it's not the first iteration
-        if not supports_vision or len(current_thoughts) != 0:
+        # Keep the original prefix across tool rounds for signed reasoning replay.
+        if not supports_vision:
             prompt_messages = self._clear_user_prompt_image_messages(prompt_messages)
 
         return prompt_messages
