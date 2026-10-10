@@ -204,7 +204,17 @@ def test_token_counting_uses_embedding_model_without_metadata(
         patch("models.text_embedding.text_embedding.genai.Client", return_value=client),
         patch.object(embedding_model, "_get_context_size", return_value=64),
         patch.object(embedding_model, "_get_max_chunks", return_value=100),
-        patch.object(embedding_model, "_calc_response_usage", return_value=_make_usage()),
+        patch.object(
+            embedding_model, "_calc_response_usage", return_value=_make_usage()
+        ),
+        # Deterministic local token estimate (1 token per char), mirroring the
+        # old test's char-token equivalence so chunks are strictly < context
+        # while still exercising the local-counting split path (no API call).
+        patch.object(
+            embedding_model,
+            "_get_num_tokens_by_gpt2",
+            side_effect=lambda text: max(1, len(text)),
+        ),
     ):
         result = embedding_model._invoke(
             model=model,
@@ -214,11 +224,15 @@ def test_token_counting_uses_embedding_model_without_metadata(
 
     client.models.get.assert_not_called()
     count_calls = client.models.count_tokens.call_args_list
-    assert all(call.kwargs["model"] == model for call in count_calls)
-    if len(texts) == 16:
-        assert len(count_calls) == 16
+    # The splitter counts tokens locally (GPT-2 estimate) for text well below
+    # the near-limit ratio. Near the limit it verifies with the model's own
+    # count (review feedback on #3759), so only the recursive-split batch
+    # (which exceeds the 0.8 * context_size ratio) consumes one count_tokens
+    # round-trip.
+    if texts == ["0123456789" * 16]:
+        assert len(count_calls) > 0
     else:
-        assert len(count_calls) > 1
+        assert len(count_calls) == 0
 
     client.models.embed_content.assert_called_once()
     embed_call = client.models.embed_content.call_args
@@ -1219,13 +1233,25 @@ class TestSplitTextsTermination:
         self.model = GeminiTextEmbeddingModel([])
 
     def _patch_count_tokens(self, chars_per_token: float):
-        """Patch _count_tokens with a deterministic char-based token estimate."""
+        """Patch the splitter's token source (_get_num_tokens_by_gpt2) and the
+        near-limit model-count fallback with a deterministic char-based token
+        estimate.
 
-        def fake_count_tokens(_client, _model, text):
+        Note: these are patched as instance attributes, so the fakes receive
+        the call arguments only (no ``self``).
+        """
+
+        def fake_count_tokens(text):
             # at least 1 token for any non-empty text
             return max(1, int(len(text) / chars_per_token) + (1 if text else 0))
 
-        return patch.object(self.model, "_count_tokens", side_effect=fake_count_tokens)
+        return patch.multiple(
+            self.model,
+            _get_num_tokens_by_gpt2=Mock(side_effect=fake_count_tokens),
+            _count_tokens=Mock(
+                side_effect=lambda client, model, text: fake_count_tokens(text)
+            ),
+        )
 
     def test_token_dense_text_terminates(self):
         """Token-dense text (more tokens than chars) must not recurse forever."""
@@ -1280,7 +1306,10 @@ class TestSplitTextsTermination:
         """
         context_size = 0
         text = "字字字字字"  # 5 chars, > 1 -> enters the split branch
-        with patch.object(self.model, "_count_tokens", return_value=0):
+        with (
+            patch.object(self.model, "_get_num_tokens_by_gpt2", return_value=0),
+            patch.object(self.model, "_count_tokens", return_value=0),
+        ):
             result = self.model._split_texts_to_fit_model_specs(
                 Mock(), "gemini-embedding-2-preview", [text], context_size
             )
