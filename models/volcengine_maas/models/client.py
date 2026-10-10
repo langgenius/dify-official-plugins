@@ -19,6 +19,10 @@ from volcenginesdkarkruntime.types.chat import (  # type: ignore
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import ChatCompletionContentPartVideoParam
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_image_param import ImageURL  # type: ignore
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import VideoURL
+from volcenginesdkarkruntime.types.chat.chat_completion_content_part_audio_param import (
+    ChatCompletionContentPartAudioParam,
+    InputAudio,
+)
 from volcenginesdkarkruntime.types.chat.chat_completion_message_tool_call_param import Function  # type: ignore
 from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 from volcenginesdkarkruntime.types.create_embedding_response import CreateEmbeddingResponse  # type: ignore
@@ -27,6 +31,7 @@ from volcenginesdkarkruntime.types.shared_params import FunctionDefinition  # ty
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -162,6 +167,16 @@ class ArkClientV3:
                                 ),
                                 type="video_url",
                             )
+                        )
+                    elif message_content.type == PromptMessageContentType.AUDIO:
+                        message_content = cast(AudioPromptMessageContent, message_content)
+                        audio = (
+                            InputAudio(url=message_content.url)
+                            if message_content.url
+                            else InputAudio(data=message_content.base64_data, format=message_content.format)
+                        )
+                        content.append(
+                            ChatCompletionContentPartAudioParam(input_audio=audio, type="input_audio")
                         )
             message_dict = ChatCompletionUserMessageParam(role="user", content=content)
         elif isinstance(message, AssistantPromptMessage):
