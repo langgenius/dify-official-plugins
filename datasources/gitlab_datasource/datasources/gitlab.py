@@ -5,7 +5,7 @@ import base64
 import markdown
 import certifi
 from typing import Dict, List, Optional, Any
-from urllib.parse import urlparse
+from urllib.parse import quote, unquote, urlparse
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -26,6 +26,62 @@ class GitLabDataSource(OnlineDocumentDatasource):
         self.gitlab_url = None
         self.base_url = None
     
+    def _get_default_readme_path(self, project_id: Any) -> Optional[str]:
+        """Resolve the actual README path within a GitLab project.
+
+        GitLab's ``GET /projects/:id/repository/files/:file_path`` endpoint
+        requires the caller to know the file path up front. The plugin
+        previously hardcoded ``"README.md"``, which 404s for repos whose
+        README lives in a subdirectory (``docs/README.rst``), uses a
+        non-``.md`` extension, or is named in a non-``README.md`` way
+        (``readme.md`` lowercase, etc.).
+
+        This helper queries the project's root tree and returns the first
+        README-like entry, preferring ``.md`` and ``.markdown`` over
+        ``.rst`` / ``.txt``. Returns ``None`` if the tree has no
+        README-like entry or the tree query itself fails, in which case the
+        caller's existing "no README" fallback path applies.
+
+        Args:
+            project_id: The GitLab project id.
+
+        Returns:
+            The repo-relative path of the first README-like entry
+            (e.g. ``"README.md"``, ``"docs/README.rst"``,
+            ``"README.markdown"``), or ``None`` when no README is present
+            or the tree query failed.
+        """
+        try:
+            tree = self._make_request(
+                f"{self.base_url}/projects/{project_id}/repository/tree",
+                params={"recursive": "false", "per_page": "100"},
+            )
+        except ValueError:
+            return None
+        if not isinstance(tree, list):
+            return None
+
+        candidates: List[Any] = []
+        for entry in tree:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("type") != "blob":
+                continue
+            path = entry.get("path")
+            if not isinstance(path, str) or not path:
+                continue
+            name = path.rsplit("/", 1)[-1].lower()
+            if not name.startswith("readme"):
+                continue
+            ext = name.rsplit(".", 1)[-1] if "." in name else ""
+            # Prefer common README extensions; fall back to any readme.* file.
+            rank = {"md": 0, "markdown": 1, "rst": 2, "txt": 3}.get(ext, 4)
+            candidates.append((rank, path))
+        if not candidates:
+            return None
+        candidates.sort()
+        return candidates[0][1]
+
     def _get_requests_session(self) -> requests.Session:
         """Create a requests session with retry strategy and SSL verification"""
         session = requests.Session()
@@ -164,24 +220,32 @@ class GitLabDataSource(OnlineDocumentDatasource):
             })
             
             # 添加 README 文件（如果存在）
-            try:
-                # GitLab API: GET /projects/:id/repository/files/:file_path
-                project_id = project['id']
-                readme_info = self._make_request(f"{self.base_url}/projects/{project_id}/repository/files/README.md")
+            # GitLab API: GET /projects/:id/repository/files/:file_path
+            # The README path must be resolved up front via the project
+            # tree; hardcoding "README.md" 404s for repos whose README
+            # lives in a subdirectory or uses a non-.md extension.
+            project_id = project['id']
+            readme_path = self._get_default_readme_path(project_id)
+            if readme_path is not None:
+                encoded_path = quote(readme_path, safe="")
+                try:
+                    readme_info = self._make_request(
+                        f"{self.base_url}/projects/{project_id}/repository/files/{encoded_path}"
+                    )
+                except ValueError:
+                    readme_info = {}
                 pages.append({
-                    "page_id": f"file:{project['path_with_namespace']}:README.md",
+                    "page_id": f"file:{project['path_with_namespace']}:{readme_path}",
                     "page_name": f"{project['name']} - README",
                     "last_edited_time": project.get("last_activity_at", ""),
                     "type": "file",
-                    "url": f"{project['web_url']}/-/blob/{project.get('default_branch', 'main')}/README.md",
+                    "url": f"{project['web_url']}/-/blob/{project.get('default_branch', 'main')}/{readme_path}",
                     "metadata": {
                         "project": project['path_with_namespace'],
-                        "file_path": "README.md",
+                        "file_path": readme_path,
                         "size": readme_info.get('size', 0)
                     }
                 })
-            except ValueError:
-                pass  # README 不存在
             
             # 添加热门 Issues
             try:
@@ -303,17 +367,27 @@ class GitLabDataSource(OnlineDocumentDatasource):
             content += f"**Topics:** {topics}\n\n"
         
         # 尝试获取 README
-        try:
-            project_id = project_info['id']
-            readme_info = self._make_request(f"{self.base_url}/projects/{project_id}/repository/files/README.md")
-            if readme_info.get("encoding") == "base64":
-                try:
-                    readme_content = base64.b64decode(readme_info["content"]).decode("utf-8")
-                    content += "## README\n\n" + readme_content
-                except (ValueError, UnicodeDecodeError) as e:
-                    content += "## README\n\nError decoding README content."
-        except ValueError:
+        # Resolve the actual README path via the project tree; the previous
+        # hardcoded "README.md" 404s for repos whose README lives in a
+        # subdirectory or uses a non-.md extension.
+        project_id = project_info['id']
+        readme_path = self._get_default_readme_path(project_id)
+        if readme_path is None:
             content += "## README\n\nNo README file found."
+        else:
+            encoded_path = quote(readme_path, safe="")
+            try:
+                readme_info = self._make_request(
+                    f"{self.base_url}/projects/{project_id}/repository/files/{encoded_path}"
+                )
+                if readme_info.get("encoding") == "base64":
+                    try:
+                        readme_content = base64.b64decode(readme_info["content"]).decode("utf-8")
+                        content += "## README\n\n" + readme_content
+                    except (ValueError, UnicodeDecodeError) as e:
+                        content += "## README\n\nError decoding README content."
+            except ValueError:
+                content += "## README\n\nNo README file found."
         
         yield self.create_variable_message("content", content)
         yield self.create_variable_message("page_id", page_id)
@@ -328,16 +402,24 @@ class GitLabDataSource(OnlineDocumentDatasource):
         if len(parts) != 3:
             raise ValueError(f"Invalid file page_id format: {page_id}")
         project_path = parts[1]
-        file_path = parts[2]
-        
+        # The path segment is now the repo-relative README path (which may
+        # itself contain URL-special characters or be percent-encoded for
+        # subdirectory paths like 'docs/README.rst' that the listing page
+        # emitted pre-fix). Unquote defensively so legacy and new page_ids
+        # both roundtrip cleanly through this method.
+        file_path = unquote(parts[2])
+
         # Basic input validation
         if not project_path or not file_path:
             raise ValueError(f"Invalid project path or file path in page_id: {page_id}")
-        
-        # URL encode the project path for GitLab API
-        encoded_project = project_path.replace('/', '%2F')
-        encoded_file_path = file_path.replace('/', '%2F')
-        
+
+        # URL encode the project and file paths for the GitLab API. A plain
+        # '/' -> '%2F' replace is not enough: special characters in the
+        # filename (spaces, parentheses, unicode) would not be encoded and
+        # the API would 404.
+        encoded_project = quote(project_path, safe="")
+        encoded_file_path = quote(file_path, safe="")
+
         file_info = self._make_request(f"{self.base_url}/projects/{encoded_project}/repository/files/{encoded_file_path}")
         
         # 获取文件内容
