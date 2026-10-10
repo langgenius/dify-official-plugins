@@ -45,7 +45,12 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         files = []
         for item in items:
-            is_folder = bool(item.get("folder"))
+            # Microsoft Graph returns `folder: {childCount: 0, ...}` for every
+            # folder including empty ones, and `file: {...}` for files. The
+            # facet's presence is the discriminator — not its truthiness —
+            # because bool({}) is False and would misclassify empty folders
+            # as files.
+            is_folder = item.get("folder") is not None
             size_raw = item.get("size", 0)
             try:
                 size = 0 if is_folder else int(size_raw)
