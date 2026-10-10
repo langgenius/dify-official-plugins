@@ -39,4 +39,4 @@ The plugin already spaces searches 2 seconds apart per process and retries with 
 - **Set `Proxy server`.** Route through an http/https/socks proxy (rotating proxies work best), or `tb` for a local Tor Browser.
 - **Handle failures in the workflow.** Enable *Retry on failure* and an *Error handling* strategy on the tool node so one blocked search degrades instead of aborting the run.
 
-For sustained high-volume use, an API-backed search plugin (Tavily, Serper, Brave Search, SearXNG) is more reliable than scraping.
+For sustained high-volume use, an API-backed search plugin (Tavily, Serper, Brave Search) is more reliable than scraping.
