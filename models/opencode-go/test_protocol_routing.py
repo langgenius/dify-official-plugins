@@ -14,6 +14,8 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from models.llm import llm_anthropic, llm_responses
 from models.llm.llm import OpenCodeGoLargeLanguageModel, apply_model_parameter_constraints
 from models.llm.session_headers import (
+    ANTHROPIC_MODELS,
+    RESPONSES_MODELS,
     public_headers_for_protocol,
     resolve_protocol,
 )
@@ -31,11 +33,26 @@ def test_resolve_protocol_defaults_and_whitelists() -> None:
     assert resolve_protocol("gpt-5.6-luna", {}) == "responses"
     assert resolve_protocol("mimo-v2.6-flash", {}) == "chat"
     assert resolve_protocol("mimo-v2.6-pro", {}) == "chat"
-    assert resolve_protocol("space-bunny-free", {}) == "chat"
+    assert resolve_protocol("space-bunny", {}) == "chat"
     assert resolve_protocol("muse-spark-1.3-contributor", {}) == "responses"
     # explicit credential wins
     assert resolve_protocol("union-alpha", {"api_protocol": "chat"}) == "chat"
     assert resolve_protocol("glm-5.3-flash", {"api_protocol": "anthropic"}) == "anthropic"
+
+
+def test_resolve_protocol_0_5_0_new_models() -> None:
+    # claude-haiku-5-5 rides the Anthropic Messages route via ANTHROPIC_MODELS.
+    assert "claude-haiku-5-5" in ANTHROPIC_MODELS
+    assert resolve_protocol("claude-haiku-5-5", {}) == "anthropic"
+    # explicit api_protocol credential still wins over the whitelist
+    assert resolve_protocol("claude-haiku-5-5", {"api_protocol": "chat"}) == "chat"
+    # longcat-2.5-preview-free is plain OAICompat chat, like longcat-2.0
+    assert "longcat-2.5-preview-free" not in ANTHROPIC_MODELS
+    assert "longcat-2.5-preview-free" not in RESPONSES_MODELS
+    assert resolve_protocol("longcat-2.5-preview-free", {}) == "chat"
+    assert resolve_protocol("longcat-2.0", {}) == "chat"
+    # renamed model keeps the plain chat route
+    assert resolve_protocol("space-bunny", {}) == "chat"
 
 
 def test_public_headers_anthropic_drops_bearer() -> None:

@@ -1,19 +1,19 @@
 # OpenCode Go
 
-Dify model provider plugin for [OpenCode Go](https://opencode.ai/docs/go/).
+Dify model provider plugin for [OpenCode Go](https://opencode.ai/v2/docs/console/go).
 
-OpenCode Go is a $10/month subscription gateway for curated open coding models. This plugin exposes those models as a Dify LLM provider.
+OpenCode Go is a subscription gateway for curated open coding models with two tiers: **Go** ($10/month) and **Go Plus** ($40/month) — identical per-token pricing, different monthly allowances. This plugin exposes those models as a Dify LLM provider.
 
 ## Features
 
-- Predefined models from the OpenCode Go catalog (GLM, Kimi, DeepSeek, MiMo, MiniMax, Qwen, LongCat, Hy, Grok, GPT Luna, Muse Spark)
+- Predefined models from the OpenCode Go catalog (GLM, Kimi, DeepSeek, MiMo, MiniMax, Qwen, LongCat (incl. LongCat 2.5), Claude, Hy, Grok, GPT Luna, Muse Spark, Space Bunny)
 - Customizable model support with an **API Protocol** selector (`chat` / `anthropic` / `responses`)
 - Three upstream protocols in one provider:
   - **Chat Completions** (`{base}/chat/completions` + `Authorization: Bearer`) — default for most models
-  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`)
+  - **Anthropic Messages** (`{base}/messages` + `x-api-key`) — models that only expose `/messages` (e.g. `minimax-m2.7`, `claude-haiku-5-5`)
   - **OpenAI Responses** (`{base}/responses` + `Authorization: Bearer`) — models that only expose `/responses` (e.g. `grok-4.7`, `grok-4.6`, `gpt-6-luna`, `gpt-5.6-luna`, `muse-spark-*`)
 - Sends OpenCode-required headers on **all three** paths:
-  - `User-Agent`: `dify-opencode-go-plugin/0.4.2` (not a generic SDK name)
+  - `User-Agent`: `dify-opencode-go-plugin/0.5.0` (not a generic SDK name)
   - `x-opencode-session`: stable id for routing / prompt-cache affinity
 - Upstream quirks handled automatically:
   - `kimi-k2.7-code` — forces `temperature=1` / `top_p=0.95` (gateway only accepts these)
@@ -39,6 +39,18 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 - Unresolved Dify templates (`{{#sys.*#}}`) are never sent as session values.
 - The internal helper header `x-dify-run-id` is never forwarded upstream.
 
+## Plans & usage limits
+
+Two subscription tiers — **Go** ($10/month) and **Go Plus** ($40/month) — share the same per-token pricing; only the monthly allowance differs. Limits are enforced over rolling windows:
+
+| Window | Share of monthly allowance |
+| --- | ---: |
+| 5 hours | 20% |
+| Week | 50% |
+| Month | 100% |
+
+When a limit is exceeded, requests can fall back to pay-as-you-go billing if the **"Use balance"** option is enabled in your OpenCode Console and a balance is available.
+
 ## Setup
 
 1. Subscribe to OpenCode Go at [opencode.ai/auth](https://opencode.ai/auth) and copy your API key.
@@ -51,11 +63,11 @@ OpenCode Go is a $10/month subscription gateway for curated open coding models. 
 If OpenCode adds a new model before this plugin is updated:
 
 1. Add a custom model under OpenCode Go.
-2. **Model ID** = model id from the [Go docs](https://opencode.ai/docs/go/) (e.g. `kimi-k2.6`).
+2. **Model ID** = model id from the [Go docs](https://opencode.ai/v2/docs/console/go) (e.g. `kimi-k2.6`).
 3. **Display Name** (optional) = label shown in the model list. Defaults to the Model ID.
 4. Set **API Protocol** to match the model’s endpoint:
    - `chat` (default) → `/chat/completions`
-   - `anthropic` → `/messages` (`minimax-m2.7`, other Messages-only ids)
+   - `anthropic` → `/messages` (`minimax-m2.7`, `claude-haiku-5-5`, other Messages-only ids)
    - `responses` → `/responses` (`grok-4.7`, `grok-4.6`, `gpt-5.6-luna`, `muse-spark-*`)
 5. Configure capability toggles as needed:
    - **Thinking / Agent Thought** (default on) — exposes thinking parameters (`enable_thinking`, `thinking_budget`, `reasoning_effort`)
@@ -87,19 +99,13 @@ When adding a custom model you can now set:
 | **API Protocol** | `chat` / `anthropic` / `responses` |
 | Function calling / context / max tokens | As before |
 
-### Custom model form (0.4.0)
+### Predefined models added in 0.5.0
 
-When adding a custom model you can now set:
-
-| Field | Purpose |
-| --- | --- |
-| **Model ID** | Upstream model id (required) |
-| **Display Name** | Label in the model list (optional; defaults to Model ID) |
-| **Thinking / Agent Thought** | Default on. Adds `agent-thought` + thinking parameters |
-| **Vision / Audio / Video / Document** | Multimodal file support |
-| **Structured output** | Adds `response_format` / `json_schema` |
-| **API Protocol** | `chat` / `anthropic` / `responses` |
-| Function calling / context / max tokens | As before |
+| Model | Protocol | Notes |
+| --- | --- | --- |
+| Claude Haiku 5.5 (`claude-haiku-5-5`) | anthropic | Messages-only (`/messages`). Base $0.10 / $0.50 (≤ 100K input); long-context tier > 100K $0.50 / $2.50. Context 1M, max output 128K. Prompts are **not used for training**; 30-day data retention. Listed in the official catalog and on the provider page, but as of 2026-10-08 the gateway `/v1/models` did not return this id yet (may require billing activation). **Not smoke-tested.** |
+| LongCat 2.5 Preview Free (`longcat-2.5-preview-free`) | chat | **Free for a limited time** (Unlimited during the promo) — may be removed anytime. Context 1M, max output 131,072. Do not rely on it for production. |
+| Space Bunny (`space-bunny`) | chat | Renamed from `space-bunny-free` (see removal table below) and now paid: $0.15 / $0.60, cache read $0.03, $30 monthly allowance. |
 
 ### Predefined models added in 0.3.0
 
@@ -128,6 +134,16 @@ When adding a custom model you can now set:
 
 Qwen and MiniMax M3 remain on Chat Completions (oa-compat) even though OpenCode docs list `/messages` as preferred — oa-compat is verified 200 and avoids regressions. MiniMax M2.7 is the exception (chat 500 → routed to anthropic).
 
+### Predefined models removed in 0.5.0
+
+| Model | Reason |
+| --- | --- |
+| Space Bunny Free (`space-bunny-free`) | Upstream renamed the model id to `space-bunny` — the gateway `/v1/models` now only returns `space-bunny`, so `space-bunny-free` no longer resolves. The model also became paid ($0.15 / $0.60). If you had added it as a custom model, re-create it with the id `space-bunny`. |
+
+### Models kept outside the official catalog
+
+`glm-5.1`, `qwen3.6-plus` and `qwen3.7-max` are no longer advertised in the official OpenCode Go catalog, but the gateway `/v1/models` still serves them and they keep working. The plugin retains them as predefined models for existing workloads; they may be removed in a future release if the gateway drops them.
+
 ### Predefined models removed in 0.3.0
 
 | Model | Reason |
@@ -153,12 +169,13 @@ Both models **remain fully usable** (not disabled) — only the name and descrip
 
 ### Cache & tier pricing (reference)
 
-Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M tokens). The OpenCode Go catalog also lists cache read/write prices and long-context tiers; those are **not** enforced by the plugin UI or billing fields, but are listed here for cost planning. Source: [models.dev OpenCode Go](https://models.dev/providers/opencode-go) (2026-09 snapshot).
+Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M tokens). The OpenCode Go catalog also lists cache read/write prices and long-context tiers; those are **not** enforced by the plugin UI or billing fields, but are listed here for cost planning. Source: [OpenCode Go provider catalog](https://models.opencode.ai/providers/opencode-go) (2026-10 snapshot).
 
 **Cache pricing** (when the gateway applies prompt caching):
 
 | Model | Cache read | Cache write |
 | --- | ---: | ---: |
+| `claude-haiku-5-5` | $0.01 | $0.125 |
 | `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` / `deepseek-v4.1-flash` | $0.003 | — |
 | `deepseek-v4-pro` | $0.022 | — |
 | `glm-5.1` / `glm-5.2` / `glm-5.3` | $0.26 | — |
@@ -172,6 +189,7 @@ Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M
 | `kimi-k2.7-code` | $0.19 | — |
 | `kimi-k3` | $0.30 | — |
 | `longcat-2.0` | $0.006 | — |
+| `longcat-2.5-preview-free` | Free | Free |
 | `mimo-v2.5` / `mimo-v2.6-flash` | $0.0028 | — |
 | `mimo-v2.5-pro` / `mimo-v2.6-pro` | $0.003625 | — |
 | `minimax-m2.7` | $0.06 | $0.375 |
@@ -182,12 +200,13 @@ Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M
 | `qwen3.7-max` | $0.50 | $3.125 |
 | `qwen3.8-flash` | $0.016 | $0.20 |
 | `qwen3.8-max` | $0.25 | $2.50 |
-| `space-bunny-free` | $0 | $0 |
+| `space-bunny` | $0.03 | — |
 
 **Long-context tiers** (higher unit price once input exceeds the threshold; YAML always records the base tier):
 
 | Model | Threshold | Tier input / output | Tier cache read / write |
 | --- | ---: | ---: | ---: |
+| `claude-haiku-5-5` | > 100,000 | $0.50 / $2.50 | $0.05 / $0.625 |
 | `gpt-5.6-luna` | > 272,000 | $0.40 / $1.80 | $0.04 / $0.50 |
 | `gpt-6-luna` | > 272,000 | $0.20 / $0.75 | $0.02 / $0.25 |
 | `grok-4.6` / `grok-4.7` | > 200,000 | $4.00 / $12.00 | $1.00 / — |
@@ -196,6 +215,17 @@ Dify's `PriceConfig` only stores **base input / output** unit prices (USD per 1M
 | `qwen3.7-plus` | > 256,000 | $1.20 / $4.80 | $0.12 / $1.50 |
 
 Models not listed above have no cache or tier rows in the catalog (flat base price only).
+
+**Peak / off-peak pricing (DeepSeek V4 line):** these models use time-of-day pricing. **Peak** = Monday–Friday 01:00–04:00 and 06:00–10:00 UTC; every other hour (including weekends) is **Off-Peak**.
+
+| Model | Off-Peak input / output | Peak input / output |
+| --- | ---: | ---: |
+| `deepseek-v4.1-flash` | $0.15 / $0.60 | $0.30 / $1.20 |
+| `deepseek-v4-pro` | $0.66 / $1.98 | $1.32 / $3.96 |
+| `deepseek-v4-flash` | $0.15 / $0.60 | $0.30 / $1.20 |
+| `deepseek-v4-flash-vision-exp` | $0.15 / $0.60 | $0.30 / $1.20 |
+
+**Privacy notes (2026-10):** Muse Spark Contributor models use your prompts to train Meta models and are **not** zero-data-retention (ZDR). DeepSeek's ZDR agreement is renewed through **2026-10-31**. Grok / GPT / Claude models retain data for 30 days; all other models retain 0 days.
 
 ### Multimodal flags
 
@@ -219,6 +249,9 @@ Local smoke matrix (2026-09-17, 0.2.0 + live-debug fixes). Vision for all vision
 | grok-4.6 via responses `/responses` | OK with outbound proxy |
 | gpt-5.6-luna via responses | OK with outbound proxy |
 | muse-spark-1.3 via responses | HTTP 200 (content quality may vary; region-limited) |
+| claude-haiku-5-5 via anthropic `/messages` | Not smoke-tested yet (added in 0.5.0; gateway `/v1/models` did not list it as of 2026-10-08) |
+| longcat-2.5-preview-free | Not smoke-tested yet (added in 0.5.0) |
+| space-bunny | Not smoke-tested yet (added in 0.5.0; renamed from `space-bunny-free`) |
 
 ## Development / debug
 
@@ -252,12 +285,12 @@ python test_smoke_live.py
 Package:
 
 ```bash
-dify plugin package models/opencode-go -o dist/opencode_go-0.4.2.difypkg
+dify plugin package models/opencode-go -o dist/opencode_go-0.5.0.difypkg
 ```
 
 ## Links
 
-- OpenCode Go docs: https://opencode.ai/docs/go/
+- OpenCode Go docs: https://opencode.ai/v2/docs/console/go
 - Models list API: `https://opencode.ai/zen/go/v1/models`
 - Auth / API keys: https://opencode.ai/auth
 - Dify plugin docs: https://docs.dify.ai/develop-plugin/dev-guides-and-walkthroughs/creating-new-model-provider
