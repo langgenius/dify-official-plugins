@@ -76,6 +76,15 @@ class AWSS3StorageDataSource(OnlineDriveDatasource):
             config=Config(s3={"addressing_style": "path"}),
         )
         response = client.get_object(Bucket=bucket_name, Key=key)
-        b64bytes = response["Body"].read()
+        # boto3 returns a StreamingBody that holds a live network connection.
+        # Always close it (even on read failure) so the connection returns to
+        # the pool. Without this, every download leaks one connection, and a
+        # botocore.EndpointConnectionError on .read() leaves the body open
+        # forever.
+        body = response["Body"]
+        try:
+            b64bytes = body.read()
+        finally:
+            body.close()
 
         yield self.create_blob_message(b64bytes, meta={"file_name": key, "mime_type": response["ContentType"]})
