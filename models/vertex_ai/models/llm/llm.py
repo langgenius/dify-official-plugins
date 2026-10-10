@@ -23,6 +23,7 @@ from dify_plugin.entities.model import PriceType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -148,6 +149,10 @@ def _extract_thought_signature(part) -> Optional[str]:
     except Exception:
         pass
     return None
+
+
+# Keep well under the plugin's MAX_REQUEST_TIMEOUT (120s) so a stalled file server fails fast
+DOCUMENT_FETCH_TIMEOUT_SECONDS = 30
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
@@ -372,13 +377,23 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 else:
                     system += "\n"
                     system += message.content
+        last_user_index = max(
+            (i for i, m in enumerate(prompt_messages) if isinstance(m, UserPromptMessage)),
+            default=-1,
+        )
         prompt_message_dicts = []
-        for message in prompt_messages:
+        for i, message in enumerate(prompt_messages):
             if not isinstance(message, SystemPromptMessage):
-                prompt_message_dicts.append(self._convert_claude_prompt_message_to_dict(message))
+                prompt_message_dicts.append(
+                    self._convert_claude_prompt_message_to_dict(
+                        message, is_last_user_message=i == last_user_index
+                    )
+                )
         return (system, prompt_message_dicts)
 
-    def _convert_claude_prompt_message_to_dict(self, message: PromptMessage) -> dict:
+    def _convert_claude_prompt_message_to_dict(
+        self, message: PromptMessage, is_last_user_message: bool = False
+    ) -> dict:
         """
         Convert PromptMessage to dict
         """
@@ -416,6 +431,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             "source": {"type": "base64", "media_type": mime_type, "data": base64_data},
                         }
                         sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        message_content = cast(DocumentPromptMessageContent, message_content)
+                        sub_messages.append(
+                            self._convert_claude_document_content(
+                                message_content, is_last_user_message
+                            )
+                        )
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
@@ -426,6 +448,40 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_dict
+
+    @staticmethod
+    def _convert_claude_document_content(
+        content: DocumentPromptMessageContent, is_last_user_message: bool
+    ) -> dict:
+        """
+        Convert a document to a Claude document block.
+        Claude on Vertex AI only accepts base64 sources, so URLs are downloaded first.
+        """
+        if content.mime_type != "application/pdf":
+            if is_last_user_message:
+                raise ValueError(
+                    f"Unsupported document type {content.mime_type}, only support application/pdf"
+                )
+            # Keep earlier turns usable when a non-PDF file is still in the conversation history
+            return {
+                "type": "text",
+                "text": f"[Unsupported document: {content.filename} ({content.mime_type})]",
+            }
+        if content.base64_data:
+            base64_data = content.base64_data
+        else:
+            try:
+                response = requests.get(content.url, timeout=DOCUMENT_FETCH_TIMEOUT_SECONDS)
+                response.raise_for_status()
+                base64_data = base64.b64encode(response.content).decode("utf-8")
+            except requests.RequestException as ex:
+                raise ValueError(
+                    f"Failed to fetch document data from url {content.url}, {ex}"
+                ) from ex
+        return {
+            "type": "document",
+            "source": {"type": "base64", "media_type": "application/pdf", "data": base64_data},
+        }
 
     def _generate_mistral(
         self,
