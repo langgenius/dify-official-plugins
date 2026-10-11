@@ -1,0 +1,38 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: litellm
+label:
+  en_US: LiteLLM
+  zh_Hans: LiteLLM
+description:
+  en_US: Connect Dify to a LiteLLM Proxy. One OpenAI-compatible endpoint gives access to 100+ model providers.
+  zh_Hans: 连接 LiteLLM Proxy。通过一个 OpenAI 兼容端点即可调用 100 多个模型供应商。
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  models:
+    - provider/litellm.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2026-10-11T07:58:03.000000000-07:00
+privacy: PRIVACY.md
+verified: false

@@ -1,0 +1,195 @@
+provider: litellm
+label:
+  en_US: LiteLLM
+  zh_Hans: LiteLLM
+description:
+  en_US: Use LiteLLM Proxy as one OpenAI-compatible gateway to 100+ model providers.
+  zh_Hans: 使用 LiteLLM Proxy 作为统一的 OpenAI 兼容网关，调用 100 多个模型供应商。
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+icon_large:
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+help:
+  title:
+    en_US: Set up a LiteLLM Proxy
+    zh_Hans: 部署 LiteLLM Proxy
+  url:
+    en_US: https://docs.litellm.ai/docs/proxy/quick_start
+supported_model_types:
+  - llm
+  - text-embedding
+configurate_methods:
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Model name from your LiteLLM config, e.g. gpt-6-luna
+      zh_Hans: LiteLLM 配置中的模型名称，例如 gpt-6-luna
+  credential_form_schemas:
+    - variable: endpoint_url
+      label:
+        en_US: LiteLLM Proxy URL
+        zh_Hans: LiteLLM Proxy 地址
+      type: text-input
+      required: true
+      default: http://localhost:4000
+      placeholder:
+        en_US: http://localhost:4000
+        zh_Hans: http://localhost:4000
+      help:
+        en_US: Base URL of your LiteLLM Proxy. The plugin adds /chat/completions or /embeddings. A trailing /v1 is optional.
+        zh_Hans: LiteLLM Proxy 的基础地址。插件会自动追加 /chat/completions 或 /embeddings，末尾的 /v1 可有可无。
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: false
+      placeholder:
+        en_US: Enter a LiteLLM virtual key or master key (optional)
+        zh_Hans: 输入 LiteLLM 虚拟密钥或主密钥（可选）
+      help:
+        en_US: Leave empty if your proxy does not require authentication.
+        zh_Hans: 如果代理未开启认证，请留空。
+    - variable: mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Completion mode
+        zh_Hans: 对话类型
+      type: select
+      required: true
+      default: chat
+      options:
+        - value: chat
+          label:
+            en_US: Chat
+            zh_Hans: 对话
+        - value: completion
+          label:
+            en_US: Completion
+            zh_Hans: 补全
+    - variable: context_size
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: "4096"
+      placeholder:
+        en_US: Enter the model context size
+        zh_Hans: 在此输入模型上下文长度
+    - variable: max_tokens_to_sample
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      required: false
+      default: "4096"
+    - variable: function_calling_type
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Function Call Type
+        zh_Hans: 函数调用类型
+      type: select
+      required: false
+      default: no_call
+      options:
+        - value: tool_call
+          label:
+            en_US: Tool Call
+            zh_Hans: 工具调用
+        - value: function_call
+          label:
+            en_US: Function Call
+            zh_Hans: 函数调用
+        - value: no_call
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: stream_function_calling
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Stream function calling
+        zh_Hans: 流式函数调用
+      type: select
+      required: false
+      default: supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Vision Support
+        zh_Hans: 视觉支持
+      type: select
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: context_size
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: "4096"
+      placeholder:
+        en_US: Enter the model context size
+        zh_Hans: 在此输入模型上下文长度
+    - variable: max_chunks
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      label:
+        en_US: Model max chunks per batch
+        zh_Hans: 模型每批的最大分块数
+      type: text-input
+      required: true
+      default: "1"
+      placeholder:
+        en_US: Enter the maximum number of chunks per batch
+        zh_Hans: 在此输入每批次的最大分块数量
+extra:
+  python:
+    provider_source: provider/litellm.py
+    model_sources:
+      - models/llm/llm.py
+      - models/text_embedding/text_embedding.py
