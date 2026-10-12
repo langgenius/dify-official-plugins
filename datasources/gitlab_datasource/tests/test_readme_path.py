@@ -3,7 +3,7 @@
 Before the fix, ``_get_pages`` and ``_get_project_content`` hardcoded
 ``"README.md"`` against the GitLab API in the file lookup URL, the page id,
 the README web URL, and ``metadata.file_path``. Repos whose default README
-lives in a subdirectory (``docs/README.rst``) or uses a non-``md`` extension
+is named differently (``README.markdown``, ``readme.md``) or uses a non-``md`` extension
 (``README.markdown``) silently got a 404 from the GitLab content API and
 the page opened to an empty README.
 
@@ -19,7 +19,7 @@ Tests pin:
   * the listing page emits ``page_id`` with the actual README path, not a
     hardcoded literal;
   * a project with no README falls back silently (no crash, no entry);
-  * a project whose README is in a subdirectory resolves correctly;
+  * a README in a subdirectory is ignored, matching GitLab, and the root priority order follows GitLab docs;
   * ``_get_file_content`` URL-decodes the path segment for legacy and new
     page ids and matches the GitLab-API path the listing used;
   * source-level guards pin the file so a future refactor can't reintroduce
@@ -193,27 +193,80 @@ def test_get_default_readme_path_extension_variants(
     assert obj._get_default_readme_path(42) == expected
 
 
-def test_get_default_readme_path_prefers_md_over_rst() -> None:
-    """When several README-like entries coexist, ``.md`` wins over ``.rst``."""
+def test_get_default_readme_path_prefers_markdown_then_md_then_rst() -> None:
+    """When several READMEs coexist: adoc, markdown, md, rst, none, then others."""
     obj = _instance()
     tree = [
         _make_tree_entry("README.rst"),
-        _make_tree_entry("README.markdown"),
         _make_tree_entry("README.md"),
+        _make_tree_entry("README.markdown"),
     ]
     obj._make_request = lambda url, params=None: tree  # type: ignore[assignment]
+    assert obj._get_default_readme_path(42) == "README.markdown"
+    tree.pop()
     assert obj._get_default_readme_path(42) == "README.md"
+    tree.pop()
+    assert obj._get_default_readme_path(42) == "README.rst"
 
 
-def test_get_default_readme_path_subdirectory_no_root() -> None:
-    """The key bug case: README living in a subdirectory resolves to the subtree path."""
+def test_get_default_readme_path_ignores_subdirectories() -> None:
+    """GitLab does not render subdirectory READMEs, so only the root counts."""
     obj = _instance()
     tree = [
         _make_tree_entry("src/main.py"),
         _make_tree_entry("docs/README.rst"),
     ]
     obj._make_request = lambda url, params=None: tree  # type: ignore[assignment]
-    assert obj._get_default_readme_path(42) == "docs/README.rst"
+    assert obj._get_default_readme_path(42) is None
+
+
+def test_get_default_readme_path_root_wins_over_subdirectory() -> None:
+    obj = _instance()
+    tree = [
+        _make_tree_entry("docs/README.adoc"),
+        _make_tree_entry("README"),
+    ]
+    obj._make_request = lambda url, params=None: tree  # type: ignore[assignment]
+    assert obj._get_default_readme_path(42) == "README"
+
+
+def test_get_default_readme_path_requires_exact_stem() -> None:
+    """``README-zh.md`` or ``readme.en.md`` are not what GitLab renders."""
+    obj = _instance()
+    tree = [
+        _make_tree_entry("README-zh.md"),
+        _make_tree_entry("readme.en.md"),
+        _make_tree_entry("READMEFIRST"),
+        _make_tree_entry("index.html.bak"),
+    ]
+    obj._make_request = lambda url, params=None: tree  # type: ignore[assignment]
+    assert obj._get_default_readme_path(42) is None
+
+
+def test_get_default_readme_path_follows_gitlab_priority_order() -> None:
+    """readme > index > _index, then adoc > markdown > md > rst > none > other, then README > readme."""
+    order = [
+        "readme.adoc",
+        "README.md",
+        "readme.md",
+        "README.rst",
+        "README",
+        "readme",
+        "README.txt",
+        "INDEX.md",
+        "index.adoc",
+        "_INDEX.md",
+        "_index.md",
+    ]
+    # ``index.adoc`` outranks ``INDEX.md`` on extension, so list it first below.
+    order[7], order[8] = "index.adoc", "INDEX.md"
+    obj = _instance()
+    remaining = list(order)
+    while remaining:
+        tree = [_make_tree_entry(name) for name in reversed(remaining)]
+        obj._make_request = lambda url, params=None, tree=tree: tree  # type: ignore[assignment]
+        assert obj._get_default_readme_path(42) == remaining[0], remaining
+        remaining.pop(0)
 
 
 def test_get_default_readme_path_returns_none_when_tree_empty() -> None:
@@ -256,14 +309,14 @@ def test_get_default_readme_path_skips_tree_subtrees() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_get_pages_emits_readme_entry_with_resolved_path_in_subdir() -> None:
+def test_get_pages_emits_readme_entry_with_resolved_path_for_root_adoc() -> None:
     """The full listing flow must thread the resolved README path through ``page_id``."""
     obj = _instance()
     fake_request, captured = _stub_make_request(
         obj,
         user=_make_user(),
-        tree=[_make_tree_entry("docs/README.rst")],
-        readme_file=_make_readme_file("docs/README.rst", size=512),
+        tree=[_make_tree_entry("README.adoc")],
+        readme_file=_make_readme_file("README.adoc", size=512),
     )
     obj._make_request = fake_request  # type: ignore[assignment]
     obj._get_projects = lambda max_projects=20: [_make_repo()]  # type: ignore[assignment]
@@ -274,12 +327,26 @@ def test_get_pages_emits_readme_entry_with_resolved_path_in_subdir() -> None:
     assert len(readme_pages) == 1, "expected exactly one README page entry"
     readme = readme_pages[0]
 
-    assert "docs/README.rst" in readme.page_id
-    assert "README.md" not in readme.page_id.split(":")[-1]  # the path segment is not the literal "README.md"
-    # The URL the API call hits must percent-encode the slash.
-    assert any("/repository/files/docs%2FREADME.rst" in u for u in captured), (
-        f"expected URL-encoded subdir path; got captured URLs {captured}"
+    assert "README.adoc" in readme.page_id
+    assert not readme.page_id.endswith(":README.md")
+    # The files API call must use the resolved name.
+    assert any("/repository/files/README.adoc" in u for u in captured), (
+        f"expected the resolved root path; got captured URLs {captured}"
     )
+
+
+def test_get_pages_skips_readme_when_only_a_subdirectory_has_one() -> None:
+    obj = _instance()
+    fake_request, _ = _stub_make_request(
+        obj,
+        user=_make_user(),
+        tree=[_make_tree_entry("docs/README.rst")],
+    )
+    obj._make_request = fake_request  # type: ignore[assignment]
+    obj._get_projects = lambda max_projects=20: [_make_repo()]  # type: ignore[assignment]
+
+    info = obj._get_pages({}).result[0]
+    assert [p for p in info.pages if p.page_name.endswith("- README")] == []
 
 
 def test_get_pages_skips_readme_when_project_has_none() -> None:

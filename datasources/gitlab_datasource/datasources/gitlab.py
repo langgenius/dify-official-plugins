@@ -26,30 +26,24 @@ class GitLabDataSource(OnlineDocumentDatasource):
         self.gitlab_url = None
         self.base_url = None
     
+    # Extension order GitLab uses when several README files exist.
+    _README_EXTENSION_ORDER = ["adoc", "markdown", "md", "rst", ""]
+    # Which stems GitLab treats as a repository landing file, best first.
+    _README_STEM_ORDER = ["readme", "index", "_index"]
+
     def _get_default_readme_path(self, project_id: Any) -> Optional[str]:
-        """Resolve the actual README path within a GitLab project.
+        """Pick the file GitLab would render as the project's README.
 
-        GitLab's ``GET /projects/:id/repository/files/:file_path`` endpoint
-        requires the caller to know the file path up front. The plugin
-        previously hardcoded ``"README.md"``, which 404s for repos whose
-        README lives in a subdirectory (``docs/README.rst``), uses a
-        non-``.md`` extension, or is named in a non-``README.md`` way
-        (``readme.md`` lowercase, etc.).
+        Only the repository root is considered: the tree is listed with
+        ``recursive=false`` and GitLab does not render READMEs from
+        subdirectories either. A file qualifies when its name without the
+        extension is exactly ``README``, ``INDEX`` or ``_INDEX``, ignoring
+        case. Candidates are ordered by stem (readme, index, _index), then by
+        extension (adoc, markdown, md, rst, none, anything else), then by
+        file name so ``README`` sorts ahead of ``readme``.
 
-        This helper queries the project's root tree and returns the first
-        README-like entry, preferring ``.md`` and ``.markdown`` over
-        ``.rst`` / ``.txt``. Returns ``None`` if the tree has no
-        README-like entry or the tree query itself fails, in which case the
-        caller's existing "no README" fallback path applies.
-
-        Args:
-            project_id: The GitLab project id.
-
-        Returns:
-            The repo-relative path of the first README-like entry
-            (e.g. ``"README.md"``, ``"docs/README.rst"``,
-            ``"README.markdown"``), or ``None`` when no README is present
-            or the tree query failed.
+        Returns ``None`` if no root file qualifies or the tree query fails,
+        in which case the caller's existing "no README" path applies.
         """
         try:
             tree = self._make_request(
@@ -63,24 +57,26 @@ class GitLabDataSource(OnlineDocumentDatasource):
 
         candidates: List[Any] = []
         for entry in tree:
-            if not isinstance(entry, dict):
-                continue
-            if entry.get("type") != "blob":
+            if not isinstance(entry, dict) or entry.get("type") != "blob":
                 continue
             path = entry.get("path")
-            if not isinstance(path, str) or not path:
+            if not isinstance(path, str) or not path or "/" in path:
                 continue
-            name = path.rsplit("/", 1)[-1].lower()
-            if not name.startswith("readme"):
+            stem, _, ext = path.rpartition(".") if "." in path else (path, "", "")
+            if stem.lower() not in self._README_STEM_ORDER:
                 continue
-            ext = name.rsplit(".", 1)[-1] if "." in name else ""
-            # Prefer common README extensions; fall back to any readme.* file.
-            rank = {"md": 0, "markdown": 1, "rst": 2, "txt": 3}.get(ext, 4)
-            candidates.append((rank, path))
+            stem_rank = self._README_STEM_ORDER.index(stem.lower())
+            ext = ext.lower()
+            ext_rank = (
+                self._README_EXTENSION_ORDER.index(ext)
+                if ext in self._README_EXTENSION_ORDER
+                else len(self._README_EXTENSION_ORDER)
+            )
+            candidates.append((stem_rank, ext_rank, path))
         if not candidates:
             return None
         candidates.sort()
-        return candidates[0][1]
+        return candidates[0][2]
 
     def _get_requests_session(self) -> requests.Session:
         """Create a requests session with retry strategy and SSL verification"""
@@ -222,8 +218,8 @@ class GitLabDataSource(OnlineDocumentDatasource):
             # 添加 README 文件（如果存在）
             # GitLab API: GET /projects/:id/repository/files/:file_path
             # The README path must be resolved up front via the project
-            # tree; hardcoding "README.md" 404s for repos whose README
-            # lives in a subdirectory or uses a non-.md extension.
+            # tree; hardcoding "README.md" 404s for repos whose README uses
+            # another name or extension (readme.md, README.rst, ...).
             project_id = project['id']
             readme_path = self._get_default_readme_path(project_id)
             if readme_path is not None:
@@ -368,8 +364,8 @@ class GitLabDataSource(OnlineDocumentDatasource):
         
         # 尝试获取 README
         # Resolve the actual README path via the project tree; the previous
-        # hardcoded "README.md" 404s for repos whose README lives in a
-        # subdirectory or uses a non-.md extension.
+        # hardcoded "README.md" 404s for repos whose README uses another
+        # name or extension (readme.md, README.rst, ...).
         project_id = project_info['id']
         readme_path = self._get_default_readme_path(project_id)
         if readme_path is None:
