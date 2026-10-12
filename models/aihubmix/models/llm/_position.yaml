@@ -1,3 +1,4 @@
+- gpt-6.1-sol
 - claude-haiku-5-5
 - claude-opus-5-5
 - claude-sonnet-5-5
@@ -18,8 +19,8 @@
 - glm-5.3
 - mercury-2.5-preview
 - qwen3.8-max-2026-09-02
-- coding-glm-5.3
 - hy4-preview
+- coding-glm-5.3
 - muse-spark-1.3
 - qwen3.8-flash
 - gemini-3.7-flash
@@ -129,7 +130,6 @@
 - minimax-m2.7
 - doubao-seed-2-0-code-preview
 - doubao-seed-2-0-lite-260215
-- doubao-seed-2-0-mini
 - gemini-3-flash-preview
 - gemini-3-flash-preview-search
 - glm-5-turbo
