@@ -23,16 +23,17 @@ MinerU is a document parser that can parse complex document data for any downstr
 - Supports running in a pure CPU environment, and also supports GPU(CUDA)/NPU(CANN)/MPS acceleration
 - Compatible with Windows, Linux, and Mac platforms.
 
-## What's New?
+## What's New in 0.6.0
 
-- Support the **official API of MinerU**
-  ![](./_assets/mineru8.jpg)
-- Local Deploy corresponds to MinerU **release 2.5**
-- The supported input file types have been increased to include **PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, and JPEG.**
-- Remove the "Replace Markdown Image Path" tool. Now, the image paths in the Markdown will be automatically replaced with previewable URLs (the validity period of the URL is determined by the FILES_ACCESS_TIMEOUT in dify.env).If you want to use this feature, please update the Dify's core code.![](./_assets/mineru2.jpg)
-- Supports more export formats (HTML, DOC, LaTeX). The download links for the additional formats will be stored in the `files` of the output variables.
-
-  ![](./_assets/mineru1.jpg)
+- **Self-hosted MinerU 4.x support.** MinerU 4.x replaced `/file_parse` with the V1 API (uploads → parse jobs → output files). The plugin detects the server version automatically, so the same configuration works with MinerU 1.x, 2.x, 3.x and 4.x, and you can upgrade the MinerU server without changing the plugin.
+- **New tool: Parse URL** – let MinerU download and parse a document from an http(s) URL (official API and MinerU 4.x).
+- **New tool: Get Parse Result** – fetch the status or result of a job by `task_id` / `batch_id`. Together with the new `Wait for result` and `Timeout` options of Parse File, long documents no longer have to finish within one tool call.
+- **Page ranges** – parse only some pages of a PDF (e.g. `1-10`).
+- **Gateway header** – optional fixed header (e.g. `X-API-Key`) for self-hosted MinerU behind a gateway or reverse proxy, sent in addition to the API token.
+- **More file types** – xls/xlsx, more image formats, and html (official API `MinerU-HTML` model or MinerU 4.x).
+- **Fixes for self-hosted MinerU 2.x/3.x** – the formula/table recognition switches and the document language are now actually sent to the server.
+- New output variables `task_id`, `batch_id`, `state` and `server_type`; clearer error messages (expired token, quota, gateway or API-key rejections).
+- Removed the unused "Replace Markdown Image Path" tool files; image links in the Markdown are replaced automatically.
 
 ## DEMO DSL
 
@@ -40,101 +41,84 @@ MinerU is a document parser that can parse complex document data for any downstr
 
 [demo_dsl.yml](https://github.com/langgenius/dify-official-plugins/blob/main/tools/mineru/_assets/mineru_demo.yml)
 
-## Getting Started
+## Tools
 
-### 1. Using the Official MinerU API
+| Tool | What it does | Official API | Self-hosted 1.x–3.x | Self-hosted 4.x |
+| --- | --- | :---: | :---: | :---: |
+| Parse File (`parse-file`) | Parse an uploaded file | ✅ | ✅ (synchronous) | ✅ |
+| Parse URL (`parse-url`) | Parse a document from an http(s) URL | ✅ | ❌ | ✅ |
+| Get Parse Result (`get-parse-result`) | Status / result of a job by `task_id` or `batch_id` | ✅ | ❌ (no job ids) | ✅ |
 
-The version 0.0.2 can now support the official API of MinerU.
+## Configuration
 
-#### Configuration Steps
+Go to "Tools" → "Plugin Market", add the "MinerU" plugin and fill in its credentials. You can save several credentials (for example one for the official API and one for an internal server) and pick one per node.
 
-1. Log into your Dify platform.
-2. Go to "Tools" -> "Plugin Market", search for "MinerU" plugin and add it.
-3. Configure the MinerU plugin parameters:
+| Field | Official API | Self-hosted |
+| --- | --- | --- |
+| Server Type | `MinerU Official API` | `Local Deployment` |
+| Base URL | optional, defaults to `https://mineru.net` | required, e.g. `http://10.0.0.5:8000` |
+| API Token | required – [get a token](https://mineru.net/apiManage/token). Tokens expire; generate a new one when you see "token has expired". | MinerU 4.x: only if the server was started with `--api-key`. Sent as `Authorization: Bearer <token>`. |
+| Gateway Header Name / Value | not used | optional; a fixed header required by a gateway in front of MinerU |
 
-   - Base URL of the MinerU API service: `https://mineru.net`
-   - API token: [Get your API token from MinerU](https://mineru.net/apiManage/token)
-   - Service Type: Select "MinerU Official API"
-4. Save your configuration.
+Saving the credentials checks them with a read-only request.
 
-#### Input Parameters
+![MinerU credentials for a self-hosted server](./_assets/mineru-0.6-credentials.jpg)
 
-|         parameter         | type     | required | example         | description                                                                                                                                                                                                                                                                                                                                                                            |
-| :------------------------: | -------- | -------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| enable formula recognition | bool     | false    | true            | Whether to enable formula recognition, the default is true                                                                                                                                                                                                                                                                                                                             |
-|  enable table recognition  | bool     | false    | true            | Whether to enable table recognition, the default is true                                                                                                                                                                                                                                                                                                                               |
-|     document language     | string   | false    | ch              | Specify the document language, the default ch, can be set to auto, when it is auto, the model will automatically recognize the document language, see the list of other optional values for details：[](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5)[PaddleOCR ](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5) |
-|   enable ocr recognition   | bool     | false    | true            | Whether to start the ocr function, the default is false                                                                                                                                                                                                                                                                                                                                |
-|    extra export formats    | [string] | false    | ["docx","html"] | Markdown and json are the default export formats without setting. This parameter only supports one or more of the three formats of docx, html, and latex.                                                                                                                                                                                                                              |
-| model version | string  | false | vlm | MinerU model version; options: pipeline or vlm |
+**Network notes for self-hosted servers**
 
-![](./_assets/mineru3.jpg)
+- Dify must be able to reach the Base URL. Do not use `127.0.0.1` or `localhost` unless MinerU runs on the same host as the Dify plugin daemon.
+- Requests come from the Dify **plugin daemon**. If the gateway uses an IP allowlist, allow the plugin daemon's address.
+- MinerU 2.x/3.x has no authentication of its own; keep it on an internal network or behind a gateway. For MinerU 4.x, start the server with `--api-key` when it listens on a non-loopback address.
 
-#### Output Variables
+### Starting a self-hosted server
 
-The plugin provides five types of output for each processed file:
+- **MinerU 4.x**: `mineru-kit api-server --host 0.0.0.0 --port 8000 --tier standard --api-key <key>` (see the [MinerU HTTP API guide](https://github.com/opendatalab/MinerU/blob/master/docs/en/usage/http_api.md)). `flash` needs no models; `basic` runs on CPU; `standard`/`advanced` need a VLM.
+- **MinerU 2.x/3.x**: `mineru-api --host 0.0.0.0 --port 8000`.
 
-> text : The parsed Markdown text
->
-> files:  The extra export formats files(html,docx,latex)
->
-> json: The parsed content list
->
-> full_zip_url: Only for Official API, the zip URL of the complete parsed result
->
-> images: The images extracted from the PDF
+## Parse File / Parse URL parameters
 
-![](./_assets/mineru4.jpg)
+| Parameter | Applies to | Description |
+| --- | --- | --- |
+| file / url | all | The document to parse. Parse URL: the official API only accepts public URLs; MinerU 4.x accepts https only unless started with `--allow-http-source`. |
+| page_ranges | all | PDF pages to parse, 1-based, e.g. `1-10` or `2,4-6`. MinerU 2.x/3.x accept a single range such as `3-10`. |
+| parse_method | self-hosted | `auto` / `ocr` / `txt` (MinerU 4.x: `ocr_mode`). |
+| tier | self-hosted 4.x | `auto` (server default), `flash`, `basic`, `standard`, `advanced`. |
+| enable_formula / enable_table | official API, self-hosted 2.x/3.x | Formula and table recognition. MinerU 4.x decides this from the tier. |
+| language | official API, self-hosted 2.x/3.x | Document language, e.g. `ch`, `en`, `japan`. The official API accepts `auto`. |
+| enable_ocr | official API | Force OCR. |
+| extra_formats | official API | Extra exports, any of `["docx","html","latex"]`. Self-hosted MinerU 4.x only returns Markdown, JSON and images. |
+| model_version | official API | `pipeline`, `vlm`, or `MinerU-HTML` for html files. |
+| backend / server_url | self-hosted 2.x/3.x | Parsing backend; `server_url` is required for the `*-client` backends. |
+| wait_for_result | official API, self-hosted 4.x | Wait until parsing finishes (default). If off, the tool returns a `task_id` / `batch_id` immediately. |
+| timeout_seconds | all | How long to wait (default 540). Keep it below Dify's `PLUGIN_MAX_EXECUTION_TIMEOUT` (600 by default). If parsing is not finished in time, the tool returns the job id instead of failing. |
 
-### 2. Using a Locally Deployed MinerU Service
+![Parse File node settings](./_assets/mineru-0.6-node-settings.jpg)
 
-Version 0.3.1 of the plugin corresponds to MinerU release 2.1.1.
+## Output Variables
 
-#### Prerequisites
+| Output | Description |
+| --- | --- |
+| text | The parsed Markdown. Image links point to files stored in Dify. |
+| json | Official API and MinerU 1.x–3.x: `content_list`. MinerU 4.x: `structured_content`. |
+| files | Extra export formats (docx, html, latex) and images without a preview URL. |
+| images | The images extracted from the document. |
+| full_zip_url | Official API only: the zip of the complete result. |
+| task_id / batch_id | The job id to pass to Get Parse Result (empty for MinerU 1.x–3.x). |
+| state | `done`, or `pending` / `running` when the tool returned before parsing finished. Failed jobs raise an error. |
+| server_type | `remote` (official API) or `local` (self-hosted). |
 
-1. **Get your local IP address:**
-   For Dify to correctly access the MinerU API, you need to use your LAN IP address (Do NOT use `127.0.0.1` or `localhost`). Get your IP address based on your operating system:
+![Parse File output: Markdown with image links stored in Dify](./_assets/mineru-0.6-output.jpg)
 
-   * **Windows**: Open Command Prompt, run `ipconfig`, and look for "IPv4 Address".
-   * **macOS**: Open Terminal, run:
-     * **Wireless network:** `ipconfig getifaddr en0`
-     * **Wired network:** `ipconfig getifaddr en1`
-   * **Linux**: Open Terminal, run `ip hostname -I` or `ip addr`.
+### Long documents
 
-   **Note your IP address, for example: `192.168.1.100`**
-2. **Deploy the MinerU Web API project:**
-   Follow the instructions here:
-   [MinerU/projects/web_api/README.md at magic_pdf-1.2.2-released · opendatalab/MinerU · GitHub](https://github.com/opendatalab/MinerU/blob/magic_pdf-1.2.2-released/projects/web_api/README.md)
+1. Run Parse File (or Parse URL) with `wait_for_result` off, or let it reach `timeout_seconds`.
+2. Pass its `task_id` and `batch_id` outputs to Get Parse Result, e.g. inside a Loop node, until `state` is `done`.
 
-#### Configuration Steps
+![Parse File, then Submit and Query with Get Parse Result, then Parse URL](./_assets/mineru-0.6-workflow.jpg)
 
-1. Log into your Dify platform.
-2. Go to "Tools" -> "Plugin Market", search for "MinerU" plugin and add it.
-3. Configure the MinerU plugin parameters:
+Use the same credential for both tools – job ids only exist on the server that created them. A self-hosted MinerU 4.x server keeps jobs in memory, so job ids do not survive a server restart.
 
-   - Base URL of the locally deployed MinerU service: `http://YOUR_LOCAL_IP:8888` (e.g., `http://192.168.1.100:8888`)
-   - Token: Leave empty (not required for local deployment)
-   - Service Type: Select "Local Deployment"
-
-   **Note: Ensure that the Dify service can access this base URL.**
-
-   ![](./_Assets/mineru5.jpg)
-4. Save your configuration.
-
-#### Input Parameters
-
-| Parameter    | Type   | Required | Default | Description                               |
-| ------------ | ------ | -------- | ------- | ----------------------------------------- |
-| file         | file   | Yes      | -       | File to be parsed                         |
-| parse_method | select | Yes      | auto    | Parsing method, can be auto, ocr, or txt. |
-
-**Note: Other parameters are invalid for the local deployment version. **
-
-#### Output Variables
-
-Same as the Official API output variables (see above).
-
-### 3. Important: Dify Environment Configuration (`FILES_URL`)
+## Important: Dify Environment Configuration (`FILES_URL`)
 
 To ensure the MinerU plugin can properly handle file uploads, you need to configure the `FILES_URL` setting in Dify:
 
@@ -176,6 +160,10 @@ Please follow the instructions above to configure the settings accordingly, and 
 
 https://github.com/langgenius/dify/issues/16327
 
+2. **"This MinerU server cannot export the requested extra formats"** – self-hosted MinerU 4.x only returns Markdown, JSON and images. Leave Extra export formats empty.
+
+3. **"The MinerU API token has expired"** – generate a new token at https://mineru.net/apiManage/token and update the plugin credentials.
+
 ## Credits
 
-This plugin is powered by [MinerU]([GitHub - opendatalab/MinerU: A high-quality tool for convert PDF to Markdown and JSON.](https://github.com/opendatalab/MinerU))
+This plugin is powered by [MinerU](https://github.com/opendatalab/MinerU)

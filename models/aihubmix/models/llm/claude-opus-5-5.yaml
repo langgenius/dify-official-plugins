@@ -19,7 +19,7 @@ parameter_rules:
       zh_Hans: 推理模式
       en_US: Thinking Mode
     type: boolean
-    default: false
+    default: true
     required: false
     help:
       zh_Hans: 思考开关。插件会把这个布尔值翻译成上游要求的对象形式再发出。

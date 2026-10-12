@@ -132,6 +132,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # GPT-6 takes the same Responses API path, sent to bedrock-runtime with an
     # inference profile instead (see _generate_with_responses_api).
     _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-6.1-sol",
         "openai.gpt-6-sol",
         "openai.gpt-6-luna",
         "openai.gpt-6-astra",
@@ -1921,7 +1922,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Create model name mapping for individual model files
         model_name_mapping = {
-            # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            # OpenAI GPT-6.1 / GPT-5.x models (Responses API)
+            'GPT-6.1 Sol': 'gpt-6-1-sol',
             'GPT-5.6 Sol': 'gpt-5-6-sol',
             'GPT-5.6 Terra': 'gpt-5-6-terra',
             'GPT-5.6 Luna': 'gpt-5-6-luna',
@@ -1930,6 +1932,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Claude models
             # Claude 5 generation models
             'Opus 5.5': 'claude-5-5-opus',
+            'Sonnet 5.5': 'claude-5-5-sonnet',
+            'Fable 5.1': 'claude-5-1-fable',
             'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
@@ -2304,6 +2308,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         credentials_for_pricing = credentials.copy()
         if model_name:
             resolved_model_name = model_name
+        elif "gpt-6.1-sol" in model_id:
+            resolved_model_name = "GPT-6.1 Sol"
         elif "gpt-6-sol" in model_id:
             resolved_model_name = "GPT-6 Sol"
         elif "gpt-6-luna" in model_id:

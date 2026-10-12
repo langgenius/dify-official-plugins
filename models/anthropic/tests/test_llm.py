@@ -128,6 +128,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
         ("CLAUDE-FABLE-5-1", (True, True, False, True, False)),
         ("CLAUDE-MYTHOS-5-latest", (True, True, False, True, False)),
         ("CLAUDE-OPUS-5-latest", (True, False, True, True, True)),
+        ("CLAUDE-OPUS-5-5", (True, True, True, True, True)),
         ("CLAUDE-SONNET-4-6", (False, False, False, False, False)),
         ("not-claude-opus-5-latest", (False, False, False, False, False)),
     ],
@@ -143,8 +144,10 @@ def test_model_classification(model: str, expected: tuple[bool, ...]) -> None:
     ) == expected
 
 
-def test_fable_5_1_cache_read_multiplier() -> None:
+def test_model_cache_read_multipliers() -> None:
     llm = AnthropicLargeLanguageModel()
 
     assert llm._cache_read_multiplier("claude-fable-5-1") == 0.025
     assert llm._cache_read_multiplier("claude-fable-5") == 0.1
+    assert llm._cache_read_multiplier("claude-opus-5-5") == 0.05
+    assert llm._cache_read_multiplier("claude-opus-5") == 0.1

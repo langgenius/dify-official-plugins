@@ -16,6 +16,8 @@ model_ids = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(model_ids)
 
 OPUS55 = "anthropic.claude-opus-5-5"
+SONNET55 = "anthropic.claude-sonnet-5-5"
+FABLE51 = "anthropic.claude-fable-5-1"
 OPUS5 = "anthropic.claude-opus-5"
 SONNET5 = "anthropic.claude-sonnet-5"
 FABLE5 = "anthropic.claude-fable-5"
@@ -25,12 +27,16 @@ class TestRegistry:
     def test_family_registered(self):
         family = model_ids.BEDROCK_MODEL_IDS["anthropic claude 5"]
         assert family["Opus 5.5"] == OPUS55
+        assert family["Sonnet 5.5"] == SONNET55
+        assert family["Fable 5.1"] == FABLE51
         assert family["Opus 5"] == OPUS5
         assert family["Sonnet 5"] == SONNET5
         assert family["Fable 5"] == FABLE5
 
     def test_get_model_id(self):
         assert model_ids.get_model_id("anthropic claude 5", "Opus 5.5") == OPUS55
+        assert model_ids.get_model_id("anthropic claude 5", "Sonnet 5.5") == SONNET55
+        assert model_ids.get_model_id("anthropic claude 5", "Fable 5.1") == FABLE51
         assert model_ids.get_model_id("anthropic claude 5", "Opus 5") == OPUS5
         assert model_ids.get_model_id("anthropic claude 5", "Sonnet 5") == SONNET5
         assert model_ids.get_model_id("anthropic claude 5", "Fable 5") == FABLE5
@@ -39,6 +45,8 @@ class TestRegistry:
 class TestIsClaude5:
     def test_bare_ids(self):
         assert model_ids.is_claude5_model(OPUS55)
+        assert model_ids.is_claude5_model(SONNET55)
+        assert model_ids.is_claude5_model(FABLE51)
         assert model_ids.is_claude5_model(OPUS5)
         assert model_ids.is_claude5_model(SONNET5)
         assert model_ids.is_claude5_model(FABLE5)
@@ -53,6 +61,10 @@ class TestIsClaude5:
         assert model_ids.is_claude5_profile_id(f"eu.{OPUS5}")
         for prefix in ("global.", "us.", "eu.", "au."):
             assert model_ids.is_claude5_profile_id(f"{prefix}{OPUS55}")
+        for prefix in ("global.", "us.", "eu."):
+            assert model_ids.is_claude5_profile_id(f"{prefix}{SONNET55}")
+        for prefix in ("global.", "us."):
+            assert model_ids.is_claude5_profile_id(f"{prefix}{FABLE51}")
         assert model_ids.is_claude5_profile_id(SONNET5)
         assert not model_ids.is_claude5_profile_id("global.anthropic.claude-opus-4-8")
 
@@ -70,10 +82,11 @@ class TestResolveProfileId:
 
     @pytest.mark.parametrize("region", ["us-east-1", "us-west-2"])
     def test_geographic_us_regions(self, region):
-        assert (
-            model_ids.resolve_claude5_profile_id(FABLE5, "geographic", region)
-            == f"us.{FABLE5}"
-        )
+        for model in (FABLE5, SONNET55, FABLE51):
+            assert (
+                model_ids.resolve_claude5_profile_id(model, "geographic", region)
+                == f"us.{model}"
+            )
 
     @pytest.mark.parametrize("region", ["ca-central-1", "ca-west-1"])
     def test_geographic_canada_maps_to_us_profile(self, region):
@@ -85,11 +98,13 @@ class TestResolveProfileId:
 
     @pytest.mark.parametrize("region", ["eu-central-1", "eu-west-1"])
     def test_geographic_eu_regions(self, region):
-        # Opus 5.5 / Opus 5 / Sonnet 5 have eu. geo profiles (live-verified); Fable 5 does not
-        assert (
-            model_ids.resolve_claude5_profile_id(OPUS55, "geographic", region)
-            == f"eu.{OPUS55}"
-        )
+        # Opus 5.5 / Sonnet 5.5 / Opus 5 / Sonnet 5 have eu. geo profiles (live-verified);
+        # Fable 5.1 / Fable 5 do not
+        for model in (OPUS55, SONNET55):
+            assert (
+                model_ids.resolve_claude5_profile_id(model, "geographic", region)
+                == f"eu.{model}"
+            )
         assert (
             model_ids.resolve_claude5_profile_id(OPUS5, "geographic", region)
             == f"eu.{OPUS5}"
@@ -98,12 +113,14 @@ class TestResolveProfileId:
             model_ids.resolve_claude5_profile_id(SONNET5, "geographic", region)
             == f"eu.{SONNET5}"
         )
-        with pytest.raises(ValueError, match="Global"):
-            model_ids.resolve_claude5_profile_id(FABLE5, "geographic", region)
+        for model in (FABLE5, FABLE51):
+            with pytest.raises(ValueError, match="Global"):
+                model_ids.resolve_claude5_profile_id(model, "geographic", region)
 
     @pytest.mark.parametrize("region", ["ap-southeast-2", "ap-southeast-4"])
     def test_geographic_au_regions(self, region):
-        # Australian regions map to the au. geo profile for Opus 5.5 / Opus 5 / Sonnet 5
+        # Australian regions map to the au. geo profile for Opus 5.5 / Opus 5 / Sonnet 5;
+        # Sonnet 5.5 / Fable 5.1 / Fable 5 have no au. profile (live-verified)
         assert (
             model_ids.resolve_claude5_profile_id(OPUS55, "geographic", region)
             == f"au.{OPUS55}"
@@ -112,8 +129,9 @@ class TestResolveProfileId:
             model_ids.resolve_claude5_profile_id(OPUS5, "geographic", region)
             == f"au.{OPUS5}"
         )
-        with pytest.raises(ValueError, match="Global"):
-            model_ids.resolve_claude5_profile_id(FABLE5, "geographic", region)
+        for model in (SONNET55, FABLE51, FABLE5):
+            with pytest.raises(ValueError, match="Global"):
+                model_ids.resolve_claude5_profile_id(model, "geographic", region)
 
     @pytest.mark.parametrize("region", ["ap-northeast-1", "ap-southeast-1"])
     def test_geographic_non_au_apac_regions_raise(self, region):

@@ -1,0 +1,15 @@
+model: gpt-6-1-sol
+label:
+  en_US: GPT-6.1 Sol
+icon: icon.svg
+model_type: llm
+features:
+  - vision
+model_properties:
+  mode: chat
+  context_size: 1000000
+pricing:
+  input: '0.002'
+  output: '0.01'
+  unit: '0.001'
+  currency: USD
