@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import hashlib
 import re
 from typing import Optional, cast
 
@@ -228,6 +229,29 @@ class ArkClientV3:
             ),
         )
 
+    @staticmethod
+    def _prompt_cache_extra_body(
+        messages: list[PromptMessage], endpoint_id: Optional[str]
+    ) -> Optional[dict]:
+        """Derive a prompt_cache_key for Ark prefix-cache routing affinity.
+
+        Ark's implicit prefix cache only hits when requests sharing a common
+        prefix land on the same inference replica; without a cache key, routing
+        is effectively random and consecutive turns of one conversation rarely
+        reuse the cached prefix. The leading system prompt is the stable shared
+        prefix of a conversation's requests, so hashing it (plus the endpoint
+        id) yields a stable routing key without exposing prompt content.
+        Returns None when there is no non-empty system message, leaving
+        request routing unchanged.
+        """
+        for message in messages:
+            if isinstance(message, SystemPromptMessage) and message.content:
+                digest = hashlib.md5(
+                    f"{endpoint_id or ''}:{message.content}".encode("utf-8")
+                ).hexdigest()[:16]
+                return {"prompt_cache_key": f"dify-pck-{digest}"}
+        return None
+
     def chat(
         self,
         messages: list[PromptMessage],
@@ -257,6 +281,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -291,6 +316,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks
