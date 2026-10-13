@@ -1,9 +1,12 @@
-model: mimo-v2.5
+model: mimo-v2.6-pro-ultraspeed
 label:
-  zh_Hans: mimo-v2.5
-  en_US: mimo-v2.5
+  zh_Hans: mimo-v2.6-pro-ultraspeed
+  en_US: mimo-v2.6-pro-ultraspeed
 model_type: llm
 features:
+  - vision
+  - video
+  - tool-call
   - multi-tool-call
   - agent-thought
   - stream-tool-call
@@ -11,6 +14,11 @@ model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
+  - name: max_completion_tokens
+    use_template: max_tokens
+    default: 131072
+    min: 1
+    max: 131072
   - name: temperature
     use_template: temperature
     type: float
@@ -49,13 +57,13 @@ parameter_rules:
       zh_Hans: 思考模式
       en_US: Thinking mode
     help:
-      zh_Hans: 是否开启思考模式。
-      en_US: Whether to enable thinking mode.
+      zh_Hans: 是否开启思考模式。启用时 temperature 和 top_p 固定为 1.0 和 0.95。
+      en_US: Whether to enable thinking mode. When enabled, temperature and top_p are fixed at 1.0 and 0.95.
     options:
       - enabled
       - disabled
 pricing:
-  input: "0"
-  output: "0"
-  unit: "1"
+  input: "4.35"
+  output: "8.7"
+  unit: "0.000001"
   currency: USD
