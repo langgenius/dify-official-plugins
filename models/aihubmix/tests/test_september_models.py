@@ -27,8 +27,8 @@ def test_september_model_facts() -> None:
     assert gemini["pricing"]["output"] == "3.75"
     assert doubao["model_properties"]["context_size"] == 256_000
     assert doubao_rules["max_tokens"]["max"] == 128_000
-    assert doubao["pricing"]["input"] == "0.0282"
-    assert doubao["pricing"]["output"] == "0.282"
+    assert doubao["pricing"]["input"] == "0.030136"
+    assert doubao["pricing"]["output"] == "0.30136"
 
 
 def test_fable_5_1_cache_read_multiplier() -> None:
