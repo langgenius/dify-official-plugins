@@ -16,7 +16,7 @@ The AWS Tools plugin includes the following tools:
 - Lambda Translate Utils
 - Lambda YAML to JSON
 - Nova Canvas
-- Bedrock Image Generation (`bedrock_image`): invokes Stability AI models (sd3-5-large, stable-image-core, stable-image-ultra) via Amazon Bedrock InvokeModel; supports text-to-image and optional image-to-image (Core supports text-to-image only), optional S3 upload, and structured debug messages for workflow troubleshooting
+- Bedrock Image Generation (`bedrock_image`): invokes Stability AI models (Stable Diffusion 3.5 Large, Stable Image Core, and Stable Image Ultra) via Amazon Bedrock InvokeModel; supports text-to-image and optional image-to-image (Core supports text-to-image only), with optional S3 upload.
 - Nova Reel
 - S3 Operator
 - SageMaker Chinese Toxicity Detector
@@ -30,12 +30,12 @@ AWS Tools 插件提供了一套基于各种 AWS 服务的综合工具集，使�
 
 AWS Tools 插件包含以下工具：
 - 应用护栏
+- AWS Bedrock 图像生成 (bedrock_image)：通过 InvokeModel 使用 Amazon Bedrock 上的 Stability AI 模型生成图像（Stable Diffusion 3.5 Large、Stable Image Core、Stable Image Ultra，默认区域 us-west-2）。三个模型均支持文生图；仅 SD 3.5 Large 与 Ultra 支持图生图（一张参考图，Core 不支持）。支持负面提示词、宽高比、强度、种子、输出格式（png/jpeg/webp，webp 仅 SD 3.5），可选通过 image_output_s3uri 上传至 S3（上传失败仍返回图像）。支持显式 AWS 凭证或默认凭证链。
 - Bedrock 检索
 - Bedrock 检索和生成
 - Lambda 翻译工具
 - Lambda YAML 转 JSON
 - Nova 画布
-- Bedrock 图像生成（`bedrock_image`）：通过 Amazon Bedrock InvokeModel 调用 Stability AI 模型（sd3-5-large、stable-image-core、stable-image-ultra）；支持文生图，并可选图生图（Core 仅支持文生图），可选上传到 S3，并提供结构化调试信息便于工作流排查
 - Nova 卷轴
 - S3 操作器
 - SageMaker 中文毒性检测器

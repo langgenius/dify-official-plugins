@@ -575,6 +575,7 @@ class TestBuildGeminiContents:
     @pytest.mark.parametrize(
         "model",
         [
+            "gemini-4-argon",
             "gemini-3.8-flash",
             "gemini-3.7-flash",
             "gemini-3.6-flash",
@@ -588,6 +589,7 @@ class TestBuildGeminiContents:
             "top_p": 0.9,
             "top_k": 40,
             "thinking_budget": 128,
+            "thinking_mode": False,
         }
 
         with (
@@ -656,6 +658,7 @@ class TestBuildGeminiContents:
     @pytest.mark.parametrize(
         "model",
         [
+            "gemini-4-argon",
             "gemini-3.8-flash",
             "gemini-3.7-flash",
             "gemini-3.6-flash",
@@ -850,6 +853,7 @@ class TestBuildGeminiContents:
     @pytest.mark.parametrize(
         "model",
         [
+            "gemini-4-argon",
             "gemini-3.8-flash",
             "gemini-3.7-flash",
             "gemini-3.6-flash",
@@ -1612,10 +1616,9 @@ class TestHandleGenerateResponse:
         mock_candidate = Mock()
         mock_candidate.content = mock_content
 
-        mock_usage = Mock()
-        mock_usage.prompt_tokens_details = []
-        mock_usage.thoughts_token_count = 0
-        mock_usage.candidates_token_count = 10
+        mock_usage = types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=2, candidates_token_count=10
+        )
 
         mock_response = Mock()
         mock_response.candidates = [mock_candidate]
@@ -1659,10 +1662,9 @@ class TestHandleGenerateResponse:
         mock_candidate = Mock()
         mock_candidate.content = mock_content
 
-        mock_usage = Mock()
-        mock_usage.prompt_tokens_details = []
-        mock_usage.thoughts_token_count = 0
-        mock_usage.candidates_token_count = 5
+        mock_usage = types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=2, candidates_token_count=5
+        )
 
         mock_response = Mock()
         mock_response.candidates = [mock_candidate]
@@ -1713,10 +1715,9 @@ class TestHandleGenerateResponse:
         mock_candidate = Mock()
         mock_candidate.content = mock_content
 
-        mock_usage = Mock()
-        mock_usage.prompt_tokens_details = []
-        mock_usage.thoughts_token_count = 0
-        mock_usage.candidates_token_count = 15
+        mock_usage = types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=2, candidates_token_count=15
+        )
 
         mock_response = Mock()
         mock_response.candidates = [mock_candidate]

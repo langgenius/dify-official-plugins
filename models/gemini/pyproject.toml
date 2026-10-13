@@ -9,9 +9,9 @@ requires-python = ">=3.12"
 dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Gemini request labels.
-    "dify-plugin>=0.10.2",
-    "google-genai>=2.22.0",
-    "numpy>=2.5.3",
+    "dify-plugin>=0.10.2,<0.11.0",
+    "google-genai>=2.30.1",
+    "numpy>=2.5.4",
     "requests>=2.34.2",
 ]
 
@@ -19,10 +19,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
-    "ruff>=0.16.6",
-    "python-dotenv>=1.2.3",
-    "Pillow>=12.3.0",
-    "black>=26.5.1",
+    "ruff>=0.17.0",
+    "python-dotenv>=1.2.4",
+    "pillow>=12.3.0",
+    "black>=26.10.1",
     "pyyaml>=6.0.3",
 ]
 
