@@ -6,7 +6,11 @@ from unittest.mock import Mock, patch
 import pytest
 import yaml
 from dify_plugin.entities.model import AIModelEntity
-from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    PromptMessageTool,
+    UserPromptMessage,
+)
 from google import genai
 from google.genai import types
 from google.genai.models import Models
@@ -172,9 +176,10 @@ def test_sdk_continuation_preserves_text_and_billed_usage(llm, stream):
     estimate_tokens.assert_not_called()
 
 
-def test_zero_output_usage_is_not_replaced_by_an_estimate(llm):
+@pytest.mark.parametrize("stream", [False, True])
+def test_zero_output_usage_is_not_replaced_by_an_estimate(llm, stream):
     response = types.GenerateContentResponse(
-        candidates=[types.Candidate(content=types.Content(role="model", parts=[]))],
+        candidates=[types.Candidate(finish_reason=types.FinishReason.STOP)],
         usage_metadata=types.GenerateContentResponseUsageMetadata(
             prompt_token_count=10,
             candidates_token_count=0,
@@ -182,7 +187,134 @@ def test_zero_output_usage_is_not_replaced_by_an_estimate(llm):
         ),
     )
     with llm.timing_context(), patch.object(llm, "get_num_tokens") as estimate_tokens:
-        result = llm._handle_generate_response(MODEL, {}, response, [])
-    assert result.usage.prompt_tokens == 10
-    assert result.usage.completion_tokens == 0
+        if stream:
+            chunks = list(
+                llm._handle_generate_stream_response(
+                    MODEL, {}, iter([response]), [], Mock()
+                )
+            )
+            usage = chunks[-1].delta.usage
+        else:
+            usage = llm._handle_generate_response(MODEL, {}, response, []).usage
+    assert usage.prompt_tokens == 10
+    assert usage.completion_tokens == 0
     estimate_tokens.assert_not_called()
+
+
+@pytest.mark.parametrize("thought", [False, True])
+@pytest.mark.parametrize("ending", [None, [], [types.Part(text="Done.")]])
+def test_stream_usage_fallback_counts_all_output(llm, thought, ending):
+    fragments = ["The quick brown fox jumps ", "over the lazy dog. " * 100]
+    prompt_messages = [UserPromptMessage(content="Tell me a story.")]
+    responses = [
+        types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(
+                    content=types.Content(
+                        role="model",
+                        parts=[
+                            types.Part(text=text, thought=True if thought else None)
+                        ],
+                    )
+                )
+            ]
+        )
+        for text in fragments
+    ]
+    responses.append(
+        types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(
+                    content=types.Content(role="model", parts=ending)
+                    if ending is not None
+                    else None,
+                    finish_reason=types.FinishReason.STOP,
+                )
+            ]
+        )
+    )
+    with llm.timing_context():
+        chunks = list(
+            llm._handle_generate_stream_response(
+                MODEL, {}, iter(responses), prompt_messages, Mock()
+            )
+        )
+
+    text = "".join(fragments)
+    terminal_text = "Done." if ending else ""
+    if thought:
+        text = f"<think>\n\n{text}"
+        terminal_text = f"\n\n</think>{terminal_text}"
+    expected = text + terminal_text
+    assert len(chunks) == 3
+    assert "".join(p.data for c in chunks for p in c.delta.message.content) == expected
+    assert "".join(p.data for p in chunks[-1].delta.message.content) == terminal_text
+    assert all(c.delta.usage is None for c in chunks[:-1])
+    assert chunks[-1].delta.finish_reason == types.FinishReason.STOP
+    assert chunks[-1].delta.usage.completion_tokens == llm.get_num_tokens(
+        MODEL, {}, [AssistantPromptMessage(content=expected)]
+    )
+    assert chunks[-1].delta.usage.prompt_tokens == llm.get_num_tokens(
+        MODEL, {}, prompt_messages
+    )
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_usage_fallback_counts_tool_names_and_arguments(llm, stream):
+    calls = [
+        types.FunctionCall(
+            id="weather-1", name="lookup_weather", args={"city": "London"}
+        ),
+        types.FunctionCall(
+            id="weather-2", name="lookup_forecast", args={"city": "Paris", "days": 7}
+        ),
+    ]
+    parts = [types.Part(function_call=call) for call in calls]
+    with (
+        llm.timing_context(),
+        patch.object(
+            llm, "_get_num_tokens_by_gpt2", wraps=llm._get_num_tokens_by_gpt2
+        ) as tokenize,
+    ):
+        if stream:
+            responses = [
+                types.GenerateContentResponse(
+                    candidates=[
+                        types.Candidate(
+                            content=types.Content(role="model", parts=[part])
+                        )
+                    ]
+                )
+                for part in parts
+            ]
+            responses.append(
+                types.GenerateContentResponse(
+                    candidates=[types.Candidate(finish_reason=types.FinishReason.STOP)]
+                )
+            )
+            chunks = list(
+                llm._handle_generate_stream_response(
+                    MODEL, {}, iter(responses), [], Mock()
+                )
+            )
+            messages = [c.delta.message for c in chunks]
+            usage = chunks[-1].delta.usage
+            assert chunks[-1].delta.message.tool_calls == []
+        else:
+            response = types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(content=types.Content(role="model", parts=parts))
+                ]
+            )
+            result = llm._handle_generate_response(MODEL, {}, response, [])
+            messages, usage = [result.message], result.usage
+
+    tokenized_output = tokenize.call_args.args[0]
+    for call in calls:
+        assert call.name in tokenized_output
+        assert json.dumps(call.args) in tokenized_output
+    assert [call.id for message in messages for call in message.tool_calls] == [
+        "weather-1",
+        "weather-2",
+    ]
+    assert usage.completion_tokens == llm._get_num_tokens_by_gpt2(tokenized_output)

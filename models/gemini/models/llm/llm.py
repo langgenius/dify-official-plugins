@@ -148,6 +148,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             message_text = f"{human_prompt} {content}"
         elif isinstance(message, AssistantPromptMessage):
             message_text = f"{ai_prompt} {content}"
+            if message.tool_calls:
+                message_text += "\n" + "\n".join(
+                    f"{call.function.name} {call.function.arguments}"
+                    for call in message.tool_calls
+                )
         elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
             message_text = f"{human_prompt} {content}"
         else:
@@ -926,6 +931,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         index = -1
         self.is_thinking = False
+        response_message = AssistantPromptMessage(content=[])
 
         for chunk in response:
             if not chunk.candidates or (
@@ -940,6 +946,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             parts = candidate.content.parts if candidate.content else []
             message = self._parse_parts(parts)
 
+            if candidate.finish_reason and self.is_thinking:
+                message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+            response_message.content.extend(message.content)
+            response_message.tool_calls.extend(message.tool_calls)
+
             index += len(parts) if parts else 0
 
             # if the stream is not finished, yield the chunk
@@ -951,12 +962,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 )
             # if the stream is finished, yield the chunk and the finish reason
             else:
-                # If we're still in thinking mode at the end, close it
-                if self.is_thinking:
-                    message.content.append(
-                        TextPromptMessageContent(data="\n\n</think>")
-                    )
-
                 prompt_tokens, completion_tokens = (
                     self._calculate_tokens_from_usage_metadata(chunk.usage_metadata)
                 )
@@ -968,7 +973,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         prompt_messages=prompt_messages,
                     )
                     completion_tokens = self.get_num_tokens(
-                        model=model, credentials=credentials, prompt_messages=[message]
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=[response_message],
                     )
                 usage = self._calc_response_usage(
                     model=model,
