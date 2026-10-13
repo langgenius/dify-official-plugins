@@ -1,17 +1,30 @@
 import base64
 import copy
+import hashlib
 import io
 import json
 import logging
 import math
 import re
+import threading
+import time
+from collections import OrderedDict
 from collections.abc import Generator, Sequence
+from types import SimpleNamespace
 from typing import Any, Optional, Union, cast
 from urllib.parse import urlparse
 
 import tiktoken
 from PIL import Image
-from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelFeature,
+    ModelPropertyKey,
+    ModelType,
+    ParameterRule,
+)
 from dify_plugin.entities.model.llm import (
     LLMMode,
     LLMResult,
@@ -45,16 +58,91 @@ from openai.types.chat import (
     ChatCompletionChunk,
     ChatCompletionMessageToolCall,
 )
-from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaToolCall
+from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
 from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
-from ..constants import LLM_BASE_MODELS, uses_responses_api
+from ..constants import (
+    LLM_BASE_MODELS,
+    _get_max_tokens,
+    _is_gpt_5plus,
+    _is_gpt_6plus,
+    uses_responses_api,
+)
 from ._metadata import apply_dify_metadata_if_enabled
+
+_CUSTOM_BASE_MODEL = "Custom"
+_DEFAULT_CUSTOM_CONTEXT_SIZE = 128000
+_DEFAULT_CUSTOM_MAX_TOKENS = 16384
+
+# Advisory model-catalogue cache (client.models.list()): bounded LRU, TTL,
+# keyed by a digest of the full credential set (never plaintext keys).
+_available_models_cache: "OrderedDict[str, tuple[float, list[str]]]" = OrderedDict()
+_available_models_cache_lock = threading.Lock()
+_AVAILABLE_MODELS_CACHE_MAX = 16
+_AVAILABLE_MODELS_TTL_SECONDS = 300
+
+
+def _available_models_cache_key(credentials: dict) -> str:
+    parts = (
+        str(credentials.get("openai_api_base") or ""),
+        str(credentials.get("auth_method") or ""),
+        str(credentials.get("openai_api_key") or ""),
+        str(credentials.get("azure_client_id") or ""),
+        str(credentials.get("azure_tenant_id") or ""),
+        str(credentials.get("azure_client_secret") or ""),
+        str(credentials.get("openai_api_version") or ""),
+    )
+    return hashlib.sha256("\x00".join(parts).encode()).hexdigest()
+
+
+def _list_available_models(credentials: dict, client: Any) -> list[str]:
+    """Advisory list of model ids exposed by the configured Azure resource.
+
+    Purely informational (e.g. error suggestions): the inference ping remains
+    the authoritative deployment validation. Fail-soft: any error returns []
+    and is never treated as an authoritative "no models" answer. Cached per
+    credential set (TTL, bounded LRU); failures are not cached as absence.
+    """
+    key = _available_models_cache_key(credentials)
+    now = time.time()
+    with _available_models_cache_lock:
+        entry = _available_models_cache.get(key)
+        if entry is not None and entry[0] > now:
+            _available_models_cache.move_to_end(key)
+            return entry[1]
+    try:
+        response = client.models.list(timeout=10)
+        model_ids = [m.id for m in response.data]
+    except Exception:
+        # Transient failures are NOT cached as authoritative absence.
+        return []
+    with _available_models_cache_lock:
+        _available_models_cache[key] = (now + _AVAILABLE_MODELS_TTL_SECONDS, model_ids)
+        _available_models_cache.move_to_end(key)
+        while len(_available_models_cache) > _AVAILABLE_MODELS_CACHE_MAX:
+            _available_models_cache.popitem(last=False)
+    return model_ids
 
 logger = logging.getLogger(__name__)
 
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5", "gpt-6")
+
+
+def _is_reasoning_family(base_model_name: str) -> bool:
+    """Reasoning chat families that reject temperature/top_p/max_tokens/stop.
+
+    Curated o* and gpt-5+ families; ``gpt-6-chat``/``gpt-6-codex`` variants
+    are not reasoning in this sense (they use the standard chat route).
+    Only OpenAI models are deployed via Azure OpenAI; other Foundry families
+    (e.g. DeepSeek) belong to the azure_ai_studio plugin.
+    """
+    name = (base_model_name or "").lower()
+    if name.startswith(("o1", "o3", "o4")):
+        return True
+    if _is_gpt_5plus(name):
+        return "chat" not in name and "codex" not in name
+    return False
 
 
 class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
@@ -69,10 +157,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
+        base_model_name = self._effective_base_model_name(credentials)
+        ai_model_entity = self._resolve_model_entity(model, credentials)
         if self._uses_responses_api(base_model_name):
             return self._chat_generate_with_responses(
                 model=model,
@@ -117,12 +203,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
-        base_model_name = self._get_base_model_name(credentials)
-        model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
-        if not model_entity:
-            raise ValueError(f"Base Model Name {base_model_name} is invalid")
+        model_entity = self._resolve_model_entity(model, credentials)
         model_mode = model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
         if model_mode == LLMMode.CHAT.value:
             return self._num_tokens_from_messages(credentials, prompt_messages, tools)
@@ -144,31 +225,43 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 "Azure OpenAI API key is required when using API Key authentication"
             )
 
-        if "base_model_name" not in credentials:
+        if not str(credentials.get("base_model_name") or "").strip():
             raise CredentialsValidateFailedError("Base Model Name is required")
-        base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
-        if not ai_model_entity:
+        base_model_name = self._effective_base_model_name(credentials)
+        if (
+            str(credentials.get("base_model_name") or "")
+            .strip()
+            .lower()
+            == _CUSTOM_BASE_MODEL.lower()
+            and not str(credentials.get("custom_base_model_name") or "").strip()
+        ):
+            raise CredentialsValidateFailedError(
+                "Custom Base Model is required when Base Model is set to Custom"
+            )
+        ai_model_entity = self._resolve_model_entity(model, credentials)
+        if ai_model_entity is None:
             raise CredentialsValidateFailedError(
                 f"Base Model Name {credentials['base_model_name']} is invalid"
             )
 
+        client = None
         try:
             client = self._create_client(credentials, use_cache=False)
             if self._uses_responses_api(base_model_name):
+                self._ensure_responses_api_supported(credentials, base_model_name)
                 client.responses.create(
                     input="ping",
                     model=model,
+                    max_output_tokens=16,
                     stream=False,
                 )
-            elif base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
+            elif _is_reasoning_family(base_model_name):
+                # Reasoning models reject temperature/top_p and max_tokens;
+                # omit them entirely.
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
-                    temperature=1,
-                    max_completion_tokens=20,
+                    max_completion_tokens=16,
                     stream=False,
                 )
             elif (
@@ -179,7 +272,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
                     temperature=0,
-                    max_tokens=20,
+                    max_tokens=16,
                     stream=False,
                 )
             else:
@@ -187,17 +280,26 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     prompt="ping",
                     model=model,
                     temperature=0,
-                    max_tokens=20,
+                    max_tokens=16,
                     stream=False,
                 )
         except Exception as ex:
+            # Advisory only: enrich the error with the model ids the resource
+            # actually exposes (never authoritative; fail-soft).
+            suggestions = []
+            if client is not None:
+                suggestions = _list_available_models(credentials, client)
+            if suggestions:
+                raise CredentialsValidateFailedError(
+                    f"{ex}. Available models in this resource: "
+                    f"{', '.join(suggestions[:10])}"
+                )
             raise CredentialsValidateFailedError(str(ex))
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
-        base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
+        ai_model_entity = self._resolve_model_entity(model, credentials)
         return ai_model_entity.entity if ai_model_entity else None
 
     def _generate(
@@ -217,9 +319,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if user:
             extra_model_kwargs["user"] = user
 
-        # client.completions does not support reasoning_effort
-        if "reasoning_effort" in model_parameters:
-            model_parameters.pop("reasoning_effort")
+        # client.completions does not support reasoning_effort, verbosity or
+        # reasoning_summary (Responses-API-only parameters)
+        for key in ("reasoning_effort", "verbosity", "reasoning_summary"):
+            if key in model_parameters:
+                model_parameters.pop(key)
         response = client.completions.create(
             prompt=prompt_messages[0].content,
             model=model,
@@ -333,12 +437,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        base_model_name = self._get_base_model_name(credentials)
+        base_model_name = self._effective_base_model_name(credentials)
         client = self._create_client(credentials)
         response_format = model_parameters.get("response_format")
+        json_schema = model_parameters.pop("json_schema", None)
         if response_format:
             if response_format == "json_schema":
-                json_schema = model_parameters.get("json_schema")
                 if not json_schema:
                     raise ValueError(
                         "Must define JSON Schema when the response format is json_schema"
@@ -347,15 +451,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     schema = json.loads(json_schema)
                 except Exception:
                     raise ValueError(f"not correct json_schema format: {json_schema}")
-                model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
                     "type": "json_schema",
                     "json_schema": schema,
                 }
             else:
                 model_parameters["response_format"] = {"type": response_format}
-        elif "json_schema" in model_parameters:
-            del model_parameters["json_schema"]
         extra_model_kwargs = {}
         if tools:
             extra_model_kwargs["tools"] = [
@@ -375,17 +476,36 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             base_model_name, prompt_messages
         )
         block_as_stream = False
-        if base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
-            # o1 and o1-* do not support streaming
-            # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
-            if base_model_name.startswith("o1"):
+        if _is_reasoning_family(base_model_name):
+            # Reasoning chat families reject temperature/top_p/max_tokens;
+            # translate max_tokens for custom families (curated o* parameter
+            # rules already name max_completion_tokens).
+            if "max_tokens" in model_parameters:
+                model_parameters["max_completion_tokens"] = model_parameters.pop(
+                    "max_tokens"
+                )
+            for key in ("temperature", "top_p"):
+                if key in model_parameters:
+                    del model_parameters[key]
+            if "stop" in extra_model_kwargs:
+                del extra_model_kwargs["stop"]
+            if base_model_name.lower().startswith("o1"):
+                # o1 and o1-* do not support streaming
+                # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
                 if stream:
                     block_as_stream = True
                     stream = False
                     if "stream_options" in extra_model_kwargs:
                         del extra_model_kwargs["stream_options"]
-            if "stop" in extra_model_kwargs:
-                del extra_model_kwargs["stop"]
+        # o1-mini does not support reasoning_effort at all.
+        if base_model_name.lower().startswith("o1-mini"):
+            if "reasoning_effort" in model_parameters:
+                del model_parameters["reasoning_effort"]
+        # reasoning_summary is Responses-API-only: the chat completions route
+        # rejects it. reasoning_effort/verbosity ARE accepted on the versionless
+        # chat route (verified live), so they are forwarded as-is.
+        if "reasoning_summary" in model_parameters:
+            del model_parameters["reasoning_summary"]
 
         messages: Any = [
             self._convert_prompt_message_to_dict(m) for m in prompt_messages
@@ -436,20 +556,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         Reference: https://platform.openai.com/docs/guides/migrate-to-responses
         """
-        base_model_name = self._get_base_model_name(credentials)
+        base_model_name = self._effective_base_model_name(credentials)
         self._ensure_responses_api_supported(credentials, base_model_name)
         client = self._create_client(credentials)
 
         # Preserve the existing GPT-5 restriction on temperature and top_p.
-        # For GPT-6, forward sampling parameters only with explicit reasoning_effort=none.
+        # For GPT-6+, forward sampling parameters only with explicit reasoning_effort=none.
         # Chat and Codex variants retain their existing handling.
         is_reasoning_model = self._uses_responses_api(base_model_name) and (
-            base_model_name.startswith(("gpt-5", "gpt-6"))
-            and "chat" not in base_model_name
-            and "codex" not in base_model_name
+            _is_gpt_5plus(base_model_name)
+            and "chat" not in base_model_name.lower()
+            and "codex" not in base_model_name.lower()
         )
         supports_sampling = not is_reasoning_model or (
-            base_model_name.startswith("gpt-6")
+            _is_gpt_6plus(base_model_name)
             and model_parameters.get("reasoning_effort") == "none"
         )
 
@@ -1247,7 +1367,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         :return: cleaned prompt messages
         """
         checklist = ["gpt-4-turbo", "gpt-4-turbo-2024-04-09"]
-        if model in checklist:
+        if model.lower() in checklist:
             user_message_count = len(
                 [m for m in prompt_messages if isinstance(m, UserPromptMessage)]
             )
@@ -1265,7 +1385,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
-        if model.startswith(("o1", "o3", "o4")):
+        if model.lower().startswith(("o1", "o3", "o4")):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -1637,9 +1757,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         try:
-            encoding = tiktoken.encoding_for_model(credentials["base_model_name"])
+            encoding = tiktoken.encoding_for_model(
+                self._effective_base_model_name(credentials)
+            )
         except KeyError:
-            encoding = tiktoken.get_encoding("cl100k_base")
+            encoding = tiktoken.get_encoding("o200k_base")
         num_tokens = len(encoding.encode(text))
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
@@ -1655,14 +1777,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
-        model = credentials["base_model_name"]
-        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")):
+        model = self._effective_base_model_name(credentials)
+        if model.startswith(
+            ("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")
+        ):
             model = "gpt-4o"
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
-            encoding_name = "cl100k_base"
+            logger.warning("Warning: model not found. Using o200k_base encoding.")
+            encoding_name = "o200k_base"
             encoding = tiktoken.get_encoding(encoding_name)
         if model.startswith("gpt-35-turbo-0301"):
             tokens_per_message = 4
@@ -1671,14 +1795,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
             or model.startswith(("o1", "o3", "o4"))
+            or model.startswith(("gpt-5", "gpt-6"))
             or model.startswith("grok")
         ):
             tokens_per_message = 3
             tokens_per_name = 1
         else:
-            raise NotImplementedError(
-                f"get_num_tokens_from_messages() is not presently implemented for model {model}.See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens."
-            )
+            # Unknown/custom family: standard chat framing (3 per message,
+            # 1 per name) so custom models never crash token counting.
+            tokens_per_message = 3
+            tokens_per_name = 1
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
         image_details: list[dict] = []
@@ -1717,7 +1843,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if len(image_details) > 0:
             num_tokens += self._num_tokens_from_images(
                 image_details=image_details,
-                base_model_name=credentials["base_model_name"],
+                base_model_name=self._effective_base_model_name(credentials),
             )
         return num_tokens
 
@@ -1771,6 +1897,145 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ai_model_entity_copy.entity.label.zh_hans = model
                 return ai_model_entity_copy
 
+    @staticmethod
+    def _effective_base_model_name(credentials: dict) -> str:
+        """The base-model family that drives routing/parameters.
+
+        For the ``Custom`` option the user types the underlying family
+        (e.g. ``gpt-6``) in ``custom_base_model_name``; the deployment name
+        (the ``model`` field) is never used for routing. Returns a
+        lowercase name so every downstream family check (prompt cleanup,
+        image token counting, routing) is case-insensitive by construction.
+        """
+        base = (credentials.get("base_model_name") or "").strip()
+        if base.lower() == _CUSTOM_BASE_MODEL.lower():
+            custom = (credentials.get("custom_base_model_name") or "").strip()
+            return (custom or base).lower()
+        return base.lower()
+
+    @classmethod
+    def _build_custom_model_entity(
+        cls, model: str, credentials: dict
+    ) -> AIModelEntity:
+        """Conservative synthetic schema for a user-typed base model.
+
+        No unverified capabilities are advertised beyond chat + agent-thought +
+        tool-calling (standard for current reasoning/frontier families); the
+        user can override context size and the max-token bound via the Custom
+        credential fields. Non-numeric inputs fall back to the defaults.
+        """
+        try:
+            context_size = int(
+                str(credentials.get("context_size") or "").strip()
+                or _DEFAULT_CUSTOM_CONTEXT_SIZE
+            )
+        except (TypeError, ValueError):
+            context_size = _DEFAULT_CUSTOM_CONTEXT_SIZE
+        if context_size <= 0:
+            context_size = _DEFAULT_CUSTOM_CONTEXT_SIZE
+        try:
+            max_tokens = int(
+                str(credentials.get("max_tokens") or "").strip()
+                or _DEFAULT_CUSTOM_MAX_TOKENS
+            )
+        except (TypeError, ValueError):
+            max_tokens = _DEFAULT_CUSTOM_MAX_TOKENS
+        if max_tokens <= 0:
+            max_tokens = _DEFAULT_CUSTOM_MAX_TOKENS
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: context_size,
+            },
+            parameter_rules=[
+                # Generic parameter set for API-version-modern deployments.
+                # The invoke handlers apply only what the active route
+                # supports (Responses vs chat), so no model-family metadata
+                # is required to expose these safely.
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，"
+                        "而较高的值将产生更详细的响应。支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_max_tokens(
+                    default=min(4096, max_tokens), min_val=1, max_val=max_tokens
+                ),
+            ],
+        )
+
+    def _resolve_model_entity(self, model: str, credentials: dict):
+        """Like ``_get_ai_model_entity`` but never returns None for a usable
+        ``Custom``/unknown base model: falls back to the synthetic entity."""
+        base_model_name = self._effective_base_model_name(credentials)
+        entity = self._get_ai_model_entity(base_model_name, model)
+        if entity is not None:
+            return entity
+        custom_entity = self._build_custom_model_entity(model, credentials)
+        return SimpleNamespace(base_model_name=base_model_name, entity=custom_entity)
+
     def _get_image_patches(self, n: int) -> float:
         return (n + 32 - 1) // 32
 
@@ -1781,16 +2046,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens: int = 0
         base_tokens: int = 0
         tile_tokens: int = 0
+        name = (base_model_name or "").lower()
 
-        if base_model_name.startswith("gpt-4o-mini"):
+        if name.startswith("gpt-4o-mini"):
             base_tokens = 2833
             tile_tokens = 5667
-        elif base_model_name.startswith(
-            ("gpt-4o", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")
-        ):
+        elif name.startswith(("gpt-4o", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")):
             base_tokens = 85
             tile_tokens = 170
-        elif base_model_name.startswith(("o1", "o3", "o1-pro")):
+        elif name.startswith(("o1", "o3", "o1-pro")):
             base_tokens = 75
             tile_tokens = 150
 
@@ -1820,7 +2084,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 num_tokens += fallback_cost
                 continue
 
-            if base_model_name.startswith(("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini")):
+            if name.startswith(("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini")):
                 width_patches = self._get_image_patches(width)
                 height_patches = self._get_image_patches(height)
                 cap = 1536
@@ -1838,11 +2102,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
                     tokens = w_patches * h_patches
 
-                if base_model_name.startswith("o4-mini"):
+                if name.startswith("o4-mini"):
                     num_tokens += int(tokens * 1.72)
-                elif base_model_name.startswith("gpt-4.1-nano"):
+                elif name.startswith("gpt-4.1-nano"):
                     num_tokens += int(tokens * 2.46)
-                elif base_model_name.startswith("gpt-4.1-mini"):
+                elif name.startswith("gpt-4.1-mini"):
                     num_tokens += int(tokens * 1.62)
             else:
                 if low_detail:
