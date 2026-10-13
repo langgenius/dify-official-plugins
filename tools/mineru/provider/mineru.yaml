@@ -37,10 +37,10 @@ credentials_for_provider:
       zh_Hans: 本地部署如 http://10.0.0.5:8000；官方API为 https://mineru.net
       pt_BR: Auto-hospedado, ex. http://10.0.0.5:8000; API oficial https://mineru.net
     help:
-      en_US: Required for local deployment (MinerU 1.x-4.x, the version is detected automatically). Defaults to https://mineru.net for the official API.
-      ja_JP: ローカルデプロイでは必須です（MinerU 1.x〜4.x、バージョンは自動検出）。公式APIの場合は既定で https://mineru.net を使用します。
-      zh_Hans: 本地部署时必填（支持 MinerU 1.x～4.x，自动识别版本）。官方API可留空，默认 https://mineru.net。
-      pt_BR: Obrigatório para implantação local (MinerU 1.x-4.x, a versão é detectada automaticamente). Para a API oficial, o padrão é https://mineru.net.
+      en_US: Required for local deployment (MinerU 1.x-4.x, detected automatically). Use the document parsing server URL; a trailing /v1 is accepted for 4.x. Defaults to https://mineru.net for the official API.
+      ja_JP: ローカルデプロイでは必須です（MinerU 1.x〜4.x、自動検出）。文書解析サーバーのURLを指定してください。4.xでは末尾の /v1 も使用できます。公式APIの既定は https://mineru.net です。
+      zh_Hans: 本地部署时必填（支持 MinerU 1.x～4.x，自动识别）。请填写文档解析服务地址，4.x 可带 /v1 后缀。官方API默认 https://mineru.net。
+      pt_BR: Obrigatório para implantação local (MinerU 1.x-4.x, detectado automaticamente). Use a URL do servidor de análise de documentos; o sufixo /v1 é aceito na versão 4.x. O padrão da API oficial é https://mineru.net.
     required: false
     type: text-input
   token:
