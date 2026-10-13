@@ -1,7 +1,7 @@
-# for more details, please refer to https://help.aliyun.com/zh/model-studio/machine-translation#dd13aa32a1b4u
-model: qwen-mt-turbo
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/qwen-mt-flash
+model: qwen-mt-flash
 label:
-  en_US: qwen-mt-turbo
+  en_US: qwen-mt-flash
 model_type: llm
 features:
   - agent-thought
