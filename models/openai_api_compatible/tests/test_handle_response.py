@@ -200,6 +200,30 @@ def test_handle_generate_response_preserves_tool_calls_with_non_stream_reasoning
     assert result.message.tool_calls[0].function.arguments == "{\"query\":\"Qwen reasoning\"}"
 
 
+def test_handle_generate_response_restores_prefilled_think_tag_and_filters_reasoning():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    # Qwen3.5's Jinja template prefills "<|im_start|>assistant\n<think>\n".
+    # The API returns only the generated continuation, without the prompt prefix.
+    result = model._handle_generate_response(
+        model="Qwen3.5-27B",
+        credentials={"mode": "chat"},
+        response=_chat_response(
+            {
+                "role": "assistant",
+                "content": "abc</think>\n{\"class\":\"x\"}",
+            }
+        ),
+        prompt_messages=[UserPromptMessage(content="hello")],
+    )
+
+    assert result.message.content == "<think>\nabc</think>\n{\"class\":\"x\"}"
+
+    filtered_result = model._filter_thinking_result(result)
+
+    assert filtered_result.message.content == "{\"class\":\"x\"}"
+
+
 def test_filter_thinking_result_removes_wrapped_non_stream_reasoning():
     model = OpenAILargeLanguageModel(model_schemas=[])
 
