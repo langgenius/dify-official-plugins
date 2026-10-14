@@ -15,7 +15,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.errors.model import CredentialsValidateFailedError
+
+from dashscope.api_entities.dashscope_response import (
+    DashScopeAPIResponse,
+    MultiModalConversationResponse,
+)
 
 # Make the plugin's own modules importable when pytest is invoked from the
 # plugin directory or the repo root, matching the pattern in the other
@@ -25,6 +31,7 @@ if str(_PLUGIN_DIR) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_DIR))
 
 from provider.tongyi import DEFAULT_VALIDATE_MODEL, TongyiProvider  # noqa: E402
+from models.llm.llm import TongyiLargeLanguageModel  # noqa: E402
 
 
 def _provider() -> TongyiProvider:
@@ -39,11 +46,9 @@ def _provider() -> TongyiProvider:
     return provider
 
 
-def test_default_validate_model_is_qwen_turbo() -> None:
-    """The default sentinel model is qwen-turbo: a Tongyi chat model with
-    broad DashScope availability and the lowest price tier.
-    """
-    assert DEFAULT_VALIDATE_MODEL == "qwen-turbo"
+def test_default_validate_model_is_qwen38_flash() -> None:
+    """Use a current model available in both Beijing and Singapore."""
+    assert DEFAULT_VALIDATE_MODEL == "qwen3.8-flash"
 
 
 def test_default_validate_model_is_in_plugin_catalog() -> None:
@@ -142,3 +147,73 @@ def test_validate_provider_credentials_propagates_unexpected_error() -> None:
             provider.validate_provider_credentials(
                 credentials={"dashscope_api_key": "x"}
             )
+
+
+@pytest.mark.parametrize("return_class", [False, True])
+@pytest.mark.parametrize(
+    ("endpoint_credentials", "expected_base_address"),
+    [
+        ({}, "https://dashscope.aliyuncs.com/api/v1"),
+        (
+            {"use_international_endpoint": "true"},
+            "https://dashscope-intl.aliyuncs.com/api/v1",
+        ),
+        (
+            {"api_host": "llm-test.cn-beijing.maas.aliyuncs.com"},
+            "https://llm-test.cn-beijing.maas.aliyuncs.com/api/v1",
+        ),
+    ],
+)
+@pytest.mark.parametrize("status_code", [200, 401, 404])
+def test_default_validation_calls_current_model_and_checks_response(
+    return_class, endpoint_credentials, expected_base_address, status_code
+) -> None:
+    """Exercise the provider through the real LLM validator and response parser.
+
+    A multimodal, non-streaming request must be made with the configured host,
+    and invalid credentials/model errors must never be silently accepted.
+    """
+    schema_path = _PLUGIN_DIR / "models" / "llm" / f"{DEFAULT_VALIDATE_MODEL}.yaml"
+    schema = AIModelEntity.model_validate(yaml.safe_load(schema_path.read_text()))
+    provider = _provider()
+    provider.provider_schema.models = [schema]
+    model = TongyiLargeLanguageModel(model_schemas=[schema])
+    credentials = {"dashscope_api_key": "test-key", **endpoint_credentials}
+    response = MultiModalConversationResponse.from_api_response(
+        DashScopeAPIResponse(
+            status_code=status_code,
+            request_id="test-request",
+            code="OK" if status_code == 200 else "TestError",
+            message="" if status_code == 200 else "validation rejected",
+            output={
+                "choices": [
+                    {"message": {"role": "assistant", "content": [{"text": "pong"}]}}
+                ]
+            },
+            usage={"input_tokens": 1, "output_tokens": 1},
+        )
+    )
+    with (
+        patch.object(
+            provider,
+            "get_model_instance",
+            return_value=TongyiLargeLanguageModel if return_class else model,
+        ),
+        patch("models.llm.llm.MultiModalConversation.call", return_value=response) as call,
+        patch("models.llm.llm.Generation.call") as text_call,
+    ):
+        if status_code == 200:
+            provider.validate_provider_credentials(credentials)
+        else:
+            with pytest.raises(CredentialsValidateFailedError, match="validation rejected"):
+                provider.validate_provider_credentials(credentials)
+
+    call.assert_called_once()
+    text_call.assert_not_called()
+    kwargs = call.call_args.kwargs
+    assert kwargs["model"] == "qwen3.8-flash"
+    assert kwargs["base_address"] == expected_base_address
+    assert kwargs["api_key"] == "test-key"
+    assert kwargs["enable_thinking"] is False
+    assert kwargs["stream"] is False
+    assert kwargs["messages"] == [{"role": "user", "content": [{"text": "ping"}]}]

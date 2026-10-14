@@ -23,7 +23,6 @@ NEW_MODELS = (
     "qwen3.8-max-2026-09-02",
     "qwen3.8-flash",
     "hy4-preview",
-    "hy3-preview",
     "coding-kimi-k3",
     "ernie-5.1",
     "mercury-2.5-preview",
@@ -57,10 +56,10 @@ def _positions() -> list[str]:
 def test_every_new_model_is_registered() -> None:
     positions = _positions()
 
-    # Pinned so the registered total stays checkable: `_position.yaml` lists 276 ids.
+    # Pinned so the registered total stays checkable: `_position.yaml` lists 275 ids.
     # The aihubmix-canon sync rewrites this note together with the count below.
-    assert len(NEW_MODELS) == 30
-    assert len(positions) == 276
+    assert len(NEW_MODELS) == 29
+    assert len(positions) == 275
     assert len(positions) == len(set(positions))
     # Every registered id must have a schema behind it and every schema must be registered.
     # The comparison is on the declared `model:` id, not the filename - several schemas are
@@ -254,7 +253,6 @@ PROJECTION_REASONING_EFFORT = {
     "gpt-5.5-pro": (["medium", "high", "xhigh"], "medium"),
     "gpt-5.6-sol-disc": (["none", "low", "medium", "high", "xhigh", "max"], "medium"),
     "gpt-6-astra": (["low", "medium", "high", "xhigh"], "medium"),  # max is inert on chat/completions
-    "hy3-preview": (["no_think", "low", "high"], "no_think"),
     "hy4-preview": (["none", "high"], "high"),
     "muse-spark-1.1": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
     "muse-spark-1.2": (["minimal", "low", "medium", "high", "xhigh"], "medium"),
@@ -266,7 +264,6 @@ PROJECTION_REASONING_EFFORT = {
 # specs.context_window / specs.max_output_tokens from the same projection.
 PROJECTION_LIMITS = {
     "glm-5.2-fast-preview": (1_000_000, "max_tokens", 131_072),
-    "hy3-preview": (256_000, "max_tokens", 128_000),
     "hy4-preview": (1_048_576, "max_tokens", 64_000),
     "qwen3.8-flash": (1_000_000, "max_completion_tokens", 131_072),
     "qwen3.8-max-2026-09-02": (1_000_000, "max_completion_tokens", 131_072),
@@ -451,7 +448,6 @@ def test_structured_output_flag_follows_the_json_schema_rule() -> None:
         "glm-5.2-fast-preview",
         "gpt-5.5-pro",
         "gpt-5.6-sol-disc",
-        "hy3-preview",
         "hy4-preview",
         "longcat-2.0",
         "mercury-2.5-preview",
