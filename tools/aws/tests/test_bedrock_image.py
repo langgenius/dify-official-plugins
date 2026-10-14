@@ -335,6 +335,63 @@ def test_s3_upload_failure_still_returns_blob(tool: BedrockImageTool):
     assert "s3=upload-failed:s3://my-bucket/out" in success
 
 
+def test_s3_upload_success_reports_uri_and_put_object_args(tool: BedrockImageTool):
+    bedrock_client = MagicMock()
+    bedrock_client.invoke_model.return_value = _success_response()
+    s3_client = MagicMock()
+
+    def _client(service_name: str, **kwargs):
+        if service_name == "bedrock-runtime":
+            return bedrock_client
+        if service_name == "s3":
+            return s3_client
+        raise AssertionError(f"unexpected service {service_name}")
+
+    session = MagicMock()
+    session.client.side_effect = _client
+
+    with patch.object(bedrock_image_mod.boto3, "Session", return_value=session):
+        messages = _consume(
+            tool._invoke(
+                {
+                    "prompt": "a cat",
+                    "output_format": "png",
+                    "image_output_s3uri": "s3://my-bucket/out",
+                }
+            )
+        )
+
+    put_kwargs = s3_client.put_object.call_args.kwargs
+    assert put_kwargs["Bucket"] == "my-bucket"
+    assert put_kwargs["Key"].startswith("out/bedrock-image-")
+    assert put_kwargs["Key"].endswith(".png")
+    assert put_kwargs["Body"] == TINY_PNG
+    assert put_kwargs["ContentType"] == "image/png"
+    # Microseconds + uuid suffix keep concurrent uploads unique.
+    assert put_kwargs["Key"].count("-") >= 3
+
+    success = next(m[1] for m in messages if m[0] == "text" and m[1].startswith("Image generated."))
+    assert f"s3=s3://my-bucket/{put_kwargs['Key']}" in success
+    assert any(m[0] == "blob" for m in messages)
+
+
+def test_fractional_seed_is_rejected(tool: BedrockImageTool):
+    with patch.object(bedrock_image_mod.boto3, "Session") as session_cls:
+        messages = _consume(tool._invoke({"prompt": "a cat", "seed": 1.9}))
+
+    session_cls.assert_not_called()
+    assert "field=seed" in messages[0][1]
+    assert "1.9" in messages[0][1]
+
+
+def test_boolean_seed_is_rejected(tool: BedrockImageTool):
+    with patch.object(bedrock_image_mod.boto3, "Session") as session_cls:
+        messages = _consume(tool._invoke({"prompt": "a cat", "seed": True}))
+
+    session_cls.assert_not_called()
+    assert "field=seed" in messages[0][1]
+
+
 def test_text_to_image_body_includes_aspect_ratio(tool: BedrockImageTool):
     bedrock_client = MagicMock()
     bedrock_client.invoke_model.return_value = _success_response(seed=99)

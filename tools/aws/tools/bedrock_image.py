@@ -5,6 +5,8 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import math
+import uuid
 from collections.abc import Generator
 from datetime import datetime
 from typing import Any, Optional
@@ -107,6 +109,66 @@ def _normalize_images(images: Any) -> list[Any]:
     if not isinstance(images, list):
         images = [images]
     return [image for image in images if image is not None and image != ""]
+
+
+def _parse_int_param(value: Any, *, field: str, default: int = 0) -> int | str:
+    """Parse an integer parameter without silently truncating floats/bools."""
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        return _format_debug_message(
+            "Invalid parameter.",
+            {
+                "field": field,
+                "value": value,
+                "allowed": "integer (booleans are not accepted)",
+            },
+        )
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value) or not value.is_integer():
+            return _format_debug_message(
+                "Invalid parameter.",
+                {
+                    "field": field,
+                    "value": value,
+                    "allowed": "integer (fractional values are not accepted)",
+                },
+            )
+        try:
+            return int(value)
+        except OverflowError:
+            return _format_debug_message(
+                "Invalid parameter.",
+                {
+                    "field": field,
+                    "value": value,
+                    "allowed": "integer within finite range",
+                },
+            )
+    try:
+        text = str(value).strip()
+        parsed = float(text)
+        if not math.isfinite(parsed) or not parsed.is_integer():
+            return _format_debug_message(
+                "Invalid parameter.",
+                {
+                    "field": field,
+                    "value": value,
+                    "allowed": "integer",
+                },
+            )
+        return int(parsed)
+    except (TypeError, ValueError, OverflowError):
+        return _format_debug_message(
+            "Invalid parameter.",
+            {
+                "field": field,
+                "value": value,
+                "allowed": "integer",
+            },
+        )
 
 
 def _file_attr(file_obj: Any, name: str, default: Any = None) -> Any:
@@ -399,18 +461,9 @@ class BedrockImageTool(Tool):
                 },
             )
 
-        seed_raw = tool_parameters.get("seed", 0)
-        try:
-            seed = int(seed_raw) if seed_raw is not None and seed_raw != "" else 0
-        except (TypeError, ValueError):
-            return _format_debug_message(
-                "Invalid parameter.",
-                {
-                    "field": "seed",
-                    "value": seed_raw,
-                    "allowed": "integer",
-                },
-            )
+        seed = _parse_int_param(tool_parameters.get("seed", 0), field="seed", default=0)
+        if isinstance(seed, str):
+            return seed
         seed_max = SEED_MAX_SD35 if model == MODEL_SD35 else SEED_MAX_CORE_ULTRA
         if seed < 0 or seed > seed_max:
             return _format_debug_message(
@@ -616,8 +669,9 @@ class BedrockImageTool(Tool):
         parsed = urlparse(s3_uri)
         bucket = parsed.netloc
         base_path = parsed.path.lstrip("/")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"bedrock-image-{timestamp}.{output_format}"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        unique = uuid.uuid4().hex[:8]
+        filename = f"bedrock-image-{timestamp}-{unique}.{output_format}"
         key = f"{base_path.rstrip('/')}/{filename}" if base_path else filename
 
         s3_kwargs = dict(client_kwargs)

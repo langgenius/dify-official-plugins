@@ -193,7 +193,7 @@ parameters:
       zh_Hans: 可选 Access Key。需与 Secret Access Key 同时提供，或都留空以使用默认凭证链。
     form: form
   - name: aws_secret_access_key
-    type: string
+    type: secret-input
     required: false
     label:
       en_US: AWS Secret Access Key
@@ -203,7 +203,7 @@ parameters:
       zh_Hans: 可选 Secret Access Key。需与 Access Key ID 同时提供，或都留空以使用默认凭证链。
     form: form
   - name: aws_session_token
-    type: string
+    type: secret-input
     required: false
     label:
       en_US: AWS Session Token
