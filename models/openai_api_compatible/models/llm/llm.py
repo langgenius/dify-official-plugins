@@ -88,6 +88,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     def _wrap_non_stream_reasoning_content(message: dict, content: str) -> str:
         reasoning_piece = message.get("reasoning") or message.get("reasoning_content")
         if not reasoning_piece:
+            opening = content.find("<think>")
+            closing = content.find("</think>")
+            if closing >= 0 and (opening < 0 or closing < opening):
+                return "<think>\n" + content
             return content
         if content.startswith("<think>"):
             return content
@@ -706,6 +710,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
+        if stream and enable_thinking_value is True:
+            result = self._normalize_thinking_stream(result)
+
         # Filter thinking content from responses if thinking mode is disabled
         # This is necessary for models like Minimax M2.1 that don't support server-side thinking control
         if enable_thinking_value is False:
@@ -715,6 +722,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 return self._filter_thinking_result(result)
 
         return result
+
+    def _normalize_thinking_stream(self, stream: Generator) -> Generator:
+        """Restore an opening think tag supplied by the model's prompt template."""
+        pending_chunks = []
+        content = ""
+        for chunk in stream:
+            pending_chunks.append(chunk)
+            if chunk.delta.message.content:
+                content += chunk.delta.message.content
+                opening = content.find("<think>")
+                closing = content.find("</think>")
+                if opening < 0 and closing < 0:
+                    continue
+                if closing >= 0 and (opening < 0 or closing < opening):
+                    for pending_chunk in pending_chunks:
+                        if pending_chunk.delta.message.content:
+                            pending_chunk.delta.message.content = (
+                                "<think>\n" + pending_chunk.delta.message.content
+                            )
+                            break
+                yield from pending_chunks
+                yield from stream
+                return
+        yield from pending_chunks
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
         """Filter thinking content from non-streaming result"""
