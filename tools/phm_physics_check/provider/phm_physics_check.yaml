@@ -1,0 +1,24 @@
+extra:
+  python:
+    source: provider/phm_physics_check.py
+identity:
+  author: PHM-Audit
+  description:
+    en_US: >-
+      Deterministic physics plausibility checker for LLM outputs. Verifies
+      quantities against universal physical laws. Offline, reproducible
+      verdicts.
+    zh_Hans: >-
+      面向大模型输出的确定性物理合理性判定。依据普适物理定律校验物理量。
+      离线运行，判定可复算。
+  icon: icon.png
+  label:
+    en_US: PHM Physics Check
+    zh_Hans: PHM 物理校验
+  name: phm_physics_check
+  tags:
+    - utilities
+    - science
+    - education
+tools:
+  - tools/phm_physics_check.yaml
