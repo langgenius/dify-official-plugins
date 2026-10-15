@@ -1,0 +1,53 @@
+identity:
+  author: PHM-Audit
+  icon: icon.png
+  label:
+    en_US: Physics Check
+    zh_Hans: 物理校验
+  name: phm_physics_check
+description:
+  human:
+    en_US: >-
+      Deterministic physics plausibility check on text. Returns PASS / WARN /
+      FAIL with structured violations. Universal physical laws only; unknown
+      units are ignored (no false positives). Deterministic and reproducible.
+    zh_Hans: >-
+      对文本做确定性物理合理性判定，返回 PASS / WARN / FAIL 与结构化违规明细。
+      仅校验普适物理定律；未知单位忽略（零误报设计）。判定确定且可复算。
+  llm: >-
+    Verify text against universal physical laws (speed of light, absolute
+    zero, probability range, kinematics, conservation). Use on any output
+    that contains physical quantities. Returns verdict plus violation list.
+extra:
+  python:
+    source: tools/phm_physics_check.py
+parameters:
+  - form: llm
+    human_description:
+      en_US: LLM output or any text containing physical quantities.
+      zh_Hans: 大模型输出或任何含物理量的文本。
+    label:
+      en_US: Text to check
+      zh_Hans: 待检文本
+    llm_description: Text to verify against universal physical laws.
+    name: text
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: >-
+        Optional JSON with SI kinematic values stated in the text
+        (keys: v0, v, a, t, s, h). Any subset. Enables internal
+        cross-consistency checks.
+      zh_Hans: >-
+        可选JSON，提供文本中所述SI运动学数值（键：v0/v/a/t/s/h），任意子集，
+        用于内部交叉一致性校验。
+    label:
+      en_US: Kinematic values (JSON, optional)
+      zh_Hans: 运动学数值（JSON，可选）
+    llm_description: >-
+      Optional JSON object of SI kinematic values: v0, v, a, t, s, h.
+      Provide only values explicitly stated in the text.
+    name: kinematics_json
+    required: false
+    type: string

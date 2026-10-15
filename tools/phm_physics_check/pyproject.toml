@@ -1,0 +1,11 @@
+[project]
+name = "phm_physics_check"
+version = "0.0.1"
+description = "Deterministic physics plausibility checker for LLM outputs: universal physical laws, offline, reproducible verdicts."
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Managed with uv; refresh the lockfile with `uv lock`.
+dependencies = [
+    "dify_plugin>=0.0.1,<0.3.0",
+]
