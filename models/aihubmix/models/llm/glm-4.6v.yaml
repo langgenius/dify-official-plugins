@@ -9,7 +9,6 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
-  - document
   - video
 model_properties:
   mode: chat
