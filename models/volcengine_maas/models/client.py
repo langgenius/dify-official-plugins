@@ -229,6 +229,13 @@ class ArkClientV3:
             ),
         )
 
+    # Chatflow system prompts are [persona head]## 【核心铁律】[fixed rules]
+    # [diary/memory recall blocks that change every round]. Only the persona
+    # head before this boundary is stable within a role, so it alone must be
+    # hashed; hashing the full system message yields a fresh key every turn
+    # (measured 10.4 keys/conversation/day) and routing affinity is lost.
+    _PERSONA_HEAD_BOUNDARY = "## 【核心铁律】"
+
     @staticmethod
     def _prompt_cache_extra_body(
         messages: list[PromptMessage], endpoint_id: Optional[str]
@@ -238,16 +245,22 @@ class ArkClientV3:
         Ark's implicit prefix cache only hits when requests sharing a common
         prefix land on the same inference replica; without a cache key, routing
         is effectively random and consecutive turns of one conversation rarely
-        reuse the cached prefix. The leading system prompt is the stable shared
-        prefix of a conversation's requests, so hashing it (plus the endpoint
-        id) yields a stable routing key without exposing prompt content.
+        reuse the cached prefix. The stable shared prefix of a role's requests
+        is the persona head before _PERSONA_HEAD_BOUNDARY (fallback: first
+        3000 chars for prompts without the boundary), hashed together with the
+        endpoint id so the key never exposes prompt content.
         Returns None when there is no non-empty system message, leaving
         request routing unchanged.
         """
         for message in messages:
             if isinstance(message, SystemPromptMessage) and message.content:
+                content: str = message.content
+                if ArkClientV3._PERSONA_HEAD_BOUNDARY in content:
+                    head = content.split(ArkClientV3._PERSONA_HEAD_BOUNDARY, 1)[0]
+                else:
+                    head = content[:3000]
                 digest = hashlib.md5(
-                    f"{endpoint_id or ''}:{message.content}".encode("utf-8")
+                    f"{endpoint_id or ''}:{head}".encode("utf-8")
                 ).hexdigest()[:16]
                 return {"prompt_cache_key": f"dify-pck-{digest}"}
         return None
