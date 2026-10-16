@@ -337,6 +337,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
 
         req_params = get_v3_req_params(credentials, model_parameters, stop)
+        cache_key = req_params.pop("prompt_cache_key", None)
         if tools:
             req_params["tools"] = tools
 
@@ -433,10 +434,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             )
 
         if not stream:
-            resp = client.chat(prompt_messages, **req_params)
+            resp = client.chat(prompt_messages, cache_key=cache_key, **req_params)
             return _handle_chat_response(resp)
 
-        chunks = client.stream_chat(prompt_messages, **req_params)
+        chunks = client.stream_chat(prompt_messages, cache_key=cache_key, **req_params)
         return _handle_stream_chat_response(chunks)
 
     def _create_final_llm_result_chunk(
@@ -608,6 +609,26 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                                     en_us="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
+        rules.append(
+            ParameterRule(
+                name="prompt_cache_key",
+                type=ParameterType.STRING,
+                label=I18nObject(zh_hans="上下文缓存路由键", en_us="Prompt Cache Key"),
+                help=I18nObject(
+                    zh_hans=(
+                        "上下文缓存路由亲和键：共享同一提示词前缀的请求配置相同取值可提升前缀缓存命中率，"
+                        "建议按角色/业务维度命名。未配置时将按系统提示词前500字符自动生成。"
+                        "注意同一取值的请求需控制在每分钟15次以内。"
+                    ),
+                    en_us=(
+                        "Routing affinity key for the implicit context cache: requests sharing a common "
+                        "prompt prefix should use the same value to improve the prefix-cache hit rate "
+                        "(e.g. per character/agent). Falls back to a key derived from the first 500 chars "
+                        "of the system prompt when unset. Keep each value under 15 requests per minute."
+                    ),
+                ),
+            )
+        )
         base_model = credentials.get("base_model_name", "")
         if base_model.lower() in ("doubao-1.5-thinking-pro", "doubao-seed-1.6"):
             rules.append(

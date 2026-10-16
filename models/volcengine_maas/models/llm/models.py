@@ -380,4 +380,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["response_format"] = model_parameters.get("response_format")
     if model_parameters.get("reasoning_effort"):
         req_params["reasoning_effort"] = model_parameters.get("reasoning_effort")
+    if model_parameters.get("prompt_cache_key"):
+        req_params["prompt_cache_key"] = model_parameters.get("prompt_cache_key")
     return req_params
