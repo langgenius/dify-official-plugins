@@ -229,41 +229,36 @@ class ArkClientV3:
             ),
         )
 
-    # Chatflow system prompts are [persona head]## 【核心铁律】[fixed rules]
-    # [diary/memory recall blocks that change every round]. Only the persona
-    # head before this boundary is stable within a role, so it alone must be
-    # hashed; hashing the full system message yields a fresh key every turn
-    # (measured 10.4 keys/conversation/day) and routing affinity is lost.
-    _PERSONA_HEAD_BOUNDARY = "## 【核心铁律】"
-
     @staticmethod
     def _prompt_cache_extra_body(
-        messages: list[PromptMessage], endpoint_id: Optional[str]
+        messages: list[PromptMessage],
+        endpoint_id: Optional[str],
+        cache_key: Optional[str] = None,
     ) -> Optional[dict]:
         """Derive a prompt_cache_key for Ark prefix-cache routing affinity.
 
         Ark's implicit prefix cache only hits when requests sharing a common
-        prefix land on the same inference replica; without a cache key, routing
-        is effectively random and consecutive turns of one conversation rarely
-        reuse the cached prefix. The stable shared prefix of a role's requests
-        is the persona head before _PERSONA_HEAD_BOUNDARY (fallback: first
-        3000 chars for prompts without the boundary), hashed together with the
-        endpoint id so the key never exposes prompt content.
-        Returns None when there is no non-empty system message, leaving
-        request routing unchanged.
+        prefix land on the same inference replica; without a cache key,
+        routing is effectively random and consecutive turns of one
+        conversation rarely reuse the cached prefix. An explicit cache_key
+        (from the model parameters) takes precedence; otherwise a fallback
+        key is derived from the first 500 chars of the leading system
+        message — enough to separate distinct prompts while usually staying
+        inside their stable head. The value is hashed together with the
+        endpoint id, so the key never exposes prompt content.
+        Returns None when no value can be derived, leaving request routing
+        unchanged.
         """
-        for message in messages:
-            if isinstance(message, SystemPromptMessage) and message.content:
-                content: str = message.content
-                if ArkClientV3._PERSONA_HEAD_BOUNDARY in content:
-                    head = content.split(ArkClientV3._PERSONA_HEAD_BOUNDARY, 1)[0]
-                else:
-                    head = content[:3000]
-                digest = hashlib.md5(
-                    f"{endpoint_id or ''}:{head}".encode("utf-8")
-                ).hexdigest()[:16]
-                return {"prompt_cache_key": f"dify-pck-{digest}"}
-        return None
+        value = cache_key
+        if not value:
+            for message in messages:
+                if isinstance(message, SystemPromptMessage) and message.content:
+                    value = message.content[:500]
+                    break
+        if not value:
+            return None
+        digest = hashlib.md5(f"{endpoint_id or ''}:{value}".encode("utf-8")).hexdigest()[:16]
+        return {"prompt_cache_key": f"dify-pck-{digest}"}
 
     def chat(
         self,
@@ -279,6 +274,7 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        cache_key: Optional[str] = None,
     ) -> ChatCompletion:
         """Block chat"""
         return self.ark.chat.completions.create(
@@ -294,7 +290,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
-            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id),
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id, cache_key),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -312,6 +308,7 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        cache_key: Optional[str] = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
         chunks = self.ark.chat.completions.create(
@@ -329,7 +326,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
-            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id),
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id, cache_key),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks
