@@ -10,7 +10,6 @@ features:
   - stream-tool-call
   - vision
   - video
-  - audio
   - structured-output
 model_properties:
   mode: chat
