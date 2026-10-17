@@ -185,6 +185,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -197,6 +198,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-opus-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -207,6 +209,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-sonnet-5",
         "claude-opus-5",
+        "claude-haiku-5",
     )
     # Models where thinking can be disabled only at effort `high` or below
     # (thinking.type=disabled combined with effort xhigh/max returns a 400). GA on
@@ -214,6 +217,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     # on these models so the request still succeeds.
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -358,7 +362,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     name="effort",
                     label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
-                    default="medium" if model.lower() == "claude-opus-5-5" else "high",
+                    default=(
+                        "medium"
+                        if model.lower() == "claude-opus-5-5"
+                        or model.lower().startswith("claude-haiku-5")
+                        else "high"
+                    ),
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
