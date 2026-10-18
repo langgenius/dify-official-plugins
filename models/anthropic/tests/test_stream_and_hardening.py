@@ -3,6 +3,9 @@
 - The streaming handler used to emit the closing think tag a second time when a
   thinking block was followed directly by a tool_use block (current_block_type
   was left as "thinking" on input_json_delta and re-closed at MessageStopEvent).
+- With thinking display "omitted", the API streams a thinking block whose only
+  thinking_delta is empty, then a signature_delta. The handler opened the think
+  tag on that empty delta, so every answer started with an empty think block.
 - HTTP 529 OverloadedError fell through the APIError catch-all and was mapped
   to InvokeBadRequestError instead of InvokeServerUnavailableError.
 - Image URL fetching had no timeout, no size cap, no scheme restriction and
@@ -27,6 +30,7 @@ from anthropic.types import (
     TextDelta,
     ThinkingBlock,
     ThinkingDelta,
+    SignatureDelta,
     ToolUseBlock,
     Usage,
 )
@@ -207,6 +211,86 @@ def test_text_only_never_emits_think_tags() -> None:
     assert OPEN_THINK not in text
     assert CLOSE_THINK not in text
     assert "plain" in text
+
+
+def _omitted_thinking_block(index: int = 0) -> list:
+    return [
+        ContentBlockStartEvent(
+            type="content_block_start",
+            index=index,
+            content_block=ThinkingBlock(thinking="", signature="", type="thinking"),
+        ),
+        ContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=index,
+            delta=ThinkingDelta(type="thinking_delta", thinking=""),
+        ),
+        ContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=index,
+            delta=SignatureDelta(type="signature_delta", signature="sig"),
+        ),
+    ]
+
+
+def test_omitted_thinking_emits_no_think_tags() -> None:
+    events = [
+        _message_start(),
+        *_omitted_thinking_block(),
+        ContentBlockStartEvent(
+            type="content_block_start",
+            index=1,
+            content_block=TextBlock(text="", type="text"),
+        ),
+        ContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=1,
+            delta=TextDelta(type="text_delta", text="answer"),
+        ),
+        _message_delta("end_turn"),
+        MessageStopEvent(type="message_stop"),
+    ]
+
+    assert _emitted_text(_run_stream(events)) == "answer"
+
+
+def test_omitted_thinking_then_stop_emits_no_think_tags() -> None:
+    events = [
+        _message_start(),
+        *_omitted_thinking_block(),
+        _message_delta("max_tokens"),
+        MessageStopEvent(type="message_stop"),
+    ]
+
+    assert _emitted_text(_run_stream(events)) == ""
+
+
+def test_empty_first_thinking_delta_still_opens_think_tag_once() -> None:
+    events = [
+        _message_start(),
+        *_omitted_thinking_block(),
+        ContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=0,
+            delta=ThinkingDelta(type="thinking_delta", thinking="hmm"),
+        ),
+        ContentBlockStartEvent(
+            type="content_block_start",
+            index=1,
+            content_block=TextBlock(text="", type="text"),
+        ),
+        ContentBlockDeltaEvent(
+            type="content_block_delta",
+            index=1,
+            delta=TextDelta(type="text_delta", text="hi there"),
+        ),
+        _message_delta("end_turn"),
+        MessageStopEvent(type="message_stop"),
+    ]
+
+    text = _emitted_text(_run_stream(events))
+
+    assert text == OPEN_THINK + "\nhmm\n" + CLOSE_THINK + "\n\nhi there"
 
 
 def test_thinking_then_parallel_tool_calls_closes_think_tag_once() -> None:
