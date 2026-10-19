@@ -48,9 +48,7 @@ def test_m3_yaml_parameters_match_official_limits() -> None:
         "tool-call",
         "stream-tool-call",
     ]
-    assert rules["temperature"]["min"] == 0
-    assert rules["temperature"]["max"] == 2
-    assert rules["temperature"]["default"] == 1
+    assert "temperature" not in rules
     assert rules["top_p"]["min"] == 0
     assert rules["top_p"]["max"] == 1
     assert rules["top_p"]["default"] == 0.95

@@ -13,11 +13,6 @@ model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
-  - name: temperature
-    use_template: temperature
-    min: 0
-    max: 2
-    default: 1
   - name: top_p
     use_template: top_p
     min: 0
