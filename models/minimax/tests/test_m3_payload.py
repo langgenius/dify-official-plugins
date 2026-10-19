@@ -49,9 +49,8 @@ def test_m3_yaml_parameters_match_official_limits() -> None:
         "stream-tool-call",
     ]
     assert "temperature" not in rules
-    assert rules["top_p"]["min"] == 0
-    assert rules["top_p"]["max"] == 1
-    assert rules["top_p"]["default"] == 0.95
+    assert "top_p" not in rules
+    assert "top_k" not in rules
     assert rules["max_tokens"]["max"] == 524288
     assert rules["thinking"]["options"] == ["adaptive"]
     assert rules["exclude_reasoning_tokens"]["default"] is True
