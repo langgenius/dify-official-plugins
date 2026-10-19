@@ -5,9 +5,7 @@ label:
 model_type: llm
 features:
   - vision
-  - document
   - video
-  - audio
 model_properties:
   mode: chat
   context_size: 1048576
