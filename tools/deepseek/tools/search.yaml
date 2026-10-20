@@ -1,0 +1,74 @@
+identity:
+  author: langgenius
+  name: search
+  label:
+    en_US: Search
+    zh_Hans: 网页搜索
+description:
+  human:
+    en_US: Search the web using the DeepSeek search engine.
+    zh_Hans: 使用 DeepSeek 搜索引擎搜索网页。
+  llm: >-
+    Search the web for current information. Returns titles, URLs, snippets,
+    summaries and optionally page content. Supports site:, -site:, exact phrases,
+    lang:, after: and before: operators.
+parameters:
+  - name: query
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Query
+      zh_Hans: 搜索词
+    human_description:
+      en_US: Search query, 1 to 128 characters. Supports search operators such as site:.
+      zh_Hans: 搜索词，1 至 128 个字符，支持 site 等搜索语法。
+    llm_description: Search query, at most 128 characters. Use search operators to narrow results when helpful.
+  - name: count
+    type: number
+    required: false
+    default: 10
+    min: 1
+    max: 50
+    form: form
+    label:
+      en_US: Result count
+      zh_Hans: 结果数量
+    human_description:
+      en_US: Number of results to return, from 1 to 50.
+      zh_Hans: 返回结果数量，1 至 50。
+  - name: need_content
+    type: boolean
+    required: false
+    default: false
+    form: form
+    label:
+      en_US: Include page content
+      zh_Hans: 包含网页正文
+    human_description:
+      en_US: Include page content in search results.
+      zh_Hans: 在搜索结果中包含网页正文。
+  - name: ori_question
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Original question
+      zh_Hans: 原始问题
+    human_description:
+      en_US: Optional original user question, up to 128 characters.
+      zh_Hans: 可选的用户原始问题，最多 128 个字符。
+    llm_description: The user's original question, at most 128 characters, to help interpret the search intent. Omit it if the question exceeds this limit.
+  - name: localization
+    type: string
+    required: false
+    form: form
+    label:
+      en_US: Localization IP
+      zh_Hans: 本地化 IP
+    human_description:
+      en_US: Optional IP address used to prioritize localized search results.
+      zh_Hans: 可选 IP 地址，用于优先返回本地化搜索结果。
+extra:
+  python:
+    source: tools/search.py

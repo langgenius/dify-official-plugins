@@ -269,6 +269,6 @@ Very large files may fail depending on runtime memory limits.
 - Microsoft Premier Support (for Graph API issues)
 - Custom integration consulting available
 
-## Version: 1.0.0
+## Version: 1.0.2
 
 This plugin implements tenant-aware OneDrive OAuth and Microsoft Graph file access.

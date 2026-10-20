@@ -1,3 +1,7 @@
+- deepseek-v4.1-flash-1017
+- gpt-6.1-sol
+- muse-wonder
+- gemini-4-argon
 - claude-haiku-5-5
 - claude-opus-5-5
 - claude-sonnet-5-5
@@ -18,11 +22,11 @@
 - glm-5.3
 - mercury-2.5-preview
 - qwen3.8-max-2026-09-02
-- coding-glm-5.3
 - hy4-preview
+- coding-glm-5.3
+- coding-glm-5.3-flash
 - muse-spark-1.3
 - qwen3.8-flash
-- gemini-3.7-flash
 - agnes-3.0-flash
 - glm-5.2
 - deepseek-v4-flash-0731
@@ -58,7 +62,6 @@
 - doubao-seed-2-1-pro
 - doubao-seed-2-1-turbo
 - grok-build-0.1
-- gemini-3.5-flash
 - coding-kimi-k3
 - gemini-3.1-flash-image
 - kimi-k2.7-code
@@ -68,7 +71,6 @@
 - qwen3.7-flash
 - qwen3.7-plus
 - step-3.7-flash
-- hy3-preview
 - minimax-m3
 - claude-opus-4-8-think
 - qwen3.7-max
@@ -117,6 +119,7 @@
 - gpt-5.3-chat-latest
 - gpt-5.3-codex
 - claude-sonnet-4-6-think
+- coding-xiaomi-mimo-v2-omni
 - coding-xiaomi-mimo-v2-pro
 - doubao-seed-2-0-pro
 - gpt-5.4-high
@@ -129,7 +132,6 @@
 - minimax-m2.7
 - doubao-seed-2-0-code-preview
 - doubao-seed-2-0-lite-260215
-- doubao-seed-2-0-mini
 - gemini-3-flash-preview
 - gemini-3-flash-preview-search
 - glm-5-turbo
@@ -190,7 +192,6 @@
 - coding-minimax-m2.7-highspeed
 - coding-minimax-m2.5
 - coding-minimax-m2.5-highspeed
-- gpt-4o-audio-preview
 - gpt-4o-mini-audio-preview
 - coding-glm-4.7
 - coding-minimax-m2.1
@@ -273,4 +274,5 @@
 - llama2-70b-4096
 - llama2-70b-40960
 - qwen3.8-27b
+- solar-pro4
 - aihubmix-Llama-3-1-405B-Instruct

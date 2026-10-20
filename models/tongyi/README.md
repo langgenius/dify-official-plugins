@@ -6,6 +6,33 @@ After installation, you need to get API keys from [Alibaba Cloud](https://bailia
 
 ![](_assets/tongyi_latest.png)
 
+## Model catalog update (0.2.23)
+
+Provider credential validation now uses `qwen3.8-flash`, which is available in
+Beijing and Singapore, instead of the retired `qwen-turbo`. Existing
+`validate_model` overrides are still honored for keys restricted to another model.
+
+The predefined catalog was checked against Alibaba Cloud's retirement notices on
+October 13, 2026. Retired model definitions and their ordering entries have been
+removed, including older snapshots and their legacy short-date aliases. Existing
+apps using these models need to select a supported replacement; their model IDs
+are not automatically rewritten.
+
+| Retired models | Available replacements | Official notice |
+| --- | --- | --- |
+| Qwen-Turbo (including the plugin's `qwen-turbo-chat` alias), Qwen-VL-Max/Plus, QwQ/QVQ and older math/coder models | `qwen3.8-flash`, `qwen3.7-plus`, `qwen3.8-max` | [Mainline retirements](https://www.aliyun.com/notice/118177) |
+| Qwen3-Max/preview, Qwen3-VL-Flash and Qwen3-Coder-Plus | Qwen3.7 and Qwen3.8 models | [Mainline retirements](https://www.aliyun.com/notice/118344) |
+| Older Qwen3, DeepSeek, Kimi and GLM snapshots | Qwen3.7/Qwen3.8 models or a supported model from the same provider | [Snapshot retirements](https://www.aliyun.com/notice/118345) |
+| Qwen-Math-Plus, Qwen-MT-Turbo, DeepSeek-V4-Flash preview and other listed legacy models | Newly added `qwen-mt-flash` for translation; `deepseek-v4-flash-0731` or `deepseek-v4.1-flash` for DeepSeek | [Legacy retirements](https://www.aliyun.com/notice/118434) |
+| Older Qwen Max/Plus/Turbo and VL snapshots | Current Qwen models | [January snapshot retirements](https://www.aliyun.com/notice/117814) |
+| `paraformer-realtime-v1` | `paraformer-realtime-v2` | [Speech model retirements](https://www.aliyun.com/notice/118331) |
+| `qwen-max-longcontext` | `qwen-max` or current Qwen models | [Platform release notes](https://help.aliyun.com/zh/model-studio/model-release-notes) |
+
+See the current [model catalog](https://help.aliyun.com/zh/model-studio/models),
+[Qwen3.8-Flash specifications](https://help.aliyun.com/zh/model-studio/qwen3-8-flash),
+and [Qwen-MT-Flash specifications](https://help.aliyun.com/zh/model-studio/qwen-mt-flash).
+Model availability depends on the API key's region and permissions.
+
 # Speech-to-text runtime note
 
 Tongyi speech-to-text patches DashScope's async-to-sync websocket bridge when it runs under Dify's gevent-based plugin runtime. This avoids sustained high CPU after STT requests while keeping the normal in-process recognition path.

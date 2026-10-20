@@ -185,6 +185,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -197,6 +198,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-opus-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -207,6 +209,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-sonnet-5",
         "claude-opus-5",
+        "claude-haiku-5",
     )
     # Models where thinking can be disabled only at effort `high` or below
     # (thinking.type=disabled combined with effort xhigh/max returns a 400). GA on
@@ -214,6 +217,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     # on these models so the request still succeeds.
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -358,7 +362,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     name="effort",
                     label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
-                    default="medium" if model.lower() == "claude-opus-5-5" else "high",
+                    default=(
+                        "medium"
+                        if model.lower() == "claude-opus-5-5"
+                        or model.lower().startswith("claude-haiku-5")
+                        else "high"
+                    ),
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
@@ -1140,8 +1149,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        current_block_type = None
         current_block_index = None
+        # The think tag opens on the first non-empty thinking text, not at block start:
+        # with display "omitted" the only thinking_delta is empty.
+        think_open = False
         
         current_tool_name = None
         current_tool_id = None
@@ -1215,7 +1226,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    if think_open:
+                        think_open = False
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1226,25 +1238,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                     
                     current_block_index = chunk.index
-                    if hasattr(chunk.delta, "thinking"):
-                        current_block_type = "thinking"
-                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
-                        yield LLMResultChunk(
-                            model=return_model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=chunk.index, message=assistant_prompt_message
-                            ),
-                        )
-                    elif hasattr(chunk.delta, "text"):
-                        current_block_type = "text"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
-                        # Tool-use block: mark as non-thinking so the closing
-                        # think tag (already emitted at the block transition
-                        # above) is not emitted a second time at stream end.
-                        current_block_type = "tool_use"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                        current_block_type = "redacted_thinking"
+                    if hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
+                        think_open = True
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1261,6 +1256,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     if current_thinking_blocks:
                         current_thinking_blocks[-1]["thinking"] += thinking_text
                     
+                    if thinking_text and not think_open:
+                        think_open = True
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk.index, message=AssistantPromptMessage(content="<think>\n")
+                            ),
+                        )
+
                     assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
                     index = chunk.index
                     yield LLMResultChunk(
@@ -1308,7 +1313,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
                 )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                if think_open:
+                    think_open = False
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,

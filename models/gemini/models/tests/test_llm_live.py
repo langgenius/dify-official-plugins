@@ -21,6 +21,7 @@ from models.llm.llm import GoogleLargeLanguageModel
 
 ROOT = Path(__file__).resolve().parents[2]
 MODELS = (
+    "gemini-4-argon",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -51,6 +52,9 @@ def _invoke(
     stream: bool,
 ) -> list[LLMResultChunk]:
     llm = GoogleLargeLanguageModel(schemas)
+    parameters = dict(parameters or {"max_output_tokens": 128, "thinking_level": "Low"})
+    if model == "gemini-4-argon":
+        parameters["max_output_tokens"] = 32_768
 
     def invoke() -> list[LLMResultChunk]:
         return list(
@@ -58,8 +62,7 @@ def _invoke(
                 model=model,
                 credentials={"google_api_key": os.environ["GEMINI_API_KEY"]},
                 prompt_messages=messages,
-                model_parameters=parameters
-                or {"max_output_tokens": 128, "thinking_level": "Low"},
+                model_parameters=parameters,
                 tools=tools,
                 stream=stream,
                 user="gemini-live-test",
