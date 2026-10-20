@@ -222,6 +222,7 @@ def _render_model(model: dict[str, Any], revision: str) -> str:
                 "  - name: reasoning_effort",
                 "    type: string",
                 "    required: false",
+                "    default: medium",
                 "    options:",
                 *(f"      - {effort}" for effort in efforts),
             ]

@@ -116,3 +116,35 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
         assert body["temperature"] == 0.2
         assert body["top_p"] == 0.3
     assert parameters == {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
+
+
+@pytest.mark.parametrize(
+    "schema", [s for s in SCHEMAS if s.model.startswith("gpt-")], ids=lambda s: s.model
+)
+@pytest.mark.parametrize("toggle_on", [True, False])
+def test_public_invoke_reasoning_effort_toggle_default(schema, toggle_on) -> None:
+    model = TokenerLargeLanguageModel(model_schemas=[schema])
+    rule = next(
+        rule
+        for rule in model.get_parameter_rules(schema.model, {"api_key": "test"})
+        if rule.name == "reasoning_effort" and rule.options
+    )
+    toggle_value = rule.default or ""
+    parameters = {rule.name: toggle_value} if toggle_on else {}
+    with patch("requests.post", return_value=response()) as post:
+        chunks = list(
+            model.invoke(
+                schema.model,
+                {"api_key": "test"},
+                [UserPromptMessage(content="Hi")],
+                parameters,
+                stream=False,
+            )
+        )
+    post.assert_called_once()
+    body = post.call_args.kwargs["json"]
+    assert chunks[0].delta.message.content == "ok"
+    if toggle_on:
+        assert body[rule.name] == toggle_value
+    else:
+        assert rule.name not in body

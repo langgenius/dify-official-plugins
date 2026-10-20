@@ -26,6 +26,7 @@ parameter_rules:
   - name: reasoning_effort
     type: string
     required: false
+    default: medium
     options:
       - none
       - low
