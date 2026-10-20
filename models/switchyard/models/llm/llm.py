@@ -5,6 +5,7 @@ import hashlib
 import logging
 import threading
 from collections.abc import Generator, Iterator, Mapping
+from typing import override
 
 import httpx
 from dify_plugin import LargeLanguageModel
@@ -111,6 +112,7 @@ async def _decide(algorithm: Algorithm, ir: dict, headers: dict | None) -> Routi
 
 
 class SwitchyardLargeLanguageModel(LargeLanguageModel):
+    @override
     def _invoke(
         self,
         model: str,
@@ -194,6 +196,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
                     finish_reason=delta.finish_reason,
                 )
 
+    @override
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
         try:
             _algorithm(credentials)
@@ -209,6 +212,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
                     f"{tier} upstream ({upstream.model}) failed: {e}"
                 ) from e
 
+    @override
     def get_num_tokens(
         self,
         model: str,
@@ -219,6 +223,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         text = "".join(m.content for m in prompt_messages if isinstance(m.content, str))
         return self._get_num_tokens_by_gpt2(text)
 
+    @override
     def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity:
         max_tokens = int(credentials.get("max_tokens_to_sample") or 8192)
         return AIModelEntity(
@@ -268,6 +273,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         )
 
     @property
+    @override
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         return {
             InvokeConnectionError: [httpx.TransportError],
