@@ -119,15 +119,21 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
 
 
 @pytest.mark.parametrize(
-    "schema", [s for s in SCHEMAS if s.model.startswith("gpt-")], ids=lambda s: s.model
+    "schema,rule_name",
+    [
+        pytest.param(schema, rule.name, id=f"{schema.model}-{rule.name}")
+        for schema in SCHEMAS
+        for rule in schema.parameter_rules
+        if rule.type.value == "string" and rule.options
+    ],
 )
 @pytest.mark.parametrize("toggle_on", [True, False])
-def test_public_invoke_reasoning_effort_toggle_default(schema, toggle_on) -> None:
+def test_public_invoke_string_option_toggle_default(schema, rule_name, toggle_on) -> None:
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     rule = next(
         rule
         for rule in model.get_parameter_rules(schema.model, {"api_key": "test"})
-        if rule.name == "reasoning_effort" and rule.options
+        if rule.name == rule_name
     )
     toggle_value = rule.default or ""
     parameters = {rule.name: toggle_value} if toggle_on else {}
@@ -145,6 +151,9 @@ def test_public_invoke_reasoning_effort_toggle_default(schema, toggle_on) -> Non
     body = post.call_args.kwargs["json"]
     assert chunks[0].delta.message.content == "ok"
     if toggle_on:
-        assert body[rule.name] == toggle_value
+        if rule.name == "response_format":
+            assert body[rule.name] == {"type": "text"}
+        else:
+            assert body[rule.name] == toggle_value
     else:
         assert rule.name not in body

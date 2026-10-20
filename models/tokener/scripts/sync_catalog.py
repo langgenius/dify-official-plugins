@@ -239,6 +239,7 @@ def _render_model(model: dict[str, Any], revision: str) -> str:
                 "      en_US: Specify the format that the model must output.",
                 "      zh_Hans: 指定模型必须输出的格式。",
                 "    required: false",
+                "    default: text",
                 "    options:",
                 "      - text",
                 "      - json_object",
