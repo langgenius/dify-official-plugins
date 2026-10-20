@@ -1,13 +1,14 @@
 version: 0.0.1
 type: plugin
 author: langgenius
-name: switchyard
+name: nvidia_nemo_switchyard
 label:
-  en_US: Switchyard
+  en_US: NVIDIA NeMo Switchyard
 description:
   en_US: Route each LLM call between a capable and an efficient model with NVIDIA NeMo Switchyard.
-  zh_Hans: 使用 NVIDIA NeMo Switchyard 在强模型和便宜模型之间自动路由每一次 LLM 调用。
-icon: icon.png
+  zh_Hans: 使用 NVIDIA NeMo Switchyard 在高性能模型和经济模型之间自动路由每一次 LLM 调用。
+icon: icon.svg
+icon_dark: icon-dark.svg
 resource:
   memory: 268435456
   permission:
@@ -21,7 +22,7 @@ resource:
       moderation: false
 plugins:
   models:
-    - provider/switchyard.yaml
+    - provider/nvidia_nemo_switchyard.yaml
 meta:
   version: 0.0.1
   arch:

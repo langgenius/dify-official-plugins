@@ -1,4 +1,4 @@
-## Switchyard
+## NVIDIA NeMo Switchyard
 
 **Author:** langgenius
 **Version:** 0.0.1
@@ -23,7 +23,7 @@ the default tier.
 
 ### Setup
 
-Add a model under **Switchyard** in Dify. The model name is the route name shown in Dify, for
+Add a model under **NVIDIA NeMo Switchyard** in Dify. The model name is the route name shown in Dify, for
 example `auto`. Each route has two upstreams. Each upstream is any endpoint that speaks one of
 these APIs:
 

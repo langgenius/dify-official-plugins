@@ -107,7 +107,7 @@ def test_invoke_routes_to_expected_tier(case: str) -> None:
     messages, tier = CASES[case]
     payload = LLMRequest(
         user_id="test_user",
-        provider="switchyard",
+        provider="nvidia_nemo_switchyard",
         model_type=ModelType.LLM,
         model="auto",
         credentials=CREDENTIALS,
@@ -139,7 +139,7 @@ def test_validate_credentials_reports_the_failing_tier() -> None:
     def validate(credentials: dict) -> list[ValidateResult]:
         payload = ModelValidateModelCredentialsRequest(
             user_id="test_user",
-            provider="switchyard",
+            provider="nvidia_nemo_switchyard",
             model_type=ModelType.LLM,
             model="auto",
             credentials=credentials,

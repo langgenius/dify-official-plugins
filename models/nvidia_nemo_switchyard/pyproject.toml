@@ -1,5 +1,5 @@
 [project]
-name = "switchyard-plugin"
+name = "nvidia-nemo-switchyard-plugin"
 version = "0.0.1"
 description = "Dify model provider that routes LLM calls with NVIDIA NeMo Switchyard"
 readme = "README.md"

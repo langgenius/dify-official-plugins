@@ -1,0 +1,168 @@
+provider: nvidia_nemo_switchyard
+label:
+  en_US: NVIDIA NeMo Switchyard
+description:
+  en_US: Route each LLM call between a capable and an efficient model with NVIDIA NeMo Switchyard.
+  zh_Hans: 使用 NVIDIA NeMo Switchyard 在高性能模型和经济模型之间自动路由每一次 LLM 调用。
+icon_large:
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+background: "#E5E7EB"
+help:
+  title:
+    en_US: How Switchyard routes requests
+    zh_Hans: Switchyard 路由说明
+  url:
+    en_US: https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/stage_router_routing.md
+supported_model_types:
+  - llm
+configurate_methods:
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model name in Dify
+      zh_Hans: 在 Dify 中的模型名称
+    placeholder:
+      en_US: Shown when picking a model in apps, e.g. auto
+      zh_Hans: 在应用里选择模型时显示的名字，例如 auto
+  credential_form_schemas:
+    # Capable tier
+    - variable: capable_endpoint_url
+      label:
+        en_US: "High-performance model (used when the task gets hard): API base URL"
+        zh_Hans: 高性能模型（任务遇到困难时使用）：API 地址
+      type: text-input
+      required: true
+      placeholder:
+        en_US: Usually ends in /v1, e.g. https://your-endpoint/v1
+        zh_Hans: 通常以 /v1 结尾，例如 https://your-endpoint/v1
+    - variable: capable_api_key
+      label:
+        en_US: "High-performance model: API key"
+        zh_Hans: 高性能模型：API Key
+      type: secret-input
+      required: false
+      placeholder:
+        en_US: Leave empty if the endpoint needs no key
+        zh_Hans: 接口不需要鉴权时可以留空
+    - variable: capable_model
+      label:
+        en_US: "High-performance model: model ID"
+        zh_Hans: 高性能模型：模型 ID
+      type: text-input
+      required: true
+      placeholder:
+        en_US: The model ID this endpoint expects in requests
+        zh_Hans: 调用该接口时填写的模型 ID
+    - variable: capable_api_format
+      label:
+        en_US: "High-performance model: API type"
+        zh_Hans: 高性能模型：接口类型
+      type: select
+      required: true
+      default: responses
+      options:
+        - value: responses
+          label:
+            en_US: Responses API (/responses, newer)
+            zh_Hans: Responses API（/responses，较新）
+        - value: chat_completions
+          label:
+            en_US: Chat Completions API (/chat/completions, most widely supported)
+            zh_Hans: Chat Completions API（/chat/completions，支持最广）
+    # Efficient tier
+    - variable: efficient_endpoint_url
+      label:
+        en_US: "Economy model (used for routine steps): API base URL"
+        zh_Hans: 经济模型（日常步骤使用）：API 地址
+      type: text-input
+      required: true
+      placeholder:
+        en_US: Usually ends in /v1, e.g. https://your-endpoint/v1
+        zh_Hans: 通常以 /v1 结尾，例如 https://your-endpoint/v1
+    - variable: efficient_api_key
+      label:
+        en_US: "Economy model: API key"
+        zh_Hans: 经济模型：API Key
+      type: secret-input
+      required: false
+      placeholder:
+        en_US: Leave empty if the endpoint needs no key
+        zh_Hans: 接口不需要鉴权时可以留空
+    - variable: efficient_model
+      label:
+        en_US: "Economy model: model ID"
+        zh_Hans: 经济模型：模型 ID
+      type: text-input
+      required: true
+      placeholder:
+        en_US: The model ID this endpoint expects in requests
+        zh_Hans: 调用该接口时填写的模型 ID
+    - variable: efficient_api_format
+      label:
+        en_US: "Economy model: API type"
+        zh_Hans: 经济模型：接口类型
+      type: select
+      required: true
+      default: responses
+      options:
+        - value: responses
+          label:
+            en_US: Responses API (/responses, newer)
+            zh_Hans: Responses API（/responses，较新）
+        - value: chat_completions
+          label:
+            en_US: Chat Completions API (/chat/completions, most widely supported)
+            zh_Hans: Chat Completions API（/chat/completions，支持最广）
+    # Routing
+    - variable: picker
+      label:
+        en_US: Which model to use by default
+        zh_Hans: 默认使用哪个模型
+      type: select
+      required: false
+      default: efficient_first
+      options:
+        - value: efficient_first
+          label:
+            en_US: Economy model, switch to the high-performance model when errors show up (recommended)
+            zh_Hans: 经济模型，出现报错时切到高性能模型（推荐）
+        - value: capable_first
+          label:
+            en_US: High-performance model, switch to the economy model while work goes smoothly (experimental)
+            zh_Hans: 高性能模型，任务顺利时切到经济模型（实验性）
+    - variable: confidence_threshold
+      label:
+        en_US: "Switch threshold, 0 to 1 (default 0.5): lower switches more easily. At 0.3 one clear error switches; at 0.5 several signals must agree. Severe or repeated errors always switch."
+        zh_Hans: 切换阈值，0 到 1（默认 0.5）：越小越容易切换。0.3 时出现一次明显报错就切换，0.5 时需要多个信号同时指向。严重报错或同一报错重复出现时总会切换。
+      type: text-input
+      required: false
+      default: "0.5"
+      placeholder:
+        en_US: A number from 0 to 1, e.g. 0.5
+        zh_Hans: 0 到 1 之间的数字，例如 0.5
+    - variable: context_size
+      label:
+        en_US: Context window in tokens (use the smaller of the two models)
+        zh_Hans: 上下文窗口 token 数（填两个模型中较小的那个）
+      type: text-input
+      required: false
+      default: "128000"
+    - variable: max_tokens_to_sample
+      label:
+        en_US: Largest allowed value for the Max Tokens setting
+        zh_Hans: 「最大 token 数」参数允许设置的最大值
+      type: text-input
+      required: false
+      default: "8192"
+extra:
+  python:
+    provider_source: provider/nvidia_nemo_switchyard.py
+    model_sources:
+      - models/llm/llm.py
