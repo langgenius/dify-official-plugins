@@ -5,7 +5,7 @@ Configure both tiers through environment variables, for any compatible endpoint:
     SWITCHYARD_{CAPABLE,EFFICIENT}_ENDPOINT_URL   base URL ending in /v1
     SWITCHYARD_{CAPABLE,EFFICIENT}_API_KEY        optional
     SWITCHYARD_{CAPABLE,EFFICIENT}_MODEL
-    SWITCHYARD_{CAPABLE,EFFICIENT}_API_FORMAT     chat_completions (default) or responses
+    SWITCHYARD_{CAPABLE,EFFICIENT}_API_FORMAT     responses (default) or chat_completions
 """
 
 import os
@@ -48,7 +48,7 @@ def _credentials() -> dict:
             f"{tier}_endpoint_url": os.environ.get(prefix + "ENDPOINT_URL", ""),
             f"{tier}_api_key": os.environ.get(prefix + "API_KEY", ""),
             f"{tier}_model": os.environ.get(prefix + "MODEL", ""),
-            f"{tier}_api_format": os.environ.get(prefix + "API_FORMAT", "chat_completions"),
+            f"{tier}_api_format": os.environ.get(prefix + "API_FORMAT", "responses"),
         }
     return credentials
 

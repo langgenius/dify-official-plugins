@@ -81,7 +81,7 @@ def _upstreams(credentials: Mapping) -> dict[str, Upstream]:
             endpoint_url=credentials[f"{tier}_endpoint_url"].rstrip("/"),
             api_key=credentials.get(f"{tier}_api_key") or "",
             model=credentials[f"{tier}_model"],
-            api_format=credentials.get(f"{tier}_api_format") or "chat_completions",
+            api_format=credentials.get(f"{tier}_api_format") or "responses",
         )
         for tier in TIERS
     }

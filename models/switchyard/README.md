@@ -29,15 +29,15 @@ these APIs:
 
 | API format | Endpoint called |
 | --- | --- |
+| `responses` (default) | `{base_url}/responses` |
 | `chat_completions` | `{base_url}/chat/completions` |
-| `responses` | `{base_url}/responses` |
 
 | Field | Meaning |
 | --- | --- |
 | Capable / Efficient base URL | Base URL ending in `/v1` |
 | Capable / Efficient API key | Sent as `Authorization: Bearer <key>`. Leave empty if not needed. |
 | Capable / Efficient model name | Model ID sent to that upstream |
-| Capable / Efficient API format | `chat_completions` or `responses` |
+| Capable / Efficient API format | `responses` (default) or `chat_completions`. Use `chat_completions` for servers without the Responses API. |
 | Default tier | `efficient_first` (recommended) or `capable_first` (experimental) |
 | Confidence threshold | 0 to 1, default 0.5 |
 | Context size | Use the smaller context window of the two models |

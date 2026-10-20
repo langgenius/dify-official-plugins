@@ -59,14 +59,14 @@ model_credential_schema:
         zh_Hans: 强模型 API 格式
       type: select
       required: true
-      default: chat_completions
+      default: responses
       options:
-        - value: chat_completions
-          label:
-            en_US: Chat Completions (/chat/completions)
         - value: responses
           label:
             en_US: Responses (/responses)
+        - value: chat_completions
+          label:
+            en_US: Chat Completions (/chat/completions)
     # Efficient tier
     - variable: efficient_endpoint_url
       label:
@@ -98,14 +98,14 @@ model_credential_schema:
         zh_Hans: 便宜模型 API 格式
       type: select
       required: true
-      default: chat_completions
+      default: responses
       options:
-        - value: chat_completions
-          label:
-            en_US: Chat Completions (/chat/completions)
         - value: responses
           label:
             en_US: Responses (/responses)
+        - value: chat_completions
+          label:
+            en_US: Chat Completions (/chat/completions)
     # Routing
     - variable: picker
       label:
