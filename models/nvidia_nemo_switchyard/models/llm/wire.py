@@ -214,7 +214,13 @@ def responses_body(
     ir: dict, model: str, tools: list[PromptMessageTool] | None, params: dict
 ) -> dict:
     """Responses body from the IR. The Responses API has no `stop` parameter."""
-    items: list[dict] = []
+    # Instructions go into `input` as role messages, not the `instructions` field: a prompt
+    # with only a system message would otherwise send an empty `input`, which is rejected.
+    items: list[dict] = [
+        {"role": block["role"], "content": text}
+        for block in ir.get("instructions", [])
+        if (text := _block_text(block["content"]))
+    ]
     for message in ir["messages"]:
         for b in message["content"]:
             if b["type"] == "text":
@@ -237,9 +243,9 @@ def responses_body(
                     }
                 )
 
-    body: dict = {"model": model, "input": items}
-    if instructions := _instructions(ir):
-        body["instructions"] = instructions
+    # Without a summary request, reasoning models stream no reasoning text at all.
+    # Models that do not reason accept the field and ignore it.
+    body: dict = {"model": model, "input": items, "reasoning": {"summary": "auto"}}
     if tools:
         body["tools"] = [
             {
@@ -315,7 +321,10 @@ def _sse(response: httpx.Response) -> Iterator[dict]:
         if data == "[DONE]":
             return
         if data:
-            yield json.loads(data)
+            try:
+                yield json.loads(data)
+            except json.JSONDecodeError as e:
+                raise UpstreamServerError(f"invalid stream event: {data[:200]}") from e
 
 
 def _chat_deltas(events: Iterator[dict]) -> Iterator[Delta]:
@@ -328,7 +337,7 @@ def _chat_deltas(events: Iterator[dict]) -> Iterator[Delta]:
             yield Delta(usage=(usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)))
         for choice in chunk.get("choices") or []:
             delta = choice.get("delta") or {}
-            text = delta.get("content") or ""
+            text = (delta.get("content") or "") + (delta.get("refusal") or "")
             reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
             if text or reasoning:
                 yield Delta(text=text, reasoning=reasoning)
@@ -339,31 +348,42 @@ def _chat_deltas(events: Iterator[dict]) -> Iterator[Delta]:
                 call.name = function.get("name") or call.name
                 call.arguments += function.get("arguments") or ""
             finish_reason = choice.get("finish_reason") or finish_reason
-    if calls:
+    if finish_reason is None:
+        raise UpstreamServerError("stream ended without a finish_reason")
+    # Truncated output can cut tool-call arguments short, so never publish those calls.
+    # Other reasons keep them: some compatible servers report `stop` for tool calls.
+    if calls and finish_reason != "length":
         yield Delta(tool_calls=[calls[i] for i in sorted(calls)])
-    yield Delta(finish_reason=finish_reason or "stop")
+    yield Delta(finish_reason=finish_reason)
 
 
 def _responses_deltas(events: Iterator[dict]) -> Iterator[Delta]:
     calls: list[ToolCall] = []
-    finish_reason = "stop"
+    terminal = None
     for event in events:
         kind = event.get("type")
-        if kind == "response.output_text.delta":
+        if kind in ("response.output_text.delta", "response.refusal.delta"):
             yield Delta(text=event["delta"])
         elif kind == "response.reasoning_summary_text.delta":
             yield Delta(reasoning=event["delta"])
+        elif kind == "response.reasoning_summary_part.added" and event.get("summary_index", 0) > 0:
+            yield Delta(reasoning="\n\n")
         elif kind == "response.output_item.done" and event["item"]["type"] == "function_call":
             item = event["item"]
             calls.append(ToolCall(item["call_id"], item["name"], item["arguments"]))
         elif kind in ("response.completed", "response.incomplete"):
-            if kind == "response.incomplete":
-                finish_reason = "length"
+            terminal = kind
             if usage := event["response"].get("usage"):
                 yield Delta(usage=(usage.get("input_tokens", 0), usage.get("output_tokens", 0)))
         elif kind in ("response.failed", "error"):
             raise UpstreamServerError(f"upstream {kind}: {json.dumps(event)[:500]}")
-    if calls:
+    if terminal is None:
+        raise UpstreamServerError("stream ended before the response completed")
+    if terminal == "response.incomplete":
+        # Calls from a cut-off response may be incomplete, so they are not published.
+        yield Delta(finish_reason="length")
+    elif calls:
         yield Delta(tool_calls=calls)
-        finish_reason = "tool_calls"
-    yield Delta(finish_reason=finish_reason)
+        yield Delta(finish_reason="tool_calls")
+    else:
+        yield Delta(finish_reason="stop")

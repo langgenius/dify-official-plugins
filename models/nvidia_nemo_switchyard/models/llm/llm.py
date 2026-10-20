@@ -2,6 +2,8 @@
 
 import asyncio
 import hashlib
+import itertools
+import json
 import logging
 import threading
 from collections.abc import Generator, Iterator, Mapping
@@ -24,6 +26,7 @@ from dify_plugin.entities.model.llm import LLMMode, LLMResultChunk, LLMResultChu
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageTool,
     UserPromptMessage,
 )
@@ -100,6 +103,20 @@ def _session_id(user: str | None, ir: dict) -> str | None:
     return hashlib.sha256(f"{user}\0{first['content']}".encode()).hexdigest()[:32]
 
 
+def _read_to_first_output(deltas: Iterator[Delta]) -> Iterator[Delta]:
+    """Consume deltas up to the first text, reasoning, tool call, or finish, then replay them.
+
+    Errors raised while reading propagate to the caller. A generator that raises is finished,
+    so its upstream connection is already closed.
+    """
+    buffered: list[Delta] = []
+    for delta in deltas:
+        buffered.append(delta)
+        if delta.text or delta.reasoning or delta.tool_calls or delta.finish_reason:
+            break
+    return itertools.chain(buffered, deltas)
+
+
 async def _decide(algorithm: Algorithm, ir: dict, headers: dict | None) -> RoutingOutcome:
     async for step in algorithm.run_stream(ir, RUNTIME_MODELS, headers=headers):
         match step:
@@ -131,13 +148,16 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         evidence = outcome.metadata.evidence if outcome.metadata else None
         upstreams = _upstreams(credentials)
 
-        # Open the stream here, not in the generator, so failures before the first token can
-        # fall back to the next candidate and reach Dify as mapped invoke errors.
+        # Read each stream up to its first output here, not in the generator, so a failure
+        # before any output falls back to the next candidate and reaches Dify as a mapped
+        # invoke error. Once output has started there is no retry.
         error: Exception | None = None
         for tier in outcome.selected_model_ids:
             upstream = upstreams[tier]
             try:
-                deltas = open_stream(upstream, outcome.request, tools, model_parameters, stop)
+                deltas = _read_to_first_output(
+                    open_stream(upstream, outcome.request, tools, model_parameters, stop)
+                )
             except (UpstreamError, httpx.TransportError) as e:
                 logger.warning("switchyard: %s (%s) failed, trying next: %s", tier, upstream.model, e)
                 error = e
@@ -220,8 +240,16 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        text = "".join(m.content for m in prompt_messages if isinstance(m.content, str))
-        return self._get_num_tokens_by_gpt2(text)
+        parts: list[str] = []
+        for message in prompt_messages:
+            if isinstance(message.content, str):
+                parts.append(message.content)
+            elif message.content:
+                parts += [c.data for c in message.content if c.type == PromptMessageContentType.TEXT]
+            if isinstance(message, AssistantPromptMessage):
+                parts += [c.function.name + c.function.arguments for c in message.tool_calls]
+        parts += [json.dumps(t.model_dump(), ensure_ascii=False) for t in tools or []]
+        return self._get_num_tokens_by_gpt2("\n".join(parts))
 
     @override
     def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity:

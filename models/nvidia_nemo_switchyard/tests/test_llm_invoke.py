@@ -157,5 +157,7 @@ def test_validate_credentials_reports_the_failing_tier() -> None:
         config=IntegrationConfig(), plugin_package_path=PLUGIN_PATH
     ) as runner:
         assert [r.result for r in validate(CREDENTIALS)] == [True]
-        with pytest.raises(ValueError, match="efficient upstream"):
-            validate(CREDENTIALS | {"efficient_api_key": "invalid"})
+        # An endpoint without key authentication would accept an invalid key.
+        if CREDENTIALS["efficient_api_key"]:
+            with pytest.raises(ValueError, match="efficient upstream"):
+                validate(CREDENTIALS | {"efficient_api_key": "invalid"})
