@@ -20,6 +20,18 @@ parameter_rules:
     default: 8192
     min: 1
     max: 65536
+  - name: seed
+    type: int
+    required: false
+  - name: reasoning_effort
+    type: string
+    required: false
+    options:
+      - none
+      - low
+      - medium
+      - high
+      - xhigh
   - name: response_format
     label:
       en_US: Response Format

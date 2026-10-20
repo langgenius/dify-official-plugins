@@ -1,4 +1,5 @@
 import json
+import math
 import uuid
 from collections.abc import Generator
 
@@ -180,6 +181,22 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
     def _validate_and_filter_model_parameters(
         self, model: str, model_parameters: dict, credentials: dict
     ) -> dict:
+        rules = self.get_parameter_rules(model, credentials)
+        declared = {rule.name for rule in rules} | {
+            rule.use_template for rule in rules if rule.use_template
+        }
+        for name, value in model_parameters.items():
+            if name in declared and name in {
+                "temperature",
+                "top_p",
+                "presence_penalty",
+                "frequency_penalty",
+                "seed",
+            }:
+                if isinstance(value, bool) or (
+                    isinstance(value, float) and not math.isfinite(value)
+                ):
+                    raise ValueError(f"Invalid numeric parameter: {name}")
         filtered = super()._validate_and_filter_model_parameters(
             model, model_parameters, credentials
         )
