@@ -20,8 +20,8 @@
 - glm-5.3-flash
 - claude-fable-5-1
 - glm-5.3
-- mercury-2.5-preview
 - qwen3.8-max-2026-09-02
+- mercury-2.5-preview
 - hy4-preview
 - coding-glm-5.3
 - coding-glm-5.3-flash
@@ -86,7 +86,6 @@
 - ernie-5.0
 - kimi-k2.6
 - command-a-plus-05-2026
-- qwen3.6-max-preview
 - qwen3.6-27b
 - qwen3.6-35b-a3b
 - qwen3.6-flash
@@ -119,12 +118,10 @@
 - gpt-5.3-chat-latest
 - gpt-5.3-codex
 - claude-sonnet-4-6-think
-- coding-xiaomi-mimo-v2-omni
-- coding-xiaomi-mimo-v2-pro
+- gpt-5.4-pro
 - doubao-seed-2-0-pro
 - gpt-5.4-high
 - gpt-5.4-low
-- gpt-5.4-pro
 - qwen3-coder-next
 - coding-glm-5.1
 - claude-opus-4-6
@@ -138,8 +135,6 @@
 - claude-opus-4-6-think
 - claude-opus-4-5
 - claude-opus-4-5-think
-- mimo-v2-omni
-- mimo-v2-pro
 - cohere-command-a
 - coding-minimax-m3
 - coding-glm-5
@@ -166,7 +161,6 @@
 - grok-4-1-fast-non-reasoning
 - grok-4-1-fast-reasoning
 - grok-code-fast-1
-- mimo-v2-flash
 - gemini-2.5-flash-image
 - zai-glm-5-turbo
 - gpt-5
@@ -180,8 +174,6 @@
 - claude-opus-4-1
 - kimi-k2.5
 - qwen3-max-2026-01-23
-- qwen3-vl-flash
-- qwen3-vl-flash-2026-01-22
 - qwen3-vl-plus
 - cc-minimax-m2.7
 - cc-minimax-m2.7-highspeed
@@ -225,10 +217,6 @@
 - kimi-k2-instruct
 - kimi-k2-turbo-preview
 - DeepSeek-OCR
-- qwen3-vl-235b-a22b-instruct
-- qwen3-vl-235b-a22b-thinking
-- qwen3-vl-30b-a3b-instruct
-- qwen3-vl-30b-a3b-thinking
 - ernie-5.0-thinking-exp
 - gpt-4.1
 - gpt-4.1-mini
@@ -237,7 +225,6 @@
 - gemini-2.5-pro-preview-03-25
 - gemini-2.5-pro-preview-05-06-search
 - gemini-2.5-pro-preview-03-25-search
-- qwen3-max
 - ernie-5.0-thinking-preview
 - inclusionAI/Ling-1T
 - inclusionAI/Ring-1T
