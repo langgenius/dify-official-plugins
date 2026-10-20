@@ -242,19 +242,43 @@ class ArkClientV3:
         routing is effectively random and consecutive turns of one
         conversation rarely reuse the cached prefix. An explicit cache_key
         (from the model parameters) takes precedence; otherwise a fallback
-        key is derived from the first 500 chars of the leading system
-        message — enough to separate distinct prompts while usually staying
-        inside their stable head. The value is hashed together with the
-        endpoint id, so the key never exposes prompt content.
-        Returns None when no value can be derived, leaving request routing
-        unchanged.
+        key is derived per conversation from the leading non-system messages.
+
+        Granularity matters: Ark throttles each prompt_cache_key to ~15
+        requests/minute and falls back to random routing beyond that. A
+        per-agent key (e.g. hashed persona head) funnels every concurrent
+        user of a popular character onto one throttled key, so the affinity
+        collapses exactly where it pays off most. Anchoring on the first
+        user turn (+ first reply) instead gives one key per conversation:
+        stable across turns within the saw-tooth memory window (each window
+        reset costs a single cold turn), unique across conversations, and a
+        single conversation can never approach the per-key rate limit.
+        First-turn requests may collide on short openers, but a fresh
+        conversation has no cache to hit anyway. Falls back to the system
+        head only when no user/assistant text exists.
+
+        The value is hashed together with the endpoint id, so the key never
+        exposes prompt content. Returns None when no value can be derived,
+        leaving request routing unchanged.
         """
         value = cache_key
         if not value:
+            parts = []
             for message in messages:
-                if isinstance(message, SystemPromptMessage) and message.content:
-                    value = message.content[:500]
+                if isinstance(message, SystemPromptMessage) or not isinstance(
+                    message.content, str
+                ):
+                    continue
+                if message.content:
+                    parts.append(message.content[:250])
+                if len(parts) >= 2:
                     break
+            value = "\n".join(parts)
+            if not value:
+                for message in messages:
+                    if isinstance(message, SystemPromptMessage) and message.content:
+                        value = message.content[:500]
+                        break
         if not value:
             return None
         digest = hashlib.md5(f"{endpoint_id or ''}:{value}".encode("utf-8")).hexdigest()[:16]
