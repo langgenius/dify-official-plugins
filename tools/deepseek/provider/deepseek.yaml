@@ -1,0 +1,32 @@
+identity:
+  author: langgenius
+  name: deepseek
+  label:
+    en_US: DeepSeek
+    zh_Hans: 深度求索
+  description:
+    en_US: Official DeepSeek web search and page fetching APIs.
+    zh_Hans: DeepSeek 官方网页搜索与抓取 API。
+  icon: icon.svg
+  tags:
+    - search
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: DeepSeek API Key
+      zh_Hans: DeepSeek API Key
+    placeholder:
+      en_US: Enter your DeepSeek API key
+      zh_Hans: 输入 DeepSeek API Key
+    help:
+      en_US: Use the same API key as the official DeepSeek model API.
+      zh_Hans: 使用与 DeepSeek 官方模型 API 相同的 API Key。
+    url: https://platform.deepseek.com/api_keys
+tools:
+  - tools/search.yaml
+  - tools/fetch.yaml
+extra:
+  python:
+    source: provider/deepseek.py

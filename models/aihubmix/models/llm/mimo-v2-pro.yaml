@@ -8,7 +8,7 @@ features:
   - video
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -18,7 +18,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 4096
+    max: 131072
   - name: response_format
     label:
       zh_Hans: 回复格式

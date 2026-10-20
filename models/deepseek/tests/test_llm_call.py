@@ -37,7 +37,9 @@ def _llm() -> DeepseekLargeLanguageModel:
 
 def test_current_catalog_and_parameter_boundaries() -> None:
     directory = ROOT / "models" / "llm"
-    position = yaml.safe_load((directory / "_position.yaml").read_text())
+    position = yaml.safe_load(
+        (directory / "_position.yaml").read_text(encoding="utf-8")
+    )
 
     assert position == list(MODELS)
     assert {
@@ -45,19 +47,22 @@ def test_current_catalog_and_parameter_boundaries() -> None:
     } == set(position)
 
     for model in position:
-        schema = yaml.safe_load((directory / f"{model}.yaml").read_text())
-        entity = AIModelEntity.model_validate(schema)
-        rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
-        assert ("vision" in schema["features"]) == (
-            model in ("deepseek-flash", "deepseek-v4-flash-vision-exp")
+        schema = yaml.safe_load(
+            (directory / f"{model}.yaml").read_text(encoding="utf-8")
         )
-        assert schema["model_properties"]["context_size"] == 1_000_000
-        maximum = 393_216 if model == "deepseek-flash" else 384_000
+        entity = AIModelEntity.model_validate(schema)
+        assert entity.deprecated is False
+        rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+        if model == "deepseek-flash":
+            assert schema["label"] == {"zh_Hans": model, "en_US": model}
+        assert ("vision" in schema["features"]) == (model != "deepseek-v4-pro")
+        assert schema["model_properties"]["context_size"] == 1_048_576
+        maximum = 393_216
         assert rules["max_tokens"]["max"] == maximum
         assert rules["max_tokens"]["default"] == (
             65_536 if model == "deepseek-flash" else 4_096
         )
-        assert rules["top_p"]["min"] == (0.95 if model == "deepseek-flash" else 0.01)
+        assert rules["top_p"]["min"] == (0.95 if model != "deepseek-v4-pro" else 0.01)
         assert rules["top_p"]["max"] == 1
         assert rules["thinking"]["default"] is True
         assert rules["reasoning_effort"]["default"] == "high"
@@ -113,11 +118,11 @@ def test_thinking_parameters_are_normalized(
     }
     if enabled:
         expected["reasoning_effort"] = "low"
-        if model == "deepseek-flash":
+        if model != "deepseek-v4-pro":
             expected["top_p"] = top_p
     else:
         expected.update(unsupported)
-        if model != "deepseek-flash":
+        if model == "deepseek-v4-pro":
             expected["top_p"] = top_p
     assert parameters == expected
 
@@ -316,15 +321,19 @@ def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
 
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("thinking", [False, True])
-@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-flash-vision-exp"])
+@pytest.mark.parametrize(
+    "model", ["deepseek-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"]
+)
 def test_vision_images_reach_chat_completions(
     model: str, stream: bool, thinking: bool
 ) -> None:
     schema = AIModelEntity.model_validate(
-        yaml.safe_load((ROOT / "models" / "llm" / f"{model}.yaml").read_text())
+        yaml.safe_load(
+            (ROOT / "models" / "llm" / f"{model}.yaml").read_text(encoding="utf-8")
+        )
     )
     llm = DeepseekLargeLanguageModel(model_schemas=[schema])
-    top_p = 0.95 if model == "deepseek-flash" else 0.8
+    top_p = 0.95
     images = [
         ImagePromptMessageContent(
             format="png", mime_type="image/png", url="https://example.com/image.png"
@@ -416,7 +425,7 @@ def test_vision_images_reach_chat_completions(
     else:
         assert "reasoning_effort" not in payload
         assert payload["temperature"] == 0.7
-    if thinking == (model == "deepseek-flash"):
+    if thinking:
         assert payload["top_p"] == top_p
     else:
         assert "top_p" not in payload
@@ -462,7 +471,7 @@ def test_vision_images_reach_chat_completions(
     ]
 
 
-def test_provider_validation_keeps_existing_model_and_propagates_errors() -> None:
+def test_provider_validation_uses_stable_model_id_and_propagates_errors() -> None:
     provider = object.__new__(DeepSeekProvider)
     model_instance = MagicMock()
     error = CredentialsValidateFailedError("model not exist")
@@ -481,6 +490,6 @@ def test_provider_validation_keeps_existing_model_and_propagates_errors() -> Non
 
     assert raised.value is error
     model_instance.validate_credentials.assert_called_once_with(
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         credentials=credentials,
     )
