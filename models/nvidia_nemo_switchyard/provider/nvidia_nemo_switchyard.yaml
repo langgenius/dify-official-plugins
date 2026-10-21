@@ -76,6 +76,25 @@ model_credential_schema:
           label:
             en_US: Chat Completions API (/chat/completions, most widely supported)
             zh_Hans: Chat Completions API（/chat/completions，支持最广）
+    - variable: capable_reasoning_summary
+      label:
+        en_US: "High-performance model: reasoning summary"
+        zh_Hans: 高性能模型：推理摘要
+      type: select
+      required: false
+      default: "off"
+      show_on:
+        - variable: capable_api_format
+          value: responses
+      options:
+        - value: "off"
+          label:
+            en_US: "Off"
+            zh_Hans: 关闭
+        - value: auto
+          label:
+            en_US: On - show the reasoning summary (only for reasoning models that support it)
+            zh_Hans: 开启：显示推理摘要（仅支持的推理模型可用）
     # Efficient tier
     - variable: efficient_endpoint_url
       label:
@@ -120,6 +139,25 @@ model_credential_schema:
           label:
             en_US: Chat Completions API (/chat/completions, most widely supported)
             zh_Hans: Chat Completions API（/chat/completions，支持最广）
+    - variable: efficient_reasoning_summary
+      label:
+        en_US: "Economy model: reasoning summary"
+        zh_Hans: 经济模型：推理摘要
+      type: select
+      required: false
+      default: "off"
+      show_on:
+        - variable: efficient_api_format
+          value: responses
+      options:
+        - value: "off"
+          label:
+            en_US: "Off"
+            zh_Hans: 关闭
+        - value: auto
+          label:
+            en_US: On - show the reasoning summary (only for reasoning models that support it)
+            zh_Hans: 开启：显示推理摘要（仅支持的推理模型可用）
     # Routing
     - variable: picker
       label:

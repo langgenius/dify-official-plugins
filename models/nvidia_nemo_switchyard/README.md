@@ -38,6 +38,7 @@ these APIs:
 | Capable / Efficient API key | Sent as `Authorization: Bearer <key>`. Leave empty if not needed. |
 | Capable / Efficient model name | Model ID sent to that upstream |
 | Capable / Efficient API format | `responses` (default) or `chat_completions`. Use `chat_completions` for servers without the Responses API. |
+| Capable / Efficient reasoning summary | Responses API only. `off` (default) or `auto`. Turn it on only for reasoning models that support summaries; other models can reject the request. |
 | Default tier | `efficient_first` (recommended) or `capable_first` (experimental) |
 | Confidence threshold | 0 to 1, default 0.5 |
 | Context size | Use the smaller context window of the two models |
@@ -49,14 +50,19 @@ Saving the route sends a short request to both upstreams. An error names the tie
 - **Fallback:** if the selected upstream fails before it sends any output, the plugin tries the
   other tier.
 - **Which model answered:** the `model` field of each result chunk is the upstream model that
-  served it. Dify shows it in logs.
+  served it. Dify's run logs currently record the route name instead.
 - **Sessions:** Dify does not pass a conversation ID to model plugins. The plugin derives a
   session key from the end user and the first user message. The capable hold uses this key. Two
   conversations by one user that start with the same message share routing state.
 - **State is per plugin process.** Routing state lives in memory and is lost when the plugin
   restarts.
-- **Reasoning:** streamed reasoning is shown in `<think>` tags. On Chat Completions upstreams,
-  reasoning from earlier assistant tool-call turns is sent back as `reasoning_content`.
+- **Reasoning:** streamed reasoning is shown in `<think>` tags. Chat Completions upstreams stream
+  it when the model returns `reasoning_content`. Responses upstreams stream it only when the
+  tier's reasoning summary is on. On Chat Completions upstreams, reasoning from earlier
+  assistant tool-call turns is sent back as `reasoning_content`.
+- **Reasoning in workflows:** with the LLM node's default `tagged` reasoning format, the
+  `<think>` block stays in the node's text output. Set the node to `separated` to get clean text
+  plus a separate `reasoning_content` output.
 
 ### Limitations
 

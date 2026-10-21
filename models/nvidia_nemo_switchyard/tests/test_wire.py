@@ -74,7 +74,13 @@ def test_responses_body_uses_input_items():
         "strict": False,
     }
     assert body["max_output_tokens"] == 10
-    assert body["reasoning"] == {"summary": "auto"}
+    assert "reasoning" not in body
+
+
+def test_responses_body_requests_a_reasoning_summary_only_when_enabled():
+    ir = to_ir([UserPromptMessage(content="hi")])
+    assert responses_body(ir, "m", None, {}, "auto")["reasoning"] == {"summary": "auto"}
+    assert "reasoning" not in responses_body(ir, "m", None, {}, None)
 
 
 def test_responses_body_with_only_a_system_prompt_has_input():

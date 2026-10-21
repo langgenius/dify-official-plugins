@@ -85,6 +85,12 @@ def _upstreams(credentials: Mapping) -> dict[str, Upstream]:
             api_key=credentials.get(f"{tier}_api_key") or "",
             model=credentials[f"{tier}_model"],
             api_format=credentials.get(f"{tier}_api_format") or "responses",
+            # Opt-in: "off" or unset sends no `reasoning.summary`.
+            reasoning_summary=(
+                None
+                if credentials.get(f"{tier}_reasoning_summary") in (None, "", "off")
+                else credentials[f"{tier}_reasoning_summary"]
+            ),
         )
         for tier in TIERS
     }
@@ -128,6 +134,33 @@ async def _decide(algorithm: Algorithm, ir: dict, headers: dict | None) -> Routi
     raise LibsyError("algorithm ended without a routing outcome")
 
 
+# Routing is local computation that takes milliseconds. The timeout only stops one stuck call
+# from holding _routing_lock, and with it every other request, forever.
+ROUTING_TIMEOUT_SECONDS = 10
+
+# Serializes routing calls; see _route. Importing dify_plugin (above) monkey-patches threading,
+# so this is gevent's cooperative lock: a waiting greenlet yields to the others instead of
+# blocking the one OS thread that the lock holder needs to finish.
+_routing_lock = threading.Lock()
+
+
+def _route(algorithm: Algorithm, ir: dict, headers: dict | None) -> RoutingOutcome:
+    """Run one libsy routing call at a time.
+
+    The libsy Python binding is async-only, so each call needs asyncio.run(). The plugin
+    runtime serves requests as gevent greenlets on one OS thread, and asyncio keeps a single
+    "running loop" per OS thread. A greenlet waiting inside asyncio.run() yields to gevent with
+    its loop still registered. A concurrent asyncio.run() then fails with "cannot be called
+    from a running event loop", and libsy, which captures the running loop to deliver its
+    result, can hand that result to another greenlet's loop and leave a request waiting
+    forever. Holding the lock keeps at most one loop alive at a time.
+    """
+    with _routing_lock:
+        return asyncio.run(
+            asyncio.wait_for(_decide(algorithm, ir, headers), ROUTING_TIMEOUT_SECONDS)
+        )
+
+
 class SwitchyardLargeLanguageModel(LargeLanguageModel):
     @override
     def _invoke(
@@ -144,7 +177,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         ir = to_ir(prompt_messages)
         session = _session_id(user, ir)
         headers = {"x-switchyard-session-id": session} if session else None
-        outcome = asyncio.run(_decide(_algorithm(credentials), ir, headers))
+        outcome = _route(_algorithm(credentials), ir, headers)
         evidence = outcome.metadata.evidence if outcome.metadata else None
         upstreams = _upstreams(credentials)
 
@@ -305,7 +338,8 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         return {
             InvokeConnectionError: [httpx.TransportError],
-            InvokeServerUnavailableError: [UpstreamServerError],
+            # TimeoutError: a routing call exceeded ROUTING_TIMEOUT_SECONDS.
+            InvokeServerUnavailableError: [UpstreamServerError, TimeoutError],
             InvokeRateLimitError: [UpstreamRateLimitError],
             InvokeAuthorizationError: [UpstreamAuthError],
             InvokeBadRequestError: [UpstreamBadRequestError, LibsyError, ValueError],

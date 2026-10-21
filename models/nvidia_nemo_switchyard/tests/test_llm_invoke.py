@@ -6,6 +6,7 @@ Configure both tiers through environment variables, for any compatible endpoint:
     SWITCHYARD_{CAPABLE,EFFICIENT}_API_KEY        optional
     SWITCHYARD_{CAPABLE,EFFICIENT}_MODEL
     SWITCHYARD_{CAPABLE,EFFICIENT}_API_FORMAT     responses (default) or chat_completions
+    SWITCHYARD_{CAPABLE,EFFICIENT}_REASONING_SUMMARY  off (default) or auto, Responses API only
 """
 
 import os
@@ -49,6 +50,7 @@ def _credentials() -> dict:
             f"{tier}_api_key": os.environ.get(prefix + "API_KEY", ""),
             f"{tier}_model": os.environ.get(prefix + "MODEL", ""),
             f"{tier}_api_format": os.environ.get(prefix + "API_FORMAT", "responses"),
+            f"{tier}_reasoning_summary": os.environ.get(prefix + "REASONING_SUMMARY", "off"),
         }
     return credentials
 

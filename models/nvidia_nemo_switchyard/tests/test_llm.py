@@ -87,3 +87,27 @@ def test_num_tokens_counts_tool_calls_and_definitions():
     with_tools = model.get_num_tokens("auto", CREDENTIALS, PLAIN_CHAT, [tool])
     assert with_call > plain
     assert with_tools > plain
+
+
+def test_concurrent_routing_from_greenlets_does_not_collide():
+    # dify_plugin monkey-patches threading with gevent, so these threads are greenlets on one
+    # OS thread, as plugin requests are at runtime.
+    import threading
+
+    ir = llm.to_ir(PLAIN_CHAT)
+    algorithm = llm._algorithm({})
+    results, errors = [], []
+
+    def route():
+        try:
+            results.append(llm._route(algorithm, ir, None).selected_model_ids[0])
+        except RuntimeError as e:  # includes LibsyError and "running event loop" failures
+            errors.append(repr(e))
+
+    threads = [threading.Thread(target=route) for _ in range(16)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(10)
+    assert errors == []
+    assert results == ["efficient"] * 16

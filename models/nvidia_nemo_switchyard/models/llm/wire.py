@@ -64,6 +64,8 @@ class Upstream:
     api_key: str
     model: str
     api_format: ApiFormat
+    # Responses API only: the `reasoning.summary` level to request, or None to omit it.
+    reasoning_summary: str | None = None
 
 
 @dataclass
@@ -211,7 +213,11 @@ def chat_body(
 
 
 def responses_body(
-    ir: dict, model: str, tools: list[PromptMessageTool] | None, params: dict
+    ir: dict,
+    model: str,
+    tools: list[PromptMessageTool] | None,
+    params: dict,
+    reasoning_summary: str | None = None,
 ) -> dict:
     """Responses body from the IR. The Responses API has no `stop` parameter."""
     # Instructions go into `input` as role messages, not the `instructions` field: a prompt
@@ -243,9 +249,11 @@ def responses_body(
                     }
                 )
 
-    # Without a summary request, reasoning models stream no reasoning text at all.
-    # Models that do not reason accept the field and ignore it.
-    body: dict = {"model": model, "input": items, "reasoning": {"summary": "auto"}}
+    body: dict = {"model": model, "input": items}
+    # Reasoning models stream reasoning text only when a summary is requested, but models
+    # without reasoning summaries can reject the field, so it is sent only when enabled.
+    if reasoning_summary:
+        body["reasoning"] = {"summary": reasoning_summary}
     if tools:
         body["tools"] = [
             {
@@ -279,7 +287,7 @@ def open_stream(
     That lets the caller fall back to the next candidate before any output is produced.
     """
     if upstream.api_format == "responses":
-        body = responses_body(ir, upstream.model, tools, params)
+        body = responses_body(ir, upstream.model, tools, params, upstream.reasoning_summary)
         parse = _responses_deltas
     else:
         body = chat_body(ir, upstream.model, tools, params, stop)
