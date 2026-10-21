@@ -66,6 +66,9 @@ class Upstream:
     api_format: ApiFormat
     # Responses API only: the `reasoning.summary` level to request, or None to omit it.
     reasoning_summary: str | None = None
+    # Chat Completions only: the field that carries Max Tokens. Some reasoning models accept
+    # only `max_completion_tokens` and reject `max_tokens`.
+    token_param: str = "max_tokens"
 
 
 @dataclass
@@ -158,7 +161,12 @@ def _dump(arguments: Any) -> str:
 
 
 def chat_body(
-    ir: dict, model: str, tools: list[PromptMessageTool] | None, params: dict, stop: list[str] | None
+    ir: dict,
+    model: str,
+    tools: list[PromptMessageTool] | None,
+    params: dict,
+    stop: list[str] | None,
+    token_param: str = "max_tokens",
 ) -> dict:
     """Chat Completions body from the IR."""
     messages: list[dict] = []
@@ -204,9 +212,11 @@ def chat_body(
             }
             for t in tools
         ]
-    for name in ("temperature", "top_p", "max_tokens"):
+    for name in ("temperature", "top_p"):
         if name in params:
             body[name] = params[name]
+    if "max_tokens" in params:
+        body[token_param] = params["max_tokens"]
     if stop:
         body["stop"] = stop
     return body
@@ -290,7 +300,7 @@ def open_stream(
         body = responses_body(ir, upstream.model, tools, params, upstream.reasoning_summary)
         parse = _responses_deltas
     else:
-        body = chat_body(ir, upstream.model, tools, params, stop)
+        body = chat_body(ir, upstream.model, tools, params, stop, upstream.token_param)
         body["stream_options"] = {"include_usage": True}
         parse = _chat_deltas
     body["stream"] = True

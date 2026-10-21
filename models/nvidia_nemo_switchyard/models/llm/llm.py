@@ -91,6 +91,7 @@ def _upstreams(credentials: Mapping) -> dict[str, Upstream]:
                 if credentials.get(f"{tier}_reasoning_summary") in (None, "", "off")
                 else credentials[f"{tier}_reasoning_summary"]
             ),
+            token_param=credentials.get(f"{tier}_token_param") or "max_tokens",
         )
         for tier in TIERS
     }

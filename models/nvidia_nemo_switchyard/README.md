@@ -39,6 +39,7 @@ these APIs:
 | Capable / Efficient model name | Model ID sent to that upstream |
 | Capable / Efficient API format | `responses` (default) or `chat_completions`. Use `chat_completions` for servers without the Responses API. |
 | Capable / Efficient reasoning summary | Responses API only. `off` (default) or `auto`. Turn it on only for reasoning models that support summaries; other models can reject the request. |
+| Capable / Efficient Max Tokens field | Chat Completions only. `max_tokens` (default) or `max_completion_tokens` for reasoning models that reject `max_tokens`. Used for both saving and invoking. |
 | Default tier | `efficient_first` (recommended) or `capable_first` (experimental) |
 | Confidence threshold | 0 to 1, default 0.5 |
 | Context size | Use the smaller context window of the two models |

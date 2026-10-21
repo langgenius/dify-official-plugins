@@ -95,6 +95,25 @@ model_credential_schema:
           label:
             en_US: On - show the reasoning summary (only for reasoning models that support it)
             zh_Hans: 开启：显示推理摘要（仅支持的推理模型可用）
+    - variable: capable_token_param
+      label:
+        en_US: "High-performance model: Max Tokens field"
+        zh_Hans: 高性能模型：最大 token 参数名
+      type: select
+      required: false
+      default: max_tokens
+      show_on:
+        - variable: capable_api_format
+          value: chat_completions
+      options:
+        - value: max_tokens
+          label:
+            en_US: max_tokens (most servers)
+            zh_Hans: max_tokens（多数接口）
+        - value: max_completion_tokens
+          label:
+            en_US: max_completion_tokens (reasoning models that reject max_tokens)
+            zh_Hans: max_completion_tokens（拒绝 max_tokens 的推理模型）
     # Efficient tier
     - variable: efficient_endpoint_url
       label:
@@ -158,6 +177,25 @@ model_credential_schema:
           label:
             en_US: On - show the reasoning summary (only for reasoning models that support it)
             zh_Hans: 开启：显示推理摘要（仅支持的推理模型可用）
+    - variable: efficient_token_param
+      label:
+        en_US: "Economy model: Max Tokens field"
+        zh_Hans: 经济模型：最大 token 参数名
+      type: select
+      required: false
+      default: max_tokens
+      show_on:
+        - variable: efficient_api_format
+          value: chat_completions
+      options:
+        - value: max_tokens
+          label:
+            en_US: max_tokens (most servers)
+            zh_Hans: max_tokens（多数接口）
+        - value: max_completion_tokens
+          label:
+            en_US: max_completion_tokens (reasoning models that reject max_tokens)
+            zh_Hans: max_completion_tokens（拒绝 max_tokens 的推理模型）
     # Routing
     - variable: picker
       label:

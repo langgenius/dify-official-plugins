@@ -56,6 +56,14 @@ def test_chat_body_replays_reasoning_on_tool_call_turns():
     assert body["max_tokens"] == 10 and body["stop"] == ["STOP"]
 
 
+def test_chat_body_sends_max_tokens_in_the_configured_field():
+    ir = to_ir([UserPromptMessage(content="hi")])
+    assert chat_body(ir, "m", None, {"max_tokens": 16}, None)["max_tokens"] == 16
+    body = chat_body(ir, "m", None, {"max_tokens": 16}, None, "max_completion_tokens")
+    assert body["max_completion_tokens"] == 16
+    assert "max_tokens" not in body
+
+
 def test_responses_body_uses_input_items():
     body = responses_body(to_ir(MESSAGES), "m", [TOOL], {"max_tokens": 10})
     assert "instructions" not in body
