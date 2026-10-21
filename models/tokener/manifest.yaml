@@ -1,4 +1,4 @@
-version: 0.2.0
+version: 0.3.0
 type: plugin
 author: langgenius
 name: tokener
@@ -17,7 +17,7 @@ resource:
       llm: true
       text_embedding: true
       rerank: true
-      tts: false
+      tts: true
       speech2text: true
       moderation: false
 plugins:
