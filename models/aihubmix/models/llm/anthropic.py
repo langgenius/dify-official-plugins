@@ -153,6 +153,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-sonnet-5",
         "claude-fable-5",
+        "claude-haiku-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-fable-5",
@@ -166,9 +167,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
     )
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):

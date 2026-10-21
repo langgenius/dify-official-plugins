@@ -56,6 +56,10 @@ def _catalog() -> dict:
                 "id": "embedding-ignored",
                 "modelType": "text-embedding",
             },
+            {
+                "id": "rerank-ignored",
+                "modelType": "rerank",
+            },
         ],
     }
 

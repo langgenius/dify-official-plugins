@@ -24,12 +24,12 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         rf"<think>\n{re.escape(_THINK_MARKER)}(.*?)\n</think>",
         re.DOTALL | re.IGNORECASE,
     )
-    _THINKING_MODELS = (
+    _FLASH_MODELS = (
         "deepseek-flash",
         "deepseek-v4-flash",
         "deepseek-v4-flash-vision-exp",
-        "deepseek-v4-pro",
     )
+    _THINKING_MODELS = (*_FLASH_MODELS, "deepseek-v4-pro")
     _THINKING_UNSUPPORTED_PARAMETERS = (
         "temperature",
         "presence_penalty",
@@ -145,13 +145,13 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             return
         if thinking.get("type") == "disabled":
             model_parameters.pop("reasoning_effort", None)
-            if model == "deepseek-flash":
+            if model in cls._FLASH_MODELS:
                 model_parameters.pop("top_p", None)
             return
         if thinking.get("type") == "enabled":
             for parameter in cls._THINKING_UNSUPPORTED_PARAMETERS:
                 model_parameters.pop(parameter, None)
-            if model != "deepseek-flash":
+            if model not in cls._FLASH_MODELS:
                 model_parameters.pop("top_p", None)
 
     @staticmethod

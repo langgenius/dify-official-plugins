@@ -3,8 +3,8 @@ label:
   en_US: Tokener.ai
   zh_Hans: Tokener.ai
 description:
-  en_US: OpenAI-compatible language models from Tokener.ai.
-  zh_Hans: 使用 Tokener.ai 调用 OpenAI-compatible 语言模型。
+  en_US: Language, embedding, and rerank models from Tokener.ai.
+  zh_Hans: 使用 Tokener.ai 调用语言、文本嵌入和重排序模型。
 icon_small:
   en_US: tokener.svg
 icon_large:
@@ -18,6 +18,8 @@ help:
     en_US: https://console.tokener.dev/keys
 supported_model_types:
   - llm
+  - text-embedding
+  - rerank
 configurate_methods:
   - predefined-model
 provider_credential_schema:
@@ -32,6 +34,12 @@ provider_credential_schema:
         en_US: Enter your Tokener.ai API key
         zh_Hans: 输入 Tokener.ai API Key
 models:
+  text_embedding:
+    predefined:
+      - models/text_embedding/*.yaml
+  rerank:
+    predefined:
+      - models/rerank/*.yaml
   llm:
     position: models/llm/_position.yaml
     predefined:
@@ -41,3 +49,5 @@ extra:
     provider_source: provider/tokener.py
     model_sources:
       - models/llm/llm.py
+      - models/text_embedding/text_embedding.py
+      - models/rerank/rerank.py
