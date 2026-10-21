@@ -37,15 +37,27 @@ def _fails_after(deltas: list[Delta]) -> Iterator[Delta]:
     raise UpstreamServerError("stream broke")
 
 
-def _streams(monkeypatch: pytest.MonkeyPatch, by_model: dict) -> list[str]:
+def _streams(monkeypatch: pytest.MonkeyPatch, by_model: dict, modes: list | None = None) -> list[str]:
     opened: list[str] = []
 
-    def fake_open_stream(upstream, *args):
+    def fake_open_response(upstream, ir, tools, params, stop, stream=True):
         opened.append(upstream.model)
+        if modes is not None:
+            modes.append(stream)
         return by_model[upstream.model]()
 
-    monkeypatch.setattr(llm, "open_stream", fake_open_stream)
+    monkeypatch.setattr(llm, "open_response", fake_open_response)
     return opened
+
+
+@pytest.mark.parametrize("stream", [True, False])
+def test_stream_flag_reaches_the_upstream(monkeypatch: pytest.MonkeyPatch, stream: bool):
+    modes: list[bool] = []
+    ok = {"efficient-model": lambda: iter([Delta(text="ok"), Delta(finish_reason="stop")])}
+    _streams(monkeypatch, ok, modes)
+    chunks = list(_model()._invoke("auto", CREDENTIALS, PLAIN_CHAT, {}, stream=stream))
+    assert modes == [stream]
+    assert chunks[-1].delta.finish_reason == "stop"
 
 
 def test_stream_failing_before_output_falls_back(monkeypatch: pytest.MonkeyPatch):

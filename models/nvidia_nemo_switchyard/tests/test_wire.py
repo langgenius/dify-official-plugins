@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 from dify_plugin.entities.model.message import (
@@ -8,12 +10,17 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 
+from models.llm import wire
 from models.llm.wire import (
+    Upstream,
     UpstreamServerError,
     _chat_deltas,
+    _chat_events,
     _responses_deltas,
+    _responses_events,
     _sse,
     chat_body,
+    open_response,
     responses_body,
     to_ir,
 )
@@ -196,3 +203,83 @@ def test_sse_with_invalid_json_is_an_upstream_error():
     response = httpx.Response(200, content=b"data: {not json\n\n")
     with pytest.raises(UpstreamServerError):
         list(_sse(response))
+
+
+def test_chat_response_maps_to_the_same_deltas_as_a_stream():
+    response = {
+        "choices": [
+            {
+                "message": {
+                    "content": "running both",
+                    "reasoning_content": "hmm",
+                    "tool_calls": [
+                        {"id": "c1", "type": "function", "function": {"name": "bash", "arguments": "{}"}},
+                        {"id": "c2", "type": "function", "function": {"name": "cat", "arguments": "{}"}},
+                    ],
+                },
+                "finish_reason": "tool_calls",
+            }
+        ],
+        "usage": {"prompt_tokens": 5, "completion_tokens": 7},
+    }
+    deltas = list(_chat_deltas(_chat_events(response)))
+    assert deltas[0].usage == (5, 7)
+    assert (deltas[1].text, deltas[1].reasoning) == ("running both", "hmm")
+    assert [c.id for c in deltas[2].tool_calls] == ["c1", "c2"]
+    assert deltas[3].finish_reason == "tool_calls"
+
+
+def test_responses_response_maps_to_the_same_deltas_as_a_stream():
+    response = {
+        "status": "completed",
+        "output": [
+            {"type": "reasoning", "summary": [{"type": "summary_text", "text": "first"}, {"type": "summary_text", "text": "second"}]},
+            {"type": "message", "content": [{"type": "output_text", "text": "answer"}]},
+            {"type": "function_call", "call_id": "c1", "name": "bash", "arguments": "{}"},
+        ],
+        "usage": {"input_tokens": 3, "output_tokens": 4},
+    }
+    deltas = list(_responses_deltas(_responses_events(response)))
+    assert "".join(d.reasoning for d in deltas) == "first\n\nsecond"
+    assert "".join(d.text for d in deltas) == "answer"
+    assert (3, 4) in [d.usage for d in deltas]
+    assert deltas[-2].tool_calls[0].name == "bash"
+    assert deltas[-1].finish_reason == "tool_calls"
+
+
+def test_responses_response_incomplete_or_failed():
+    incomplete = list(_responses_deltas(_responses_events({"status": "incomplete", "output": []})))
+    assert incomplete[-1].finish_reason == "length"
+    with pytest.raises(UpstreamServerError):
+        list(_responses_deltas(_responses_events({"status": "failed", "error": {"message": "x"}})))
+
+
+def _mock_upstream(monkeypatch: pytest.MonkeyPatch, handler) -> None:
+    client = httpx.Client
+    monkeypatch.setattr(
+        wire.httpx, "Client", lambda **kwargs: client(transport=httpx.MockTransport(handler), **kwargs)
+    )
+
+
+def test_open_response_without_stream_sends_a_plain_request(monkeypatch: pytest.MonkeyPatch):
+    sent: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content))
+        message = {"role": "assistant", "content": "hi"}
+        return httpx.Response(200, json={"choices": [{"message": message, "finish_reason": "stop"}]})
+
+    _mock_upstream(monkeypatch, handler)
+    upstream = Upstream("https://u.example/v1", "", "m", "chat_completions")
+    deltas = list(open_response(upstream, to_ir([UserPromptMessage(content="hi")]), None, {}, None, stream=False))
+    assert sent[0]["stream"] is False and "stream_options" not in sent[0]
+    assert [d.text for d in deltas if d.text] == ["hi"]
+    assert deltas[-1].finish_reason == "stop"
+
+
+def test_open_response_without_stream_raises_before_returning(monkeypatch: pytest.MonkeyPatch):
+    # A response cut short is an error the caller can still fall back from.
+    _mock_upstream(monkeypatch, lambda request: httpx.Response(200, json={"choices": []}))
+    upstream = Upstream("https://u.example/v1", "", "m", "chat_completions")
+    with pytest.raises(UpstreamServerError):
+        open_response(upstream, to_ir([UserPromptMessage(content="hi")]), None, {}, None, stream=False)

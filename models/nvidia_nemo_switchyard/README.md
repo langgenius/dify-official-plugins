@@ -50,6 +50,9 @@ Saving the route sends a short request to both upstreams. An error names the tie
 
 - **Fallback:** if the selected upstream fails before it sends any output, the plugin tries the
   other tier.
+- **Streaming:** Dify's `stream` flag is passed to the upstream. A non-streaming call reads the
+  whole upstream response before returning, so any upstream failure falls back. Saving a route
+  always checks both upstreams with a streaming request.
 - **Which model answered:** the `model` field of each result chunk is the upstream model that
   served it. Dify's run logs currently record the route name instead.
 - **Sessions:** Dify does not pass a conversation ID to model plugins. The plugin derives a

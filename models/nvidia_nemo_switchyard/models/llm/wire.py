@@ -1,4 +1,4 @@
-"""Wire conversion: Dify prompt messages -> Switchyard IR -> Chat Completions / Responses streams."""
+"""Wire conversion: Dify prompt messages -> Switchyard IR -> Chat Completions / Responses calls."""
 
 import json
 import re
@@ -284,28 +284,35 @@ def responses_body(
     return body
 
 
-def open_stream(
+def open_response(
     upstream: Upstream,
     ir: dict,
     tools: list[PromptMessageTool] | None,
     params: dict,
     stop: list[str] | None,
+    stream: bool = True,
 ) -> Iterator[Delta]:
-    """Send the request and return its normalized stream.
+    """Send the request and return its normalized deltas.
 
     The HTTP request is made before this returns, so connection and HTTP errors raise here.
     That lets the caller fall back to the next candidate before any output is produced.
+    Without `stream`, the whole response is read and parsed here, so every upstream failure
+    raises before this returns.
     """
     if upstream.api_format == "responses":
         body = responses_body(ir, upstream.model, tools, params, upstream.reasoning_summary)
-        parse = _responses_deltas
+        parse, events = _responses_deltas, _responses_events
     else:
         body = chat_body(ir, upstream.model, tools, params, stop, upstream.token_param)
-        body["stream_options"] = {"include_usage": True}
-        parse = _chat_deltas
-    body["stream"] = True
+        if stream:
+            body["stream_options"] = {"include_usage": True}
+        parse, events = _chat_deltas, _chat_events
+    body["stream"] = stream
 
-    headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream" if stream else "application/json",
+    }
     if upstream.api_key:
         headers["Authorization"] = f"Bearer {upstream.api_key}"
     client = httpx.Client(timeout=httpx.Timeout(300, connect=10))
@@ -313,14 +320,18 @@ def open_stream(
         request = client.build_request(
             "POST", upstream.endpoint_url + PATHS[upstream.api_format], json=body, headers=headers
         )
-        response = client.send(request, stream=True)
+        response = client.send(request, stream=stream)
         if response.status_code >= 400:
             detail = response.read().decode(errors="replace")[:500]
             raise _http_error(response.status_code, detail)
+        if stream:
+            return _closing(parse(_sse(response)), client)
+        deltas = list(parse(events(_json(response))))
     except BaseException:
         client.close()
         raise
-    return _closing(parse(_sse(response)), client)
+    client.close()
+    return iter(deltas)
 
 
 def _closing(deltas: Iterator[Delta], client: httpx.Client) -> Iterator[Delta]:
@@ -343,6 +354,46 @@ def _sse(response: httpx.Response) -> Iterator[dict]:
                 yield json.loads(data)
             except json.JSONDecodeError as e:
                 raise UpstreamServerError(f"invalid stream event: {data[:200]}") from e
+
+
+def _json(response: httpx.Response) -> dict:
+    try:
+        return response.json()
+    except json.JSONDecodeError as e:
+        raise UpstreamServerError(f"invalid response body: {response.text[:200]}") from e
+
+
+def _chat_events(response: dict) -> Iterator[dict]:
+    """A non-streaming Chat Completions response as the stream event with the same content."""
+    choices = []
+    for choice in response.get("choices") or []:
+        message = choice.get("message") or {}
+        # Stream fragments carry an index; complete tool calls are listed in order instead.
+        calls = [{**call, "index": i} for i, call in enumerate(message.get("tool_calls") or [])]
+        choices.append({"delta": {**message, "tool_calls": calls}, "finish_reason": choice.get("finish_reason")})
+    yield {**response, "choices": choices}
+
+
+def _responses_events(response: dict) -> Iterator[dict]:
+    """A non-streaming Responses API response as the stream events with the same content."""
+    for item in response.get("output") or []:
+        kind = item.get("type")
+        if kind == "reasoning":
+            for i, part in enumerate(item.get("summary") or []):
+                yield {"type": "response.reasoning_summary_part.added", "summary_index": i}
+                yield {"type": "response.reasoning_summary_text.delta", "delta": part.get("text", "")}
+        elif kind == "message":
+            for part in item.get("content") or []:
+                if part.get("type") == "output_text":
+                    yield {"type": "response.output_text.delta", "delta": part.get("text", "")}
+                elif part.get("type") == "refusal":
+                    yield {"type": "response.refusal.delta", "delta": part.get("refusal", "")}
+        elif kind == "function_call":
+            yield {"type": "response.output_item.done", "item": item}
+    # Some compatible servers omit `status` on completed responses.
+    status = "failed" if response.get("error") else response.get("status") or "completed"
+    if status in ("completed", "incomplete", "failed"):
+        yield {"type": f"response.{status}", "response": response}
 
 
 def _chat_deltas(events: Iterator[dict]) -> Iterator[Delta]:

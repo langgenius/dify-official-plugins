@@ -49,7 +49,7 @@ from .wire import (
     UpstreamError,
     UpstreamRateLimitError,
     UpstreamServerError,
-    open_stream,
+    open_response,
     to_ir,
 )
 
@@ -184,13 +184,14 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
 
         # Read each stream up to its first output here, not in the generator, so a failure
         # before any output falls back to the next candidate and reaches Dify as a mapped
-        # invoke error. Once output has started there is no retry.
+        # invoke error. Once output has started there is no retry. A non-streaming call reads
+        # the whole response here, so any failure falls back.
         error: Exception | None = None
         for tier in outcome.selected_model_ids:
             upstream = upstreams[tier]
             try:
                 deltas = _read_to_first_output(
-                    open_stream(upstream, outcome.request, tools, model_parameters, stop)
+                    open_response(upstream, outcome.request, tools, model_parameters, stop, stream)
                 )
             except (UpstreamError, httpx.TransportError) as e:
                 logger.warning("switchyard: %s (%s) failed, trying next: %s", tier, upstream.model, e)
@@ -259,7 +260,7 @@ class SwitchyardLargeLanguageModel(LargeLanguageModel):
         ir = to_ir([UserPromptMessage(content="ping")])
         for tier, upstream in _upstreams(credentials).items():
             try:
-                for _ in open_stream(upstream, ir, None, {"max_tokens": 16}, None):
+                for _ in open_response(upstream, ir, None, {"max_tokens": 16}, None):
                     pass
             except Exception as e:
                 raise CredentialsValidateFailedError(
