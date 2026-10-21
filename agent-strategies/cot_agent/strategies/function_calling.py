@@ -31,6 +31,7 @@ from dify_plugin.interfaces.agent import (
     ToolEntity,
     ToolInvokeMeta,
 )
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 from pydantic import BaseModel, field_validator
 
 from strategies.tool_allowlist import coerce_allowed_tools, filter_allowed_tools
@@ -259,16 +260,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             yield round_log
 
-            # Check capacity without changing the configured output budget.
             prompt_messages = self._organize_prompt_messages(
                 history_prompt_messages=history_prompt_messages,
                 current_thoughts=current_thoughts,
                 model=model,
             )
-            if model.entity:
-                self.recalc_llm_max_tokens(
-                    model.entity, prompt_messages, model.completion_params
-                )
             # invoke model
             model_started_at = time.perf_counter()
             model_log = self.create_log_message(
@@ -297,7 +293,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             # save full response
             response = ""
-            opaque_body = None
+            result = LLMResult(
+                model=model.model,
+                message=AssistantPromptMessage(content=""),
+                usage=LLMUsage.empty_usage(),
+            )
             thinking_started = False
 
             # save tool call names and inputs
@@ -307,8 +307,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             if isinstance(chunks, Generator):
                 for chunk in chunks:
-                    if chunk.delta.message.opaque_body is not None:
-                        opaque_body = chunk.delta.message.opaque_body
+                    merge_llm_result_chunk(result, chunk)
                     # check if there is any tool call
                     if self.check_tool_calls(chunk):
                         function_call_state = True
@@ -317,35 +316,18 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             [tool_call[1] for tool_call in tool_calls]
                         )
 
-                    if chunk.delta.message and chunk.delta.message.content:
-                        if isinstance(chunk.delta.message.content, list):
-                            for content in chunk.delta.message.content:
-                                response += content.data
-                                should_stream, thinking_started = (
-                                    self._get_streaming_content_state(
-                                        content=content.data,
-                                        function_call_state=function_call_state,
-                                        thinking_started=thinking_started,
-                                        iteration_step=iteration_step,
-                                        max_iteration_steps=max_iteration_steps,
-                                    )
-                                )
-                                if should_stream:
-                                    yield self.create_text_message(content.data)
-                        else:
-                            response_content = str(chunk.delta.message.content)
-                            response += response_content
-                            should_stream, thinking_started = (
-                                self._get_streaming_content_state(
-                                    content=response_content,
-                                    function_call_state=function_call_state,
-                                    thinking_started=thinking_started,
-                                    iteration_step=iteration_step,
-                                    max_iteration_steps=max_iteration_steps,
-                                )
-                            )
-                            if should_stream:
-                                yield self.create_text_message(response_content)
+                    response_content = chunk.delta.message.get_text_content()
+                    if response_content:
+                        response += response_content
+                        should_stream, thinking_started = self._get_streaming_content_state(
+                            content=response_content,
+                            function_call_state=function_call_state,
+                            thinking_started=thinking_started,
+                            iteration_step=iteration_step,
+                            max_iteration_steps=max_iteration_steps,
+                        )
+                        if should_stream:
+                            yield self.create_text_message(response_content)
 
                     if chunk.delta.usage:
                         self.increase_usage(llm_usage, chunk.delta.usage)
@@ -354,7 +336,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             else:
                 result = chunks
                 result = cast(LLMResult, result)
-                opaque_body = result.message.opaque_body
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
@@ -367,20 +348,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     self.increase_usage(llm_usage, result.usage)
                     current_llm_usage = result.usage
 
-                if result.message and result.message.content:
-                    if isinstance(result.message.content, list):
-                        for content in result.message.content:
-                            response += content.data
-                    else:
-                        response += str(result.message.content)
-
-                if not result.message.content:
-                    result.message.content = ""
-                if isinstance(result.message.content, str):
-                    yield self.create_text_message(result.message.content)
-                elif isinstance(result.message.content, list):
-                    for content in result.message.content:
-                        yield self.create_text_message(content.data)
+                response = result.message.get_text_content()
+                if response:
+                    yield self.create_text_message(response)
 
             yield self.finish_log_message(
                 log=model_log,
@@ -410,8 +380,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
 
             # If there are tool calls, merge all tool calls into a single assistant message
+            assistant_message = result.message.model_copy(deep=True)
             if tool_calls:
-                tool_call_objects = [
+                assistant_message.tool_calls = [
                     AssistantPromptMessage.ToolCall(
                         id=tool_call_id,
                         type="function",
@@ -424,17 +395,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     )
                     for tool_call_id, tool_call_name, tool_call_args in tool_calls
                 ]
-                assistant_message = AssistantPromptMessage(
-                    content=response,  # Preserve LLM returned content, even if empty
-                    tool_calls=tool_call_objects,
-                    opaque_body=opaque_body,
-                )
-                current_thoughts.append(assistant_message)
-            elif response.strip():
-                # If no tool calls but has response, add a regular assistant message
-                assistant_message = AssistantPromptMessage(
-                    content=response, tool_calls=[], opaque_body=opaque_body
-                )
+            if not assistant_message.is_empty():
                 current_thoughts.append(assistant_message)
 
             final_answer += response + "\n"
@@ -486,24 +447,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         },
                     )
 
-                    # Add to current_thoughts for context
-                    current_thoughts.append(
-                        AssistantPromptMessage(
-                            content="",
-                            tool_calls=[
-                                AssistantPromptMessage.ToolCall(
-                                    id=tool_call_id,
-                                    type="function",
-                                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                        name=tool_call_name,
-                                        arguments=json.dumps(
-                                            tool_call_args, ensure_ascii=False
-                                        ),
-                                    ),
-                                )
-                            ],
-                        )
-                    )
                     current_thoughts.append(
                         ToolPromptMessage(
                             content=tool_response["tool_response"],
@@ -748,7 +691,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         metadata = ExecutionMetadata.from_llm_usage(llm_usage["usage"])
         yield self.create_json_message(
             {
-                "execution_metadata": metadata.model_dump()
+                "execution_metadata": metadata.model_dump(),
+                "model_history": {
+                    "provider": fc_params.model.provider,
+                    "model": fc_params.model.model,
+                    "messages": [message.model_dump(mode="json") for message in [
+                        history_prompt_messages[-1], *current_thoughts
+                    ]],
+                },
             }
         )
 

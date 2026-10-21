@@ -23,7 +23,7 @@ from strategies.ReAct import ReActAgentStrategy
 
 @pytest.mark.parametrize("mode", ["blocking", "streaming", "react"])
 @pytest.mark.parametrize("use_defaults", [False, True])
-def test_large_tool_result_stops_before_changing_output_budget(mode, use_defaults):
+def test_provider_checks_context_without_changing_output_budget(mode, use_defaults):
     completion_params = (
         {}
         if use_defaults
@@ -113,7 +113,14 @@ def test_large_tool_result_stops_before_changing_output_budget(mode, use_default
     )
     strategy = strategy_class(runtime=Mock(), session=session)
 
-    with pytest.raises(InvokeBadRequestError, match="context window exhausted"):
+    first_reply = session.model.llm.invoke.side_effect
+    first_reply = next(first_reply)
+    session.model.llm.invoke.side_effect = [
+        first_reply,
+        InvokeBadRequestError("provider context window exhausted"),
+    ]
+
+    with pytest.raises(InvokeBadRequestError, match="provider context window exhausted"):
         list(
             strategy._invoke(
                 {
@@ -127,9 +134,7 @@ def test_large_tool_result_stops_before_changing_output_budget(mode, use_default
         )
 
     session.tool.invoke.assert_called_once()
-    session.model.llm.invoke.assert_called_once()
+    assert session.model.llm.invoke.call_count == 2
     assert model.completion_params == completion_params
-    assert (
-        session.model.llm.invoke.call_args.kwargs["model_config"].completion_params
-        == completion_params
-    )
+    for call in session.model.llm.invoke.call_args_list:
+        assert call.kwargs["model_config"].completion_params == completion_params

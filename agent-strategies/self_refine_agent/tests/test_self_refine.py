@@ -36,9 +36,7 @@ from strategies.self_refine import SelfRefineParams, SelfRefineStrategy
 
 
 def _list_content_message(text: str) -> AssistantPromptMessage:
-    return AssistantPromptMessage(
-        content=[TextPromptMessageContent(data=text)]
-    )
+    return AssistantPromptMessage(content=[TextPromptMessageContent(data=text)])
 
 
 def _tool_entity() -> ToolEntity:
@@ -263,16 +261,20 @@ class TestSelfRefineTools(unittest.TestCase):
     def test_execute_tools_invokes_with_provider_type_and_credential(self):
         tool = _tool_entity()
         self.strategy.session.tool.invoke = Mock(
-            return_value=iter([
-                ToolInvokeMessage(
-                    type=ToolInvokeMessage.MessageType.TEXT,
-                    message=ToolInvokeMessage.TextMessage(text="42"),
-                ),
-                ToolInvokeMessage(
-                    type=ToolInvokeMessage.MessageType.JSON,
-                    message=ToolInvokeMessage.JsonMessage(json_object={"answer": 42}),
-                ),
-            ])
+            return_value=iter(
+                [
+                    ToolInvokeMessage(
+                        type=ToolInvokeMessage.MessageType.TEXT,
+                        message=ToolInvokeMessage.TextMessage(text="42"),
+                    ),
+                    ToolInvokeMessage(
+                        type=ToolInvokeMessage.MessageType.JSON,
+                        message=ToolInvokeMessage.JsonMessage(
+                            json_object={"answer": 42}
+                        ),
+                    ),
+                ]
+            )
         )
 
         results = self._drain(
@@ -364,3 +366,56 @@ class TestSelfRefineTools(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_refinement_tool_round_and_saved_history_preserve_model_state():
+    from copy import deepcopy
+
+    strategy = SelfRefineStrategy(runtime=Mock(), session=Mock())
+    model = AgentModelConfig(provider="anthropic", model="claude", mode="chat")
+    reply = _tool_call_result()
+    reply.message.content = [
+        TextPromptMessageContent(data="checking", opaque_body={"signature": "signed"}),
+        TextPromptMessageContent(data="", opaque_body=0),
+    ]
+    reply.message.opaque_body = False
+    final = LLMResult(
+        model=model.model,
+        message=AssistantPromptMessage(
+            content="done", opaque_body={"id": 9007199254740993}
+        ),
+        usage=LLMUsage.empty_usage(),
+    )
+    requests = []
+
+    def invoke(**kwargs):
+        requests.append(deepcopy(kwargs["prompt_messages"]))
+        return reply if len(requests) == 1 else final
+
+    strategy.session.model.llm.invoke.side_effect = invoke
+    strategy.session.tool.invoke.return_value = iter([_text_tool_message("42")])
+    output = list(
+        strategy._invoke(
+            {
+                "query": "hello",
+                "instruction": "answer",
+                "model": model,
+                "tools": [_tool_entity()],
+                "maximum_iterations": 2,
+                "max_refinements": 0,
+            }
+        )
+    )
+    assert requests[1][-2] == reply.message
+    assert requests[1][-1] == ToolPromptMessage(
+        content="42", tool_call_id="call-1", name="search"
+    )
+    saved = output[-1].message.json_object["model_history"]
+    restored = AgentModelConfig.model_validate(
+        {**model.model_dump(mode="json"), "history_prompt_messages": saved["messages"]}
+    )
+    assert restored.history_prompt_messages[1:] == [
+        reply.message,
+        requests[1][-1],
+        final.message,
+    ]

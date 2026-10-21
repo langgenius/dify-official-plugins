@@ -5,7 +5,7 @@ from typing import Any, Optional, cast
 
 import pydantic
 from dify_plugin.entities.agent import AgentInvokeMessage
-from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
+from dify_plugin.entities.model.llm import LLMModelConfig, LLMResult, LLMResultChunk, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -24,6 +24,7 @@ from dify_plugin.interfaces.agent import (
     AgentStrategy,
     ToolEntity,
 )
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 from output_parser.cot_output_parser import (
     CotAgentOutputParser,
     ReactChunk,
@@ -129,7 +130,7 @@ class ReActAgentStrategy(AgentStrategy):
         # Init parameters
         self.query = react_params.query
         self.instruction = react_params.instruction
-        agent_scratchpad: list[AgentScratchpadUnit] = []
+        current_thoughts: list[PromptMessage] = []
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
         run_agent_state = True
@@ -181,14 +182,9 @@ class ReActAgentStrategy(AgentStrategy):
             # not be parsed as a valid Action (issue #3699).
             round_parse_failed = False
 
-            # Check capacity without changing the configured output budget.
             prompt_messages = self._organize_prompt_messages(
-                agent_scratchpad, self.query
+                current_thoughts, self.query
             )
-            if model.entity:
-                self.recalc_llm_max_tokens(
-                    model.entity, prompt_messages, model.completion_params
-                )
             # invoke model
             chunks = self.session.model.llm.invoke(
                 model_config=LLMModelConfig(**model.model_dump(mode="json")),
@@ -198,8 +194,19 @@ class ReActAgentStrategy(AgentStrategy):
             )
 
             usage_dict: dict[str, Optional[LLMUsage]] = {"usage": None}
+            result = LLMResult(
+                model=model.model,
+                message=AssistantPromptMessage(content=""),
+                usage=LLMUsage.empty_usage(),
+            )
+
+            def collect_response() -> Generator[LLMResultChunk, None, None]:
+                for chunk in chunks:
+                    merge_llm_result_chunk(result, chunk)
+                    yield chunk
+
             react_chunks = CotAgentOutputParser.handle_react_stream_output(
-                chunks, usage_dict
+                collect_response(), usage_dict
             )
             scratchpad = AgentScratchpadUnit(
                 agent_response="",
@@ -241,7 +248,7 @@ class ReActAgentStrategy(AgentStrategy):
                     elif not scratchpad.action:
                         scratchpad.thought = (scratchpad.thought or "") + chunk
             scratchpad.thought = (scratchpad.thought or "").strip()
-            agent_scratchpad.append(scratchpad)
+            current_thoughts.append(result.message)
 
             # get llm usage
             if "usage" in usage_dict:
@@ -427,6 +434,8 @@ class ReActAgentStrategy(AgentStrategy):
                     self.update_prompt_message_tool(
                         tool_instances[prompt_tool.name], prompt_tool
                     )
+            if run_agent_state:
+                current_thoughts.append(UserPromptMessage(content=f"Observation: {scratchpad.observation}\n\ncontinue"))
             yield self.finish_log_message(
                 log=round_log,
                 data={
@@ -488,6 +497,13 @@ class ReActAgentStrategy(AgentStrategy):
 
         yield self.create_json_message(
             {
+                "model_history": {
+                    "provider": model.provider,
+                    "model": model.model,
+                    "messages": [message.model_dump(mode="json") for message in [
+                        *self._organize_user_query(self.query, []), *current_thoughts
+                    ]],
+                },
                 "execution_metadata": {
                     LogMetadata.TOTAL_PRICE: llm_usage["usage"].total_price
                     if llm_usage["usage"] is not None
@@ -513,7 +529,7 @@ class ReActAgentStrategy(AgentStrategy):
         return prompt_messages
 
     def _organize_prompt_messages(
-        self, agent_scratchpad: list, query: str
+        self, current_thoughts: list[PromptMessage], query: str
     ) -> list[PromptMessage]:
         """
         Organize
@@ -521,48 +537,9 @@ class ReActAgentStrategy(AgentStrategy):
         # organize system prompt
         system_message = self._system_prompt_message
 
-        # organize current assistant messages
-        agent_scratchpad = agent_scratchpad
-        if not agent_scratchpad:
-            assistant_messages = []
-        else:
-            assistant_message = AssistantPromptMessage(content="")
-            for unit in agent_scratchpad:
-                if unit.action is not None and is_final_action(unit.action.action_name):
-                    assert isinstance(assistant_message.content, str)
-                    assistant_message.content += f"Final Answer: {unit.agent_response}"
-                else:
-                    assert isinstance(assistant_message.content, str)
-                    assistant_message.content += f"Thought: {unit.thought}\n\n"
-                    if unit.action_str:
-                        assistant_message.content += f"Action: {unit.action_str}\n\n"
-                    if unit.observation:
-                        assistant_message.content += (
-                            f"Observation: {unit.observation}\n\n"
-                        )
-
-            assistant_messages = [assistant_message]
-
         # query messages
         query_messages = self._organize_user_query(query, [])
-
-        if assistant_messages:
-            # organize historic prompt messages
-            historic_messages = self.history_prompt_messages
-            messages = [
-                system_message,
-                *historic_messages,
-                *query_messages,
-                *assistant_messages,
-                UserPromptMessage(content="continue"),
-            ]
-        else:
-            # organize historic prompt messages
-            historic_messages = self.history_prompt_messages
-            messages = [system_message, *historic_messages, *query_messages]
-
-        # join all messages
-        return messages
+        return [system_message, *self.history_prompt_messages, *query_messages, *current_thoughts]
 
     def _handle_invoke_action(
         self,
