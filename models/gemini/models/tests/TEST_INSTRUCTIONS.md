@@ -58,11 +58,13 @@ uv run --frozen python -m pytest models/tests/test_document_filtering.py -m live
 
 ## New-model live coverage
 
-`gemini-3.7-flash`, `gemini-3.6-flash`, and `gemini-3.5-flash-lite` are tested through the plugin LLM interface.
+`gemini-4-argon`, `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, and `gemini-3.5-flash-lite` are tested through the plugin LLM interface.
 
 The live suite covers streaming text generation, non-streaming structured output, inline image input, forced function calling, call ID preservation, function responses, and multi-turn replay.
 
 Responses are intentionally short to limit API cost.
+Gemini 4 Argon uses a 32,768-token ceiling to allow room for thinking, as recommended by Google, and requires a paid API key.
+SDK continuation and cumulative usage are verified offline in `test_gemini4.py` without generating long billable responses.
 
 ## Troubleshooting
 

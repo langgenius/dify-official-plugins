@@ -331,7 +331,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if "thinking" in model_parameters:
             thinking_type = model_parameters.get("thinking")
             if thinking_type == "disabled":
-                model_parameters["reasoning_effort"] = "minimal"
+                model_parameters["reasoning_effort"] = (
+                    "none" if credentials.get("base_model_name", "").lower() == "deepseek-v4.1-flash"
+                    else "minimal"
+                )
 
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
@@ -631,8 +634,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             "doubao-seed-2.0-code",
             "doubao-seed-2.1-pro",
             "doubao-seed-2.1-turbo",
+            "doubao-seed-2.1-lite",
             "deepseek-v4-pro-ga",
             "deepseek-v4-flash-ga",
+            "deepseek-v4.1-flash",
         ):
             rules.append(
                 ParameterRule(
@@ -664,6 +669,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if base_model.lower() in (
             "doubao-seed-2.1-pro",
             "doubao-seed-2.1-turbo",
+            "doubao-seed-2.1-lite",
             "deepseek-v4-pro-ga",
             "deepseek-v4-flash-ga",
         ):
@@ -676,6 +682,28 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
                     options=["minimal", "low", "medium", "high", "max"]
                     if is_deepseek else ["minimal", "low", "medium", "high"],
+                )
+            )
+
+        if base_model.lower() == "deepseek-v4.1-flash":
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="high",
+                    label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
+                    options=["none", "low", "high", "max"],
+                )
+            )
+
+        if base_model.lower() == "glm-5.3-flash":
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="max",
+                    label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
+                    options=["low", "high", "max"],
                 )
             )
 

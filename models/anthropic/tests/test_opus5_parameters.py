@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 from dify_plugin.entities.model.message import UserPromptMessage
 
@@ -168,6 +169,64 @@ def test_opus5_task_budget_sent_with_beta_header(monkeypatch) -> None:
     )
 
     assert payload["output_config"]["task_budget"] == {"type": "tokens", "total": 64000}
+    assert payload["extra_headers"] == {"anthropic-beta": "task-budgets-2026-03-13"}
+
+
+def test_opus5_5_schema_matches_anthropic_docs() -> None:
+    model_dir = Path(__file__).parents[1] / "models" / "llm"
+    schema = yaml.safe_load((model_dir / "claude-opus-5-5.yaml").read_text())
+    rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
+
+    assert schema["model"] in yaml.safe_load((model_dir / "_position.yaml").read_text())
+    assert schema["model_properties"]["context_size"] == 1_000_000
+    assert "structured-output" in schema["features"]
+    assert rules["max_tokens"]["max"] == 128_000
+    assert rules["effort"]["default"] == "medium"
+    assert rules["effort"]["options"] == ["low", "medium", "high", "xhigh", "max"]
+    assert rules["thinking_display"]["default"] == "summarized"
+    assert not {"thinking", "thinking_budget", "temperature", "top_p", "top_k"} & rules.keys()
+    assert schema["pricing"] == {
+        "input": "4.00",
+        "output": "20.00",
+        "unit": "0.000001",
+        "currency": "USD",
+    }
+
+    custom_schema = AnthropicLargeLanguageModel().get_customizable_model_schema(
+        "claude-opus-5-5", {}
+    )
+    custom_rules = {rule.name: rule for rule in custom_schema.parameter_rules}
+    assert "thinking" not in custom_rules
+    assert custom_rules["effort"].default == "medium"
+
+
+@pytest.mark.parametrize("thinking", [{}, {"thinking": False}, {"thinking": True}])
+def test_opus5_5_always_uses_adaptive_thinking(monkeypatch, thinking) -> None:
+    json_schema = {"type": "object", "properties": {"answer": {"type": "string"}}}
+    payload = _capture_payload(
+        monkeypatch,
+        {
+            **thinking,
+            "max_tokens": 128_000,
+            "thinking_budget": 1024,
+            "thinking_display": "summarized",
+            "effort": "max",
+            "temperature": 0.5,
+            "top_p": 0.9,
+            "top_k": 1,
+            "task_budget": 64_000,
+            "json_schema": json_schema,
+        },
+        model="claude-opus-5-5",
+    )
+
+    assert payload["thinking"] == {"type": "adaptive", "display": "summarized"}
+    assert payload["output_config"] == {
+        "effort": "max",
+        "task_budget": {"type": "tokens", "total": 64_000},
+        "format": {"type": "json_schema", "schema": json_schema},
+    }
+    assert not {"temperature", "top_p", "top_k", "thinking_budget", "tool_choice"} & payload.keys()
     assert payload["extra_headers"] == {"anthropic-beta": "task-budgets-2026-03-13"}
 
 

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 
 [[package]]
@@ -518,7 +518,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "yarl", specifier = ">=1.24.5" },
