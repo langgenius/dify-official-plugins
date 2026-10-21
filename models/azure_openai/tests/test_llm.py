@@ -37,17 +37,30 @@ def make_llm() -> AzureOpenAILargeLanguageModel:
 
 
 class TestUsesResponsesApi(unittest.TestCase):
-    def test_gpt5_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5"))
-
-    def test_gpt5_mini_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5-mini"))
-
-    def test_gpt5_nano_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5-nano"))
-
-    def test_gpt51_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.1"))
+    def test_model_routing(self):
+        """Preserve Responses API routing and its Chat Completions exceptions."""
+        cases = (
+            ("gpt-5", True),
+            ("gpt-5-mini", True),
+            ("gpt-5-nano", True),
+            ("gpt-5.1", True),
+            ("gpt-5.6-sol", True),
+            ("gpt-5.6-terra", True),
+            ("gpt-5.6-luna", True),
+            ("gpt-6-astra", True),
+            ("gpt-6.1-sol", True),
+            ("gpt-5-chat", False),
+            ("gpt-4o", False),
+            ("gpt-5-codex", True),
+            ("gpt-5.1-codex", True),
+            ("o1", False),
+        )
+        for model_name, expected in cases:
+            with self.subTest(model=model_name):
+                self.assertEqual(
+                    AzureOpenAILargeLanguageModel._uses_responses_api(model_name),
+                    expected,
+                )
 
     def test_gpt55_metadata(self):
         model = next(
@@ -78,26 +91,89 @@ class TestUsesResponsesApi(unittest.TestCase):
         self.assertEqual(model.entity.pricing.input, 5)
         self.assertEqual(model.entity.pricing.output, 30)
 
-    def test_gpt56_series_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-sol"))
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-terra"))
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-luna"))
 
-    def test_gpt5_chat_does_not_use_responses_api(self):
-        """gpt-5-chat is a regular chat model, not reasoning → Chat Completions API."""
-        self.assertFalse(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5-chat"))
+class TestGpt6Compatibility(unittest.TestCase):
+    def setUp(self):
+        self.llm = make_llm()
 
-    def test_gpt4o_does_not_use_responses_api(self):
-        self.assertFalse(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-4o"))
+    def test_invoke_sampling_parameters(self):
+        """Only send GPT-6 sampling parameters when reasoning is disabled."""
+        for model_name in ("gpt-6-astra", "gpt-6.1-sol"):
+            entity = next(model.entity for model in LLM_BASE_MODELS if model.base_model_name == model_name)
+            rules = {rule.name: rule for rule in entity.parameter_rules}
+            self.assertNotIn("none", rules["reasoning_effort"].options)
+            self.assertNotIn("temperature", rules)
+            self.assertNotIn("top_p", rules)
 
-    def test_codex_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5-codex"))
+        for model_name in ("gpt-6-sol", "gpt-6-luna"):
+            entity = next(model.entity for model in LLM_BASE_MODELS if model.base_model_name == model_name)
+            rules = {rule.name: rule for rule in entity.parameter_rules}
+            self.assertIn("none", rules["reasoning_effort"].options)
+            self.assertIsNone(rules["temperature"].default)
+            self.assertIn("top_p", rules)
 
-    def test_gpt51_codex_uses_responses_api(self):
-        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.1-codex"))
+        cases = (
+            ("gpt-5", None, False, 0.7),
+            ("gpt-5.5", "none", False, 0.7),
+            ("gpt-6-astra", None, False, 0.7),
+            ("gpt-6.1-sol", "medium", False, 0.7),
+            ("gpt-6-sol", "medium", False, 0.7),
+            ("gpt-6-sol", "none", True, 0.7),
+            ("gpt-6-luna", "none", True, 0.7),
+            ("gpt-6-sol", "none", True, None),
+            ("gpt-6-luna", "none", True, 0.0),
+        )
+        for model_name, reasoning_effort, supports_sampling, temperature in cases:
+            with self.subTest(model=model_name, reasoning_effort=reasoning_effort, temperature=temperature):
+                client = MagicMock()
+                self.llm._create_client = MagicMock(return_value=client)
+                self.llm._handle_responses_response = MagicMock(return_value="ok")
+                parameters = {"temperature": temperature, "top_p": 0.9}
+                if reasoning_effort is not None:
+                    parameters["reasoning_effort"] = reasoning_effort
+                self.llm._invoke(
+                    model="deployment-name",
+                    credentials={
+                        "base_model_name": model_name,
+                        "openai_api_base": "https://example.openai.azure.com/openai/v1",
+                    },
+                    prompt_messages=[UserPromptMessage(content="hello")],
+                    model_parameters=parameters,
+                    stream=False,
+                )
+                client.chat.completions.create.assert_not_called()
+                client.responses.create.assert_called_once()
+                kwargs = client.responses.create.call_args.kwargs
+                self.assertEqual(kwargs["model"], "deployment-name")
+                if supports_sampling:
+                    if temperature is None:
+                        self.assertNotIn("temperature", kwargs)
+                    else:
+                        self.assertEqual(kwargs["temperature"], temperature)
+                    self.assertEqual(kwargs["top_p"], 0.9)
+                    self.assertEqual(kwargs["reasoning"]["effort"], "none")
+                else:
+                    self.assertNotIn("temperature", kwargs)
+                    self.assertNotIn("top_p", kwargs)
 
-    def test_o1_does_not_use_responses_api(self):
-        self.assertFalse(AzureOpenAILargeLanguageModel._uses_responses_api("o1"))
+    def test_message_token_estimation(self):
+        """Use the existing token estimator for GPT-6 instead of rejecting it as unsupported."""
+        messages = [UserPromptMessage(content="hello")]
+        expected = self.llm._num_tokens_from_messages({"base_model_name": "gpt-4o"}, messages)
+        self.assertEqual(
+            self.llm._num_tokens_from_messages({"base_model_name": "gpt-6-astra"}, messages),
+            expected,
+        )
+
+    def test_image_token_estimation(self):
+        """Prevent a missing GPT-6 branch from estimating image tokens as zero."""
+        image_url = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+        self.assertEqual(
+            self.llm._num_tokens_from_images(
+                "gpt-6-astra", [{"url": image_url, "detail": "high"}]
+            ),
+            255,
+        )
 
 
 class TestWebSearchParameterRules(unittest.TestCase):

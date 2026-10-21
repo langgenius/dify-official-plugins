@@ -1,0 +1,5 @@
+model: qwen3-rerank
+label:
+  en_US: Qwen3 Rerank
+model_type: rerank
+model_properties: {}

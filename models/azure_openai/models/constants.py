@@ -32,12 +32,12 @@ def uses_responses_api(base_model_name: str) -> bool:
     Determine if the model should use the Responses API.
 
     1. Models with "codex" in the base name
-    2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+    2. gpt-5.x and gpt-6.x models (excluding chat and codex variants)
     """
     return (
         "codex" in base_model_name
         or (
-            base_model_name.startswith("gpt-5")
+            base_model_name.startswith(("gpt-5", "gpt-6"))
             and "chat" not in base_model_name
             and "codex" not in base_model_name
         )
@@ -4259,6 +4259,366 @@ LLM_BASE_MODELS = [
             ),
         ),
     ),
+    AzureBaseModel(
+        base_model_name="gpt-6.1-sol",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_us="fake-deployment-name-label"),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="Specifies the format that the model must output.",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response JSON schema for the model to adhere to.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持的值取决于模型。",
+                        en_us="Constrains reasoning effort. Supported values depend on the model.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high", "xhigh", "max"],
+                    default="medium",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model.",
+                    ),
+                    required=False,
+                    options=["auto", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。支持 low、medium 和 high。",
+                        en_us="Constrains response verbosity: low, medium, or high.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=2,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-6-astra",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_us="fake-deployment-name-label"),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="Specifies the format that the model must output.",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response JSON schema for the model to adhere to.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持的值取决于模型。",
+                        en_us="Constrains reasoning effort. Supported values depend on the model.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high", "xhigh", "max"],
+                    default="medium",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model.",
+                    ),
+                    required=False,
+                    options=["auto", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。支持 low、medium 和 high。",
+                        en_us="Constrains response verbosity: low, medium, or high.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=10,
+                output=50,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-6-sol",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_us="fake-deployment-name-label"),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **(PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE] | {"default": None}),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="Specifies the format that the model must output.",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response JSON schema for the model to adhere to.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持的值取决于模型。",
+                        en_us="Constrains reasoning effort. Supported values depend on the model.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="medium",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model.",
+                    ),
+                    required=False,
+                    options=["auto", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。支持 low、medium 和 high。",
+                        en_us="Constrains response verbosity: low, medium, or high.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=2,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-6-luna",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_us="fake-deployment-name-label"),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **(PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE] | {"default": None}),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="Specifies the format that the model must output.",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response JSON schema for the model to adhere to.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持的值取决于模型。",
+                        en_us="Constrains reasoning effort. Supported values depend on the model.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="medium",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model.",
+                    ),
+                    required=False,
+                    options=["auto", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。支持 low、medium 和 high。",
+                        en_us="Constrains response verbosity: low, medium, or high.",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=0.1,
+                output=0.5,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
 ]
 
 
@@ -4388,6 +4748,19 @@ SPEECH2TEXT_BASE_MODELS = [
             },
         ),
         extra_invoke_params={"chunking_strategy": "auto"},
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-transcribe",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_us="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 25,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
+            },
+        ),
     ),
 ]
 TTS_BASE_MODELS = [

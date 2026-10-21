@@ -1,10 +1,7 @@
 import os
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
-
-import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -41,15 +38,8 @@ def _invoke(model_parameters: dict, stream: bool = False):
     return call.call_args.kwargs, result
 
 
-def test_qwen3_omni_defaults_to_non_thinking_in_yaml() -> None:
-    models_dir = Path(__file__).parent.parent / "models" / "llm"
-    data = yaml.safe_load((models_dir / f"{QWEN3_OMNI_MODEL}.yaml").read_text())
-    enable_thinking_rule = next(
-        rule for rule in data["parameter_rules"] if rule["name"] == "enable_thinking"
-    )
-    assert enable_thinking_rule["default"] is False
-
-
+# The retired snapshot is no longer predefined. Retain runtime coverage for
+# users supplying custom/legacy model IDs.
 def test_qwen3_omni_forces_streaming_when_thinking_is_omitted() -> None:
     kwargs, result = _invoke({})
     assert kwargs["stream"] is True

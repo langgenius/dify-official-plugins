@@ -1,0 +1,52 @@
+model: minimax-m3.1-flash
+label:
+  en_US: MiniMax-M3.1-Flash
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - video
+  - document
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 10240
+    min: 1
+    max: 512000
+  - name: effort
+    label:
+      en_US: Effort
+      zh_Hans: 思考强度
+    type: string
+    default: high
+    required: false
+    help:
+      en_US: Thinking depth for MiniMax-M3.1-Flash, sent as output_config.effort. Thinking is always on.
+      zh_Hans: MiniMax-M3.1-Flash 的思考强度，通过 output_config.effort 发送。思考始终开启。
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+  - name: exclude_reasoning_tokens
+    label:
+      en_US: Hide the thought process
+      zh_Hans: 隐藏思考过程
+    type: boolean
+    default: true
+    required: false
+    help:
+      en_US: Whether to hide the thought process.
+      zh_Hans: 是否隐藏思考过程。
+pricing:
+  input: "1"
+  output: "4"
+  unit: "0.000001"
+  currency: RMB

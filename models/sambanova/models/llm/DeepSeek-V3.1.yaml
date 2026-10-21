@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -22,7 +22,7 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 16384
+    max: 7168
 pricing:
   input: '0.3'
   output: '0.45'

@@ -62,6 +62,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
     "gemini-3.7-flash",
+    "gemini-3.8-flash",
 ]
 IMAGE_GENERATION_MODELS = {
     "gemini-3.1-flash-image-preview",
@@ -938,6 +939,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         config_kwargs = model_parameters.copy()
+        if model == "gemini-3.8-flash":
+            # Gemini 3.8 uses thinking levels instead of budgets or sampling controls.
+            for unsupported in (
+                "temperature", "top_p", "top_k", "frequency_penalty",
+                "presence_penalty", "candidate_count", "thinking_budget",
+            ):
+                config_kwargs.pop(unsupported, None)
         if "max_tokens_to_sample" in config_kwargs:
             config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample")
 

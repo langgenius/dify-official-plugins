@@ -25,4 +25,4 @@ resource:
     model:
       enabled: false
 type: plugin
-version: 0.0.71
+version: 0.0.72

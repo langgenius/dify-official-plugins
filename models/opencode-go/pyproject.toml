@@ -1,6 +1,6 @@
 [project]
 name = "opencode-go"
-version = "0.4.2"
+version = "0.5.0"
 description = "Dify model provider plugin for OpenCode Go"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,6 +8,11 @@ dependencies = [
     "dify_plugin>=0.3.0,<0.11.0",
     "httpx>=0.28.1",
     "openai>=1.50.0",
+    # Security floors (pinned as direct deps to force transitive resolution).
+    # See Dify plugin marketplace security assessment (C-grade -> remediate).
+    "urllib3>=2.8.0",   # CVE-2026-97687 HTTPS proxy TLS bypass + chunked deflate infinite loop
+    "multidict>=6.9.1,<8", # CVE-2026-104874 CIMultiDict/MultiDict items-view reference leak
+    "werkzeug>=3.1.9",  # CVE-2026-102598 safe_join() Windows special device names
 ]
 
 [dependency-groups]

@@ -1,0 +1,26 @@
+[project]
+name = "dify-plugin-litellm"
+version = "0.0.1"
+description = "LiteLLM Proxy model provider for Dify"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dify_plugin>=0.10.2,<0.11.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.15.22",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]

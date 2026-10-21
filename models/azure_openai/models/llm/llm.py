@@ -54,7 +54,7 @@ from ._metadata import apply_dify_metadata_if_enabled
 
 logger = logging.getLogger(__name__)
 
-THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5", "gpt-6")
 
 
 class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
@@ -440,13 +440,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         self._ensure_responses_api_supported(credentials, base_model_name)
         client = self._create_client(credentials)
 
-        # Whether this model is a pure reasoning model (gpt-5, gpt-5-mini, etc.)
-        # that does NOT support temperature, top_p, or stop sequences.
-        # gpt-5-chat and gpt-5-codex use different APIs and are excluded here.
+        # Preserve the existing GPT-5 restriction on temperature and top_p.
+        # For GPT-6, forward sampling parameters only with explicit reasoning_effort=none.
+        # Chat and Codex variants retain their existing handling.
         is_reasoning_model = self._uses_responses_api(base_model_name) and (
-            base_model_name.startswith("gpt-5")
+            base_model_name.startswith(("gpt-5", "gpt-6"))
             and "chat" not in base_model_name
             and "codex" not in base_model_name
+        )
+        supports_sampling = not is_reasoning_model or (
+            base_model_name.startswith("gpt-6")
+            and model_parameters.get("reasoning_effort") == "none"
         )
 
         # Convert prompt messages to the Responses API format
@@ -459,11 +463,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         }
 
         # Map model parameters to the Responses API.
-        # temperature and top_p are not supported by gpt-5 reasoning models.
-        if not is_reasoning_model:
-            if "temperature" in model_parameters:
+        if supports_sampling:
+            if model_parameters.get("temperature") is not None:
                 responses_params["temperature"] = model_parameters["temperature"]
-            if "top_p" in model_parameters:
+            if model_parameters.get("top_p") is not None:
                 responses_params["top_p"] = model_parameters["top_p"]
         if "max_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_tokens"]
@@ -1653,7 +1656,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
-        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5")):
+        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")):
             model = "gpt-4o"
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -1783,7 +1786,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             base_tokens = 2833
             tile_tokens = 5667
         elif base_model_name.startswith(
-            ("gpt-4o", "gpt-4.1", "gpt-4.5", "gpt-5")
+            ("gpt-4o", "gpt-4.1", "gpt-4.5", "gpt-5", "gpt-6")
         ):
             base_tokens = 85
             tile_tokens = 170

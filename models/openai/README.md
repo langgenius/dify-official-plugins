@@ -11,7 +11,7 @@ This plugin connects Dify to OpenAI language, embedding, moderation, speech-to-t
 - The LLM integration was rewritten around the official OpenAI Python SDK.
 - The Responses API is now the default for supported language models.
 - Chat Completions remains available for compatible endpoints and audio-capable chat models.
-- Stateless reasoning replay preserves every OpenAI output item, including encrypted reasoning items and assistant phase metadata.
+- The plugin retains every OpenAI output item, including encrypted reasoning items and assistant phase metadata, for stateless replay when Dify passes the opaque payload back.
 - Reasoning summaries, refusals, parallel function calls, terminal states, usage, and stream cancellation now have explicit handling.
 - The model catalog was checked against OpenAI's model and deprecation documentation.
 - Deprecated and unavailable model entries were removed, while missing current entries were added.
@@ -47,11 +47,45 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 <img src="./_assets/openai-01.png" width="400" alt="OpenAI provider configuration" />
 
+## GPT-6 models
+
+GPT-6 Astra, Sol, and Luna support text, vision, structured outputs, and streaming, with reasoning effort set to `medium` by default.
+GPT-6 Astra requires Responses for function calling and does not support reasoning effort `none`.
+GPT-6 Sol and Luna support function calling through Chat Completions only with reasoning effort `none`; use Responses to combine reasoning and tools.
+Sampling and log-probability parameters are omitted when reasoning is enabled.
+
+## Question classification with Decisions
+
+Select `gpt-6-luna-only-for-question-classifier` in a Dify Question Classifier
+node to use OpenAI's Decisions API with the upstream `gpt-6-luna` model. It uses
+your existing OpenAI credentials and API base, regardless of the API Protocol
+setting; no additional switch or model parameters are needed.
+
+This adapter supports the six-message text Chat classifier template from
+Graphon 0.7.0. It preserves the query, conversation history, category IDs and
+custom instructions, and returns the existing category JSON for workflow
+routing. Ordinary chat prompts, images, tools, stop sequences and generation
+parameters are unsupported. Dify does not restrict this model to classifier
+selectors, so its label states the intended use and the plugin validates the
+message protocol. Unknown templates, invalid category results and refusals
+raise errors instead of selecting a default branch. Confidence and option
+probabilities are not exposed by the current classifier contract.
+
+Decisions returns a complete result, which Dify's plugin SDK wraps into one
+chunk when streaming is requested. Billing uses the API's actual token usage
+at the base Decisions rate of USD 0.10 per million input tokens and zero output
+cost. Regional and long-context premiums are not represented by Dify's static
+pricing. Request metadata and storage options apply only to Chat/Responses,
+and are not sent to Decisions.
+
+See the [official Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
+
 ## Reasoning state
 
 The plugin sends `store=false` by default and requests encrypted reasoning content when it uses the Responses API. Enabling `Enable request metadata` switches `store` to `true`, but encrypted reasoning content is still requested, so reasoning replay behaves the same either way.
 
-Complete response output items are stored in the assistant message's opaque payload and replayed in original order on the next turn.
+Complete response output items are stored in the assistant message's opaque payload and replayed in original order when that payload returns on the next turn.
+Existing SDK, daemon, Dify, and Agent paths can lose or reject this payload during tool continuations; adding GPT-6 model support does not resolve those limitations.
 
 Reasoning summaries are user-visible only when `reasoning_summary` is enabled for a supported model.
 
