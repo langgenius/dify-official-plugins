@@ -28,8 +28,26 @@
           {
             "direction": "input",
             "modality": "audio",
+            "unit": "second",
+            "price": "0.00005"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
             "unit": "million_tokens",
-            "price": "0"
+            "price": "1.25"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "3"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "5"
           }
         ]
       }
@@ -60,8 +78,26 @@
           {
             "direction": "input",
             "modality": "audio",
+            "unit": "second",
+            "price": "0.00005"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
             "unit": "million_tokens",
-            "price": "0"
+            "price": "1.25"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "3"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "5"
           }
         ]
       }
@@ -92,8 +128,26 @@
           {
             "direction": "input",
             "modality": "audio",
+            "unit": "second",
+            "price": "0.0001"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
             "unit": "million_tokens",
-            "price": "0"
+            "price": "2.5"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "6"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "10"
           }
         ]
       }
@@ -124,8 +178,26 @@
           {
             "direction": "input",
             "modality": "audio",
+            "unit": "second",
+            "price": "0.0001"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
             "unit": "million_tokens",
-            "price": "0"
+            "price": "2.5"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "6"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "10"
           }
         ]
       }
@@ -157,7 +229,7 @@
             "direction": "input",
             "modality": "audio",
             "unit": "second",
-            "price": "0"
+            "price": "0.0001"
           }
         ]
       }

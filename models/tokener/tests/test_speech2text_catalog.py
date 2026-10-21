@@ -80,16 +80,9 @@ def test_speech2text_catalog_rejects_invalid_upload_metadata(audio):
         {"currency": "USD", "rates": []},
         {"currency": "USD", "rates": [None]},
         {"currency": "USD", "rates": [{}]},
-        {
-            "currency": "USD",
-            "rates": [
-                {"direction": "input", "modality": "audio", "unit": "second", "price": "0"},
-                {"direction": "input", "modality": "audio", "unit": "million_tokens", "price": "1"},
-            ],
-        },
     ],
 )
-def test_speech2text_catalog_rejects_invalid_or_mixed_pricing(pricing):
+def test_speech2text_catalog_rejects_invalid_pricing(pricing):
     payload = catalog()
     payload["models"][0]["pricing"] = pricing
     with pytest.raises(CatalogError):
@@ -104,19 +97,37 @@ def test_speech2text_catalog_rejects_invalid_decimal_rate(price):
         render_catalog(payload, model_type="speech2text")
 
 
-def test_speech2text_catalog_accepts_token_modalities_without_summing_prices():
-    payload = catalog()
-    payload["models"][0]["pricing"]["rates"] = [
-        {"direction": direction, "modality": modality, "unit": "million_tokens", "price": price}
-        for direction, modality, price in [
-            ("input", "text", "1.000000"),
-            ("input", "audio", "2"),
-            ("output", "text", "3"),
-        ]
+DURATION_RATE = {"direction": "input", "modality": "audio", "unit": "second", "price": "0.0001"}
+TOKEN_RATES = [
+    {"direction": direction, "modality": modality, "unit": "million_tokens", "price": price}
+    for direction, modality, price in [
+        ("input", "text", "2.5"),
+        ("input", "audio", "6"),
+        ("output", "text", "10"),
     ]
+]
+
+
+@pytest.mark.parametrize(
+    "rates",
+    [[DURATION_RATE], [DURATION_RATE, *TOKEN_RATES]],
+    ids=["duration", "duration-and-tokens"],
+)
+def test_speech2text_catalog_accepts_duration_with_optional_token_rates(rates):
+    payload = catalog()
+    payload["models"][0]["pricing"]["rates"] = rates
     files = render_catalog(payload, model_type="speech2text")
-    schema = yaml.safe_load(files[f"{payload['models'][0]['id']}.yaml"])
-    assert "pricing" not in schema
+    assert "pricing" not in yaml.safe_load(files[f"{payload['models'][0]['id']}.yaml"])
+
+
+@pytest.mark.parametrize(
+    ("field", "value"), [("direction", "both"), ("modality", "video"), ("unit", "character")]
+)
+def test_speech2text_catalog_rejects_invalid_rate_field(field, value):
+    payload = catalog()
+    payload["models"][0]["pricing"]["rates"] = [{**DURATION_RATE, field: value}]
+    with pytest.raises(CatalogError):
+        render_catalog(payload, model_type="speech2text")
 
 
 def test_speech2text_catalog_cli_only_writes_selected_model_type(tmp_path):

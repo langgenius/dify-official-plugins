@@ -213,7 +213,6 @@ def _validate_speech2text(model: dict[str, Any]) -> None:
     rates = pricing.get("rates")
     if not isinstance(rates, list) or not 1 <= len(rates) <= 6:
         raise CatalogError(f"{model_id}.pricing.rates must contain 1 to 6 rates")
-    units = set()
     for rate in rates:
         if (
             not isinstance(rate, dict)
@@ -224,9 +223,6 @@ def _validate_speech2text(model: dict[str, Any]) -> None:
             or re.fullmatch(r"[0-9]+(?:\.[0-9]{1,6})?", rate["price"]) is None
         ):
             raise CatalogError(f"{model_id}.pricing.rates contains an invalid speech2text rate")
-        units.add(rate["unit"])
-    if len(units) != 1:
-        raise CatalogError(f"{model_id}.pricing.rates must use duration or tokens, not both")
 
 
 def _render_speech2text(model: dict[str, Any], revision: str) -> str:
