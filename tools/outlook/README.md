@@ -20,6 +20,9 @@ Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and 
 - **List Calendars** — list your calendars.
 - **List Events** — list upcoming events (optionally from a specific calendar).
 - **Search Events** — find events by keyword and/or a date range (uses calendarView with pagination).
+- **List Calendar Groups** (new in 0.7.0) — calendar groups such as *My Calendars* and *People's calendars*; calendars other people shared with you are usually in the latter.
+- **Calendar groups and shared calendars** (new in 0.7.0) — List Calendars, List Events and Search Events take an optional **Calendar Group ID**: they cover every calendar in the group and tag each event with its calendar and owner. Calendars shared with you need the `Calendars.Read.Shared` permission.
+- **Get Schedule** (new in 0.7.0) — free/busy of people for a time window (Graph `getSchedule`), by email and/or a calendar group (its calendars' owners). Works for anyone in the organisation without calendar sharing; subjects only where you may see them.
 - **Create Event** — create a meeting/appointment (supports attendees, location and a Teams online meeting).
 - **Get Event** — get a single event by ID.
 - **Update Event** — update fields of an event.
@@ -35,11 +38,13 @@ Two ways to authorize: **OAuth** (a user signs in; tools act on that user's mail
 2. Under **API permissions**, add these delegated Microsoft Graph permissions and grant consent:
    - `Mail.Read`, `Mail.Send`, `Mail.ReadWrite` — email
    - `Calendars.ReadWrite` — calendar
+   - `Calendars.Read.Shared` — calendars other people shared with you (new in 0.7.0)
    - `offline_access` — token refresh
 3. Add the redirect URI shown by Dify.
 4. In Dify, configure the plugin with **Client ID**, **Client Secret** and (optional) **Tenant ID** (leave blank / `common` for personal or multi-tenant), then complete the OAuth sign-in.
 
 > Existing installs: adding the calendar tools introduces the `Calendars.ReadWrite` scope — you will be asked to re-authorize once.
+> Upgrading to 0.7.0 adds the `Calendars.Read.Shared` scope: add it to the app registration and re-authorize once.
 
 ### Service Principal (app-only, new in 0.7.0)
 Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
@@ -55,6 +60,8 @@ Both OAuth and Service Principal have a **Microsoft Cloud** setting: Global, US 
 ## Usage
 
 Add the Outlook tools to an agent or workflow, fill in the inputs, and run the node. For calendar, a common flow is **List Calendars** → **Create Event** / **List Events**.
+
+To look at the calendars of people who shared theirs with you (for example an assistant and the executives): **List Calendar Groups** → take the id of *People's calendars* → **Search Events** with that Calendar Group ID and a date range, or **Get Schedule** with it for free/busy.
 
 ## Privacy
 

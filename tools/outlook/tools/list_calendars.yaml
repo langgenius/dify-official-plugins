@@ -39,6 +39,25 @@ parameters:
       zh_Hant: 要返回的最大行事曆數
     llm_description: Maximum number of calendars to return, default is 50
     form: llm
+  - name: calendar_group_id
+    type: string
+    required: false
+    label:
+      en_US: Calendar Group ID
+      ko_KR: 캘린더 그룹 ID
+      zh_Hans: 日历组 ID
+      pt_BR: ID do Grupo de Calendários
+      ja_JP: カレンダー グループ ID
+      zh_Hant: 行事曆群組 ID
+    human_description:
+      en_US: 'Optional: only the calendars in this group (from List Calendar Groups), e.g. the calendars shared with you'
+      ko_KR: '선택: 이 그룹의 캘린더만 (캘린더 그룹 목록에서 가져옴). 예: 나와 공유된 캘린더'
+      zh_Hans: 可选：仅此日历组中的日历（来自“列出日历组”），例如他人共享给您的日历
+      pt_BR: 'Opcional: somente os calendários deste grupo (de Listar Grupos de Calendários), ex. os compartilhados com você'
+      ja_JP: '任意: このグループのカレンダーのみ（カレンダー グループ一覧から取得）。例: 共有されたカレンダー'
+      zh_Hant: 選填：僅此行事曆群組中的行事曆（來自「列出行事曆群組」），例如他人共用給您的行事曆
+    llm_description: Optional ID of a calendar group from List Calendar Groups; restricts the result to that group's calendars (for example the 'People's calendars' group that holds calendars shared with the user).
+    form: llm
   - name: mailbox
     type: string
     required: false

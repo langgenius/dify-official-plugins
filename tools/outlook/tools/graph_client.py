@@ -194,3 +194,55 @@ def resolve_graph_context(credentials: Mapping[str, Any], mailbox: Any = None) -
         raise GraphAuthError(f"Unsupported Microsoft Graph endpoint '{graph_host}'.")
     api_base = f"{graph_host}/v1.0"
     return GraphContext(token, api_base, f"{api_base}/me")
+
+
+def segment(value: Any) -> str:
+    """Quote an ID for use as one URL path segment (calendar IDs can contain '/', '+' and '=')."""
+    return quote(str(value).strip(), safe="")
+
+
+def describe_error(response: requests.Response) -> str:
+    """Turn a Graph error response into a short message with a hint for the common cases."""
+    try:
+        error = response.json().get("error") or {}
+        detail = f"{error.get('code', '')}: {error.get('message', '')}".strip(": ")
+    except ValueError:
+        detail = response.text[:300]
+    hint = {
+        401: "Authentication failed; the token may be expired.",
+        403: "Access denied: check the calendar permissions (Calendars.Read.Shared for calendars shared with you) and admin consent.",
+        404: "Not found: check the IDs (get them from List Calendar Groups / List Calendars).",
+    }.get(response.status_code, "")
+    return f"API error {response.status_code}: {detail}" + (f" {hint}" if hint else "")
+
+
+def calendars_in_group(ctx: GraphContext, group_id: str) -> list[dict[str, Any]]:
+    """
+    The calendars in a calendar group, each with its owner.
+
+    The "People's calendars" group is where Outlook puts calendars other people
+    shared with the user, so this is how an agent finds e.g. executives' calendars.
+    """
+    try:
+        response = requests.get(
+            f"{ctx.mailbox_base}/calendarGroups/{segment(group_id)}/calendars",
+            headers={"Authorization": f"Bearer {ctx.access_token}"},
+            params={"$select": "id,name,owner,canEdit,isDefaultCalendar", "$top": 100},
+            timeout=30,
+        )
+    except requests.exceptions.RequestException as e:
+        raise GraphAuthError(f"Network error: {e}") from e
+    if response.status_code < 200 or response.status_code >= 300:
+        raise GraphAuthError(describe_error(response))
+    return response.json().get("value", [])
+
+
+def calendar_tag(calendar: Mapping[str, Any]) -> dict[str, Any]:
+    """Which calendar (and whose) an event came from, attached to merged results."""
+    owner = calendar.get("owner") or {}
+    return {
+        "id": calendar.get("id"),
+        "name": calendar.get("name"),
+        "owner_name": owner.get("name"),
+        "owner_address": owner.get("address"),
+    }

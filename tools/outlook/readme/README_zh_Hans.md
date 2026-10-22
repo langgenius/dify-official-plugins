@@ -140,8 +140,11 @@ The plugin requires the following Microsoft Graph API permissions:
 - Mail.Send: For sending emails
 - Mail.ReadWrite: For updating email properties (flags, priority)
 - Calendars.ReadWrite: For calendar events (list/create/get/update/delete) — added in 0.3.0
+- Calendars.Read.Shared: For calendars other people shared with you (calendar groups, Get Schedule) — added in 0.7.0
 
 > Calendar tools (0.3.0): `list_calendars`, `list_events`, `create_event`, `get_event`, `update_event`, `delete_event`. Existing installs will be asked to re-authorize once to grant the new `Calendars.ReadWrite` scope.
+
+> Calendar groups (0.7.0): `list_calendar_groups`, a `calendar_group_id` option on `list_calendars` / `list_events` / `search_events`, and `get_schedule` (free/busy). Re-authorize once to grant `Calendars.Read.Shared`.
 
 ### Service Principal (app-only, new in 0.7.0)
 Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
@@ -318,8 +321,11 @@ ID draft123のドラフトを送信
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
 - Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
 
 > 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
+
+> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
 
 ### サービス プリンシパル（アプリのみ、0.7.0 で追加）
 個人ではなく組織としてワークフローを実行したい場合に使います。ユーザーのサインインは不要で、担当者の退職などで止まることはなく、監査ログにはアプリとして記録されます。
@@ -496,8 +502,11 @@ OAuth とサービス プリンシパルの両方に **Microsoft クラウド** 
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
 - Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
 
 > 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
+
+> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
 
 ### Service Principal（仅应用，0.7.0 新增）
 希望工作流以组织身份而不是某个人的身份运行时使用：无需用户登录，不会因人员离职而中断，审计日志中记录的是该应用。

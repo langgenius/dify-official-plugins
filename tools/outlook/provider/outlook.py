@@ -17,7 +17,8 @@ from tools.graph_client import (
 
 
 class OutlookProvider(ToolProvider):
-    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite Calendars.ReadWrite offline_access"
+    # Calendars.Read.Shared: calendars other people shared with the user (e.g. an executive's, for an assistant).
+    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite Calendars.ReadWrite Calendars.Read.Shared offline_access"
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate credentials by calling Microsoft Graph API."""

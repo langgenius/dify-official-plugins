@@ -1,0 +1,157 @@
+identity:
+  name: get_schedule
+  author: langgenius
+  label:
+    en_US: Get Schedule (Free/Busy)
+    ko_KR: 일정 가용성 조회
+    zh_Hans: 查询忙闲（日程可用性）
+    pt_BR: Obter Disponibilidade
+    ja_JP: 空き時間の確認
+    zh_Hant: 查詢忙閒（日程可用性）
+description:
+  human:
+    en_US: Check when people are free or busy in a time window, by email and/or a calendar group
+    ko_KR: 이메일 및/또는 캘린더 그룹으로 지정한 사람들의 시간대별 가용성을 확인합니다
+    zh_Hans: 按邮箱和/或日历组查询多人在某个时间段内的忙闲状态
+    pt_BR: Verificar quando as pessoas estão livres ou ocupadas em um período, por e-mail e/ou grupo de calendários
+    ja_JP: メールアドレスやカレンダー グループで指定した人の空き時間を確認します
+    zh_Hant: 依信箱和/或行事曆群組查詢多人在某個時段內的忙閒狀態
+  llm: Get free/busy availability (Microsoft Graph getSchedule) of one or more people for a time window. Works for anyone in the organisation without calendar sharing; subjects are only returned where the caller may see them. Give emails and/or a calendar_group_id (its calendars' owners are used). Returns busy slots and an availability view per person.
+parameters:
+- name: emails
+  type: string
+  required: false
+  label:
+    en_US: Emails
+    ko_KR: 이메일
+    zh_Hans: 邮箱地址
+    pt_BR: E-mails
+    ja_JP: メールアドレス
+    zh_Hant: 信箱地址
+  human_description:
+    en_US: Comma-separated email addresses of the people to check
+    ko_KR: 확인할 사람들의 이메일 주소(쉼표로 구분)
+    zh_Hans: 要查询的人员邮箱地址，以逗号分隔
+    pt_BR: Endereços de e-mail das pessoas, separados por vírgula
+    ja_JP: 確認する人のメールアドレス（カンマ区切り）
+    zh_Hant: 要查詢的人員信箱地址，以逗號分隔
+  llm_description: Comma-separated email addresses of the people whose availability to check.
+  form: llm
+- name: calendar_group_id
+  type: string
+  required: false
+  label:
+    en_US: Calendar Group ID
+    ko_KR: 캘린더 그룹 ID
+    zh_Hans: 日历组 ID
+    pt_BR: ID do Grupo de Calendários
+    ja_JP: カレンダー グループ ID
+    zh_Hant: 行事曆群組 ID
+  human_description:
+    en_US: 'Optional: also check the owners of the calendars in this group (e.g. the executives'' calendars shared with you)'
+    ko_KR: '선택: 이 그룹 캘린더의 소유자도 확인합니다(예: 나와 공유된 임원 캘린더)'
+    zh_Hans: 可选：同时查询此日历组中各日历的所有者（例如共享给您的高管日历）
+    pt_BR: 'Opcional: verificar também os donos dos calendários deste grupo (ex. calendários de executivos compartilhados com você)'
+    ja_JP: '任意: このグループのカレンダーの所有者も確認します（例: 共有された役員のカレンダー）'
+    zh_Hant: 選填：同時查詢此行事曆群組中各行事曆的擁有者（例如共用給您的主管行事曆）
+  llm_description: Optional ID of a calendar group from List Calendar Groups; the owners of its calendars are added to the people to check.
+  form: llm
+- name: start_datetime
+  type: string
+  required: true
+  label:
+    en_US: Start
+    ko_KR: 시작
+    zh_Hans: 开始时间
+    pt_BR: Início
+    ja_JP: 開始
+    zh_Hant: 開始時間
+  human_description:
+    en_US: ISO 8601, e.g. 2026-12-01T09:00:00 (in Time Zone) or with an offset
+    ko_KR: 'ISO 8601 형식. 예: 2026-12-01T09:00:00(시간대 기준) 또는 오프셋 포함'
+    zh_Hans: ISO 8601 格式，例如 2026-12-01T09:00:00（按“时区”解释）或带时区偏移
+    pt_BR: ISO 8601, ex. 2026-12-01T09:00:00 (no Fuso Horário) ou com deslocamento
+    ja_JP: 'ISO 8601 形式。例: 2026-12-01T09:00:00（タイム ゾーン基準）またはオフセット付き'
+    zh_Hant: ISO 8601 格式，例如 2026-12-01T09:00:00（依「時區」解讀）或含時區偏移
+  llm_description: Start of the window as ISO 8601. Without a UTC offset it is read in time_zone; a bare date means the start of that day.
+  form: llm
+- name: end_datetime
+  type: string
+  required: true
+  label:
+    en_US: End
+    ko_KR: 종료
+    zh_Hans: 结束时间
+    pt_BR: Fim
+    ja_JP: 終了
+    zh_Hant: 結束時間
+  human_description:
+    en_US: ISO 8601, after the start; a bare date means the end of that day
+    ko_KR: ISO 8601 형식, 시작 이후. 날짜만 입력하면 그날의 끝
+    zh_Hans: ISO 8601 格式，需晚于开始时间；只填日期表示当天结束
+    pt_BR: ISO 8601, após o início; apenas a data significa o fim desse dia
+    ja_JP: ISO 8601 形式（開始より後）。日付のみの場合はその日の終わり
+    zh_Hant: ISO 8601 格式，需晚於開始時間；只填日期表示當天結束
+  llm_description: End of the window as ISO 8601, after the start. Without a UTC offset it is read in time_zone; a bare date means the end of that day.
+  form: llm
+- name: time_zone
+  type: string
+  required: false
+  default: UTC
+  label:
+    en_US: Time Zone
+    ko_KR: 시간대
+    zh_Hans: 时区
+    pt_BR: Fuso Horário
+    ja_JP: タイム ゾーン
+    zh_Hant: 時區
+  human_description:
+    en_US: Time zone for times without an offset and for the result, e.g. Asia/Seoul, Tokyo Standard Time (default UTC)
+    ko_KR: '오프셋이 없는 시간과 결과에 사용할 시간대. 예: Asia/Seoul, Korea Standard Time (기본값 UTC)'
+    zh_Hans: 用于不带偏移的时间及结果的时区，例如 Asia/Shanghai、China Standard Time（默认 UTC）
+    pt_BR: Fuso para horários sem deslocamento e para o resultado, ex. America/Sao_Paulo (padrão UTC)
+    ja_JP: 'オフセットのない時刻と結果に使うタイム ゾーン。例: Asia/Tokyo、Tokyo Standard Time（既定 UTC）'
+    zh_Hant: 用於不含偏移的時間及結果的時區，例如 Asia/Taipei、Taipei Standard Time（預設 UTC）
+  llm_description: IANA or Windows time zone name used for times without an offset and for the returned slots, e.g. Asia/Seoul. Default UTC.
+  form: llm
+- name: interval_minutes
+  type: number
+  required: false
+  default: 30
+  label:
+    en_US: Interval (minutes)
+    ko_KR: 간격(분)
+    zh_Hans: 时间粒度（分钟）
+    pt_BR: Intervalo (minutos)
+    ja_JP: 間隔（分）
+    zh_Hant: 時間粒度（分鐘）
+  human_description:
+    en_US: Slot length of the availability view, 5-1440 (default 30)
+    ko_KR: 가용성 보기의 슬롯 길이, 5-1440 (기본값 30)
+    zh_Hans: 忙闲视图的时间格长度，5-1440（默认 30）
+    pt_BR: Duração de cada intervalo da disponibilidade, 5-1440 (padrão 30)
+    ja_JP: 空き時間ビューの 1 枠の長さ（5〜1440、既定 30）
+    zh_Hant: 忙閒檢視的時間格長度，5-1440（預設 30）
+  llm_description: Length in minutes of each slot in the availability view, 5-1440, default 30.
+  form: llm
+- name: mailbox
+  type: string
+  required: false
+  label:
+    en_US: Mailbox
+    ko_KR: 사서함
+    zh_Hans: 邮箱
+    pt_BR: Caixa de Correio
+    ja_JP: メールボックス
+    zh_Hant: 信箱
+  human_description:
+    en_US: 'Service Principal only: the mailbox to act on (user principal name or user ID). Leave empty to use the credential''s default mailbox.'
+    ko_KR: '서비스 주체 전용: 작업할 사서함(사용자 계정 이름 또는 사용자 ID). 비워 두면 자격 증명의 기본 사서함을 사용합니다.'
+    zh_Hans: 仅限 Service Principal：要操作的邮箱（用户主体名称或用户 ID）。留空则使用凭据中的默认邮箱。
+    pt_BR: 'Somente Service Principal: a caixa de correio em que atuar (nome principal do usuário ou ID do usuário). Deixe vazio para usar a caixa padrão da credencial.'
+    ja_JP: 'サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。'
+    zh_Hant: 僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。
+  form: form
+extra:
+  python:
+    source: tools/get_schedule.py
