@@ -20,8 +20,11 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
     if bedrock_endpoint_url and bedrock_proxy_url:
         raise InvokeBadRequestError("Cannot use both bedrock_endpoint_url and bedrock_proxy_url at the same time. Please choose one or none.")
 
-    # Initialize client config with region
-    client_config = Config(region_name=region_name)
+    # Runtime inference can take longer than botocore's 60-second read timeout.
+    if service_name == 'bedrock-runtime':
+        client_config = Config(region_name=region_name, read_timeout=3600)
+    else:
+        client_config = Config(region_name=region_name)
 
     # Configure proxy if provided
     if bedrock_proxy_url:
