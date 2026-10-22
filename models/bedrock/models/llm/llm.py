@@ -587,6 +587,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             system_cache_checkpoint=system_cache_checkpoint,
             latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
+        # Haiku 5.5 uses adaptive thinking by default. Saved legacy
+        # sampling and token-budget controls must not reach Converse.
+        underlying_id = model_info.get("underlying_model_id", model_id)
+        if model_ids.strip_profile_prefix(underlying_id) == "anthropic.claude-haiku-5-5":
+            model_parameters = {
+                key: value for key, value in model_parameters.items()
+                if key not in {"temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"}
+            }
         inference_config, additional_model_fields = self._convert_converse_api_model_parameters(model_parameters, stop)
 
         parameters = {
@@ -1834,6 +1842,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Always exclude model_name since it's determined by inference profile
         excluded_params = ['model_name']
+        if underlying_model_id and model_ids.strip_profile_prefix(underlying_model_id) == "anthropic.claude-haiku-5-5":
+            excluded_params.extend(["temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"])
 
         # Apply model-specific filtering if underlying_model_id is available
         allowed_parameter_rules = []
