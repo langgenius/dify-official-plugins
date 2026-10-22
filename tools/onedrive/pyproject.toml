@@ -7,11 +7,8 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "azure-core>=1.41.0",
     "dify_plugin>=0.10.2",
-    "microsoft-kiota-abstractions>=1.12.0",
     "msal>=1.38.0",
-    "msgraph-sdk>=1.62.0",
     "requests>=2.34.2",
     "werkzeug>=3.1.8",
 ]
