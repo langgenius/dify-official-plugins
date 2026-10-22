@@ -1,0 +1,38 @@
+identity:
+  name: get_online_meeting
+  author: langgenius
+  label:
+    en_US: Get Online Meeting
+    zh_Hans: 获取在线会议
+    pt_BR: Obter Reunião Online
+    ja_JP: オンライン会議取得
+    zh_Hant: 取得線上會議
+description:
+  human:
+    en_US: Get an online meeting by ID
+    zh_Hans: 按 ID 获取在线会议
+    pt_BR: Obter uma reunião online pelo ID
+    ja_JP: ID でオンライン会議を取得
+    zh_Hant: 依 ID 取得線上會議
+  llm: Get the details and join link of an online meeting the signed-in user created.
+parameters:
+- name: meeting_id
+  type: string
+  required: true
+  label:
+    en_US: Meeting ID
+    zh_Hans: 会议 ID
+    pt_BR: ID da Reunião
+    ja_JP: 会議 ID
+    zh_Hant: 會議 ID
+  human_description:
+    en_US: The ID of the online meeting (from Create Online Meeting)
+    zh_Hans: 在线会议 ID（来自“创建在线会议”）
+    pt_BR: O ID da reunião online (de Criar Reunião Online)
+    ja_JP: オンライン会議の ID（オンライン会議作成から取得）
+    zh_Hant: 線上會議 ID（來自「建立線上會議」）
+  llm_description: The ID of the online meeting, as returned by Create Online Meeting
+  form: llm
+extra:
+  python:
+    source: tools/get_online_meeting.py

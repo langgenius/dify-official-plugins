@@ -1,0 +1,107 @@
+identity:
+  name: reply_channel_message
+  author: langgenius
+  label:
+    en_US: Reply to Channel Message
+    zh_Hans: 回复频道消息
+    pt_BR: Responder Mensagem de Canal
+    ja_JP: チャネル メッセージに返信
+    zh_Hant: 回覆頻道訊息
+description:
+  human:
+    en_US: Reply in the thread of a Microsoft Teams channel message
+    zh_Hans: 在 Microsoft Teams 频道消息的会话中回复
+    pt_BR: Responder no tópico de uma mensagem de canal do Microsoft Teams
+    ja_JP: Microsoft Teams のチャネル メッセージのスレッドに返信
+    zh_Hant: 在 Microsoft Teams 頻道訊息的討論串中回覆
+  llm: Post a reply in the thread of an existing Microsoft Teams channel message. Needs team_id, channel_id and the top-level message_id.
+parameters:
+- name: team_id
+  type: string
+  required: true
+  label:
+    en_US: Team ID
+    zh_Hans: 团队 ID
+    pt_BR: ID da Equipe
+    ja_JP: チーム ID
+    zh_Hant: 團隊 ID
+  human_description:
+    en_US: The ID of the team (from List Teams)
+    zh_Hans: 团队 ID（来自“列出团队”）
+    pt_BR: O ID da equipe (de Listar Equipes)
+    ja_JP: チームの ID（チーム一覧から取得）
+    zh_Hant: 團隊 ID（來自「列出團隊」）
+  llm_description: The ID of the Microsoft Teams team, as returned by List Teams
+  form: llm
+- name: channel_id
+  type: string
+  required: true
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    pt_BR: ID do Canal
+    ja_JP: チャネル ID
+    zh_Hant: 頻道 ID
+  human_description:
+    en_US: The ID of the channel (from List Channels)
+    zh_Hans: 频道 ID（来自“列出频道”）
+    pt_BR: O ID do canal (de Listar Canais)
+    ja_JP: チャネルの ID（チャネル一覧から取得）
+    zh_Hant: 頻道 ID（來自「列出頻道」）
+  llm_description: The ID of the channel, as returned by List Channels
+  form: llm
+- name: message_id
+  type: string
+  required: true
+  label:
+    en_US: Message ID
+    zh_Hans: 消息 ID
+    pt_BR: ID da Mensagem
+    ja_JP: メッセージ ID
+    zh_Hant: 訊息 ID
+  human_description:
+    en_US: The ID of the channel message (the thread's first message)
+    zh_Hans: 频道消息 ID（会话的第一条消息）
+    pt_BR: O ID da mensagem do canal (a primeira mensagem do tópico)
+    ja_JP: チャネル メッセージの ID（スレッドの最初のメッセージ）
+    zh_Hant: 頻道訊息 ID（討論串的第一則訊息）
+  llm_description: The ID of the top-level channel message to reply to or read replies of, as returned by List Channel Messages
+  form: llm
+- name: message
+  type: string
+  required: true
+  label:
+    en_US: Message
+    zh_Hans: 消息
+    pt_BR: Mensagem
+    ja_JP: メッセージ
+    zh_Hant: 訊息
+  human_description:
+    en_US: The reply content
+    zh_Hans: 回复内容
+    pt_BR: O conteúdo da resposta
+    ja_JP: 返信の内容
+    zh_Hant: 回覆內容
+  llm_description: The content of the reply
+  form: llm
+- name: content_type
+  type: string
+  required: false
+  default: html
+  label:
+    en_US: Content Type
+    zh_Hans: 内容类型
+    pt_BR: Tipo de Conteúdo
+    ja_JP: コンテンツタイプ
+    zh_Hant: 內容類型
+  human_description:
+    en_US: html or text (default html)
+    zh_Hans: html 或 text（默认 html）
+    pt_BR: html ou text (padrão html)
+    ja_JP: html または text（既定は html）
+    zh_Hant: html 或 text（預設 html）
+  llm_description: The content type of the reply body, either html or text, default is html
+  form: llm
+extra:
+  python:
+    source: tools/reply_channel_message.py

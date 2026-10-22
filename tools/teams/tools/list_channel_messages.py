@@ -4,14 +4,17 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphError, resolve_graph_context
 
 
 class ListChannelMessagesTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        access_token = self.runtime.credentials.get("access_token")
-        if not access_token:
-            yield self.create_text_message("Access token is required in credentials.")
+        try:
+            graph = resolve_graph_context(self.runtime.credentials)
+        except GraphError as e:
+            yield self.create_text_message(str(e))
             return
+        access_token = graph.access_token
 
         team_id = tool_parameters.get("team_id", "")
         channel_id = tool_parameters.get("channel_id", "")
@@ -34,7 +37,7 @@ class ListChannelMessagesTool(Tool):
         }
 
         url = (
-            f"https://graph.microsoft.com/v1.0/teams/{team_id}"
+            f"{graph.api_base}/teams/{team_id}"
             f"/channels/{channel_id}/messages"
         )
         params = {"$top": top}

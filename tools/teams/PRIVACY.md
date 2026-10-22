@@ -6,11 +6,11 @@ This plugin does not collect or store personal data of its own. To operate it us
 
 ## Data Processing
 
-When you invoke a tool, the parameters you supply (team/channel/chat IDs, message text) and, for reads, the data returned by Microsoft Graph (teams, channels, chats, messages) are sent directly between Dify and Microsoft Graph to perform the requested action. The plugin acts only as a pass-through and does not retain this data after a request completes. Because it uses delegated permissions, actions are performed as the signed-in user.
+When you invoke a tool, the parameters you supply (team/channel/chat/plan/task/meeting IDs, message text, task and meeting details, user IDs or user principal names of chat members and task assignees) and, for reads, the data returned by Microsoft Graph (teams, channels, chats and their members, messages and replies, online meetings, Planner plans, buckets and tasks) are sent directly between Dify and Microsoft Graph to perform the requested action. The plugin acts only as a pass-through and does not retain this data after a request completes. Because it uses delegated permissions, actions are performed as the signed-in user.
 
 ## Third-party Services
 
-This plugin communicates with **Microsoft Graph / Microsoft 365** (https://graph.microsoft.com). Your use of Microsoft services is governed by the Microsoft Privacy Statement: https://privacy.microsoft.com/privacystatement
+This plugin communicates with **Microsoft Graph / Microsoft 365** (https://graph.microsoft.com, or the national-cloud endpoint selected in the plugin settings). Your use of Microsoft services is governed by the Microsoft Privacy Statement: https://privacy.microsoft.com/privacystatement
 
 ## Data Retention
 
@@ -24,4 +24,4 @@ Because the plugin stores no data of its own, requests regarding data access, co
 
 For privacy-related questions about this plugin, please contact the plugin author via the Dify Marketplace listing.
 
-Last updated: 2026-08-04
+Last updated: 2026-10-22

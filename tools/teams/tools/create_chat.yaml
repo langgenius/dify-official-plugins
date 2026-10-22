@@ -1,0 +1,55 @@
+identity:
+  name: create_chat
+  author: langgenius
+  label:
+    en_US: Create Chat
+    zh_Hans: 创建聊天
+    pt_BR: Criar Chat
+    ja_JP: チャット作成
+    zh_Hant: 建立聊天
+description:
+  human:
+    en_US: Start a one-on-one or group chat with other users
+    zh_Hans: 与其他用户发起一对一或群组聊天
+    pt_BR: Iniciar um chat individual ou em grupo com outros usuários
+    ja_JP: 他のユーザーと 1 対 1 またはグループ チャットを開始
+    zh_Hant: 與其他使用者發起一對一或群組聊天
+  llm: Create a Microsoft Teams chat with the given users; the signed-in user is added automatically. One other user and no topic gives a one-on-one chat (an existing one is returned), otherwise a group chat. Returns the chat id for Send Chat Message.
+parameters:
+- name: members
+  type: string
+  required: true
+  label:
+    en_US: Members
+    zh_Hans: 成员
+    pt_BR: Membros
+    ja_JP: メンバー
+    zh_Hant: 成員
+  human_description:
+    en_US: Comma-separated user principal names or user IDs of the other members
+    zh_Hans: 其他成员的用户主体名称或用户 ID，用逗号分隔
+    pt_BR: Nomes principais de usuário ou IDs dos outros membros, separados por vírgula
+    ja_JP: 他のメンバーのユーザー プリンシパル名またはユーザー ID（カンマ区切り）
+    zh_Hant: 其他成員的使用者主體名稱或使用者 ID，以逗號分隔
+  llm_description: Comma-separated user principal names (emails) or Entra user IDs of the other chat members, not including the signed-in user
+  form: llm
+- name: topic
+  type: string
+  required: false
+  label:
+    en_US: Topic
+    zh_Hans: 主题
+    pt_BR: Tópico
+    ja_JP: トピック
+    zh_Hant: 主題
+  human_description:
+    en_US: Group chat name (makes it a group chat)
+    zh_Hans: 群组聊天名称（填写后为群组聊天）
+    pt_BR: Nome do chat em grupo (torna-o um chat em grupo)
+    ja_JP: グループ チャットの名前（指定するとグループ チャット）
+    zh_Hant: 群組聊天名稱（填寫後為群組聊天）
+  llm_description: Optional name of the group chat; setting it always creates a group chat
+  form: llm
+extra:
+  python:
+    source: tools/create_chat.py

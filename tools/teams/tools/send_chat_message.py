@@ -4,14 +4,17 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphError, resolve_graph_context
 
 
 class SendChatMessageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        access_token = self.runtime.credentials.get("access_token")
-        if not access_token:
-            yield self.create_text_message("Access token is required in credentials.")
+        try:
+            graph = resolve_graph_context(self.runtime.credentials)
+        except GraphError as e:
+            yield self.create_text_message(str(e))
             return
+        access_token = graph.access_token
 
         chat_id = tool_parameters.get("chat_id", "")
         message = tool_parameters.get("message", "")
@@ -31,7 +34,7 @@ class SendChatMessageTool(Tool):
             "Content-Type": "application/json",
         }
 
-        url = f"https://graph.microsoft.com/v1.0/chats/{chat_id}/messages"
+        url = f"{graph.api_base}/chats/{chat_id}/messages"
         body = {"body": {"contentType": content_type, "content": message}}
 
         try:

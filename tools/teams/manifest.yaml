@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.2.0
 type: plugin
 author: langgenius
 name: teams
@@ -8,10 +8,10 @@ label:
   zh_Hans: Microsoft Teams
   pt_BR: Microsoft Teams
 description:
-  en_US: Post messages to Microsoft Teams channels and chats, and list teams and channels via Microsoft Graph.
-  ja_JP: Microsoft Graph を通じて Teams のチャネルやチャットにメッセージを投稿し、チームやチャネルを一覧表示します。
-  zh_Hans: 通过 Microsoft Graph 向 Teams 频道和聊天发送消息，并列出团队和频道。
-  pt_BR: Publique mensagens em canais e chats do Microsoft Teams e liste equipes e canais via Microsoft Graph.
+  en_US: Post and reply to Microsoft Teams channel and chat messages, create chats and online meetings, and manage Planner tasks via Microsoft Graph.
+  ja_JP: Microsoft Graph を通じて Teams のチャネルやチャットへの投稿と返信、チャットやオンライン会議の作成、Planner タスクの管理を行います。
+  zh_Hans: 通过 Microsoft Graph 在 Teams 频道和聊天中发送与回复消息、创建聊天和在线会议，并管理 Planner 任务。
+  pt_BR: Publique e responda mensagens em canais e chats do Microsoft Teams, crie chats e reuniões online e gerencie tarefas do Planner via Microsoft Graph.
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:

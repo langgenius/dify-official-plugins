@@ -84,6 +84,51 @@ oauth_schema:
         ja_JP: "Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください"
         zh_Hant: "請從 Azure 入口網站 > Azure Active Directory > 屬性取得您的租戶 ID"
       url: "https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties"
+    - name: "cloud"
+      type: "select"
+      required: false
+      default: global
+      label:
+        en_US: "Microsoft Cloud"
+        zh_Hans: "Microsoft 云"
+        pt_BR: "Nuvem da Microsoft"
+        ja_JP: "Microsoft クラウド"
+        zh_Hant: "Microsoft 雲端"
+      help:
+        en_US: "Choose a national cloud only if your Microsoft 365 tenant lives there; it changes the sign-in and Graph endpoints."
+        zh_Hans: "仅当您的 Microsoft 365 租户位于国家云时才选择；会同时更改登录和 Graph 端点。"
+        pt_BR: "Escolha uma nuvem nacional somente se o seu locatário do Microsoft 365 estiver nela; isso altera os endpoints de login e do Graph."
+        ja_JP: "Microsoft 365 テナントが各国のクラウドにある場合のみ選択してください。サインインと Graph のエンドポイントが変わります。"
+        zh_Hant: "僅當您的 Microsoft 365 租用戶位於國家雲端時才選擇；會同時變更登入與 Graph 端點。"
+      options:
+        - value: global
+          label:
+            en_US: "Global (graph.microsoft.com)"
+            zh_Hans: "全球 (graph.microsoft.com)"
+            pt_BR: "Global (graph.microsoft.com)"
+            ja_JP: "グローバル (graph.microsoft.com)"
+            zh_Hant: "全球 (graph.microsoft.com)"
+        - value: usgov
+          label:
+            en_US: "US Government (graph.microsoft.us)"
+            zh_Hans: "美国政府 (graph.microsoft.us)"
+            pt_BR: "Governo dos EUA (graph.microsoft.us)"
+            ja_JP: "米国政府 (graph.microsoft.us)"
+            zh_Hant: "美國政府 (graph.microsoft.us)"
+        - value: dod
+          label:
+            en_US: "US Government DoD (dod-graph.microsoft.us)"
+            zh_Hans: "美国政府 DoD (dod-graph.microsoft.us)"
+            pt_BR: "Governo dos EUA DoD (dod-graph.microsoft.us)"
+            ja_JP: "米国政府 DoD (dod-graph.microsoft.us)"
+            zh_Hant: "美國政府 DoD (dod-graph.microsoft.us)"
+        - value: china
+          label:
+            en_US: "China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)"
+            zh_Hans: "中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)"
+            pt_BR: "China, operado pela 21Vianet (microsoftgraph.chinacloudapi.cn)"
+            ja_JP: "中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)"
+            zh_Hant: "中國，世紀互聯營運 (microsoftgraph.chinacloudapi.cn)"
   credentials_schema:
     - name: "access_token"
       type: "secret-input"
@@ -113,6 +158,19 @@ tools:
   - tools/list_chats.yaml
   - tools/list_channel_messages.yaml
   - tools/list_group_calendar_events.yaml
+  - tools/reply_channel_message.yaml
+  - tools/list_channel_message_replies.yaml
+  - tools/create_chat.yaml
+  - tools/list_chat_members.yaml
+  - tools/create_online_meeting.yaml
+  - tools/get_online_meeting.yaml
+  - tools/delete_online_meeting.yaml
+  - tools/list_planner_plans.yaml
+  - tools/list_planner_buckets.yaml
+  - tools/list_planner_tasks.yaml
+  - tools/create_planner_task.yaml
+  - tools/update_planner_task.yaml
+  - tools/delete_planner_task.yaml
 extra:
   python:
     source: provider/teams.py

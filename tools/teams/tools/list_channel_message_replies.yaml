@@ -1,0 +1,90 @@
+identity:
+  name: list_channel_message_replies
+  author: langgenius
+  label:
+    en_US: List Channel Message Replies
+    zh_Hans: 列出频道消息回复
+    pt_BR: Listar Respostas de Mensagem de Canal
+    ja_JP: チャネル メッセージの返信一覧
+    zh_Hant: 列出頻道訊息回覆
+description:
+  human:
+    en_US: List the replies in the thread of a channel message
+    zh_Hans: 列出频道消息会话中的回复
+    pt_BR: Listar as respostas no tópico de uma mensagem de canal
+    ja_JP: チャネル メッセージのスレッドの返信を一覧表示
+    zh_Hant: 列出頻道訊息討論串中的回覆
+  llm: List the replies to a top-level Microsoft Teams channel message.
+parameters:
+- name: team_id
+  type: string
+  required: true
+  label:
+    en_US: Team ID
+    zh_Hans: 团队 ID
+    pt_BR: ID da Equipe
+    ja_JP: チーム ID
+    zh_Hant: 團隊 ID
+  human_description:
+    en_US: The ID of the team (from List Teams)
+    zh_Hans: 团队 ID（来自“列出团队”）
+    pt_BR: O ID da equipe (de Listar Equipes)
+    ja_JP: チームの ID（チーム一覧から取得）
+    zh_Hant: 團隊 ID（來自「列出團隊」）
+  llm_description: The ID of the Microsoft Teams team, as returned by List Teams
+  form: llm
+- name: channel_id
+  type: string
+  required: true
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    pt_BR: ID do Canal
+    ja_JP: チャネル ID
+    zh_Hant: 頻道 ID
+  human_description:
+    en_US: The ID of the channel (from List Channels)
+    zh_Hans: 频道 ID（来自“列出频道”）
+    pt_BR: O ID do canal (de Listar Canais)
+    ja_JP: チャネルの ID（チャネル一覧から取得）
+    zh_Hant: 頻道 ID（來自「列出頻道」）
+  llm_description: The ID of the channel, as returned by List Channels
+  form: llm
+- name: message_id
+  type: string
+  required: true
+  label:
+    en_US: Message ID
+    zh_Hans: 消息 ID
+    pt_BR: ID da Mensagem
+    ja_JP: メッセージ ID
+    zh_Hant: 訊息 ID
+  human_description:
+    en_US: The ID of the channel message (the thread's first message)
+    zh_Hans: 频道消息 ID（会话的第一条消息）
+    pt_BR: O ID da mensagem do canal (a primeira mensagem do tópico)
+    ja_JP: チャネル メッセージの ID（スレッドの最初のメッセージ）
+    zh_Hant: 頻道訊息 ID（討論串的第一則訊息）
+  llm_description: The ID of the top-level channel message to reply to or read replies of, as returned by List Channel Messages
+  form: llm
+- name: top
+  type: number
+  required: false
+  default: 20
+  label:
+    en_US: Max Results
+    zh_Hans: 最大结果数
+    pt_BR: Máximo de Resultados
+    ja_JP: 最大件数
+    zh_Hant: 最大結果數
+  human_description:
+    en_US: How many replies to return (1-50, default 20)
+    zh_Hans: 返回的回复数量（1-50，默认 20）
+    pt_BR: Quantas respostas retornar (1-50, padrão 20)
+    ja_JP: 返す返信の数（1〜50、既定 20）
+    zh_Hant: 要回傳的回覆數量（1-50，預設 20）
+  llm_description: Maximum number of replies to return, 1-50, default 20
+  form: llm
+extra:
+  python:
+    source: tools/list_channel_message_replies.py

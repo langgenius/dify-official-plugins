@@ -1,0 +1,38 @@
+identity:
+  name: list_planner_plans
+  author: langgenius
+  label:
+    en_US: List Planner Plans
+    zh_Hans: 列出 Planner 计划
+    pt_BR: Listar Planos do Planner
+    ja_JP: Planner プラン一覧
+    zh_Hant: 列出 Planner 計畫
+description:
+  human:
+    en_US: List the Planner plans of a team
+    zh_Hans: 列出团队的 Planner 计划
+    pt_BR: Listar os planos do Planner de uma equipe
+    ja_JP: チームの Planner プランを一覧表示
+    zh_Hant: 列出團隊的 Planner 計畫
+  llm: List the Microsoft Planner plans that belong to a team (team_id is the team's group ID).
+parameters:
+- name: team_id
+  type: string
+  required: true
+  label:
+    en_US: Team ID
+    zh_Hans: 团队 ID
+    pt_BR: ID da Equipe
+    ja_JP: チーム ID
+    zh_Hant: 團隊 ID
+  human_description:
+    en_US: The ID of the team (from List Teams)
+    zh_Hans: 团队 ID（来自“列出团队”）
+    pt_BR: O ID da equipe (de Listar Equipes)
+    ja_JP: チームの ID（チーム一覧から取得）
+    zh_Hant: 團隊 ID（來自「列出團隊」）
+  llm_description: The ID of the Microsoft Teams team, as returned by List Teams
+  form: llm
+extra:
+  python:
+    source: tools/list_planner_plans.py

@@ -5,7 +5,7 @@
 
 ## Overview
 
-Post messages into Microsoft Teams **channels** and **chats**, and list your teams, channels and chats — via the Microsoft Graph API with OAuth2. Ideal for broadcasting the same message into a team channel from a Dify workflow or agent.
+Post and reply to messages in Microsoft Teams **channels** and **chats**, start chats, create online meetings, and manage **Planner** tasks — via the Microsoft Graph API with OAuth2. Works in the global cloud and in national clouds (US Government, China/21Vianet).
 
 ## Tools
 
@@ -17,7 +17,27 @@ Post messages into Microsoft Teams **channels** and **chats**, and list your tea
 - **List Channel Messages** — recent messages in a channel.
 - **List Group Calendar Events** — events from a team's Microsoft 365 group calendar, optionally within a start/end date range (`GET /groups/{team-id}/calendarView`); returns subject, start/end, organizer, attendees and Teams meeting info.
 
-Typical flow: **List Teams** → **List Channels** (grab the channel id) → **Send Channel Message**.
+### Channel threads (new in 0.2.0)
+- **Reply to Channel Message** — reply in a message's thread (`POST …/messages/{message-id}/replies`).
+- **List Channel Message Replies** — the replies in a thread.
+
+### Chats (new in 0.2.0)
+- **Create Chat** — start a one-on-one or group chat with users given by UPN or user ID; the signed-in user is added automatically, and an existing one-on-one chat is returned instead of a duplicate.
+- **List Chat Members** — members of a chat (names, emails, user IDs).
+
+### Online meetings (new in 0.2.0)
+- **Create Online Meeting** — a standalone Teams meeting with its join link (`POST /me/onlineMeetings`). Times are ISO 8601; a value without a UTC offset is taken as UTC.
+- **Get Online Meeting** / **Delete Online Meeting** — by meeting ID.
+
+### Planner (new in 0.2.0)
+- **List Planner Plans** — plans of a team.
+- **List Planner Buckets** — buckets (columns) of a plan.
+- **List Planner Tasks** — tasks of a plan, optionally without completed ones.
+- **Create Planner Task** — with bucket, due date and assignees (user IDs, or `me`).
+- **Update Planner Task** — title, bucket, progress (`percent_complete`: 0 / 50 / 100) or due date.
+- **Delete Planner Task**.
+
+Typical flows: **List Teams** → **List Channels** → **Send Channel Message** / **Reply to Channel Message**; **List Teams** → **List Planner Plans** → **Create Planner Task**.
 
 ## Setup (Azure AD app + OAuth2)
 
@@ -28,9 +48,14 @@ Typical flow: **List Teams** → **List Channels** (grab the channel id) → **S
    - `ChannelMessage.Send` — post channel messages
    - `Chat.ReadWrite`, `ChatMessage.Send` — list/post chats
    - `Group.Read.All` — read a team's group calendar (List Group Calendar Events; admin consent required)
+   - `ChannelMessage.Read.All` — read channel messages and replies (admin consent required)
+   - `OnlineMeetings.ReadWrite` — create, get and delete online meetings
+   - `Tasks.ReadWrite` — Planner plans, buckets and tasks
    - `User.Read`, `offline_access`
 4. Add the redirect URI shown by Dify when you connect the plugin.
-5. In Dify, configure the plugin with **Client ID**, **Client Secret** and (optional) **Tenant ID** — leave Tenant ID blank / `common` for personal or multi-tenant apps — then complete the OAuth sign-in.
+5. In Dify, configure the plugin with **Client ID**, **Client Secret**, (optional) **Tenant ID** — leave it blank / `common` for personal or multi-tenant apps — and **Microsoft Cloud** (Global unless your tenant is in a national cloud), then complete the OAuth sign-in.
+
+> Upgrading from 0.1.x: 0.2.0 asks for three more delegated permissions (`ChannelMessage.Read.All`, `OnlineMeetings.ReadWrite`, `Tasks.ReadWrite`). Add them to the app registration, grant consent, and re-authorize once. Existing authorizations keep working for the 0.1.x tools in the meantime.
 
 ## Notes
 

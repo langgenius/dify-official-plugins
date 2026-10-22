@@ -4,6 +4,7 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphError, resolve_graph_context
 
 
 class ListGroupCalendarEventsTool(Tool):
@@ -16,10 +17,12 @@ class ListGroupCalendarEventsTool(Tool):
     """
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        access_token = self.runtime.credentials.get("access_token")
-        if not access_token:
-            yield self.create_text_message("Access token is required in credentials.")
+        try:
+            graph = resolve_graph_context(self.runtime.credentials)
+        except GraphError as e:
+            yield self.create_text_message(str(e))
             return
+        access_token = graph.access_token
 
         team_id = (tool_parameters.get("team_id") or "").strip()
         if not team_id:
@@ -47,7 +50,7 @@ class ListGroupCalendarEventsTool(Tool):
 
         # calendarView needs a range and expands recurring events; /events lists as-is.
         if start_datetime and end_datetime:
-            url = f"https://graph.microsoft.com/v1.0/groups/{team_id}/calendarView"
+            url = f"{graph.api_base}/groups/{team_id}/calendarView"
             params = {
                 "startDateTime": start_datetime,
                 "endDateTime": end_datetime,
@@ -56,7 +59,7 @@ class ListGroupCalendarEventsTool(Tool):
                 "$select": select,
             }
         else:
-            url = f"https://graph.microsoft.com/v1.0/groups/{team_id}/events"
+            url = f"{graph.api_base}/groups/{team_id}/events"
             params = {
                 "$top": top,
                 "$orderby": "start/dateTime",

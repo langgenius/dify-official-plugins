@@ -1,0 +1,72 @@
+identity:
+  name: create_online_meeting
+  author: langgenius
+  label:
+    en_US: Create Online Meeting
+    zh_Hans: 创建在线会议
+    pt_BR: Criar Reunião Online
+    ja_JP: オンライン会議作成
+    zh_Hant: 建立線上會議
+description:
+  human:
+    en_US: Create a Teams online meeting and get its join link
+    zh_Hans: 创建 Teams 在线会议并获取加入链接
+    pt_BR: Criar uma reunião online do Teams e obter o link de participação
+    ja_JP: Teams のオンライン会議を作成し参加リンクを取得
+    zh_Hant: 建立 Teams 線上會議並取得加入連結
+  llm: Create a standalone Microsoft Teams online meeting for the signed-in user and return its id and joinWebUrl. To put a meeting on a calendar, use a calendar tool instead.
+parameters:
+- name: subject
+  type: string
+  required: true
+  label:
+    en_US: Subject
+    zh_Hans: 主题
+    pt_BR: Assunto
+    ja_JP: 件名
+    zh_Hant: 主旨
+  human_description:
+    en_US: The meeting subject
+    zh_Hans: 会议主题
+    pt_BR: O assunto da reunião
+    ja_JP: 会議の件名
+    zh_Hant: 會議主旨
+  llm_description: The subject of the meeting
+  form: llm
+- name: start_datetime
+  type: string
+  required: true
+  label:
+    en_US: Start
+    zh_Hans: 开始时间
+    pt_BR: Início
+    ja_JP: 開始
+    zh_Hant: 開始時間
+  human_description:
+    en_US: ISO 8601 date-time, e.g. 2026-12-01T10:00:00+09:00 (no offset = UTC)
+    zh_Hans: ISO 8601 日期时间，例如 2026-12-01T10:00:00+09:00（不带偏移则视为 UTC）
+    pt_BR: Data-hora ISO 8601, ex. 2026-12-01T10:00:00+09:00 (sem fuso = UTC)
+    ja_JP: 'ISO 8601 の日時（例: 2026-12-01T10:00:00+09:00。オフセットなしは UTC）'
+    zh_Hant: ISO 8601 日期時間，例如 2026-12-01T10:00:00+09:00（不含偏移則視為 UTC）
+  llm_description: Start as ISO 8601 date-time, e.g. 2026-12-01T10:00:00+09:00; without a UTC offset it is treated as UTC
+  form: llm
+- name: end_datetime
+  type: string
+  required: true
+  label:
+    en_US: End
+    zh_Hans: 结束时间
+    pt_BR: Fim
+    ja_JP: 終了
+    zh_Hant: 結束時間
+  human_description:
+    en_US: ISO 8601 date-time, after the start
+    zh_Hans: ISO 8601 日期时间，需晚于开始时间
+    pt_BR: Data-hora ISO 8601, após o início
+    ja_JP: ISO 8601 の日時（開始より後）
+    zh_Hant: ISO 8601 日期時間，需晚於開始時間
+  llm_description: End as ISO 8601 date-time, after the start
+  form: llm
+extra:
+  python:
+    source: tools/create_online_meeting.py

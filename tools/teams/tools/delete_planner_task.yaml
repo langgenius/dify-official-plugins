@@ -1,0 +1,38 @@
+identity:
+  name: delete_planner_task
+  author: langgenius
+  label:
+    en_US: Delete Planner Task
+    zh_Hans: 删除 Planner 任务
+    pt_BR: Excluir Tarefa do Planner
+    ja_JP: Planner タスク削除
+    zh_Hant: 刪除 Planner 任務
+description:
+  human:
+    en_US: Delete a Planner task
+    zh_Hans: 删除 Planner 任务
+    pt_BR: Excluir uma tarefa do Planner
+    ja_JP: Planner タスクを削除
+    zh_Hant: 刪除 Planner 任務
+  llm: Delete a Microsoft Planner task.
+parameters:
+- name: task_id
+  type: string
+  required: true
+  label:
+    en_US: Task ID
+    zh_Hans: 任务 ID
+    pt_BR: ID da Tarefa
+    ja_JP: タスク ID
+    zh_Hant: 任務 ID
+  human_description:
+    en_US: The ID of the Planner task (from List Planner Tasks)
+    zh_Hans: Planner 任务 ID（来自“列出 Planner 任务”）
+    pt_BR: O ID da tarefa do Planner (de Listar Tarefas do Planner)
+    ja_JP: Planner タスクの ID（Planner タスク一覧から取得）
+    zh_Hant: Planner 任務 ID（來自「列出 Planner 任務」）
+  llm_description: The ID of the Planner task, as returned by List Planner Tasks or Create Planner Task
+  form: llm
+extra:
+  python:
+    source: tools/delete_planner_task.py
