@@ -5,9 +5,11 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListChannelsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -60,4 +62,5 @@ class ListChannelsTool(Tool):
                 f"Found {len(channels)} channel(s):\n{summary}"
             )
 
+        self._out.update(channels=[{"id": c.get("id") or "", "name": c.get("displayName") or "", "description": c.get("description") or "", "membership_type": c.get("membershipType") or "", "web_url": c.get("webUrl") or "", "email": c.get("email") or ""} for c in data.get("value", [])], count=len(channels), success=True)
         yield self.create_json_message({"channels": channels})

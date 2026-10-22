@@ -150,6 +150,54 @@ parameters:
     zh_Hant: 上一次結果中的續讀連結（pagination.next_link），通常留空
   llm_description: Continuation link from a previous List Chats result (pagination.next_link). It keeps that call's filters; leave empty to start a new search.
   form: llm
+output_schema:
+  type: object
+  properties:
+    chats:
+      type: array
+      description: Chats
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Chat ID
+          display_name:
+            type: string
+            description: Topic, or the other participants' names
+          chat_type:
+            type: string
+            description: oneOnOne, group or meeting
+          topic:
+            type: string
+            description: Topic
+          web_url:
+            type: string
+            description: Link to the chat
+          last_updated:
+            type: string
+            description: Last activity (ISO 8601)
+          member_names:
+            type: array[string]
+            description: Participant names
+          member_emails:
+            type: array[string]
+            description: Participant emails
+    count:
+      type: integer
+      description: Number of items returned
+    has_more:
+      type: boolean
+      description: True when more results are available
+    next_link:
+      type: string
+      description: Pass to next_link to continue, empty when complete
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_chats.py

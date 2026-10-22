@@ -4,15 +4,8 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import (
-    GraphError,
-    bounded_int,
-    check_next_link,
-    paginate,
-    require,
-    resolve_graph_context,
-    segment,
-)
+from tools.graph_client import bounded_int, check_next_link, GraphError, message_vars, paginate, require, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 _TIME_FIELDS = ("createdDateTime", "lastModifiedDateTime")
 
@@ -29,6 +22,7 @@ def _utc(value: str, name: str) -> str:
 
 
 class ListChatMessagesTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -93,6 +87,7 @@ class ListChatMessagesTool(Tool):
         result: dict[str, Any] = {"chat_id": chat_id, "messages": messages, "pagination": pagination}
         if page.error:
             result["warning"] = page.error
+        self._out.update(messages=[message_vars(m) for m in raw], count=len(messages), has_more=page.next_link is not None, next_link=page.next_link or "", success=True)
         yield self.create_json_message(result)
 
     @staticmethod

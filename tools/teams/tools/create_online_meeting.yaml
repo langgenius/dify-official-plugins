@@ -67,6 +67,30 @@ parameters:
     zh_Hant: ISO 8601 日期時間，需晚於開始時間
   llm_description: End as ISO 8601 date-time, after the start
   form: llm
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: Online meeting ID
+    subject:
+      type: string
+      description: Meeting subject
+    join_url:
+      type: string
+      description: Join link
+    start:
+      type: string
+      description: Start (ISO 8601, UTC)
+    end:
+      type: string
+      description: End (ISO 8601, UTC)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/create_online_meeting.py

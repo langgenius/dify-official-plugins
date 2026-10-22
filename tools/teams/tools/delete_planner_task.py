@@ -3,10 +3,12 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphError, etag_of, require, resolve_graph_context, segment
+from tools.graph_client import etag_of, GraphError, require, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 
 class DeletePlannerTaskTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -18,4 +20,5 @@ class DeletePlannerTaskTool(Tool):
             return
 
         yield self.create_text_message("Task deleted.")
+        self._out.update(task_id=task_id, success=True)
         yield self.create_json_message({"status": "deleted", "task_id": task_id})

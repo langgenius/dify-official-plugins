@@ -4,11 +4,13 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphError, require, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 _MAX_PAGES = 10  # safety cap when following @odata.nextLink
 
 
 class ListPlannerTasksTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -49,4 +51,9 @@ class ListPlannerTasksTool(Tool):
             for t in tasks[:limit]
         ]
         yield self.create_text_message(f"Found {len(result)} task(s) in the plan.")
+        self._out.update(
+            tasks=[{"id": t["id"] or "", "title": t["title"] or "", "bucket_id": t["bucketId"] or "", "percent_complete": int(t["percentComplete"] or 0),
+                    "due_datetime": t["dueDateTime"] or "", "assignee_ids": t["assigneeIds"], "created_datetime": t["createdDateTime"] or ""} for t in result],
+            count=len(result), success=True,
+        )
         yield self.create_json_message({"tasks": result})

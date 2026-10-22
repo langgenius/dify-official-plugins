@@ -101,6 +101,30 @@ parameters:
     zh_Hant: ISO 8601 日期或日期時間，例如 2026-12-01 或 2026-12-01T18:00:00+09:00（不含時區偏移則視為 UTC）
   llm_description: Due date as ISO 8601, e.g. 2026-12-01T18:00:00+09:00; a value without a UTC offset is treated as UTC
   form: llm
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: Planner task ID
+    title:
+      type: string
+      description: Task title
+    bucket_id:
+      type: string
+      description: Bucket ID
+    percent_complete:
+      type: integer
+      description: 0 not started, 50 in progress, 100 completed
+    due_datetime:
+      type: string
+      description: Due date (ISO 8601, UTC)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/update_planner_task.py

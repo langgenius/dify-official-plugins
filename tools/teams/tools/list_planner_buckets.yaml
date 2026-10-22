@@ -33,6 +33,30 @@ parameters:
     zh_Hant: Planner 計畫 ID（來自「列出 Planner 計畫」）
   llm_description: The ID of the Planner plan, as returned by List Planner Plans
   form: llm
+output_schema:
+  type: object
+  properties:
+    buckets:
+      type: array
+      description: Buckets of the plan
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Bucket ID
+          name:
+            type: string
+            description: Bucket name
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_planner_buckets.py

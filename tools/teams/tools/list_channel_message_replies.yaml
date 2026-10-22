@@ -85,6 +85,60 @@ parameters:
     zh_Hant: 要回傳的回覆數量（1-50，預設 20）
   llm_description: Maximum number of replies to return, 1-50, default 20
   form: llm
+output_schema:
+  type: object
+  properties:
+    replies:
+      type: array
+      description: Replies in the thread
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Message ID
+          message_type:
+            type: string
+            description: message, or a system event type
+          subject:
+            type: string
+            description: Subject (channel messages)
+          content:
+            type: string
+            description: Body as sent (HTML or text)
+          content_type:
+            type: string
+            description: html or text
+          from_name:
+            type: string
+            description: Sender display name
+          from_user_id:
+            type: string
+            description: Sender user ID
+          created_datetime:
+            type: string
+            description: Created time (ISO 8601)
+          last_modified_datetime:
+            type: string
+            description: Last modified time (ISO 8601)
+          web_url:
+            type: string
+            description: Link to the message in Teams
+          reply_to_id:
+            type: string
+            description: ID of the message this replies to
+          attachment_names:
+            type: array[string]
+            description: Names of attached files
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_channel_message_replies.py

@@ -50,6 +50,24 @@ parameters:
     zh_Hant: 群組聊天名稱（填寫後為群組聊天）
   llm_description: Optional name of the group chat; setting it always creates a group chat
   form: llm
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: Chat ID, for Send Chat Message
+    chat_type:
+      type: string
+      description: oneOnOne or group
+    web_url:
+      type: string
+      description: Link to the chat
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/create_chat.py

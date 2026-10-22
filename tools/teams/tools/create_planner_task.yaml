@@ -101,6 +101,30 @@ parameters:
     zh_Hant: 以逗號分隔的 Entra 使用者 ID；'me' 表示目前登入的使用者
   llm_description: Comma-separated Entra user object IDs to assign (the userId values from List Chat Members work); 'me' is the signed-in user
   form: llm
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: Planner task ID
+    title:
+      type: string
+      description: Task title
+    bucket_id:
+      type: string
+      description: Bucket ID
+    percent_complete:
+      type: integer
+      description: 0 not started, 50 in progress, 100 completed
+    due_datetime:
+      type: string
+      description: Due date (ISO 8601, UTC)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/create_planner_task.py

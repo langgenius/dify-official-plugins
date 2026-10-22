@@ -33,6 +33,18 @@ parameters:
     zh_Hant: 線上會議 ID（來自「建立線上會議」）
   llm_description: The ID of the online meeting, as returned by Create Online Meeting
   form: llm
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: ID of the deleted meeting
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/delete_online_meeting.py

@@ -33,6 +33,33 @@ parameters:
     zh_Hant: 團隊 ID（來自「列出團隊」）
   llm_description: The ID of the Microsoft Teams team, as returned by List Teams
   form: llm
+output_schema:
+  type: object
+  properties:
+    plans:
+      type: array
+      description: Planner plans of the team
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Plan ID
+          title:
+            type: string
+            description: Plan title
+          created_datetime:
+            type: string
+            description: Created time
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_planner_plans.py

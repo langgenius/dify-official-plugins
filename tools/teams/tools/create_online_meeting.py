@@ -3,10 +3,12 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphError, require, resolve_graph_context, to_graph_datetime
+from tools.graph_client import GraphError, meeting_vars, require, resolve_graph_context, to_graph_datetime
+from tools.outputs import with_outputs
 
 
 class CreateOnlineMeetingTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -28,4 +30,5 @@ class CreateOnlineMeetingTool(Tool):
         yield self.create_text_message(
             f"Online meeting created{note}. Meeting ID: {data.get('id')} Join URL: {data.get('joinWebUrl')}"
         )
+        self._out.update(**meeting_vars(data), success=True)
         yield self.create_json_message(data)

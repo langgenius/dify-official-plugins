@@ -3,10 +3,12 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphError, etag_of, require, resolve_graph_context, segment, to_graph_datetime
+from tools.graph_client import etag_of, GraphError, require, resolve_graph_context, segment, task_vars, to_graph_datetime
+from tools.outputs import with_outputs
 
 
 class UpdatePlannerTaskTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -52,4 +54,5 @@ class UpdatePlannerTaskTool(Tool):
             return
 
         yield self.create_text_message(f"Task updated{note}: {', '.join(changes)}.")
+        self._out.update(**task_vars(task), success=True)
         yield self.create_json_message(task)

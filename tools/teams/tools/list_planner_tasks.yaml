@@ -69,6 +69,45 @@ parameters:
     zh_Hant: 包含已 100% 完成的任務
   llm_description: Whether to include completed tasks, default true
   form: llm
+output_schema:
+  type: object
+  properties:
+    tasks:
+      type: array
+      description: Tasks of the plan
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Task ID
+          title:
+            type: string
+            description: Title
+          bucket_id:
+            type: string
+            description: Bucket ID
+          percent_complete:
+            type: integer
+            description: Progress 0-100
+          due_datetime:
+            type: string
+            description: Due date
+          assignee_ids:
+            type: array[string]
+            description: Assigned user IDs
+          created_datetime:
+            type: string
+            description: Created time
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_planner_tasks.py

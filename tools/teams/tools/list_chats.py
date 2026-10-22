@@ -3,7 +3,8 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphError, bounded_int, check_next_link, paginate, resolve_graph_context
+from tools.graph_client import bounded_int, check_next_link, GraphError, paginate, resolve_graph_context
+from tools.outputs import with_outputs
 
 _CHAT_TYPES = ("oneOnOne", "group", "meeting")
 # Graph expands at most this many members per chat; a chat at the cap may have more.
@@ -16,6 +17,7 @@ def _odata_string(value: str) -> str:
 
 
 class ListChatsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -76,6 +78,15 @@ class ListChatsTool(Tool):
         result: dict[str, Any] = {"chats": chats, "pagination": pagination}
         if page.error:
             result["warning"] = page.error
+        self._out.update(
+            chats=[
+                {"id": c["id"] or "", "display_name": c["display_name"] or "", "chat_type": c["chatType"] or "", "topic": c["topic"] or "",
+                 "web_url": c["webUrl"] or "", "last_updated": c["lastUpdatedDateTime"] or "",
+                 "member_names": [m["name"] or "" for m in c["members"]], "member_emails": [m["email"] or "" for m in c["members"]]}
+                for c in chats
+            ],
+            count=len(chats), has_more=page.next_link is not None, next_link=page.next_link or "", success=True,
+        )
         yield self.create_json_message(result)
 
     @staticmethod

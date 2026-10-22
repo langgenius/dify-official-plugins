@@ -63,6 +63,34 @@ Typical flows: **List Teams** → **List Channels** → **Send Channel Message**
 - Auth uses delegated permissions, so messages are posted **as the signed-in user**.
 - Access tokens are refreshed automatically via the stored refresh token (`offline_access`).
 
+## Output variables
+
+Besides `text` and `json` (unchanged), every tool returns typed variables that later workflow nodes can pick directly, without parsing `json`. Every tool has `success` (boolean) and `error` (string, empty on success), so a workflow can branch with an IF node; list tools return an array of flat items plus `count`.
+
+| Tool | Variables (besides `success`, `error`) |
+|---|---|
+| List Teams | `teams`, `count` |
+| List Channels | `channels`, `count` |
+| Send Channel Message | `message_id`, `web_url`, `created_datetime` |
+| Send Chat Message | `message_id`, `web_url`, `created_datetime` |
+| List Chats | `chats`, `count`, `has_more`, `next_link` |
+| List Chat Messages | `messages`, `count`, `has_more`, `next_link` |
+| List Channel Messages | `messages`, `count` |
+| List Group Calendar Events | `events`, `count` |
+| Reply to Channel Message | `message_id`, `web_url`, `created_datetime` |
+| List Channel Message Replies | `replies`, `count` |
+| Create Chat | `chat_id`, `chat_type`, `web_url` |
+| List Chat Members | `members`, `count` |
+| Create Online Meeting | `meeting_id`, `subject`, `join_url`, `start`, `end` |
+| Get Online Meeting | `meeting_id`, `subject`, `join_url`, `start`, `end` |
+| Delete Online Meeting | `meeting_id` |
+| List Planner Plans | `plans`, `count` |
+| List Planner Buckets | `buckets`, `count` |
+| List Planner Tasks | `tasks`, `count` |
+| Create Planner Task | `task_id`, `title`, `bucket_id`, `percent_complete`, `due_datetime` |
+| Update Planner Task | `task_id`, `title`, `bucket_id`, `percent_complete`, `due_datetime` |
+| Delete Planner Task | `task_id` |
+
 ## Privacy
 
 See [PRIVACY.md](PRIVACY.md).

@@ -4,9 +4,11 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphError, require, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 
 class DeleteOnlineMeetingTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -17,4 +19,5 @@ class DeleteOnlineMeetingTool(Tool):
             return
 
         yield self.create_text_message("Online meeting deleted.")
+        self._out.update(meeting_id=meeting_id, success=True)
         yield self.create_json_message({"status": "deleted", "meeting_id": meeting_id})

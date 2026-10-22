@@ -232,3 +232,51 @@ def paginate(
         current = check_next_link(ctx, link, resource_path) if link else None
         params = None  # the next link already carries the query
     return Page(items, pages, current)
+
+
+# ── flat, typed fields for the tools' output variables ────────────────
+
+
+def _s(value: Any) -> str:
+    return "" if value is None else str(value)
+
+
+def message_vars(msg: Mapping[str, Any]) -> dict[str, Any]:
+    """A channel or chat message as flat fields (sender, body, times, link)."""
+    sender = msg.get("from") or {}
+    who = sender.get("user") or sender.get("application") or sender.get("device") or {}
+    body = msg.get("body") or {}
+    return {
+        "id": _s(msg.get("id")),
+        "message_type": _s(msg.get("messageType")),
+        "subject": _s(msg.get("subject")),
+        "content": _s(body.get("content")),
+        "content_type": _s(body.get("contentType")),
+        "from_name": _s(who.get("displayName")),
+        "from_user_id": _s(who.get("id")),
+        "created_datetime": _s(msg.get("createdDateTime")),
+        "last_modified_datetime": _s(msg.get("lastModifiedDateTime")),
+        "web_url": _s(msg.get("webUrl")),
+        "reply_to_id": _s(msg.get("replyToId")),
+        "attachment_names": [_s(a.get("name")) for a in msg.get("attachments") or []],
+    }
+
+
+def task_vars(task: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "task_id": _s(task.get("id")),
+        "title": _s(task.get("title")),
+        "bucket_id": _s(task.get("bucketId")),
+        "percent_complete": int(task.get("percentComplete") or 0),
+        "due_datetime": _s(task.get("dueDateTime")),
+    }
+
+
+def meeting_vars(meeting: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "meeting_id": _s(meeting.get("id")),
+        "subject": _s(meeting.get("subject")),
+        "join_url": _s(meeting.get("joinWebUrl")),
+        "start": _s(meeting.get("startDateTime")),
+        "end": _s(meeting.get("endDateTime")),
+    }

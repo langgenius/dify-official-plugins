@@ -3,10 +3,12 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphError, require, resolve_graph_context, segment
+from tools.graph_client import GraphError, message_vars, require, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 
 class ListChannelMessageRepliesTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -34,4 +36,5 @@ class ListChannelMessageRepliesTool(Tool):
             for msg in data.get("value", [])
         ]
         yield self.create_text_message(f"Found {len(replies)} reply(s)." if replies else "No replies found.")
+        self._out.update(replies=[message_vars(m) for m in data.get("value", [])], count=len(replies), success=True)
         yield self.create_json_message({"replies": replies})

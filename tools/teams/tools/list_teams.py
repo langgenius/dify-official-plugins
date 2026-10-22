@@ -5,9 +5,11 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListTeamsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -53,4 +55,5 @@ class ListTeamsTool(Tool):
             )
             yield self.create_text_message(f"Found {len(teams)} team(s):\n{summary}")
 
+        self._out.update(teams=[{"id": t.get("id") or "", "name": t.get("displayName") or "", "description": t.get("description") or "", "web_url": t.get("webUrl") or ""} for t in data.get("value", [])], count=len(teams), success=True)
         yield self.create_json_message({"teams": teams})

@@ -5,6 +5,7 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListGroupCalendarEventsTool(Tool):
@@ -16,6 +17,7 @@ class ListGroupCalendarEventsTool(Tool):
     it lists the group's events. Requires the Group.Read.All permission.
     """
 
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
             graph = resolve_graph_context(self.runtime.credentials)
@@ -110,4 +112,17 @@ class ListGroupCalendarEventsTool(Tool):
                 f"Found {len(events)} event(s):\n" + "\n".join(lines)
             )
 
+        self._out.update(
+            events=[
+                {"id": e.get("id") or "", "subject": e.get("subject") or "",
+                 "start": (e.get("start") or {}).get("dateTime") or "", "end": (e.get("end") or {}).get("dateTime") or "",
+                 "time_zone": (e.get("start") or {}).get("timeZone") or "",
+                 "organizer_name": ((e.get("organizer") or {}).get("emailAddress") or {}).get("name") or "",
+                 "organizer_address": ((e.get("organizer") or {}).get("emailAddress") or {}).get("address") or "",
+                 "location": (e.get("location") or {}).get("displayName") or "", "is_online_meeting": bool(e.get("isOnlineMeeting")),
+                 "join_url": (e.get("onlineMeeting") or {}).get("joinUrl") or "", "web_link": e.get("webLink") or ""}
+                for e in data.get("value", [])
+            ],
+            count=len(events), success=True,
+        )
         yield self.create_json_message({"events": events})

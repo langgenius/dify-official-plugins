@@ -33,6 +33,18 @@ parameters:
     zh_Hant: Planner 任務 ID（來自「列出 Planner 任務」）
   llm_description: The ID of the Planner task, as returned by List Planner Tasks or Create Planner Task
   form: llm
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: ID of the deleted task
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/delete_planner_task.py
