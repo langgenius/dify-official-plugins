@@ -5,7 +5,7 @@ from urllib.parse import quote
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.graph_client import GraphAuthError, file_info, graph_request, resolve_graph_context
+from tools.graph_client import GraphAuthError, file_info, graph_request, is_service_principal, resolve_graph_context
 
 
 class SearchFileTool(Tool):
@@ -28,8 +28,12 @@ class SearchFileTool(Tool):
             q = quote(str(query).replace("'", "''"), safe="")
             response = graph_request(graph, "GET", f"{graph.drive_base}/root/search(q='{q}')", params={"$top": limit})
         except GraphAuthError as e:
-            yield self.create_text_message(f"Error searching files: {e}")
-            yield self.create_json_message({"error": str(e)})
+            message = str(e)
+            if is_service_principal(self.runtime.credentials) and " 403:" in message:
+                # Drive search goes through SharePoint search, which app-only tokens may only use with Sites.Read.All.
+                message += " With a Service Principal, search also needs the application permission Sites.Read.All."
+            yield self.create_text_message(f"Error searching files: {message}")
+            yield self.create_json_message({"error": message})
             return
 
         files = (response.json().get("value") or [])[:limit]

@@ -61,10 +61,10 @@ credentials_for_provider:
       ja_JP: アプリ登録のクライアントシークレットの値
       pt_BR: Valor do segredo do cliente do registro de aplicativo
     help:
-      en_US: The app needs the Microsoft Graph application permission Files.ReadWrite.All with admin consent.
-      zh_Hans: 应用需要已获管理员同意的 Microsoft Graph 应用程序权限 Files.ReadWrite.All。
-      ja_JP: アプリには、管理者の同意を付与した Microsoft Graph のアプリケーションのアクセス許可 Files.ReadWrite.All が必要です。
-      pt_BR: O aplicativo precisa da permissão de aplicativo do Microsoft Graph Files.ReadWrite.All com consentimento do administrador.
+      en_US: The app needs the Microsoft Graph application permission Files.ReadWrite.All (plus Sites.Read.All for search) with admin consent.
+      zh_Hans: 应用需要已获管理员同意的 Microsoft Graph 应用程序权限 Files.ReadWrite.All（搜索还需要 Sites.Read.All）。
+      ja_JP: アプリには、管理者の同意を付与した Microsoft Graph のアプリケーションのアクセス許可 Files.ReadWrite.All（検索には Sites.Read.All も）が必要です。
+      pt_BR: O aplicativo precisa da permissão de aplicativo do Microsoft Graph Files.ReadWrite.All (e Sites.Read.All para a pesquisa) com consentimento do administrador.
     url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
   drive_user:
     type: text-input

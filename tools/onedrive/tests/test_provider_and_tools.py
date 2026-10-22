@@ -240,3 +240,11 @@ def test_delete_reports_graph_errors(monkeypatch):
     monkeypatch.setattr(graph_client.requests, "request", fake)
     out = run(DeleteFileByIdTool, {"file_id": "missing"})
     assert out[0][0] == "json" and "OneDrive API error 404: itemNotFound" in out[0][1]["error"]
+
+
+def test_search_403_with_service_principal_names_sites_read_all(monkeypatch):
+    monkeypatch.setattr(graph_client.requests, "post", lambda *a, **k: FakeResponse({"access_token": "app", "expires_in": 3599}))
+    fake = FakeGraph({("GET", "/root/search(q='x')"): FakeResponse({"error": {"code": "accessDenied", "message": "Access denied"}}, 403)})
+    monkeypatch.setattr(graph_client.requests, "request", fake)
+    out = run(SearchFileTool, {"query": "x"}, dict(SP))
+    assert "Sites.Read.All" in out[0][1]
