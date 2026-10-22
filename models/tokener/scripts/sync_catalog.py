@@ -20,6 +20,14 @@ SAMPLING_MODELS = {"deepseek-v4-flash", "deepseek-v4-pro", "glm-5.2", "kimi-k3"}
 GPT_MODELS = {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}
 ROOT = Path(__file__).resolve().parents[1]
 LLM_DIR = ROOT / "models" / "llm"
+TTS_MODELS = {"tts-1", "tts-1-hd"}
+SPEECH2TEXT_MODELS = {
+    "whisper-1",
+    "gpt-4o-mini-transcribe",
+    "gpt-4o-mini-transcribe-2025-12-15",
+    "gpt-4o-transcribe",
+    "gpt-4o-transcribe-diarize",
+}
 
 CAPABILITIES = {
     "streaming",
@@ -85,7 +93,7 @@ def fetch_catalog(url: str) -> Any:
         raise CatalogError("catalog response is not valid JSON") from ex
 
 
-def render_catalog(payload: Any) -> dict[str, str]:
+def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
     if not isinstance(payload, dict) or payload.get("schemaVersion") != 1:
         raise CatalogError("catalog schemaVersion must be 1")
 
@@ -96,6 +104,9 @@ def render_catalog(payload: Any) -> dict[str, str]:
     raw_models = payload.get("models")
     if not isinstance(raw_models, list) or not raw_models:
         raise CatalogError("models must be a non-empty array")
+
+    if model_type not in {"llm", "speech2text", "tts"}:
+        raise CatalogError(f"unsupported output model type: {model_type}")
 
     seen: set[str] = set()
     models: list[dict[str, Any]] = []
@@ -108,11 +119,23 @@ def render_catalog(payload: Any) -> dict[str, str]:
             raise CatalogError(f"duplicate model id: {model_id}")
         seen.add(model_id)
 
-        model_type = raw_model.get("modelType")
-        if model_type in {"text-embedding", "rerank"}:
+        entry_type = raw_model.get("modelType")
+        if entry_type == "speech2text":
+            if model_type == "speech2text" and model_id in SPEECH2TEXT_MODELS:
+                _validate_speech2text(raw_model)
+                models.append(raw_model)
             continue
+        if entry_type == "tts":
+            if model_type == "tts" and model_id in TTS_MODELS:
+                _validate_tts(raw_model)
+                models.append(raw_model)
+            continue
+        if entry_type in {"text-embedding", "rerank"}:
+            continue
+        if entry_type != "llm":
+            raise CatalogError(f"unsupported model type for {model_id}: {entry_type}")
         if model_type != "llm":
-            raise CatalogError(f"unsupported model type for {model_id}: {model_type}")
+            continue
 
         _string(raw_model.get("label"), f"{model_id}.label")
         _string(raw_model.get("provider"), f"{model_id}.provider")
@@ -154,13 +177,146 @@ def render_catalog(payload: Any) -> dict[str, str]:
 
         models.append(raw_model)
 
+    if not models:
+        raise CatalogError(f"catalog contains no supported {model_type} models")
+
     files: dict[str, str] = {}
     ordered_models = sorted(models, key=lambda model: model["id"])
+    render = {"llm": _render_model, "speech2text": _render_speech2text, "tts": _render_tts}[
+        model_type
+    ]
     for model in ordered_models:
         filename = f"{quote(model['id'], safe='._-')}.yaml"
-        files[filename] = _render_model(model, revision)
+        files[filename] = render(model, revision)
     files["_position.yaml"] = _render_position(ordered_models, revision)
     return files
+
+
+def _validate_speech2text(model: dict[str, Any]) -> None:
+    model_id = model["id"]
+    _string(model.get("label"), f"{model_id}.label")
+    _string(model.get("provider"), f"{model_id}.provider")
+    if not isinstance(model.get("deprecated"), bool):
+        raise CatalogError(f"{model_id}.deprecated must be a boolean")
+    audio = model.get("audio")
+    if not isinstance(audio, dict):
+        raise CatalogError(f"{model_id}.audio must be an object")
+    _positive_int(audio.get("maxUploadBytes"), f"{model_id}.audio.maxUploadBytes")
+    extensions = audio.get("supportedExtensions")
+    if (
+        not isinstance(extensions, list)
+        or not 1 <= len(extensions) <= 32
+        or any(
+            not isinstance(ext, str) or re.fullmatch(r"[a-z0-9]+", ext) is None
+            for ext in extensions
+        )
+    ):
+        raise CatalogError(f"{model_id}.audio.supportedExtensions must contain 1 to 32 extensions")
+    _validate_audio_pricing(model, {"second", "million_tokens"})
+
+
+def _validate_audio_pricing(model: dict[str, Any], allowed_units: set[str]) -> None:
+    model_id = model["id"]
+    pricing = model.get("pricing")
+    if not isinstance(pricing, dict) or pricing.get("currency") != "USD":
+        raise CatalogError(f"{model_id}.pricing.currency must be USD")
+    rates = pricing.get("rates")
+    if not isinstance(rates, list) or not 1 <= len(rates) <= 6:
+        raise CatalogError(f"{model_id}.pricing.rates must contain 1 to 6 rates")
+    for rate in rates:
+        if (
+            not isinstance(rate, dict)
+            or rate.get("direction") not in ("input", "output")
+            or rate.get("modality") not in ("text", "audio")
+            or not isinstance(rate.get("unit"), str)
+            or rate["unit"] not in allowed_units
+            or not isinstance(rate.get("price"), str)
+            or re.fullmatch(r"[0-9]+(?:\.[0-9]{1,6})?", rate["price"]) is None
+        ):
+            raise CatalogError(f"{model_id}.pricing.rates contains an invalid audio rate")
+
+
+def _validate_tts(model: dict[str, Any]) -> None:
+    model_id = model["id"]
+    _string(model.get("label"), f"{model_id}.label")
+    _string(model.get("provider"), f"{model_id}.provider")
+    if not isinstance(model.get("deprecated"), bool):
+        raise CatalogError(f"{model_id}.deprecated must be a boolean")
+    audio = model.get("audio")
+    if not isinstance(audio, dict):
+        raise CatalogError(f"{model_id}.audio must be an object")
+    voices = audio.get("voices")
+    if not isinstance(voices, list) or not 1 <= len(voices) <= 128:
+        raise CatalogError(f"{model_id}.audio.voices must contain 1 to 128 voices")
+    voice_ids = set()
+    for voice in voices:
+        if not isinstance(voice, dict):
+            raise CatalogError(f"{model_id}.audio.voices must contain voice objects")
+        voice_ids.add(_string(voice.get("id"), f"{model_id}.audio.voices.id"))
+        languages = voice.get("languages")
+        if not isinstance(languages, list) or any(
+            not isinstance(language, str) for language in languages
+        ):
+            raise CatalogError(f"{model_id}.audio.voices.languages must be a string array")
+    default_voice = _string(audio.get("defaultVoice"), f"{model_id}.audio.defaultVoice")
+    if default_voice not in voice_ids:
+        raise CatalogError(f"{model_id}.audio.defaultVoice must be one of the voices")
+    _positive_int(audio.get("wordLimit"), f"{model_id}.audio.wordLimit")
+    if audio.get("audioFormat") not in ("mp3", "aac", "opus", "pcm"):
+        raise CatalogError(f"{model_id}.audio.audioFormat is unsupported")
+    _validate_audio_pricing(model, {"second", "character", "million_tokens"})
+
+
+def _render_tts(model: dict[str, Any], revision: str) -> str:
+    audio = model["audio"]
+    lines = [
+        GENERATED_MARKER,
+        f"# catalog-revision: {revision}",
+        f"model: {json.dumps(model['id'])}",
+        "label:",
+        f"  en_US: {json.dumps(model['label'], ensure_ascii=False)}",
+        f"  zh_Hans: {json.dumps(model['label'], ensure_ascii=False)}",
+        "model_type: tts",
+        "model_properties:",
+        f"  default_voice: {json.dumps(audio['defaultVoice'])}",
+        f"  word_limit: {audio['wordLimit']}",
+        f"  audio_type: {json.dumps(audio['audioFormat'])}",
+        "  voices:",
+    ]
+    for voice in audio["voices"]:
+        lines.extend(
+            [
+                f"    - mode: {json.dumps(voice['id'])}",
+                f"      name: {json.dumps(voice['id'])}",
+                f"      language: {json.dumps(voice['languages'], ensure_ascii=False)}",
+            ]
+        )
+    lines.append(f"deprecated: {str(model['deprecated']).lower()}")
+    return "\n".join(lines) + "\n"
+
+
+def _render_speech2text(model: dict[str, Any], revision: str) -> str:
+    audio = model["audio"]
+    upload_mib = Decimal(audio["maxUploadBytes"]) / (1024 * 1024)
+    extensions = json.dumps(",".join(audio["supportedExtensions"]))
+    return (
+        "\n".join(
+            [
+                GENERATED_MARKER,
+                f"# catalog-revision: {revision}",
+                f"model: {json.dumps(model['id'])}",
+                "label:",
+                f"  en_US: {json.dumps(model['label'], ensure_ascii=False)}",
+                f"  zh_Hans: {json.dumps(model['label'], ensure_ascii=False)}",
+                "model_type: speech2text",
+                "model_properties:",
+                f"  file_upload_limit: {upload_mib:f}",
+                f"  supported_file_extensions: {extensions}",
+                f"deprecated: {str(model['deprecated']).lower()}",
+            ]
+        )
+        + "\n"
+    )
 
 
 def _render_model(model: dict[str, Any], revision: str) -> str:
@@ -283,7 +439,7 @@ def sync_files(files: dict[str, str], *, check: bool, output_dir: Path = LLM_DIR
     if check:
         if changed or stale:
             for name in sorted(changed | stale):
-                print(f"catalog drift: models/llm/{name}", file=sys.stderr)
+                print(f"catalog drift: {output_dir.name}/{name}", file=sys.stderr)
             return False
         return True
 
@@ -292,7 +448,7 @@ def sync_files(files: dict[str, str], *, check: bool, output_dir: Path = LLM_DIR
         (output_dir / name).unlink()
     for name in changed:
         (output_dir / name).write_text(files[name], encoding="utf-8")
-    print(f"synced {len(files) - 1} LLM models")
+    print(f"synced {len(files) - 1} {output_dir.name} models")
     return True
 
 
@@ -300,11 +456,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Sync Tokener.ai models into Dify YAML")
     parser.add_argument("--url", default=DEFAULT_CATALOG_URL, help="catalog endpoint")
     parser.add_argument("--check", action="store_true", help="fail if generated files differ")
+    parser.add_argument("--model-type", choices=("llm", "speech2text", "tts"), default="llm")
     args = parser.parse_args()
 
     try:
-        files = render_catalog(fetch_catalog(args.url))
-        return 0 if sync_files(files, check=args.check) else 1
+        files = render_catalog(fetch_catalog(args.url), model_type=args.model_type)
+        output_dir = ROOT / "models" / args.model_type
+        return 0 if sync_files(files, check=args.check, output_dir=output_dir) else 1
     except CatalogError as ex:
         print(f"catalog sync failed: {ex}", file=sys.stderr)
         return 1
