@@ -56,10 +56,10 @@ def _positions() -> list[str]:
 def test_every_new_model_is_registered() -> None:
     positions = _positions()
 
-    # Pinned so the registered total stays checkable: `_position.yaml` lists 265 ids.
+    # Pinned so the registered total stays checkable: `_position.yaml` lists 259 ids.
     # The aihubmix-canon sync rewrites this note together with the count below.
     assert len(NEW_MODELS) == 29
-    assert len(positions) == 265
+    assert len(positions) == 259
     assert len(positions) == len(set(positions))
     # Every registered id must have a schema behind it and every schema must be registered.
     # The comparison is on the declared `model:` id, not the filename - several schemas are

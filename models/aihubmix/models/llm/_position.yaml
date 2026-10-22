@@ -50,7 +50,6 @@
 - gemini-3.6-flash
 - kimi-k3
 - muse-spark-1.2
-- qwen3.8-max-preview
 - claude-sonnet-5
 - muse-spark-1.1
 - gemini-3.1-flash-lite-image
@@ -100,8 +99,6 @@
 - gemma-4-31b-it
 - gpt-5.4
 - claude-sonnet-4-6
-- coding-xiaomi-mimo-v2.5
-- coding-xiaomi-mimo-v2.5-pro
 - doubao-seed-2-0-lite-260428
 - doubao-seed-2-0-mini-260428
 - gemini-3.1-pro-preview
@@ -148,7 +145,6 @@
 - gpt-5.2-pro
 - gpt-5.1
 - gpt-5.1-codex-max
-- doubao-seed-1-8
 - gpt-5.1-chat-latest
 - gpt-5.1-codex
 - gpt-5.1-codex-mini
@@ -213,10 +209,8 @@
 - grok-4
 - grok-4-fast-non-reasoning
 - grok-4-fast-reasoning
-- kimi-k2-0711
 - kimi-k2-instruct
 - kimi-k2-turbo-preview
-- DeepSeek-OCR
 - ernie-5.0-thinking-exp
 - gpt-4.1
 - gpt-4.1-mini
@@ -260,6 +254,6 @@
 - grok-4.20-multi-agent-beta-0309
 - llama2-70b-4096
 - llama2-70b-40960
+- aihubmix-Llama-3-1-405B-Instruct
 - qwen3.8-27b
 - solar-pro4
-- aihubmix-Llama-3-1-405B-Instruct
