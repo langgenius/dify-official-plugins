@@ -2,6 +2,7 @@
 import base64
 import json
 import logging
+import re
 from collections.abc import Generator
 from typing import Optional, Union, cast
 
@@ -300,6 +301,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_parameters.get("json_schema"):
             model_parameters.pop("response_format", None)
             model_parameters["_structured_output_schema"] = model_parameters.pop("json_schema")
+        elif model_parameters.get("response_format") and credentials.get("inference_profile_id"):
+            # Resolve profile capabilities before consuming response_format.
+            return self._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         elif model_parameters.get("response_format"):
             stop = stop or []
             if "```\n" not in stop:
@@ -376,16 +380,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if "\n```" not in stop:
                                 stop.append("\n```")
                             response_format = model_parameters.pop("response_format")
+                            instructions = (
+                                prompt_messages[0].content
+                                if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage)
+                                else ""
+                            )
                             format_prompt = SystemPromptMessage(
-                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", instructions).replace(
                                     "{{block}}", response_format
                                 )
                             )
-                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                            if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage):
                                 prompt_messages[0] = format_prompt
                             else:
                                 prompt_messages.insert(0, format_prompt)
-                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                            # Claude 4.6+ rejects assistant prefill.
+                            version = re.search(r"claude-(?:(?:opus|sonnet|haiku|fable|mythos)-)?(\d+)(?:-(\d+))?", underlying_model_id)
+                            supports_prefill = True
+                            if version:
+                                major, minor = int(version[1]), int(version[2] or 0)
+                                supports_prefill = (major, minor) < (4, 6)
+                            if supports_prefill:
+                                prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
                         else:
                             # For non-Anthropic models, just remove response_format parameter
                             model_parameters.pop("response_format", None)
