@@ -198,7 +198,9 @@ def _fetch_claude_attachment(url: str) -> bytes:
     except InvokeBadRequestError:
         raise
     except Exception as ex:
-        raise InvokeBadRequestError(f"Failed to fetch attachment from url {_redact_url(url)}, {ex}")
+        raise InvokeBadRequestError(
+            f"Failed to fetch attachment from url {_redact_url(url)} ({type(ex).__name__})"
+        ) from None
     raise InvokeBadRequestError(f"Attachment url {_redact_url(url)} redirected too many times")
 
 
