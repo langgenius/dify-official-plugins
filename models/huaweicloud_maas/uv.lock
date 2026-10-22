@@ -463,7 +463,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "openai", specifier = ">=3.8.0" },
 ]

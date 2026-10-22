@@ -18,19 +18,16 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
     thinking_mapping = {
-        "deepseek-v3.2": _THINKING_PATH_XDS,
-        "deepseek-v3.2-exp": _THINKING_PATH_XDS,
-        "deepseek-v3.1-terminus": _THINKING_PATH_XDS,
-        "qwen3-235b-a22b": _THINKING_PATH_VLLM,
         "qwen3-32b": _THINKING_PATH_VLLM,
         "qwen3-30b-a3b": _THINKING_PATH_VLLM,
-        "glm-5": _THINKING_PATH_XDS,
         "glm-5.1": _THINKING_PATH_XDS,
         "glm-5.2": _THINKING_PATH_XDS,
+        "glm-5.2-arkts-spark": _THINKING_PATH_XDS,
         "kimi-k2.6": _THINKING_PATH_XDS,
         "deepseek-v4-flash": _THINKING_PATH_XDS,
-        "deepseek-v4-pro": _THINKING_PATH_XDS,
+        "deepseek-v4.1-flash": _THINKING_PATH_XDS,
         "openpangu-2.0-flash": _THINKING_PATH_XDS,
+        "openpangu-2.0-pro": _THINKING_PATH_XDS,
     }
 
     def _invoke(
