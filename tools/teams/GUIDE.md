@@ -42,7 +42,8 @@ For 1:1 or group chats, use **List Chats** to get a `chat_id`, then **Send Chat 
 | List Channels | `GET /teams/{team-id}/channels` |
 | Send Channel Message | `POST /teams/{team-id}/channels/{channel-id}/messages` |
 | Send Chat Message | `POST /chats/{chat-id}/messages` |
-| List Chats | `GET /me/chats` |
+| List Chats | `GET /me/chats?$expand=members` (optional `$filter` on participant and chat type) |
+| List Chat Messages | `GET /chats/{chat-id}/messages` |
 | List Channel Messages | `GET /teams/{team-id}/channels/{channel-id}/messages` |
 | List Group Calendar Events | `GET /groups/{team-id}/calendarView` |
 | Reply to Channel Message | `POST /teams/{team-id}/channels/{channel-id}/messages/{message-id}/replies` |

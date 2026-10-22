@@ -156,6 +156,7 @@ tools:
   - tools/send_channel_message.yaml
   - tools/send_chat_message.yaml
   - tools/list_chats.yaml
+  - tools/list_chat_messages.yaml
   - tools/list_channel_messages.yaml
   - tools/list_group_calendar_events.yaml
   - tools/reply_channel_message.yaml

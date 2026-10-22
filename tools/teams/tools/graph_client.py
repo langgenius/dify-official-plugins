@@ -10,10 +10,11 @@ none and stay on the global cloud. The login host and the Graph host are always
 looked up together from ``CLOUDS`` so they never point at different clouds.
 """
 
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any, Mapping
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlparse
 
 import requests
 
@@ -150,3 +151,84 @@ def resolve_graph_context(credentials: Mapping[str, Any]) -> GraphContext:
         # Never send the bearer token to a host that is not a Microsoft Graph endpoint.
         raise GraphError(f"Unsupported Microsoft Graph endpoint '{graph_host}'.")
     return GraphContext(token, f"{graph_host}/v1.0")
+
+
+def bounded_int(value: Any, default: int, low: int, high: int, name: str) -> int:
+    """An integer parameter within [low, high]; empty means the default."""
+    if value in (None, ""):
+        return default
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as e:
+        raise GraphError(f"{name} must be a number from {low} to {high}.") from e
+    if not low <= number <= high:
+        raise GraphError(f"{name} must be a number from {low} to {high}.")
+    return number
+
+
+def check_next_link(ctx: GraphContext, next_link: str, resource_path: str) -> str:
+    """
+    Accept a continuation link only if it points at the same Graph host, API version and
+    resource path the tool reads (e.g. ``/me/chats``), so the bearer token is never sent
+    elsewhere and a link for another chat cannot be slipped in.
+    """
+    parsed = urlparse(next_link.strip())
+    expected = urlparse(f"{ctx.api_base}{resource_path}")
+    path = unquote(parsed.path)
+    same_path = path == unquote(expected.path)
+    if not same_path and resource_path.startswith("/me/"):
+        # Graph may phrase the continuation of /me/... as /users/{id}/...
+        prefix, _, rest = unquote(expected.path).partition("/me/")
+        parts = path[len(prefix):].strip("/").split("/") if path.startswith(prefix + "/users/") else []
+        same_path = len(parts) >= 3 and parts[0] == "users" and "/".join(parts[2:]) == rest
+    if (parsed.scheme, parsed.netloc) != (expected.scheme, expected.netloc) or not same_path:
+        raise GraphError(f"next_link must be a Microsoft Graph link for {resource_path} returned by this tool.")
+    return next_link.strip()
+
+
+@dataclass
+class Page:
+    items: list[dict[str, Any]]
+    pages: int
+    next_link: str | None
+    error: str | None = None
+
+    @property
+    def complete(self) -> bool:
+        return self.next_link is None and self.error is None
+
+
+def paginate(
+    ctx: GraphContext,
+    url: str,
+    params: Mapping[str, Any] | None,
+    *,
+    resource_path: str,
+    max_pages: int,
+    budget_seconds: float = 70.0,
+) -> Page:
+    """
+    Read up to ``max_pages`` pages, following @odata.nextLink even across empty pages
+    (Graph returns empty pages while a filter is still scanning), and stop early when the
+    time budget is used up. An error on the first page raises; a later error returns what
+    was read so far with the link to resume from.
+    """
+    started = time.monotonic()
+    items: list[dict[str, Any]] = []
+    pages = 0
+    current: str | None = url
+    while current and pages < max_pages:
+        if pages and time.monotonic() - started > budget_seconds:
+            break
+        try:
+            body = ctx.request("GET", current[len(ctx.api_base):] if current.startswith(ctx.api_base) else current, params=params).json()
+        except GraphError as e:
+            if not pages:
+                raise
+            return Page(items, pages, current, str(e))
+        pages += 1
+        items.extend(body.get("value", []))
+        link = body.get("@odata.nextLink")
+        current = check_next_link(ctx, link, resource_path) if link else None
+        params = None  # the next link already carries the query
+    return Page(items, pages, current)

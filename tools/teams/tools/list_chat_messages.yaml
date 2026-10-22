@@ -1,0 +1,176 @@
+identity:
+  name: list_chat_messages
+  author: langgenius
+  label:
+    en_US: List Chat Messages
+    zh_Hans: 列出聊天消息
+    pt_BR: Listar Mensagens do Chat
+    ja_JP: チャット メッセージ一覧
+    zh_Hant: 列出聊天訊息
+description:
+  human:
+    en_US: Read the messages of a one-on-one, group or meeting chat, newest first
+    zh_Hans: 读取一对一、群组或会议聊天中的消息，按时间倒序
+    pt_BR: Ler as mensagens de um chat individual, em grupo ou de reunião, das mais recentes
+    ja_JP: 1 対 1、グループ、会議のチャットのメッセージを新しい順に読みます
+    zh_Hant: 讀取一對一、群組或會議聊天中的訊息，依時間倒序
+  llm: 'Read messages of a Microsoft Teams chat (chat_id from List Chats), newest first, with sender, body (original HTML or text), times, link and attachment metadata. Optional time window: end_datetime with either time field; start_datetime only with time_field=lastModifiedDateTime. Times need a time zone offset. System events are excluded unless include_system_events is true. When pagination.has_more is true, call again with pagination.next_link and the same chat_id.'
+parameters:
+- name: chat_id
+  type: string
+  required: true
+  label:
+    en_US: Chat ID
+    zh_Hans: 聊天 ID
+    pt_BR: ID do Chat
+    ja_JP: チャット ID
+    zh_Hant: 聊天 ID
+  human_description:
+    en_US: The chat to read (from List Chats)
+    zh_Hans: 要读取的聊天（来自“列出聊天”）
+    pt_BR: O chat a ler (de Listar Chats)
+    ja_JP: 読むチャット（チャット一覧から取得）
+    zh_Hant: 要讀取的聊天（來自「列出聊天」）
+  llm_description: ID of the one-on-one, group or meeting chat to read, as returned by List Chats.
+  form: llm
+- name: time_field
+  type: select
+  required: false
+  default: createdDateTime
+  label:
+    en_US: Time Field
+    zh_Hans: 时间字段
+    pt_BR: Campo de Tempo
+    ja_JP: 時刻の項目
+    zh_Hant: 時間欄位
+  human_description:
+    en_US: Created or last-modified time, for the filter and the order
+    zh_Hans: 按创建时间或最后修改时间筛选和排序
+    pt_BR: Criação ou última modificação, para o filtro e a ordem
+    ja_JP: 作成日時または最終更新日時（絞り込みと並べ替えに使用）
+    zh_Hant: 依建立時間或最後修改時間篩選和排序
+  llm_description: createdDateTime (default) or lastModifiedDateTime; used for both the time filter and the newest-first order.
+  form: llm
+  options:
+  - value: createdDateTime
+    label:
+      en_US: Created time
+      zh_Hans: 创建时间
+      pt_BR: Hora de criação
+      ja_JP: 作成日時
+      zh_Hant: 建立時間
+  - value: lastModifiedDateTime
+    label:
+      en_US: Last modified time
+      zh_Hans: 最后修改时间
+      pt_BR: Hora da última modificação
+      ja_JP: 最終更新日時
+      zh_Hant: 最後修改時間
+- name: start_datetime
+  type: string
+  required: false
+  label:
+    en_US: After
+    zh_Hans: 开始时间（之后）
+    pt_BR: Depois de
+    ja_JP: この日時より後
+    zh_Hant: 開始時間（之後）
+  human_description:
+    en_US: Only with Last modified time; ISO 8601 with time zone, e.g. 2026-10-14T00:00:00+09:00 (excluded)
+    zh_Hans: 仅在按最后修改时间时可用；带时区的 ISO 8601，例如 2026-10-14T00:00:00+09:00（不含该时刻）
+    pt_BR: Somente com Hora da última modificação; ISO 8601 com fuso, ex. 2026-10-14T00:00:00+09:00 (excluído)
+    ja_JP: '最終更新日時のときのみ。タイム ゾーン付き ISO 8601（例: 2026-10-14T00:00:00+09:00、その時刻は含まない）'
+    zh_Hant: 僅在依最後修改時間時可用；含時區的 ISO 8601，例如 2026-10-14T00:00:00+09:00（不含該時刻）
+  llm_description: Return messages after this time (exclusive). Only supported with time_field=lastModifiedDateTime. ISO 8601 with offset.
+  form: llm
+- name: end_datetime
+  type: string
+  required: false
+  label:
+    en_US: Before
+    zh_Hans: 结束时间（之前）
+    pt_BR: Antes de
+    ja_JP: この日時より前
+    zh_Hant: 結束時間（之前）
+  human_description:
+    en_US: ISO 8601 with time zone (excluded)
+    zh_Hans: 带时区的 ISO 8601（不含该时刻）
+    pt_BR: ISO 8601 com fuso (excluído)
+    ja_JP: タイム ゾーン付き ISO 8601（その時刻は含まない）
+    zh_Hant: 含時區的 ISO 8601（不含該時刻）
+  llm_description: Return messages before this time (exclusive), for either time field. ISO 8601 with offset.
+  form: llm
+- name: include_system_events
+  type: boolean
+  required: false
+  default: false
+  label:
+    en_US: Include System Events
+    zh_Hans: 包含系统事件
+    pt_BR: Incluir Eventos do Sistema
+    ja_JP: システム イベントを含める
+    zh_Hant: 包含系統事件
+  human_description:
+    en_US: Also return events such as members added or a meeting started
+    zh_Hans: 同时返回成员加入、会议开始等系统事件
+    pt_BR: Também retornar eventos como membros adicionados ou reunião iniciada
+    ja_JP: メンバーの追加や会議の開始などのイベントも返します
+    zh_Hant: 同時傳回成員加入、會議開始等系統事件
+  llm_description: 'Whether to also return system events (members added, meeting started, ...). Default false: regular messages only.'
+  form: llm
+- name: top
+  type: number
+  required: false
+  default: 20
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+    pt_BR: Tamanho da Página
+    ja_JP: 1 ページの件数
+    zh_Hant: 每頁數量
+  human_description:
+    en_US: Items requested per page, 1-50 (default 20); not the total
+    zh_Hans: 每页请求的数量，1-50（默认 20），不是总数
+    pt_BR: Itens por página, 1-50 (padrão 20); não é o total
+    ja_JP: 1 ページで要求する件数（1〜50、既定 20）。合計件数ではありません
+    zh_Hant: 每頁請求的數量，1-50（預設 20），不是總數
+  llm_description: Items requested per page from Microsoft Graph, 1-50, default 20. This is not the total number returned.
+  form: llm
+- name: max_pages
+  type: number
+  required: false
+  default: 5
+  label:
+    en_US: Max Pages
+    zh_Hans: 最大页数
+    pt_BR: Máximo de Páginas
+    ja_JP: 最大ページ数
+    zh_Hant: 最大頁數
+  human_description:
+    en_US: Pages read in one call, 1-10 (default 5)
+    zh_Hans: 单次调用读取的页数，1-10（默认 5）
+    pt_BR: Páginas lidas em uma chamada, 1-10 (padrão 5)
+    ja_JP: 1 回の呼び出しで読むページ数（1〜10、既定 5）
+    zh_Hant: 單次呼叫讀取的頁數，1-10（預設 5）
+  llm_description: Maximum pages read in one call, 1-10, default 5. A time budget of about 70 seconds also applies.
+  form: llm
+- name: next_link
+  type: string
+  required: false
+  label:
+    en_US: Next Link
+    zh_Hans: 续读链接
+    pt_BR: Próximo Link
+    ja_JP: 続きのリンク
+    zh_Hant: 續讀連結
+  human_description:
+    en_US: Continuation link from an earlier result (pagination.next_link); leave empty normally
+    zh_Hans: 上一次结果中的续读链接（pagination.next_link），通常留空
+    pt_BR: Link de continuação de um resultado anterior (pagination.next_link); normalmente vazio
+    ja_JP: 前回の結果の続きのリンク（pagination.next_link）。通常は空欄
+    zh_Hant: 上一次結果中的續讀連結（pagination.next_link），通常留空
+  llm_description: Continuation link from a previous List Chat Messages result (pagination.next_link); use it with the same chat_id and include_system_events. It keeps that call's order and time filter.
+  form: llm
+extra:
+  python:
+    source: tools/list_chat_messages.py

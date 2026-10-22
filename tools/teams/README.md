@@ -13,7 +13,8 @@ Post and reply to messages in Microsoft Teams **channels** and **chats**, start 
 - **List Channels** — channels in a team (`GET /teams/{team-id}/channels`).
 - **Send Channel Message** — post a message to a channel (`POST /teams/{team-id}/channels/{channel-id}/messages`).
 - **Send Chat Message** — post a message to a 1:1 or group chat (`POST /chats/{chat-id}/messages`).
-- **List Chats** — your recent chats (`GET /me/chats`).
+- **List Chats** — your chats with their participants (name, user ID, email), a display name (the topic, or the other participants) and web link. Filter by an exact participant name and/or email and by chat type (one-on-one, group, meeting); reads several pages and returns `pagination.next_link` to continue (`GET /me/chats?$expand=members`).
+- **List Chat Messages** (new in 0.2.0) — the messages of a chat, newest first, by created or last-modified time with an optional time window; system events are left out unless asked for (`GET /chats/{chat-id}/messages`).
 - **List Channel Messages** — recent messages in a channel.
 - **List Group Calendar Events** — events from a team's Microsoft 365 group calendar, optionally within a start/end date range (`GET /groups/{team-id}/calendarView`); returns subject, start/end, organizer, attendees and Teams meeting info.
 
