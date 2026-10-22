@@ -25,7 +25,11 @@ Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and 
 - **Update Event** — update fields of an event.
 - **Delete Event** — delete an event.
 
-## Setup (OAuth2 with Azure AD)
+## Setup
+
+Two ways to authorize: **OAuth** (a user signs in; tools act on that user's mailbox) or **Service Principal** (app-only; tools act on a named mailbox).
+
+### OAuth2 with Azure AD
 
 1. Register an application in the [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade); copy the **Client ID** and create a **Client Secret**.
 2. Under **API permissions**, add these delegated Microsoft Graph permissions and grant consent:
@@ -36,6 +40,17 @@ Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and 
 4. In Dify, configure the plugin with **Client ID**, **Client Secret** and (optional) **Tenant ID** (leave blank / `common` for personal or multi-tenant), then complete the OAuth sign-in.
 
 > Existing installs: adding the calendar tools introduces the `Calendars.ReadWrite` scope — you will be asked to re-authorize once.
+
+### Service Principal (app-only, new in 0.7.0)
+Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
+
+1. In the app registration, add Microsoft Graph **Application** permissions (not Delegated): `Mail.ReadWrite`, `Mail.Send`, `Calendars.ReadWrite`, then click **Grant admin consent**.
+2. Recommended: limit the app to the mailboxes it needs with an Exchange Online [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) assignment; otherwise application permissions reach every mailbox in the tenant.
+3. In Dify, add an authorization of the **API Key** type and fill in **Tenant ID** (your directory ID, not `common`), **Client ID**, **Client Secret** and **Default Mailbox** (e.g. `support@contoso.com`). Dify signs in and reads that inbox to check the permissions.
+4. Each tool has an optional **Mailbox** setting (set in the node, never chosen by the LLM) to act on a different mailbox with the same credential.
+
+### National clouds (new in 0.7.0)
+Both OAuth and Service Principal have a **Microsoft Cloud** setting: Global, US Government, US Government DoD, or China (21Vianet). It switches the sign-in host and the Microsoft Graph host together. Existing authorizations keep using the global cloud.
 
 ## Usage
 

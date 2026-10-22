@@ -5,6 +5,7 @@ from datetime import datetime
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
 
 
 class ListEmailsTool(Tool):
@@ -24,11 +25,14 @@ class ListEmailsTool(Tool):
                 yield self.create_text_message("Limit must be between 1 and 100.")
                 return
                 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Get emails
@@ -75,14 +79,14 @@ class ListEmailsTool(Tool):
         try:
             # Build base URL using /me
             if folder.lower() == "inbox":
-                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
+                base_url = f"{self._mailbox_base}/mailFolders/inbox/messages"
             elif folder.lower() == "sent":
-                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages"
+                base_url = f"{self._mailbox_base}/mailFolders/sentitems/messages"
             elif folder.lower() == "drafts":
-                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages"
+                base_url = f"{self._mailbox_base}/mailFolders/drafts/messages"
             else:
                 # For custom folders, search all messages
-                base_url = "https://graph.microsoft.com/v1.0/me/messages"
+                base_url = f"{self._mailbox_base}/messages"
             
             # Build select fields
             select_fields = [

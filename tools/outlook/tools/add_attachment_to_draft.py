@@ -8,6 +8,7 @@ import os
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
 
 
 class AddAttachmentToDraftTool(Tool):
@@ -20,8 +21,14 @@ class AddAttachmentToDraftTool(Tool):
             draft_id = tool_parameters.get("draft_id", "")
             files_to_attach = tool_parameters.get("file_to_attach")  # This is now a list of files
             attachment_name = tool_parameters.get("attachment_name", "")  
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
+                return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             
             try:
@@ -113,7 +120,7 @@ class AddAttachmentToDraftTool(Tool):
             }
             
             # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}/attachments"
+            url = f"{self._mailbox_base}/messages/{encoded_draft_id}/attachments"
             
             # Headers
             headers = {

@@ -4,6 +4,7 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
 
 
 class DeleteEventTool(Tool):
@@ -18,17 +19,20 @@ class DeleteEventTool(Tool):
                 yield self.create_text_message("Event ID is required.")
                 return
 
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
             }
 
-            url = f"https://graph.microsoft.com/v1.0/me/events/{event_id}"
+            url = f"{self._mailbox_base}/events/{event_id}"
 
             try:
                 response = requests.delete(url, headers=headers, timeout=30)

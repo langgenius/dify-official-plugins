@@ -5,8 +5,8 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
 
-GRAPH = "https://graph.microsoft.com/v1.0"
 SELECT = "id,subject,start,end,organizer,location,webLink,bodyPreview"
 _MAX_PAGES = 25  # safety cap when following @odata.nextLink
 
@@ -42,10 +42,13 @@ class SearchEventsTool(Tool):
                 )
                 return
 
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             headers = {
                 "Authorization": f"Bearer {access_token}",
@@ -64,8 +67,8 @@ class SearchEventsTool(Tool):
                     return
 
                 base = (
-                    f"{GRAPH}/me/calendars/{calendar_id}/calendarView"
-                    if calendar_id else f"{GRAPH}/me/calendarView"
+                    f"{self._mailbox_base}/calendars/{calendar_id}/calendarView"
+                    if calendar_id else f"{self._mailbox_base}/calendarView"
                 )
                 params: Optional[dict] = {
                     "startDateTime": start_iso,
@@ -105,7 +108,7 @@ class SearchEventsTool(Tool):
                     pages += 1
                 events = events[:limit]
             else:
-                base = f"{GRAPH}/me/calendars/{calendar_id}/events" if calendar_id else f"{GRAPH}/me/events"
+                base = f"{self._mailbox_base}/calendars/{calendar_id}/events" if calendar_id else f"{self._mailbox_base}/events"
                 headers["ConsistencyLevel"] = "eventual"  # required for $search
                 params = {"$search": f'"{query}"', "$top": limit, "$select": SELECT}
                 try:

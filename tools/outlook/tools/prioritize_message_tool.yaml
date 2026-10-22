@@ -60,6 +60,24 @@ parameters:
       zh_Hant: 要為郵件設置的優先級
     llm_description: The priority level to set for the email, can be low, normal, or high, default is high
     form: llm
+  - name: mailbox
+    type: string
+    required: false
+    label:
+      en_US: Mailbox
+      ko_KR: 사서함
+      zh_Hans: 邮箱
+      pt_BR: Caixa de Correio
+      ja_JP: メールボックス
+      zh_Hant: 信箱
+    human_description:
+      en_US: "Service Principal only: the mailbox to act on (user principal name or user ID). Leave empty to use the credential's default mailbox."
+      ko_KR: "서비스 주체 전용: 작업할 사서함(사용자 계정 이름 또는 사용자 ID). 비워 두면 자격 증명의 기본 사서함을 사용합니다."
+      zh_Hans: "仅限 Service Principal：要操作的邮箱（用户主体名称或用户 ID）。留空则使用凭据中的默认邮箱。"
+      pt_BR: "Somente Service Principal: a caixa de correio em que atuar (nome principal do usuário ou ID do usuário). Deixe vazio para usar a caixa padrão da credencial."
+      ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
+      zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
+    form: form
 extra:
   python:
     source: tools/prioritize_message_tool.py

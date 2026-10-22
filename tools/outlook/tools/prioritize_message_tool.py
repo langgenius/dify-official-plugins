@@ -5,6 +5,7 @@ import urllib.parse
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
 
 
 class PrioritizeEmailTool(Tool):
@@ -26,11 +27,14 @@ class PrioritizeEmailTool(Tool):
                 yield self.create_text_message("Priority level must be 'low', 'normal', or 'high'.")
                 return
                 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Update email priority
@@ -66,7 +70,7 @@ class PrioritizeEmailTool(Tool):
             }
             
             # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_email_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_email_id}"
             
             # Headers
             headers = {
