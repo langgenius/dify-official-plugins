@@ -75,6 +75,27 @@ parameters:
       ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
       zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
     form: form
+output_schema:
+  type: object
+  properties:
+    file_name:
+      type: string
+      description: Attachment name
+    content_type:
+      type: string
+      description: MIME type
+    size:
+      type: integer
+      description: Size in bytes
+    downloaded:
+      type: boolean
+      description: True when the file is in files (file attachments only)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/download_attachment.py

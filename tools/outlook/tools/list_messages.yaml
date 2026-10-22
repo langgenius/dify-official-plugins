@@ -119,6 +119,60 @@ parameters:
       ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
       zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
     form: form
+output_schema:
+  type: object
+  properties:
+    messages:
+      type: array
+      description: Messages
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Message ID
+          conversation_id:
+            type: string
+            description: Conversation (thread) ID
+          subject:
+            type: string
+            description: Subject
+          from_name:
+            type: string
+            description: Sender name
+          from_address:
+            type: string
+            description: Sender email
+          to:
+            type: array[string]
+            description: Recipient emails
+          received_datetime:
+            type: string
+            description: Received time
+          preview:
+            type: string
+            description: Body preview
+          is_read:
+            type: boolean
+            description: Read
+          has_attachments:
+            type: boolean
+            description: Has attachments
+          importance:
+            type: string
+            description: low, normal or high
+          web_link:
+            type: string
+            description: Link to the message in Outlook
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_messages.py 

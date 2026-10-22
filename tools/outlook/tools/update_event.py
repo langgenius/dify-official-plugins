@@ -4,10 +4,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.graph_client import event_detail_vars, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class UpdateEventTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Update a calendar event in Outlook using Microsoft Graph API
@@ -72,6 +74,7 @@ class UpdateEventTool(Tool):
             yield self.create_text_message(
                 f"Event updated: {data.get('subject')} (id: {data.get('id')})"
             )
+            self._out.update(**event_detail_vars(data), success=True)
             yield self.create_json_message(data)
 
         except Exception as e:

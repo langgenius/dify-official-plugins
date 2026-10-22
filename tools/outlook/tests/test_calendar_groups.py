@@ -56,7 +56,9 @@ def run(cls, params, credentials=OAUTH):
     tool.runtime = SimpleNamespace(credentials=credentials)
     tool.create_text_message = lambda text: ("text", text)
     tool.create_json_message = lambda data: ("json", data)
-    return list(tool._invoke(params))
+    tool.create_variable_message = lambda name, value: ("var", name, value)
+    # Output variables are checked in test_output_variables.py.
+    return [m for m in tool._invoke(params) if m[0] != "var"]
 
 
 def test_scope_includes_shared_calendars():

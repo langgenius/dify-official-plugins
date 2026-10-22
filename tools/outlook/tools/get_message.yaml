@@ -57,6 +57,54 @@ parameters:
       ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
       zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
     form: form
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: Message ID
+    conversation_id:
+      type: string
+      description: Conversation (thread) ID
+    subject:
+      type: string
+      description: Subject
+    from_name:
+      type: string
+      description: Sender name
+    from_address:
+      type: string
+      description: Sender email
+    to:
+      type: array[string]
+      description: Recipient emails
+    cc:
+      type: array[string]
+      description: Cc emails
+    received_datetime:
+      type: string
+      description: Received time
+    body:
+      type: string
+      description: Body
+    body_type:
+      type: string
+      description: html or text
+    web_link:
+      type: string
+      description: Link to the message in Outlook
+    attachment_ids:
+      type: array[string]
+      description: Attachment IDs, for Download Attachment
+    attachment_names:
+      type: array[string]
+      description: Attachment names
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_message.py 

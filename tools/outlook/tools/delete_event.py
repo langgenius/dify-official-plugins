@@ -5,9 +5,11 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class DeleteEventTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Delete a calendar event in Outlook using Microsoft Graph API
@@ -46,6 +48,7 @@ class DeleteEventTool(Tool):
                 )
                 return
 
+            self._out.update(event_id=event_id, success=True)
             yield self.create_text_message(f"Event {event_id} deleted successfully.")
             yield self.create_json_message({"status": "deleted", "event_id": event_id})
 

@@ -6,9 +6,11 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class SendMessageTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Send an email message directly through Outlook using Microsoft Graph API
@@ -52,6 +54,7 @@ class SendMessageTool(Tool):
 
                 # Success
                 attach_note = f" with {result.get('attachment_count', 0)} attachment(s)" if result.get("attachment_count") else ""
+                self._out.update(subject=subject, to=self._parse_recipients(to_recipients), attachment_count=int(result.get("attachment_count", 0)), success=True)
                 yield self.create_text_message(f"Message sent successfully: {subject}{attach_note}")
                 yield self.create_json_message({
                     "status": "sent",

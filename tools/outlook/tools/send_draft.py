@@ -6,9 +6,11 @@ import urllib.parse
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class SendDraftTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Send a draft message through Outlook using Microsoft Graph API
@@ -46,6 +48,7 @@ class SendDraftTool(Tool):
                     return
                 
                 # Success
+                self._out.update(draft_id=draft_id, subject=draft_details["subject"] or "", success=True)
                 yield self.create_text_message(f"Message sent successfully: {draft_details['subject']}")
                 yield self.create_json_message({
                     "status": "sent",

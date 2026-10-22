@@ -4,10 +4,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, describe_error, resolve_graph_context, segment
+from tools.graph_client import describe_error, GraphAuthError, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 
 class ListCalendarsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List the user's Outlook calendars using Microsoft Graph API,
@@ -56,6 +58,12 @@ class ListCalendarsTool(Tool):
             summary = "\n".join(lines)
             yield self.create_text_message(
                 f"Found {len(calendars)} calendar(s):\n{summary}" if calendars else "No calendars found."
+            )
+            self._out.update(
+                calendars=[{"id": c.get("id") or "", "name": c.get("name") or "", "owner_name": (c.get("owner") or {}).get("name") or "",
+                            "owner_address": (c.get("owner") or {}).get("address") or "", "can_edit": bool(c.get("canEdit")),
+                            "is_default": bool(c.get("isDefaultCalendar"))} for c in calendars],
+                count=len(calendars), success=True,
             )
             yield self.create_json_message(data)
 

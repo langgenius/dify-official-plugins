@@ -152,6 +152,42 @@ parameters:
     ja_JP: 'サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。'
     zh_Hant: 僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。
   form: form
+output_schema:
+  type: object
+  properties:
+    schedules:
+      type: array
+      description: Free/busy per person
+      items:
+        type: object
+        properties:
+          email:
+            type: string
+            description: Email
+          availability_view:
+            type: string
+            description: 'One digit per slot: 0 free, 1 tentative, 2 busy, 3 out of office, 4 working elsewhere'
+          availability:
+            type: array[string]
+            description: The same per slot, as words
+          busy_count:
+            type: integer
+            description: Number of busy/tentative/out-of-office items
+          error:
+            type: string
+            description: Why this person's schedule could not be read
+    busy_people:
+      type: array[string]
+      description: Emails of people with any busy, tentative or out-of-office time in the window
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_schedule.py

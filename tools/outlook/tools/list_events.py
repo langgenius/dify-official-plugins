@@ -4,17 +4,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import (
-    GraphAuthError,
-    calendar_tag,
-    calendars_in_group,
-    describe_error,
-    resolve_graph_context,
-    segment,
-)
+from tools.graph_client import calendar_tag, calendars_in_group, describe_error, event_vars, GraphAuthError, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 
 class ListEventsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List calendar events from Outlook using Microsoft Graph API: from the default
@@ -65,6 +60,7 @@ class ListEventsTool(Tool):
 
             data = response.json()
             events = data.get("value", [])
+            self._out.update(events=[event_vars(e) for e in events], count=len(events), success=True)
             yield self.create_text_message(self._summary(events))
             yield self.create_json_message(data)
 
@@ -102,6 +98,10 @@ class ListEventsTool(Tool):
 
         events.sort(key=lambda e: (e.get("start") or {}).get("dateTime") or "", reverse=True)
         events = events[:limit]
+        self._out.update(
+            events=[event_vars(e) for e in events], count=len(events),
+            errors=[{"calendar_name": e["calendar"]["name"] or "", "error": e["error"]} for e in errors], success=True,
+        )
         text = self._summary(events)
         if errors:
             text += f"\n{len(errors)} calendar(s) could not be read: " + "; ".join(

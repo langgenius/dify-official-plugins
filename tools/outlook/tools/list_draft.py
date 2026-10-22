@@ -5,10 +5,12 @@ from datetime import datetime
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.graph_client import address_of, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListDraftEmailsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List draft emails using Microsoft Graph API
@@ -41,6 +43,11 @@ class ListDraftEmailsTool(Tool):
                     yield self.create_text_message(drafts)
                     return
                 
+                self._out.update(
+                    drafts=[{"id": d["id"] or "", "subject": d["subject"] or "", "to": [address_of(r)[1] for r in d["to_recipients"]],
+                             "created_datetime": d["created_datetime"] or "", "has_attachments": bool(d["has_attachments"])} for d in drafts],
+                    count=len(drafts), success=True,
+                )
                 # Format and return results
                 if not drafts:
                     summary = "No draft emails found"

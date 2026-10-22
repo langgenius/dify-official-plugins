@@ -5,14 +5,8 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import (
-    GraphAuthError,
-    calendar_tag,
-    calendars_in_group,
-    describe_error,
-    resolve_graph_context,
-    segment,
-)
+from tools.graph_client import calendar_tag, calendars_in_group, describe_error, event_vars, GraphAuthError, resolve_graph_context, segment
+from tools.outputs import with_outputs
 
 SELECT = "id,subject,start,end,organizer,location,webLink,bodyPreview"
 _MAX_PAGES = 25  # safety cap when following @odata.nextLink
@@ -23,6 +17,7 @@ class _SearchError(Exception):
 
 
 class SearchEventsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Search calendar events by keyword and/or date range via Microsoft Graph, in the
@@ -119,6 +114,10 @@ class SearchEventsTool(Tool):
                 f"\n{len(errors)} calendar(s) could not be read: "
                 + "; ".join(f"{e['calendar']['name']}: {e['error']}" for e in errors)
                 if errors else ""
+            )
+            self._out.update(
+                events=[event_vars(e) for e in events], count=len(events),
+                errors=[{"calendar_name": (e["calendar"] or {}).get("name") or "", "error": e["error"]} for e in errors], success=True,
             )
             if not events:
                 yield self.create_text_message("No matching events found." + failed)

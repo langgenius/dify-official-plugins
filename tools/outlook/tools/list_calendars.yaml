@@ -76,6 +76,42 @@ parameters:
       ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
       zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
     form: form
+output_schema:
+  type: object
+  properties:
+    calendars:
+      type: array
+      description: Calendars
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Calendar ID
+          name:
+            type: string
+            description: Name
+          owner_name:
+            type: string
+            description: Owner name
+          owner_address:
+            type: string
+            description: Owner email
+          can_edit:
+            type: boolean
+            description: The user can edit it
+          is_default:
+            type: boolean
+            description: Default calendar
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_calendars.py

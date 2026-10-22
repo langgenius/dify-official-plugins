@@ -6,9 +6,11 @@ import json
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class DraftEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Create a draft email using Microsoft Graph API
@@ -45,6 +47,8 @@ class DraftEmailTool(Tool):
                 # Success: return only the draft_id as a text message
                 draft_id = result.get("id")
                 if draft_id:
+                    self._out.update(draft_id=draft_id, subject=result.get("subject") or "", conversation_id=result.get("conversationId") or "",
+                                     web_link=result.get("webLink") or "", success=True)
                     yield self.create_text_message(draft_id)
                 else:
                     yield self.create_text_message("Draft created but no ID returned.")

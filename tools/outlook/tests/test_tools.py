@@ -26,11 +26,16 @@ class FakeResponse:
         return self._payload
 
 
+def _messages(gen):
+    return [m for m in gen if m[0] != "var"]
+
+
 def make_tool(cls, credentials):
     tool = cls.__new__(cls)
     tool.runtime = SimpleNamespace(credentials=credentials)
     tool.create_text_message = lambda text: ("text", text)
     tool.create_json_message = lambda data: ("json", data)
+    tool.create_variable_message = lambda name, value: ("var", name, value)
     return tool
 
 
@@ -54,7 +59,7 @@ def test_send_message_with_service_principal_posts_to_the_mailbox(monkeypatch):
 
     monkeypatch.setattr(send_module.requests, "post", fake_post)
     tool = make_tool(SendMessageTool, dict(SP))
-    out = list(tool._invoke({"to": "a@b.com", "subject": "hi", "message": "body", "mailbox": "sales@contoso.com"}))
+    out = _messages(tool._invoke({"to": "a@b.com", "subject": "hi", "message": "body", "mailbox": "sales@contoso.com"}))
 
     assert sent["url"] == "https://graph.microsoft.com/v1.0/users/sales@contoso.com/sendMail"
     assert sent["auth"] == "Bearer app"
@@ -70,7 +75,7 @@ def test_list_messages_with_oauth_still_uses_me(monkeypatch):
 
     monkeypatch.setattr(list_module.requests, "get", fake_get)
     tool = make_tool(ListEmailsTool, {"access_token": "user", "refresh_token": "r"})
-    list(tool._invoke({"limit": 5, "folder": "inbox"}))
+    _messages(tool._invoke({"limit": 5, "folder": "inbox"}))
 
     assert seen["url"] == "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
 
@@ -78,6 +83,6 @@ def test_list_messages_with_oauth_still_uses_me(monkeypatch):
 def test_tool_reports_missing_mailbox_instead_of_calling_graph(monkeypatch, app_token):
     monkeypatch.setattr(list_module.requests, "get", lambda *a, **k: pytest.fail("Graph must not be called"))
     tool = make_tool(ListEmailsTool, dict(SP, mailbox=""))
-    out = list(tool._invoke({"limit": 5, "folder": "inbox"}))
+    out = _messages(tool._invoke({"limit": 5, "folder": "inbox"}))
     assert len(out) == 1 and out[0][0] == "text"
     assert "no signed-in user" in out[0][1]

@@ -7,9 +7,11 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class DownloadAttachmentTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Download a single Outlook email attachment as a file, using the message
@@ -69,6 +71,7 @@ class DownloadAttachmentTool(Tool):
             content_type = attachment.get("contentType") or "application/octet-stream"
             content_bytes = attachment.get("contentBytes")
 
+            self._out.update(file_name=name, content_type=content_type, size=int(attachment.get("size") or 0))
             # Only file attachments carry the raw bytes (contentBytes). Item/reference
             # attachments (nested emails, links) have no downloadable file.
             if odata_type != "#microsoft.graph.fileAttachment" or not content_bytes:
@@ -76,6 +79,7 @@ class DownloadAttachmentTool(Tool):
                     f"'{name}' is a {odata_type or 'non-file'} attachment and has no downloadable "
                     "file. Only file attachments (e.g. PDF, Excel, TXT) can be downloaded."
                 )
+                self._out["success"] = True
                 yield self.create_json_message(attachment)
                 return
 
@@ -85,6 +89,7 @@ class DownloadAttachmentTool(Tool):
                 yield self.create_text_message("Failed to decode the attachment content.")
                 return
 
+            self._out.update(downloaded=True, success=True)
             yield self.create_text_message(f"Downloaded attachment: {name}")
             yield self.create_blob_message(
                 blob=raw,

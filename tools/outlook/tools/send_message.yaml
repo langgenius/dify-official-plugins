@@ -114,6 +114,24 @@ parameters:
       ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
       zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
     form: form
+output_schema:
+  type: object
+  properties:
+    subject:
+      type: string
+      description: Subject
+    to:
+      type: array[string]
+      description: Recipient emails
+    attachment_count:
+      type: integer
+      description: Number of attachments sent
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/send_message.py 

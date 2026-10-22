@@ -6,9 +6,11 @@ import urllib.parse
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class PrioritizeEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Set the priority/importance level of an email using Microsoft Graph API
@@ -45,6 +47,7 @@ class PrioritizeEmailTool(Tool):
                     return
                 
                 # Success
+                self._out.update(message_id=email_id, importance=priority_level, success=True)
                 yield self.create_text_message(f"Email priority updated to '{priority_level}' successfully!")
                 yield self.create_json_message(result)
                 

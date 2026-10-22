@@ -5,7 +5,8 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, calendars_in_group, describe_error, resolve_graph_context
+from tools.graph_client import calendars_in_group, describe_error, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 # getSchedule takes a bounded number of schedules per request; larger lists are sent in chunks.
 _CHUNK = 20
@@ -13,6 +14,7 @@ _STATUS = {"0": "free", "1": "tentative", "2": "busy", "3": "oof", "4": "working
 
 
 class GetScheduleTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Free/busy of one or more people for a time window (Microsoft Graph getSchedule).
@@ -92,6 +94,12 @@ class GetScheduleTool(Tool):
                     return
                 schedules.extend(self._format(item) for item in response.json().get("value", []))
 
+            self._out.update(
+                schedules=[{"email": s["email"] or "", "availability_view": s["availability_view"], "availability": s["availability"],
+                            "busy_count": len(s["busy"]), "error": s["error"] or ""} for s in schedules],
+                busy_people=[s["email"] for s in schedules if s["busy"]],
+                count=len(schedules), success=True,
+            )
             lines = []
             for s in schedules:
                 if s.get("error"):

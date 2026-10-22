@@ -4,10 +4,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, describe_error, resolve_graph_context
+from tools.graph_client import describe_error, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListCalendarGroupsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List the calendar groups of the mailbox (e.g. "My Calendars", "People's calendars").
@@ -39,6 +41,7 @@ class ListCalendarGroupsTool(Tool):
             yield self.create_text_message(
                 f"Found {len(groups)} calendar group(s):\n{summary}" if groups else "No calendar groups found."
             )
+            self._out.update(calendar_groups=groups, count=len(groups), success=True)
             yield self.create_json_message({"calendar_groups": groups})
 
         except Exception as e:

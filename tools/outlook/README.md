@@ -63,6 +63,32 @@ Add the Outlook tools to an agent or workflow, fill in the inputs, and run the n
 
 To look at the calendars of people who shared theirs with you (for example an assistant and the executives): **List Calendar Groups** → take the id of *People's calendars* → **Search Events** with that Calendar Group ID and a date range, or **Get Schedule** with it for free/busy.
 
+## Output variables
+
+Besides `text` and `json` (unchanged), every tool returns typed variables that later workflow nodes can pick directly, without parsing `json`. Every tool has `success` (boolean) and `error` (string, empty on success), so a workflow can branch with an IF node; list tools return an array of flat items plus `count`.
+
+| Tool | Variables (besides `success`, `error`) |
+|---|---|
+| List Messages | `messages`, `count` |
+| Get Message | `message_id`, `conversation_id`, `subject`, `from_name`, `from_address`, `to`, `cc`, `received_datetime`, `body`, `body_type`, `web_link`, `attachment_ids`, `attachment_names` |
+| Download Attachment | `file_name`, `content_type`, `size`, `downloaded` |
+| Send Message | `subject`, `to`, `attachment_count` |
+| Send Draft | `draft_id`, `subject` |
+| Draft Email | `draft_id`, `subject`, `conversation_id`, `web_link` |
+| List Draft Emails | `drafts`, `count` |
+| Add Attachment to Draft | `attachments`, `count` |
+| Prioritize Email | `message_id`, `importance` |
+| Flag Email | `message_id`, `flag_status` |
+| List Calendar Groups | `calendar_groups`, `count` |
+| List Calendars | `calendars`, `count` |
+| List Events | `events`, `count`, `errors` |
+| Search Events | `events`, `count`, `errors` |
+| Get Schedule (Free/Busy) | `schedules`, `busy_people`, `count` |
+| Create Event | `event_id`, `subject`, `start`, `end`, `time_zone`, `location`, `web_link`, `online_meeting_url` |
+| Get Event | `event_id`, `subject`, `start`, `end`, `time_zone`, `location`, `web_link`, `online_meeting_url` |
+| Update Event | `event_id`, `subject`, `start`, `end`, `time_zone`, `location`, `web_link`, `online_meeting_url` |
+| Delete Event | `event_id` |
+
 ## Privacy
 
 This plugin sends the inputs required by the selected operation to Microsoft Graph. See [PRIVACY.md](PRIVACY.md) for details.

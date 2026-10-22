@@ -7,9 +7,11 @@ from datetime import datetime, timedelta
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class FlagEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Flag an email with follow-up status using Microsoft Graph API
@@ -47,6 +49,7 @@ class FlagEmailTool(Tool):
                     "complete": "marked as complete"
                 }.get(flag_status, "updated")
                 
+                self._out.update(message_id=email_id, flag_status=flag_status, success=True)
                 yield self.create_text_message(f"Successfully {action_msg} email!")
                 yield self.create_json_message(result)
                 

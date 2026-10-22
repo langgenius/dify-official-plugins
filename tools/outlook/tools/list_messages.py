@@ -5,10 +5,12 @@ from datetime import datetime
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.graph_client import address_of, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListEmailsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List emails from Outlook using Microsoft Graph API
@@ -42,6 +44,17 @@ class ListEmailsTool(Tool):
                     yield self.create_text_message(emails)
                     return
                 
+                self._out.update(
+                    messages=[
+                        {"id": e["id"] or "", "conversation_id": e["conversation_id"] or "", "subject": e["subject"] or "",
+                         "from_name": address_of(e["sender"])[0], "from_address": address_of(e["sender"])[1],
+                         "to": [address_of(r)[1] for r in e["to_recipients"]], "received_datetime": e["received_datetime"] or "",
+                         "preview": e["preview"] or "", "is_read": bool(e["is_read"]), "has_attachments": bool(e["has_attachments"]),
+                         "importance": e["importance"] or "", "web_link": e.get("web_link") or ""}
+                        for e in emails
+                    ],
+                    count=len(emails), success=True,
+                )
                 # Format and return results
                 if not emails:
                     summary = f"No emails found in {folder}"
@@ -92,7 +105,7 @@ class ListEmailsTool(Tool):
             select_fields = [
                 "id", "subject", "sender", "toRecipients", "ccRecipients", 
                 "receivedDateTime", "sentDateTime", "bodyPreview", 
-                "isRead", "hasAttachments", "importance", "conversationId"
+                "isRead", "hasAttachments", "importance", "conversationId", "webLink"
             ]
             
             if include_body:
@@ -191,7 +204,8 @@ class ListEmailsTool(Tool):
             "is_read": msg.get("isRead", False),
             "has_attachments": msg.get("hasAttachments", False),
             "importance": msg.get("importance", "normal"),
-            "conversation_id": msg.get("conversationId", "")
+            "conversation_id": msg.get("conversationId", ""),
+            "web_link": msg.get("webLink", "")
         }
         
         # Include full body if requested

@@ -246,3 +246,52 @@ def calendar_tag(calendar: Mapping[str, Any]) -> dict[str, Any]:
         "owner_name": owner.get("name"),
         "owner_address": owner.get("address"),
     }
+
+
+# ── flat, typed fields for the tools' output variables ────────────────
+
+
+def _s(value: Any) -> str:
+    return "" if value is None else str(value)
+
+
+def address_of(recipient: Mapping[str, Any] | None) -> tuple[str, str]:
+    """(name, address) of a Graph recipient {"emailAddress": {...}}, or of an already simplified {name, email}."""
+    recipient = recipient or {}
+    email = recipient.get("emailAddress") or recipient
+    return _s(email.get("name")), _s(email.get("address") or email.get("email"))
+
+
+def event_vars(event: Mapping[str, Any]) -> dict[str, Any]:
+    """A calendar event as flat fields; calendar_name/owner_address come from a calendar-group search."""
+    start, end = event.get("start") or {}, event.get("end") or {}
+    organizer_name, organizer_address = address_of(event.get("organizer"))
+    calendar = event.get("calendar") or {}
+    return {
+        "id": _s(event.get("id")),
+        "subject": _s(event.get("subject")),
+        "start": _s(start.get("dateTime")),
+        "end": _s(end.get("dateTime")),
+        "time_zone": _s(start.get("timeZone")),
+        "location": _s((event.get("location") or {}).get("displayName")),
+        "organizer_name": organizer_name,
+        "organizer_address": organizer_address,
+        "web_link": _s(event.get("webLink")),
+        "calendar_name": _s(calendar.get("name")),
+        "owner_address": _s(calendar.get("owner_address")),
+    }
+
+
+def event_detail_vars(event: Mapping[str, Any]) -> dict[str, Any]:
+    """Single-event variables for create/get/update."""
+    v = event_vars(event)
+    return {
+        "event_id": v["id"],
+        "subject": v["subject"],
+        "start": v["start"],
+        "end": v["end"],
+        "time_zone": v["time_zone"],
+        "location": v["location"],
+        "web_link": v["web_link"],
+        "online_meeting_url": _s((event.get("onlineMeeting") or {}).get("joinUrl")),
+    }

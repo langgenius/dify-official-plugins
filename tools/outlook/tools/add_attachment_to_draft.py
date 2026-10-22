@@ -9,9 +9,11 @@ import os
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class AddAttachmentToDraftTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Add attachments to an existing draft email using Microsoft Graph API
@@ -51,6 +53,10 @@ class AddAttachmentToDraftTool(Tool):
                     results.append(result)
                     yield self.create_text_message(f"Attachment '{result['name']}' added to draft successfully!")
                     yield self.create_json_message(result)
+                self._out.update(
+                    attachments=[{"id": r.get("attachment_id") or "", "name": r.get("name") or "", "size": int(r.get("size") or 0)} for r in results],
+                    count=len(results), success=bool(results),
+                )
                 if results:
                     yield self.create_text_message(f"Total {len(results)} attachment(s) added successfully.")
                 else:
