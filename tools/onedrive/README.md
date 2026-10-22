@@ -119,6 +119,17 @@ Upload a file to the OneDrive root directory; a `file_name` such as `reports/q3.
 
 
 
+## Output variables
+
+Besides `text` and `json` (unchanged), every tool returns typed variables that later workflow nodes can pick directly, without parsing `json`. Every tool has `success` (boolean) and `error` (string, empty on success), so a workflow can branch with an IF node; list tools return an array of flat items plus `count`.
+
+| Tool | Variables (besides `success`, `error`) |
+|---|---|
+| Get File or Folder by ID | `file_id`, `name`, `is_folder`, `mime_type`, `size`, `web_url`, `download_url`, `downloaded` |
+| Delete File by ID | `file_id` |
+| Search File or Folder by Name | `items`, `count` |
+| Upload File | `file_id`, `name`, `size`, `web_url` |
+
 ## PRIVACY
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.

@@ -6,10 +6,12 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 
-from tools.graph_client import GraphAuthError, file_info, graph_request, resolve_graph_context
+from tools.outputs import with_outputs
+from tools.graph_client import file_info, graph_request, GraphAuthError, item_vars, resolve_graph_context
 
 
 class UploadFileTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         file: File = tool_parameters.get("file")
         custom_file_name = tool_parameters.get("file_name")
@@ -48,5 +50,7 @@ class UploadFileTool(Tool):
             return
 
         info = file_info(uploaded)
+        v = item_vars(uploaded)
+        self._out.update(file_id=v["id"], name=v["name"], size=v["size"], web_url=v["web_url"], success=True)
         yield self.create_text_message(f"File uploaded successfully: {info}")
         yield self.create_json_message(info)

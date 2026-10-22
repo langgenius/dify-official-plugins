@@ -64,6 +64,27 @@ parameters:
       ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
       pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão da credencial.'
     form: form
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: Drive item ID of the uploaded file
+    name:
+      type: string
+      description: File name
+    size:
+      type: integer
+      description: Size in bytes
+    web_url:
+      type: string
+      description: Link to open the file in OneDrive
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/upload_file.py

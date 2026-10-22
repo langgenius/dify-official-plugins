@@ -186,13 +186,21 @@ class FakeGraph:
         raise AssertionError(f"unexpected {method} {url}")
 
 
+LAST_VARS: dict = {}
+
+
 def run(cls, params, credentials=OAUTH):
+    """Invoke a tool; returns its text/json/blob messages, and leaves its output variables in LAST_VARS."""
     tool = cls.__new__(cls)
     tool.runtime = SimpleNamespace(credentials=credentials)
     tool.create_text_message = lambda text: ("text", text)
     tool.create_json_message = lambda data: ("json", data)
     tool.create_blob_message = lambda blob, meta: ("blob", blob, meta)
-    return list(tool._invoke(params))
+    tool.create_variable_message = lambda name, value: ("var", name, value)
+    out = list(tool._invoke(params))
+    LAST_VARS.clear()
+    LAST_VARS.update({m[1]: m[2] for m in out if m[0] == "var"})
+    return [m for m in out if m[0] != "var"]
 
 
 def test_search_quotes_the_query_and_keeps_the_output_shape(monkeypatch):

@@ -5,10 +5,12 @@ from urllib.parse import quote
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.graph_client import GraphAuthError, file_info, graph_request, is_service_principal, resolve_graph_context
+from tools.outputs import with_outputs
+from tools.graph_client import file_info, graph_request, GraphAuthError, is_service_principal, item_vars, resolve_graph_context
 
 
 class SearchFileTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         query = tool_parameters.get("query")
         limit = tool_parameters.get("limit", 10)
@@ -37,4 +39,5 @@ class SearchFileTool(Tool):
             return
 
         files = (response.json().get("value") or [])[:limit]
+        self._out.update(items=[item_vars(f) for f in files], count=len(files), success=True)
         yield self.create_json_message({"results": [file_info(f) for f in files]})

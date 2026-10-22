@@ -253,3 +253,19 @@ def file_info(item: Mapping[str, Any]) -> dict[str, Any]:
         "drive_id": parent.get("driveId"),
         "web_url": item.get("webUrl"),
     }
+
+
+def item_vars(item: Mapping[str, Any]) -> dict[str, Any]:
+    """Flat, typed fields of a drive item for the tools' output variables."""
+    parent = item.get("parentReference") or {}
+    return {
+        "id": item.get("id") or "",
+        "name": item.get("name") or "",
+        "is_folder": "folder" in item,
+        "mime_type": (item.get("file") or {}).get("mimeType") or "",
+        "size": int(item.get("size") or 0),
+        "web_url": item.get("webUrl") or "",
+        "download_url": item.get("@microsoft.graph.downloadUrl") or "",
+        "path": parent.get("path") or "",
+        "last_modified": item.get("lastModifiedDateTime") or "",
+    }
