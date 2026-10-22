@@ -13,7 +13,9 @@ Both kinds can target a national cloud; the login host and the Graph host are
 looked up together from ``CLOUDS`` so they never point at different clouds.
 """
 
+import ast
 import hashlib
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -40,6 +42,32 @@ _token_lock = threading.Lock()
 
 class GraphAuthError(Exception):
     """Raised when credentials cannot be turned into a usable Graph call."""
+
+
+# repr() of the workflow editor's {"value": ..., "type": ...} wrapper for a tool setting
+_WRAPPED_SETTING = re.compile(
+    r"""^\{'value':\s*(?P<value>'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"),\s*'type':\s*<ToolInputType\.[A-Z_]+:\s*'[a-z_]+'>\}$"""
+)
+
+
+def setting_value(value: Any) -> str:
+    """
+    Plain string value of a form-type tool setting.
+
+    The workflow editor stores settings as {"type": "constant", "value": ...}. Dify 1.16.1
+    hands string settings to the plugin as the repr() of that wrapper instead of the value,
+    e.g. "{'value': 'a@contoso.com', 'type': <ToolInputType.CONSTANT: 'constant'>}", so
+    unwrap both the mapping and its repr.
+    """
+    if isinstance(value, Mapping):
+        value = value.get("value")
+    if value is None:
+        return ""
+    text = str(value).strip()
+    match = _WRAPPED_SETTING.match(text)
+    if match:
+        text = str(ast.literal_eval(match.group("value"))).strip()
+    return text
 
 
 def cloud_hosts(cloud: str | None) -> tuple[str, str]:
@@ -127,12 +155,12 @@ class GraphContext:
     mailbox_base: str
 
 
-def resolve_graph_context(credentials: Mapping[str, Any], mailbox: str | None = None) -> GraphContext:
+def resolve_graph_context(credentials: Mapping[str, Any], mailbox: Any = None) -> GraphContext:
     """
     Turn the runtime credentials (plus the optional per-tool Mailbox parameter)
     into a token and the URL roots every tool builds its requests on.
     """
-    mailbox = (mailbox or "").strip()
+    mailbox = setting_value(mailbox)
 
     if is_service_principal(credentials):
         _, graph_host = cloud_hosts(credentials.get("cloud"))

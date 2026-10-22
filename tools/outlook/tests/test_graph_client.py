@@ -80,6 +80,29 @@ def test_mailbox_is_url_encoded(token_calls):
     assert ctx.mailbox_base.endswith("/users/a%2Fb%3Fc@contoso.com")
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "{'value': 'sales@contoso.com', 'type': <ToolInputType.CONSTANT: 'constant'>}",
+        "{'value': 'sales@contoso.com', 'type': <ToolInputType.MIXED: 'mixed'>}",
+        {"type": "constant", "value": "sales@contoso.com"},
+        "  sales@contoso.com  ",
+    ],
+)
+def test_mailbox_setting_is_unwrapped(token_calls, raw):
+    # Dify 1.16.1 passes form settings as the repr of the editor's {"type", "value"} wrapper.
+    ctx = resolve_graph_context(SP, mailbox=raw)
+    assert ctx.mailbox_base.endswith("/users/sales@contoso.com")
+
+
+def test_unwrapping_does_not_evaluate_anything_else():
+    assert graph_client.setting_value("{'value': __import__('os'), 'type': <ToolInputType.CONSTANT: 'constant'>}") == (
+        "{'value': __import__('os'), 'type': <ToolInputType.CONSTANT: 'constant'>}"
+    )
+    assert graph_client.setting_value(None) == ""
+    assert graph_client.setting_value({"type": "constant", "value": None}) == ""
+
+
 def test_service_principal_needs_a_mailbox(token_calls):
     creds = dict(SP, mailbox="")
     with pytest.raises(GraphAuthError, match="no signed-in user"):
