@@ -68,6 +68,24 @@ parameters:
       zh_Hant: 訊息的內容類型，html 或 text
     llm_description: The content type of the message body, either html or text, default is html
     form: llm
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: ID of the new message
+    web_url:
+      type: string
+      description: Link to the message in Teams
+    created_datetime:
+      type: string
+      description: Created time (ISO 8601)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/send_chat_message.py

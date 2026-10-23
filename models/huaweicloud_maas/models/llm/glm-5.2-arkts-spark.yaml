@@ -1,7 +1,6 @@
-model: glm-5
+model: glm-5.2-arkts-spark
 label:
-  zh_Hans: GLM-5
-  en_US: GLM-5
+  en_US: GLM-5.2-ArkTS-SPARK
 model_type: llm
 features:
   - agent-thought
@@ -21,18 +20,8 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     min: 1
-    max: 16384
+    max: 128000
     default: 16384
-  - name: frequency_penalty
-    use_template: frequency_penalty
-    min: -2
-    max: 2
-    default: 0
-  - name: presence_penalty
-    use_template: presence_penalty
-    min: -2
-    max: 2
-    default: 0
   - name: enable_thinking
     required: false
     type: boolean
@@ -44,7 +33,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: '4'
-  output: '18'
+  input: '9.6'
+  output: '33.6'
   unit: '0.000001'
   currency: RMB

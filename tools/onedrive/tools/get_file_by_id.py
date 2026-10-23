@@ -1,16 +1,18 @@
-import asyncio
 from collections.abc import Generator
 from typing import Any
 
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from msgraph.generated.models.drive_item import DriveItem
 
-from .utils import OneDriveClient
+from tools.outputs import with_outputs
+from tools.graph_client import file_info, graph_request, GraphAuthError, item_vars, resolve_graph_context, segment
+
+_MAX_DOWNLOAD = 15 * 1024 * 1024
 
 
 class GetFileByIdTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
 
         file_id = tool_parameters.get("file_id")
@@ -21,51 +23,29 @@ class GetFileByIdTool(Tool):
             yield self.create_json_message({"error": "File ID is required."})
             return
 
-        client: OneDriveClient = OneDriveClient(self.runtime.credentials)
-
         try:
-            file: DriveItem = asyncio.run(client.get_file_by_id(file_id))
-
-            if not file:
-                yield self.create_text_message("File not found.")
-                yield self.create_json_message({"error": "File not found."})
-                return
-
-            file_info = {
-                "id": file.id,
-                "name": file.name,
-                "size": file.size,  # In bytes
-                "download_url": (
-                    file.additional_data.get("@microsoft.graph.downloadUrl")
-                    if file.additional_data
-                    else None
-                ),
-                "last_modified_date_time": (
-                    file.last_modified_date_time.isoformat()
-                    if file.last_modified_date_time
-                    else None
-                ),
-                "path": (file.parent_reference.path if file.parent_reference else None),
-                "drive_id": (
-                    file.parent_reference.drive_id if file.parent_reference else None
-                ),
-            }
-
-            yield self.create_json_message(file_info)
-            if (
-                download
-                and file_info.get("download_url")
-                and file_info.get("size", 0) < 15 * 1024 * 1024
-            ):
-                response = requests.get(file_info["download_url"], timeout=30)
-                if response.status_code == 200:
-                    yield self.create_blob_message(
-                        blob=response.content,
-                        meta={
-                            "file_name": file_info["name"],
-                        },
-                    )
-
-        except Exception as e:
+            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"))
+            item = graph_request(graph, "GET", f"{graph.drive_base}/items/{segment(file_id)}").json()
+        except GraphAuthError as e:
             yield self.create_json_message({"error": str(e)})
             yield self.create_text_message(f"Error retrieving file: {e}")
+            return
+
+        info = file_info(item)
+        v = item_vars(item)
+        self._out.update(
+            file_id=v["id"], name=v["name"], is_folder=v["is_folder"], mime_type=v["mime_type"],
+            size=v["size"], web_url=v["web_url"], download_url=v["download_url"], success=True,
+        )
+        yield self.create_json_message(info)
+        if download and info.get("download_url") and (info.get("size") or 0) < _MAX_DOWNLOAD:
+            # The download URL is pre-authenticated and short-lived; it must not get the bearer token.
+            try:
+                response = requests.get(info["download_url"], timeout=30)
+            except requests.exceptions.RequestException as e:
+                self._out.update(success=False, error=f"Error downloading file: {e}")
+                yield self.create_text_message(f"Error downloading file: {e}")
+                return
+            if response.status_code == 200:
+                self._out["downloaded"] = True
+                yield self.create_blob_message(blob=response.content, meta={"file_name": info["name"]})

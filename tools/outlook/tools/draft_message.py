@@ -5,9 +5,12 @@ import json
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class DraftEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Create a draft email using Microsoft Graph API
@@ -21,8 +24,14 @@ class DraftEmailTool(Tool):
             body_content = tool_parameters.get("body", "")
             body_type = tool_parameters.get("body_type", "text")  # text or html
             importance = tool_parameters.get("importance", "normal")  # low, normal, high
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
+                return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             try:
                 # Create draft email
@@ -38,6 +47,8 @@ class DraftEmailTool(Tool):
                 # Success: return only the draft_id as a text message
                 draft_id = result.get("id")
                 if draft_id:
+                    self._out.update(draft_id=draft_id, subject=result.get("subject") or "", conversation_id=result.get("conversationId") or "",
+                                     web_link=result.get("webLink") or "", success=True)
                     yield self.create_text_message(draft_id)
                 else:
                     yield self.create_text_message("Draft created but no ID returned.")
@@ -86,7 +97,7 @@ class DraftEmailTool(Tool):
                 message["bccRecipients"] = bcc_list
             
             # API endpoint using /me
-            url = "https://graph.microsoft.com/v1.0/me/messages"
+            url = f"{self._mailbox_base}/messages"
             
             # Headers
             headers = {
