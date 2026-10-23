@@ -63,7 +63,8 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
                 stream=stream,
             )
         )
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert {key: body.get(key) for key in parameters} == parameters
     assert body["stream"] is stream
     assert chunks[0].delta.message.content == "ok"
@@ -106,7 +107,8 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
                 stream=False,
             )
         )
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert chunks[0].delta.message.content == "ok"
     assert body["max_tokens"] == 1500
     if model_id == "gpt-5.6-luna":
@@ -148,7 +150,8 @@ def test_public_invoke_string_option_toggle_default(schema, rule_name, toggle_on
             )
         )
     post.assert_called_once()
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert chunks[0].delta.message.content == "ok"
     if toggle_on:
         if rule.name == "response_format":
