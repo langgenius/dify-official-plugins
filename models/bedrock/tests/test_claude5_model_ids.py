@@ -17,6 +17,7 @@ _spec.loader.exec_module(model_ids)
 
 OPUS55 = "anthropic.claude-opus-5-5"
 SONNET55 = "anthropic.claude-sonnet-5-5"
+HAIKU55 = "anthropic.claude-haiku-5-5"
 FABLE51 = "anthropic.claude-fable-5-1"
 OPUS5 = "anthropic.claude-opus-5"
 SONNET5 = "anthropic.claude-sonnet-5"
@@ -28,6 +29,7 @@ class TestRegistry:
         family = model_ids.BEDROCK_MODEL_IDS["anthropic claude 5"]
         assert family["Opus 5.5"] == OPUS55
         assert family["Sonnet 5.5"] == SONNET55
+        assert family["Haiku 5.5"] == HAIKU55
         assert family["Fable 5.1"] == FABLE51
         assert family["Opus 5"] == OPUS5
         assert family["Sonnet 5"] == SONNET5
@@ -36,6 +38,7 @@ class TestRegistry:
     def test_get_model_id(self):
         assert model_ids.get_model_id("anthropic claude 5", "Opus 5.5") == OPUS55
         assert model_ids.get_model_id("anthropic claude 5", "Sonnet 5.5") == SONNET55
+        assert model_ids.get_model_id("anthropic claude 5", "Haiku 5.5") == HAIKU55
         assert model_ids.get_model_id("anthropic claude 5", "Fable 5.1") == FABLE51
         assert model_ids.get_model_id("anthropic claude 5", "Opus 5") == OPUS5
         assert model_ids.get_model_id("anthropic claude 5", "Sonnet 5") == SONNET5
@@ -46,6 +49,7 @@ class TestIsClaude5:
     def test_bare_ids(self):
         assert model_ids.is_claude5_model(OPUS55)
         assert model_ids.is_claude5_model(SONNET55)
+        assert model_ids.is_claude5_model(HAIKU55)
         assert model_ids.is_claude5_model(FABLE51)
         assert model_ids.is_claude5_model(OPUS5)
         assert model_ids.is_claude5_model(SONNET5)
@@ -63,6 +67,8 @@ class TestIsClaude5:
             assert model_ids.is_claude5_profile_id(f"{prefix}{OPUS55}")
         for prefix in ("global.", "us.", "eu."):
             assert model_ids.is_claude5_profile_id(f"{prefix}{SONNET55}")
+        for prefix in ("global.", "us.", "eu.", "au."):
+            assert model_ids.is_claude5_profile_id(f"{prefix}{HAIKU55}")
         for prefix in ("global.", "us."):
             assert model_ids.is_claude5_profile_id(f"{prefix}{FABLE51}")
         assert model_ids.is_claude5_profile_id(SONNET5)
@@ -82,7 +88,7 @@ class TestResolveProfileId:
 
     @pytest.mark.parametrize("region", ["us-east-1", "us-west-2"])
     def test_geographic_us_regions(self, region):
-        for model in (FABLE5, SONNET55, FABLE51):
+        for model in (FABLE5, SONNET55, HAIKU55, FABLE51):
             assert (
                 model_ids.resolve_claude5_profile_id(model, "geographic", region)
                 == f"us.{model}"
@@ -100,7 +106,7 @@ class TestResolveProfileId:
     def test_geographic_eu_regions(self, region):
         # Opus 5.5 / Sonnet 5.5 / Opus 5 / Sonnet 5 have eu. geo profiles (live-verified);
         # Fable 5.1 / Fable 5 do not
-        for model in (OPUS55, SONNET55):
+        for model in (OPUS55, SONNET55, HAIKU55):
             assert (
                 model_ids.resolve_claude5_profile_id(model, "geographic", region)
                 == f"eu.{model}"
@@ -124,6 +130,10 @@ class TestResolveProfileId:
         assert (
             model_ids.resolve_claude5_profile_id(OPUS55, "geographic", region)
             == f"au.{OPUS55}"
+        )
+        assert (
+            model_ids.resolve_claude5_profile_id(HAIKU55, "geographic", region)
+            == f"au.{HAIKU55}"
         )
         assert (
             model_ids.resolve_claude5_profile_id(OPUS5, "geographic", region)

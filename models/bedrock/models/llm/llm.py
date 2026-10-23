@@ -1941,6 +1941,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Claude 5 generation models
             'Opus 5.5': 'claude-5-5-opus',
             'Sonnet 5.5': 'claude-5-5-sonnet',
+            'Haiku 5.5': 'claude-5-5-haiku',
             'Fable 5.1': 'claude-5-1-fable',
             'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',

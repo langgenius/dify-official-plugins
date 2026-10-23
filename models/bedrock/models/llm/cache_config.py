@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 CACHE_SUPPORTED_MODELS = [
     "anthropic.claude-opus-5-5",
     "anthropic.claude-sonnet-5-5",
+    "anthropic.claude-haiku-5-5",
     "anthropic.claude-fable-5-1",
     "anthropic.claude-opus-5",
     "anthropic.claude-sonnet-5",
@@ -36,6 +37,11 @@ CACHE_CONFIG = {
         "supported_fields": ["system", "messages", "tools"]
     },
     "anthropic.claude-sonnet-5-5": {
+        "min_tokens": 512,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages", "tools"]
+    },
+    "anthropic.claude-haiku-5-5": {
         "min_tokens": 512,
         "max_checkpoints": 4,
         "supported_fields": ["system", "messages", "tools"]
