@@ -4,6 +4,7 @@ import time
 from collections.abc import Generator
 from typing import Any, Optional
 
+from dify_plugin.invocations.model.llm import merge_llm_result_chunk
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMResult, LLMResultChunk, LLMUsage
@@ -115,6 +116,7 @@ class SelfRefineStrategy(AgentStrategy):
         previous_critique: Optional[str] = None
         final_output = ""
         total_metadata = ExecutionMetadata()
+        model_messages: list[PromptMessage] = []
 
         while refinement_count <= params.max_refinements:
             attempt_number = refinement_count + 1
@@ -137,6 +139,7 @@ class SelfRefineStrategy(AgentStrategy):
 
                 final_output = execution_result["output"]
                 metadata = execution_result["metadata"]
+                model_messages = execution_result["messages"]
 
                 # Accumulate metadata
                 total_metadata.total_tokens += metadata.total_tokens
@@ -215,6 +218,11 @@ class SelfRefineStrategy(AgentStrategy):
         yield self.create_text_message(final_output)
 
         yield self.create_json_message({
+            "model_history": {
+                "provider": params.model.provider,
+                "model": params.model.model,
+                "messages": [message.model_dump(mode="json") for message in model_messages],
+            },
             "refinement_count": refinement_count,
             "total_attempts": refinement_count + 1,
             "total_tokens": total_metadata.total_tokens,
@@ -265,6 +273,7 @@ class SelfRefineStrategy(AgentStrategy):
         if params.model.history_prompt_messages:
             prompt_messages.extend(params.model.history_prompt_messages)
 
+        history_end = len(prompt_messages)
         prompt_messages.append(UserPromptMessage(content=params.query))
 
         # Prepare model config
@@ -307,7 +316,11 @@ class SelfRefineStrategy(AgentStrategy):
                     stop=[]
                 )
 
-                response_text, tool_calls, usage = self._collect_response(chunks, stream)
+                result = self._collect_response(chunks)
+                response_text = result.message.get_text_content()
+                tool_calls = self._parse_tool_calls(result.message.tool_calls)
+                usage = result.usage
+                prompt_messages.append(result.message)
 
             except Exception as e:
                 logger.error(f"LLM invocation failed: {e}")
@@ -342,25 +355,6 @@ class SelfRefineStrategy(AgentStrategy):
                 )
                 break
 
-            # Record what the model asked for, then hand the observations back to
-            # it. Without this the model never sees any tool output.
-            prompt_messages.append(
-                AssistantPromptMessage(
-                    content=response_text,
-                    tool_calls=[
-                        AssistantPromptMessage.ToolCall(
-                            id=call_id,
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=tool_name,
-                                arguments=json.dumps(tool_params, ensure_ascii=False)
-                            )
-                        )
-                        for call_id, tool_name, tool_params in tool_calls
-                    ]
-                )
-            )
-
             observations = yield from self._execute_tools(
                 tool_calls=tool_calls,
                 tools=params.tools or []
@@ -384,41 +378,18 @@ class SelfRefineStrategy(AgentStrategy):
 
         return {
             "output": final_output,
-            "metadata": metadata
+            "metadata": metadata,
+            "messages": prompt_messages[history_end:],
         }
 
-    def _collect_response(
-        self,
-        chunks: Generator[LLMResultChunk, None, None] | LLMResult,
-        stream: bool
-    ) -> tuple[str, list[tuple[str, str, dict[str, Any]]], Optional[LLMUsage]]:
-        """Collect text, tool calls and usage from a streaming or blocking result"""
-
-        response_text = ""
-        tool_calls: list[tuple[str, str, dict[str, Any]]] = []
-        usage: Optional[LLMUsage] = None
-
-        if stream and isinstance(chunks, Generator):
-            for chunk in chunks:
-                if chunk.delta and chunk.delta.message and chunk.delta.message.content:
-                    response_text += chunk.delta.message.get_text_content()
-
-                if chunk.delta and chunk.delta.message and chunk.delta.message.tool_calls:
-                    tool_calls.extend(self._parse_tool_calls(chunk.delta.message.tool_calls))
-
-                if chunk.delta and chunk.delta.usage:
-                    usage = chunk.delta.usage
-        else:
-            result = chunks if isinstance(chunks, LLMResult) else next(chunks)
-            if result.message and result.message.content:
-                response_text = result.message.get_text_content()
-
-            if result.message and result.message.tool_calls:
-                tool_calls.extend(self._parse_tool_calls(result.message.tool_calls))
-
-            usage = result.usage
-
-        return response_text, tool_calls, usage
+    @staticmethod
+    def _collect_response(chunks: Generator[LLMResultChunk, None, None] | LLMResult) -> LLMResult:
+        if isinstance(chunks, LLMResult):
+            return chunks
+        result = LLMResult(model="", message=AssistantPromptMessage(content=""), usage=LLMUsage.empty_usage())
+        for chunk in chunks:
+            merge_llm_result_chunk(result, chunk)
+        return result
 
     @staticmethod
     def _parse_tool_calls(
