@@ -32,4 +32,4 @@ resource:
       size: 1048576
 tags: []
 type: plugin
-version: 1.0.2
+version: 1.0.3
