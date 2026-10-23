@@ -51,3 +51,8 @@ Selecting `japan` for *Cross-Region Inference* uses the `jp.` geographic profile
 
 ## Privacy
 This plugin sends the inputs required by the selected operation to the upstream service. See [PRIVACY.md](PRIVACY.md) for details.
+
+
+### Claude Haiku 5.5 custom inference profiles
+
+Custom profiles backed by `anthropic.claude-haiku-5-5` do not expose legacy sampling controls (`temperature`, `top_p`, `top_k`) or token-budget thinking controls. Saved values are omitted from Converse requests. Haiku 5.5 uses adaptive thinking by default. This does not add a predefined model catalog entry or change pricing or profile routing.
