@@ -1077,9 +1077,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Claude 5 generation models (Sonnet 5 / Fable 5): adaptive thinking is
         # always on; depth is controlled by `effort` (replaces budget_tokens).
         # Only the 'anthropic claude 5' family yaml exposes this parameter.
-        if "effort" in model_parameters:
+        # `thinking_display` ("omitted" by default on Claude 5): "summarized"
+        # streams reasoning summaries so long thinking does not leave the
+        # connection idle. It is only read here and never forwarded as-is.
+        thinking_display_summarized = model_parameters.get("thinking_display") == "summarized"
+        claude5_thinking = "effort" in model_parameters or thinking_display_summarized
+        if claude5_thinking:
             additional_model_fields["thinking"] = {"type": "adaptive"}
-            additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
+            if thinking_display_summarized:
+                additional_model_fields["thinking"]["display"] = "summarized"
+            if "effort" in model_parameters:
+                additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
             # Claude 5 rejects non-default sampling params. The family yaml does
             # not expose them, but drop any that reach here through callers that
             # bypass the SDK's parameter-rule filtering (e.g. direct _invoke).
@@ -1088,7 +1096,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             additional_model_fields.pop("top_k", None)
 
         # process reasoning related parameters, construct nested reasoning_config structure
-        if "reasoning_type" in model_parameters and "effort" not in model_parameters:
+        if "reasoning_type" in model_parameters and not claude5_thinking:
             reasoning_type = model_parameters["reasoning_type"]
             if reasoning_type:
                 reasoning_config = {

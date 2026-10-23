@@ -87,6 +87,19 @@ parameter_rules:
     help:
       zh_Hans: 控制自适应思考的深度与整体 token 消耗（替代思考预算）。编码/智能体任务推荐 high 或 xhigh。
       en_US: Controls adaptive thinking depth and overall token spend (replaces thinking budget). Use high or xhigh for coding/agentic tasks.
+  - name: thinking_display
+    label:
+      zh_Hans: 推理内容展示
+      en_US: Thinking Display
+    type: string
+    required: false
+    default: omitted
+    options:
+      - omitted
+      - summarized
+    help:
+      zh_Hans: 响应中推理内容的展示方式。omitted 为 API 默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，摘要会随流式输出持续到达，因此即使思考时间很长，连接也不会处于无通信状态。
+      en_US: How thinking content is exposed in the response. `omitted` is the API default (thinking text is not returned); `summarized` returns summarized reasoning that arrives on the stream, so the connection does not go idle during long thinking.
   - name: refusal_fallback
     label:
       zh_Hans: 拒答回落到 Claude 4.8 Opus
