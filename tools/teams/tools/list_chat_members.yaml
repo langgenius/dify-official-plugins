@@ -1,0 +1,68 @@
+identity:
+  name: list_chat_members
+  author: langgenius
+  label:
+    en_US: List Chat Members
+    zh_Hans: 列出聊天成员
+    pt_BR: Listar Membros do Chat
+    ja_JP: チャット メンバー一覧
+    zh_Hant: 列出聊天成員
+description:
+  human:
+    en_US: List the members of a chat
+    zh_Hans: 列出聊天的成员
+    pt_BR: Listar os membros de um chat
+    ja_JP: チャットのメンバーを一覧表示
+    zh_Hant: 列出聊天的成員
+  llm: List the members of a Microsoft Teams chat with their names, emails and user IDs.
+parameters:
+- name: chat_id
+  type: string
+  required: true
+  label:
+    en_US: Chat ID
+    zh_Hans: 聊天 ID
+    pt_BR: ID do Chat
+    ja_JP: チャット ID
+    zh_Hant: 聊天 ID
+  human_description:
+    en_US: The ID of the chat (from List Chats or Create Chat)
+    zh_Hans: 聊天 ID（来自“列出聊天”或“创建聊天”）
+    pt_BR: O ID do chat (de Listar Chats ou Criar Chat)
+    ja_JP: チャットの ID（チャット一覧またはチャット作成から取得）
+    zh_Hant: 聊天 ID（來自「列出聊天」或「建立聊天」）
+  llm_description: The ID of the chat, as returned by List Chats or Create Chat
+  form: llm
+output_schema:
+  type: object
+  properties:
+    members:
+      type: array
+      description: Chat members
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Display name
+          email:
+            type: string
+            description: Email
+          user_id:
+            type: string
+            description: User ID
+          roles:
+            type: array[string]
+            description: Roles, e.g. owner
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/list_chat_members.py

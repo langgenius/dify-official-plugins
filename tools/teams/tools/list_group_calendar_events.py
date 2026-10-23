@@ -4,6 +4,8 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListGroupCalendarEventsTool(Tool):
@@ -15,11 +17,14 @@ class ListGroupCalendarEventsTool(Tool):
     it lists the group's events. Requires the Group.Read.All permission.
     """
 
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        access_token = self.runtime.credentials.get("access_token")
-        if not access_token:
-            yield self.create_text_message("Access token is required in credentials.")
+        try:
+            graph = resolve_graph_context(self.runtime.credentials)
+        except GraphError as e:
+            yield self.create_text_message(str(e))
             return
+        access_token = graph.access_token
 
         team_id = (tool_parameters.get("team_id") or "").strip()
         if not team_id:
@@ -47,7 +52,7 @@ class ListGroupCalendarEventsTool(Tool):
 
         # calendarView needs a range and expands recurring events; /events lists as-is.
         if start_datetime and end_datetime:
-            url = f"https://graph.microsoft.com/v1.0/groups/{team_id}/calendarView"
+            url = f"{graph.api_base}/groups/{team_id}/calendarView"
             params = {
                 "startDateTime": start_datetime,
                 "endDateTime": end_datetime,
@@ -56,7 +61,7 @@ class ListGroupCalendarEventsTool(Tool):
                 "$select": select,
             }
         else:
-            url = f"https://graph.microsoft.com/v1.0/groups/{team_id}/events"
+            url = f"{graph.api_base}/groups/{team_id}/events"
             params = {
                 "$top": top,
                 "$orderby": "start/dateTime",
@@ -107,4 +112,17 @@ class ListGroupCalendarEventsTool(Tool):
                 f"Found {len(events)} event(s):\n" + "\n".join(lines)
             )
 
+        self._out.update(
+            events=[
+                {"id": e.get("id") or "", "subject": e.get("subject") or "",
+                 "start": (e.get("start") or {}).get("dateTime") or "", "end": (e.get("end") or {}).get("dateTime") or "",
+                 "time_zone": (e.get("start") or {}).get("timeZone") or "",
+                 "organizer_name": ((e.get("organizer") or {}).get("emailAddress") or {}).get("name") or "",
+                 "organizer_address": ((e.get("organizer") or {}).get("emailAddress") or {}).get("address") or "",
+                 "location": (e.get("location") or {}).get("displayName") or "", "is_online_meeting": bool(e.get("isOnlineMeeting")),
+                 "join_url": (e.get("onlineMeeting") or {}).get("joinUrl") or "", "web_link": e.get("webLink") or ""}
+                for e in data.get("value", [])
+            ],
+            count=len(events), success=True,
+        )
         yield self.create_json_message({"events": events})

@@ -51,6 +51,53 @@ parameters:
       pt_BR: Baixar o arquivo ou não
     llm_description: Whether to download the file or not
     form: llm
+  - name: drive_user
+    type: string
+    required: false
+    label:
+      en_US: Drive Owner
+      zh_Hans: 网盘所有者
+      ja_JP: ドライブ所有者
+      pt_BR: Proprietário da Unidade
+    human_description:
+      en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s default.'
+      zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+      ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+      pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão da credencial.'
+    form: form
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: Drive item ID
+    name:
+      type: string
+      description: File or folder name
+    is_folder:
+      type: boolean
+      description: True for a folder
+    mime_type:
+      type: string
+      description: MIME type of a file
+    size:
+      type: integer
+      description: Size in bytes
+    web_url:
+      type: string
+      description: Link to open the item in OneDrive
+    download_url:
+      type: string
+      description: Short-lived pre-authenticated download link
+    downloaded:
+      type: boolean
+      description: True when the content was returned in files (requested and under 15 MB)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_file_by_id.py

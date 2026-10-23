@@ -5,9 +5,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class SendMessageTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Send an email message directly through Outlook using Microsoft Graph API
@@ -32,11 +35,14 @@ class SendMessageTool(Tool):
                 yield self.create_text_message("Message content is required.")
                 return
 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             try:
                 # Send the email directly
@@ -48,6 +54,7 @@ class SendMessageTool(Tool):
 
                 # Success
                 attach_note = f" with {result.get('attachment_count', 0)} attachment(s)" if result.get("attachment_count") else ""
+                self._out.update(subject=subject, to=self._parse_recipients(to_recipients), attachment_count=int(result.get("attachment_count", 0)), success=True)
                 yield self.create_text_message(f"Message sent successfully: {subject}{attach_note}")
                 yield self.create_json_message({
                     "status": "sent",
@@ -116,7 +123,7 @@ class SendMessageTool(Tool):
             message_body = {"message": graph_message}
 
             # API endpoint
-            url = "https://graph.microsoft.com/v1.0/me/sendMail"
+            url = f"{self._mailbox_base}/sendMail"
 
             # Headers
             headers = {

@@ -2,7 +2,7 @@
 # Microsoft OneDrive Plugin
 
 **Author**: langgenius
-**Version**: 0.0.7
+**Version**: 0.1.0
 **Type**: plugin
 
 ## Introduction
@@ -63,6 +63,8 @@ This plugin integrates with Microsoft OneDrive, enabling you to search, retrieve
 
 6. Configure the plugin in Dify:
     - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Azure Portal.
+    - **Tenant ID** (new in 0.1.0): leave it as `common` for a multi-tenant app (or personal accounts). If your app registration is **single-tenant** ("Accounts in this organizational directory only"), enter your directory (tenant) ID or domain; with `common` Microsoft rejects the sign-in with `AADSTS50194`.
+    - **Microsoft Cloud** (new in 0.1.0): keep Global unless your tenant is in a national cloud (US Government, US Government DoD, China operated by 21Vianet).
     - Make sure you have the same redirect URI as specified in the Azure Portal. If not, you will need to update it in the Azure Portal.
     - Click `Save and authorize` to initiate the OAuth flow.
 
@@ -73,6 +75,18 @@ This plugin integrates with Microsoft OneDrive, enabling you to search, retrieve
     <img src="_assets/result-dify.png" alt="Plugin Configuration" width="45%">
 </p>
 
+
+## Service Principal (app-only, new in 0.1.0)
+
+Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
+
+1. In the app registration, add the Microsoft Graph **Application** permissions (not Delegated) `Files.ReadWrite.All` and, for **Search File or Folder by Name**, `Sites.Read.All` (OneDrive search runs on SharePoint search, which app-only tokens can only use with it), then click **Grant admin consent**. These reach every user's OneDrive in the tenant, so treat the client secret accordingly.
+2. In Dify, add an authorization of the **API Key** type and fill in **Tenant ID** (your directory ID, not `common`), **Client ID**, **Client Secret**, **Default Drive Owner** (the user whose OneDrive to use, e.g. `alice@contoso.com`) and **Microsoft Cloud**. Dify signs in and opens that OneDrive to check the permission.
+3. Each tool has an optional **Drive Owner** setting (set in the node, never chosen by the LLM) to use another user's OneDrive with the same credential.
+
+The drive owner needs a license that includes OneDrive, and their OneDrive exists only after they have opened it once.
+
+> **Known limitation — search with a Service Principal.** OneDrive search runs on SharePoint search. App-only tokens get `403 accessDenied` from it unless the app also has `Sites.Read.All`, and even with it Microsoft Graph may return an empty result for app-only requests (we saw this in our test tenant, for both drive search and the Microsoft Search API). Upload, Get File by ID and Delete File by ID are not affected. If you need search, use an OAuth authorization.
 
 ## Tool Descriptions
 
@@ -97,7 +111,7 @@ Search for files or folders in OneDrive by name.
 - limit (number, optional): The maximum number of results to return (default: 10).
 
 ### upload_file
-Upload a file to OneDrive root directory.
+Upload a file to the OneDrive root directory; a `file_name` such as `reports/q3.pdf` puts it in that folder.
 
 **Parameters:**
 - file (file): The file to upload to OneDrive.
@@ -105,8 +119,19 @@ Upload a file to OneDrive root directory.
 
 
 
+## Output variables
+
+Besides `text` and `json` (unchanged), every tool returns typed variables that later workflow nodes can pick directly, without parsing `json`. Every tool has `success` (boolean) and `error` (string, empty on success), so a workflow can branch with an IF node; list tools return an array of flat items plus `count`.
+
+| Tool | Variables (besides `success`, `error`) |
+|---|---|
+| Get File or Folder by ID | `file_id`, `name`, `is_folder`, `mime_type`, `size`, `web_url`, `download_url`, `downloaded` |
+| Delete File by ID | `file_id` |
+| Search File or Folder by Name | `items`, `count` |
+| Upload File | `file_id`, `name`, `size`, `web_url` |
+
 ## PRIVACY
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
 
-Last updated: July 22, 2026
+Last updated: October 22, 2026

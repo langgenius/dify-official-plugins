@@ -5,12 +5,11 @@ from dify_plugin import ModelProvider
 
 logger = logging.getLogger(__name__)
 
-# Sentinel model used for credential validation. Picked as one of the oldest
-# Tongyi chat models so it has broad availability across all DashScope
-# tiers — a key valid for any Tongyi model will pass validation against it.
-# Callers can override the sentinel by passing `validate_model` in the
-# credentials dict (e.g. when the key only covers a different model).
-DEFAULT_VALIDATE_MODEL = "qwen-turbo"
+# Use a current model available in both Beijing and Singapore. Qwen-Turbo
+# was retired on 2026-10-10; validating against it rejects otherwise valid keys.
+# https://help.aliyun.com/zh/model-studio/qwen3-8-flash
+# Keys restricted to another model can still override `validate_model`.
+DEFAULT_VALIDATE_MODEL = "qwen3.8-flash"
 
 
 class TongyiProvider(ModelProvider):

@@ -1,81 +1,221 @@
-oauth_schema:
-  client_schema:
-    - name: "client_id"
-      type: "secret-input"
-      required: true
-      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
-      placeholder:
-        en_US: "Please input your Client ID"
-        zh_CN: "请输入你的 Client ID"
-        ja_JP: "Client ID を入力してください"
-        pt_BR: "Insira seu Client ID"
-      help:
-        en_US: "Client ID is used to authenticate requests to the Microsoft API."
-        zh_CN: "Client ID 用于认证请求到 Microsoft API。"
-        ja_JP: "Client ID は Microsoft API へのリクエスト認証に使用されます。"
-        pt_BR: "Client ID é usado para autenticar solicitações à API do Microsoft."
-      label:
-        en_US: "Client ID"
-        zh_CN: "Client ID"
-        ja_JP: "Client ID"
-    - name: "client_secret"
-      type: "secret-input"
-      required: true
-      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
-      placeholder:
-        en_US: "Please input your Client Secret"
-        zh_CN: "请输入你的 Client Secret"
-        ja_JP: "Client Secret を入力してください"
-        pt_BR: "Insira seu Client Secret"
-      help:
-        en_US: "Client Secret is used to authenticate requests to the Microsoft API."
-        zh_CN: "Client Secret 用于认证请求到 Microsoft API。"
-        ja_JP: "Client Secret は Microsoft API へのリクエスト認証に使用されます。"
-        pt_BR: "Client Secret é usado para autenticar solicitações à API do Microsoft."
-      label:
-        en_US: "Client Secret"
-        zh_CN: "Client Secret"
-        ja_JP: "Client Secret"
-  credentials_schema:
-    - name: "access_token"
-      type: "secret-input"
-      label:
-        en_US: "Access Token"
-        zh_CN: "访问令牌"
-        ja_JP: "アクセス トークン"
-    - name: "refresh_token"
-      type: "secret-input"
-      label:
-        en_US: "Refresh Token"
-        zh_CN: "刷新令牌"
-        ja_JP: "リフレッシュ トークン"
-        pt_BR: "Token de atualização"
-    - name: "expires_at"
-      type: "secret-input"
-      label:
-        en_US: "Expires At"
-        zh_CN: "过期时间"
-        ja_JP: "有効期限"
-        pt_BR: "Expira Em"
-
 identity:
   author: langgenius
   name: microsoft_onedrive
   label:
     en_US: Microsoft OneDrive
-    zh_CN: 微软 OneDrive
+    zh_Hans: 微软 OneDrive
     ja_JP: マイクロソフト OneDrive
+    pt_BR: Microsoft OneDrive
   description:
     en_US: Access Microsoft OneDrive in Dify
-    zh_CN: 在 Dify 中访问微软 OneDrive
+    zh_Hans: 在 Dify 中访问微软 OneDrive
     ja_JP: DifyでMicrosoft OneDriveにアクセス
+    pt_BR: Acessar o Microsoft OneDrive no Dify
   icon: icon.svg
   icon_dark: icon-dark.svg
+credentials_for_provider:
+  tenant_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Tenant ID
+      zh_Hans: 租户 ID
+      ja_JP: テナント ID
+      pt_BR: ID do Locatário
+    placeholder:
+      en_US: Directory (tenant) ID, e.g. 00000000-0000-0000-0000-000000000000
+      zh_Hans: 目录（租户）ID，例如 00000000-0000-0000-0000-000000000000
+      ja_JP: 'ディレクトリ（テナント）ID、例: 00000000-0000-0000-0000-000000000000'
+      pt_BR: ID do diretório (locatário), ex. 00000000-0000-0000-0000-000000000000
+    help:
+      en_US: Service Principal sign-in needs your directory's own tenant ID; 'common' does not work.
+      zh_Hans: Service Principal 登录必须使用您目录自己的租户 ID，不能用 'common'。
+      ja_JP: サービス プリンシパルでのサインインには、ディレクトリ固有のテナント ID が必要です（'common' は使えません）。
+      pt_BR: O login com Service Principal precisa do ID do locatário do seu diretório; 'common' não funciona.
+    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+      pt_BR: ID do Cliente
+    placeholder:
+      en_US: Application (client) ID of the app registration
+      zh_Hans: 应用注册的应用程序（客户端）ID
+      ja_JP: アプリ登録のアプリケーション（クライアント）ID
+      pt_BR: ID do aplicativo (cliente) do registro de aplicativo
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアントシークレット
+      pt_BR: Segredo do Cliente
+    placeholder:
+      en_US: Client secret value of the app registration
+      zh_Hans: 应用注册的客户端密钥值
+      ja_JP: アプリ登録のクライアントシークレットの値
+      pt_BR: Valor do segredo do cliente do registro de aplicativo
+    help:
+      en_US: The app needs the Microsoft Graph application permission Files.ReadWrite.All (plus Sites.Read.All for search) with admin consent.
+      zh_Hans: 应用需要已获管理员同意的 Microsoft Graph 应用程序权限 Files.ReadWrite.All（搜索还需要 Sites.Read.All）。
+      ja_JP: アプリには、管理者の同意を付与した Microsoft Graph のアプリケーションのアクセス許可 Files.ReadWrite.All（検索には Sites.Read.All も）が必要です。
+      pt_BR: O aplicativo precisa da permissão de aplicativo do Microsoft Graph Files.ReadWrite.All (e Sites.Read.All para a pesquisa) com consentimento do administrador.
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  drive_user:
+    type: text-input
+    required: true
+    label:
+      en_US: Default Drive Owner
+      zh_Hans: 默认网盘所有者
+      ja_JP: 既定のドライブ所有者
+      pt_BR: Proprietário Padrão da Unidade
+    placeholder:
+      en_US: e.g. alice@contoso.com
+      zh_Hans: 例如 alice@contoso.com
+      ja_JP: 例 alice@contoso.com
+      pt_BR: ex. alice@contoso.com
+    help:
+      en_US: The user (user principal name or user ID) whose OneDrive the tools act on. A tool's Drive Owner parameter overrides it.
+      zh_Hans: 工具要操作其 OneDrive 的用户（用户主体名称或用户 ID）。工具的“网盘所有者”参数会覆盖此值。
+      ja_JP: ツールが操作する OneDrive の所有ユーザー（ユーザー プリンシパル名またはユーザー ID）。ツールの「ドライブ所有者」パラメーターが優先されます。
+      pt_BR: O usuário (nome principal ou ID) cujo OneDrive as ferramentas usam. O parâmetro Proprietário da Unidade da ferramenta tem prioridade.
+  cloud:
+    type: select
+    required: false
+    default: global
+    label: &id001
+      en_US: Microsoft Cloud
+      zh_Hans: Microsoft 云
+      ja_JP: Microsoft クラウド
+      pt_BR: Nuvem da Microsoft
+    options: &id002
+    - value: global
+      label:
+        en_US: Global (graph.microsoft.com)
+        zh_Hans: 全球 (graph.microsoft.com)
+        ja_JP: グローバル (graph.microsoft.com)
+        pt_BR: Global (graph.microsoft.com)
+    - value: usgov
+      label:
+        en_US: US Government (graph.microsoft.us)
+        zh_Hans: 美国政府 (graph.microsoft.us)
+        ja_JP: 米国政府 (graph.microsoft.us)
+        pt_BR: Governo dos EUA (graph.microsoft.us)
+    - value: dod
+      label:
+        en_US: US Government DoD (dod-graph.microsoft.us)
+        zh_Hans: 美国政府 DoD (dod-graph.microsoft.us)
+        ja_JP: 米国政府 DoD (dod-graph.microsoft.us)
+        pt_BR: Governo dos EUA DoD (dod-graph.microsoft.us)
+    - value: china
+      label:
+        en_US: China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)
+        zh_Hans: 中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)
+        ja_JP: 中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)
+        pt_BR: China, operado pela 21Vianet (microsoftgraph.chinacloudapi.cn)
+oauth_schema:
+  client_schema:
+  - name: client_id
+    type: secret-input
+    required: true
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
+    placeholder:
+      en_US: Please input your Client ID
+      zh_Hans: 请输入你的 Client ID
+      ja_JP: クライアント ID を入力してください
+      pt_BR: Insira seu Client ID
+    help:
+      en_US: Client ID is used to authenticate requests to the Microsoft API.
+      zh_Hans: Client ID 用于认证请求到 Microsoft API。
+      ja_JP: クライアント ID は Microsoft API へのリクエストの認証に使用されます。
+      pt_BR: O Client ID é usado para autenticar solicitações à API da Microsoft.
+    label:
+      en_US: Client ID
+      zh_Hans: Client ID
+      ja_JP: クライアント ID
+      pt_BR: Client ID
+  - name: client_secret
+    type: secret-input
+    required: true
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
+    placeholder:
+      en_US: Please input your Client Secret
+      zh_Hans: 请输入你的 Client Secret
+      ja_JP: クライアントシークレットを入力してください
+      pt_BR: Insira seu Client Secret
+    help:
+      en_US: Client Secret is used to authenticate requests to the Microsoft API.
+      zh_Hans: Client Secret 用于认证请求到 Microsoft API。
+      ja_JP: クライアントシークレットは Microsoft API へのリクエストの認証に使用されます。
+      pt_BR: O Client Secret é usado para autenticar solicitações à API da Microsoft.
+    label:
+      en_US: Client Secret
+      zh_Hans: Client Secret
+      ja_JP: クライアントシークレット
+      pt_BR: Client Secret
+  - name: tenant_id
+    type: text-input
+    required: false
+    default: common
+    label:
+      en_US: Tenant ID
+      zh_Hans: 租户 ID
+      ja_JP: テナント ID
+      pt_BR: ID do Locatário
+    placeholder:
+      en_US: Leave as common for multi-tenant / personal accounts
+      zh_Hans: 多租户或个人账户请保留 common
+      ja_JP: マルチテナント / 個人アカウントの場合は common のまま
+      pt_BR: Deixe common para multilocatário / contas pessoais
+    help:
+      en_US: Your directory (tenant) ID or domain. Required when the app registration is single-tenant ('common' only works for multi-tenant apps).
+      zh_Hans: 您的目录（租户）ID 或域名。应用注册为单租户时必须填写（'common' 仅适用于多租户应用）。
+      ja_JP: ディレクトリ（テナント）ID またはドメイン。アプリ登録がシングルテナントの場合は必須です（'common' はマルチテナント アプリでのみ使えます）。
+      pt_BR: O ID ou domínio do seu diretório (locatário). Obrigatório quando o registro do aplicativo é de locatário único ('common' só funciona para aplicativos multilocatário).
+    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
+  - name: cloud
+    type: select
+    required: false
+    default: global
+    label: *id001
+    help:
+      en_US: Choose a national cloud only if your Microsoft 365 tenant lives there; it changes the sign-in and Graph endpoints.
+      zh_Hans: 仅当您的 Microsoft 365 租户位于国家云时才选择；会同时更改登录和 Graph 端点。
+      ja_JP: Microsoft 365 テナントが各国のクラウドにある場合のみ選択してください。サインインと Graph のエンドポイントが変わります。
+      pt_BR: Escolha uma nuvem nacional somente se o seu locatário do Microsoft 365 estiver nela; isso altera os endpoints de login e do Graph.
+    options: *id002
+  credentials_schema:
+  - name: access_token
+    type: secret-input
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+      ja_JP: アクセストークン
+      pt_BR: Token de Acesso
+  - name: refresh_token
+    type: secret-input
+    label:
+      en_US: Refresh Token
+      zh_Hans: 刷新令牌
+      ja_JP: リフレッシュトークン
+      pt_BR: Token de Atualização
+  - name: expires_at
+    type: secret-input
+    label:
+      en_US: Expires At
+      zh_Hans: 过期时间
+      ja_JP: 有効期限
+      pt_BR: Expira Em
 tools:
-  - tools/get_file_by_id.yaml
-  - tools/delete_file_by_id.yaml
-  - tools/search_file.yaml
-  - tools/upload_file.yaml
+- tools/get_file_by_id.yaml
+- tools/delete_file_by_id.yaml
+- tools/search_file.yaml
+- tools/upload_file.yaml
 extra:
   python:
     source: provider/onedrive.py

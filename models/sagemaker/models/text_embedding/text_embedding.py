@@ -88,7 +88,11 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         # get model properties
         try:
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
-            sagemaker_client = get_sagemaker_client("sagemaker-runtime", credentials)
+            sagemaker_client = get_sagemaker_client(
+                "sagemaker-runtime",
+                credentials,
+                role_session_prefix="dify-sagemaker-embedding",
+            )
             truncated_texts = [item[:CONTEXT_SIZE] for item in texts]
 
             batches = batch_generator(

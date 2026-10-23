@@ -115,6 +115,8 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         )
         if thinking_payload:
             request_kwargs["thinking"] = thinking_payload
+        if options.effort:
+            request_kwargs["output_config"] = {"effort": options.effort}
 
         request_kwargs.update(options.sampling)
 

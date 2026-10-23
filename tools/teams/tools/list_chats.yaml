@@ -9,31 +9,195 @@ identity:
     zh_Hant: 列出聊天
 description:
   human:
-    en_US: List your Microsoft Teams chats
-    zh_Hans: 列出您的 Microsoft Teams 聊天
-    pt_BR: Listar seus chats do Microsoft Teams
-    ja_JP: あなたの Microsoft Teams チャットを一覧表示
-    zh_Hant: 列出您的 Microsoft Teams 聊天
-  llm: List the users Microsoft Teams chats using the Microsoft Graph API, returns chat id, topic and chatType
+    en_US: List your Microsoft Teams chats with their participants, optionally filtered by participant or chat type
+    zh_Hans: 列出您的 Microsoft Teams 聊天及其成员，可按成员或聊天类型筛选
+    pt_BR: Listar seus chats do Microsoft Teams com os participantes, opcionalmente filtrando por participante ou tipo
+    ja_JP: Microsoft Teams のチャットを参加者付きで一覧表示します。参加者やチャットの種類で絞り込めます
+    zh_Hant: 列出您的 Microsoft Teams 聊天及其成員，可依成員或聊天類型篩選
+  llm: List the signed-in user's Microsoft Teams chats with participants (name, user id, email), display name and web link. Filter by an exact participant display name and/or email (same participant) and by chat type. Results can span several pages; when pagination.has_more is true, call again with pagination.next_link. Use a chat id with List Chat Messages or Send Chat Message.
 parameters:
-  - name: top
-    type: number
-    required: false
-    default: 20
+- name: participant_name
+  type: string
+  required: false
+  label:
+    en_US: Participant Name
+    zh_Hans: 成员姓名
+    pt_BR: Nome do Participante
+    ja_JP: 参加者名
+    zh_Hant: 成員姓名
+  human_description:
+    en_US: Exact display name of a participant
+    zh_Hans: 成员的显示名（精确匹配）
+    pt_BR: Nome de exibição exato de um participante
+    ja_JP: 参加者の表示名（完全一致）
+    zh_Hant: 成員的顯示名稱（完全相符）
+  llm_description: Optional exact display name of a chat participant (case and spelling must match).
+  form: llm
+- name: participant_email
+  type: string
+  required: false
+  label:
+    en_US: Participant Email
+    zh_Hans: 成员邮箱
+    pt_BR: E-mail do Participante
+    ja_JP: 参加者のメール
+    zh_Hant: 成員信箱
+  human_description:
+    en_US: Exact email of a participant
+    zh_Hans: 成员的邮箱（精确匹配）
+    pt_BR: E-mail exato de um participante
+    ja_JP: 参加者のメールアドレス（完全一致）
+    zh_Hant: 成員的信箱（完全相符）
+  llm_description: Optional exact email address of a chat participant. With participant_name, both must match the same participant.
+  form: llm
+- name: chat_type
+  type: select
+  required: false
+  default: all
+  label:
+    en_US: Chat Type
+    zh_Hans: 聊天类型
+    pt_BR: Tipo de Chat
+    ja_JP: チャットの種類
+    zh_Hant: 聊天類型
+  human_description:
+    en_US: all, oneOnOne, group or meeting
+    zh_Hans: 全部、一对一、群组或会议
+    pt_BR: todos, individual, grupo ou reunião
+    ja_JP: すべて、1 対 1、グループ、会議
+    zh_Hant: 全部、一對一、群組或會議
+  llm_description: 'Chat type to return: all (default), oneOnOne, group or meeting.'
+  form: llm
+  options:
+  - value: all
     label:
-      en_US: Top
-      zh_Hans: 数量
-      pt_BR: Quantidade
-      ja_JP: 件数
-      zh_Hant: 數量
-    human_description:
-      en_US: The maximum number of chats to return
-      zh_Hans: 要返回的最大聊天数
-      pt_BR: O número máximo de chats a retornar
-      ja_JP: 返すチャットの最大数
-      zh_Hant: 要返回的最大聊天數
-    llm_description: The maximum number of chats to return, default is 20
-    form: llm
+      en_US: All
+      zh_Hans: 全部
+      pt_BR: Todos
+      ja_JP: すべて
+      zh_Hant: 全部
+  - value: oneOnOne
+    label:
+      en_US: One-on-one
+      zh_Hans: 一对一
+      pt_BR: Individual
+      ja_JP: 1 対 1
+      zh_Hant: 一對一
+  - value: group
+    label:
+      en_US: Group
+      zh_Hans: 群组
+      pt_BR: Grupo
+      ja_JP: グループ
+      zh_Hant: 群組
+  - value: meeting
+    label:
+      en_US: Meeting
+      zh_Hans: 会议
+      pt_BR: Reunião
+      ja_JP: 会議
+      zh_Hant: 會議
+- name: top
+  type: number
+  required: false
+  default: 20
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+    pt_BR: Tamanho da Página
+    ja_JP: 1 ページの件数
+    zh_Hant: 每頁數量
+  human_description:
+    en_US: Items requested per page, 1-50 (default 20); not the total
+    zh_Hans: 每页请求的数量，1-50（默认 20），不是总数
+    pt_BR: Itens por página, 1-50 (padrão 20); não é o total
+    ja_JP: 1 ページで要求する件数（1〜50、既定 20）。合計件数ではありません
+    zh_Hant: 每頁請求的數量，1-50（預設 20），不是總數
+  llm_description: Items requested per page from Microsoft Graph, 1-50, default 20. This is not the total number returned.
+  form: llm
+- name: max_pages
+  type: number
+  required: false
+  default: 5
+  label:
+    en_US: Max Pages
+    zh_Hans: 最大页数
+    pt_BR: Máximo de Páginas
+    ja_JP: 最大ページ数
+    zh_Hant: 最大頁數
+  human_description:
+    en_US: Pages read in one call, 1-10 (default 5)
+    zh_Hans: 单次调用读取的页数，1-10（默认 5）
+    pt_BR: Páginas lidas em uma chamada, 1-10 (padrão 5)
+    ja_JP: 1 回の呼び出しで読むページ数（1〜10、既定 5）
+    zh_Hant: 單次呼叫讀取的頁數，1-10（預設 5）
+  llm_description: Maximum pages read in one call, 1-10, default 5. A time budget of about 70 seconds also applies.
+  form: llm
+- name: next_link
+  type: string
+  required: false
+  label:
+    en_US: Next Link
+    zh_Hans: 续读链接
+    pt_BR: Próximo Link
+    ja_JP: 続きのリンク
+    zh_Hant: 續讀連結
+  human_description:
+    en_US: Continuation link from an earlier result (pagination.next_link); leave empty normally
+    zh_Hans: 上一次结果中的续读链接（pagination.next_link），通常留空
+    pt_BR: Link de continuação de um resultado anterior (pagination.next_link); normalmente vazio
+    ja_JP: 前回の結果の続きのリンク（pagination.next_link）。通常は空欄
+    zh_Hant: 上一次結果中的續讀連結（pagination.next_link），通常留空
+  llm_description: Continuation link from a previous List Chats result (pagination.next_link). It keeps that call's filters; leave empty to start a new search.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    chats:
+      type: array
+      description: Chats
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Chat ID
+          display_name:
+            type: string
+            description: Topic, or the other participants' names
+          chat_type:
+            type: string
+            description: oneOnOne, group or meeting
+          topic:
+            type: string
+            description: Topic
+          web_url:
+            type: string
+            description: Link to the chat
+          last_updated:
+            type: string
+            description: Last activity (ISO 8601)
+          member_names:
+            type: array[string]
+            description: Participant names
+          member_emails:
+            type: array[string]
+            description: Participant emails
+    count:
+      type: integer
+      description: Number of items returned
+    has_more:
+      type: boolean
+      description: True when more results are available
+    next_link:
+      type: string
+      description: Pass to next_link to continue, empty when complete
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_chats.py

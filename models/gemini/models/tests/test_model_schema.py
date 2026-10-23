@@ -134,12 +134,33 @@ def test_introductory_flash_models_share_one_rate_card():
     assert len(set(pricings)) == 1, dict(zip(INTRODUCTORY_FLASH_MODELS, pricings))
 
 
-def test_latest_flash_models_are_first_in_display_order():
+def test_latest_models_are_first_in_display_order():
     position = yaml.safe_load((LLM_SCHEMA_DIR / "_position.yaml").read_text())
-    assert position[:5] == [
+    assert position[:6] == [
+        "gemini-4-argon",
         "gemini-3.8-flash",
         "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-3.5-flash",
         "gemini-3.5-flash-lite",
     ]
+
+
+def test_gemini4_context_output_limits_and_pricing():
+    llm = GoogleLargeLanguageModel(_load_llm_model_schemas())
+    schema = llm.get_model_schema("gemini-4-argon")
+    assert schema is not None
+    assert schema.model_properties[ModelPropertyKey.CONTEXT_SIZE] == 1_048_576
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+    assert rules["max_output_tokens"].default == 65_536
+    assert rules["max_output_tokens"].max == 1_048_576
+    assert rules["thinking_level"].default == "Medium"
+    assert rules["thinking_level"].options == ["Low", "Medium", "High"]
+    assert (
+        not {"temperature", "top_p", "top_k", "thinking_budget", "thinking_mode"}
+        & rules.keys()
+    )
+    assert schema.pricing is not None
+    assert schema.pricing.input == Decimal("2.00")
+    assert schema.pricing.output == Decimal("10.00")
+    assert schema.pricing.unit == Decimal("0.000001")

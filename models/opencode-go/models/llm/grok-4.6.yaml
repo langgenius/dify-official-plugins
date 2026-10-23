@@ -7,9 +7,10 @@ features:
   - agent-thought
   - tool-call
   - stream-tool-call
+  - vision
 model_properties:
   mode: chat
-  context_size: 200000
+  context_size: 500000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +21,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 32768
+    max: 500000
     help:
       en_US: Maps to Responses API max_output_tokens.
       zh_Hans: 映射到 Responses API 的 max_output_tokens。

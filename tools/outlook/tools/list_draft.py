@@ -5,9 +5,12 @@ from datetime import datetime
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import address_of, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class ListDraftEmailsTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         List draft emails using Microsoft Graph API
@@ -23,11 +26,14 @@ class ListDraftEmailsTool(Tool):
                 yield self.create_text_message("Limit must be between 1 and 100.")
                 return
                 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Get draft emails
@@ -37,6 +43,11 @@ class ListDraftEmailsTool(Tool):
                     yield self.create_text_message(drafts)
                     return
                 
+                self._out.update(
+                    drafts=[{"id": d["id"] or "", "subject": d["subject"] or "", "to": [address_of(r)[1] for r in d["to_recipients"]],
+                             "created_datetime": d["created_datetime"] or "", "has_attachments": bool(d["has_attachments"])} for d in drafts],
+                    count=len(drafts), success=True,
+                )
                 # Format and return results
                 if not drafts:
                     summary = "No draft emails found"
@@ -72,7 +83,7 @@ class ListDraftEmailsTool(Tool):
         """
         try:
             # Build base URL for drafts folder using /me
-            base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages"
+            base_url = f"{self._mailbox_base}/mailFolders/drafts/messages"
             
             # Build select fields
             select_fields = [
@@ -185,7 +196,7 @@ class ListDraftEmailsTool(Tool):
         Get attachment details for a message
         """
         try:
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments"
+            url = f"{self._mailbox_base}/messages/{message_id}/attachments"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"

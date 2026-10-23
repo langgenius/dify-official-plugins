@@ -40,7 +40,7 @@ from dify_plugin.errors.model import (
 )
 
 try:
-    from models.llm import llm_anthropic, llm_responses, session_headers
+    from models.llm import friendly_errors, llm_anthropic, llm_responses, session_headers
     from models.llm.session_headers import (
         DEFAULT_ENDPOINT_URL,
         add_custom_parameters,
@@ -50,6 +50,7 @@ try:
         resolve_protocol,
     )
 except ImportError:  # pragma: no cover - importlib standalone load
+    import friendly_errors
     import llm_anthropic
     import llm_responses
     import session_headers
@@ -76,6 +77,69 @@ MODEL_PARAMETER_OVERRIDES: dict[str, dict[str, Any]] = {
 MODEL_PARAMETER_STRIP: dict[str, frozenset[str]] = {
     "gpt-5.6-luna": frozenset({"temperature", "top_p"}),
 }
+
+
+def _flag(credentials: dict, key: str, default: bool) -> bool:
+    raw = credentials.get(key)
+    if raw is None or raw == "":
+        return default
+    return str(raw).strip().lower() == "true"
+
+
+def _thinking_parameter_rules() -> list[ParameterRule]:
+    """Optional thinking / reasoning knobs for customizable models."""
+    return [
+        ParameterRule(
+            name="enable_thinking",
+            label=I18nObject(en_us="Enable Thinking", zh_hans="启用思考"),
+            type=ParameterType.BOOLEAN,
+            default=False,
+            help=I18nObject(
+                en_us="Turn on model reasoning / thinking when the upstream supports it.",
+                zh_hans="上游支持时开启模型推理 / 思考输出。",
+            ),
+        ),
+        ParameterRule(
+            name="thinking_budget",
+            label=I18nObject(en_us="Thinking Budget", zh_hans="思考 Token 预算"),
+            type=ParameterType.INT,
+            default=4096,
+            min=0,
+            max=128000,
+            help=I18nObject(
+                en_us="Max tokens reserved for thinking. Ignored if the model does not use it.",
+                zh_hans="思考过程可用的 token 上限。模型不支持时忽略。",
+            ),
+        ),
+        ParameterRule(
+            name="reasoning_effort",
+            label=I18nObject(en_us="Reasoning Effort", zh_hans="推理强度"),
+            type=ParameterType.STRING,
+            default="",
+            options=["", "minimal", "low", "medium", "high"],
+            help=I18nObject(
+                en_us="Optional reasoning effort for models that accept it (e.g. low / medium / high).",
+                zh_hans="可选推理强度（如 low / medium / high），模型不支持时忽略。",
+            ),
+        ),
+    ]
+
+
+def _structured_output_parameter_rules() -> list[ParameterRule]:
+    return [
+        ParameterRule(
+            name="response_format",
+            use_template="response_format",
+            label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
+            type=ParameterType.STRING,
+        ),
+        ParameterRule(
+            name="json_schema",
+            use_template="json_schema",
+            label=I18nObject(en_us="JSON Schema", zh_hans="JSON Schema"),
+            type=ParameterType.TEXT,
+        ),
+    ]
 
 # union-alpha SSE frequently 503s / returns empty bodies while non-stream is
 # stable. Dify still asks for a generator, so we emulate one chunk.
@@ -222,16 +286,22 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 stream,
                 headers,
             )
-        return super()._invoke(
-            model,
-            credentials,
-            prompt_messages,
-            model_parameters,
-            tools,
-            stop,
-            stream,
-            user,
-        )
+        try:
+            result = super()._invoke(
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                stream,
+                user,
+            )
+        except InvokeError as ex:
+            raise friendly_errors.rewrite_invoke_error(ex) from ex
+        if isinstance(result, Generator):
+            return self._wrap_chat_stream(result)
+        return result
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         credentials = dict(credentials)
@@ -262,12 +332,54 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                     ModelFeature.STREAM_TOOL_CALL,
                 ]
             )
-        if credentials.get("vision_support", "false") == "true":
+        # Default thinking on: most Go coding models emit reasoning content.
+        if _flag(credentials, "thinking_support", True):
+            features.append(ModelFeature.AGENT_THOUGHT)
+        if _flag(credentials, "vision_support", False):
             features.append(ModelFeature.VISION)
+        if _flag(credentials, "audio_support", False):
+            features.append(ModelFeature.AUDIO)
+        if _flag(credentials, "video_support", False):
+            features.append(ModelFeature.VIDEO)
+        if _flag(credentials, "document_support", False):
+            features.append(ModelFeature.DOCUMENT)
+        if _flag(credentials, "structured_output_support", False):
+            features.append(ModelFeature.STRUCTURED_OUTPUT)
+
+        display_name = str(credentials.get("display_name") or "").strip() or model
+
+        parameter_rules: list[ParameterRule] = [
+            ParameterRule(
+                name="temperature",
+                use_template="temperature",
+                label=I18nObject(en_us="Temperature", zh_hans="温度"),
+                type=ParameterType.FLOAT,
+            ),
+            ParameterRule(
+                name="top_p",
+                use_template="top_p",
+                label=I18nObject(en_us="Top P", zh_hans="Top P"),
+                type=ParameterType.FLOAT,
+            ),
+            ParameterRule(
+                name="max_tokens",
+                use_template="max_tokens",
+                default=4096,
+                min=1,
+                max=int(credentials.get("max_tokens", 32768)),
+                label=I18nObject(en_us="Max Tokens", zh_hans="最大 Token"),
+                type=ParameterType.INT,
+            ),
+        ]
+        if _flag(credentials, "thinking_support", True):
+            parameter_rules.extend(_thinking_parameter_rules())
+        if _flag(credentials, "structured_output_support", False):
+            parameter_rules.extend(_structured_output_parameter_rules())
+        parameter_rules.append(extra_headers_rule())
 
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_us=model, zh_hans=model),
+            label=I18nObject(en_us=display_name, zh_hans=display_name),
             model_type=ModelType.LLM,
             features=features,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -277,30 +389,7 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
             },
-            parameter_rules=[
-                ParameterRule(
-                    name="temperature",
-                    use_template="temperature",
-                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
-                    type=ParameterType.FLOAT,
-                ),
-                ParameterRule(
-                    name="top_p",
-                    use_template="top_p",
-                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
-                    type=ParameterType.FLOAT,
-                ),
-                ParameterRule(
-                    name="max_tokens",
-                    use_template="max_tokens",
-                    default=4096,
-                    min=1,
-                    max=int(credentials.get("max_tokens", 32768)),
-                    label=I18nObject(en_us="Max Tokens", zh_hans="最大 Token"),
-                    type=ParameterType.INT,
-                ),
-                extra_headers_rule(),
-            ],
+            parameter_rules=parameter_rules,
         )
         return self._inject_extra_headers_rule(entity)
 
@@ -365,8 +454,10 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 attempts=5 if force_nonstream else 4,
             )
         except requests.RequestException as ex:
-            raise InvokeError(
+            raise friendly_errors.rewrite_invoke_error(
+                InvokeError(
                 f"OpenCode Anthropic Messages connection error: {ex}"
+                )
             ) from ex
 
         if response.status_code != 200:
@@ -430,7 +521,9 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         for event in events:
             kind = event.get("kind")
             if kind == "error":
-                raise InvokeError(str(event.get("message") or f"{error_label} stream error"))
+                raise friendly_errors.wrap_stream_error(
+                    str(event.get("message") or f"{error_label} stream error")
+                )
             if kind == "usage":
                 usage_in = int(event.get("input_tokens") or usage_in)
                 usage_out = int(event.get("output_tokens") or usage_out)
@@ -497,6 +590,13 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                         usage=usage,
                     ),
                 )
+
+    def _wrap_chat_stream(self, stream: Generator) -> Generator:
+        """Rewrite raw OAICompat stream errors into user-facing messages."""
+        try:
+            yield from stream
+        except InvokeError as ex:
+            raise friendly_errors.rewrite_invoke_error(ex) from ex
 
     def _wrap_anthropic_stream(
         self,
@@ -593,7 +693,9 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
                 stream,
             )
         except requests.RequestException as ex:
-            raise InvokeError(f"OpenCode Responses connection error: {ex}") from ex
+            raise friendly_errors.rewrite_invoke_error(
+                InvokeError(f"OpenCode Responses connection error: {ex}")
+            ) from ex
 
         if response.status_code != 200:
             raise llm_responses.map_http_error(response, response.text)

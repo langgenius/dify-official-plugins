@@ -1,13 +1,14 @@
 # Privacy Policy
 
 ## Data Collection
-This plugin requires Azure AD application credentials (client ID, client secret, and tenant ID) to authenticate with Microsoft Graph API. These credentials are used solely for the purpose of accessing your Outlook account.
+This plugin requires Azure AD application credentials (client ID, client secret, and tenant ID) to authenticate with Microsoft Graph API, either through a user's OAuth sign-in or as a Service Principal (app-only). With a Service Principal it also stores the default mailbox to act on. These credentials are used solely for the purpose of accessing the configured Outlook mailbox.
 
 ## Data Processing
 - All email operations (reading, sending, listing) are performed through Microsoft Graph API
 - Your credentials are stored securely and are only used to authenticate API requests
 - No email content or metadata is stored by this plugin
-- All operations are performed in real-time and no data is cached
+- All operations are performed in real-time and no email data is cached
+- With a Service Principal, the short-lived access token issued by Microsoft Entra ID is kept in the plugin process's memory until it expires, so that consecutive tool calls do not sign in again
 
 ## Third-party Services
 This plugin uses the following third-party services:
@@ -28,4 +29,4 @@ You have the right to:
 ## Contact Information
 For privacy-related inquiries, please contact the plugin author at support@langgenius.ai
 
-Last updated: 2024-03-21
+Last updated: 2026-10-22

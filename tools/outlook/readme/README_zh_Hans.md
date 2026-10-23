@@ -1,7 +1,7 @@
 # Outlook Plugin for Dify
 
 **Author:** langgenius
-**Version:** 0.6.0
+**Version:** 0.7.0
 **Type:** Plugin
 
 ---
@@ -140,8 +140,22 @@ The plugin requires the following Microsoft Graph API permissions:
 - Mail.Send: For sending emails
 - Mail.ReadWrite: For updating email properties (flags, priority)
 - Calendars.ReadWrite: For calendar events (list/create/get/update/delete) — added in 0.3.0
+- Calendars.Read.Shared: For calendars other people shared with you (calendar groups, Get Schedule) — added in 0.7.0
 
 > Calendar tools (0.3.0): `list_calendars`, `list_events`, `create_event`, `get_event`, `update_event`, `delete_event`. Existing installs will be asked to re-authorize once to grant the new `Calendars.ReadWrite` scope.
+
+> Calendar groups (0.7.0): `list_calendar_groups`, a `calendar_group_id` option on `list_calendars` / `list_events` / `search_events`, and `get_schedule` (free/busy). Re-authorize once to grant `Calendars.Read.Shared`.
+
+### Service Principal (app-only, new in 0.7.0)
+Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
+
+1. In the app registration, add Microsoft Graph **Application** permissions (not Delegated): `Mail.ReadWrite`, `Mail.Send`, `Calendars.ReadWrite`, then click **Grant admin consent**.
+2. Recommended: limit the app to the mailboxes it needs with an Exchange Online [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) assignment; otherwise application permissions reach every mailbox in the tenant.
+3. In Dify, add an authorization of the **API Key** type and fill in **Tenant ID** (your directory ID, not `common`), **Client ID**, **Client Secret** and **Default Mailbox** (e.g. `support@contoso.com`). Dify signs in and reads that inbox to check the permissions.
+4. Each tool has an optional **Mailbox** setting (set in the node, never chosen by the LLM) to act on a different mailbox with the same credential.
+
+### National clouds (new in 0.7.0)
+Both OAuth and Service Principal have a **Microsoft Cloud** setting: Global, US Government, US Government DoD, or China (21Vianet). It switches the sign-in host and the Microsoft Graph host together. Existing authorizations keep using the global cloud.
 
 ### Security Benefits
 - **No shared credentials**: Users authenticate directly with Microsoft
@@ -307,8 +321,22 @@ ID draft123のドラフトを送信
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
 - Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
 
 > 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
+
+> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
+
+### サービス プリンシパル（アプリのみ、0.7.0 で追加）
+個人ではなく組織としてワークフローを実行したい場合に使います。ユーザーのサインインは不要で、担当者の退職などで止まることはなく、監査ログにはアプリとして記録されます。
+
+1. アプリ登録で Microsoft Graph の **アプリケーション** のアクセス許可（委任ではありません）`Mail.ReadWrite`、`Mail.Send`、`Calendars.ReadWrite` を追加し、**管理者の同意を与えます**。
+2. 推奨: Exchange Online の [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) で、アプリが操作できるメールボックスを必要なものに限定してください。限定しない場合、テナント内のすべてのメールボックスにアクセスできます。
+3. Dify で **API Key** タイプの認証を追加し、**テナント ID**（`common` ではなくディレクトリ ID）、**クライアント ID**、**クライアント シークレット**、**既定のメールボックス**（例: `support@contoso.com`）を入力します。Dify はサインインしてその受信トレイを読み取り、権限を確認します。
+4. 各ツールには任意の **メールボックス** 設定があり（ノードで設定し、LLM には選ばせません）、同じ資格情報で別のメールボックスを操作できます。
+
+### 各国のクラウド（0.7.0 で追加）
+OAuth とサービス プリンシパルの両方に **Microsoft クラウド** 設定があります（グローバル、米国政府、米国政府 DoD、中国 21Vianet）。サインインと Microsoft Graph のホストが一緒に切り替わります。既存の認証は引き続きグローバル クラウドを使います。
 
 ### セキュリティの利点
 - **无共享凭据**：用户直接通过Microsoft认证
@@ -474,8 +502,22 @@ ID draft123のドラフトを送信
 - Mail.Send：用于发送邮件
 - Mail.ReadWrite：用于更新邮件属性（标志、优先级）
 - Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
+- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
 
 > 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
+
+> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
+
+### Service Principal（仅应用，0.7.0 新增）
+希望工作流以组织身份而不是某个人的身份运行时使用：无需用户登录，不会因人员离职而中断，审计日志中记录的是该应用。
+
+1. 在应用注册中添加 Microsoft Graph **应用程序**权限（不是委托权限）：`Mail.ReadWrite`、`Mail.Send`、`Calendars.ReadWrite`，然后点击 **授予管理员同意**。
+2. 建议：用 Exchange Online 的 [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) 把应用可访问的邮箱限定为所需的邮箱；否则应用程序权限可访问租户内的所有邮箱。
+3. 在 Dify 中添加 **API Key** 类型的授权，填写 **租户 ID**（目录 ID，不能是 `common`）、**客户端 ID**、**客户端密钥** 和 **默认邮箱**（例如 `support@contoso.com`）。Dify 会登录并读取该收件箱来检查权限。
+4. 每个工具都有一个可选的 **邮箱** 设置（在节点中配置，不由 LLM 选择），可用同一凭据操作其他邮箱。
+
+### 国家云（0.7.0 新增）
+OAuth 和 Service Principal 都有 **Microsoft 云** 设置：全球、美国政府、美国政府 DoD、中国（世纪互联）。登录地址和 Microsoft Graph 地址会一起切换。已有的授权继续使用全球云。
 
 ### 安全优势
 - **无共享凭据**：用户直接通过Microsoft认证

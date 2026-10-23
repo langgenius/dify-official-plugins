@@ -8,6 +8,9 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude 5': {
+        'Opus 5.5': 'anthropic.claude-opus-5-5',
+        'Sonnet 5.5': 'anthropic.claude-sonnet-5-5',
+        'Fable 5.1': 'anthropic.claude-fable-5-1',
         'Opus 5': 'anthropic.claude-opus-5',
         'Sonnet 5': 'anthropic.claude-sonnet-5',
         'Fable 5': 'anthropic.claude-fable-5',
@@ -75,6 +78,10 @@ BEDROCK_MODEL_IDS = {
         'Qwen3 Coder 30B': 'qwen.qwen3-coder-30b-a3b-v1:0'
     },
     'openai': {
+        'GPT-6.1 Sol': 'openai.gpt-6.1-sol',
+        'GPT-6 Sol': 'openai.gpt-6-sol',
+        'GPT-6 Luna': 'openai.gpt-6-luna',
+        'GPT-6 Astra': 'openai.gpt-6-astra',
         'GPT-5.6 Sol': 'openai.gpt-5.6-sol',
         'GPT-5.6 Terra': 'openai.gpt-5.6-terra',
         'GPT-5.6 Luna': 'openai.gpt-5.6-luna',
@@ -187,13 +194,20 @@ def resolve_japan_profile_id(model_id, region_name):
 # Claude 5 generation models are invocable ONLY through inference profiles
 # (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
 # converse returns ValidationException). Geo profile coverage varies per
-# model (live-verified via list-inference-profiles): Opus 5 and Sonnet 5
-# have us./eu./au. geo profiles, Fable 5 only us. — there is no apac. geo
-# profile for any of them. See the model cards:
+# model (live-verified via list-inference-profiles): Opus 5.5, Opus 5 and
+# Sonnet 5 have us./eu./au. geo profiles, Sonnet 5.5 us./eu., Fable 5.1 and
+# Fable 5 only us. — there is no apac. geo profile for any of them. Opus 5.5
+# also has a jp. profile, which is not wired up here yet. See the model cards:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-1.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
 CLAUDE5_PROFILE_PREFIXES = {
+    'anthropic.claude-opus-5-5': ('us', 'eu', 'au', 'global'),
+    'anthropic.claude-sonnet-5-5': ('us', 'eu', 'global'),
+    'anthropic.claude-fable-5-1': ('us', 'global'),
     'anthropic.claude-opus-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-sonnet-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-fable-5': ('us', 'global'),
@@ -330,4 +344,42 @@ def resolve_claude45_profile_id(model_id, cross_region, region_name):
         f"{model_id} can only be invoked through an inference profile. "
         f"Set Cross-Region Inference to 'global' (recommended) or 'geographic'"
         + (", or 'japan'." if model_id in JP_PROFILE_MODELS else ".")
+    )
+
+
+# GPT-6 models are INFERENCE_PROFILE-only too. Of seven regions checked,
+# bedrock-mantle serves Sol/Luna only in us-east-1 and Astra only in
+# us-west-2, so they go to the bedrock-runtime OpenAI-compatible endpoint
+# with a us. (US and Canada regions) or global. profile instead; there are
+# no eu./apac./jp. GPT-6 profiles. Live-verified 2026-09-24. GPT-6.1 Sol has
+# the same us./global. profiles (live-verified 2026-10-05); its model card
+# lists bedrock-mantle in us-east-1 only.
+GPT6_MODEL_IDS = frozenset({
+    'openai.gpt-6.1-sol',
+    'openai.gpt-6-sol',
+    'openai.gpt-6-luna',
+    'openai.gpt-6-astra',
+})
+
+
+def resolve_gpt6_profile_id(model_id, cross_region, region_name):
+    """
+    Resolve the inference profile ID for a GPT-6 model (mirrors
+    resolve_claude45_profile_id).
+
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message
+    """
+    if cross_region == 'global':
+        return f"global.{model_id}"
+    if cross_region == 'geographic':
+        if region_name.startswith(('us-', 'ca-')):
+            return f"us.{model_id}"
+        raise ValueError(
+            f"{model_id} has no geographic inference profile for {region_name}. "
+            f"Set Cross-Region Inference to 'global'."
+        )
+    raise ValueError(
+        f"{model_id} is called through a us. or global. inference profile. "
+        f"Set Cross-Region Inference to 'geographic' (US and Canada regions) or 'global'."
     )

@@ -185,10 +185,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-opus-5-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -196,6 +198,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-opus-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -206,6 +209,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-sonnet-5",
         "claude-opus-5",
+        "claude-haiku-5",
     )
     # Models where thinking can be disabled only at effort `high` or below
     # (thinking.type=disabled combined with effort xhigh/max returns a 400). GA on
@@ -213,6 +217,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     # on these models so the request still succeeds.
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -292,6 +297,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         if model_id == "claude-fable-5-1":
             return 0.025
+        if model_id == "claude-opus-5-5":
+            return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
     @staticmethod
@@ -355,7 +362,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     name="effort",
                     label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
-                    default="high",
+                    default=(
+                        "medium"
+                        if model.lower() == "claude-opus-5-5"
+                        or model.lower().startswith("claude-haiku-5")
+                        else "high"
+                    ),
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
@@ -480,7 +492,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             disabling_thinking = False
             if always_on_adaptive_thinking:
-                # Fable/Mythos: adaptive thinking is always on and cannot be disabled.
+                # Opus 5.5/Fable/Mythos: adaptive thinking cannot be disabled.
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
@@ -1137,8 +1149,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        current_block_type = None
         current_block_index = None
+        # The think tag opens on the first non-empty thinking text, not at block start:
+        # with display "omitted" the only thinking_delta is empty.
+        think_open = False
         
         current_tool_name = None
         current_tool_id = None
@@ -1212,7 +1226,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    if think_open:
+                        think_open = False
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1223,20 +1238,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                     
                     current_block_index = chunk.index
-                    if hasattr(chunk.delta, "thinking"):
-                        current_block_type = "thinking"
-                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
-                        yield LLMResultChunk(
-                            model=return_model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=chunk.index, message=assistant_prompt_message
-                            ),
-                        )
-                    elif hasattr(chunk.delta, "text"):
-                        current_block_type = "text"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                        current_block_type = "redacted_thinking"
+                    if hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
+                        think_open = True
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1253,6 +1256,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     if current_thinking_blocks:
                         current_thinking_blocks[-1]["thinking"] += thinking_text
                     
+                    if thinking_text and not think_open:
+                        think_open = True
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk.index, message=AssistantPromptMessage(content="<think>\n")
+                            ),
+                        )
+
                     assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
                     index = chunk.index
                     yield LLMResultChunk(
@@ -1300,7 +1313,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
                 )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                if think_open:
+                    think_open = False
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
@@ -1528,6 +1542,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         return result
     
+    # Cap for URL-fetched images: fail early with a clear error instead of
+    # bloating the request payload (base64 inflates size ~33%).
+    MAX_IMAGE_FETCH_BYTES = 10 * 1024 * 1024
+
     def _process_image_data(self, data: str) -> tuple[str, str]:
         """Process image data from URL or data URI."""
         if data.startswith("data:"):
@@ -1535,19 +1553,55 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             header, encoded = data.split(";base64,", 1)
             mime_type = header.replace("data:", "")
             return mime_type, encoded
-        
+
         # Fetch from URL
+        url = data.strip()
+        if not url.lower().startswith(("http://", "https://")):
+            raise ValueError(
+                f"Unsupported image URL scheme: only http(s) URLs are allowed ({data})"
+            )
         try:
-            response = requests.get(data)
-            response.raise_for_status()
-            
-            with Image.open(io.BytesIO(response.content)) as img:
-                img_format = img.format or "jpeg"  # Default to jpeg if format is None
-                mime_type = f"image/{img_format.lower()}"
-            
-            base64_data = base64.b64encode(response.content).decode("utf-8")
+            # Bounded timeout (a hung URL must not block the worker indefinitely)
+            # and no redirect following (the fetched host is exactly the one given).
+            # stream=True + iter_content keeps memory bounded: a hostile server
+            # cannot push more than ~MAX_IMAGE_FETCH_BYTES into the process.
+            # The context manager guarantees the connection is released on every
+            # exit path (early rejection, mid-stream cap, success).
+            with requests.get(
+                url,
+                timeout=(5.0, 15.0),
+                allow_redirects=False,
+                stream=True,
+            ) as response:
+                response.raise_for_status()
+                # raise_for_status only raises for >= 400: reject 3xx explicitly.
+                if 300 <= response.status_code < 400:
+                    raise ValueError("Redirect responses are not allowed")
+
+                length = int(response.headers.get("Content-Length") or 0)
+                if length > self.MAX_IMAGE_FETCH_BYTES:
+                    raise ValueError(
+                        f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
+                    )
+
+                chunks: list[bytes] = []
+                received = 0
+                for chunk in response.iter_content(chunk_size=64 * 1024):
+                    received += len(chunk)
+                    if received > self.MAX_IMAGE_FETCH_BYTES:
+                        raise ValueError(
+                            f"Image exceeds the {self.MAX_IMAGE_FETCH_BYTES // (1024 * 1024)} MB limit"
+                        )
+                    chunks.append(chunk)
+                content = b"".join(chunks)
+
+                with Image.open(io.BytesIO(content)) as img:
+                    img_format = img.format or "jpeg"  # Default to jpeg if format is None
+                    mime_type = f"image/{img_format.lower()}"
+
+            base64_data = base64.b64encode(content).decode("utf-8")
             return mime_type, base64_data
-            
+
         except Exception as ex:
             raise ValueError(f"Failed to fetch image from {data}: {ex}") from ex
     
@@ -1768,7 +1822,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 anthropic.APIConnectionError,
                 anthropic.APITimeoutError,
             ],
-            InvokeServerUnavailableError: [anthropic.InternalServerError],
+            InvokeServerUnavailableError: [
+                anthropic.InternalServerError,
+                # 529 Overloaded is a server-side capacity error, not a client error.
+                anthropic.OverloadedError,
+            ],
             InvokeRateLimitError: [anthropic.RateLimitError],
             InvokeAuthorizationError: [
                 anthropic.AuthenticationError,

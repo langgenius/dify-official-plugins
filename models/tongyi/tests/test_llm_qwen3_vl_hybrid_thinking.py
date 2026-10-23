@@ -48,7 +48,9 @@ def _invoke(model_name: str, model_parameters: dict, stream: bool = False):
 
 def test_qwen3_vl_hybrid_models_default_to_non_thinking_in_yaml() -> None:
     models_dir = Path(__file__).parent.parent / "models" / "llm"
-    for model_name in QWEN3_VL_HYBRID_THINKING_MODELS:
+    # Only the mainline Plus model remains in the predefined catalog.
+    # Runtime tests below retain coverage for custom/legacy model IDs.
+    for model_name in ["qwen3-vl-plus"]:
         data = yaml.safe_load((models_dir / f"{model_name}.yaml").read_text())
         enable_thinking_rule = next(
             rule for rule in data["parameter_rules"] if rule["name"] == "enable_thinking"
