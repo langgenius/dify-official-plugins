@@ -48,3 +48,8 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
+
+
+### Workflow error handling
+
+Enable **Fail workflow on extraction error** to raise file-read, empty-file and extraction failures so Dify retries and error branches can run. Off by default preserves existing workflows receiving error text messages. Successful outputs are unchanged. Unexpected failures show a short message; inspect plugin logs for the underlying cause.
