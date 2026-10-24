@@ -218,6 +218,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
         "claude-haiku-5",
+        "claude-sonnet-5-5",
+    )
+    # Models where up-front thinking is turned off with thinking.type=between_tools
+    # instead of "disabled" (which returns a 400 naming between_tools). between_tools
+    # takes no other field and is accepted only at effort low/medium/high, so these
+    # models also sit in DISABLED_THINKING_EFFORT_CAP_MODELS for the clamp.
+    BETWEEN_TOOLS_THINKING_OFF_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -254,6 +262,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _supports_task_budget(self, model: str) -> bool:
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
+
+    def _uses_between_tools_thinking_off(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.BETWEEN_TOOLS_THINKING_OFF_MODELS
+        )
 
     def _enforces_disabled_thinking_effort_cap(self, model: str) -> bool:
         model_id = (model or "").lower()
@@ -297,7 +312,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         if model_id == "claude-fable-5-1":
             return 0.025
-        if model_id == "claude-opus-5-5":
+        if model_id in ("claude-opus-5-5", "claude-sonnet-5-5"):
             return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
@@ -503,6 +518,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
                 }
+            elif thinking_was_set and self._uses_between_tools_thinking_off(model):
+                # Sonnet 5.5: thinking.type=disabled is rejected with a 400 that
+                # points to between_tools. Send exactly {"type": "between_tools"}:
+                # display/budget_tokens/block_binding alongside it also return 400.
+                # Must be checked before the adaptive-default-on branch because the
+                # "claude-sonnet-5" prefix there also matches claude-sonnet-5-5.
+                extra_model_kwargs["thinking"] = {"type": "between_tools"}
+                disabling_thinking = True
             elif adaptive_thinking_default_on and thinking_was_set:
                 # Sonnet 5 / Opus 5: thinking is on by default. An explicit false
                 # turns it off; omitting the field uses the API's adaptive-on default.
