@@ -88,6 +88,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     def _wrap_non_stream_reasoning_content(message: dict, content: str) -> str:
         reasoning_piece = message.get("reasoning") or message.get("reasoning_content")
         if not reasoning_piece:
+            opening = content.find("<think>")
+            closing = content.find("</think>")
+            if closing >= 0 and (opening < 0 or closing < opening):
+                return "<think>\n" + content
             return content
         if content.startswith("<think>"):
             return content
