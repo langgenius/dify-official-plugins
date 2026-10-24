@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from dify_plugin.entities.model import (
@@ -27,20 +28,44 @@ AZURE_DEFAULT_PARAM_SEED_HELP = I18nObject(
 )
 
 
+def _is_gpt_5plus(base_model_name: str) -> bool:
+    """True for gpt-5.x/gpt-6.x/... generations (>= 5).
+
+    Parses the numeric generation so ``gpt-10`` also routes correctly.
+    Azure's GPT-3.5 naming convention drops the dot (``gpt-35-turbo``), so
+    the ``gpt-35`` prefix is excluded explicitly (35 >= 5 would otherwise
+    classify it as a gpt-5+ generation).
+    """
+    name = (base_model_name or "").lower()
+    if name.startswith("gpt-35"):
+        return False
+    match = re.match(r"^gpt-(\d+)(?:[.\-]|$)", name)
+    return bool(match) and int(match.group(1)) >= 5
+
+
+def _is_gpt_6plus(base_model_name: str) -> bool:
+    """True for gpt-6.x/gpt-7.x/... generations (>= 6), case-insensitive."""
+    name = (base_model_name or "").lower()
+    if name.startswith("gpt-35"):
+        return False
+    match = re.match(r"^gpt-(\d+)(?:[.\-]|$)", name)
+    return bool(match) and int(match.group(1)) >= 6
+
+
 def uses_responses_api(base_model_name: str) -> bool:
     """
     Determine if the model should use the Responses API.
 
     1. Models with "codex" in the base name
-    2. gpt-5.x and gpt-6.x models (excluding chat and codex variants)
+    2. gpt-5+ models (excluding chat and codex variants which use different APIs)
+
+    The generation check is version-agnostic (``gpt-5`` through ``gpt-N``) so
+    new generations (e.g. gpt-6) are routed correctly before a curated entry
+    lands in ``LLM_BASE_MODELS``. Case-insensitive and None-safe.
     """
-    return (
-        "codex" in base_model_name
-        or (
-            base_model_name.startswith(("gpt-5", "gpt-6"))
-            and "chat" not in base_model_name
-            and "codex" not in base_model_name
-        )
+    name = (base_model_name or "").lower()
+    return "codex" in name or (
+        _is_gpt_5plus(name) and "chat" not in name and "codex" not in name
     )
 
 
