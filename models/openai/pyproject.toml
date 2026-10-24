@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for OpenAI request metadata.
-    "dify_plugin>=0.10.2,<0.11.0",
+    "dify_plugin>=0.11.0,<0.12.0",
     # 3.26.0 introduces the Decisions API.
     "openai>=3.26.0",
     "tiktoken>=0.14.0",
@@ -19,6 +19,10 @@ dev = [
     "pytest>=9.1.1",
     "pytest-mock>=3.15.1",
 ]
+
+[tool.uv.sources]
+# shortcut: pin the replay fix until a containing SDK release is published.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "ccc0084f1f3280f0ef0c6907035c9823576c5084" }
 
 [tool.pytest.ini_options]
 markers = [

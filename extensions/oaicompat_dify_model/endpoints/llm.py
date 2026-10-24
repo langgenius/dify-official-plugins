@@ -92,7 +92,7 @@ class OaicompatDifyModelEndpoint(Endpoint, BaseAuth):
                                 "index": 0,
                                 "message": {
                                     "role": "assistant",
-                                    "content": llm_invoke_response.message.content,
+                                    "content": llm_invoke_response.message.get_text_content(),
                                 },
                                 "finish_reason": "stop",
                             }
@@ -124,7 +124,7 @@ class OaicompatDifyModelEndpoint(Endpoint, BaseAuth):
                                     {
                                         "index": 0,
                                         "delta": {
-                                            "content": chunk.delta.message.content
+                                            "content": chunk.delta.message.get_text_content()
                                         },
                                         "finish_reason": None,
                                     }
