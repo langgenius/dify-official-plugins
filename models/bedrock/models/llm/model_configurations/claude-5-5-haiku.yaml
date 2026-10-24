@@ -1,0 +1,23 @@
+model: claude-5-5-haiku
+label:
+  en_US: Claude Haiku 5.5
+icon: icon.svg
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+# https://aws.amazon.com/bedrock/pricing/
+# Global cross-region rates for prompts up to 100K tokens. Prompts over 100K
+# tokens are billed at $0.50 / $2.50 per MTok, which the flat pricing schema
+# can't express.
+pricing:
+  input: '0.0001'
+  output: '0.0005'
+  unit: '0.001'
+  currency: USD
