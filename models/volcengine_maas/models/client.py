@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import hashlib
 import re
 from typing import Optional, cast
 
@@ -228,6 +229,61 @@ class ArkClientV3:
             ),
         )
 
+    @staticmethod
+    def _prompt_cache_extra_body(
+        messages: list[PromptMessage],
+        endpoint_id: Optional[str],
+        cache_key: Optional[str] = None,
+    ) -> Optional[dict]:
+        """Derive a prompt_cache_key for Ark prefix-cache routing affinity.
+
+        Ark's implicit prefix cache only hits when requests sharing a common
+        prefix land on the same inference replica; without a cache key,
+        routing is effectively random and consecutive turns of one
+        conversation rarely reuse the cached prefix. An explicit cache_key
+        (from the model parameters) takes precedence; otherwise a fallback
+        key is derived per conversation from the leading non-system messages.
+
+        Granularity matters: Ark throttles each prompt_cache_key to ~15
+        requests/minute and falls back to random routing beyond that. A
+        per-agent key (e.g. hashed persona head) funnels every concurrent
+        user of a popular character onto one throttled key, so the affinity
+        collapses exactly where it pays off most. Anchoring on the first
+        user turn (+ first reply) instead gives one key per conversation:
+        stable across turns within the saw-tooth memory window (each window
+        reset costs a single cold turn), unique across conversations, and a
+        single conversation can never approach the per-key rate limit.
+        First-turn requests may collide on short openers, but a fresh
+        conversation has no cache to hit anyway. Falls back to the system
+        head only when no user/assistant text exists.
+
+        The value is hashed together with the endpoint id, so the key never
+        exposes prompt content. Returns None when no value can be derived,
+        leaving request routing unchanged.
+        """
+        value = cache_key
+        if not value:
+            parts = []
+            for message in messages:
+                if isinstance(message, SystemPromptMessage) or not isinstance(
+                    message.content, str
+                ):
+                    continue
+                if message.content:
+                    parts.append(message.content[:250])
+                if len(parts) >= 2:
+                    break
+            value = "\n".join(parts)
+            if not value:
+                for message in messages:
+                    if isinstance(message, SystemPromptMessage) and message.content:
+                        value = message.content[:500]
+                        break
+        if not value:
+            return None
+        digest = hashlib.md5(f"{endpoint_id or ''}:{value}".encode("utf-8")).hexdigest()[:16]
+        return {"prompt_cache_key": f"dify-pck-{digest}"}
+
     def chat(
         self,
         messages: list[PromptMessage],
@@ -242,6 +298,7 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        cache_key: Optional[str] = None,
     ) -> ChatCompletion:
         """Block chat"""
         return self.ark.chat.completions.create(
@@ -257,6 +314,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id, cache_key),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -274,6 +332,7 @@ class ArkClientV3:
         thinking: Thinking | None = None,
         response_format: Optional[dict] = None,
         reasoning_effort: Optional[str] = None,
+        cache_key: Optional[str] = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
         chunks = self.ark.chat.completions.create(
@@ -291,6 +350,7 @@ class ArkClientV3:
             thinking=thinking,
             response_format=response_format,
             reasoning_effort=reasoning_effort,
+            extra_body=self._prompt_cache_extra_body(messages, self.endpoint_id, cache_key),
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks
