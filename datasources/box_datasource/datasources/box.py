@@ -126,7 +126,7 @@ class BoxDataSource(OnlineDriveDatasource):
                     "Authentication failed. The access token may have expired. "
                     "Please refresh or reauthorize the connection."
                 ) from e
-            return OnlineDriveBrowseFilesResponse(result=[])
+            raise ValueError(f"Failed to browse Box folder: {str(e)}") from e
 
     def _download_file(self, request: OnlineDriveDownloadFileRequest) -> Generator[DatasourceMessage, None, None]:
         credentials = self.runtime.credentials
