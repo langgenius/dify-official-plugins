@@ -1,0 +1,8 @@
+# https://docs.modelstudio.console.alibabacloud.com/en/model-studio/qwen3-vl-rerank.md
+# https://www.alibabacloud.com/help/en/model-studio/rerank
+# Multimodal (text/image/video) reranking via dashscope.TextReRank. Priced per
+# input: text $0.1 / MTok, image $0.258 / MTok; rerank schemas carry no pricing.
+model: qwen3-vl-rerank
+model_type: rerank
+model_properties:
+  context_size: 120000

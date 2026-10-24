@@ -1,0 +1,17 @@
+# https://www.alibabacloud.com/help/en/model-studio/qwen3-vl-embedding
+# https://www.alibabacloud.com/help/en/model-studio/multimodal-embedding-api-reference
+# Unified multimodal (text/image/video) embedding, served by the DashScope
+# multimodal embedding endpoint. Beijing region only. Priced per input:
+# text $0.1 / MTok, image $0.258 / MTok; the flat pricing schema carries the text rate.
+model: qwen3-vl-embedding
+model_type: text-embedding
+description: Unified text/image/video embedding (Beijing region). Alibaba bills text at $0.1/MTok and image or video at $0.258/MTok; reported price accounts for the per-modality split returned by the API.
+model_properties:
+  context_size: 32000
+  max_chunks: 10
+pricing:
+  input: "0.1"
+  unit: "0.000001"
+  currency: USD
+features:
+  - vision
