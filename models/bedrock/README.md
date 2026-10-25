@@ -56,4 +56,4 @@ This plugin sends the inputs required by the selected operation to the upstream 
 
 ### Claude Haiku 5.5 custom inference profiles
 
-Custom profiles backed by `anthropic.claude-haiku-5-5` do not expose legacy sampling controls (`temperature`, `top_p`, `top_k`) or token-budget thinking controls. Saved values are omitted from Converse requests. Haiku 5.5 uses adaptive thinking by default. This does not add a predefined model catalog entry or change pricing or profile routing.
+Custom profiles backed by `anthropic.claude-haiku-5-5` do not expose legacy sampling controls (`temperature`, `top_p`, `top_k`) or token-budget thinking controls. Saved values are omitted from Converse requests. Haiku 5.5 uses adaptive thinking by default. Haiku 5.5 is also available as a predefined model in the Anthropic Claude 5 family (see above).
