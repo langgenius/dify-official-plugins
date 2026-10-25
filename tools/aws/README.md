@@ -22,6 +22,11 @@ The tools based on the AWS Services.
 2. Open the plugin settings in Dify.
 3. Save the configuration.
 
+Translation evaluation uses the `wordnet` and `omw-1.4` NLTK corpora.
+With NLTK 3.10.4, store these resources in a private directory configured through `NLTK_DATA`.
+For installations behind an outbound proxy, preload the corpora there, or set `NLTK_ALLOW_PROXIED_URLOPEN=1` only when the proxy is trusted to prevent SSRF.
+See the [NLTK security changes](https://github.com/nltk/nltk/releases/tag/v3.10.4) for the resource and download requirements.
+
 ## Usage
 Add the AWS Tools tools to an agent or workflow, fill in the required inputs, and run the node to call the upstream service.
 

@@ -66,6 +66,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-flash-lite-preview",
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
+    "gemini-3.1-flash-image",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
@@ -74,6 +75,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
 ]
 IMAGE_GENERATION_MODELS = {
     "gemini-3.1-flash-image-preview",
+    "gemini-3.1-flash-image",
 }
 
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
@@ -1226,7 +1228,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 "16:9",
                 "21:9",
                 "4:1",
+                "1:4",
                 "8:1",
+                "1:8",
             ]
         ):
             aspect_ratio = None
@@ -1235,7 +1239,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if (
             not resolution
             or not isinstance(resolution, str)
-            or resolution not in ["1K", "2K", "4K"]
+            or resolution not in ["512", "1K", "2K", "4K"]
         ):
             resolution = None
 

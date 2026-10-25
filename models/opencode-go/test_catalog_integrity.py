@@ -21,7 +21,7 @@ PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent
 LLM_DIR = PLUGIN_ROOT / "models" / "llm"
 POSITION_FILE = LLM_DIR / "_position.yaml"
 # Bump together with manifest.yaml / pyproject.toml / DEFAULT_USER_AGENT on release.
-EXPECTED_VERSION = "0.5.0"
+EXPECTED_VERSION = "0.5.1"
 
 
 def _model_yaml_files() -> list[pathlib.Path]:

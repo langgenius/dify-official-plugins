@@ -2,6 +2,7 @@
 import base64
 import json
 import logging
+import re
 from collections.abc import Generator
 from typing import Optional, Union, cast
 
@@ -300,6 +301,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_parameters.get("json_schema"):
             model_parameters.pop("response_format", None)
             model_parameters["_structured_output_schema"] = model_parameters.pop("json_schema")
+        elif model_parameters.get("response_format") and credentials.get("inference_profile_id"):
+            # Resolve profile capabilities before consuming response_format.
+            return self._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         elif model_parameters.get("response_format"):
             stop = stop or []
             if "```\n" not in stop:
@@ -376,16 +380,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if "\n```" not in stop:
                                 stop.append("\n```")
                             response_format = model_parameters.pop("response_format")
+                            instructions = (
+                                prompt_messages[0].content
+                                if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage)
+                                else ""
+                            )
                             format_prompt = SystemPromptMessage(
-                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", instructions).replace(
                                     "{{block}}", response_format
                                 )
                             )
-                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                            if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage):
                                 prompt_messages[0] = format_prompt
                             else:
                                 prompt_messages.insert(0, format_prompt)
-                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                            # Claude 4.6+ rejects assistant prefill.
+                            version = re.search(r"claude-(?:(?:opus|sonnet|haiku|fable|mythos)-)?(\d+)(?:-(\d+))?", underlying_model_id)
+                            supports_prefill = True
+                            if version:
+                                major, minor = int(version[1]), int(version[2] or 0)
+                                supports_prefill = (major, minor) < (4, 6)
+                            if supports_prefill:
+                                prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
                         else:
                             # For non-Anthropic models, just remove response_format parameter
                             model_parameters.pop("response_format", None)
@@ -587,6 +603,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             system_cache_checkpoint=system_cache_checkpoint,
             latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
+        # Haiku 5.5 uses adaptive thinking by default. Saved legacy
+        # sampling and token-budget controls must not reach Converse.
+        underlying_id = model_info.get("underlying_model_id", model_id)
+        if model_ids.strip_profile_prefix(underlying_id) == "anthropic.claude-haiku-5-5":
+            model_parameters = {
+                key: value for key, value in model_parameters.items()
+                if key not in {"temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"}
+            }
         inference_config, additional_model_fields = self._convert_converse_api_model_parameters(model_parameters, stop)
 
         parameters = {
@@ -1842,6 +1866,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Always exclude model_name since it's determined by inference profile
         excluded_params = ['model_name']
+        if underlying_model_id and model_ids.strip_profile_prefix(underlying_model_id) == "anthropic.claude-haiku-5-5":
+            excluded_params.extend(["temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"])
 
         # Apply model-specific filtering if underlying_model_id is available
         allowed_parameter_rules = []
