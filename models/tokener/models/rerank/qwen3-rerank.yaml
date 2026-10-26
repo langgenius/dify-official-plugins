@@ -1,5 +1,10 @@
-model: qwen3-rerank
-label:
-  en_US: Qwen3 Rerank
-model_type: rerank
-model_properties: {}
+{
+  "model": "qwen3-rerank",
+  "label": {
+    "en_US": "qwen3-rerank",
+    "zh_Hans": "qwen3-rerank"
+  },
+  "model_type": "rerank",
+  "model_properties": {},
+  "deprecated": false
+}

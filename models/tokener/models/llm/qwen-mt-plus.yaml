@@ -1,0 +1,29 @@
+model: "qwen-mt-plus"
+label:
+  en_US: "qwen-mt-plus"
+  zh_Hans: "qwen-mt-plus"
+model_type: llm
+features: []
+model_properties:
+  mode: chat
+  context_size: 2048
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 2048
+    min: 1
+    max: 2048
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+pricing:
+  input: "2.460000"
+  output: "7.370000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false
