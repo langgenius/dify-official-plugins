@@ -15,9 +15,32 @@ identity:
   icon_dark: icon-dark.svg
 
 credentials_for_provider:
+  auth_method:
+    type: select
+    required: false
+    default: password
+    label:
+      en_US: Authentication method
+    options:
+      - value: password
+        label:
+          en_US: Username and security token (legacy SOAP)
+      - value: client_credentials
+        label:
+          en_US: OAuth client credentials
+  consumer_key:
+    type: text-input
+    required: false
+    label:
+      en_US: OAuth client ID
+  consumer_secret:
+    type: secret-input
+    required: false
+    label:
+      en_US: OAuth client secret
   username:
     type: text-input
-    required: true
+    required: false
     label:
       en_US: Username
       zh_Hans: 用户名
@@ -36,7 +59,7 @@ credentials_for_provider:
     url: https://login.salesforce.com
   password:
     type: secret-input
-    required: true
+    required: false
     label:
       en_US: Password
       zh_Hans: 密码
@@ -55,7 +78,7 @@ credentials_for_provider:
     url: https://login.salesforce.com
   security_token:
     type: secret-input
-    required: true
+    required: false
     label:
       en_US: Security Token
       zh_Hans: 安全令牌
@@ -81,12 +104,12 @@ credentials_for_provider:
       pt_BR: Domínio
       ja_JP: ドメイン
     placeholder:
-      en_US: Leave empty for production, or enter 'test' for sandbox
+      en_US: 'Password mode: empty or test. OAuth: organization.my'
       zh_Hans: 生产环境留空，沙盒环境输入 'test'
       pt_BR: Deixe vazio para produção ou digite 'test' para sandbox
       ja_JP: 本番環境は空白、サンドボックスの場合は 'test' を入力
     help:
-      en_US: Use 'test' for sandbox environment, leave empty for production
+      en_US: 'Password mode: test for sandbox or empty for production. OAuth requires organization.my or organization--sandbox.sandbox.my, without https:// or .salesforce.com.'
       zh_Hans: 沙盒环境使用 'test'，生产环境留空
       pt_BR: Use 'test' para ambiente sandbox, deixe vazio para produção
       ja_JP: サンドボックス環境の場合は 'test'、本番環境の場合は空白

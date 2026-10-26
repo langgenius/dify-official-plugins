@@ -45,7 +45,7 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         files = []
         for item in items:
-            is_folder = bool(item.get("folder"))
+            is_folder = item.get("folder") is not None
             size_raw = item.get("size", 0)
             try:
                 size = 0 if is_folder else int(size_raw)
