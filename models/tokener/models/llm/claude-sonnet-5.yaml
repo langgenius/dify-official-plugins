@@ -17,7 +17,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 65536
+    max: 128000
   - name: response_format
     label:
       en_US: Response Format
