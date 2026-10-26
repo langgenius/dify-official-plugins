@@ -42,6 +42,7 @@ from openai import OpenAI
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+    _PREFILLED_THINK_END = re.compile(r"</think>[ \t]*(?:\r?\n|$)")
     # Models that require max_completion_tokens (OpenAI Responses API family)
     # Dotted provider/geo prefixes are allowed because Amazon Bedrock's
     # OpenAI-compatible endpoints take IDs like openai.gpt-6-sol / us.openai.gpt-6-sol.
@@ -730,36 +731,52 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         return result
 
-    @staticmethod
-    def _restore_prefilled_think_tag(result: LLMResult) -> LLMResult:
+    @classmethod
+    def _restore_prefilled_think_tag(cls, result: LLMResult) -> LLMResult:
         """Restore the opening think tag when the chat template prefilled it."""
         if not isinstance(result, LLMResult) or not result.message:
             return result
         content = result.message.content
         if not isinstance(content, str):
             return result
-        # A complete JSON answer is never a reasoning trace, even with a literal `</think>`.
-        with suppress(ValueError):
-            json.loads(content)
-            return result
         opening = content.find("<think>")
-        closing = content.find("</think>")
-        if closing >= 0 and (opening < 0 or closing < opening):
+        closing = cls._PREFILLED_THINK_END.search(content)
+        # The template ends reasoning with the closing tag on its own line, which keeps a
+        # literal `</think>` inside prose or JSON strings from being taken as reasoning.
+        if closing and (opening < 0 or closing.start() < opening):
             result.message.content = "<think>\n" + content
         return result
 
     @staticmethod
     def _restore_prefilled_think_stream(stream: Generator) -> Generator:
         """Prepend the opening think tag when a thinking stream starts without one."""
-        checked = False
+        held: list | None = []
+        head = ""
         for chunk in stream:
-            content = chunk.delta.message.content
-            if not checked and isinstance(content, str) and content.strip():
-                checked = True
-                # A leading "<" is an opening tag, possibly split across chunks.
-                if not content.lstrip().startswith("<"):
-                    chunk.delta.message.content = "<think>\n" + content
-            yield chunk
+            if held is None:
+                yield chunk
+                continue
+            held.append(chunk)
+            if isinstance(chunk.delta.message.content, str):
+                head += chunk.delta.message.content
+            # Hold the first few characters so a split `<think>` or `</think>` is recognized.
+            stripped = head.lstrip()
+            if not stripped or (
+                len(stripped) < len("</think>")
+                and ("<think>".startswith(stripped) or "</think>".startswith(stripped))
+            ):
+                continue
+            if not stripped.startswith("<think>"):
+                first = next(
+                    c.delta.message
+                    for c in held
+                    if isinstance(c.delta.message.content, str) and c.delta.message.content.strip()
+                )
+                first.content = "<think>\n" + first.content
+            yield from held
+            held = None
+        if held:
+            yield from held
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
         """Filter thinking content from non-streaming result"""

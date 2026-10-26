@@ -227,7 +227,7 @@ def _invoke_non_stream(
             model="Qwen3.5-27B",
             credentials=credentials,
             prompt_messages=[UserPromptMessage(content="hello")],
-            model_parameters=model_parameters or {},
+            model_parameters=dict(model_parameters or {}),
             stream=False,
         )
 
@@ -271,12 +271,20 @@ def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
         ({"mode": "chat", "agent_thought_support": "supported"}, {"enable_thinking": False}),
     ],
 )
-def test_invoke_preserves_literal_closing_think_tag_in_json_answer(credentials, model_parameters):
+@pytest.mark.parametrize(
+    "content",
+    [
+        "{\"tag\":\"</think>\"}",
+        "```json\n{\"tag\":\"</think>\"}\n```",
+        "The closing tag is </think>.",
+    ],
+)
+def test_invoke_preserves_literal_closing_think_tag_in_answer(credentials, model_parameters, content):
     model = OpenAILargeLanguageModel(model_schemas=[])
 
-    result = _invoke_non_stream(model, credentials, "{\"tag\":\"</think>\"}", model_parameters)
+    result = _invoke_non_stream(model, credentials, content, model_parameters)
 
-    assert result.message.content == "{\"tag\":\"</think>\"}"
+    assert result.message.content == content
 
 
 def _invoke_stream(credentials: dict, model_parameters: dict, pieces: list[str]) -> str:
@@ -299,7 +307,7 @@ def _invoke_stream(credentials: dict, model_parameters: dict, pieces: list[str])
             model="Qwen3.5-27B",
             credentials={"mode": "chat", **credentials},
             prompt_messages=[UserPromptMessage(content="hello")],
-            model_parameters=model_parameters,
+            model_parameters=dict(model_parameters),
             stream=True,
         )
         return "".join(chunk.delta.message.content for chunk in chunks)
@@ -312,12 +320,16 @@ def _invoke_stream(credentials: dict, model_parameters: dict, pieces: list[str])
         ({"agent_thought_support": "only_thinking_supported"}, {}),
     ],
 )
-def test_invoke_stream_restores_prefilled_think_tag(credentials, model_parameters):
-    content = _invoke_stream(
-        credentials, model_parameters, ["", "reason", "ing</th", "ink>\n{\"class\":\"x\"}"]
-    )
-
-    assert content == "<think>\nreasoning</think>\n{\"class\":\"x\"}"
+@pytest.mark.parametrize(
+    ("pieces", "expected"),
+    [
+        (["", "reason", "ing</th", "ink>\n{\"class\":\"x\"}"], "<think>\nreasoning</think>\n{\"class\":\"x\"}"),
+        # Empty reasoning starts with the closing tag, possibly split across chunks.
+        (["\n", "</th", "ink>\n{\"class\":\"x\"}"], "\n<think>\n</think>\n{\"class\":\"x\"}"),
+    ],
+)
+def test_invoke_stream_restores_prefilled_think_tag(credentials, model_parameters, pieces, expected):
+    assert _invoke_stream(credentials, model_parameters, pieces) == expected
 
 
 @pytest.mark.parametrize(
