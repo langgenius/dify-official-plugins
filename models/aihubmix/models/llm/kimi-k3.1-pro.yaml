@@ -1,0 +1,56 @@
+# https://aihubmix.com/model/kimi-k3.1-pro
+model: kimi-k3.1-pro
+label:
+  zh_Hans: Kimi K3.1 Pro
+  en_US: Kimi K3.1 Pro
+model_type: llm
+features:
+  - vision
+  - structured-output
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: max_completion_tokens
+    use_template: max_tokens
+    default: 131072
+    min: 1
+    max: 1048576
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 控制推理深度；模型始终启用思考模式。
+      en_US: Controls reasoning depth; thinking is always enabled.
+    required: false
+    default: max
+    options:
+      - low
+      - high
+      - max
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '2'
+  output: '10.5'
+  unit: '0.000001'
+  currency: USD

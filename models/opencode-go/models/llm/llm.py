@@ -40,6 +40,7 @@ from dify_plugin.errors.model import (
 )
 
 try:
+    from models.llm.kimi import KimiK31ReasoningMixin
     from models.llm import friendly_errors, llm_anthropic, llm_responses, session_headers
     from models.llm.session_headers import (
         DEFAULT_ENDPOINT_URL,
@@ -50,6 +51,7 @@ try:
         resolve_protocol,
     )
 except ImportError:  # pragma: no cover - importlib standalone load
+    from kimi import KimiK31ReasoningMixin
     import friendly_errors
     import llm_anthropic
     import llm_responses
@@ -200,7 +202,7 @@ def _post_with_retry(
     return last
 
 
-class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
+class OpenCodeGoLargeLanguageModel(KimiK31ReasoningMixin, OAICompatLargeLanguageModel):
     @staticmethod
     def _inject_extra_headers_rule(entity: AIModelEntity) -> AIModelEntity:
         if not any(rule.name == "extra_headers" for rule in entity.parameter_rules):
@@ -260,6 +262,7 @@ class OpenCodeGoLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        credentials["_kimi_k31"] = model in self._KIMI_K31_MODELS
         self._apply_extra_headers(credentials, model_parameters)
         model_parameters = apply_model_parameter_constraints(model, model_parameters)
         headers = add_custom_parameters(credentials, user)
