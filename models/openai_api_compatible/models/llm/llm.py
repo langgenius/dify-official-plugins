@@ -708,6 +708,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
+        # Chat templates such as Qwen3.5's prefill `<think>\n` in the prompt, so the model
+        # output starts with reasoning and only contains the closing tag. This can happen
+        # even when thinking is disabled here, because strict mode does not send the switch.
+        is_chat = credentials.get("mode") == LLMMode.CHAT.value
+        if is_chat and not stream:
+            result = self._restore_prefilled_think_tag(result)
+
         # Filter thinking content from responses if thinking mode is disabled
         # This is necessary for models like Minimax M2.1 that don't support server-side thinking control
         if enable_thinking_value is False:
@@ -716,7 +723,43 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 return self._filter_thinking_result(result)
 
+        # A stream must decide before the closing tag arrives, so only trust an explicit
+        # switch: hybrid models may default to non-thinking when it is left unset.
+        if is_chat and stream and enable_thinking_value is True:
+            return self._restore_prefilled_think_stream(result)
+
         return result
+
+    @staticmethod
+    def _restore_prefilled_think_tag(result: LLMResult) -> LLMResult:
+        """Restore the opening think tag when the chat template prefilled it."""
+        if not isinstance(result, LLMResult) or not result.message:
+            return result
+        content = result.message.content
+        if not isinstance(content, str):
+            return result
+        # A complete JSON answer is never a reasoning trace, even with a literal `</think>`.
+        with suppress(ValueError):
+            json.loads(content)
+            return result
+        opening = content.find("<think>")
+        closing = content.find("</think>")
+        if closing >= 0 and (opening < 0 or closing < opening):
+            result.message.content = "<think>\n" + content
+        return result
+
+    @staticmethod
+    def _restore_prefilled_think_stream(stream: Generator) -> Generator:
+        """Prepend the opening think tag when a thinking stream starts without one."""
+        checked = False
+        for chunk in stream:
+            content = chunk.delta.message.content
+            if not checked and isinstance(content, str) and content.strip():
+                checked = True
+                # A leading "<" is an opening tag, possibly split across chunks.
+                if not content.lstrip().startswith("<"):
+                    chunk.delta.message.content = "<think>\n" + content
+            yield chunk
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
         """Filter thinking content from non-streaming result"""

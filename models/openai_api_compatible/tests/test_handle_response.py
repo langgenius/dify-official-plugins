@@ -3,7 +3,12 @@ from unittest.mock import Mock, patch
 import pytest
 
 from dify_plugin.errors.model import InvokeError
-from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
+from dify_plugin.entities.model.llm import LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    SystemPromptMessage,
+    UserPromptMessage,
+)
 
 from models.llm.llm import OpenAILargeLanguageModel
 
@@ -198,6 +203,136 @@ def test_handle_generate_response_preserves_tool_calls_with_non_stream_reasoning
     assert result.message.tool_calls
     assert result.message.tool_calls[0].function.name == "search_docs"
     assert result.message.tool_calls[0].function.arguments == "{\"query\":\"Qwen reasoning\"}"
+
+
+def _invoke_non_stream(
+    model: OpenAILargeLanguageModel,
+    credentials: dict,
+    content: str,
+    model_parameters: dict | None = None,
+):
+    def fake_super(self, model_name, credentials, prompt_messages, *args):
+        return self._handle_generate_response(
+            model=model_name,
+            credentials=credentials,
+            response=_chat_response({"role": "assistant", "content": content}),
+            prompt_messages=prompt_messages,
+        )
+
+    with patch(
+        "dify_plugin.interfaces.model.openai_compatible.llm.OAICompatLargeLanguageModel._invoke",
+        new=fake_super,
+    ):
+        return model._invoke(
+            model="Qwen3.5-27B",
+            credentials=credentials,
+            prompt_messages=[UserPromptMessage(content="hello")],
+            model_parameters=model_parameters or {},
+            stream=False,
+        )
+
+
+def test_invoke_restores_prefilled_think_tag_and_filters_reasoning():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    # Qwen3.5's Jinja template prefills "<|im_start|>assistant\n<think>\n".
+    # The API returns only the generated continuation, without the prompt prefix.
+    result = _invoke_non_stream(
+        model,
+        {"mode": "chat", "agent_thought_support": "supported"},
+        "reasoning</think>\n{\"class\":\"x\"}",
+    )
+
+    assert result.message.content == "<think>\nreasoning</think>\n{\"class\":\"x\"}"
+
+    filtered_result = model._filter_thinking_result(result)
+
+    assert filtered_result.message.content == "{\"class\":\"x\"}"
+
+
+def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    # Strict mode never sends the thinking switch, so Qwen3.5 still prefills `<think>`.
+    result = _invoke_non_stream(
+        model,
+        {"mode": "chat"},
+        "Format: {\"class\": \"...\"}</think>\n{\"class\":\"x\"}",
+    )
+
+    assert result.message.content == "{\"class\":\"x\"}"
+
+
+@pytest.mark.parametrize(
+    ("credentials", "model_parameters"),
+    [
+        ({"mode": "chat"}, {}),
+        ({"mode": "chat", "agent_thought_support": "supported"}, {}),
+        ({"mode": "chat", "agent_thought_support": "supported"}, {"enable_thinking": False}),
+    ],
+)
+def test_invoke_preserves_literal_closing_think_tag_in_json_answer(credentials, model_parameters):
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    result = _invoke_non_stream(model, credentials, "{\"tag\":\"</think>\"}", model_parameters)
+
+    assert result.message.content == "{\"tag\":\"</think>\"}"
+
+
+def _invoke_stream(credentials: dict, model_parameters: dict, pieces: list[str]) -> str:
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    def fake_super(self, model_name, credentials, prompt_messages, *args):
+        for index, piece in enumerate(pieces):
+            yield LLMResultChunk(
+                model=model_name,
+                delta=LLMResultChunkDelta(
+                    index=index, message=AssistantPromptMessage(content=piece)
+                ),
+            )
+
+    with patch(
+        "dify_plugin.interfaces.model.openai_compatible.llm.OAICompatLargeLanguageModel._invoke",
+        new=fake_super,
+    ):
+        chunks = model._invoke(
+            model="Qwen3.5-27B",
+            credentials={"mode": "chat", **credentials},
+            prompt_messages=[UserPromptMessage(content="hello")],
+            model_parameters=model_parameters,
+            stream=True,
+        )
+        return "".join(chunk.delta.message.content for chunk in chunks)
+
+
+@pytest.mark.parametrize(
+    ("credentials", "model_parameters"),
+    [
+        ({"agent_thought_support": "supported"}, {"enable_thinking": True}),
+        ({"agent_thought_support": "only_thinking_supported"}, {}),
+    ],
+)
+def test_invoke_stream_restores_prefilled_think_tag(credentials, model_parameters):
+    content = _invoke_stream(
+        credentials, model_parameters, ["", "reason", "ing</th", "ink>\n{\"class\":\"x\"}"]
+    )
+
+    assert content == "<think>\nreasoning</think>\n{\"class\":\"x\"}"
+
+
+@pytest.mark.parametrize(
+    ("credentials", "model_parameters", "pieces"),
+    [
+        # Opening tag already present, split across chunks.
+        ({"agent_thought_support": "supported"}, {"enable_thinking": True}, ["<th", "ink>r</think>x"]),
+        # Thinking left to the model default: a hybrid model may answer without reasoning.
+        ({"agent_thought_support": "supported"}, {}, ["{\"class\":", "\"x\"}"]),
+    ],
+)
+def test_invoke_stream_keeps_content_without_prefilled_think_tag(
+    credentials, model_parameters, pieces
+):
+    assert _invoke_stream(credentials, model_parameters, pieces) == "".join(pieces)
 
 
 def test_filter_thinking_result_removes_wrapped_non_stream_reasoning():
