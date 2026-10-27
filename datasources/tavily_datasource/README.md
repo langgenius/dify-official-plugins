@@ -27,7 +27,7 @@ You'll need a Tavily API key to use this plugin. Get one from [Tavily](https://a
 - **Domain Filters**: Include or exclude specific domains
 - **Include Images**: Whether to include images in results
 - **Include Answer**: Whether to include AI-generated answers
-- **Include Raw Content**: Whether to extract full content from found pages
+- **Include Raw Content**: Prefer full `raw_content` returned by Search. If it is absent or blank, use the search snippet; only call Extract when neither is available. Disabled uses snippets without Extract.
 
 ## Usage
 
@@ -54,8 +54,10 @@ The plugin returns:
 Each web page entry includes:
 - Source URL
 - Title
-- Description (with relevance score and publish date if available)
+- Description (with relevance score and publish date if available; snippet fallback or extraction failure details when applicable)
 - Extracted content
+
+A page that fails extraction remains in the output with its source URL, empty content, and an error description (including the extraction request ID when returned). Other pages continue to be processed.
 
 ## Version
 

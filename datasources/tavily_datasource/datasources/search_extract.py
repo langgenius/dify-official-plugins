@@ -85,17 +85,41 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
                         else:
                             description = f"Relevance: {result['score']}"
                     
-                    content = result.get("content", "")
-                    
-                    # If raw content extraction is enabled and we don't have content, try to extract
-                    if include_raw_content and not content:
-                        try:
-                            extracted_content = self._extract_content(api_key, [result.get("url", "")])
-                            if extracted_content and extracted_content.get("results"):
-                                content = extracted_content["results"][0].get("raw_content", "")
-                        except Exception as e:
-                            raise ValueError(f"Failed to extract content from {result.get('url', '')}: {str(e)}")
-                    
+                    # Prefer requested full content, then keep a usable search snippet.
+                    # Only incur an Extract request when neither is available.
+                    content = self._nonempty_text(result.get("content"))
+                    content_note = ""
+                    if include_raw_content:
+                        raw_content = self._nonempty_text(result.get("raw_content"))
+                        if raw_content:
+                            content = raw_content
+                        elif content:
+                            content_note = "Content source: search snippet (raw content unavailable)"
+                        else:
+                            try:
+                                extracted = self._extract_content(api_key, [result.get("url", "")])
+                                # This request contains one URL; redirects may change the response URL.
+                                pages = extracted.get("results", [])
+                                if pages:
+                                    content = self._nonempty_text(pages[0].get("raw_content"))
+                                if not content:
+                                    failures = extracted.get("failed_results", [])
+                                    errors = [
+                                        str(page.get("error", "No content returned"))
+                                        for page in failures
+                                    ]
+                                    content_note = "Extraction failed: " + (
+                                        "; ".join(errors) or "No content returned"
+                                    )
+                                    if extracted.get("request_id"):
+                                        content_note += f" (request_id: {extracted['request_id']})"
+                            except Exception as e:
+                                content_note = f"Extraction failed: {e}"
+                    if content_note:
+                        description = (
+                            f"{description} | {content_note}" if description else content_note
+                        )
+
                     web_info_detail = WebSiteInfoDetail(
                         source_url=result.get("url", ""),
                         title=result.get("title", ""),
@@ -136,6 +160,10 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
         except Exception as e:
             raise ValueError(f"An error occurred: {str(e)}")
     
+    @staticmethod
+    def _nonempty_text(value: Any) -> str:
+        return value if isinstance(value, str) and value.strip() else ""
+
     def _perform_search(self, api_key: str, query: str, **kwargs) -> dict:
         """
         Perform search using Tavily Search API.
