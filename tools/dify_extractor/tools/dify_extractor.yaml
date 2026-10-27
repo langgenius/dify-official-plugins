@@ -25,6 +25,16 @@ parameters:
       pt_BR: o arquivo a ser analisado (suporta pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv, json, yaml, yml e texto simples)
     llm_description: the file to parse (supports PDF, Office, Markdown, HTML, CSV, JSON, YAML, and plain text files)
     form: llm
+  - name: fail_on_error
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Fail workflow on extraction error
+    human_description:
+      en_US: Raise extraction errors so workflow retries and error branches can handle them. Off keeps existing text-message behavior.
+    llm_description: Raise extraction errors instead of returning an error text message.
+    form: form
 output_schema:
     type: object
     properties:
