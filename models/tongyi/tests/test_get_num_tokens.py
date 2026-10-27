@@ -57,23 +57,58 @@ def test_qwen_tokenizer_matches_dashscope_encoding():
     assert expected > 0
 
 
-def test_non_qwen_predefined_model_falls_back_to_gpt2():
+def _stub_gpt2_estimator(model: TongyiLargeLanguageModel, monkeypatch, value: int = 27):
+    """Replace the SDK gpt2 estimator with a deterministic stub.
+
+    The real ``AIModel._get_num_tokens_by_gpt2`` downloads tiktoken's gpt2 vocab
+    on a cold cache and runs it inside the SDK's gevent thread pool. In a pytest
+    process (where ssl is monkey-patched late) that worker dies with
+    RecursionError, the completion notification fails too, and the caller hangs
+    until gevent raises ``LoopExit: This operation would block forever`` -- which
+    is what CI hit. Stubbing keeps these tests offline and deterministic while
+    still asserting the routing behaviour the regression is about.
+
+    Returns the list of prompt texts the estimator was called with.
+    """
+    calls: list[str] = []
+
+    def _fake_get_num_tokens_by_gpt2(text: str) -> int:
+        calls.append(text)
+        return value
+
+    monkeypatch.setattr(model, "_get_num_tokens_by_gpt2", _fake_get_num_tokens_by_gpt2)
+    return calls
+
+
+def test_non_qwen_predefined_model_falls_back_to_gpt2(monkeypatch):
     """Non-qwen hosted models are unsupported by DashScope's tokenizer and must
     fall back to the gpt2 estimator rather than returning 0 or raising."""
+    model = _model()
+    calls = _stub_gpt2_estimator(model, monkeypatch)
+
     for name in ("glm-5", "kimi-k2.5", "deepseek-v4-pro", "MiniMax-M2.5"):
-        num_tokens = _model().get_num_tokens(name, {}, _messages())
-        assert num_tokens > 0, f"{name} should fall back to a non-zero estimate"
+        num_tokens = model.get_num_tokens(name, {}, _messages())
+        assert num_tokens == 27, f"{name} should fall back to the gpt2 estimate"
+
+    assert len(calls) == 4
+    # The estimator receives the flattened prompt, not the raw message objects.
+    assert "Hello world" in calls[0]
 
 
-def test_customizable_model_falls_back_to_gpt2():
+def test_customizable_model_falls_back_to_gpt2(monkeypatch):
     """A user-defined customizable model (arbitrary name) must still yield a
     usable non-zero estimate."""
-    num_tokens = _model().get_num_tokens(
+    model = _model()
+    calls = _stub_gpt2_estimator(model, monkeypatch)
+
+    num_tokens = model.get_num_tokens(
         "my-custom-openai-compatible-model",
         {"context_size": 4096, "function_calling_type": "tool_call"},
         _messages(),
     )
-    assert num_tokens > 0
+
+    assert num_tokens == 27
+    assert len(calls) == 1
 
 
 def test_chat_suffix_model_is_normalized():
