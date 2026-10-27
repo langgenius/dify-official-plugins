@@ -58,6 +58,7 @@ tools:
   - tools/linear_list_issue_statuses.yaml
   - tools/linear_list_project_labels.yaml
   - tools/linear_get_issue.yaml
+  - tools/linear_find_issues_by_url.yaml
   - tools/linear_get_project.yaml
   - tools/linear_get_team.yaml
   - tools/linear_get_user.yaml
