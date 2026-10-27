@@ -57,7 +57,7 @@ Each web page entry includes:
 - Description (with relevance score and publish date if available; snippet fallback or extraction failure details when applicable)
 - Extracted content
 
-A page that fails extraction remains in the output with its source URL, empty content, and an error description (including the extraction request ID when returned). Other pages continue to be processed.
+When Extract returns no content, an empty page can include the returned failure details and request ID in its description. Extract HTTP or transport exceptions retain the existing behavior: skip that page and continue with other search results. Search request failures still fail the crawl.
 
 ## Version
 

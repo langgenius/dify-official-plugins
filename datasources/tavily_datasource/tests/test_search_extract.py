@@ -83,7 +83,7 @@ def test_partial_extract_failure_retains_url_and_failure_metadata(fixture):
     calls, responses = fixture
     responses["search"]["results"] = [
         {"url": "https://example.test/ok", "content": "snippet", "raw_content": "FULL"},
-        {"url": "https://example.test/failed", "title": "Failed page", "content": None},
+        {"url": "https://example.test/failed", "title": "Failed page", "content": ""},
     ]
     responses["extract"] = {"results": [], "failed_results": [{"url": "https://example.test/failed", "error": "Page unavailable"}], "request_id": "extract-123"}
     result = final(crawl({"include_raw_content": True}))
@@ -96,14 +96,25 @@ def test_partial_extract_failure_retains_url_and_failure_metadata(fixture):
     assert result["total"] == result["completed"] == 2
 
 
-def test_extract_transport_failure_preserved_without_dropping_page(fixture):
+@pytest.mark.parametrize("failure", [requests.Timeout("read timed out"), requests.HTTPError("503 unavailable")])
+def test_extract_transport_failure_preserves_existing_page_skip(fixture, failure):
     _, responses = fixture
-    responses["search"]["results"] = [{"url": "https://example.test/a", "content": ""}]
-    responses["extract"] = requests.Timeout("read timed out")
+    responses["search"]["results"] = [
+        {"url": "https://example.test/failed", "content": ""},
+        {"url": "https://example.test/ok", "content": "usable snippet"},
+    ]
+    responses["extract"] = failure
     result = final(crawl({"include_raw_content": True}))
-    assert len(result["web_info_list"]) == 1
-    assert result["web_info_list"][0]["content"] == ""
-    assert "read timed out" in result["web_info_list"][0]["description"]
+    assert [page["source_url"] for page in result["web_info_list"]] == ["https://example.test/ok"]
+    assert result["web_info_list"][0]["content"] == "usable snippet"
+    assert result["total"] == result["completed"] == 1
+
+
+def test_search_transport_failure_preserves_crawl_error(fixture):
+    _, responses = fixture
+    responses["search"] = requests.HTTPError("401 invalid key")
+    with pytest.raises(ValueError, match="An error occurred: 401 invalid key"):
+        crawl({})
 
 
 def test_empty_search_keeps_completed_shape(fixture):

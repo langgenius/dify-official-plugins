@@ -114,7 +114,11 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
                                     if extracted.get("request_id"):
                                         content_note += f" (request_id: {extracted['request_id']})"
                             except Exception as e:
-                                content_note = f"Extraction failed: {e}"
+                                # Preserve the existing per-result failure path: the outer
+                                # handler skips this page and continues with the next result.
+                                raise ValueError(
+                                    f"Failed to extract content from {result.get('url', '')}: {e}"
+                                )
                     if content_note:
                         description = (
                             f"{description} | {content_note}" if description else content_note
