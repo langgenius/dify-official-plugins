@@ -343,9 +343,9 @@ parameters:
     label:
       en_US: Max Results
       zh_Hans: 最大结果数
-    llm_description: The maximum number of search results to return. Range is 0-20.
+    llm_description: The maximum number of search results to return. Range is 1-20.
     max: 20
-    min: 0
+    min: 1
     required: false
     type: number
   - name: chunks_per_source

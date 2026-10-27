@@ -114,7 +114,7 @@ def test_yaml_schema_and_new_fields():
     expected = {"include_domains_mode", "language", "filter_by_language", "include_published_date", "filter_by_published_date", "safe_search", "exact_match"}
     assert expected <= params.keys()
     assert params["max_results"].default == 5
-    assert params["max_results"].min == 0
+    assert params["max_results"].min == 1
     assert "basic" in params["chunks_per_source"].llm_description
 
 
