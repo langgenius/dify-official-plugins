@@ -60,6 +60,19 @@ parameter_rules:
       zh_Hans: 是否隐藏思考过程。
       en_US: Whether to hide the thought process.
     required: false
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service Tier
+    type: string
+    help:
+      zh_Hans: auto 使用默认路由。flex 优先使用 flex 端点（价格更低，可能更慢），只会回退到价格不高于 flex 的端点，否则返回容量错误。没有 flex 端点时按默认方式路由。Dify 中显示的费用按标准价格计算。
+      en_US: auto uses default routing. flex tries flex endpoints first (lower price, can be slower) and only falls back to endpoints priced at or below them, otherwise it returns a capacity error. Without a flex endpoint the request routes normally. Costs shown in Dify use standard prices.
+    required: false
+    default: auto
+    options:
+      - auto
+      - flex
 pricing:
   input: "0.10"
   output: "0.60"

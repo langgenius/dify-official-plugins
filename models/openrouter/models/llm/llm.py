@@ -176,6 +176,21 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["verbosity"] = verbosity
 
     @staticmethod
+    def _set_service_tier_params(model_parameters: dict):
+        """Sets the service_tier parameter for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place. 'flex' asks OpenRouter
+        to try the model's flex endpoints first; 'auto' (the default) and any other value
+        leave the parameter out so routing stays unchanged.
+        See: https://openrouter.ai/docs/guides/features/service-tiers
+
+        :param model_parameters: The dictionary of model parameters.
+        """
+        service_tier = model_parameters.pop("service_tier", None)
+        if service_tier == "flex":
+            model_parameters["service_tier"] = service_tier
+
+    @staticmethod
     def _set_json_schema_params(model_parameters: dict):
         response_format = model_parameters.get("response_format")
         if response_format and response_format == "json_schema":
@@ -216,6 +231,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             self._set_reasoning_params(model_parameters)
             self._set_verbosity_params(model_parameters)
             self._set_json_schema_params(model_parameters)
+            self._set_service_tier_params(model_parameters)
 
         # Allow data collection by default so that all available providers can serve requests.
         # Without this, models whose only providers require data collection would return a 404
@@ -329,6 +345,30 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         self, model: str, credentials: dict
     ) -> AIModelEntity:
         entity = super().get_customizable_model_schema(model, credentials)
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="service_tier",
+                label=I18nObject(en_us="Service Tier", zh_hans="服务层级"),
+                help=I18nObject(
+                    en_us=(
+                        "auto uses default routing. flex tries flex endpoints first "
+                        "(lower price, can be slower) and only falls back to endpoints "
+                        "priced at or below them, otherwise it returns a capacity error. "
+                        "Without a flex endpoint the request routes normally. "
+                        "Costs shown in Dify use standard prices."
+                    ),
+                    zh_hans=(
+                        "auto 使用默认路由。flex 优先使用 flex 端点（价格更低，可能更慢），"
+                        "只会回退到价格不高于 flex 的端点，否则返回容量错误。"
+                        "没有 flex 端点时按默认方式路由。Dify 中显示的费用按标准价格计算。"
+                    ),
+                ),
+                type=ParameterType.STRING,
+                options=["auto", "flex"],
+                default="auto",
+                required=False,
+            )
+        )
 
         if credentials.get("reasoning_support") != "support":
             return entity

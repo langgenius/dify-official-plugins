@@ -140,3 +140,74 @@ def test_custom_vision_model_keeps_uploaded_images(
     sent_content = generate.call_args.args[2][0].content
     assert isinstance(sent_content, list)
     assert any(isinstance(part, ImagePromptMessageContent) for part in sent_content)
+
+
+def test_set_service_tier_params_sends_flex() -> None:
+    model_parameters = {"service_tier": "flex", "temperature": 0.2}
+
+    OpenRouterLargeLanguageModel._set_service_tier_params(model_parameters)
+
+    assert model_parameters == {"service_tier": "flex", "temperature": 0.2}
+
+
+@pytest.mark.parametrize("service_tier", ["auto", None, "", "priority"])
+def test_set_service_tier_params_leaves_routing_unchanged_otherwise(
+    service_tier: str | None,
+) -> None:
+    model_parameters = {"service_tier": service_tier, "temperature": 0.2}
+
+    OpenRouterLargeLanguageModel._set_service_tier_params(model_parameters)
+
+    assert model_parameters == {"temperature": 0.2}
+
+
+def test_service_tier_rules_default_to_auto_and_offer_flex() -> None:
+    rules = [
+        rule
+        for schema in _llm_schemas()
+        for rule in schema["parameter_rules"]
+        if rule["name"] == "service_tier"
+    ]
+
+    assert rules
+    for rule in rules:
+        assert rule["default"] == "auto"
+        assert rule["options"] == ["auto", "flex"]
+
+
+def test_invoke_sends_flex_service_tier(llm: OpenRouterLargeLanguageModel) -> None:
+    schema_path = (
+        Path(__file__).resolve().parent.parent / "models" / "llm" / "gpt-6-luna.yaml"
+    )
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    model_schema = llm.get_customizable_model_schema(
+        schema["model"],
+        {"mode": "chat", "context_size": "128000", "max_tokens_to_sample": "8192"},
+    )
+
+    with (
+        patch.object(llm, "_update_credential"),
+        patch.object(llm, "get_model_schema", return_value=model_schema),
+        patch.object(llm, "_generate", return_value="result") as generate,
+    ):
+        llm._invoke(
+            model=schema["model"],
+            credentials={},
+            prompt_messages=[UserPromptMessage(content="Hi")],
+            model_parameters={"service_tier": "flex"},
+        )
+
+    sent_parameters = generate.call_args.args[3]
+    assert sent_parameters["service_tier"] == "flex"
+    assert sent_parameters["provider"] == {"data_collection": "allow"}
+
+
+def test_custom_model_exposes_service_tier(llm: OpenRouterLargeLanguageModel) -> None:
+    schema = llm.get_customizable_model_schema(
+        "custom/flex-model",
+        {"mode": "chat", "context_size": "128000", "max_tokens_to_sample": "8192"},
+    )
+
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+    assert rules["service_tier"].options == ["auto", "flex"]
+    assert rules["service_tier"].default == "auto"
