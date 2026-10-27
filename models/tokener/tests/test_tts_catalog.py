@@ -53,11 +53,11 @@ def test_tts_catalog_ignores_other_audio_models_and_keeps_existing_type_outputs(
         + stt["models"]
         + llm["models"]
         + [
-            {"id": "gpt-4o-mini-tts-2025-12-15", "modelType": "tts"},
-            {"id": "qwen3-tts-flash", "modelType": "tts"},
+            {**deepcopy(tts["models"][0]), "id": "gpt-4o-mini-tts-2025-12-15"},
+            {**deepcopy(tts["models"][0]), "id": "qwen3-tts-flash"},
         ],
     }
-    assert render_catalog(mixed, model_type="tts") == render_catalog(tts, model_type="tts")
+    assert len(render_catalog(mixed, model_type="tts")) == 5
     assert render_catalog(mixed) == render_catalog(
         {**llm, "catalogRevision": tts["catalogRevision"]}
     )
@@ -129,36 +129,39 @@ def test_tts_catalog_rejects_invalid_pricing(pricing):
         render_catalog(payload, model_type="tts")
 
 
-def test_tts_catalog_cli_only_writes_tts_and_rejects_empty_selection_without_writes(tmp_path):
+def test_tts_catalog_cli_only_writes_selected_type_and_rejects_invalid_metadata(tmp_path):
     payload = catalog()
     for kind in ("llm", "speech2text"):
         (tmp_path / "models" / kind).mkdir(parents=True)
         (tmp_path / "models" / kind / "keep.yaml").write_bytes(b"keep bytes\n")
+    args = ["sync_catalog.py", "--input", "snapshot.json", "--model-type", "tts"]
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
-        patch("scripts.sync_catalog.fetch_catalog", return_value=payload),
-        patch("sys.argv", ["sync_catalog.py", "--model-type", "tts"]),
+        patch("scripts.sync_catalog.load_catalog", return_value=payload),
+        patch("sys.argv", args),
     ):
         assert main() == 0
+    for kind in ("llm", "speech2text"):
+        assert (tmp_path / "models" / kind / "keep.yaml").read_bytes() == b"keep bytes\n"
     assert sync_files(
         render_catalog(payload, model_type="tts"), check=True, output_dir=tmp_path / "models/tts"
     )
     before = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*.yaml")}
-    for model_type, rows in [
-        ("llm", payload["models"]),
-        ("speech2text", payload["models"]),
-        ("tts", [{"id": "gpt-4o-mini-tts-2025-12-15", "modelType": "tts"}]),
-    ]:
-        with (
-            patch("scripts.sync_catalog.ROOT", tmp_path),
-            patch(
-                "scripts.sync_catalog.fetch_catalog",
-                return_value={**deepcopy(payload), "models": rows},
-            ),
-            patch("sys.argv", ["sync_catalog.py", "--model-type", model_type]),
-        ):
-            assert main() == 1
-        assert {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
+    with (
+        patch("scripts.sync_catalog.ROOT", tmp_path),
+        patch(
+            "scripts.sync_catalog.load_catalog",
+            return_value={
+                **payload,
+                "models": [
+                    {"id": "new-model-without-metadata", "modelType": "tts"},
+                ],
+            },
+        ),
+        patch("sys.argv", args),
+    ):
+        assert main() == 1
+    assert {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
 
 
 @pytest.mark.parametrize("model_type", ["tts", "speech2text"])
@@ -183,10 +186,30 @@ def test_tts_catalog_rejects_unsafe_audio_format_without_writing_files(tmp_path,
     before = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
-        patch("scripts.sync_catalog.fetch_catalog", return_value=payload),
-        patch("sys.argv", ["sync_catalog.py", "--model-type", "tts"]),
+        patch("scripts.sync_catalog.load_catalog", return_value=payload),
+        patch("sys.argv", ["sync_catalog.py", "--input", "snapshot.json", "--model-type", "tts"]),
     ):
         assert main() == 1
     assert {
         p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()
     } == before
+
+
+def test_tts_catalog_rejects_non_dify_locale_before_any_write(tmp_path, capsys):
+    payload = catalog()
+    payload["models"][0]["audio"]["voices"][0]["languages"] = ["en-US", "zh-CN"]
+    target = tmp_path / "models/tts/keep.yaml"
+    target.parent.mkdir(parents=True)
+    target.write_text("existing model bytes\n")
+    with (
+        patch("scripts.sync_catalog.ROOT", tmp_path),
+        patch("scripts.sync_catalog.load_catalog", return_value=payload),
+        patch("sys.argv", ["sync_catalog.py", "--input", "snapshot.json"]),
+    ):
+        assert main() == 1
+    error = capsys.readouterr().err
+    assert "tts-1" in error
+    assert "alloy" in error
+    assert "zh-CN" in error
+    assert list(tmp_path.rglob("*.yaml")) == [target]
+    assert target.read_text() == "existing model bytes\n"

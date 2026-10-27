@@ -1,0 +1,46 @@
+model: "qwen-long"
+label:
+  en_US: "qwen-long"
+  zh_Hans: "qwen-long"
+model_type: llm
+features:
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 10000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 32768
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    help:
+      en_US: Specify the format that the model must output.
+      zh_Hans: 指定模型必须输出的格式。
+    required: false
+    default: text
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: "0.072000"
+  output: "0.287000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false
