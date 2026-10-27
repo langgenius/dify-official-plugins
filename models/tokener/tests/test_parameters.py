@@ -33,11 +33,19 @@ def response() -> requests.Response:
 @pytest.mark.parametrize("stream", [False, True])
 def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
     model = TokenerLargeLanguageModel(model_schemas=[schema])
-    parameters = {"seed": 42}
-    if not schema.model.startswith("gpt-"):
-        parameters.update(temperature=1.0, top_p=0.9, presence_penalty=0.1, frequency_penalty=-0.1)
-    if schema.model.startswith("gpt-"):
-        parameters["reasoning_effort"] = "low"
+    declared = {rule.name for rule in schema.parameter_rules}
+    parameters = {
+        key: value
+        for key, value in {
+            "seed": 42,
+            "temperature": 1.0,
+            "top_p": 0.9,
+            "presence_penalty": 0.1,
+            "frequency_penalty": -0.1,
+            "reasoning_effort": "low",
+        }.items()
+        if key in declared
+    }
     original = parameters.copy()
     result = response()
     with (

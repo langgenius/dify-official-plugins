@@ -117,7 +117,7 @@ def test_multimodal_invoke_delegates_session_management_to_sdk() -> None:
         "Session",
         side_effect=AssertionError("the plugin must not create a requests.Session"),
     ), patch.object(
-        model, "embed_multimodal_documents", return_value=([[0.4, 0.5]], 5)
+        model, "embed_multimodal_documents", return_value=([[0.4, 0.5]], {"total": 5, "text": 5, "image": 0})
     ) as embed_multimodal_documents:
         result = model._invoke_multimodal(
             model=MULTIMODAL_MODEL, credentials=CREDENTIALS, documents=documents

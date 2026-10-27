@@ -732,44 +732,60 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from streaming result"""
         buffer = ""
         in_thinking = False
-        thinking_started = False
+        strip_leading_whitespace = False
+        held_chunk = None
 
         for chunk in stream:
             if chunk.delta and chunk.delta.message and chunk.delta.message.content:
                 content = chunk.delta.message.content
                 buffer += content
 
-                # Detect start of thinking block
-                if not thinking_started and buffer.startswith("<think>"):
-                    in_thinking = True
-                    thinking_started = True
-                    # Don't continue here - check for end tag in same iteration
+                if not in_thinking:
+                    # Detect start of thinking block
+                    if buffer.startswith("<think>"):
+                        in_thinking = True
+                        held_chunk = None
+                    elif "<think>".startswith(buffer):
+                        # The opening tag may be split across chunks, e.g. "<" + "think>"
+                        held_chunk = chunk
+                        continue
 
-                # Detect end of thinking block
-                if in_thinking and "</think>" in buffer:
-                    # Find the end of thinking block
-                    end_idx = buffer.find("</think>") + len("</think>")
-                    # Skip whitespace after </think>
-                    while end_idx < len(buffer) and buffer[end_idx].isspace():
-                        end_idx += 1
+                if in_thinking:
+                    # Detect end of thinking block
+                    if "</think>" not in buffer:
+                        continue
                     # Remove thinking block and continue with remaining content
+                    end_idx = buffer.find("</think>") + len("</think>")
                     buffer = buffer[end_idx:]
                     in_thinking = False
-                    thinking_started = False
-                    # Yield remaining content if any
-                    if buffer:
-                        chunk.delta.message.content = buffer
-                        buffer = ""
-                        yield chunk
-                    continue
+                    strip_leading_whitespace = True
 
-                # If not in thinking block, yield content
-                if not in_thinking:
-                    yield chunk
-                    buffer = ""
+                # Skip whitespace after </think>, which may arrive in later chunks
+                if strip_leading_whitespace:
+                    buffer = buffer.lstrip()
+                    if not buffer:
+                        continue
+                    strip_leading_whitespace = False
+
+                held_chunk = None
+                chunk.delta.message.content = buffer
+                buffer = ""
+                yield chunk
             else:
+                # Flush content held as a possible opening tag before chunks without content,
+                # such as the final chunk with finish_reason and usage
+                if held_chunk is not None:
+                    held_chunk.delta.message.content = buffer
+                    yield held_chunk
+                    held_chunk = None
+                    buffer = ""
                 # Yield chunks without content as-is
                 yield chunk
+
+        # Flush content held as a possible opening tag when the stream ends
+        if held_chunk is not None:
+            held_chunk.delta.message.content = buffer
+            yield held_chunk
 
     def _handle_generate_response(
         self,

@@ -27,7 +27,11 @@ def test_actual_converse_request_drops_stale_values(underlying):
     request = client.converse.call_args.kwargs
     assert request["inferenceConfig"] == {"maxTokens": 4096}
     assert request["additionalModelRequestFields"] == {}
-    assert "additionalModelResponseFieldPaths" not in request
+    if underlying:
+        assert "additionalModelResponseFieldPaths" not in request
+    else:
+        # Haiku 5.5 profile IDs are Claude 5 profiles, so the refusal signal is requested.
+        assert request["additionalModelResponseFieldPaths"] == ["/stop_details"]
 
 def test_legacy_haiku_keeps_sampling_rules():
     names = ["model_name", "temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget", "max_tokens"]
