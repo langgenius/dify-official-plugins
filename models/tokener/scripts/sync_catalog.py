@@ -223,6 +223,8 @@ def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
 def _render_model(model: dict[str, Any]) -> str:
     capabilities = set(model["capabilities"])
     features = [feature for capability, feature in FEATURES if capability in capabilities]
+    if model["id"] == "qwen-long":
+        features.append("document")
     pricing = model["pricing"]
 
     lines = [
@@ -266,7 +268,7 @@ def _render_model(model: dict[str, Any]) -> str:
     for name in sampling:
         minimum, maximum = {
             "temperature": (0, 2),
-            "top_p": (0.01, 1),
+            "top_p": (profile.get("top_p_min", 0.01), 1),
             "presence_penalty": (-2, 2),
             "frequency_penalty": (-2, 2),
         }[name]

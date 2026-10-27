@@ -24,6 +24,13 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         for offset in range(0, len(texts), batch_size):
             batch = texts[offset : offset + batch_size]
             payload = {"model": model, "input": batch, "encoding_format": "float"}
+            if model == "gemini-embedding-2-preview":
+                prefix = (
+                    "task: search result | query: "
+                    if input_type == EmbeddingInputType.QUERY
+                    else "title: none | text: "
+                )
+                payload["input"] = [prefix + text for text in batch]
             if user:
                 payload["user"] = user
             response = self._post("embeddings", credentials, payload)

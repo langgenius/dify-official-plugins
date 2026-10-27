@@ -5,6 +5,7 @@ label:
 model_type: llm
 features:
   - structured-output
+  - document
 model_properties:
   mode: chat
   context_size: 10000000

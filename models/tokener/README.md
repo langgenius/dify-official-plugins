@@ -14,6 +14,32 @@ Existing keys from the same Tokener.ai Console remain valid. The API key must ha
 In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
 Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
 The plugin sends up to 32 texts per embedding request. It does not truncate texts.
+For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents.
+Existing knowledge indexes can mix prefixed queries with unprefixed document vectors after this update.
+Rebuilding an index alone reuses cached document vectors without the prefix.
+For self-hosted Dify, the document cache uses `provider_name = langgenius/tokener/tokener` and `model_name = gemini-embedding-2-preview`.
+The query cache uses the logical Redis key prefix `langgenius/tokener/tokener_gemini-embedding-2-preview_`, followed by the text hash.
+If `REDIS_KEY_PREFIX` is configured, physical Redis keys also start with its trimmed value and a colon.
+These caches are shared across knowledge bases that use the same provider and model.
+After all plugin instances use this version, schedule both model switches during a low-traffic period.
+Applications continue running during each switch.
+Knowledge retrieval first returns no results, then partial results as documents finish indexing.
+An administrator must complete these steps for affected knowledge bases:
+
+1. Clear document cache rows that match both `provider_name` and `model_name` above.
+2. Clear query cache keys with the matching Redis prefix, including the deployment prefix when configured.
+3. In each knowledge base, select another configured embedding model and save. Wait for indexing to finish. Check for documents with `error` status before continuing.
+4. Select Tokener.ai and `gemini-embedding-2-preview` again and save. Wait for indexing to finish. Check for documents with `error` status again.
+
+Saving the same provider and model does not start indexing.
+Each model change rebuilds completed, enabled, non-archived documents only.
+Both switches can incur embedding charges.
+Failed documents remain in `error` status without automatic retries.
+Resolve document errors after each switch.
+Dify Cloud users cannot clear this cache themselves. Contact Dify support before updating an affected knowledge base.
+The effect of mixing old and new vectors on retrieval quality has not been measured.
+For `gemini-embedding-001`, query and document inputs still use the same request format.
+The plugin does not yet preserve the retrieval task type for this model.
 
 Provider, LLM, and embedding validation use authenticated `GET /v1/models`.
 Rerank validation sends a small rerank request. Speech validation sends demo audio or a short speech request.
@@ -26,11 +52,19 @@ The SDK filters parameters that the selected model does not declare.
 New reasoning models expose no sampling controls unless a profile explicitly permits them.
 Unknown families expose the output limit and catalog-declared structured output controls.
 
+GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
+
 The existing GPT-5.6 profile retains seed and reasoning effort controls.
 The existing DeepSeek V4, GLM-5.2, and Kimi K3 profiles retain their verified sampling controls and seed.
 Other GPT-5, GPT-6, and o-series models expose no unverified sampling or reasoning controls.
 Claude, Gemini, Grok, Qwen, DeepSeek, GLM, Kimi, and MiniMax family rules expose sampling only for models without reasoning capability.
 Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
+
+Qwen-Long accepts text through Tokener.ai. Its schema declares `document` so Dify forwards attachments to the plugin for an explicit error.
+This declaration makes Dify show document controls; it does not enable document processing through Tokener.ai.
+The plugin rejects forwarded attachments before it sends an upstream request, including attachments from basic chat apps (EasyUI).
+For any app type, extract the document text and paste it into the message instead of attaching the document.
+In Workflow or Chatflow, you can also connect a Doc Extractor node's text output to the LLM node.
 
 ## Sync models
 
