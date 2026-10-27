@@ -1,38 +1,38 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
-from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
+
+from ..utils import build_ticket_url, check_value_in, get_event, get_ticket, load_payload, resolve_subdomain
 
 
 class TicketPriorityChangedEvent(Event):
     """Triggered when a Zendesk ticket's priority changes."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
-        if not payload:
-            raise ValueError("No payload received")
+    def _on_event(
+        self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None
+    ) -> Variables:
+        payload = load_payload(request, payload)
+        ticket_data = get_ticket(payload)
+        event = get_event(payload)
 
-        ticket_data = payload.get("detail", {})
+        # Zendesk sends upper-case values (e.g. "OPEN") and `null` when the priority was previously unset.
+        current_priority = event.get("current")
+        previous_priority = event.get("previous")
 
-        current_priority = payload.get("event", {}).get("current", "").lower()
-        previous_priority = payload.get("event", {}).get("previous", "").lower()
+        check_value_in(previous_priority, parameters.get("from_priority"))
+        check_value_in(current_priority, parameters.get("to_priority"))
 
-        # Filter by from_priority
-        from_priority_param = parameters.get("from_priority")
-        if from_priority_param:
-            allowed_from = [p.strip().lower() for p in from_priority_param.split(",")]
-            if previous_priority not in allowed_from:
-                raise EventIgnoreError()
-
-        # Filter by to_priority
-        to_priority_param = parameters.get("to_priority")
-        if to_priority_param:
-            allowed_to = [p.strip().lower() for p in to_priority_param.split(",")]
-            if current_priority not in allowed_to:
-                raise EventIgnoreError()
-
-        return Variables(variables={"ticket": ticket_data})
+        return Variables(
+            variables={
+                "ticket": ticket_data,
+                "ticket_url": build_ticket_url(resolve_subdomain(self.runtime), ticket_data.get("id")),
+                "current_priority": current_priority,
+                "previous_priority": previous_priority,
+            }
+        )

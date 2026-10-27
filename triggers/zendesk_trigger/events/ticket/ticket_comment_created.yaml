@@ -49,9 +49,62 @@ parameters:
   type: string
   required: false
   description:
-    en_US: Comma separated keywords. Trigger if comment contains any keyword.
-    zh_Hans: 逗号分隔的关键词。如果评论包含任何关键词则触发。
-    ja_JP: カンマ区切りのキーワード。コメントにいずれかが含まれる場合トリガーします。
+    en_US: Comma separated keywords (case-insensitive), e.g. "#linear". Trigger only if the comment contains any keyword.
+    zh_Hans: 逗号分隔的关键词（不区分大小写），例如 "#linear"。仅当评论包含任一关键词时触发。
+    ja_JP: カンマ区切りのキーワード（大文字小文字を区別しない）。例 "#linear"。コメントにいずれかが含まれる場合のみトリガーします。
+
+- name: strip_keyword
+  label:
+    en_US: Strip Keyword
+    zh_Hans: 移除关键词
+    ja_JP: キーワードを除去
+  type: select
+  required: false
+  options:
+  - value: "true"
+    label:
+      en_US: "Yes"
+      zh_Hans: "是"
+      ja_JP: "はい"
+  - value: "false"
+    label:
+      en_US: "No"
+      zh_Hans: "否"
+      ja_JP: "いいえ"
+  default: "true"
+  description:
+    en_US: Remove the matched keyword from `clean_body`, so the text can be forwarded (e.g. to a Linear comment) as-is.
+    zh_Hans: 从 `clean_body` 中移除匹配到的关键词，便于直接转发（例如同步为 Linear 评论）。
+    ja_JP: 一致したキーワードを `clean_body` から除去し、そのまま転送（例 Linear コメント）できるようにします。
+
+- name: author_is_staff
+  label:
+    en_US: Author Type
+    zh_Hans: 评论作者类型
+    ja_JP: 投稿者タイプ
+  type: select
+  required: false
+  options:
+  - value: "any"
+    label:
+      en_US: "Any"
+      zh_Hans: "任意"
+      ja_JP: "任意"
+  - value: "true"
+    label:
+      en_US: "Staff (agents/admins) only"
+      zh_Hans: "仅客服人员"
+      ja_JP: "スタッフのみ"
+  - value: "false"
+    label:
+      en_US: "End users only"
+      zh_Hans: "仅终端用户"
+      ja_JP: "エンドユーザーのみ"
+  default: "any"
+  description:
+    en_US: Filter by whether the comment author is a Zendesk staff member
+    zh_Hans: 按评论作者是否为 Zendesk 客服人员过滤
+    ja_JP: コメント投稿者が Zendesk スタッフかどうかでフィルター
 
 output_schema:
   type: object
@@ -60,8 +113,10 @@ output_schema:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         body:
+          type: string
+        html_body:
           type: string
         is_public:
           type: boolean
@@ -69,17 +124,82 @@ output_schema:
           type: object
           properties:
             id:
-              type: integer
+              type: string
             name:
               type: string
+            is_staff:
+              type: boolean
       required:
       - id
       - body
+    ticket_id:
+      type: ["string", "null"]
+      description: Zendesk ticket ID
+    matched_keyword:
+      type: ["string", "null"]
+      description: The `Body Contains` keyword that matched the comment, if any
+    clean_body:
+      type: string
+      description: Comment body with the matched keyword removed (when `Strip Keyword` is enabled)
     ticket:
       type: object
-      description: The ticket this comment belongs to
+      description: Ticket details (the `detail` object of the Zendesk event). IDs are strings; enum values are upper-case, e.g. OPEN.
+      properties:
+        id:
+          type: string
+        subject:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        custom_status:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+        is_public:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        actor_id:
+          type: ["string", "null"]
+        assignee_id:
+          type: ["string", "null"]
+        brand_id:
+          type: ["string", "null"]
+        external_id:
+          type: ["string", "null"]
+        form_id:
+          type: ["string", "null"]
+        group_id:
+          type: ["string", "null"]
+        organization_id:
+          type: ["string", "null"]
+        requester_id:
+          type: ["string", "null"]
+        submitter_id:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        via:
+          type: object
+          properties:
+            channel:
+              type: string
+    ticket_url:
+      type: ["string", "null"]
+      description: Agent URL of the ticket, e.g. https://acme.zendesk.com/agent/tickets/123
   required:
   - comment
+  - ticket
 
 extra:
   python:

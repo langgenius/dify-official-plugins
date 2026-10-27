@@ -75,7 +75,30 @@ This plugin connects Zendesk's customer service platform with Dify's AI capabili
 - the `Client kind` of Zendesk required choose `Confidential`
 
 
+### Sync keyword comments to Linear
+
+Linear's Zendesk integration links a Linear issue to a ticket via an attachment whose URL is the ticket's agent URL.
+To forward selected Zendesk comments to that Linear issue:
+
+1. Subscribe to `ticket_comment_created` and set **Body Contains** to a keyword such as `#linear`
+   (optionally **Author Type** = staff only, **Strip Keyword** = yes).
+2. Use the trigger outputs `ticket_url` / `ticket_id` to look up the linked Linear issue, and `clean_body`
+   (the comment without the keyword) as the Linear comment body via the Linear tool's *Add Comment*.
+
+## Troubleshooting
+
+- `HTTP 401` when creating the subscription: Zendesk rejected the credentials (it returns an empty body).
+  Check the subdomain (`acme` or `acme.zendesk.com`), the admin email and the API token, and make sure
+  token access is enabled in Admin Center > Apps and integrations > Zendesk API.
+- `HTTP 403`: the user is not an admin. Only admins can manage webhooks.
+
 ## Version History
+
+- **1.2.0**: Fix `ticket_comment_created` never firing (Zendesk sends `ticket.comment_added`);
+  fetch the webhook signing secret from Zendesk so signatures are verified; readable Zendesk API errors;
+  admin role check during credential validation; null-safe status / priority filters;
+  output schemas aligned with the real payload; new `ticket_url`, `clean_body`, `matched_keyword`
+  outputs and `strip_keyword` / `author_is_staff` comment filters.
 
 - **1.0.0** (2025-10-31): Initial release
   - Support for ticket, comment and article events
