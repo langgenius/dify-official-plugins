@@ -120,17 +120,17 @@ def test_dispatch_verifies_signature_and_forwards_payload() -> None:
 
 def test_comment_event_matches_keyword_and_strips_it() -> None:
     event = TicketCommentCreatedEvent(runtime=_event_runtime())
-    payload = _comment_payload("#Linear Customer confirmed the fix works")
+    payload = _comment_payload("#Escalate Customer confirmed the fix works")
 
     variables = event.on_event(
-        request=_request(payload), parameters={"body_contains": "#linear, #eng"}, payload=payload
+        request=_request(payload), parameters={"body_contains": "#escalate, #eng"}, payload=payload
     ).variables
 
-    assert variables["matched_keyword"] == "#linear"
+    assert variables["matched_keyword"] == "#escalate"
     assert variables["clean_body"] == "Customer confirmed the fix works"
     assert variables["ticket_id"] == "342757"
     assert variables["ticket_url"] == "https://acme.zendesk.com/agent/tickets/342757"
-    assert variables["comment"]["body"] == "#Linear Customer confirmed the fix works"
+    assert variables["comment"]["body"] == "#Escalate Customer confirmed the fix works"
 
 
 def test_comment_event_filters() -> None:
@@ -138,7 +138,7 @@ def test_comment_event_filters() -> None:
     payload = _comment_payload("no keyword here", is_staff=False)
 
     with pytest.raises(EventIgnoreError):
-        event.on_event(request=_request(payload), parameters={"body_contains": "#linear"}, payload=payload)
+        event.on_event(request=_request(payload), parameters={"body_contains": "#escalate"}, payload=payload)
     with pytest.raises(EventIgnoreError):
         event.on_event(request=_request(payload), parameters={"author_is_staff": "true"}, payload=payload)
     with pytest.raises(EventIgnoreError):

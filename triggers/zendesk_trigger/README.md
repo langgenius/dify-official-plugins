@@ -75,15 +75,13 @@ This plugin connects Zendesk's customer service platform with Dify's AI capabili
 - the `Client kind` of Zendesk required choose `Confidential`
 
 
-### Sync keyword comments to Linear
+### Keyword-tagged comments
 
-Linear's Zendesk integration links a Linear issue to a ticket via an attachment whose URL is the ticket's agent URL.
-To forward selected Zendesk comments to that Linear issue:
+To react only to comments tagged with a keyword:
 
-1. Subscribe to `ticket_comment_created` and set **Body Contains** to a keyword such as `#linear`
+1. Subscribe to `ticket_comment_created` and set **Body Contains** to a keyword such as `#escalate`
    (optionally **Author Type** = staff only, **Strip Keyword** = yes).
-2. Use the trigger outputs `ticket_url` / `ticket_id` to look up the linked Linear issue, and `clean_body`
-   (the comment without the keyword) as the Linear comment body via the Linear tool's *Add Comment*.
+2. Use `clean_body` (the comment without the keyword), `ticket_id` and `ticket_url` in downstream nodes.
 
 ## Troubleshooting
 

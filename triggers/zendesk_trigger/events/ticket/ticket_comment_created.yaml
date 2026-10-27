@@ -49,9 +49,9 @@ parameters:
   type: string
   required: false
   description:
-    en_US: Comma separated keywords (case-insensitive), e.g. "#linear". Trigger only if the comment contains any keyword.
-    zh_Hans: 逗号分隔的关键词（不区分大小写），例如 "#linear"。仅当评论包含任一关键词时触发。
-    ja_JP: カンマ区切りのキーワード（大文字小文字を区別しない）。例 "#linear"。コメントにいずれかが含まれる場合のみトリガーします。
+    en_US: Comma separated keywords (case-insensitive), e.g. "#escalate". Trigger only if the comment contains any keyword.
+    zh_Hans: 逗号分隔的关键词（不区分大小写），例如 "#escalate"。仅当评论包含任一关键词时触发。
+    ja_JP: カンマ区切りのキーワード（大文字小文字を区別しない）。例 "#escalate"。コメントにいずれかが含まれる場合のみトリガーします。
 
 - name: strip_keyword
   label:
@@ -73,9 +73,9 @@ parameters:
       ja_JP: "いいえ"
   default: "true"
   description:
-    en_US: Remove the matched keyword from `clean_body`, so the text can be forwarded (e.g. to a Linear comment) as-is.
-    zh_Hans: 从 `clean_body` 中移除匹配到的关键词，便于直接转发（例如同步为 Linear 评论）。
-    ja_JP: 一致したキーワードを `clean_body` から除去し、そのまま転送（例 Linear コメント）できるようにします。
+    en_US: Remove the matched keyword from `clean_body`, so the comment text can be used as-is in downstream nodes.
+    zh_Hans: 从 `clean_body` 中移除匹配到的关键词，便于在后续节点中直接使用评论内容。
+    ja_JP: 一致したキーワードを `clean_body` から除去し、後続ノードでコメント本文をそのまま使えるようにします。
 
 - name: author_is_staff
   label:
