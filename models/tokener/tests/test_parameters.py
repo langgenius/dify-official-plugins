@@ -7,6 +7,7 @@ import requests
 import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.errors.model import InvokeBadRequestError
 
 from models.llm.llm import TokenerLargeLanguageModel
 
@@ -48,20 +49,13 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
     }
     original = parameters.copy()
     result = response()
-    with (
-        patch("requests.post", return_value=result) as post,
-        patch.object(
-            result,
-            "iter_lines",
-            return_value=iter(
-                [
-                    'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}],'
-                    '"usage":{"prompt_tokens":1,"completion_tokens":1}}',
-                    "data: [DONE]",
-                ]
-            ),
-        ),
-    ):
+    if stream:
+        result._content = (
+            b'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}],'
+            b'"usage":{"prompt_tokens":1,"completion_tokens":1}}\n\ndata: [DONE]\n\n'
+        )
+        result._content_consumed = True
+    with patch("requests.post", return_value=result) as post:
         chunks = list(
             model.invoke(
                 schema.model,
@@ -95,8 +89,13 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
 def test_public_invoke_rejects_invalid_declared_values(model_id, parameters) -> None:
     schema = next(s for s in SCHEMAS if s.model == model_id)
     model = TokenerLargeLanguageModel(model_schemas=[schema])
-    with patch("requests.post") as post, pytest.raises(ValueError):
+    # Reviewed compatibility values now raise a typed model-input error. Native
+    # schema validation still uses the SDK's existing ValueError contract.
+    expected = InvokeBadRequestError if "reasoning_effort" in parameters else ValueError
+    with patch("requests.post") as post, pytest.raises(expected) as error:
         list(model.invoke(schema.model, {"api_key": "test"}, [], parameters))
+    if "reasoning_effort" in parameters:
+        assert "reasoning_effort" in str(error.value)
     post.assert_not_called()
 
 

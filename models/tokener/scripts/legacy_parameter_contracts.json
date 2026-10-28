@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "source_plugins": {
+    "openai": "1.0.8@5676d8eb5d7df5784610e656f49f5fbdc48b81d106a17d8946d9966c1fe73f1b",
+    "anthropic": "0.3.38@fd7fad98a670b4c3c4af699da12bbfba143482519a97c438d6bdea4e247b83dd",
+    "gemini": "0.9.12@9bb9eff3f9c99a8f1f87bdd5e0f178d5493918939dd0e02825ae8383bd0fd7ed",
+    "tongyi": "0.2.26@6c75a6b95954ef3c97f0d3225bad7cbfbff7cdbc82d9425074aae121cc056a64",
+    "x": "0.0.27@895dd0c90fd73ca6a668860a01e4629fbca15f880b1b38a73e36a1ac45a4b8eb"
+  },
+  "wire_contract": {
+    "litellm_version_reviewed": "1.97.0",
+    "gemini_requires_explicit_native_contract_confirmation": true,
+    "google_openai_requires_explicit_contract_confirmation": true,
+    "google_openai_litellm_version_reviewed": "1.103.0-rc.1",
+    "google_openai_litellm_commit": "ccf5e8c93af3a70fb5e5b8bfc67321ba340eaabd",
+    "google_openai_openai_sdk_lock_version": "2.33.0",
+    "google_openai_plugin_http_extra_body_depth": 2,
+    "google_openai_final_rest_extra_body_depth": 1,
+    "sources": [
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/utils.py",
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/llms/vertex_ai/gemini/transformation.py",
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py",
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/llms/dashscope/chat/transformation.py",
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/llms/openai/openai.py",
+      "https://github.com/BerriAI/litellm/blob/v1.97.0/litellm/llms/openai/chat/gpt_transformation.py",
+      "https://github.com/BerriAI/litellm/blob/v1.103.0-rc.1/litellm/utils.py",
+      "https://github.com/BerriAI/litellm/blob/v1.103.0-rc.1/litellm/llms/openai/openai.py",
+      "https://ai.google.dev/gemini-api/docs/openai"
+    ]
+  },
+  "qwen_thinking_models": [
+    "qwen-flash", "qwen-plus-latest", "qwen3-vl-plus", "qwen3.5-flash",
+    "qwen3.5-plus", "qwen3.6-flash", "qwen3.6-plus", "qwen3.7-max", "qwen3.7-plus"
+  ],
+  "local_stream_control_models": [
+    "gpt-4.1-mini-2025-04-14", "gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-5.1",
+    "gpt-5.2", "gpt-5.4", "gpt-5.4-mini", "gpt-5.5", "gpt-5.6-luna",
+    "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-luna", "gpt-6-sol"
+  ],
+  "native_sdk_filtered_sampling_models": ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"],
+  "reasoning_effort_options": {
+    "gpt-5": ["minimal", "low", "medium", "high"],
+    "gpt-5-mini": ["minimal", "low", "medium", "high"],
+    "gpt-5-nano": ["minimal", "low", "medium", "high"],
+    "gpt-5.1": ["none", "low", "medium", "high"],
+    "gpt-5.2": ["none", "low", "medium", "high", "xhigh"],
+    "gpt-5.4": ["none", "low", "medium", "high", "xhigh"],
+    "gpt-5.4-mini": ["none", "low", "medium", "high", "xhigh"],
+    "gpt-5.5": ["none", "low", "medium", "high", "xhigh"],
+    "gpt-5.6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-5.6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-5.6-terra": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
+    "grok-4.3": ["low", "high"],
+    "grok-4.5": ["low", "medium", "high"],
+    "grok-4.6": ["low", "medium", "high", "xhigh"]
+  },
+  "gemini_models": {
+    "gemini-2.5-flash": {"sampling": true, "thinking_budget_max": 24576, "flex_inference": true},
+    "gemini-3-flash-preview": {"sampling": true, "thinking_levels": ["Minimal", "Low", "Medium", "High"], "media_resolution": true, "flex_inference": true},
+    "gemini-3.1-flash-lite": {"sampling": true, "thinking_levels": ["Minimal", "Low", "Medium", "High"], "media_resolution": true, "service_tier": true},
+    "gemini-3.1-pro-preview": {"sampling": true, "thinking_levels": ["Low", "High"], "media_resolution": true, "flex_inference": true},
+    "gemini-3.5-flash": {"thinking_levels": ["Minimal", "Low", "Medium", "High"], "media_resolution": true, "service_tier": true},
+    "gemini-3.5-flash-lite": {"thinking_levels": ["Minimal", "Low", "Medium", "High"], "media_resolution": true, "service_tier": true},
+    "gemini-3.7-flash": {"thinking_levels": ["Low", "Medium", "High"], "media_resolution": true, "service_tier": true}
+  },
+  "anthropic_cache_ttl_models": ["claude-opus-4-7"]
+}

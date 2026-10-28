@@ -14,6 +14,9 @@ Existing keys from the same Tokener.ai Console remain valid. The API key must ha
 In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
 Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
 The plugin sends up to 32 texts per embedding request. It does not truncate texts.
+For a one-input request with exactly one result, an explicit `index: null` is treated as index zero.
+Missing indices, non-integer indices, and ambiguous batch responses remain errors.
+This response-format compatibility does not certify retrieval quality or change the input formatting below.
 For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents.
 Existing knowledge indexes can mix prefixed queries with unprefixed document vectors after this update.
 Rebuilding an index alone reuses cached document vectors without the prefix.
@@ -65,6 +68,36 @@ This declaration makes Dify show document controls; it does not enable document 
 The plugin rejects forwarded attachments before it sends an upstream request, including attachments from basic chat apps (EasyUI).
 For any app type, extract the document text and paste it into the message instead of attaching the document.
 In Workflow or Chatflow, you can also connect a Doc Extractor node's text output to the LLM node.
+
+### Forwarded provider parameters
+
+The plugin accepts a reviewed set of parameters from existing Dify providers for
+exact model IDs listed in `scripts/legacy_parameter_contracts.json`. It does not
+resolve model aliases or change an application's selected provider.
+
+This compatibility layer preserves explicit `false` and zero values, consumes
+local streaming controls, and translates supported output limits, reasoning,
+and Qwen thinking controls before the SDK filters model parameters. Transport
+settings, credentials, headers, and arbitrary `extra_body` payloads are not model
+parameters and are rejected.
+
+Gemini-specific controls depend on the actual backend protocol. The packaged
+default does not assume that a model name establishes a native Gemini or Google
+OpenAI-compatible route. A deployment-specific build must verify the backend and
+LiteLLM transport contract before enabling the corresponding adapter. Unsupported
+non-default native tools, media controls, or cache-block conversions fail
+explicitly rather than being silently dropped. This is not complete parameter,
+multimodal, or retrieval-quality equivalence with every source provider.
+
+Chat streaming accepts standard SSE line endings and metadata fields. Malformed
+or truncated streams raise an error instead of completing with an empty answer.
+The plugin requests streaming usage where supported; if a backend omits usage,
+the SDK's existing estimate is not proof of authoritative billing or output-limit
+enforcement. Tokener determines actual charges.
+
+Gemini embedding requests omit the OpenAI-only `user` field, matching the source
+Gemini provider's behavior. The input-format and cache considerations above still
+apply.
 
 ## Sync models
 

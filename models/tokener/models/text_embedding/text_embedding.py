@@ -31,14 +31,31 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                     else "title: none | text: "
                 )
                 payload["input"] = [prefix + text for text in batch]
-            if user:
+            # Dify's Gemini provider does not send the console user ID to
+            # embedContent. Gemini routes reject this OpenAI-only metadata;
+            # tenancy and billing remain scoped by the managed API key.
+            if user and model not in {"gemini-embedding-001", "gemini-embedding-2-preview"}:
                 payload["user"] = user
             response = self._post("embeddings", credentials, payload)
             data = response["data"]
+            # Only one input and one explicit null index are unambiguous. Never
+            # infer ordering for batches, missing fields or other invalid indices.
+            if (
+                len(batch) == 1
+                and isinstance(data, list)
+                and len(data) == 1
+                and isinstance(data[0], dict)
+                and "index" in data[0]
+                and data[0]["index"] is None
+            ):
+                data = [{**data[0], "index": 0}]
             if (
                 not isinstance(data, list)
                 or len(data) != len(batch)
-                or any(type(item["index"]) is not int for item in data)
+                or any(
+                    not isinstance(item, dict) or type(item.get("index")) is not int
+                    for item in data
+                )
                 or sorted(item["index"] for item in data) != list(range(len(batch)))
             ):
                 raise InvokeServerUnavailableError("Tokener.ai returned invalid embedding indices")

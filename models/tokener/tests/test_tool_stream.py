@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -8,6 +8,7 @@ import yaml
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
+from dify_plugin.errors.model import InvokeServerUnavailableError
 
 from models._credentials import ENDPOINT_URL
 from models.llm.llm import TokenerLargeLanguageModel
@@ -24,9 +25,9 @@ def _stream_response(events: list[dict]) -> requests.Response:
     response = requests.Response()
     response.status_code = 200
     response.encoding = "utf-8"
-    response.iter_lines = Mock(
-        return_value=[
-            f"data: {json.dumps(event)}"
+    response._content = (
+        "".join(
+            f"data: {json.dumps(event)}\n\n"
             for event in [
                 *events,
                 {
@@ -38,8 +39,10 @@ def _stream_response(events: list[dict]) -> requests.Response:
                     },
                 },
             ]
-        ]
-    )
+        )
+        + "data: [DONE]\n\n"
+    ).encode()
+    response._content_consumed = True
     return response
 
 
@@ -285,42 +288,38 @@ def test_stream_without_indices_keeps_legacy_single_tool_behavior() -> None:
     _assert_stream_result(chunks, {"call0": ("foo", '{"x":1}')})
 
 
-def test_stream_non_json_termination_preserves_collected_tools() -> None:
+def test_stream_non_json_termination_raises_instead_of_finalizing_collected_tools() -> None:
     response = _stream_response([])
-    response.iter_lines = Mock(
-        return_value=[
-            ": keepalive",
-            "data: [DONE]",
-            'data: {"choices": [{"delta": {"content": "answer", "tool_calls": '
-            '[{"index": 0, "id": "call0", "function": {"name": "foo", "arguments": "{}"}}]}, '
-            '"finish_reason": "tool_calls"}], '
-            '"usage": {"prompt_tokens": 13, "completion_tokens": 7}}',
-            "data: not-json",
-        ]
+    response._content = (
+        b": keepalive\n\n"
+        b'data: {"choices": [{"delta": {"content": "answer", "tool_calls": '
+        b'[{"index": 0, "id": "call0", "function": {"name": "foo", "arguments": "{}"}}]}, '
+        b'"finish_reason": "tool_calls"}], '
+        b'"usage": {"prompt_tokens": 13, "completion_tokens": 7}}\n\n'
+        b"data: not-json\n\n"
     )
+    collected = []
     with patch("requests.post", return_value=response):
-        chunks = list(
-            _model().invoke(
+        with pytest.raises(InvokeServerUnavailableError, match="malformed SSE JSON"):
+            for chunk in _model().invoke(
                 MODEL,
                 {"api_key": "test-key"},
                 [UserPromptMessage(content="Run tools")],
                 {},
                 stream=True,
-            )
-        )
-    assert any(chunk.delta.finish_reason == "Non-JSON encountered." for chunk in chunks)
-    assert [
-        (call.id, call.function.name, call.function.arguments)
-        for chunk in chunks
-        for call in chunk.delta.message.tool_calls
-    ] == [("call0", "foo", "{}")]
-    assert chunks[-1].delta.usage.total_tokens == 20
+            ):
+                collected.append(chunk)
+    assert "".join(chunk.delta.message.content or "" for chunk in collected) == "answer"
+    assert not any(chunk.delta.message.tool_calls or chunk.delta.usage for chunk in collected)
 
 
 def test_stream_upstream_error_is_propagated() -> None:
     response = _stream_response([])
-    response.iter_lines = Mock(return_value=['data: {"error": "upstream rejected request"}'])
-    with patch("requests.post", return_value=response), pytest.raises(ValueError, match="upstream"):
+    response._content = b'data: {"error": "upstream rejected request"}\n\n'
+    with (
+        patch("requests.post", return_value=response),
+        pytest.raises(InvokeServerUnavailableError, match="SSE error envelope"),
+    ):
         list(
             _model().invoke(
                 MODEL,

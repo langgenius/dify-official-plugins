@@ -2,6 +2,7 @@ import json
 import math
 import uuid
 from collections.abc import Generator
+from copy import deepcopy
 
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
@@ -17,6 +18,25 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 
 from models._credentials import ENDPOINT_URL, validate_model_access
+from models.llm._legacy_parameters import (
+    TRANSPORT_FIELDS,
+    legacy_parameter_names,
+    prepare_legacy_parameters,
+)
+from models.llm._sse import ChatCompletionSSEStreamResponse
+
+# A model's public name does not prove that its deployment uses native Gemini.
+# Enable only after verifying the server's reviewed LiteLLM transport contract.
+GEMINI_NATIVE_TRANSPORT_CONFIRMED = False
+GEMINI_GOOGLE_OPENAI_TRANSPORT_CONFIRMED = False
+
+
+class _CompatibilityParameters(dict):
+    """Request-local state, never a JSON key or shared model-instance attribute."""
+
+    def __init__(self, filtered: dict, compatibility_inputs: dict):
+        super().__init__(filtered)
+        self.compatibility_inputs = deepcopy(compatibility_inputs)
 
 
 def _has_complete_arguments(arguments: str) -> bool:
@@ -145,11 +165,44 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
                 "In Workflow or Chatflow, connect a Doc Extractor node's text output "
                 "to the LLM node."
             )
+        rules = self.get_parameter_rules(model, credentials)
+        declared = {rule.name for rule in rules} | {
+            rule.use_template for rule in rules if rule.use_template
+        }
+        if isinstance(model_parameters, _CompatibilityParameters):
+            # SDK wrappers may legitimately remove/adjust already-filtered native
+            # values. Keep those changes; restore only the compatibility inputs
+            # that would otherwise have been lost to the SDK's schema allowlist.
+            parameters = {**model_parameters, **deepcopy(model_parameters.compatibility_inputs)}
+            adapt = True
+        else:
+            parameters = deepcopy(model_parameters)
+            adapt = bool(legacy_parameter_names(model) & parameters.keys())
+        forbidden = TRANSPORT_FIELDS & parameters.keys()
+        if forbidden:
+            raise InvokeBadRequestError("Transport fields are not model parameters")
+        if adapt:
+            plan = prepare_legacy_parameters(
+                model,
+                parameters,
+                declared_parameters=declared,
+                gemini_native_contract=GEMINI_NATIVE_TRANSPORT_CONFIRMED,
+                gemini_google_openai_contract=GEMINI_GOOGLE_OPENAI_TRANSPORT_CONFIRMED,
+                has_custom_tools=bool(tools),
+            )
+            # Call the base SDK filter, not our pre-validation hook a second time.
+            filtered = super()._validate_and_filter_model_parameters(
+                model, plan.sdk_parameters, credentials
+            )
+            if plan.sdk_parameters.get("tool_choice") is not None:
+                filtered["tool_choice"] = plan.sdk_parameters["tool_choice"]
+            parameters = {**filtered, **plan.wire_overrides}
+            stream = plan.effective_stream(stream)
         return super()._invoke(
             model=model,
             credentials=self._model_credentials(model, credentials),
             prompt_messages=prompt_messages,
-            model_parameters=model_parameters,
+            model_parameters=parameters,
             tools=tools,
             stop=stop,
             stream=stream,
@@ -157,7 +210,7 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         )
 
     def _transform_invoke_error(self, error: Exception) -> InvokeError:
-        if isinstance(error, InvokeBadRequestError):
+        if isinstance(error, InvokeError):
             return error
         return super()._transform_invoke_error(error)
 
@@ -168,6 +221,7 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         response: requests.Response,
         prompt_messages: list[PromptMessage],
     ) -> Generator:
+        response = ChatCompletionSSEStreamResponse(response)
         if credentials.get("function_calling_type") != "tool_call":
             yield from super()._handle_generate_stream_response(
                 model, credentials, response, prompt_messages
@@ -217,11 +271,33 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
                     isinstance(value, float) and not math.isfinite(value)
                 ):
                     raise ValueError(f"Invalid numeric parameter: {name}")
-        filtered = super()._validate_and_filter_model_parameters(
-            model, model_parameters, credentials
-        )
-        if model_parameters.get("tool_choice") is not None:
-            filtered["tool_choice"] = model_parameters["tool_choice"]
+        forbidden = TRANSPORT_FIELDS & model_parameters.keys()
+        if forbidden:
+            raise InvokeBadRequestError("Transport fields are not model parameters")
+        compatibility_inputs = None
+        parameters = deepcopy(model_parameters)
+        if legacy_parameter_names(model) & parameters.keys():
+            # This hook has no tools argument. Validate values now, but defer
+            # deployment gating/tool precedence until _invoke has the actual tools.
+            # Treating custom tools as present prevents premature native-tool
+            # rejection for a combination the source plugin disables itself.
+            preliminary = prepare_legacy_parameters(
+                model,
+                parameters,
+                declared_parameters=declared,
+                gemini_native_contract=True,
+                has_custom_tools=True,
+                defer_schema_tool_conflict=True,
+            )
+            compatibility_inputs = {
+                name: parameters[name] for name in preliminary.consumed_parameters
+            }
+            parameters = preliminary.sdk_parameters
+        filtered = super()._validate_and_filter_model_parameters(model, parameters, credentials)
+        if parameters.get("tool_choice") is not None:
+            filtered["tool_choice"] = parameters["tool_choice"]
+        if compatibility_inputs is not None:
+            return _CompatibilityParameters(filtered, compatibility_inputs)
         return filtered
 
     def _generate(
@@ -249,6 +325,10 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters = {
                 key: value for key, value in model_parameters.items() if key != "tool_choice"
             }
+        if stream:
+            # Ask for authoritative usage; do not synthesize a usage frame if the
+            # server does not send it. SDK's existing fallback remains unchanged.
+            model_parameters["stream_options"] = {"include_usage": True}
         return super()._generate(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
