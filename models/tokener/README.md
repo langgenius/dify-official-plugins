@@ -38,8 +38,7 @@ Failed documents remain in `error` status without automatic retries.
 Resolve document errors after each switch.
 Dify Cloud users cannot clear this cache themselves. Contact Dify support before updating an affected knowledge base.
 The effect of mixing old and new vectors on retrieval quality has not been measured.
-For `gemini-embedding-001`, query and document inputs still use the same request format.
-The plugin does not yet preserve the retrieval task type for this model.
+For `gemini-embedding-001`, the plugin sends `task_type=RETRIEVAL_QUERY` for queries and `task_type=RETRIEVAL_DOCUMENT` for documents. The input text stays unchanged.
 
 Provider, LLM, and embedding validation use authenticated `GET /v1/models`.
 Rerank validation sends a small rerank request. Speech validation sends demo audio or a short speech request.

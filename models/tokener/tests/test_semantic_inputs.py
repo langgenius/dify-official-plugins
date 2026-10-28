@@ -89,6 +89,34 @@ def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, para
 
 
 @pytest.mark.parametrize(
+    "input_type,task_type",
+    [
+        (EmbeddingInputType.QUERY, "RETRIEVAL_QUERY"),
+        (EmbeddingInputType.DOCUMENT, "RETRIEVAL_DOCUMENT"),
+    ],
+)
+def test_embedding_001_public_invoke_preserves_retrieval_purpose(input_type, task_type):
+    model_id = "gemini-embedding-001"
+    model = TokenerTextEmbeddingModel(model_schemas=[schema("text_embedding", model_id)])
+    with patch(
+        "requests.post",
+        return_value=response(
+            {
+                "data": [{"index": 0, "embedding": [0.1, 0.2]}],
+                "usage": {"total_tokens": 777},
+            }
+        ),
+    ) as post:
+        result = model.invoke(
+            model_id, {"api_key": "test"}, ["same text"], input_type=input_type
+        )
+    body = post.call_args.kwargs["json"]
+    assert body["input"] == ["same text"]
+    assert body["task_type"] == task_type
+    assert result.usage.tokens == 777
+
+
+@pytest.mark.parametrize(
     "input_type,prefix",
     [
         (EmbeddingInputType.QUERY, "task: search result | query: "),
