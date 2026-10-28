@@ -60,11 +60,13 @@ Other GPT-5, GPT-6, and o-series models expose no unverified sampling or reasoni
 Claude, Gemini, Grok, Qwen, DeepSeek, GLM, Kimi, and MiniMax family rules expose sampling only for models without reasoning capability.
 Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
 
-Qwen-Long accepts text through Tokener.ai. Its schema declares `document` so Dify forwards attachments to the plugin for an explicit error.
-This declaration makes Dify show document controls; it does not enable document processing through Tokener.ai.
-The plugin rejects forwarded attachments before it sends an upstream request, including attachments from basic chat apps (EasyUI).
-For any app type, extract the document text and paste it into the message instead of attaching the document.
-In Workflow or Chatflow, you can also connect a Doc Extractor node's text output to the LLM node.
+Qwen-Long sends document attachments to the provider for native document processing.
+Supported formats are TXT, DOCX, PDF, XLSX, EPUB, MOBI, MD, CSV, JSON, BMP, PNG, JPG, JPEG, and GIF.
+The plugin downloads Dify document URLs and sends the original bytes as base64 data through the existing chat endpoint.
+The complete JSON request must fit within 32 MiB, including base64 encoding, messages, and parameters.
+Each request reserves credit for up to 10 million input tokens and the selected output limit.
+Low balances can prevent a small document request. Final charges use measured token usage and release unused credit.
+Streaming document requests include token usage.
 
 ## Sync models
 
@@ -112,6 +114,11 @@ An empty stream raises an error. Supported formats are `mp3`, `aac`, `opus`, and
 Audio definitions appear only when the snapshot contains matching available models.
 Live audio generation, Dify playback, and production latency remain unverified.
 A segment without output for more than 120 seconds can exceed the serverless idle limit.
+
+When Tokener returns a JSON error message, document requests show its sanitized
+text with the HTTP status. Messages that identify balance or rate-limit failures
+remain distinct. Credential values and bearer tokens are redacted. Non-JSON
+error pages use a generic HTTP-status message.
 
 ## Support
 

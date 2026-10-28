@@ -1,7 +1,7 @@
 import base64
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
@@ -12,7 +12,6 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import InvokeBadRequestError
 
 from models.llm.llm import TokenerLargeLanguageModel
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
@@ -34,7 +33,7 @@ def response(body):
 
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("attachment", ["url", "base64_data"])
-def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment):
+def test_qwen_long_sends_document_and_preserves_measured_usage(stream, attachment):
     model = TokenerLargeLanguageModel(model_schemas=[schema("llm", "qwen-long")])
     document = DocumentPromptMessageContent(
         format="pdf",
@@ -48,9 +47,43 @@ def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment)
         },
     )
     messages = [UserPromptMessage(content=[TextPromptMessageContent(data="Summarize"), document])]
-    with patch("requests.post") as post, pytest.raises(InvokeBadRequestError):
-        list(model.invoke("qwen-long", {"api_key": "test"}, messages, {}, stream=stream))
-    post.assert_not_called()
+    result = response(
+        {
+            "model": "qwen-long",
+            "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1234, "completion_tokens": 7, "total_tokens": 1241},
+        }
+    )
+    result.iter_lines = Mock(
+        return_value=[
+            'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":null}]}',
+            'data: {"choices":[{"delta":{},"finish_reason":"stop"}],'
+            '"usage":{"prompt_tokens":1234,"completion_tokens":7,"total_tokens":1241}}',
+            "data: [DONE]",
+        ]
+    )
+    result._content_consumed = True
+    download = requests.Response()
+    download.status_code = 200
+    download._content = b"%PDF-1.7 unique document fact"
+    download._content_consumed = True
+    with (
+        patch("requests.post", return_value=result) as post,
+        patch("requests.get", return_value=download) as get,
+    ):
+        chunks = list(model.invoke("qwen-long", {"api_key": "test"}, messages, {}, stream=stream))
+    body = json.loads(post.call_args.kwargs["data"])
+    uploaded = body["messages"][0]["content"][1]["file"]
+    assert (
+        base64.b64decode(uploaded["file_data"].split(",", 1)[1]) == b"%PDF-1.7 unique document fact"
+    )
+    assert uploaded["filename"].endswith(".pdf")
+    if stream:
+        assert body["stream_options"] == {"include_usage": True}
+    usage = chunks[-1].delta.usage
+    assert usage.prompt_tokens == 1234
+    assert usage.completion_tokens == 7
+    assert get.call_count == (1 if attachment == "url" else 0)
     assert messages[0].content[1] is document
 
 
@@ -140,7 +173,7 @@ def test_catalog_sync_retains_gpt_4o_mini_parameter_contract():
     assert rules["top_p"].min == 0
 
 
-def test_catalog_sync_keeps_qwen_long_document_rejection_reachable():
+def test_catalog_sync_keeps_qwen_long_document_input_enabled():
     model = {
         "id": "qwen-long",
         "label": "qwen-long",

@@ -10,13 +10,13 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultC
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
-    PromptMessageContentType,
     PromptMessageFunction,
     PromptMessageTool,
 )
 from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 
 from models._credentials import ENDPOINT_URL, validate_model_access
+from models.llm.documents import generate_documents, has_documents, prepare_documents
 
 
 def _has_complete_arguments(arguments: str) -> bool:
@@ -132,19 +132,8 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        if model == "qwen-long" and any(
-            content.type == PromptMessageContentType.DOCUMENT
-            for message in prompt_messages
-            if isinstance(message.content, list)
-            for content in message.content
-        ):
-            raise InvokeBadRequestError(
-                "Tokener.ai cannot process document attachments with qwen-long. "
-                "Extract the document text and paste it into the message "
-                "instead of attaching the document. "
-                "In Workflow or Chatflow, connect a Doc Extractor node's text output "
-                "to the LLM node."
-            )
+        if model == "qwen-long":
+            prompt_messages = prepare_documents(prompt_messages)
         return super()._invoke(
             model=model,
             credentials=self._model_credentials(model, credentials),
@@ -249,6 +238,10 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters = {
                 key: value for key, value in model_parameters.items() if key != "tool_choice"
             }
+        if model == "qwen-long" and has_documents(prompt_messages):
+            return generate_documents(
+                self, model, credentials, prompt_messages, model_parameters, stop, stream, user
+            )
         return super()._generate(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
