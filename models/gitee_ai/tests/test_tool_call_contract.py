@@ -3,12 +3,12 @@ import json
 import pytest
 import requests
 from dify_plugin.entities.model.llm import LLMUsage
-from dify_plugin.errors.model import InvokeError
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import InvokeError
 from models.llm import llm as module
 
 
@@ -152,7 +152,13 @@ def test_tool_calls_keep_their_arguments_ids_and_results(
         ("{}", "weather", None, 'data: {"broken":', False),
         ("{}", "weather", None, 'data: {"broken":\n\n', False),
         ("{}", "weather", "tool_calls", 'data: {"broken":\n\n', False),
-        ("{}", "weather", "tool_calls", 'data: {"error":{"message":"failed"}}\n\n', False),
+        (
+            "{}",
+            "weather",
+            "tool_calls",
+            'data: {"error":{"message":"failed"}}\n\n',
+            False,
+        ),
     ],
 )
 def test_sse_tool_calls_require_complete_objects_and_success(
@@ -164,6 +170,7 @@ def test_sse_tool_calls_require_complete_objects_and_success(
         "type": "function",
         "function": {"name": name, "arguments": arguments},
     }
+
     def frame(delta, reason=None):
         return {
             "id": "response",

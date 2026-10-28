@@ -3,12 +3,12 @@ import json
 import httpx
 import pytest
 from dify_plugin.entities.model.llm import LLMUsage
-from dify_plugin.errors.model import InvokeError
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import InvokeError
 from legacy.client import MaaSClient
 from models.client import ArkClientV3
 from models.llm.llm import VolcengineMaaSLargeLanguageModel
@@ -207,7 +207,13 @@ def test_legacy_ids_are_independent_of_function_names(monkeypatch, with_ids):
         ("{}", "weather", None, 'data: {"broken":', False),
         ("{}", "weather", None, 'data: {"broken":\n\n', False),
         ("{}", "weather", "tool_calls", 'data: {"broken":\n\n', False),
-        ("{}", "weather", "tool_calls", 'data: {"error":{"message":"failed"}}\n\n', False),
+        (
+            "{}",
+            "weather",
+            "tool_calls",
+            'data: {"error":{"message":"failed"}}\n\n',
+            False,
+        ),
     ],
 )
 def test_sse_tool_calls_require_complete_objects_and_success(
@@ -219,6 +225,7 @@ def test_sse_tool_calls_require_complete_objects_and_success(
         "type": "function",
         "function": {"name": name, "arguments": arguments},
     }
+
     def frame(delta, reason=None):
         return {
             "id": "response",
@@ -234,17 +241,23 @@ def test_sse_tool_calls_require_complete_objects_and_success(
         frames.append(frame({}, finish_reason))
     wire = "".join(f"data: {json.dumps(frame)}\n\n" for frame in frames) + tail
     client = ArkClientV3(
-        api_key="test", http_client=httpx.Client(transport=httpx.MockTransport(
-            lambda request: httpx.Response(200, text=wire, headers={"content-type": "text/event-stream"})
-        ))
+        api_key="test",
+        http_client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200, text=wire, headers={"content-type": "text/event-stream"}
+                )
+            )
+        ),
     )
     client.endpoint_id = "endpoint"
     monkeypatch.setattr(ArkClientV3, "from_credentials", lambda credentials: client)
     llm = VolcengineMaaSLargeLanguageModel([])
     llm._calc_response_usage = lambda *args, **kwargs: LLMUsage.empty_usage()
-    chunks = llm._generate_v3("model", {}, [UserPromptMessage(content="Weather?")], {}, stream=True)
+    chunks = llm._generate_v3(
+        "model", {}, [UserPromptMessage(content="Weather?")], {}, stream=True
+    )
     try:
-
         emitted = []
         if succeeds:
             for chunk in chunks:

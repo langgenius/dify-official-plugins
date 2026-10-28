@@ -2,14 +2,14 @@ import json
 
 import pytest
 import requests
-from dashscope.api_entities.http_request import HttpRequest
 from dashscope.api_entities.dashscope_response import (
     DashScopeAPIResponse,
     GenerationResponse,
 )
+from dashscope.api_entities.http_request import HttpRequest
 from dify_plugin.entities.model.llm import LLMUsage
-from dify_plugin.errors.model import InvokeError
 from dify_plugin.entities.model.message import AssistantPromptMessage, ToolPromptMessage
+from dify_plugin.errors.model import InvokeError
 from models.llm.llm import TongyiLargeLanguageModel
 
 
@@ -129,7 +129,13 @@ def test_blocking_calls_without_ids_receive_distinct_ids():
         ("{}", "weather", None, 'data: {"broken":', False),
         ("{}", "weather", None, 'data: {"broken":\n\n', False),
         ("{}", "weather", "tool_calls", 'data: {"broken":\n\n', False),
-        ("{}", "weather", "tool_calls", 'event:error\nstatus:500\ndata: {"code":"InternalError","message":"failed"}\n\n', False),
+        (
+            "{}",
+            "weather",
+            "tool_calls",
+            'event:error\nstatus:500\ndata: {"code":"InternalError","message":"failed"}\n\n',
+            False,
+        ),
     ],
 )
 def test_sse_tool_calls_require_complete_objects_and_success(
@@ -141,11 +147,20 @@ def test_sse_tool_calls_require_complete_objects_and_success(
         "type": "function",
         "function": {"name": name, "arguments": arguments},
     }
+
     def frame(calls, reason="null"):
         return {
             "output": {
-                "choices": [{"message": {"role": "assistant", "content": "", "tool_calls": calls},
-                             "finish_reason": reason}]
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": calls,
+                        },
+                        "finish_reason": reason,
+                    }
+                ]
             },
             "usage": {"input_tokens": 10, "output_tokens": 4},
         }
@@ -156,10 +171,15 @@ def test_sse_tool_calls_require_complete_objects_and_success(
     response = requests.Response()
     response.status_code = 200
     response.headers["content-type"] = "text/event-stream"
-    response._content = ("".join(f"data: {json.dumps(frame)}\n\n" for frame in frames) + tail).encode()
+    response._content = (
+        "".join(f"data: {json.dumps(frame)}\n\n" for frame in frames) + tail
+    ).encode()
     response._content_consumed = True
     request = HttpRequest("https://example.test/", "test", "POST", stream=True)
-    decoded = (GenerationResponse.from_api_response(item) for item in request._handle_response(response))
+    decoded = (
+        GenerationResponse.from_api_response(item)
+        for item in request._handle_response(response)
+    )
     llm = TongyiLargeLanguageModel([])
     llm._calc_response_usage = lambda *args: LLMUsage.empty_usage()
     chunks = llm._handle_generate_stream_response("qwen", {}, decoded, [], True)
