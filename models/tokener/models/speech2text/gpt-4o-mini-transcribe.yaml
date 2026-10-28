@@ -1,0 +1,9 @@
+model: "gpt-4o-mini-transcribe"
+label:
+  en_US: "gpt-4o-mini-transcribe"
+  zh_Hans: "gpt-4o-mini-transcribe"
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: "mp3,mp4,mpeg,mpga,m4a,wav,webm"
+deprecated: false

@@ -410,6 +410,8 @@ class SnowflakeQueryTool(Tool):
                 account=account_name,
                 authenticator="oauth",
                 token=access_token,
+                # Keep each user's OAuth token out of the shared disk cache.
+                client_store_temporary_credential=False,
                 warehouse=warehouse,
                 database=database,
                 schema=schema,

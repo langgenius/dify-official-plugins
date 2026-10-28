@@ -60,6 +60,106 @@ parameters:
       zh_Hant: 要列出事件的行事曆 ID；預設為主行事曆
     llm_description: The ID of the calendar to list events from. If omitted, events from the primary calendar are returned
     form: llm
+  - name: calendar_group_id
+    type: string
+    required: false
+    label:
+      en_US: Calendar Group ID
+      ko_KR: 캘린더 그룹 ID
+      zh_Hans: 日历组 ID
+      pt_BR: ID do Grupo de Calendários
+      ja_JP: カレンダー グループ ID
+      zh_Hant: 行事曆群組 ID
+    human_description:
+      en_US: 'Optional: search every calendar in this group and merge the results; ignored when Calendar ID is set'
+      ko_KR: '선택: 이 그룹의 모든 캘린더를 검색해 결과를 합칩니다. 캘린더 ID를 지정하면 무시됩니다'
+      zh_Hans: 可选：在此日历组的所有日历中查找并合并结果；填写了日历 ID 时忽略
+      pt_BR: 'Opcional: pesquisa todos os calendários deste grupo e junta os resultados; ignorado quando o ID do Calendário é informado'
+      ja_JP: '任意: このグループのすべてのカレンダーを検索して結果をまとめます。カレンダー ID を指定した場合は無視されます'
+      zh_Hant: 選填：在此行事曆群組的所有行事曆中查找並合併結果；填寫了行事曆 ID 時忽略
+    llm_description: Optional ID of a calendar group from List Calendar Groups. Every calendar in the group is queried and the events are merged, each tagged with its calendar and owner. Ignored when calendar_id is given.
+    form: llm
+  - name: mailbox
+    type: string
+    required: false
+    label:
+      en_US: Mailbox
+      ko_KR: 사서함
+      zh_Hans: 邮箱
+      pt_BR: Caixa de Correio
+      ja_JP: メールボックス
+      zh_Hant: 信箱
+    human_description:
+      en_US: "Service Principal only: the mailbox to act on (user principal name or user ID). Leave empty to use the credential's default mailbox."
+      ko_KR: "서비스 주체 전용: 작업할 사서함(사용자 계정 이름 또는 사용자 ID). 비워 두면 자격 증명의 기본 사서함을 사용합니다."
+      zh_Hans: "仅限 Service Principal：要操作的邮箱（用户主体名称或用户 ID）。留空则使用凭据中的默认邮箱。"
+      pt_BR: "Somente Service Principal: a caixa de correio em que atuar (nome principal do usuário ou ID do usuário). Deixe vazio para usar a caixa padrão da credencial."
+      ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
+      zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
+    form: form
+output_schema:
+  type: object
+  properties:
+    events:
+      type: array
+      description: Events
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Event ID
+          subject:
+            type: string
+            description: Subject
+          start:
+            type: string
+            description: Start date-time
+          end:
+            type: string
+            description: End date-time
+          time_zone:
+            type: string
+            description: Time zone of start and end
+          location:
+            type: string
+            description: Location
+          organizer_name:
+            type: string
+            description: Organizer name
+          organizer_address:
+            type: string
+            description: Organizer email
+          web_link:
+            type: string
+            description: Link to the event in Outlook
+          calendar_name:
+            type: string
+            description: Calendar the event came from (calendar-group searches)
+          owner_address:
+            type: string
+            description: Owner of that calendar (calendar-group searches)
+    count:
+      type: integer
+      description: Number of items returned
+    errors:
+      type: array
+      description: Calendars of the group that could not be read
+      items:
+        type: object
+        properties:
+          calendar_name:
+            type: string
+            description: Calendar name
+          error:
+            type: string
+            description: Why it could not be read
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_events.py

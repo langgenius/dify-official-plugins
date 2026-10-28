@@ -5,8 +5,11 @@ import urllib.parse
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import address_of, GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 class GetMessageTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Get a specific message from Outlook
@@ -14,11 +17,14 @@ class GetMessageTool(Tool):
         try:
             # Get parameters
             message_id = tool_parameters.get("message_id")                
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
                 
             try:
                 # Get message using REST API
@@ -28,6 +34,16 @@ class GetMessageTool(Tool):
                     yield self.create_text_message("Message not found.")
                     return
                     
+                self._out.update(
+                    message_id=message["id"] or "", conversation_id=message.get("conversation_id") or "", subject=message["subject"] or "",
+                    from_name=address_of(message["sender"])[0], from_address=address_of(message["sender"])[1],
+                    to=[address_of(r)[1] for r in message["to_recipients"]], cc=[address_of(r)[1] for r in message["cc_recipients"]],
+                    received_datetime=message["received"] or "", body=message["body"] or "", body_type=message["body_type"] or "",
+                    web_link=message.get("web_link") or "",
+                    attachment_ids=[a.get("id") or "" for a in message["attachments"]],
+                    attachment_names=[a.get("name") or "" for a in message["attachments"]],
+                    success=True,
+                )
                 # Create response
                 yield self.create_text_message(f"Retrieved message: {message['subject']}")
                 yield self.create_json_message(message)
@@ -48,7 +64,7 @@ class GetMessageTool(Tool):
             # URL encode the message ID to handle special characters
             encoded_message_id = urllib.parse.quote(message_id, safe='')
             
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_message_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_message_id}"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
@@ -77,7 +93,9 @@ class GetMessageTool(Tool):
                 "received": message_data.get("receivedDateTime"),
                 "body": message_data.get("body", {}).get("content", ""),
                 "body_type": message_data.get("body", {}).get("contentType", "text"),
-                "has_attachments": message_data.get("hasAttachments", False)
+                "has_attachments": message_data.get("hasAttachments", False),
+                "conversation_id": message_data.get("conversationId"),
+                "web_link": message_data.get("webLink"),
             }
             
             # Get attachments if any
@@ -100,7 +118,7 @@ class GetMessageTool(Tool):
             # URL encode the message ID to handle special characters
             encoded_message_id = urllib.parse.quote(message_id, safe='')
             
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_message_id}/attachments"
+            url = f"{self._mailbox_base}/messages/{encoded_message_id}/attachments"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"

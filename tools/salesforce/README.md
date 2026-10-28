@@ -113,3 +113,10 @@ For issues, questions, or contributions, please contact the plugin author or ref
 
 Please refer to the LICENSE file for licensing information.
 
+
+
+### OAuth client credentials
+
+Choose **OAuth client credentials** to avoid legacy SOAP login. Enable the client credentials grant in a Salesforce connected app or external client app, configure its Run As integration user and API/Chatter permissions, and supply its client ID and secret. Domain must be your My Domain prefix, for example `organization.my` or sandbox `organization--sandbox.sandbox.my`, without `https://` or `.salesforce.com`. Username, password and security token are unused in this mode. Chatter uses the authenticated integration user's ID when Parent ID is omitted.
+
+Existing credentials keep the default username/password/security-token mode. Select OAuth explicitly to migrate. Token access does not grant object or Chatter permissions; configure those in Salesforce.

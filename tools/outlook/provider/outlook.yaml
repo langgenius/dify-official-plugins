@@ -16,6 +16,144 @@ identity:
     zh_Hant: 與 Outlook 郵件互動
   icon: icon.svg
   icon_dark: icon-dark.svg
+# Service Principal (app-only): no user sign-in, the app acts with application permissions.
+credentials_for_provider:
+  tenant_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Tenant ID
+      ko_KR: 테넌트 ID
+      zh_Hans: 租户 ID
+      pt_BR: ID do Locatário
+      ja_JP: テナント ID
+      zh_Hant: 租戶 ID
+    placeholder:
+      en_US: Directory (tenant) ID, e.g. 00000000-0000-0000-0000-000000000000
+      ko_KR: "디렉터리(테넌트) ID, 예: 00000000-0000-0000-0000-000000000000"
+      zh_Hans: 目录（租户）ID，例如 00000000-0000-0000-0000-000000000000
+      pt_BR: ID do diretório (locatário), ex. 00000000-0000-0000-0000-000000000000
+      ja_JP: "ディレクトリ（テナント）ID、例: 00000000-0000-0000-0000-000000000000"
+      zh_Hant: 目錄（租用戶）ID，例如 00000000-0000-0000-0000-000000000000
+    help:
+      en_US: "Service Principal sign-in needs your directory's own tenant ID; 'common' does not work. Find it under Microsoft Entra ID > Overview."
+      ko_KR: "서비스 주체 로그인에는 디렉터리의 테넌트 ID가 필요하며 'common'은 사용할 수 없습니다. Microsoft Entra ID > 개요에서 확인하세요."
+      zh_Hans: "Service Principal 登录必须使用您目录自己的租户 ID，不能用 'common'。可在 Microsoft Entra ID > 概述中找到。"
+      pt_BR: "O login com Service Principal precisa do ID do locatário do seu diretório; 'common' não funciona. Encontre-o em Microsoft Entra ID > Visão geral."
+      ja_JP: "サービス プリンシパルでのサインインには、ディレクトリ固有のテナント ID が必要です（'common' は使えません）。Microsoft Entra ID > 概要 で確認できます。"
+      zh_Hant: "Service Principal 登入必須使用您目錄自己的租用戶 ID，不能用 'common'。可在 Microsoft Entra ID > 概觀中找到。"
+    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      ko_KR: 클라이언트 ID
+      zh_Hans: 客户端 ID
+      pt_BR: ID do Cliente
+      ja_JP: クライアント ID
+      zh_Hant: 客戶端 ID
+    placeholder:
+      en_US: Application (client) ID of the app registration
+      ko_KR: 앱 등록의 애플리케이션(클라이언트) ID
+      zh_Hans: 应用注册的应用程序（客户端）ID
+      pt_BR: ID do aplicativo (cliente) do registro de aplicativo
+      ja_JP: アプリ登録のアプリケーション（クライアント）ID
+      zh_Hant: 應用程式註冊的應用程式（用戶端）ID
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      ko_KR: 클라이언트 시크릿
+      zh_Hans: 客户端密钥
+      pt_BR: Segredo do Cliente
+      ja_JP: クライアントシークレット
+      zh_Hant: 客戶端密鑰
+    placeholder:
+      en_US: Client secret value of the app registration
+      ko_KR: 앱 등록의 클라이언트 시크릿 값
+      zh_Hans: 应用注册的客户端密钥值
+      pt_BR: Valor do segredo do cliente do registro de aplicativo
+      ja_JP: アプリ登録のクライアントシークレットの値
+      zh_Hant: 應用程式註冊的客戶端密鑰值
+    help:
+      en_US: "The app needs Microsoft Graph application permissions (Mail.ReadWrite, Mail.Send, Calendars.ReadWrite) with admin consent."
+      ko_KR: "앱에 관리자 동의가 부여된 Microsoft Graph 애플리케이션 권한(Mail.ReadWrite, Mail.Send, Calendars.ReadWrite)이 필요합니다."
+      zh_Hans: "应用需要已获管理员同意的 Microsoft Graph 应用程序权限（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）。"
+      pt_BR: "O aplicativo precisa das permissões de aplicativo do Microsoft Graph (Mail.ReadWrite, Mail.Send, Calendars.ReadWrite) com consentimento do administrador."
+      ja_JP: "アプリには、管理者の同意を付与した Microsoft Graph のアプリケーションのアクセス許可（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）が必要です。"
+      zh_Hant: "應用程式需要已獲管理員同意的 Microsoft Graph 應用程式權限（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）。"
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  mailbox:
+    type: text-input
+    required: true
+    label:
+      en_US: Default Mailbox
+      ko_KR: 기본 사서함
+      zh_Hans: 默认邮箱
+      pt_BR: Caixa de Correio Padrão
+      ja_JP: 既定のメールボックス
+      zh_Hant: 預設信箱
+    placeholder:
+      en_US: e.g. support@contoso.com
+      ko_KR: "예: support@contoso.com"
+      zh_Hans: 例如 support@contoso.com
+      pt_BR: ex. support@contoso.com
+      ja_JP: "例: support@contoso.com"
+      zh_Hant: 例如 support@contoso.com
+    help:
+      en_US: "The mailbox (user principal name or user ID) the tools act on. A tool's Mailbox parameter overrides it."
+      ko_KR: "도구가 작업할 사서함(사용자 계정 이름 또는 사용자 ID)입니다. 도구의 사서함 매개변수가 우선합니다."
+      zh_Hans: "工具要操作的邮箱（用户主体名称或用户 ID）。工具的“邮箱”参数会覆盖此值。"
+      pt_BR: "A caixa de correio (nome principal do usuário ou ID do usuário) em que as ferramentas atuam. O parâmetro Caixa de Correio da ferramenta tem prioridade."
+      ja_JP: "ツールが操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。ツールの「メールボックス」パラメーターが優先されます。"
+      zh_Hant: "工具要操作的信箱（使用者主體名稱或使用者 ID）。工具的「信箱」參數會覆蓋此值。"
+  cloud:
+    type: select
+    required: false
+    default: global
+    label:
+      en_US: Microsoft Cloud
+      ko_KR: Microsoft 클라우드
+      zh_Hans: Microsoft 云
+      pt_BR: Nuvem da Microsoft
+      ja_JP: Microsoft クラウド
+      zh_Hant: Microsoft 雲端
+    options:
+      - value: global
+        label:
+          en_US: Global (graph.microsoft.com)
+          ko_KR: 글로벌 (graph.microsoft.com)
+          zh_Hans: 全球 (graph.microsoft.com)
+          pt_BR: Global (graph.microsoft.com)
+          ja_JP: グローバル (graph.microsoft.com)
+          zh_Hant: 全球 (graph.microsoft.com)
+      - value: usgov
+        label:
+          en_US: US Government (graph.microsoft.us)
+          ko_KR: 미국 정부 (graph.microsoft.us)
+          zh_Hans: 美国政府 (graph.microsoft.us)
+          pt_BR: Governo dos EUA (graph.microsoft.us)
+          ja_JP: 米国政府 (graph.microsoft.us)
+          zh_Hant: 美國政府 (graph.microsoft.us)
+      - value: dod
+        label:
+          en_US: US Government DoD (dod-graph.microsoft.us)
+          ko_KR: 미국 정부 DoD (dod-graph.microsoft.us)
+          zh_Hans: 美国政府 DoD (dod-graph.microsoft.us)
+          pt_BR: Governo dos EUA DoD (dod-graph.microsoft.us)
+          ja_JP: 米国政府 DoD (dod-graph.microsoft.us)
+          zh_Hant: 美國政府 DoD (dod-graph.microsoft.us)
+      - value: china
+        label:
+          en_US: China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)
+          ko_KR: 중국, 21Vianet 운영 (microsoftgraph.chinacloudapi.cn)
+          zh_Hans: 中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)
+          pt_BR: China, operado pela 21Vianet (microsoftgraph.chinacloudapi.cn)
+          ja_JP: 中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)
+          zh_Hant: 中國，世紀互聯營運 (microsoftgraph.chinacloudapi.cn)
 oauth_schema:
   client_schema:
     - name: "client_id"
@@ -94,6 +232,57 @@ oauth_schema:
         ja_JP: "Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください"
         zh_Hant: "請從 Azure 入口網站 > Azure Active Directory > 屬性取得您的租戶 ID"
       url: "https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties"
+    - name: "cloud"
+      type: "select"
+      required: false
+      default: global
+      label:
+        en_US: "Microsoft Cloud"
+        ko_KR: "Microsoft 클라우드"
+        zh_Hans: "Microsoft 云"
+        pt_BR: "Nuvem da Microsoft"
+        ja_JP: "Microsoft クラウド"
+        zh_Hant: "Microsoft 雲端"
+      help:
+        en_US: "Choose a national cloud only if your Microsoft 365 tenant lives there; it changes the sign-in and Graph endpoints."
+        ko_KR: "Microsoft 365 테넌트가 국가별 클라우드에 있는 경우에만 선택하세요. 로그인 및 Graph 엔드포인트가 바뀝니다."
+        zh_Hans: "仅当您的 Microsoft 365 租户位于国家云时才选择；会同时更改登录和 Graph 端点。"
+        pt_BR: "Escolha uma nuvem nacional somente se o seu locatário do Microsoft 365 estiver nela; isso altera os endpoints de login e do Graph."
+        ja_JP: "Microsoft 365 テナントが各国のクラウドにある場合のみ選択してください。サインインと Graph のエンドポイントが変わります。"
+        zh_Hant: "僅當您的 Microsoft 365 租用戶位於國家雲端時才選擇；會同時變更登入與 Graph 端點。"
+      options:
+        - value: global
+          label:
+            en_US: "Global (graph.microsoft.com)"
+            ko_KR: "글로벌 (graph.microsoft.com)"
+            zh_Hans: "全球 (graph.microsoft.com)"
+            pt_BR: "Global (graph.microsoft.com)"
+            ja_JP: "グローバル (graph.microsoft.com)"
+            zh_Hant: "全球 (graph.microsoft.com)"
+        - value: usgov
+          label:
+            en_US: "US Government (graph.microsoft.us)"
+            ko_KR: "미국 정부 (graph.microsoft.us)"
+            zh_Hans: "美国政府 (graph.microsoft.us)"
+            pt_BR: "Governo dos EUA (graph.microsoft.us)"
+            ja_JP: "米国政府 (graph.microsoft.us)"
+            zh_Hant: "美國政府 (graph.microsoft.us)"
+        - value: dod
+          label:
+            en_US: "US Government DoD (dod-graph.microsoft.us)"
+            ko_KR: "미국 정부 DoD (dod-graph.microsoft.us)"
+            zh_Hans: "美国政府 DoD (dod-graph.microsoft.us)"
+            pt_BR: "Governo dos EUA DoD (dod-graph.microsoft.us)"
+            ja_JP: "米国政府 DoD (dod-graph.microsoft.us)"
+            zh_Hant: "美國政府 DoD (dod-graph.microsoft.us)"
+        - value: china
+          label:
+            en_US: "China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)"
+            ko_KR: "중국, 21Vianet 운영 (microsoftgraph.chinacloudapi.cn)"
+            zh_Hans: "中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)"
+            pt_BR: "China, operado pela 21Vianet (microsoftgraph.chinacloudapi.cn)"
+            ja_JP: "中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)"
+            zh_Hant: "中國，世紀互聯營運 (microsoftgraph.chinacloudapi.cn)"
   credentials_schema:
     - name: "access_token"
       type: "secret-input"
@@ -129,9 +318,11 @@ tools:
   - tools/add_attachment_to_draft.yaml
   - tools/prioritize_message_tool.yaml
   - tools/flag_message.yaml
+  - tools/list_calendar_groups.yaml
   - tools/list_calendars.yaml
   - tools/list_events.yaml
   - tools/search_events.yaml
+  - tools/get_schedule.yaml
   - tools/create_event.yaml
   - tools/get_event.yaml
   - tools/update_event.yaml

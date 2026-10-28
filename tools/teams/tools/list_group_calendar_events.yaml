@@ -85,6 +85,57 @@ parameters:
       zh_Hant: 要返回的最大事件數
     llm_description: The maximum number of events to return, default is 20
     form: llm
+output_schema:
+  type: object
+  properties:
+    events:
+      type: array
+      description: Events of the team's group calendar
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Event ID
+          subject:
+            type: string
+            description: Subject
+          start:
+            type: string
+            description: Start date-time
+          end:
+            type: string
+            description: End date-time
+          time_zone:
+            type: string
+            description: Time zone of start and end
+          organizer_name:
+            type: string
+            description: Organizer name
+          organizer_address:
+            type: string
+            description: Organizer email
+          location:
+            type: string
+            description: Location
+          is_online_meeting:
+            type: boolean
+            description: True for a Teams meeting
+          join_url:
+            type: string
+            description: Teams join link
+          web_link:
+            type: string
+            description: Link to the event
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_group_calendar_events.py

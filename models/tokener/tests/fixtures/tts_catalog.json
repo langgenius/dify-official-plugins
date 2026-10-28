@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "catalogRevision": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "models": [
+    {
+      "id": "tts-1",
+      "label": "tts-1",
+      "provider": "openai",
+      "modelType": "tts",
+      "deprecated": false,
+      "audio": {
+        "voices": [
+          {
+            "id": "alloy",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "ash",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "coral",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "echo",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "fable",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "onyx",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "nova",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "sage",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "shimmer",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          }
+        ],
+        "defaultVoice": "alloy",
+        "wordLimit": 4096,
+        "audioFormat": "mp3"
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "character",
+            "price": "0.000015"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tts-1-hd",
+      "label": "tts-1-hd",
+      "provider": "openai",
+      "modelType": "tts",
+      "deprecated": false,
+      "audio": {
+        "voices": [
+          {
+            "id": "alloy",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "ash",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "coral",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "echo",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "fable",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "onyx",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "nova",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "sage",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          },
+          {
+            "id": "shimmer",
+            "languages": [
+              "zh-Hans",
+              "en-US",
+              "de-DE",
+              "fr-FR",
+              "es-ES",
+              "it-IT",
+              "th-TH",
+              "id-ID"
+            ]
+          }
+        ],
+        "defaultVoice": "alloy",
+        "wordLimit": 4096,
+        "audioFormat": "mp3"
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "character",
+            "price": "0.00003"
+          }
+        ]
+      }
+    }
+  ]
+}

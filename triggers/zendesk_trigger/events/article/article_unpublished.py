@@ -7,14 +7,16 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 
+from ..utils import load_payload
+
 
 class ArticleUnpublishedEvent(Event):
     """Triggered when a Zendesk help center article is unpublished."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
-        if not payload:
-            raise ValueError("No payload received")
+    def _on_event(
+        self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None
+    ) -> Variables:
+        payload = load_payload(request, payload)
 
         detail = payload.get("detail", {})
         if not isinstance(detail, Mapping):

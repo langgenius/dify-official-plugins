@@ -1,17 +1,24 @@
 import base64
+import binascii
 import io
+import ipaddress
 import json
 import logging
+import socket
 import time
 from collections.abc import Generator, Mapping, Sequence
 from typing import Any, Optional, Union, cast
+from urllib.parse import urljoin, urlsplit
 
+import anthropic
+import charset_normalizer
 import google.auth.transport.requests
 import requests
 from PIL import Image
 from anthropic import AnthropicVertex, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
+    ContentBlockStartEvent,
     Message,
     MessageDeltaEvent,
     MessageStartEvent,
@@ -23,6 +30,7 @@ from dify_plugin.entities.model import PriceType
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -58,6 +66,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-flash-lite-preview",
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
+    "gemini-3.1-flash-image",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
@@ -66,6 +75,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
 ]
 IMAGE_GENERATION_MODELS = {
     "gemini-3.1-flash-image-preview",
+    "gemini-3.1-flash-image",
 }
 
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
@@ -83,7 +93,137 @@ SIGNATURE_SEPARATOR = "::sig::"
 # Regions where Vertex AI Model Garden currently serves Mistral AI models.
 MISTRAL_SUPPORTED_REGIONS = {"europe-west4", "us-central1"}
 
+# Claude models that run adaptive thinking when the `thinking` field is omitted.
+# Dify messages cannot carry thinking signatures, so thinking is turned off on
+# requests whose history contains tool results instead of replaying blocks it
+# can't rebuild. Not valid for every model: Claude Sonnet 5.5 rejects disabled thinking.
+CLAUDE_ADAPTIVE_THINKING_DEFAULT_MODELS = ("claude-sonnet-5",)
+
+# Anthropic caps a request at 32 MB and base64 grows data by 4/3, so keep each
+# document well below that to leave room for the rest of the request.
+CLAUDE_MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
+# Documents from every turn are re-sent, so also bound their encoded total.
+CLAUDE_MAX_REQUEST_ATTACHMENT_BYTES = 30 * 1024 * 1024
+
+# Cloud metadata endpoints outside the link-local range (Alibaba Cloud, AWS IPv6).
+METADATA_NETWORKS = (ipaddress.ip_network("100.100.100.200/32"), ipaddress.ip_network("fd00:ec2::254/128"))
+NAT64_NETWORK = ipaddress.ip_network("64:ff9b::/96")
+MAX_ATTACHMENT_REDIRECTS = 3
+
+# Anthropic error types for errors the Vertex client raises as a plain APIStatusError:
+# SSE `error` events inside an HTTP 200 stream and status codes it has no class for (e.g. 413).
+CLAUDE_ERROR_TYPE_MAPPING: dict[str, type[InvokeError]] = {
+    "invalid_request_error": InvokeBadRequestError,
+    "request_too_large": InvokeBadRequestError,
+    "not_found_error": InvokeBadRequestError,
+    "permission_error": InvokeBadRequestError,
+    "authentication_error": InvokeAuthorizationError,
+    "rate_limit_error": InvokeRateLimitError,
+    "api_error": InvokeServerUnavailableError,
+    "overloaded_error": InvokeServerUnavailableError,
+}
+CLAUDE_STATUS_MAPPING: dict[int, type[InvokeError]] = {
+    413: InvokeBadRequestError,
+}
+
 logger = logging.getLogger(__name__)
+
+
+def _is_claude_model(model: str, model_ids: Sequence[str]) -> bool:
+    """Match a model id exactly or as a dated `<id>@<version>` snapshot, never as a prefix of a newer model."""
+    return any(model == model_id or model.startswith(f"{model_id}@") for model_id in model_ids)
+
+
+def _parse_claude_tool_input(arguments: Optional[str]) -> dict:
+    """Parse stored tool call arguments, falling back to an empty object when they are not a JSON object."""
+    try:
+        parsed = json.loads(arguments or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _redact_url(url: str) -> str:
+    """Drop the query string so signed URLs do not leak into error messages."""
+    return urlsplit(url)._replace(query="", fragment="").geturl()
+
+
+def _is_metadata_address(ip: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]) -> bool:
+    """Whether an address can reach a cloud metadata endpoint, including IPv6 forms that embed an IPv4 address."""
+    if ip.version == 6:
+        embedded = ip.ipv4_mapped or ip.sixtofour
+        if embedded is None and ip in NAT64_NETWORK:
+            embedded = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
+        if embedded is not None and _is_metadata_address(embedded):
+            return True
+    return ip.is_link_local or any(ip in network for network in METADATA_NETWORKS)
+
+
+def _check_attachment_url(url: str) -> None:
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise InvokeBadRequestError(f"Unsupported attachment url {_redact_url(url)}")
+    try:
+        addresses = {info[4][0] for info in socket.getaddrinfo(parts.hostname, parts.port or None)}
+    except socket.gaierror as ex:
+        raise InvokeBadRequestError(f"Failed to resolve attachment url {_redact_url(url)}, {ex}")
+    if any(_is_metadata_address(ipaddress.ip_address(address.split("%")[0])) for address in addresses):
+        raise InvokeBadRequestError(f"Attachment url {_redact_url(url)} points to a link-local or metadata address")
+
+
+def _fetch_claude_attachment(url: str) -> bytes:
+    """
+    Download an attachment for a Claude request
+
+    Only http(s) is allowed and hosts that resolve to link-local or cloud metadata
+    addresses are refused, re-checked on every redirect. Private addresses stay
+    reachable because Dify's own file URLs often point at an internal host. The
+    check resolves the host separately from the request, so it does not stop DNS
+    rebinding.
+    """
+    try:
+        for _ in range(MAX_ATTACHMENT_REDIRECTS + 1):
+            _check_attachment_url(url)
+            with requests.get(url, timeout=60, stream=True, allow_redirects=False) as response:
+                if response.is_redirect:
+                    url = urljoin(url, response.headers["Location"])
+                    continue
+                response.raise_for_status()
+                if int(response.headers.get("Content-Length") or 0) > CLAUDE_MAX_DOCUMENT_BYTES:
+                    raise InvokeBadRequestError(_document_too_large_message())
+                data = bytearray()
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    data.extend(chunk)
+                    if len(data) > CLAUDE_MAX_DOCUMENT_BYTES:
+                        raise InvokeBadRequestError(_document_too_large_message())
+                return bytes(data)
+    except InvokeBadRequestError:
+        raise
+    except Exception as ex:
+        raise InvokeBadRequestError(
+            f"Failed to fetch attachment from url {_redact_url(url)} ({type(ex).__name__})"
+        ) from None
+    raise InvokeBadRequestError(f"Attachment url {_redact_url(url)} redirected too many times")
+
+
+def _truncated_tool_call_message() -> str:
+    return "Claude reached max_tokens in the middle of a tool call, increase max_tokens and try again"
+
+
+def _document_too_large_message() -> str:
+    return f"Document is larger than {CLAUDE_MAX_DOCUMENT_BYTES // (1024 * 1024)} MB, which Claude on Vertex AI cannot accept"
+
+
+def _decode_text_document(raw: bytes) -> str:
+    """Decode a text document, detecting non-UTF-8 encodings such as Shift_JIS instead of garbling them."""
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        pass
+    match = charset_normalizer.from_bytes(raw).best()
+    if match is None:
+        raise InvokeBadRequestError("Could not detect the text encoding of the document")
+    return str(match)
 
 
 def _encode_tool_call_id(function_name: str, thought_signature: Optional[str]) -> str:
@@ -177,7 +317,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         if "claude" in model:
-            return self._generate_anthropic(model, credentials, prompt_messages, model_parameters, stop, stream, user)
+            return self._generate_anthropic(
+                model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+            )
         if "mistral" in model or "codestral" in model:
             return self._generate_mistral(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
@@ -188,6 +330,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         prompt_messages: list[PromptMessage],
         model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
@@ -199,6 +342,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :param prompt_messages: prompt messages
         :param model_parameters: model parameters
+        :param tools: tools for tool calling
         :param stop: stop words
         :param stream: is stream response
         :return: full response or stream response chunk generator result
@@ -213,13 +357,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         project_id = credentials["vertex_project_id"]
         SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
         token = ""
-        vertex_anthropic_location = credentials["vertex_anthropic_location"]
-        vertex_location = credentials["vertex_location"]
+        # Optional credential fields left blank are not stored by Dify, so the key may be absent.
+        vertex_anthropic_location = credentials.get("vertex_anthropic_location")
+        vertex_location = credentials.get("vertex_location")
         if service_account_info:
-            credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-            request = google.auth.transport.requests.Request()
-            credentials.refresh(request)
-            token = credentials.token
+            gcp_credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+            gcp_credentials.refresh(google.auth.transport.requests.Request())
+            token = gcp_credentials.token
         if vertex_anthropic_location:
             location = vertex_anthropic_location
         elif vertex_location:
@@ -235,18 +379,68 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             client = AnthropicVertex(region=location, project_id=project_id, access_token=token)
         else:
             client = AnthropicVertex(region=location, project_id=project_id)
-        extra_model_kwargs = {}
-        if stop:
-            extra_model_kwargs["stop_sequences"] = stop
-        (system, prompt_message_dicts) = self._convert_claude_prompt_messages(prompt_messages)
-        if system:
-            extra_model_kwargs["system"] = system
-        response = client.messages.create(
-            model=model, messages=prompt_message_dicts, stream=stream, **model_parameters, **extra_model_kwargs
+        request_kwargs = self._build_claude_request_kwargs(
+            model, prompt_messages, model_parameters, tools, stop
         )
         if stream:
+            response = client.messages.create(stream=True, **request_kwargs)
             return self._handle_claude_stream_response(model, credentials, response, prompt_messages)
+        # The SDK refuses non-streaming requests with a large max_tokens (e.g. the
+        # 128K default of recent models), so stream internally and collect the result.
+        with client.messages.stream(**request_kwargs) as message_stream:
+            response = message_stream.get_final_message()
         return self._handle_claude_response(model, credentials, response, prompt_messages)
+
+    def _build_claude_request_kwargs(
+        self,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+    ) -> dict:
+        """
+        Build the Anthropic Messages API request for a Claude model on Vertex AI
+        """
+        request_kwargs: dict[str, Any] = {"model": model, **model_parameters}
+        system, prompt_message_dicts = self._convert_claude_prompt_messages(prompt_messages)
+        attachment_bytes = sum(
+            len(block["source"]["data"])
+            for message in prompt_message_dicts
+            if isinstance(message["content"], list)
+            for block in message["content"]
+            if block["type"] in ("document", "image")
+        )
+        if attachment_bytes > CLAUDE_MAX_REQUEST_ATTACHMENT_BYTES:
+            raise InvokeBadRequestError(
+                f"Attachments in this conversation add up to more than "
+                f"{CLAUDE_MAX_REQUEST_ATTACHMENT_BYTES // (1024 * 1024)} MB, which exceeds the Claude request limit"
+            )
+        request_kwargs["messages"] = prompt_message_dicts
+        if system:
+            request_kwargs["system"] = system
+        if stop:
+            request_kwargs["stop_sequences"] = stop
+        if tools:
+            request_kwargs["tools"] = self._convert_claude_tools(tools)
+        if _is_claude_model(model, CLAUDE_ADAPTIVE_THINKING_DEFAULT_MODELS) and any(
+            isinstance(message, ToolPromptMessage) for message in prompt_messages
+        ):
+            request_kwargs["thinking"] = {"type": "disabled"}
+        return request_kwargs
+
+    def _convert_claude_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
+        """
+        Convert PromptMessageTool list to Anthropic tool dicts
+        """
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "input_schema": tool.parameters or {"type": "object", "properties": {}},
+            }
+            for tool in tools
+        ]
 
     def _handle_claude_response(
         self, model: str, credentials: dict, response: Message, prompt_messages: list[PromptMessage]
@@ -260,7 +454,22 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: full response chunk generator result
         """
-        assistant_prompt_message = AssistantPromptMessage(content=response.content[0].text)
+        # Content can also hold thinking and tool_use blocks, so read text by block type.
+        text = "".join(block.text for block in response.content if block.type == "text")
+        tool_calls = [
+            AssistantPromptMessage.ToolCall(
+                id=block.id,
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name=block.name, arguments=json.dumps(block.input)
+                ),
+            )
+            for block in response.content
+            if block.type == "tool_use"
+        ]
+        if tool_calls and response.stop_reason == "max_tokens":
+            raise InvokeBadRequestError(_truncated_tool_call_message())
+        assistant_prompt_message = AssistantPromptMessage(content=text, tool_calls=tool_calls)
         if response.usage:
             prompt_tokens = response.usage.input_tokens
             completion_tokens = response.usage.output_tokens
@@ -279,6 +488,10 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         Handle llm chat stream response
 
+        Tool input JSON fragments are buffered per content block and only surfaced
+        as complete ToolCall objects in the terminating chunk. Thinking and
+        signature deltas are skipped.
+
         :param model: model name
         :param credentials: credentials
         :param response: response
@@ -286,12 +499,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         try:
-            full_assistant_content = ""
             return_model = None
             input_tokens = 0
             output_tokens = 0
             finish_reason = None
             index = 0
+            tool_call_accumulator: dict[int, dict] = {}
             for chunk in response:
                 if isinstance(chunk, MessageStartEvent):
                     return_model = chunk.message.model
@@ -299,30 +512,58 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 elif isinstance(chunk, MessageDeltaEvent):
                     output_tokens = chunk.usage.output_tokens
                     finish_reason = chunk.delta.stop_reason
+                elif isinstance(chunk, ContentBlockStartEvent):
+                    if chunk.content_block.type == "tool_use":
+                        tool_call_accumulator[chunk.index] = {
+                            "id": chunk.content_block.id,
+                            "name": chunk.content_block.name,
+                            "arguments": "",
+                        }
                 elif isinstance(chunk, MessageStopEvent):
+                    # A tool_use cut off by max_tokens carries partial JSON that Dify can't parse.
+                    if tool_call_accumulator and finish_reason == "max_tokens":
+                        raise InvokeBadRequestError(_truncated_tool_call_message())
+                    tool_calls = [
+                        AssistantPromptMessage.ToolCall(
+                            id=slot["id"],
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=slot["name"], arguments=slot["arguments"] or "{}"
+                            ),
+                        )
+                        for slot in tool_call_accumulator.values()
+                    ]
                     usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index + 1,
-                            message=AssistantPromptMessage(content=""),
+                            message=AssistantPromptMessage(content="", tool_calls=tool_calls),
                             finish_reason=finish_reason,
                             usage=usage,
                         ),
                     )
                 elif isinstance(chunk, ContentBlockDeltaEvent):
+                    if chunk.delta.type == "input_json_delta":
+                        if chunk.index in tool_call_accumulator:
+                            tool_call_accumulator[chunk.index]["arguments"] += chunk.delta.partial_json
+                        continue
+                    if chunk.delta.type != "text_delta":
+                        continue
                     chunk_text = chunk.delta.text or ""
-                    full_assistant_content += chunk_text
-                    assistant_prompt_message = AssistantPromptMessage(content=chunk_text or "")
+                    assistant_prompt_message = AssistantPromptMessage(content=chunk_text)
                     index = chunk.index
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                     )
+        except InvokeError:
+            raise
         except Exception as ex:
-            raise InvokeError(str(ex))
+            # Map mid-stream API errors (rate limits, overload, ...) to their Dify error types.
+            raise self._transform_invoke_error(ex) from ex
 
     def _calc_claude_response_usage(
         self, model: str, credentials: dict, prompt_tokens: int, completion_tokens: int
@@ -373,15 +614,41 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 else:
                     system += "\n"
                     system += message.content
+        last_user_message = next(
+            (message for message in reversed(prompt_messages) if isinstance(message, UserPromptMessage)), None
+        )
         prompt_message_dicts = []
         for message in prompt_messages:
-            if not isinstance(message, SystemPromptMessage):
-                prompt_message_dicts.append(self._convert_claude_prompt_message_to_dict(message))
+            if isinstance(message, SystemPromptMessage):
+                continue
+            # The API rejects empty assistant turns (e.g. an earlier answer that held only thinking).
+            if isinstance(message, AssistantPromptMessage) and not message.content and not message.tool_calls:
+                continue
+            message_dict = self._convert_claude_prompt_message_to_dict(
+                message, is_last_user_message=message is last_user_message
+            )
+            if message_dict["content"] == []:
+                continue
+            # Results of parallel tool calls must share a single user turn.
+            if (
+                isinstance(message, ToolPromptMessage)
+                and prompt_message_dicts
+                and prompt_message_dicts[-1]["role"] == "user"
+                and isinstance(prompt_message_dicts[-1]["content"], list)
+                and prompt_message_dicts[-1]["content"]
+                and all(block["type"] == "tool_result" for block in prompt_message_dicts[-1]["content"])
+            ):
+                prompt_message_dicts[-1]["content"].extend(message_dict["content"])
+            else:
+                prompt_message_dicts.append(message_dict)
         return (system, prompt_message_dicts)
 
-    def _convert_claude_prompt_message_to_dict(self, message: PromptMessage) -> dict:
+    def _convert_claude_prompt_message_to_dict(self, message: PromptMessage, is_last_user_message: bool = False) -> dict:
         """
         Convert PromptMessage to dict
+
+        :param is_last_user_message: whether an unsupported document should fail the request
+            instead of being replaced by a placeholder (as it is in earlier turns)
         """
         if isinstance(message, UserPromptMessage):
             message = cast(UserPromptMessage, message)
@@ -392,18 +659,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(TextPromptMessageContent, message_content)
-                        sub_message_dict = {"type": "text", "text": message_content.data}
-                        sub_messages.append(sub_message_dict)
+                        # Empty text blocks are rejected by the API (e.g. a file sent with an empty query).
+                        if message_content.data:
+                            sub_messages.append({"type": "text", "text": message_content.data})
                     elif message_content.type == PromptMessageContentType.IMAGE:
                         message_content = cast(ImagePromptMessageContent, message_content)
                         if not message_content.data.startswith("data:"):
+                            image_content = _fetch_claude_attachment(message_content.data)
                             try:
-                                image_content = requests.get(message_content.data).content
                                 with Image.open(io.BytesIO(image_content)) as img:
                                     mime_type = f"image/{img.format.lower()}"
-                                base64_data = base64.b64encode(image_content).decode("utf-8")
                             except Exception as ex:
-                                raise ValueError(f"Failed to fetch image data from url {message_content.data}, {ex}")
+                                raise InvokeBadRequestError(
+                                    f"Failed to read image from url {_redact_url(message_content.data)}, {ex}"
+                                )
+                            base64_data = base64.b64encode(image_content).decode("utf-8")
                         else:
                             data_split = message_content.data.split(";base64,")
                             mime_type = data_split[0].replace("data:", "")
@@ -417,16 +687,86 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             "source": {"type": "base64", "media_type": mime_type, "data": base64_data},
                         }
                         sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        sub_messages.append(
+                            self._convert_claude_document(
+                                cast(DocumentPromptMessageContent, message_content), is_last_user_message
+                            )
+                        )
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
-            message_dict = {"role": "assistant", "content": message.content}
+            if message.tool_calls:
+                content = []
+                if message.content:
+                    content.append({"type": "text", "text": message.content})
+                for tool_call in message.tool_calls:
+                    content.append(
+                        {
+                            "type": "tool_use",
+                            "id": tool_call.id,
+                            "name": tool_call.function.name,
+                            "input": _parse_claude_tool_input(tool_call.function.arguments),
+                        }
+                    )
+                message_dict = {"role": "assistant", "content": content}
+            else:
+                message_dict = {"role": "assistant", "content": message.content}
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
+        elif isinstance(message, ToolPromptMessage):
+            message = cast(ToolPromptMessage, message)
+            tool_content = message.content
+            if isinstance(tool_content, list):
+                tool_content = "".join(
+                    c.data for c in tool_content if c.type == PromptMessageContentType.TEXT
+                )
+            message_dict = {
+                "role": "user",
+                "content": [
+                    {"type": "tool_result", "tool_use_id": message.tool_call_id, "content": tool_content or ""}
+                ],
+            }
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_dict
+
+    def _convert_claude_document(self, content: DocumentPromptMessageContent, is_last_user_message: bool) -> dict:
+        """
+        Convert a document attachment to an Anthropic document block
+
+        Claude accepts PDF and plain-text documents. Other formats raise in the
+        latest user turn and become a placeholder in earlier turns, so an old
+        attachment does not break the rest of the conversation.
+        """
+        mime_type = content.mime_type
+        if mime_type != "application/pdf" and not mime_type.startswith("text/"):
+            if is_last_user_message:
+                raise InvokeBadRequestError(
+                    f"Unsupported document type {mime_type}, only support application/pdf and text/* documents"
+                )
+            return {"type": "text", "text": f"[Unsupported document: {content.filename or 'document'} ({mime_type})]"}
+
+        if content.base64_data:
+            # Check the size before decoding to avoid holding an oversized copy in memory.
+            if len(content.base64_data) * 3 // 4 > CLAUDE_MAX_DOCUMENT_BYTES:
+                raise InvokeBadRequestError(_document_too_large_message())
+            try:
+                raw = base64.b64decode(content.base64_data, validate=True)
+            except binascii.Error as ex:
+                raise InvokeBadRequestError(f"Invalid base64 data for document {content.filename or ''}, {ex}")
+        else:
+            raw = _fetch_claude_attachment(content.url)
+
+        if mime_type == "application/pdf":
+            source = {"type": "base64", "media_type": mime_type, "data": base64.b64encode(raw).decode("utf-8")}
+        else:
+            source = {"type": "text", "media_type": "text/plain", "data": _decode_text_document(raw)}
+        document = {"type": "document", "source": source}
+        if content.filename:
+            document["title"] = content.filename
+        return document
 
     def _generate_mistral(
         self,
@@ -888,7 +1228,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 "16:9",
                 "21:9",
                 "4:1",
+                "1:4",
                 "8:1",
+                "1:8",
             ]
         ):
             aspect_ratio = None
@@ -897,7 +1239,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if (
             not resolution
             or not isinstance(resolution, str)
-            or resolution not in ["1K", "2K", "4K"]
+            or resolution not in ["512", "1K", "2K", "4K"]
         ):
             resolution = None
 
@@ -1520,6 +1862,17 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
 
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        # The Vertex client raises a plain APIStatusError for mid-stream SSE errors (HTTP 200)
+        # and for status codes it has no subclass for, so classify those by error type.
+        if type(error) is anthropic.APIStatusError:
+            invoke_error = CLAUDE_ERROR_TYPE_MAPPING.get(error.type or "") or CLAUDE_STATUS_MAPPING.get(
+                error.status_code
+            )
+            if invoke_error:
+                return invoke_error(description=f"[vertex_ai] {invoke_error.description}, {error}")
+        return super()._transform_invoke_error(error)
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -1531,22 +1884,40 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: Invoke emd = gml.GenerativeModel(model) error mapping
         """
         return {
-            InvokeConnectionError: [exceptions.RetryError],
+            InvokeConnectionError: [exceptions.RetryError, anthropic.APIConnectionError],
             InvokeServerUnavailableError: [
                 exceptions.ServiceUnavailable,
                 exceptions.InternalServerError,
                 exceptions.BadGateway,
                 exceptions.GatewayTimeout,
                 exceptions.DeadlineExceeded,
+                anthropic.InternalServerError,
+                anthropic.ServiceUnavailableError,
+                anthropic.DeadlineExceededError,
             ],
-            InvokeRateLimitError: [exceptions.ResourceExhausted, exceptions.TooManyRequests],
+            InvokeRateLimitError: [
+                exceptions.ResourceExhausted,
+                exceptions.TooManyRequests,
+                anthropic.RateLimitError,
+            ],
             InvokeAuthorizationError: [
                 exceptions.Unauthenticated,
                 exceptions.PermissionDenied,
                 exceptions.Unauthenticated,
                 exceptions.Forbidden,
+                anthropic.AuthenticationError,
             ],
             InvokeBadRequestError: [
+                # Keep errors the plugin raises itself (e.g. unsupported documents) as bad requests.
+                InvokeBadRequestError,
+                anthropic.BadRequestError,
+                # A 403 on Vertex usually means the model is not enabled for the project
+                # (e.g. Marketplace terms not accepted). Authorization errors would replace
+                # that message with a generic credentials hint, so keep it as a bad request.
+                anthropic.PermissionDeniedError,
+                anthropic.NotFoundError,
+                anthropic.ConflictError,
+                anthropic.UnprocessableEntityError,
                 exceptions.BadRequest,
                 exceptions.InvalidArgument,
                 exceptions.FailedPrecondition,

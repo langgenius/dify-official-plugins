@@ -16,6 +16,7 @@ from dify_plugin.interfaces.model.openai_compatible.rerank import OAICompatReran
 from dify_plugin.interfaces.model.rerank_model import MultiModalRerankResult
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
+    InvokeBadRequestError,
     InvokeError,
     InvokeServerUnavailableError,
 )
@@ -197,9 +198,9 @@ class OpenAIRerankModel(OAICompatRerankModel):
         """
         Invoke rerank model with multimodal support.
 
-        API Format (from vLLM/Qwen3-VL-Reranker docs):
+        API Format (vLLM /v1/rerank with Qwen3-VL-Reranker):
         {
-            "query": "query text string",  # Query is plain text string
+            "query": "text" | ScoreMultiModalParam,
             "documents": [  # Documents use ScoreMultiModalParam format
                 {
                     "content": [
@@ -210,8 +211,10 @@ class OpenAIRerankModel(OAICompatRerankModel):
             ]
         }
 
-        Note: Query with image is NOT supported by this model architecture.
-        Only documents can contain images.
+        Both the query and the documents may contain images. A text query is
+        sent as a plain string, an image query is sent in the same
+        ScoreMultiModalParam format as the documents (never inlined as text,
+        which would blow up the model context).
         """
         if not docs:
             return MultiModalRerankResult(
@@ -219,15 +222,13 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 docs=[],
             )
 
-        # Check if query is an image - this is not supported
+        query_payload: str | dict
         if query.content_type == MultiModalContentType.IMAGE:
-            logger.warning(
-                "Query with image is not supported by Qwen3-VL-Reranker. Converting to text."
-            )
-            # Convert image query to text description
-            query_text = f"[Image: {query.content}]"
+            query_payload = self._to_score_multimodal_param(query)
+            if not query_payload["content"]:
+                raise InvokeBadRequestError("Image query is invalid or unsupported")
         else:
-            query_text = (
+            query_payload = (
                 query.content if isinstance(query.content, str) else str(query.content)
             )
 
@@ -250,7 +251,7 @@ class OpenAIRerankModel(OAICompatRerankModel):
         # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
         payload = {
             "model": endpoint_model_name,
-            "query": query_text,  # Plain text string
+            "query": query_payload,  # Plain text, or ScoreMultiModalParam for images
             "documents": documents_params,  # ScoreMultiModalParam format
             "top_n": top_n if top_n is not None else len(docs),
         }
@@ -373,6 +374,41 @@ class OpenAIRerankModel(OAICompatRerankModel):
             logger.warning("Image URL validation failed")
             return ""
 
+    @staticmethod
+    def _sniff_image_format(data: bytes) -> Optional[str]:
+        """Return the image format for known magic bytes, otherwise None."""
+        if data.startswith(b"\xff\xd8\xff"):
+            return "jpeg"
+        if data.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "png"
+        if data.startswith((b"GIF87a", b"GIF89a")):
+            return "gif"
+        if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+            return "webp"
+        if data.startswith(b"BM"):
+            return "bmp"
+        return None
+
+    def _normalize_image_url(self, value: str) -> str:
+        """
+        Convert raw base64 image data into a data URI.
+
+        URLs and existing data URIs are returned unchanged; values that are not
+        valid base64 of a known image format are also returned unchanged and
+        left to `_validate_image_url` to reject.
+        """
+        value = "".join(value.split())
+        if value.startswith(("data:", "http://", "https://")):
+            return value
+        try:
+            data = base64.b64decode(value, validate=True)
+        except Exception:
+            return value
+        image_format = self._sniff_image_format(data)
+        if image_format is None:
+            return value
+        return f"data:image/{image_format};base64,{value}"
+
     def _to_score_multimodal_param(self, content: MultiModalContent) -> dict:
         """
         Convert MultiModalContent to ScoreMultiModalParam format.
@@ -398,12 +434,15 @@ class OpenAIRerankModel(OAICompatRerankModel):
             content_list.append({"type": "text", "text": text_content})
         elif content.content_type == MultiModalContentType.IMAGE:
             # Process image URL securely
-            image_url = content.content
-            if isinstance(content.content, str):
-                # Validate URL before using
-                image_url = self._validate_image_url(content.content)
-            elif isinstance(content.content, dict) and "url" in content.content:
-                image_url = self._validate_image_url(content.content["url"])
+            raw_image = content.content
+            if isinstance(raw_image, dict):
+                raw_image = raw_image.get("url", "")
+            if isinstance(raw_image, str):
+                # Dify passes raw base64; vLLM only accepts http(s)/data/file URLs,
+                # so wrap it into a data URI before validating.
+                image_url = self._validate_image_url(
+                    self._normalize_image_url(raw_image)
+                )
             else:
                 image_url = ""
 

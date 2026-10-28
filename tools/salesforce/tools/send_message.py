@@ -1,11 +1,13 @@
 from collections.abc import Generator
 from typing import Any
 
+from provider.client import create_client
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 try:
-    from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
+    from simple_salesforce import SalesforceAuthenticationFailed
 except ImportError:
     raise ImportError(
         "simple-salesforce is declared in pyproject.toml. Run `uv sync` in the plugin directory."
@@ -30,24 +32,11 @@ class SendMessageTool(Tool):
             return
         
         try:
-            # Get credentials
             username = self.runtime.credentials.get("username")
-            password = self.runtime.credentials.get("password")
-            security_token = self.runtime.credentials.get("security_token")
-            domain = self.runtime.credentials.get("domain")
-            
-            if not username or not password or not security_token:
-                yield self.create_text_message("Salesforce credentials are not properly configured.")
-                return
-            
+
             # Connect to Salesforce
             try:
-                sf = Salesforce(
-                    username=username,
-                    password=password,
-                    security_token=security_token,
-                    domain=domain if domain else None
-                )
+                sf = create_client(self.runtime.credentials)
             except SalesforceAuthenticationFailed as e:
                 yield self.create_text_message(f"Authentication failed: {str(e)}")
                 return
@@ -58,10 +47,13 @@ class SendMessageTool(Tool):
             # If no parent_id is provided, get the current user's ID
             if not parent_id:
                 try:
-                    user_info = sf.query("SELECT Id FROM User WHERE Username = '{}'".format(username))
-                    if user_info.get('totalSize', 0) > 0:
-                        parent_id = user_info['records'][0]['Id']
+                    if self.runtime.credentials.get("auth_method") == "client_credentials":
+                        parent_id = sf.restful("chatter/users/me")["id"]
                     else:
+                        user_info = sf.query("SELECT Id FROM User WHERE Username = '{}'".format(username))
+                        if user_info.get('totalSize', 0) > 0:
+                            parent_id = user_info['records'][0]['Id']
+                    if not parent_id:
                         yield self.create_text_message("Could not determine current user ID. Please provide a parent_id.")
                         return
                 except Exception as e:

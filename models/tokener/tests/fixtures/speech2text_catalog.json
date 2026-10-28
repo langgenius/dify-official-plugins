@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "catalogRevision": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "models": [
+    {
+      "id": "gpt-4o-mini-transcribe",
+      "label": "gpt-4o-mini-transcribe",
+      "provider": "openai",
+      "modelType": "speech2text",
+      "deprecated": false,
+      "audio": {
+        "maxUploadBytes": 25000000,
+        "supportedExtensions": [
+          "flac",
+          "mp3",
+          "mp4",
+          "mpeg",
+          "mpga",
+          "m4a",
+          "ogg",
+          "wav",
+          "webm"
+        ]
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "second",
+            "price": "0.00005"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "1.25"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "3"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "gpt-4o-mini-transcribe-2025-12-15",
+      "label": "gpt-4o-mini-transcribe-2025-12-15",
+      "provider": "openai",
+      "modelType": "speech2text",
+      "deprecated": false,
+      "audio": {
+        "maxUploadBytes": 25000000,
+        "supportedExtensions": [
+          "flac",
+          "mp3",
+          "mp4",
+          "mpeg",
+          "mpga",
+          "m4a",
+          "ogg",
+          "wav",
+          "webm"
+        ]
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "second",
+            "price": "0.00005"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "1.25"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "3"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "gpt-4o-transcribe",
+      "label": "gpt-4o-transcribe",
+      "provider": "openai",
+      "modelType": "speech2text",
+      "deprecated": false,
+      "audio": {
+        "maxUploadBytes": 25000000,
+        "supportedExtensions": [
+          "flac",
+          "mp3",
+          "mp4",
+          "mpeg",
+          "mpga",
+          "m4a",
+          "ogg",
+          "wav",
+          "webm"
+        ]
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "second",
+            "price": "0.0001"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "2.5"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "6"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "10"
+          }
+        ]
+      }
+    },
+    {
+      "id": "gpt-4o-transcribe-diarize",
+      "label": "gpt-4o-transcribe-diarize",
+      "provider": "openai",
+      "modelType": "speech2text",
+      "deprecated": false,
+      "audio": {
+        "maxUploadBytes": 25000000,
+        "supportedExtensions": [
+          "flac",
+          "mp3",
+          "mp4",
+          "mpeg",
+          "mpga",
+          "m4a",
+          "ogg",
+          "wav",
+          "webm"
+        ]
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "second",
+            "price": "0.0001"
+          },
+          {
+            "direction": "input",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "2.5"
+          },
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "million_tokens",
+            "price": "6"
+          },
+          {
+            "direction": "output",
+            "modality": "text",
+            "unit": "million_tokens",
+            "price": "10"
+          }
+        ]
+      }
+    },
+    {
+      "id": "whisper-1",
+      "label": "whisper-1",
+      "provider": "openai",
+      "modelType": "speech2text",
+      "deprecated": false,
+      "audio": {
+        "maxUploadBytes": 25000000,
+        "supportedExtensions": [
+          "flac",
+          "mp3",
+          "mp4",
+          "mpeg",
+          "mpga",
+          "m4a",
+          "ogg",
+          "wav",
+          "webm"
+        ]
+      },
+      "pricing": {
+        "currency": "USD",
+        "rates": [
+          {
+            "direction": "input",
+            "modality": "audio",
+            "unit": "second",
+            "price": "0.0001"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -6,9 +6,12 @@ from datetime import datetime, timedelta
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class FlagEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Flag an email with follow-up status using Microsoft Graph API
@@ -19,8 +22,14 @@ class FlagEmailTool(Tool):
             flag_status = tool_parameters.get("flag_status", "flagged")
             due_date_days = tool_parameters.get("due_date_days", 0)
             flag_message = tool_parameters.get("flag_message", "")         
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
+                return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Update email flag
@@ -40,6 +49,7 @@ class FlagEmailTool(Tool):
                     "complete": "marked as complete"
                 }.get(flag_status, "updated")
                 
+                self._out.update(message_id=email_id, flag_status=flag_status, success=True)
                 yield self.create_text_message(f"Successfully {action_msg} email!")
                 yield self.create_json_message(result)
                 
@@ -93,7 +103,7 @@ class FlagEmailTool(Tool):
                 update_data["categories"] = []
             
             # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_email_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_email_id}"
             
             # Headers
             headers = {

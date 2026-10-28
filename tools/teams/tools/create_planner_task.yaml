@@ -1,0 +1,130 @@
+identity:
+  name: create_planner_task
+  author: langgenius
+  label:
+    en_US: Create Planner Task
+    zh_Hans: 创建 Planner 任务
+    pt_BR: Criar Tarefa do Planner
+    ja_JP: Planner タスク作成
+    zh_Hant: 建立 Planner 任務
+description:
+  human:
+    en_US: Create a task in a Planner plan
+    zh_Hans: 在 Planner 计划中创建任务
+    pt_BR: Criar uma tarefa em um plano do Planner
+    ja_JP: Planner プランにタスクを作成
+    zh_Hant: 在 Planner 計畫中建立任務
+  llm: Create a task in a Microsoft Planner plan, optionally in a bucket, with a due date and assignees.
+parameters:
+- name: plan_id
+  type: string
+  required: true
+  label:
+    en_US: Plan ID
+    zh_Hans: 计划 ID
+    pt_BR: ID do Plano
+    ja_JP: プラン ID
+    zh_Hant: 計畫 ID
+  human_description:
+    en_US: The ID of the Planner plan (from List Planner Plans)
+    zh_Hans: Planner 计划 ID（来自“列出 Planner 计划”）
+    pt_BR: O ID do plano do Planner (de Listar Planos do Planner)
+    ja_JP: Planner プランの ID（Planner プラン一覧から取得）
+    zh_Hant: Planner 計畫 ID（來自「列出 Planner 計畫」）
+  llm_description: The ID of the Planner plan, as returned by List Planner Plans
+  form: llm
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    pt_BR: Título
+    ja_JP: タイトル
+    zh_Hant: 標題
+  human_description:
+    en_US: The task title
+    zh_Hans: 任务标题
+    pt_BR: O título da tarefa
+    ja_JP: タスクのタイトル
+    zh_Hant: 任務標題
+  llm_description: The title of the task
+  form: llm
+- name: bucket_id
+  type: string
+  required: false
+  label:
+    en_US: Bucket ID
+    zh_Hans: 分组 ID
+    pt_BR: ID do Bucket
+    ja_JP: バケット ID
+    zh_Hant: 分組 ID
+  human_description:
+    en_US: The ID of the bucket (from List Planner Buckets)
+    zh_Hans: 分组 ID（来自“列出 Planner 分组”）
+    pt_BR: O ID do bucket (de Listar Buckets do Planner)
+    ja_JP: バケットの ID（Planner バケット一覧から取得）
+    zh_Hant: 分組 ID（來自「列出 Planner 分組」）
+  llm_description: The ID of the Planner bucket, as returned by List Planner Buckets
+  form: llm
+- name: due_datetime
+  type: string
+  required: false
+  label:
+    en_US: Due Date
+    zh_Hans: 截止日期
+    pt_BR: Data de Vencimento
+    ja_JP: 期限
+    zh_Hant: 截止日期
+  human_description:
+    en_US: ISO 8601 date or date-time, e.g. 2026-12-01 or 2026-12-01T18:00:00+09:00 (no offset = UTC)
+    zh_Hans: ISO 8601 日期或日期时间，例如 2026-12-01 或 2026-12-01T18:00:00+09:00（不带时区偏移则视为 UTC）
+    pt_BR: Data ou data-hora ISO 8601, ex. 2026-12-01 ou 2026-12-01T18:00:00+09:00 (sem fuso = UTC)
+    ja_JP: 'ISO 8601 の日付または日時（例: 2026-12-01、2026-12-01T18:00:00+09:00。オフセットなしは UTC）'
+    zh_Hant: ISO 8601 日期或日期時間，例如 2026-12-01 或 2026-12-01T18:00:00+09:00（不含時區偏移則視為 UTC）
+  llm_description: Due date as ISO 8601, e.g. 2026-12-01T18:00:00+09:00; a value without a UTC offset is treated as UTC
+  form: llm
+- name: assignee_ids
+  type: string
+  required: false
+  label:
+    en_US: Assignees
+    zh_Hans: 负责人
+    pt_BR: Responsáveis
+    ja_JP: 担当者
+    zh_Hant: 負責人
+  human_description:
+    en_US: Comma-separated Entra user IDs; 'me' assigns the signed-in user
+    zh_Hans: 以逗号分隔的 Entra 用户 ID；'me' 表示当前登录用户
+    pt_BR: IDs de usuário do Entra separados por vírgula; 'me' atribui ao usuário conectado
+    ja_JP: カンマ区切りの Entra ユーザー ID。'me' はサインイン中のユーザー
+    zh_Hant: 以逗號分隔的 Entra 使用者 ID；'me' 表示目前登入的使用者
+  llm_description: Comma-separated Entra user object IDs to assign (the userId values from List Chat Members work); 'me' is the signed-in user
+  form: llm
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: Planner task ID
+    title:
+      type: string
+      description: Task title
+    bucket_id:
+      type: string
+      description: Bucket ID
+    percent_complete:
+      type: integer
+      description: 0 not started, 50 in progress, 100 completed
+    due_datetime:
+      type: string
+      description: Due date (ISO 8601, UTC)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/create_planner_task.py

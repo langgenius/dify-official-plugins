@@ -218,6 +218,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
         "claude-haiku-5",
+        "claude-sonnet-5-5",
+    )
+    # Models where up-front thinking is turned off with thinking.type=between_tools
+    # instead of "disabled" (which returns a 400 naming between_tools). between_tools
+    # takes no other field and is accepted only at effort low/medium/high, so these
+    # models also sit in DISABLED_THINKING_EFFORT_CAP_MODELS for the clamp.
+    BETWEEN_TOOLS_THINKING_OFF_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -254,6 +262,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _supports_task_budget(self, model: str) -> bool:
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
+
+    def _uses_between_tools_thinking_off(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.BETWEEN_TOOLS_THINKING_OFF_MODELS
+        )
 
     def _enforces_disabled_thinking_effort_cap(self, model: str) -> bool:
         model_id = (model or "").lower()
@@ -297,7 +312,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         if model_id == "claude-fable-5-1":
             return 0.025
-        if model_id == "claude-opus-5-5":
+        if model_id in ("claude-opus-5-5", "claude-sonnet-5-5"):
             return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
@@ -503,6 +518,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
                 }
+            elif thinking_was_set and self._uses_between_tools_thinking_off(model):
+                # Sonnet 5.5: thinking.type=disabled is rejected with a 400 that
+                # points to between_tools. Send exactly {"type": "between_tools"}:
+                # display/budget_tokens/block_binding alongside it also return 400.
+                # Must be checked before the adaptive-default-on branch because the
+                # "claude-sonnet-5" prefix there also matches claude-sonnet-5-5.
+                extra_model_kwargs["thinking"] = {"type": "between_tools"}
+                disabling_thinking = True
             elif adaptive_thinking_default_on and thinking_was_set:
                 # Sonnet 5 / Opus 5: thinking is on by default. An explicit false
                 # turns it off; omitting the field uses the API's adaptive-on default.
@@ -571,6 +594,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "type": "json_schema",
                 "schema": json_schema,
             }
+
+        # API version 2026-10-21 (the Anthropic SDK 2.x default) rejects
+        # temperature/top_p/top_k with a 400 even at their default values,
+        # while older models still honor them under 2023-06-01. The migration
+        # guide's own remedy is to keep such requests on 2023-06-01. When
+        # sampling parameters are forwarded for a model that accepts them,
+        # pin the request to 2023-06-01 so explicitly configured sampling
+        # keeps working after the SDK 2.x upgrade. output_config (structured
+        # output / effort / task budget) requires the newer API version, so
+        # when both apply the sampling parameters are dropped with a warning
+        # instead of breaking the whole request.
+        if sampling_parameters:
+            if "output_config" not in extra_model_kwargs:
+                extra_headers["anthropic-version"] = "2023-06-01"
+            else:
+                logging.warning(
+                    "Model %s: dropping sampling parameters %s; the request "
+                    "carries output_config, which requires API version "
+                    "2026-10-21 (rejecting temperature/top_p/top_k).",
+                    model,
+                    sorted(sampling_parameters),
+                )
+                extra_body = model_parameters.pop("extra_body", {})
+                for key in sampling_parameters:
+                    extra_body.pop(key, None)
+                if extra_body:
+                    model_parameters["extra_body"] = extra_body
 
         # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
