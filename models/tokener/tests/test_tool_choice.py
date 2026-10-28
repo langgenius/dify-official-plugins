@@ -38,27 +38,19 @@ def test_public_invoke_preserves_tool_choice(stream, tool_choice) -> None:
         "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
         "usage": {"prompt_tokens": 1, "completion_tokens": 1},
     }
-    response._content = json.dumps(payload).encode()
+    response._content = (
+        'data: {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}], '
+        '"usage": {"prompt_tokens": 1, "completion_tokens": 1}}\n\ndata: [DONE]\n\n'
+        if stream
+        else json.dumps(payload)
+    ).encode()
+    response._content_consumed = True
     parameters = {"max_tokens": 10}
     if tool_choice is not _OMITTED:
         parameters["tool_choice"] = tool_choice
     original_parameters = parameters.copy()
     credentials = {"api_key": "test-key"}
-    with (
-        patch("requests.post", return_value=response) as post,
-        patch.object(
-            response,
-            "iter_lines",
-            return_value=iter(
-                [
-                    'data: {"choices": [{"delta": {"content": "ok"}, '
-                    '"finish_reason": "stop"}], '
-                    '"usage": {"prompt_tokens": 1, "completion_tokens": 1}}',
-                    "data: [DONE]",
-                ]
-            ),
-        ),
-    ):
+    with patch("requests.post", return_value=response) as post:
         chunks = list(
             model.invoke(
                 model=schema.model,

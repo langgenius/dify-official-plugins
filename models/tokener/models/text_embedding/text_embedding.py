@@ -31,7 +31,10 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                     else "title: none | text: "
                 )
                 payload["input"] = [prefix + text for text in batch]
-            if user:
+            # Dify's Gemini provider does not send the console user ID to
+            # embedContent. Gemini routes reject this OpenAI-only metadata;
+            # tenancy and billing remain scoped by the managed API key.
+            if user and model not in {"gemini-embedding-001", "gemini-embedding-2-preview"}:
                 payload["user"] = user
             response = self._post("embeddings", credentials, payload)
             data = response["data"]

@@ -66,6 +66,36 @@ The plugin rejects forwarded attachments before it sends an upstream request, in
 For any app type, extract the document text and paste it into the message instead of attaching the document.
 In Workflow or Chatflow, you can also connect a Doc Extractor node's text output to the LLM node.
 
+### Forwarded provider parameters
+
+The plugin accepts a reviewed set of parameters from existing Dify providers for
+exact model IDs listed in `scripts/legacy_parameter_contracts.json`. It does not
+resolve model aliases or change an application's selected provider.
+
+This compatibility layer preserves explicit `false` and zero values, consumes
+local streaming controls, and translates supported output limits, reasoning,
+and Qwen thinking controls before the SDK filters model parameters. Transport
+settings, credentials, headers, and arbitrary `extra_body` payloads are not model
+parameters and are rejected.
+
+Gemini-specific controls depend on the actual backend protocol. The packaged
+default does not assume that a model name establishes a native Gemini or Google
+OpenAI-compatible route. A deployment-specific build must verify the backend and
+LiteLLM transport contract before enabling the corresponding adapter. Unsupported
+non-default native tools, media controls, or cache-block conversions fail
+explicitly rather than being silently dropped. This is not complete parameter,
+multimodal, or retrieval-quality equivalence with every source provider.
+
+Chat streaming accepts standard SSE line endings and metadata fields. Malformed
+or truncated streams raise an error instead of completing with an empty answer.
+The plugin requests streaming usage where supported; if a backend omits usage,
+the SDK's existing estimate is not proof of authoritative billing or output-limit
+enforcement. Tokener determines actual charges.
+
+Gemini embedding requests omit the OpenAI-only `user` field, matching the source
+Gemini provider's behavior. The input-format and cache considerations above still
+apply.
+
 ## Sync models
 
 Run the generator from this plugin directory with a complete Tokener catalog snapshot JSON file.
