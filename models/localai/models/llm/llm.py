@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Generator
 from typing import Optional, cast
 from dify_plugin.entities.model import (
@@ -279,10 +280,17 @@ class LocalAILanguageModel(LargeLanguageModel):
         if tools and len(tools) > 0:
             extra_model_kwargs["functions"] = [tool.model_dump() for tool in tools]
         if completion_type == "chat_completion":
+            messages = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
+            tool_names = {
+                call.id: call.function.name
+                for message in prompt_messages if isinstance(message, AssistantPromptMessage)
+                for call in message.tool_calls
+            }
+            for message, converted in zip(prompt_messages, messages):
+                if isinstance(message, ToolPromptMessage):
+                    converted["name"] = tool_names.get(message.tool_call_id, message.tool_call_id)
             result = client.chat.completions.create(
-                messages=[
-                    self._convert_prompt_message_to_dict(m) for m in prompt_messages
-                ],
+                messages=messages,
                 model=model_name,
                 stream=stream,
                 **model_parameters,
@@ -370,16 +378,7 @@ class LocalAILanguageModel(LargeLanguageModel):
             message_dict = {"role": "system", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
-            message_dict = {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": message.tool_call_id,
-                        "content": message.content,
-                    }
-                ],
-            }
+            message_dict = {"role": "function", "content": message.content}
         else:
             raise ValueError(f"Unknown message type {type(message)}")
         return message_dict
@@ -561,24 +560,29 @@ class LocalAILanguageModel(LargeLanguageModel):
         tools: list[PromptMessageTool],
     ) -> Generator:
         full_response = ""
+        function_call = None
         for chunk in response:
             if len(chunk.choices) == 0:
                 continue
             delta = chunk.choices[0]
+            if delta.delta.function_call:
+                if function_call is None:
+                    function_call = FunctionCall(name="", arguments="")
+                function_call.name += delta.delta.function_call.name or ""
+                function_call.arguments += delta.delta.function_call.arguments or ""
             if delta.finish_reason is None and (
                 delta.delta.content is None or delta.delta.content == ""
             ):
                 continue
-            function_calls = None
-            if delta.delta.function_call:
-                function_calls = [delta.delta.function_call]
-            assistant_message_tool_calls = self._extract_response_tool_calls(
-                function_calls or []
-            )
+            assistant_message_tool_calls = []
+            if delta.finish_reason is not None and function_call is not None:
+                assistant_message_tool_calls = self._extract_response_tool_calls([function_call])
+                function_call = None
             assistant_prompt_message = AssistantPromptMessage(
                 content=delta.delta.content or "",
                 tool_calls=assistant_message_tool_calls,
             )
+            full_response += delta.delta.content or ""
             if delta.finish_reason is not None:
                 temp_assistant_prompt_message = AssistantPromptMessage(
                     content=full_response, tool_calls=assistant_message_tool_calls
@@ -615,7 +619,6 @@ class LocalAILanguageModel(LargeLanguageModel):
                         index=delta.index, message=assistant_prompt_message
                     ),
                 )
-                full_response += delta.delta.content
 
     def _extract_response_tool_calls(
         self, response_function_calls: list[FunctionCall]
@@ -633,7 +636,7 @@ class LocalAILanguageModel(LargeLanguageModel):
                     name=response_tool_call.name, arguments=response_tool_call.arguments
                 )
                 tool_call = AssistantPromptMessage.ToolCall(
-                    id=0, type="function", function=function
+                    id=uuid.uuid4().hex, type="function", function=function
                 )
                 tool_calls.append(tool_call)
         return tool_calls

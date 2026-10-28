@@ -1,4 +1,6 @@
+import json
 import logging
+import uuid
 from collections.abc import Generator
 from decimal import Decimal
 from typing import Optional, Union, cast
@@ -6,26 +8,35 @@ from typing import Optional, Union, cast
 import tiktoken
 from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (AIModelEntity, FetchFrom, ModelType,
-                                        PriceConfig)
-from dify_plugin.entities.model.llm import (LLMMode, LLMResult, LLMResultChunk,
-                                            LLMResultChunkDelta)
-from dify_plugin.entities.model.message import (AssistantPromptMessage,
-                                                ImagePromptMessageContent,
-                                                PromptMessage,
-                                                PromptMessageContentType,
-                                                PromptMessageTool,
-                                                SystemPromptMessage,
-                                                TextPromptMessageContent,
-                                                ToolPromptMessage,
-                                                UserPromptMessage)
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType, PriceConfig
+from dify_plugin.entities.model.llm import (
+    LLMMode,
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
+from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
+    ImagePromptMessageContent,
+    PromptMessage,
+    PromptMessageContentType,
+    PromptMessageTool,
+    SystemPromptMessage,
+    TextPromptMessageContent,
+    ToolPromptMessage,
+    UserPromptMessage,
+)
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from openai import OpenAI, Stream
 from openai.types import Completion
-from openai.types.chat import (ChatCompletion, ChatCompletionChunk,
-                               ChatCompletionMessageToolCall)
-from openai.types.chat.chat_completion_chunk import (ChoiceDeltaFunctionCall,
-                                                     ChoiceDeltaToolCall)
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionChunk,
+    ChatCompletionMessageToolCall,
+)
+from openai.types.chat.chat_completion_chunk import (
+    ChoiceDeltaToolCall,
+)
 from openai.types.chat.chat_completion_message import FunctionCall
 
 from .common_openai import _CommonOpenAI
@@ -685,7 +696,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # chat model
         response = client.chat.completions.create(
-            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],  # type: ignore
+            messages=self._convert_prompt_messages_to_dict(prompt_messages),  # type: ignore
             model=model,
             stream=stream,
             **model_parameters,
@@ -722,18 +733,20 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         assistant_message = response.choices[0].message
         # assistant_message_tool_calls = assistant_message.tool_calls
         assistant_message_function_call = assistant_message.function_call
+        if assistant_message_function_call is not None and response.choices[0].finish_reason in (
+            None,
+            "length",
+            "content_filter",
+        ):
+            raise InvokeError("The response ended before the function call completed.")
 
         # extract tool calls from response
         # tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-        function_call = self._extract_response_function_call(
-            assistant_message_function_call
-        )
+        function_call = self._extract_response_function_call(assistant_message_function_call)
         tool_calls = [function_call] if function_call else []
 
         # transform assistant message to prompt message
-        assistant_prompt_message = AssistantPromptMessage(
-            content=assistant_message.content, tool_calls=tool_calls
-        )
+        assistant_prompt_message = AssistantPromptMessage(content=assistant_message.content, tool_calls=tool_calls)
 
         # calculate num tokens
         if response.usage:
@@ -742,17 +755,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             completion_tokens = response.usage.completion_tokens
         else:
             # calculate num tokens
-            prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
-            )
-            completion_tokens = self._num_tokens_from_messages(
-                model, [assistant_prompt_message]
-            )
+            prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
+            completion_tokens = self._num_tokens_from_messages(model, [assistant_prompt_message])
 
         # transform usage
-        usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
-        )
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
         # transform response
         return LLMResult(
@@ -771,140 +778,62 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> Generator:
-        """
-        Handle llm chat stream response
-
-        :param model: model name
-        :param response: response
-        :param prompt_messages: prompt messages
-        :param tools: tools for tool calling
-        :return: llm response chunk generator
-        """
         full_assistant_content = ""
-        delta_assistant_message_function_call_storage: Optional[
-            ChoiceDeltaFunctionCall
-        ] = None
-        prompt_tokens = 0
-        completion_tokens = 0
-        final_tool_calls = []
+        function_call: FunctionCall | None = None
+        response_usage = None
         final_chunk = LLMResultChunk(
             model=model,
             prompt_messages=prompt_messages,
-            delta=LLMResultChunkDelta(
-                index=0,
-                message=AssistantPromptMessage(content=""),
-            ),
+            delta=LLMResultChunkDelta(index=0, message=AssistantPromptMessage(content="")),
         )
-
         for chunk in response:
-            if len(chunk.choices) == 0:
-                if chunk.usage:
-                    # calculate num tokens
-                    prompt_tokens = chunk.usage.prompt_tokens
-                    completion_tokens = chunk.usage.completion_tokens
+            if chunk.usage is not None:
+                response_usage = chunk.usage
+            if not chunk.choices:
                 continue
+            choice = chunk.choices[0]
+            fragment = choice.delta.function_call
+            if fragment is not None:
+                if function_call is None:
+                    function_call = FunctionCall(name="", arguments="")
+                if fragment.name:
+                    function_call.name += fragment.name
+                function_call.arguments += fragment.arguments or ""
 
-            delta = chunk.choices[0]
-            has_finish_reason = delta.finish_reason is not None
-
-            if (
-                not has_finish_reason
-                and (delta.delta.content is None or delta.delta.content == "")
-                and delta.delta.function_call is None
-            ):
-                continue
-
-            # assistant_message_tool_calls = delta.delta.tool_calls
-            assistant_message_function_call = delta.delta.function_call
-
-            # extract tool calls from response
-            if delta_assistant_message_function_call_storage is not None:
-                # handle process of stream function call
-                if assistant_message_function_call:
-                    # message has not ended ever
-                    assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments, str
-                    )
-                    assert isinstance(assistant_message_function_call.arguments, str)
-
-                    delta_assistant_message_function_call_storage.arguments += (
-                        assistant_message_function_call.arguments
-                    )
-                    continue
-                else:
-                    # message has ended
-                    assistant_message_function_call = (
-                        delta_assistant_message_function_call_storage
-                    )
-                    delta_assistant_message_function_call_storage = None
-            else:
-                if assistant_message_function_call:
-                    # start of stream function call
-                    delta_assistant_message_function_call_storage = (
-                        assistant_message_function_call
-                    )
-                    if delta_assistant_message_function_call_storage.arguments is None:
-                        delta_assistant_message_function_call_storage.arguments = ""
-                    if not has_finish_reason:
-                        continue
-
-            # tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-            function_call = self._extract_response_function_call(
-                assistant_message_function_call
+            content = choice.delta.content or ""
+            full_assistant_content += content
+            result_chunk = LLMResultChunk(
+                model=chunk.model,
+                prompt_messages=prompt_messages,
+                system_fingerprint=chunk.system_fingerprint,
+                delta=LLMResultChunkDelta(
+                    index=choice.index,
+                    message=AssistantPromptMessage(content=content),
+                    finish_reason=choice.finish_reason,
+                ),
             )
-            tool_calls = [function_call] if function_call else []
-            if tool_calls:
-                final_tool_calls.extend(tool_calls)
+            if choice.finish_reason is not None:
+                final_chunk = result_chunk
+            elif content:
+                yield result_chunk
 
-            # transform assistant message to prompt message
-            assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content if delta.delta.content else "",
-                tool_calls=tool_calls,
+        if function_call is not None:
+            if final_chunk.delta.finish_reason in (None, "length", "content_filter"):
+                raise InvokeError("The stream ended before the function call completed.")
+            tool_call = self._extract_response_function_call(function_call)
+            if tool_call is not None:
+                final_chunk.delta.message.tool_calls = [tool_call]
+
+        if response_usage is not None:
+            prompt_tokens = response_usage.prompt_tokens
+            completion_tokens = response_usage.completion_tokens
+        else:
+            prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
+            full_message = AssistantPromptMessage(
+                content=full_assistant_content, tool_calls=final_chunk.delta.message.tool_calls
             )
-
-            full_assistant_content += delta.delta.content if delta.delta.content else ""
-
-            if has_finish_reason:
-                final_chunk = LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint=chunk.system_fingerprint,
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                        finish_reason=delta.finish_reason,
-                    ),
-                )
-            else:
-                yield LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint=chunk.system_fingerprint,
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                    ),
-                )
-
-        if not prompt_tokens:
-            prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
-            )
-
-        if not completion_tokens:
-            full_assistant_prompt_message = AssistantPromptMessage(
-                content=full_assistant_content, tool_calls=final_tool_calls
-            )
-            completion_tokens = self._num_tokens_from_messages(
-                model, [full_assistant_prompt_message]
-            )
-
-        # transform usage
-        usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
-        )
-        final_chunk.delta.usage = usage
-
+            completion_tokens = self._num_tokens_from_messages(model, [full_message])
+        final_chunk.delta.usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         yield final_chunk
 
     def _extract_response_tool_calls(
@@ -936,28 +865,24 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return tool_calls
 
     def _extract_response_function_call(
-        self, response_function_call: Optional[FunctionCall | ChoiceDeltaFunctionCall]
-    ) -> Optional[AssistantPromptMessage.ToolCall]:
-        """
-        Extract function call from response
-
-        :param response_function_call: response function call
-        :return: tool call
-        """
-        tool_call = None
-        if response_function_call:
-            assert isinstance(response_function_call, FunctionCall)
-
-            function = AssistantPromptMessage.ToolCall.ToolCallFunction(
-                name=response_function_call.name,
-                arguments=response_function_call.arguments,
-            )
-
-            tool_call = AssistantPromptMessage.ToolCall(
-                id=response_function_call.name, type="function", function=function
-            )
-
-        return tool_call
+        self, response_function_call: FunctionCall | None
+    ) -> AssistantPromptMessage.ToolCall | None:
+        if response_function_call is None:
+            return None
+        arguments = response_function_call.arguments or "{}"
+        try:
+            parameters = json.loads(arguments)
+        except (TypeError, ValueError) as error:
+            raise InvokeError("The model returned invalid function arguments.") from error
+        if not response_function_call.name or not isinstance(parameters, dict):
+            raise InvokeError("The model returned an incomplete function call.")
+        return AssistantPromptMessage.ToolCall(
+            id=f"call_{uuid.uuid4().hex}",
+            type="function",
+            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                name=response_function_call.name, arguments=arguments
+            ),
+        )
 
     def _clear_illegal_prompt_messages(
         self, model: str, prompt_messages: list[PromptMessage]
@@ -992,6 +917,18 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                             )
 
         return prompt_messages
+
+    def _convert_prompt_messages_to_dict(self, messages: list[PromptMessage]) -> list[dict]:
+        tool_names = {}
+        converted = []
+        for message in messages:
+            if isinstance(message, AssistantPromptMessage):
+                tool_names.update((call.id, call.function.name) for call in message.tool_calls)
+            item = self._convert_prompt_message_to_dict(message)
+            if isinstance(message, ToolPromptMessage) and not message.name:
+                item["name"] = tool_names.get(message.tool_call_id, message.tool_call_id)
+            converted.append(item)
+        return converted
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
         """
@@ -1121,7 +1058,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 "information on how messages are converted to tokens."
             )
         num_tokens = 0
-        messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
+        messages_dict = self._convert_prompt_messages_to_dict(messages)
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():

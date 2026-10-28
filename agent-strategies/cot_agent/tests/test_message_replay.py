@@ -1,24 +1,28 @@
+import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
+import httpx
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from dify_plugin.core.runtime import Session
+from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
+from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities.model import AIModelEntity
-from dify_plugin.entities.model.llm import (
-    LLMResult,
-    LLMResultChunk,
-    LLMResultChunkDelta,
-    LLMUsage,
-)
+from dify_plugin.entities.model.llm import LLMResultChunk, LLMResultChunkDelta, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
     TextPromptMessageContent,
     UserPromptMessage,
+    ensure_prompt_message,
 )
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.interfaces.agent import AgentModelConfig, ToolEntity
@@ -27,7 +31,10 @@ from strategies.ReAct import ReActAgentStrategy
 
 
 @pytest.mark.parametrize("mode", ["blocking", "streaming", "react"])
-def test_tool_rounds_preserve_original_messages_and_history(mode):
+@pytest.mark.parametrize("fail_after_call", [False, True])
+def test_tool_rounds_preserve_original_messages_and_history(
+    mode, fail_after_call, monkeypatch
+):
     history = [
         UserPromptMessage(
             content=[
@@ -93,60 +100,125 @@ def test_tool_rounds_preserve_original_messages_and_history(mode):
                 if mode == "react"
                 else [
                     AssistantPromptMessage.ToolCall(
-                        id=f"call-{index}",
+                        id=f"call-{index}-{call_index}",
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name="lookup", arguments="{}"
+                            name="lookup",
+                            arguments='{ "id": 9007199254740993, "scale": 1e-9, "label": "\\u4e2d" }',
                         ),
                     )
+                    for call_index in range(2)
                 ],
             )
         )
     replies.append(AssistantPromptMessage(content="FinalAnswer: done"))
     requests = []
+    tool_requests = []
 
-    def invoke(**kwargs):
-        requests.append(deepcopy(kwargs["prompt_messages"]))
-        reply = replies[len(requests) - 1]
-        if mode == "blocking":
-            return LLMResult(
-                model=model.model,
-                message=reply.model_copy(deep=True),
-                usage=LLMUsage.empty_usage(),
-            )
-        return (
-            chunk
-            for chunk in [
-                LLMResultChunk(
-                    model=model.model,
-                    delta=LLMResultChunkDelta(
-                        index=0, message=reply.model_copy(deep=True)
-                    ),
-                ),
-                LLMResultChunk(
-                    model=model.model,
-                    delta=LLMResultChunkDelta(
-                        index=1, message=AssistantPromptMessage(content="")
-                    ),
-                ),
+    def respond(request):
+        invocation = json.loads(request.content)["data"]["data"]
+        if invocation["type"] == "tool":
+            tool_requests.append(invocation["request"])
+            messages = [
+                ToolInvokeMessage(
+                    type=ToolInvokeMessage.MessageType.TEXT,
+                    message=ToolInvokeMessage.TextMessage(text=""),
+                ).model_dump(mode="json")
             ]
-        )
-
-    session = Mock()
-    session.model.llm.invoke.side_effect = invoke
-    session.tool.invoke.side_effect = lambda **_: iter(
-        [
-            ToolInvokeMessage(
-                type=ToolInvokeMessage.MessageType.TEXT,
-                message=ToolInvokeMessage.TextMessage(text=""),
+        else:
+            assert invocation["type"] == "llm"
+            requests.append(
+                [
+                    ensure_prompt_message(value)
+                    for value in invocation["request"]["prompt_messages"]
+                ]
             )
+            round_index = len(requests) - 1
+            reply = replies[round_index]
+            partial = reply.model_copy(deep=True)
+            terminal = AssistantPromptMessage(content="")
+            if isinstance(reply.content, list):
+                partial.content = reply.content[:1]
+                partial.tool_calls = reply.tool_calls[:1]
+                terminal.content = reply.content[1:]
+                terminal.tool_calls = reply.tool_calls[1:]
+            terminal.opaque_body = partial.opaque_body
+            partial.opaque_body = None
+            partial_usage = LLMUsage.empty_usage()
+            partial_usage.prompt_tokens = 10
+            partial_usage.completion_tokens = 1
+            partial_usage.total_tokens = 11
+            partial_usage.total_price = Decimal("0.01")
+            terminal_usage = partial_usage.model_copy(
+                update={
+                    "prompt_tokens": 10 * (round_index + 1),
+                    "completion_tokens": round_index + 3,
+                    "total_tokens": 11 * (round_index + 1) + 2,
+                    "total_price": Decimal("0.1") * (round_index + 1),
+                }
+            )
+            messages = [
+                LLMResultChunk(
+                    model=model.model,
+                    delta=LLMResultChunkDelta(
+                        index=index, message=message, usage=usage
+                    ),
+                ).model_dump(mode="json")
+                for index, (message, usage) in enumerate(
+                    [
+                        (partial, partial_usage),
+                        (terminal, terminal_usage),
+                        (AssistantPromptMessage(content=""), None),
+                    ]
+                )
+            ]
+        events = [
+            {
+                "session_id": "replay",
+                "event": "backwards_response",
+                "data": {
+                    "backwards_request_id": invocation["backwards_request_id"],
+                    "event": "response",
+                    "message": "",
+                    "data": message,
+                },
+            }
+            for message in messages
         ]
+        if fail_after_call and invocation["type"] == "llm":
+            events = events[:1] + [
+                {
+                    "session_id": "replay",
+                    "event": "backwards_response",
+                    "data": {
+                        "backwards_request_id": invocation["backwards_request_id"],
+                        "event": "error",
+                        "message": "provider stream failed",
+                        "data": None,
+                    },
+                }
+            ]
+        return httpx.Response(200, text="\n".join(map(json.dumps, events)))
+
+    client_type = httpx.Client
+    monkeypatch.setattr(
+        "dify_plugin.core.runtime.httpx",
+        SimpleNamespace(
+            Client=lambda: client_type(transport=httpx.MockTransport(respond))
+        ),
     )
     strategy_class = (
         ReActAgentStrategy if mode == "react" else FunctionCallingAgentStrategy
     )
-    output = list(
-        strategy_class(runtime=Mock(), session=session)._invoke(
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        session = Session(
+            session_id="replay",
+            executor=executor,
+            reader=StdioRequestReader(),
+            writer=StdioResponseWriter(),
+            dify_plugin_daemon_url="http://daemon.test",
+        )
+        invocation = strategy_class(runtime=Mock(), session=session)._invoke(
             {
                 "query": "look up",
                 "instruction": "Use the tool",
@@ -155,7 +227,29 @@ def test_tool_rounds_preserve_original_messages_and_history(mode):
                 "maximum_iterations": 3,
             }
         )
+        if fail_after_call:
+            with pytest.raises(Exception, match="provider stream failed"):
+                list(invocation)
+            assert tool_requests == []
+            return
+        output = list(invocation)
+
+    assert len(tool_requests) == (2 if mode == "react" else 4)
+    if mode != "react":
+        assert all(
+            request["tool_parameters"]
+            == {"id": 9007199254740993, "scale": 1e-9, "label": "中"}
+            for request in tool_requests
+        )
+    metadata = next(
+        item.message.json_object
+        for item in output
+        if item.type == ToolInvokeMessage.MessageType.JSON
+        and "model_history" in item.message.json_object
     )
+    usage = metadata.get("execution_metadata", metadata)
+    assert usage["total_tokens"] == 72
+    assert float(usage["total_price"]) == pytest.approx(0.6)
 
     assert len(requests) == 3
     assert model.history_prompt_messages == original_history

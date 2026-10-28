@@ -289,8 +289,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 )
             )
 
-            tool_calls: list[tuple[str, str, dict[str, Any]]] = []
-
             # save full response
             response = ""
             result = LLMResult(
@@ -300,21 +298,12 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             thinking_started = False
 
-            # save tool call names and inputs
-            tool_call_names = ""
-
-            current_llm_usage = None
-
             if isinstance(chunks, Generator):
                 for chunk in chunks:
                     merge_llm_result_chunk(result, chunk)
                     # check if there is any tool call
                     if self.check_tool_calls(chunk):
                         function_call_state = True
-                        tool_calls.extend(self.extract_tool_calls(chunk) or [])
-                        tool_call_names = ";".join(
-                            [tool_call[1] for tool_call in tool_calls]
-                        )
 
                     response_content = chunk.delta.message.get_text_content()
                     if response_content:
@@ -329,28 +318,17 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if should_stream:
                             yield self.create_text_message(response_content)
 
-                    if chunk.delta.usage:
-                        self.increase_usage(llm_usage, chunk.delta.usage)
-                        current_llm_usage = chunk.delta.usage
-
             else:
-                result = chunks
-                result = cast(LLMResult, result)
-                # check if there is any tool call
-                if self.check_blocking_tool_calls(result):
-                    function_call_state = True
-                    tool_calls.extend(self.extract_blocking_tool_calls(result) or [])
-                    tool_call_names = ";".join(
-                        [tool_call[1] for tool_call in tool_calls]
-                    )
-
-                if result.usage:
-                    self.increase_usage(llm_usage, result.usage)
-                    current_llm_usage = result.usage
-
+                result = cast(LLMResult, chunks)
                 response = result.message.get_text_content()
                 if response:
                     yield self.create_text_message(response)
+
+            tool_calls = self.extract_blocking_tool_calls(result)
+            function_call_state = bool(tool_calls)
+            tool_call_names = ";".join(call[1] for call in tool_calls)
+            current_llm_usage = result.usage
+            self.increase_usage(llm_usage, current_llm_usage)
 
             yield self.finish_log_message(
                 log=model_log,
@@ -379,22 +357,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 },
             )
 
-            # If there are tool calls, merge all tool calls into a single assistant message
             assistant_message = result.message.model_copy(deep=True)
-            if tool_calls:
-                assistant_message.tool_calls = [
-                    AssistantPromptMessage.ToolCall(
-                        id=tool_call_id,
-                        type="function",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=tool_call_name,
-                            arguments=json.dumps(
-                                tool_call_args, ensure_ascii=False
-                            ),
-                        ),
-                    )
-                    for tool_call_id, tool_call_name, tool_call_args in tool_calls
-                ]
             if not assistant_message.is_empty():
                 current_thoughts.append(assistant_message)
 

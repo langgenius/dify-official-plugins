@@ -482,7 +482,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = resp_content[0]["text"]
             assistant_prompt_message = AssistantPromptMessage(
                 content=resp_content,
-                tool_calls=response.output.choices[0].message.get("tool_calls", []),
+                tool_calls=[
+                    {**call, "id": call.get("id") or uuid.uuid4().hex}
+                    for call in response.output.choices[0].message.get("tool_calls") or []
+                ],
             )
             usage = self._calc_response_usage(
                 model,
@@ -501,26 +504,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             self._cleanup_temp_files()
 
     def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
-        tool_calls_stream = response.output.choices[0].message["tool_calls"]
-        for tool_call_stream in tool_calls_stream:
-            idx = tool_call_stream.get("index")
-            if idx >= len(tool_calls):
-                tool_calls.append(tool_call_stream)
-            else:
-                if tool_call_stream.get("function"):
-                    func_name = tool_call_stream.get("function").get("name")
-                    tool_call_obj = tool_calls[idx]
-                    if func_name:
-                        if incremental_output:
-                            tool_call_obj["function"]["name"] += func_name
-                        else:
-                            tool_call_obj["function"]["name"] = func_name
-                    args = tool_call_stream.get("function").get("arguments")
-                    if args:
-                        if incremental_output:
-                            tool_call_obj["function"]["arguments"] += args
-                        else:
-                            tool_call_obj["function"]["arguments"] = args
+        tool_calls_stream = response.output.choices[0].message["tool_calls"] or []
+        for position, tool_call_stream in enumerate(tool_calls_stream):
+            idx = tool_call_stream.get("index", position)
+            tool_call_obj = tool_calls.setdefault(
+                idx,
+                {"id": uuid.uuid4().hex, "type": "function", "function": {"name": "", "arguments": ""}},
+            )
+            if tool_call_stream.get("id"):
+                tool_call_obj["id"] = tool_call_stream["id"]
+            for field in ("name", "arguments"):
+                value = tool_call_stream.get("function", {}).get(field)
+                if value:
+                    if incremental_output:
+                        tool_call_obj["function"][field] += value
+                    else:
+                        tool_call_obj["function"][field] = value
 
     def _handle_generate_stream_response(
         self,
@@ -543,7 +542,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         is_reasoning = False
         # This is used to handle unincremental output correctly
         full_text = ""
-        tool_calls = []
+        tool_calls = {}
+        finish_reason = None
         try:
             for index, response in enumerate(responses):
                 if response.status_code not in {200, HTTPStatus.OK}:
@@ -555,6 +555,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
+                    finish_reason = resp_finish_reason
                     resp_content = response.output.choices[0].message.content
                     assistant_prompt_message = AssistantPromptMessage(content="")
                     if "tool_calls" in response.output.choices[0].message:
@@ -575,19 +576,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     elif is_reasoning:
                         assistant_prompt_message.content = "\n</think>"
                         full_text += "\n</think>"
-                    if tool_calls:
-                        message_tool_calls = []
-                        for tool_call_obj in tool_calls:
-                            message_tool_call = AssistantPromptMessage.ToolCall(
-                                id=tool_call_obj["function"]["name"],
-                                type="function",
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=tool_call_obj["function"]["name"],
-                                    arguments=tool_call_obj["function"]["arguments"],
-                                ),
-                            )
-                            message_tool_calls.append(message_tool_call)
-                        assistant_prompt_message.tool_calls = message_tool_calls
+                    if tool_calls and finish_reason not in {"stop", "tool_calls"}:
+                        raise InvokeError(f"Tool call stream ended with {finish_reason}")
                     usage = response.usage
                     usage = self._calc_response_usage(
                         model, credentials, usage.input_tokens, usage.output_tokens
@@ -644,6 +634,32 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                 index=index, message=assistant_prompt_message
                             ),
                         )
+            if tool_calls:
+                if finish_reason not in {"stop", "tool_calls"}:
+                    raise InvokeError("Tool call stream ended without a successful finish reason")
+                for tool_call in tool_calls.values():
+                    function = tool_call["function"]
+                    if not function["name"].strip():
+                        raise InvokeError("Tool call is missing a function name")
+                    try:
+                        arguments = json.loads(function["arguments"])
+                    except json.JSONDecodeError as exc:
+                        raise InvokeError("Tool call arguments are not valid JSON") from exc
+                    if not isinstance(arguments, dict):
+                        raise InvokeError("Tool call arguments must be a JSON object")
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=index + 1,
+                        message=AssistantPromptMessage(
+                            content="",
+                            tool_calls=[tool_calls[index] for index in sorted(tool_calls)],
+                        ),
+                    ),
+                )
+        except requests.RequestException as exc:
+            raise InvokeError("Failed to read streamed response") from exc
         finally:
             self._cleanup_temp_files()
 
@@ -914,7 +930,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     {
                         "role": "tool",
                         "content": prompt_message.content,
-                        "name": prompt_message.tool_call_id,
+                        "tool_call_id": prompt_message.tool_call_id,
                     }
                 )
             else:

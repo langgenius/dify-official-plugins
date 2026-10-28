@@ -1,11 +1,20 @@
+import json
 import sys
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
-PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PLUGIN_ROOT))
+import httpx
+import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from dify_plugin.core.runtime import Session
+from dify_plugin.core.server.stdio.request_reader import StdioRequestReader
+from dify_plugin.core.server.stdio.response_writer import StdioResponseWriter
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, ModelFeature, ModelType
 from dify_plugin.entities.model.llm import (
@@ -19,6 +28,7 @@ from dify_plugin.entities.model.message import (
     PromptMessageTool,
     TextPromptMessageContent,
     ToolPromptMessage,
+    ensure_prompt_message,
 )
 from dify_plugin.entities.tool import (
     ToolDescription,
@@ -368,54 +378,203 @@ if __name__ == "__main__":
     unittest.main()
 
 
-def test_refinement_tool_round_and_saved_history_preserve_model_state():
-    from copy import deepcopy
-
-    strategy = SelfRefineStrategy(runtime=Mock(), session=Mock())
-    model = AgentModelConfig(provider="anthropic", model="claude", mode="chat")
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("fail_after_call", [False, True])
+def test_refinement_tool_round_and_saved_history_preserve_model_state(
+    stream, fail_after_call, monkeypatch
+):
+    model = AgentModelConfig(
+        provider="anthropic",
+        model="claude",
+        mode="chat",
+        entity=AIModelEntity(
+            model="claude",
+            model_type=ModelType.LLM,
+            model_properties={},
+            features=[ModelFeature.STREAM_TOOL_CALL] if stream else [],
+        ),
+    )
     reply = _tool_call_result()
     reply.message.content = [
         TextPromptMessageContent(data="checking", opaque_body={"signature": "signed"}),
         TextPromptMessageContent(data="", opaque_body=0),
     ]
     reply.message.opaque_body = False
+    first_call = reply.message.tool_calls[0]
+    first_call.function.arguments = (
+        '{ "query": "\\u4e2d", "id": 9007199254740993, "scale": 1e-9 }'
+    )
+    reply.message.tool_calls.append(
+        first_call.model_copy(update={"id": "call-2"}, deep=True)
+    )
+    reply.usage = reply.usage.model_copy(
+        update={
+            "prompt_tokens": 20,
+            "completion_tokens": 5,
+            "total_tokens": 25,
+            "total_price": Decimal("0.02"),
+        }
+    )
     final = LLMResult(
         model=model.model,
         message=AssistantPromptMessage(
             content="done", opaque_body={"id": 9007199254740993}
         ),
-        usage=LLMUsage.empty_usage(),
+        usage=LLMUsage.empty_usage().model_copy(
+            update={
+                "prompt_tokens": 30,
+                "completion_tokens": 5,
+                "total_tokens": 35,
+                "total_price": Decimal("0.03"),
+            }
+        ),
     )
     requests = []
+    tool_requests = []
 
-    def invoke(**kwargs):
-        requests.append(deepcopy(kwargs["prompt_messages"]))
-        return reply if len(requests) == 1 else final
-
-    strategy.session.model.llm.invoke.side_effect = invoke
-    strategy.session.tool.invoke.return_value = iter([_text_tool_message("42")])
-    output = list(
-        strategy._invoke(
+    def respond(request):
+        invocation = json.loads(request.content)["data"]["data"]
+        if invocation["type"] == "tool":
+            tool_requests.append(invocation["request"])
+            messages = [_text_tool_message("42").model_dump(mode="json")]
+        else:
+            requests.append(
+                [
+                    ensure_prompt_message(value)
+                    for value in invocation["request"]["prompt_messages"]
+                ]
+            )
+            result = reply if len(requests) == 1 else final
+            chunks = [
+                LLMResultChunk(
+                    model=model.model,
+                    delta=LLMResultChunkDelta(
+                        index=0, message=result.message, usage=result.usage
+                    ),
+                )
+            ]
+            if stream and len(requests) == 1:
+                chunks = [
+                    LLMResultChunk(
+                        model=model.model,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=reply.message.model_copy(
+                                update={
+                                    "content": reply.message.content[index : index + 1],
+                                    "tool_calls": reply.message.tool_calls[
+                                        index : index + 1
+                                    ],
+                                    "opaque_body": False if index else None,
+                                }
+                            ),
+                            usage=reply.usage
+                            if index
+                            else reply.usage.model_copy(
+                                update={
+                                    "completion_tokens": 1,
+                                    "total_tokens": 21,
+                                    "total_price": Decimal("0.01"),
+                                }
+                            ),
+                        ),
+                    )
+                    for index in range(2)
+                ]
+                chunks.append(
+                    LLMResultChunk(
+                        model=model.model,
+                        delta=LLMResultChunkDelta(
+                            index=2, message=AssistantPromptMessage(content="")
+                        ),
+                    )
+                )
+            messages = [chunk.model_dump(mode="json") for chunk in chunks]
+        events = [
             {
-                "query": "hello",
-                "instruction": "answer",
-                "model": model,
-                "tools": [_tool_entity()],
-                "maximum_iterations": 2,
-                "max_refinements": 0,
+                "session_id": "refine",
+                "event": "backwards_response",
+                "data": {
+                    "backwards_request_id": invocation["backwards_request_id"],
+                    "event": "response",
+                    "message": "",
+                    "data": message,
+                },
             }
+            for message in messages
+        ]
+        if fail_after_call and invocation["type"] == "llm":
+            events = events[:1] + [
+                {
+                    "session_id": "refine",
+                    "event": "backwards_response",
+                    "data": {
+                        "backwards_request_id": invocation["backwards_request_id"],
+                        "event": "error",
+                        "message": "provider stream failed",
+                        "data": None,
+                    },
+                }
+            ]
+        return httpx.Response(200, text="\n".join(map(json.dumps, events)))
+
+    client_type = httpx.Client
+    monkeypatch.setattr(
+        "dify_plugin.core.runtime.httpx",
+        SimpleNamespace(
+            Client=lambda: client_type(transport=httpx.MockTransport(respond))
+        ),
+    )
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        session = Session(
+            session_id="refine",
+            executor=executor,
+            reader=StdioRequestReader(),
+            writer=StdioResponseWriter(),
+            dify_plugin_daemon_url="http://daemon.test",
         )
+        strategy = SelfRefineStrategy(runtime=Mock(), session=session)
+        output = list(
+            strategy._invoke(
+                {
+                    "query": "hello",
+                    "instruction": "answer",
+                    "model": model,
+                    "tools": [_tool_entity()],
+                    "maximum_iterations": 2,
+                    "max_refinements": 0,
+                }
+            )
+        )
+    if fail_after_call:
+        assert tool_requests == []
+        assert any(
+            item.type == ToolInvokeMessage.MessageType.TEXT
+            and "provider stream failed" in item.message.text
+            for item in output
+        )
+        return
+
+    assert len(tool_requests) == 2
+    assert all(
+        request["tool_parameters"]
+        == {"query": "中", "id": 9007199254740993, "scale": 1e-9}
+        for request in tool_requests
     )
-    assert requests[1][-2] == reply.message
-    assert requests[1][-1] == ToolPromptMessage(
-        content="42", tool_call_id="call-1", name="search"
-    )
-    saved = output[-1].message.json_object["model_history"]
+    assert requests[1][-3] == reply.message
+    assert requests[1][-2:] == [
+        ToolPromptMessage(content="42", tool_call_id=call_id, name="search")
+        for call_id in ("call-1", "call-2")
+    ]
+    metadata = output[-1].message.json_object
+    assert metadata["total_tokens"] == 60
+    assert metadata["total_price"] == pytest.approx(0.05)
+    saved = metadata["model_history"]
     restored = AgentModelConfig.model_validate(
         {**model.model_dump(mode="json"), "history_prompt_messages": saved["messages"]}
     )
     assert restored.history_prompt_messages[1:] == [
         reply.message,
-        requests[1][-1],
+        *requests[1][-2:],
         final.message,
     ]

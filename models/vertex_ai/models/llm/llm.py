@@ -5,6 +5,7 @@ import logging
 import time
 from collections.abc import Generator, Mapping, Sequence
 from typing import Any, Optional, Union, cast
+from uuid import uuid4
 
 import google.auth.transport.requests
 import requests
@@ -77,7 +78,7 @@ DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 DEFAULT_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
 
 # Separator used to encode thought_signature into ToolCall.id field
-# Format: "{function_name}::sig::{base64_encoded_signature}"
+# Format: "{call_id}::sig::{base64_encoded_signature}"
 SIGNATURE_SEPARATOR = "::sig::"
 
 # Regions where Vertex AI Model Garden currently serves Mistral AI models.
@@ -86,21 +87,22 @@ MISTRAL_SUPPORTED_REGIONS = {"europe-west4", "us-central1"}
 logger = logging.getLogger(__name__)
 
 
-def _encode_tool_call_id(function_name: str, thought_signature: Optional[str]) -> str:
+def _encode_tool_call_id(call_id: Optional[str], thought_signature: Optional[str]) -> str:
     """
-    Encode function name and thought_signature into a single ToolCall.id string.
+    Encode a unique call ID and thought_signature into a single ToolCall.id string.
     This allows persisting the signature across requests since ToolCall.id is preserved by Dify.
     """
+    call_id = call_id or str(uuid4())
     if thought_signature:
         sig_b64 = base64.b64encode(thought_signature.encode()).decode()
-        return f"{function_name}{SIGNATURE_SEPARATOR}{sig_b64}"
-    return function_name
+        return f"{call_id}{SIGNATURE_SEPARATOR}{sig_b64}"
+    return call_id
 
 
 def _decode_tool_call_id(tool_call_id: str) -> tuple[str, Optional[str]]:
     """
-    Decode ToolCall.id back into function name and thought_signature.
-    Returns (function_name, signature) tuple. Signature may be None if not encoded.
+    Decode ToolCall.id back into call ID and thought_signature.
+    Returns (call_id, signature) tuple. Signature may be None if not encoded.
     """
     if SIGNATURE_SEPARATOR in tool_call_id:
         parts = tool_call_id.split(SIGNATURE_SEPARATOR, 1)
@@ -131,6 +133,8 @@ def _extract_thought_signature(part) -> Optional[str]:
     """
     # Direct attributes first
     sig = getattr(part, "thought_signature", None) or getattr(part, "thoughtSignature", None)
+    if isinstance(sig, bytes):
+        return base64.b64encode(sig).decode()
     if isinstance(sig, str) and sig:
         return sig
     # Try dict conversion if the SDK object supports it
@@ -581,7 +585,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     arguments = json.dumps(arguments)
                 tool_calls.append(
                     AssistantPromptMessage.ToolCall(
-                        id=_normalize_mistral_tool_call_id(tool_call.id, tool_call.function.name),
+                        id=_normalize_mistral_tool_call_id(tool_call.id, uuid4().hex[:9]),
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name=tool_call.function.name,
@@ -673,7 +677,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
 
             tool_calls = [
                 AssistantPromptMessage.ToolCall(
-                    id=slot["id"] or slot["name"],
+                    id=slot["id"] or uuid4().hex[:9],
                     type="function",
                     function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=slot["name"],
@@ -1178,7 +1182,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         # This allows the signature to persist across requests
                         sig = _extract_thought_signature(part)
                         func_name = part.function_call.name
-                        tool_call_id = _encode_tool_call_id(func_name, sig)
+                        tool_call_id = _encode_tool_call_id(
+                            getattr(part.function_call, "id", None), sig
+                        )
 
                         tool_call = AssistantPromptMessage.ToolCall(
                             id=tool_call_id,
@@ -1279,12 +1285,29 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         is_thinking = False
         for chunk in response:
             # GenAI SDK returns GenerateContentResponse objects
-            if not hasattr(chunk, 'candidates') or not chunk.candidates:
-                continue
-
-            candidate = chunk.candidates[0]
-
-            if not hasattr(candidate, 'content') or not candidate.content or not candidate.content.parts:
+            candidate = chunk.candidates[0] if chunk.candidates else None
+            if not candidate or not candidate.content or not candidate.content.parts:
+                if chunk.usage_metadata is not None:
+                    prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                        chunk.usage_metadata
+                    )
+                    usage = self._calc_response_usage(
+                        model, credentials, prompt_tokens, completion_tokens
+                    )
+                    index += 1
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=""),
+                            finish_reason=(
+                                str(candidate.finish_reason)
+                                if candidate and candidate.finish_reason else None
+                            ),
+                            usage=usage,
+                        ),
+                    )
                 continue
 
             for part in candidate.content.parts:
@@ -1295,7 +1318,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     # Extract thought_signature and encode it into the ToolCall.id
                     sig = _extract_thought_signature(part)
                     func_name = part.function_call.name
-                    tool_call_id = _encode_tool_call_id(func_name, sig)
+                    tool_call_id = _encode_tool_call_id(
+                        getattr(part.function_call, "id", None), sig
+                    )
 
                     assistant_prompt_message.tool_calls.append(
                         AssistantPromptMessage.ToolCall(
@@ -1488,12 +1513,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 for tool_call in message.tool_calls:
                     # Decode thought_signature from ToolCall.id if present
                     # Falls back to bypass signature if not encoded
-                    _, signature = _decode_tool_call_id(tool_call.id)
+                    call_id, signature = _decode_tool_call_id(tool_call.id)
                     if not signature:
                         signature = DEFAULT_THOUGHT_SIGNATURE
 
                     part_dict = {
                         "function_call": {
+                            "id": call_id,
                             "name": tool_call.function.name,
                             "args": json.loads(tool_call.function.arguments),
                         },
@@ -1509,6 +1535,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 "parts": [
                     {
                         "function_response": {
+                            "id": _decode_tool_call_id(message.tool_call_id)[0],
                             "name": message.name,
                             "response": {"response": message.content}
                         }

@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Refresh the lockfile with: uv lock
 dependencies = [
-    "dify_plugin>=0.9.0",
+    "dify_plugin>=0.11.0,<0.12.0",
     "httpx>=0.28.1",
     "openai>=2.38.0",
     "requests>=2.34.2",
@@ -23,3 +23,7 @@ dev = [
     "pytest>=9.0.3",
     "ruff>=0.15.14",
 ]
+
+[tool.uv.sources]
+# Pin the complete tool-call contract until a containing SDK release is published.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "0fa060a11fd774fe8ed70c915d7881e20a765b64" }

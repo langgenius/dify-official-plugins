@@ -243,18 +243,24 @@ class OCILargeLanguageModel(LargeLanguageModel):
                 **infer_params
             ) 
 
-            chat_history = []
-            for idx, message in enumerate(prompt_messages, start=1):                
-                if idx < len(prompt_messages):
-                    message = Convertor()._parse_prompt_message_to_cohere(message)
-                    chat_history.append(message)
-                else:
-                    if isinstance(message, ToolPromptMessage):
-                        chat_request.tool_results = Convertor()._parse_prompt_message_to_cohere(message).tool_results
-                        chat_request.message = ""
-                    else:
-                        chat_request.message = Convertor()._get_message_content_text(message.content)
-            chat_request.chat_history = chat_history
+            converter = Convertor()
+            history_end = len(prompt_messages) - 1
+            if isinstance(prompt_messages[-1], ToolPromptMessage):
+                while history_end > 0 and isinstance(prompt_messages[history_end - 1], ToolPromptMessage):
+                    history_end -= 1
+            chat_request.chat_history = [
+                converter._parse_prompt_message_to_cohere(message)
+                for message in prompt_messages[:history_end]
+            ]
+            if isinstance(prompt_messages[-1], ToolPromptMessage):
+                chat_request.tool_results = [
+                    result
+                    for message in prompt_messages[history_end:]
+                    for result in converter._parse_prompt_message_to_cohere(message).tool_results
+                ]
+                chat_request.message = ""
+            else:
+                chat_request.message = converter._get_message_content_text(prompt_messages[-1].content)
 
             if tools:
                 chat_request.tools = Convertor().convert_tools_to_cohere(tools)
@@ -319,12 +325,12 @@ class OCILargeLanguageModel(LargeLanguageModel):
         """
         model_id = response["modelId"]
         vendor = model_id.split(".")[0].lower()        
-        logging.debug("OCI Response:  "+response)
         chat_response = response["chatResponse"]
         assistant_prompt_message = AssistantPromptMessage(content = "")
         # Cohere response
-        if vendor == "cohere":            
-            response_tool_calls = chat_response["toolCalls"]
+        if vendor == "cohere":
+            finish_reason = chat_response.get("finishReason")
+            response_tool_calls = chat_response.get("toolCalls")
             if response_tool_calls:
                 tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
                 assistant_prompt_message.tool_calls = tool_calls
@@ -332,21 +338,21 @@ class OCILargeLanguageModel(LargeLanguageModel):
                 assistant_prompt_message.content = chat_response["text"]
         # Generic response
         else:
-            choice = response["choices"][0]
+            choice = chat_response["choices"][0]
             finish_reason = choice["finishReason"]
-            response_tool_calls = choice["message"]["toolCalls"]
+            response_tool_calls = choice["message"].get("toolCalls")
             assistant_prompt_message = AssistantPromptMessage()
             if finish_reason == "tool_calls" or response_tool_calls:
                 assistant_prompt_message.tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
             else:
                 assistant_prompt_message.content = choice["message"]["content"][0]["text"]
         
-        prompt_tokens = response["usage"]["promptTokens"]
-        total_tokens = response["usage"]["totalTokens"]
+        self._validate_tool_calls(assistant_prompt_message.tool_calls, finish_reason, vendor)
+        prompt_tokens = chat_response["usage"]["promptTokens"]
+        total_tokens = chat_response["usage"]["totalTokens"]
         completion_tokens = total_tokens - prompt_tokens
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
-        logging.debug("OCI Response to Dify:  "+result)
         return result
 
     def _handle_generate_stream_response(
@@ -356,89 +362,84 @@ class OCILargeLanguageModel(LargeLanguageModel):
         response,
         prompt_messages: list[PromptMessage]
     ) -> Generator:
-            """
-            Handle llm stream response
-
-            :param model: model name
-            :param credentials: credentials
-            :param response: response
-            :param prompt_messages: prompt messages
-            :return: llm response chunk generator result
-            """
-            index = -1
-            vendor = model.split(".")[0].lower()
-            finish_reason = None
-            usage = None
+        """Collect native tool fragments before exposing complete calls to Dify."""
+        index = 0
+        vendor = model.split(".")[0].lower()
+        finish_reason = None
+        usage = None
+        tool_calls = []
+        calls_by_id = {}
+        active_calls = {}
+        try:
             for stream in response.data.events():
                 chunk = json.loads(stream.data)
-                    
-                if "finishReason" not in chunk:
-                    assistant_prompt_message = AssistantPromptMessage()
-                    if vendor == "cohere":
-                        assistant_prompt_message.content = ""      
-                        if chunk.get("toolCalls"):
-                            tool_calls = Convertor().convert_response_tool_calls(chunk["toolCalls"],vendor)
-                            assistant_prompt_message.tool_calls = tool_calls
-                        elif chunk.get("text"):
-                            assistant_prompt_message.content = chunk["text"]
-                            #logging.debug(chunk["text"])
-                    else:
-                        if chunk.get("message", {}).get("content", [{}])[0].get("text"):
-                            text = chunk["message"]["content"][0]["text"]
-                            assistant_prompt_message.content = text
-                            #logging.debug(text)
-                        if chunk.get("message", {}).get("toolCalls"):
-                            tool_calls = Convertor().convert_response_tool_calls(chunk["message"]["toolCalls"],vendor)
-                            assistant_prompt_message.tool_calls = tool_calls
-                    
-                    if assistant_prompt_message:
-                        index += 1
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
-                        )
-                if "finishReason" in chunk:
+                if vendor == "cohere":
+                    tool_calls.extend(Convertor().convert_response_tool_calls(chunk.get("toolCalls") or [], vendor))
+                    text = chunk.get("text") or ""
+                else:
+                    message = chunk.get("message") or {}
+                    text = "".join(part.get("text") or "" for part in message.get("content") or [])
+                    for position, part in enumerate(message.get("toolCalls") or []):
+                        call_id = part.get("id")
+                        call = calls_by_id.get(call_id) if call_id else active_calls.get(position)
+                        if call is None:
+                            call = AssistantPromptMessage.ToolCall(
+                                id=call_id or str(uuid.uuid4()),
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+                            )
+                            tool_calls.append(call)
+                            calls_by_id[call.id] = call
+                        # OCI reuses array positions when the next call starts.
+                        active_calls[position] = call
+                        if part.get("name"):
+                            call.function.name = part["name"]
+                        call.function.arguments += part.get("arguments") or ""
+
+                if text:
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(index=index, message=AssistantPromptMessage(content=text)),
+                    )
+                    index += 1
+                if chunk.get("finishReason"):
                     finish_reason = chunk["finishReason"]
-                    logging.debug("Stream finishReason:  "+ str(chunk))
-                if "usage" in chunk:
-                    logging.debug("Stream usage:  "+ str(chunk))
+                if chunk.get("usage") is not None:
                     prompt_tokens = chunk["usage"]["promptTokens"]
-                    total_tokens = chunk["usage"]["totalTokens"]
-                    completion_tokens = total_tokens - prompt_tokens
-                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)              
-                if finish_reason and usage:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=AssistantPromptMessage(content=""),
-                            finish_reason=str(finish_reason),
-                            usage=usage,
-                        ),
-                    )
-                elif finish_reason:
-                    yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index,
-                                message=AssistantPromptMessage(content=""),
-                                finish_reason=str(finish_reason),
-                            ),
-                        )
-                elif usage:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=AssistantPromptMessage(content=""),
-                            usage=usage,
-                        ),
-                    )
+                    completion_tokens = chunk["usage"]["totalTokens"] - prompt_tokens
+                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        except Exception as error:
+            raise self._transform_invoke_error(error) from error
+
+        self._validate_tool_calls(tool_calls, finish_reason, vendor)
+        yield LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                finish_reason=finish_reason,
+                usage=usage,
+            ),
+        )
             
+    @staticmethod
+    def _validate_tool_calls(tool_calls, finish_reason, vendor: str) -> None:
+        successful_reasons = ("COMPLETE",) if vendor == "cohere" else ("stop", "tool_calls")
+        for call in tool_calls:
+            if finish_reason not in successful_reasons:
+                raise InvokeError("The model stopped before completing its tool calls.")
+            if not call.function.name or not call.function.name.strip():
+                raise InvokeError("The model returned a tool call without a function name.")
+            try:
+                parameters = json.loads(call.function.arguments)
+            except (TypeError, ValueError) as error:
+                raise InvokeError("The model returned invalid tool arguments.") from error
+            if not isinstance(parameters, dict):
+                raise InvokeError("Tool arguments must be a JSON object.")
+
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
         Convert a single message to a string.
@@ -482,7 +483,8 @@ class OCILargeLanguageModel(LargeLanguageModel):
         
 
 class Convertor:
-    def __init__(self):        
+    def __init__(self):
+        self.tool_calls: dict[str, AssistantPromptMessage.ToolCall] = {}
         self.type_mapping = {
             "array": "list",
             "boolean": "bool",
@@ -495,6 +497,8 @@ class Convertor:
         }
 
     def _get_message_content_text(self, content) :
+        if content is None:
+            return ""
         if isinstance(content, str):
             text = content
         elif isinstance(content, list):
@@ -506,7 +510,7 @@ class Convertor:
                 elif c.type == PromptMessageContentType.IMAGE:
                     images.append(c.data)                        
         else:
-            raise ValueError(f"Got unknown message type {message}")
+            raise ValueError(f"Got unknown message content {content}")
         return text
 
     ## convert prompt message to cohere message
@@ -522,12 +526,15 @@ class Convertor:
             )
         
         elif isinstance(message, ToolPromptMessage):
+            call = self.tool_calls.get(message.tool_call_id)
+            if call is None:
+                raise ValueError(f"Unknown tool call ID: {message.tool_call_id}")
             oci_message = oci.generative_ai_inference.models.CohereToolMessage(
                 tool_results = [
                     oci.generative_ai_inference.models.CohereToolResult(
                         call = oci.generative_ai_inference.models.CohereToolCall(
-                                name = message.tool_call_id,
-                                parameters = {}
+                                name = call.function.name,
+                                parameters = json.loads(call.function.arguments)
                             ),
                         outputs = [{"tool_results": text}]
                     )
@@ -541,6 +548,7 @@ class Convertor:
             if message.tool_calls:
                 oci_tool_calls = []
                 for tool in message.tool_calls:
+                    self.tool_calls[tool.id] = tool
                     oci_tool_calls.append(
                         oci.generative_ai_inference.models.CohereToolCall(
                             name = tool.function.name,
@@ -583,7 +591,7 @@ class Convertor:
         
         elif isinstance(message, ToolPromptMessage):
             oci_message = oci.generative_ai_inference.models.ToolMessage(
-                tool_call_id =  message.name,
+                tool_call_id = message.tool_call_id,
                 content = content
             )
         elif isinstance(message, AssistantPromptMessage):
@@ -596,7 +604,7 @@ class Convertor:
                     oci_tool_calls.append(
                         oci.generative_ai_inference.models.FunctionCall(
                             type = "FUNCTION",
-                            id = tool.function.name,
+                            id = tool.id,
                             name = tool.function.name,
                             arguments = tool.function.arguments
                         )
@@ -667,14 +675,14 @@ class Convertor:
         """
         dify_tool_calls = []
         for call in tool_calls:  
-            name = call["name"]
+            name = call.get("name") or ""
             if vendor == "cohere":
-                arguments = str(call["parameters"])
+                arguments = json.dumps(call.get("parameters"))
             else:
-                arguments = call["arguments"]
+                arguments = call.get("arguments") or ""
             
             dify_call = AssistantPromptMessage.ToolCall(
-                id = name,
+                id = call.get("id") or str(uuid.uuid4()),
                 type = "function",
                 function = AssistantPromptMessage.ToolCall.ToolCallFunction  (
                     name = name,
