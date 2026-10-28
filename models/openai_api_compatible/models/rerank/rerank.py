@@ -162,8 +162,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
             # Sort by score (highest first)
             rerank_docs.sort(key=lambda x: x.score, reverse=True)
 
-            # Apply top_n if specified
-            if top_n:
+            # Apply top_n if specified (check for None to allow top_n=0)
+            if top_n is not None:
                 rerank_docs = rerank_docs[:top_n]
 
             # Apply score threshold
