@@ -848,8 +848,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         usage = response_json.get("usage")
         if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
+            # Gateways differ here: most report prompt_tokens/completion_tokens,
+            # Anthropic-compatible proxies report input_tokens/output_tokens, and
+            # some report only total_tokens. Indexing the OpenAI names raised
+            # KeyError on a response whose content was perfectly usable.
+            prompt_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+            completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+            if prompt_tokens is None:
+                prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            if completion_tokens is None:
+                completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
         else:
             prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
