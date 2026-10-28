@@ -5,9 +5,12 @@ import urllib.parse
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class PrioritizeEmailTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Set the priority/importance level of an email using Microsoft Graph API
@@ -26,11 +29,14 @@ class PrioritizeEmailTool(Tool):
                 yield self.create_text_message("Priority level must be 'low', 'normal', or 'high'.")
                 return
                 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Update email priority
@@ -41,6 +47,7 @@ class PrioritizeEmailTool(Tool):
                     return
                 
                 # Success
+                self._out.update(message_id=email_id, importance=priority_level, success=True)
                 yield self.create_text_message(f"Email priority updated to '{priority_level}' successfully!")
                 yield self.create_json_message(result)
                 
@@ -66,7 +73,7 @@ class PrioritizeEmailTool(Tool):
             }
             
             # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_email_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_email_id}"
             
             # Headers
             headers = {

@@ -1,55 +1,121 @@
 # Tokener.ai
 
-## Overview
-
-Tokener.ai model provider for Dify. The plugin calls chat completions, rerank, and text embeddings through a fixed Tokener.ai endpoint.
-
 ## Configure
 
+Tokener.ai provides language, text embedding, rerank, speech recognition, and text-to-speech models for Dify.
+
 1. Install **Tokener.ai** from the Dify Marketplace.
-2. Create an API key in the [Tokener.ai Console](https://console.tokener.dev/keys).
+2. Create an API key in the [Tokener.ai Console](https://console.tokener.ai/keys).
 3. Open **Settings → Model Provider → Tokener.ai** and enter the key.
 
-The API endpoint is fixed to `https://api.tokener.dev/v1`. The plugin does not accept provider keys, LiteLLM keys, organization IDs, or custom endpoints.
+The API endpoint changes from `https://api.tokener.dev/v1` to `https://api.tokener.ai/v1`.
+Existing keys from the same Tokener.ai Console remain valid. The API key must have access to the selected model.
 
-## Usage
+In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
+Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
+The plugin sends up to 32 texts per embedding request. It does not truncate texts.
+For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents.
+Existing knowledge indexes can mix prefixed queries with unprefixed document vectors after this update.
+Rebuilding an index alone reuses cached document vectors without the prefix.
+For self-hosted Dify, the document cache uses `provider_name = langgenius/tokener/tokener` and `model_name = gemini-embedding-2-preview`.
+The query cache uses the logical Redis key prefix `langgenius/tokener/tokener_gemini-embedding-2-preview_`, followed by the text hash.
+If `REDIS_KEY_PREFIX` is configured, physical Redis keys also start with its trimmed value and a colon.
+These caches are shared across knowledge bases that use the same provider and model.
+After all plugin instances use this version, schedule both model switches during a low-traffic period.
+Applications continue running during each switch.
+Knowledge retrieval first returns no results, then partial results as documents finish indexing.
+An administrator must complete these steps for affected knowledge bases:
 
-In a Dify Workflow or Chatflow, add an LLM node, select **Tokener.ai**, and choose an available model.
+1. Clear document cache rows that match both `provider_name` and `model_name` above.
+2. Clear query cache keys with the matching Redis prefix, including the deployment prefix when configured.
+3. In each knowledge base, select another configured embedding model and save. Wait for indexing to finish. Check for documents with `error` status before continuing.
+4. Select Tokener.ai and `gemini-embedding-2-preview` again and save. Wait for indexing to finish. Check for documents with `error` status again.
 
-Provider, LLM, and embedding validation use authenticated `GET /v1/models`. Rerank model validation sends one small rerank request to check model access.
+Saving the same provider and model does not start indexing.
+Each model change rebuilds completed, enabled, non-archived documents only.
+Both switches can incur embedding charges.
+Failed documents remain in `error` status without automatic retries.
+Resolve document errors after each switch.
+Dify Cloud users cannot clear this cache themselves. Contact Dify support before updating an affected knowledge base.
+The effect of mixing old and new vectors on retrieval quality has not been measured.
+For `gemini-embedding-001`, query and document inputs still use the same request format.
+The plugin does not yet preserve the retrieval task type for this model.
 
-Select **Qwen3 Rerank** as a rerank model. The API key must have access to `qwen3-rerank`. The public model directory does not list restricted rerank models.
-
-The plugin registers a text embedding adapter. No predefined embedding models are included because the verified catalog lists none. The adapter needs matching model definitions before embedding models appear in Dify. Embeddings keep the requested model ID and the default vector dimensions. The plugin does not truncate texts or switch models.
+Provider, LLM, and embedding validation use authenticated `GET /v1/models`.
+Rerank validation sends a small rerank request. Speech validation sends demo audio or a short speech request.
+These validation requests can incur charges.
 
 ## Model parameters
 
-Parameter rules come from the catalog generator and explicit model profiles. The SDK does not send parameters that the selected model does not declare. New model IDs receive no sampling or reasoning controls until their API contract is verified.
+The generator reads family rules from `scripts/parameter_profiles.json` and capabilities from the catalog.
+The SDK filters parameters that the selected model does not declare.
+New reasoning models expose no sampling controls unless a profile explicitly permits them.
+Unknown families expose the output limit and catalog-declared structured output controls.
 
-| Models | Temperature | Top P | Presence penalty | Frequency penalty | Seed | Reasoning effort | Thinking |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna | Not declared | Not declared | Not declared | Not declared | Integer | none, low, medium, high, xhigh | Not declared |
-| deepseek-v4-flash, deepseek-v4-pro, glm-5.2, kimi-k3 | 0–2 | 0.01–1 | -2–2 | -2–2 | Integer | Not declared | Not declared |
+GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
 
-Staging GPT requests return HTTP 400 for custom temperature and Top P, even with `reasoning_effort=none`. GPT models do not expose these controls. Dify built-in calls can still supply them. The SDK filters these undeclared parameters before HTTP and sends declared parameters. DeepSeek and GLM deployment policies remove thinking controls, so the plugin does not declare them. Kimi reasoning effort is not declared because its effect is unverified. Seed forwarding does not guarantee repeatable output.
+The existing GPT-5.6 profile retains seed and reasoning effort controls.
+The existing DeepSeek V4, GLM-5.2, and Kimi K3 profiles retain their verified sampling controls and seed.
+Other GPT-5, GPT-6, and o-series models expose no unverified sampling or reasoning controls.
+Claude, Gemini, Grok, Qwen, DeepSeek, GLM, Kimi, and MiniMax family rules expose sampling only for models without reasoning capability.
+Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
 
-Profiles use the API parameter policy and the LiteLLM 1.103.0-rc.1 contract. Staging requests confirm request acceptance for the tested models and values. They do not prove parameter effects or production deployment settings. Production parameter overrides and DeepSeek Flash inference remain unverified. Recheck these profiles when deployment policies change. Catalog revisions do not include parameter policies.
+Qwen-Long accepts text through Tokener.ai. Its schema declares `document` so Dify forwards attachments to the plugin for an explicit error.
+This declaration makes Dify show document controls; it does not enable document processing through Tokener.ai.
+The plugin rejects forwarded attachments before it sends an upstream request, including attachments from basic chat apps (EasyUI).
+For any app type, extract the document text and paste it into the message instead of attaching the document.
+In Workflow or Chatflow, you can also connect a Doc Extractor node's text output to the LLM node.
 
 ## Sync models
 
-Model YAML is generated from the Tokener.ai public catalog:
+Run the generator from this plugin directory with a complete Tokener catalog snapshot JSON file.
+The snapshot must include restricted models available to your users. The public catalog hides restricted models.
+An OpenAI `/v1/models` response lacks the context, capability, and price metadata needed for generation.
 
 ```bash
-uv run python scripts/sync_catalog.py
-uv run python scripts/sync_catalog.py --check
+export UV_PROJECT_ENVIRONMENT=/tmp/tokener-plugin-venv
+uv run --frozen python scripts/sync_catalog.py --input /tmp/tokener-models.json
+uv run --frozen python scripts/sync_catalog.py --input /tmp/tokener-models.json --check
 ```
 
-Only LLM entries are generated.
+The snapshot must contain the complete `items` array. Each item supplies `publicModelId`, `category`, `enabled`, `managedAvailable`, and model metadata.
+The generator includes models with both `enabled: true` and `managedAvailable: true`, regardless of access scope.
+Both display labels use the public model ID. Internal identifiers and display names are excluded.
+Decision routes are outside the supported Dify model types. Unknown categories stop generation and identify the affected public model IDs.
+Keep the source snapshot outside Git. The snapshot does not prove that a particular API key has model access.
+
+The generator also accepts a complete machine catalog snapshot with `schemaVersion: 1`, `catalogRevision`, and `models`.
+The input path is required. If the file contains an HTML login page, re-authenticate and obtain a new JSON snapshot.
+Never put keys in snapshots or commits.
+
+The default selection is all five supported types.
+Select `--model-type llm`, `text_embedding`, `rerank`, `tts`, or `speech2text` to update one type.
+Synchronization validates all selected types before writing. It deletes model YAMLs that lack a matching snapshot entry in each selected type.
+An empty type produces an empty position list and removes its model definitions. `--check` reports drift without writing.
+
+Embedding prices use the catalog input price. Rerank and audio definitions omit optional Dify prices because their billing units differ.
+Tokener.ai determines charges. Audio models require complete voice or upload metadata and prices.
+New audio models use their catalog type and metadata, without an ID allowlist.
+
+## Audio behavior
+
+Speech recognition uploads files to `/v1/audio/transcriptions`. Upload limits and extensions come from catalog metadata. Upload limits use decimal megabytes.
+The diarization model uses automatic chunking and returns text without speaker labels.
+Text-to-speech sends requests to `/v1/audio/speech`. Voices, languages, the default voice, text limits, and format come from catalog metadata.
+Voice languages must use Dify UI locale codes. An unsupported code stops generation and identifies the model, voice, and code.
+
+Long speech text is split into sequential requests. The text limit counts characters, as in the OpenAI plugin.
+The plugin streams audio bytes in order. A later failure raises an error after any audio already sent.
+An empty stream raises an error. Supported formats are `mp3`, `aac`, `opus`, and `pcm`.
+`wav` and `flac` are rejected because concatenated files can truncate playback.
+
+Audio definitions appear only when the snapshot contains matching available models.
+Live audio generation, Dify playback, and production latency remain unverified.
+A segment without output for more than 120 seconds can exceed the serverless idle limit.
 
 ## Support
 
-Open an issue in [dify-official-plugins](https://github.com/langgenius/dify-official-plugins/issues) and include the Dify version, plugin version, model ID, and request ID. Never include API keys or prompt content.
+Open an issue in [dify-official-plugins](https://github.com/langgenius/dify-official-plugins/issues).
+Include the Dify version, plugin version, model ID, and request ID. Never include API keys or prompt content.
 
-## License
-
-Apache License 2.0. See the repository [LICENSE](https://github.com/langgenius/dify-official-plugins/blob/main/LICENSE).
+Apache License 2.0. See [LICENSE](https://github.com/langgenius/dify-official-plugins/blob/main/LICENSE).

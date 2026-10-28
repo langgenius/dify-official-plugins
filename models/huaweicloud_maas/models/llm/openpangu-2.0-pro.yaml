@@ -43,7 +43,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: '3.2'
-  output: '14.5'
+  input: '4.8'
+  output: '17.6'
   unit: '0.000001'
   currency: RMB

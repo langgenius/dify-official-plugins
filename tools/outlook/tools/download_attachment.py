@@ -6,9 +6,12 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class DownloadAttachmentTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Download a single Outlook email attachment as a file, using the message
@@ -25,15 +28,18 @@ class DownloadAttachmentTool(Tool):
                 yield self.create_text_message("'attachment_id' is required.")
                 return
 
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
 
             enc_msg = urllib.parse.quote(message_id, safe="")
             enc_att = urllib.parse.quote(attachment_id, safe="")
             url = (
-                f"https://graph.microsoft.com/v1.0/me/messages/{enc_msg}"
+                f"{self._mailbox_base}/messages/{enc_msg}"
                 f"/attachments/{enc_att}"
             )
             headers = {
@@ -65,6 +71,7 @@ class DownloadAttachmentTool(Tool):
             content_type = attachment.get("contentType") or "application/octet-stream"
             content_bytes = attachment.get("contentBytes")
 
+            self._out.update(file_name=name, content_type=content_type, size=int(attachment.get("size") or 0))
             # Only file attachments carry the raw bytes (contentBytes). Item/reference
             # attachments (nested emails, links) have no downloadable file.
             if odata_type != "#microsoft.graph.fileAttachment" or not content_bytes:
@@ -72,6 +79,7 @@ class DownloadAttachmentTool(Tool):
                     f"'{name}' is a {odata_type or 'non-file'} attachment and has no downloadable "
                     "file. Only file attachments (e.g. PDF, Excel, TXT) can be downloaded."
                 )
+                self._out["success"] = True
                 yield self.create_json_message(attachment)
                 return
 
@@ -81,6 +89,7 @@ class DownloadAttachmentTool(Tool):
                 yield self.create_text_message("Failed to decode the attachment content.")
                 return
 
+            self._out.update(downloaded=True, success=True)
             yield self.create_text_message(f"Downloaded attachment: {name}")
             yield self.create_blob_message(
                 blob=raw,

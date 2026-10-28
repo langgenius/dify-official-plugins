@@ -5,9 +5,12 @@ import urllib.parse
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from tools.graph_client import GraphAuthError, resolve_graph_context
+from tools.outputs import with_outputs
 
 
 class SendDraftTool(Tool):
+    @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Send a draft message through Outlook using Microsoft Graph API
@@ -22,11 +25,14 @@ class SendDraftTool(Tool):
                 yield self.create_text_message("Draft ID is required.")
                 return
                 
-            # Get access token from OAuth credentials
-            access_token = self.runtime.credentials.get("access_token")
-            if not access_token:
-                yield self.create_text_message("Access token is required in credentials.")
+            # Resolve the Graph token and target mailbox (OAuth or Service Principal)
+            try:
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+            except GraphAuthError as e:
+                yield self.create_text_message(str(e))
                 return
+            access_token = graph.access_token
+            self._mailbox_base = graph.mailbox_base
             
             try:
                 # Get draft details first
@@ -42,6 +48,7 @@ class SendDraftTool(Tool):
                     return
                 
                 # Success
+                self._out.update(draft_id=draft_id, subject=draft_details["subject"] or "", success=True)
                 yield self.create_text_message(f"Message sent successfully: {draft_details['subject']}")
                 yield self.create_json_message({
                     "status": "sent",
@@ -71,7 +78,7 @@ class SendDraftTool(Tool):
             # URL encode the draft ID to handle special characters
             encoded_draft_id = urllib.parse.quote(draft_id, safe='')
             
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_draft_id}"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
@@ -117,7 +124,7 @@ class SendDraftTool(Tool):
             encoded_draft_id = urllib.parse.quote(draft_id, safe='')
             
             # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}/send"
+            url = f"{self._mailbox_base}/messages/{encoded_draft_id}/send"
             
             # Headers
             headers = {
@@ -159,7 +166,7 @@ class SendDraftTool(Tool):
             # URL encode the message ID to handle special characters
             encoded_message_id = urllib.parse.quote(message_id, safe='')
             
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_message_id}"
+            url = f"{self._mailbox_base}/messages/{encoded_message_id}"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"

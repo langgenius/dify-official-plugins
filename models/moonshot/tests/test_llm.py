@@ -29,12 +29,13 @@ def _llm(schemas=None):
     return MoonshotLargeLanguageModel(model_schemas=schemas or [])
 
 
-def test_non_stream_reasoning_round_trips_exactly():
+@pytest.mark.parametrize("model", ["kimi-k3", "kimi-k3.1-pro", "kimi-k3.1-pro-highspeed"])
+def test_non_stream_reasoning_round_trips_exactly(model):
     reasoning_content = "  must survive exactly\n"
     response = Mock()
     response.json.return_value = {
         "id": "chatcmpl-1",
-        "model": "kimi-k3",
+        "model": model,
         "choices": [
             {
                 "finish_reason": "tool_calls",
@@ -65,7 +66,7 @@ def test_non_stream_reasoning_round_trips_exactly():
     llm = _llm()
 
     result = llm._handle_generate_response(
-        "kimi-k3",
+        model,
         credentials,
         response,
         [UserPromptMessage(content="hi")],
@@ -79,7 +80,7 @@ def test_non_stream_reasoning_round_trips_exactly():
         payload = llm._convert_prompt_message_to_dict(
             message,
             {
-                "_current_model": "kimi-k3",
+                "_current_model": model,
                 "function_calling_type": "tool_call",
             },
         )
@@ -131,6 +132,8 @@ def test_thinking_model_detection_is_exact():
         "kimi-k2.7-code",
         "kimi-k2.7-code-highspeed",
         "kimi-k3",
+        "kimi-k3.1-pro",
+        "kimi-k3.1-pro-highspeed",
         "kimi-k2-thinking",
         "kimi-k2-thinking-turbo",
     ):
@@ -213,6 +216,8 @@ def test_stream_reasoning_ignores_empty_chunks():
     ("model", "context_size", "default_tokens", "max_tokens"),
     [
         ("kimi-k3", 1_048_576, 131_072, 1_048_576),
+        ("kimi-k3.1-pro", 1_048_576, 131_072, 1_048_576),
+        ("kimi-k3.1-pro-highspeed", 1_048_576, 131_072, 1_048_576),
         ("kimi-k2.7-code", 262_144, 32_768, 262_144),
         ("kimi-k2.7-code-highspeed", 262_144, 32_768, 262_144),
     ],
@@ -255,12 +260,23 @@ def test_new_model_schema_and_token_limits(
         )
 
 
-def test_json_schema_is_sent_to_api():
-    model = "kimi-k2.7-code"
+@pytest.mark.parametrize(
+    ("model", "reasoning_effort"),
+    [("kimi-k2.7-code", None)]
+    + [
+        (model, effort)
+        for model in ("kimi-k3.1-pro", "kimi-k3.1-pro-highspeed")
+        for effort in (None, "low", "high", "max")
+    ],
+)
+def test_json_schema_is_sent_to_api(model, reasoning_effort):
     raw = yaml.safe_load(
         (ROOT / "models" / "llm" / f"{model}.yaml").read_text(),
     )
     llm = _llm([AIModelEntity.model_validate(raw)])
+    parameters = {"max_tokens": 128, "response_format": "json_schema"}
+    if reasoning_effort is not None:
+        parameters["reasoning_effort"] = reasoning_effort
     output_schema = {
         "name": "moonshot_test",
         "strict": True,
@@ -302,11 +318,7 @@ def test_json_schema_is_sent_to_api():
                 model=model,
                 credentials={"api_key": "test"},
                 prompt_messages=[UserPromptMessage(content="Reply with JSON.")],
-                model_parameters={
-                    "max_tokens": 128,
-                    "response_format": "json_schema",
-                    "json_schema": json.dumps(output_schema),
-                },
+                model_parameters={**parameters, "json_schema": json.dumps(output_schema)},
                 stream=False,
             ),
         )
@@ -318,6 +330,20 @@ def test_json_schema_is_sent_to_api():
         "json_schema": output_schema,
     }
     assert "json_schema" not in request
+    if model in ("kimi-k3.1-pro", "kimi-k3.1-pro-highspeed"):
+        if reasoning_effort is None:
+            # Optional parameters are omitted so the API applies its default.
+            assert "reasoning_effort" not in request
+        else:
+            assert request["reasoning_effort"] == reasoning_effort
+        assert not {
+            "thinking",
+            "temperature",
+            "top_p",
+            "n",
+            "presence_penalty",
+            "frequency_penalty",
+        }.intersection(request)
     assert chunks[0].delta.message.content == '{"answer":"ok"}'
 
 

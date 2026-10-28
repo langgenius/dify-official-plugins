@@ -98,7 +98,7 @@ def test_public_rerank_preserves_documents_indices_and_threshold():
             top_n=2,
             user="user",
         )
-    assert post.call_args.args == ("https://api.tokener.dev/v1/rerank",)
+    assert post.call_args.args == ("https://api.tokener.ai/v1/rerank",)
     assert post.call_args.kwargs["json"] == {
         "model": "qwen3-rerank",
         "query": "same",
@@ -179,7 +179,7 @@ def test_public_embedding_preserves_model_texts_dimensions_and_order(input_type)
     assert result.model == "embedding-test"
     assert post.call_count == 2
     for index, call in enumerate(post.call_args_list):
-        assert call.args == ("https://api.tokener.dev/v1/embeddings",)
+        assert call.args == ("https://api.tokener.ai/v1/embeddings",)
         assert call.kwargs["json"] == {
             "model": "embedding-test",
             "input": texts[index * 2 : index * 2 + 2],
@@ -246,10 +246,9 @@ def test_public_non_llm_does_not_retry_network_failure():
     assert post.call_count == 1
 
 
-def test_dify_exposes_rerank_without_public_directory_membership():
+def test_rerank_validation_does_not_require_public_directory_membership():
     registration = PluginRegistration(DifyPluginEnv())
     model = registration.get_model_instance("tokener", ModelType.RERANK)
-    assert [schema.model for schema in model.model_schemas] == ["qwen3-rerank"]
     with (
         patch("requests.get", return_value=response({"data": []})) as get,
         patch("requests.post", return_value=response({"results": []})) as post,

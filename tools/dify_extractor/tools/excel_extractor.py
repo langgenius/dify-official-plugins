@@ -42,8 +42,10 @@ class ExcelExtractor(BaseExtractor):
                     document_values: list[str] = []
                     for header, cell in zip(headers, cells, strict=False):
                         value = self._format_value(cell.value)
-                        if cell.hyperlink and value:
-                            value = f"[{value}]({cell.hyperlink.target})"
+                        # Links to a cell in the workbook have a location but no target.
+                        target = cell.hyperlink.target if cell.hyperlink else None
+                        if target and value:
+                            value = f"[{value}]({target})"
                         values.append(value)
                         if value:
                             document_values.append(f"{header}: {value}")

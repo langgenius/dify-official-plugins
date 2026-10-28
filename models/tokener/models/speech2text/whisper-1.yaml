@@ -1,0 +1,9 @@
+model: "whisper-1"
+label:
+  en_US: "whisper-1"
+  zh_Hans: "whisper-1"
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: "mp3,mp4,mpeg,mpga,m4a,wav,webm"
+deprecated: false

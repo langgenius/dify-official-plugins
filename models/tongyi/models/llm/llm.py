@@ -136,19 +136,29 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:
         """
-        if self.get_customizable_model_schema(model, credentials) is not None:
-            return 0
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
             model = model.replace("-chat", "")
         if model == "farui-plus":
             model = "qwen-farui-plus"
+
+        prompt = self._convert_messages_to_prompt(prompt_messages)
+
+        # DashScope only ships a local tokenizer for the Qwen series. Any other
+        # model -- hosted third-party models (kimi/glm/deepseek/...) or
+        # user-defined customizable models -- is unsupported there, so fall back
+        # to the offline gpt2 estimator. This keeps Dify's prompt trimming and
+        # max_tokens budgeting working with a usable, non-zero token count
+        # instead of the previous behaviour of always returning 0.
         if model in self.tokenizers:
             tokenizer = self.tokenizers[model]
         else:
-            tokenizer = get_tokenizer(model)
+            try:
+                tokenizer = get_tokenizer(model)
+            except UnsupportedModel:
+                return self._get_num_tokens_by_gpt2(prompt)
             self.tokenizers[model] = tokenizer
-        tokens = tokenizer.encode(self._convert_messages_to_prompt(prompt_messages))
-        return len(tokens)
+
+        return len(tokenizer.encode(prompt))
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

@@ -185,7 +185,7 @@ def test_transient_connection_error_is_retried_for_multimodal(monkeypatch, sleep
     caller = _Caller(response=_MultiModalResponse(), error=_connection_error(), failures=1)
     monkeypatch.setattr(te.dashscope.MultiModalEmbedding, "call", caller)
 
-    assert _embed_multimodal_documents() == ([[0.4, 0.5]], 5)
+    assert _embed_multimodal_documents() == ([[0.4, 0.5]], {"total": 5, "text": 5, "image": 0})
     assert caller.calls == 2
     assert sleeps == [1]
 
