@@ -11,6 +11,8 @@ LLM = MODELS / "llm"
 
 ADDED_MODELS = {
     "gpt-6-astra",
+    "gpt-6.1-sol",
+    "gpt-6.1-terra",
     "gpt-6-sol",
     "gpt-6-luna",
     "chat-latest",
@@ -124,6 +126,8 @@ def test_llm_parameters_and_prices_are_well_formed() -> None:
     ("model", "supports_none", "input_price", "output_price"),
     [
         ("gpt-6-astra", False, "10.00", "50.00"),
+        ("gpt-6.1-sol", False, "2.00", "10.00"),
+        ("gpt-6.1-terra", True, "1.00", "5.00"),
         ("gpt-6-sol", True, "2.00", "10.00"),
         ("gpt-6-luna", True, "0.10", "0.50"),
     ],
@@ -142,6 +146,10 @@ def test_gpt_6_catalog_matches_the_api_contract(
     )
     assert effort["default"] == "medium"
     assert rules["enable_stream"]["default"] is True
+    if model == "gpt-6.1-terra":
+        assert rules["reasoning_context"]["options"] == ["auto", "current_turn"]
+    elif model == "gpt-6.1-sol":
+        assert "all_turns" in rules["reasoning_context"]["options"]
     assert {
         "vision",
         "structured-output",

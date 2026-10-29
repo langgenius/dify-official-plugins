@@ -27,7 +27,7 @@ from dify_plugin.errors.model import InvokeBadRequestError, InvokeConnectionErro
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
-from ..common_openai import _normalize_gpt6_parameters, _user_digest
+from ..common_openai import _is_gpt6_model, _normalize_gpt6_parameters, _user_digest
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
 
@@ -53,9 +53,9 @@ def generate_chat(
     effort = params.get("reasoning_effort")
     _normalize_gpt6_parameters(model, params, effort)
     if (
-        model.startswith("gpt-6-")
+        _is_gpt6_model(model)
         and (tools or params.get("tools"))
-        and (model == "gpt-6-astra" or effort != "none")
+        and (model == "gpt-6-astra" or model.startswith("gpt-6.1-") or effort != "none")
     ):
         raise InvokeBadRequestError(
             f"{model} function tools require the Responses API with this reasoning effort"
@@ -150,7 +150,7 @@ def _chat_params(model: str, model_parameters: dict) -> dict:
             ("reasoning_context", "auto"),
         )
         if params.pop(name, None)
-        not in (None, "", default if model.startswith("gpt-6-") else None)
+        not in (None, "", default if _is_gpt6_model(model) else None)
     ]
     if unsupported:
         raise InvokeBadRequestError(
