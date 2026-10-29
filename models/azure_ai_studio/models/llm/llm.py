@@ -2,6 +2,7 @@ import json
 import logging
 from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union
+from uuid import uuid4
 
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import (
@@ -179,7 +180,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             for tool in tools
         ]
 
-    def _convert_tool_calls(self, tool_calls) -> list[AssistantPromptMessage.ToolCall]:
+    def _convert_tool_calls(self, tool_calls, finish_reason) -> list[AssistantPromptMessage.ToolCall]:
         """
         Convert API tool calls to AssistantPromptMessage.ToolCall objects
 
@@ -188,17 +189,27 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         """
         result = []
         for tool_call in tool_calls:
-            if hasattr(tool_call, "function"):
-                result.append(
-                    AssistantPromptMessage.ToolCall(
-                        id=tool_call.id or "",
-                        type="function",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=tool_call.function.name or "",
-                            arguments=tool_call.function.arguments or "",
-                        ),
-                    )
+            if finish_reason not in ("stop", "tool_calls"):
+                raise InvokeError("The model stopped before completing its tool calls.")
+            function = tool_call.function
+            if function is None or not function.name or not function.name.strip():
+                raise InvokeError("The model returned a tool call without a function name.")
+            try:
+                parameters = json.loads(function.arguments)
+            except (TypeError, ValueError) as error:
+                raise InvokeError("The model returned invalid tool arguments.") from error
+            if not isinstance(parameters, dict):
+                raise InvokeError("Tool arguments must be a JSON object.")
+            result.append(
+                AssistantPromptMessage.ToolCall(
+                    id=tool_call.id or str(uuid4()),
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=function.name,
+                        arguments=function.arguments,
+                    ),
                 )
+            )
         return result
 
     def _invoke(
@@ -286,7 +297,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         try:
             response = client.complete(**payload)
             if stream:
-                return self._handle_stream_response(response, model, prompt_messages)
+                return self._handle_stream_response(response, model, prompt_messages, credentials)
             return self._handle_non_stream_response(
                 response, model, prompt_messages, credentials
             )
@@ -294,40 +305,71 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             raise self._transform_invoke_error(e)
 
     def _handle_stream_response(
-        self, response, model: str, prompt_messages: Sequence[PromptMessage]
+        self, response, model: str, prompt_messages: Sequence[PromptMessage], credentials: dict
     ) -> Generator:
-        for chunk in response:
-            if isinstance(chunk, StreamingChatCompletionsUpdate):
-                if chunk.choices:
-                    delta = chunk.choices[0].delta
-
-                    # Handle content updates
-                    if delta.content:
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=list(prompt_messages),
-                            delta=LLMResultChunkDelta(
-                                index=0,
-                                message=AssistantPromptMessage(
-                                    content=delta.content, tool_calls=[]
-                                ),
-                            ),
+        calls: dict[int | str, AssistantPromptMessage.ToolCall] = {}
+        finish_reason = None
+        usage = None
+        try:
+            for chunk in response:
+                if isinstance(chunk, StreamingChatCompletionsUpdate):
+                    if chunk.usage is not None:
+                        usage = self._calc_response_usage(
+                            model, credentials, chunk.usage.prompt_tokens, chunk.usage.completion_tokens
                         )
+                    if chunk.choices:
+                        choice = chunk.choices[0]
+                        delta = choice.delta
+                        if choice.finish_reason:
+                            finish_reason = choice.finish_reason
 
-                    # Handle tool calls if present
-                    if hasattr(delta, "tool_calls") and delta.tool_calls:
-                        tool_calls = self._convert_tool_calls(delta.tool_calls)
-                        if tool_calls:
+                        # Handle content updates
+                        if delta.content:
                             yield LLMResultChunk(
                                 model=model,
                                 prompt_messages=list(prompt_messages),
                                 delta=LLMResultChunkDelta(
                                     index=0,
                                     message=AssistantPromptMessage(
-                                        content="", tool_calls=tool_calls
+                                        content=delta.content, tool_calls=[]
                                     ),
                                 ),
                             )
+
+                        for part in delta.tool_calls or []:
+                            # The Azure model keeps the wire index as an additional property.
+                            key = part.get("index")
+                            if key is None:
+                                key = part.id
+                            if key is None or key == "":
+                                raise InvokeError("A streamed tool call must include an index or ID")
+                            if key not in calls:
+                                calls[key] = AssistantPromptMessage.ToolCall(
+                                    id="", type="function",
+                                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+                                )
+                            call = calls[key]
+                            if part.id:
+                                call.id = part.id
+                            if part.function:
+                                if part.function.name:
+                                    call.function.name = part.function.name
+                                call.function.arguments += part.function.arguments or ""
+
+        except Exception as error:
+            raise self._transform_invoke_error(error) from error
+
+        tool_calls = self._convert_tool_calls(calls.values(), finish_reason)
+        yield LLMResultChunk(
+            model=model,
+            prompt_messages=list(prompt_messages),
+            delta=LLMResultChunkDelta(
+                index=0,
+                message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                finish_reason=finish_reason,
+                usage=usage,
+            ),
+        )
 
     def _handle_non_stream_response(
         self,
@@ -342,7 +384,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         # Handle tool calls if present
         tool_calls = []
         if hasattr(choice.message, "tool_calls") and choice.message.tool_calls:
-            tool_calls = self._convert_tool_calls(choice.message.tool_calls)
+            tool_calls = self._convert_tool_calls(choice.message.tool_calls, choice.finish_reason)
 
         assistant_prompt_message = AssistantPromptMessage(
             content=assistant_text, tool_calls=tool_calls

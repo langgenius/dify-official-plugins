@@ -60,7 +60,7 @@ class PerfXCloudLargeLanguageModel(OpenAILargeLanguageModel):
         tokens_per_name = 1
 
         num_tokens = 0
-        messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
+        messages_dict = self._convert_prompt_messages_to_dict(messages)
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():

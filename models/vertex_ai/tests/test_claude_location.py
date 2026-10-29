@@ -1,7 +1,13 @@
-from contextlib import contextmanager
-from types import SimpleNamespace
-
-from anthropic.types import Message, TextBlock, Usage
+from anthropic.types import (
+    Message,
+    RawContentBlockStartEvent,
+    RawContentBlockStopEvent,
+    RawMessageDeltaEvent,
+    RawMessageStartEvent,
+    RawMessageStopEvent,
+    TextBlock,
+    Usage,
+)
 from dify_plugin.entities.model.message import UserPromptMessage
 
 import models.llm.llm as llm_module
@@ -10,21 +16,31 @@ from models.llm.llm import VertexAiLargeLanguageModel
 
 class _FakeMessages:
     def create(self, **kwargs):
-        return Message(
+        message = Message(
             id="msg_test",
             type="message",
             role="assistant",
             model=kwargs["model"],
-            content=[TextBlock(type="text", text="ok")],
-            stop_reason="end_turn",
+            content=[],
+            stop_reason=None,
             stop_sequence=None,
             usage=Usage(input_tokens=1, output_tokens=1),
         )
-
-    # Non-streaming calls go through messages.stream() and collect the final message.
-    @contextmanager
-    def stream(self, **kwargs):
-        yield SimpleNamespace(get_final_message=lambda: self.create(**kwargs))
+        yield from [
+            RawMessageStartEvent(type="message_start", message=message),
+            RawContentBlockStartEvent(
+                type="content_block_start",
+                index=0,
+                content_block=TextBlock(type="text", text="ok"),
+            ),
+            RawContentBlockStopEvent(type="content_block_stop", index=0),
+            RawMessageDeltaEvent(
+                type="message_delta",
+                delta={"stop_reason": "end_turn", "stop_sequence": None},
+                usage={"output_tokens": 1},
+            ),
+            RawMessageStopEvent(type="message_stop"),
+        ]
 
 
 def _patch_client(monkeypatch) -> list[str]:

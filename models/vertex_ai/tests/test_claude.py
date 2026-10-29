@@ -1,6 +1,5 @@
 import base64
 import json
-from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -9,8 +8,8 @@ import anthropic
 import httpx2
 import pytest
 import requests
-from anthropic import AnthropicVertex
 import yaml
+from anthropic import AnthropicVertex
 from anthropic.types import (
     InputJSONDelta,
     Message,
@@ -38,7 +37,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import InvokeBadRequestError
+from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 
 from models.llm import llm
 
@@ -65,16 +64,22 @@ def _message(content, stop_reason="end_turn"):
 
 
 def _mock_client(monkeypatch, final_message=None, events=()):
-    stream = SimpleNamespace(get_final_message=Mock(return_value=final_message))
-
-    @contextmanager
-    def stream_ctx(**kwargs):
-        yield stream
-
-    messages = SimpleNamespace(
-        create=Mock(return_value=iter(events)),
-        stream=Mock(side_effect=stream_ctx),
-    )
+    if final_message is not None:
+        events = [RawMessageStartEvent(type="message_start", message=_message([]))]
+        for index, block in enumerate(final_message.content):
+            events += [
+                RawContentBlockStartEvent(type="content_block_start", index=index, content_block=block),
+                RawContentBlockStopEvent(type="content_block_stop", index=index),
+            ]
+        events += [
+            RawMessageDeltaEvent(
+                type="message_delta",
+                delta={"stop_reason": final_message.stop_reason, "stop_sequence": None},
+                usage={"output_tokens": final_message.usage.output_tokens},
+            ),
+            RawMessageStopEvent(type="message_stop"),
+        ]
+    messages = SimpleNamespace(create=Mock(return_value=(event for event in events)))
     client = SimpleNamespace(messages=messages)
     vertex = Mock(return_value=client)
     monkeypatch.setattr(llm, "AnthropicVertex", vertex)
@@ -135,9 +140,9 @@ def test_non_stream_uses_streaming_and_skips_thinking(monkeypatch):
     result = model._generate_anthropic(
         MODEL, CREDENTIALS, [UserPromptMessage(content="Weather?")], {"max_tokens": 128000}, [TOOL], stream=False
     )
-    messages.create.assert_not_called()
-    assert messages.stream.call_args.kwargs["max_tokens"] == 128000
-    assert messages.stream.call_args.kwargs["tools"] == [
+    assert messages.create.call_args.kwargs["stream"] is True
+    assert messages.create.call_args.kwargs["max_tokens"] == 128000
+    assert messages.create.call_args.kwargs["tools"] == [
         {"name": "get_weather", "description": "Get the weather", "input_schema": TOOL.parameters}
     ]
     assert result.message.content == "Let me check."
@@ -239,8 +244,7 @@ def test_tool_round_trip_messages():
             ],
         },
     ]
-    # Thinking blocks from the tool_use turn can't be replayed, so thinking is off here.
-    assert kwargs["thinking"] == {"type": "disabled"}
+    assert "thinking" not in kwargs
 
 
 def test_thinking_left_default_without_tool_results():
@@ -436,7 +440,7 @@ def test_shift_jis_text_document_is_decoded():
 
 def test_text_csv_document_is_accepted():
     model = llm.VertexAiLargeLanguageModel([])
-    doc = _document("text/csv", "a,b\n1,2\n".encode(), "data.csv")
+    doc = _document("text/csv", b"a,b\n1,2\n", "data.csv")
     kwargs = model._build_claude_request_kwargs(MODEL, [_user(doc)], {"max_tokens": 10})
     assert kwargs["messages"][0]["content"][0]["source"] == {
         "type": "text",
@@ -593,25 +597,27 @@ def test_plugin_bad_request_errors_stay_bad_requests():
 
 
 @pytest.mark.parametrize(
-    ("model_name", "thinking_disabled"),
+    "thinking",
     [
-        ("claude-sonnet-5", True),
-        ("claude-sonnet-5@20260101", True),
-        # Claude Sonnet 5.5 rejects disabled thinking, so the prefix must not match it.
-        ("claude-sonnet-5-5", False),
-        ("claude-opus-4-8", False),
-        ("claude-sonnet-4-6", False),
+        None,
+        {"type": "enabled", "budget_tokens": 1024},
+        {"type": "disabled"},
+        {"type": "adaptive"},
     ],
 )
-def test_thinking_disabled_only_for_matching_models(model_name, thinking_disabled):
+def test_tool_history_preserves_thinking_configuration(thinking):
     model = llm.VertexAiLargeLanguageModel([])
     prompt_messages = [
         UserPromptMessage(content="Weather?"),
         AssistantPromptMessage(content="", tool_calls=[_tool_call("toolu_1", '{"city": "Tokyo"}')]),
         ToolPromptMessage(content="Sunny", tool_call_id="toolu_1", name="get_weather"),
     ]
-    kwargs = model._build_claude_request_kwargs(model_name, prompt_messages, {"max_tokens": 10}, [TOOL])
-    assert ("thinking" in kwargs) is thinking_disabled
+    parameters = {"max_tokens": 10}
+    if thinking is not None:
+        parameters["thinking"] = thinking
+    kwargs = model._build_claude_request_kwargs(MODEL, prompt_messages, parameters, [TOOL])
+    assert kwargs.get("thinking") == thinking
+    assert ("thinking" in kwargs) is (thinking is not None)
 
 
 def _tool_call(tool_call_id, arguments):
@@ -622,19 +628,18 @@ def _tool_call(tool_call_id, arguments):
     )
 
 
-def test_assistant_text_and_tool_calls_with_malformed_arguments():
+@pytest.mark.parametrize("arguments", ["", '{"city": "To', "[]"])
+def test_assistant_tool_calls_reject_malformed_arguments(arguments):
     model = llm.VertexAiLargeLanguageModel([])
     prompt_messages = [
         UserPromptMessage(content="Weather?"),
         AssistantPromptMessage(
             content="Let me check",
-            tool_calls=[_tool_call("toolu_1", ""), _tool_call("toolu_2", '{"city": "To'), _tool_call("toolu_3", "[]")],
+            tool_calls=[_tool_call("toolu_1", arguments)],
         ),
     ]
-    kwargs = model._build_claude_request_kwargs(MODEL, prompt_messages, {"max_tokens": 10})
-    content = kwargs["messages"][1]["content"]
-    assert content[0] == {"type": "text", "text": "Let me check"}
-    assert [block["input"] for block in content[1:]] == [{}, {}, {}]
+    with pytest.raises(InvokeError):
+        model._build_claude_request_kwargs(MODEL, prompt_messages, {"max_tokens": 10})
 
 
 def test_tool_result_not_merged_into_user_content():

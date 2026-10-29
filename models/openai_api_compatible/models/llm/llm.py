@@ -3,6 +3,7 @@ import re
 from contextlib import suppress
 from typing import Any, Mapping, Optional, Union, Generator, List
 from urllib.parse import urljoin, urlparse
+from uuid import uuid4
 
 import requests
 from dify_plugin.entities.model import (
@@ -1236,7 +1237,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if item_type == "function_call":
                     function_name = getattr(item, "name", "")
                     function_args = getattr(item, "arguments", "")
-                    call_id = getattr(item, "call_id", "") or getattr(item, "id", "")
+                    call_id = (
+                        getattr(item, "call_id", "") or getattr(item, "id", "") or str(uuid4())
+                    )
 
                     if isinstance(function_args, dict):
                         args_str = json.dumps(function_args)
@@ -1288,16 +1291,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Generator:
         full_text = ""
         index = 0
-        is_first = True
         is_reasoning = False
-
-        pending_tool_calls = {}
-        current_tool_call = None
+        response_usage = None
 
         for chunk in response:
-            if is_first:
-                is_first = False
-
             chunk_type = getattr(chunk, "type", "")
 
             if chunk_type == "response.reasoning_summary_text.delta":
@@ -1336,34 +1333,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                     index += 1
 
-            elif chunk_type == "response.output_item.added":
-                item = getattr(chunk, "item", None)
-                if item and hasattr(item, "type"):
-                    item_type = getattr(item, "type", "")
-
-                    if item_type == "function_call":
-                        function_name = getattr(item, "name", "")
-                        call_id = getattr(item, "call_id", "")
-
-                        if function_name and call_id:
-                            pending_tool_calls[call_id] = {
-                                "id": call_id,
-                                "name": function_name,
-                                "arguments": "",
-                            }
-                            current_tool_call = call_id
-
-            elif chunk_type == "response.function_call_arguments.delta":
-                delta_args = getattr(chunk, "delta", "")
-                if current_tool_call and current_tool_call in pending_tool_calls:
-                    pending_tool_calls[current_tool_call]["arguments"] += delta_args
-
-            elif chunk_type == "response.function_call_arguments.done":
-                call_id = getattr(chunk, "item_id", "")
-                final_args = getattr(chunk, "arguments", "")
-                if call_id and call_id in pending_tool_calls:
-                    pending_tool_calls[call_id]["arguments"] = final_args
-
             elif chunk_type == "response.output_item.done":
                 item = getattr(chunk, "item", None)
                 if item and hasattr(item, "type"):
@@ -1372,12 +1341,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     if item_type == "function_call":
                         function_name = getattr(item, "name", "")
                         function_args = getattr(item, "arguments", "")
-                        call_id = getattr(item, "call_id", "")
-
-                        if call_id in pending_tool_calls:
-                            final_args = pending_tool_calls[call_id]["arguments"] or function_args
-                        else:
-                            final_args = function_args
+                        call_id = (
+                            getattr(item, "call_id", "") or getattr(item, "id", "") or str(uuid4())
+                        )
+                        if isinstance(function_args, dict):
+                            function_args = json.dumps(function_args)
+                        elif not isinstance(function_args, str):
+                            function_args = "{}"
 
                         if function_name:
                             tool_call = AssistantPromptMessage.ToolCall(
@@ -1385,7 +1355,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                                 type="function",
                                 function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                                     name=function_name,
-                                    arguments=final_args or "{}",
+                                    arguments=function_args,
                                 ),
                             )
 
@@ -1401,10 +1371,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                             )
                             index += 1
 
-                            if call_id in pending_tool_calls:
-                                del pending_tool_calls[call_id]
-                            if call_id == current_tool_call:
-                                current_tool_call = None
+            elif chunk_type in ("response.completed", "response.incomplete"):
+                response_usage = getattr(getattr(chunk, "response", None), "usage", None)
 
             elif hasattr(chunk, "delta") and hasattr(chunk.delta, "text"):
                 delta_text = chunk.delta.text or ""
@@ -1419,11 +1387,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                     index += 1
 
-        prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
-        full_assistant_prompt_message = AssistantPromptMessage(content=full_text)
-        completion_tokens = self._num_tokens_from_string(
-            full_assistant_prompt_message.content or ""
-        )
+        if response_usage is not None:
+            prompt_tokens = response_usage.input_tokens
+            completion_tokens = response_usage.output_tokens
+        else:
+            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            completion_tokens = self._num_tokens_from_string(full_text)
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
         yield LLMResultChunk(

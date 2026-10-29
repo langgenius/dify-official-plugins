@@ -138,7 +138,7 @@ def test_convert_tools():
     ]
 
 
-def test_non_streaming_response_falls_back_to_function_name_when_id_is_omitted():
+def test_non_streaming_response_generates_unique_ids_when_omitted():
     # Regression test: ToolCall.id defaults to the literal string "null" (not None) when the
     # API omits it, and must not be surfaced as a real id.
     llm = _llm()
@@ -154,7 +154,10 @@ def test_non_streaming_response_falls_back_to_function_name_when_id_is_omitted()
                 finish_reason="tool_calls",
                 message=AssistantMessage(
                     content=None,
-                    tool_calls=[ToolCall(function=FunctionCall(name="get_weather", arguments='{"city": "Tokyo"}'))],
+                    tool_calls=[
+                        ToolCall(function=FunctionCall(name="get_weather", arguments='{"city": "Tokyo"}')),
+                        ToolCall(function=FunctionCall(name="get_weather", arguments='{"city": "Paris"}')),
+                    ],
                 ),
             )
         ],
@@ -163,8 +166,8 @@ def test_non_streaming_response_falls_back_to_function_name_when_id_is_omitted()
     result = llm._handle_mistral_response("mistral-small-2503", {}, response, [])
 
     assert result.message.content == ""
-    assert len(result.message.tool_calls) == 1
-    assert result.message.tool_calls[0].id == "get_weather"
+    assert len({call.id for call in result.message.tool_calls}) == 2
+    assert all(len(call.id) == 9 and call.id.isalnum() for call in result.message.tool_calls)
     assert result.message.tool_calls[0].function.name == "get_weather"
     assert result.message.tool_calls[0].function.arguments == '{"city": "Tokyo"}'
 
@@ -273,6 +276,22 @@ def test_streaming_handles_parallel_tool_calls_independently():
     assert tool_calls["call_1"].function.arguments == '{"city": "Tokyo"}'
     assert tool_calls["call_2"].function.name == "get_time"
     assert tool_calls["call_2"].function.arguments == '{"tz": "JST"}'
+
+
+def test_streaming_generates_independent_ids_for_same_function():
+    llm = _llm()
+    events = [_stream_event(
+        tool_calls=[
+            ToolCall(index=index, function=FunctionCall(name="get_weather", arguments=arguments))
+            for index, arguments in enumerate(['{"city":"Paris"}', '{"city":"Tokyo"}'])
+        ],
+        finish_reason="tool_calls",
+    )]
+    chunks = list(llm._handle_mistral_stream_response("mistral-small-2503", {}, iter(events), []))
+    calls = chunks[-1].delta.message.tool_calls
+    assert len({call.id for call in calls}) == 2
+    assert all(len(call.id) == 9 and call.id.isalnum() for call in calls)
+    assert [call.function.arguments for call in calls] == ['{"city":"Paris"}', '{"city":"Tokyo"}']
 
 
 def test_streaming_null_sentinel_does_not_clobber_a_real_id_from_an_earlier_fragment():
