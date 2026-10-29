@@ -60,7 +60,12 @@ def _render_embedding(model: dict[str, Any]) -> str:
                 "model": model["id"],
                 "label": {"en_US": model["id"], "zh_Hans": model["id"]},
                 "model_type": "text-embedding",
-                "model_properties": {"context_size": model["contextSize"], "max_chunks": 32},
+                "model_properties": {
+                    "context_size": model["contextSize"],
+                    "max_chunks": 10
+                    if model["id"] in {"text-embedding-v3", "text-embedding-v4"}
+                    else 32,
+                },
                 "pricing": {
                     "input": model["pricing"]["inputPerMillion"],
                     "unit": "0.000001",

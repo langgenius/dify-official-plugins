@@ -13,7 +13,9 @@ Existing keys from the same Tokener.ai Console remain valid. The API key must ha
 
 In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
 Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
-The plugin sends up to 32 texts per embedding request. It does not truncate texts.
+For `text-embedding-v3` and `text-embedding-v4`, the plugin sends up to 10 texts per request.
+Both models accept up to 8192 tokens per text and retain the default 1024 vector dimensions.
+Other embedding models use up to 32 texts per request. The plugin does not truncate texts.
 For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents.
 Existing knowledge indexes can mix prefixed queries with unprefixed document vectors after this update.
 Rebuilding an index alone reuses cached document vectors without the prefix.

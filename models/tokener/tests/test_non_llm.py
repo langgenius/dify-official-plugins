@@ -274,3 +274,27 @@ def test_hidden_rerank_validation_rejects_denied_model_access():
         model.validate_credentials("qwen3-rerank", {"api_key": "test"})
     assert "private detail" not in str(caught.value)
     assert post.call_count == 1
+
+
+@pytest.mark.parametrize("model_id", ["text-embedding-v3", "text-embedding-v4"])
+def test_dashscope_embeddings_split_eleven_texts_at_provider_limit(model_id):
+    registration = PluginRegistration(DifyPluginEnv())
+    model = registration.get_model_instance("tokener", ModelType.TEXT_EMBEDDING)
+    texts = [f"document {index}" for index in range(11)]
+
+    def embed(endpoint, credentials, payload):
+        return {
+            "data": [
+                {"index": index, "embedding": [float(text.split()[-1])] * 1024}
+                for index, text in enumerate(payload["input"])
+            ],
+            "usage": {"total_tokens": len(payload["input"])},
+        }
+
+    with patch.object(model, "_post", side_effect=embed) as post:
+        result = model.invoke(model_id, {"api_key": "test"}, texts)
+    payloads = [call.args[2] for call in post.call_args_list]
+    assert [len(payload["input"]) for payload in payloads] == [10, 1]
+    assert all("dimensions" not in payload for payload in payloads)
+    assert [vector[0] for vector in result.embeddings] == list(range(11))
+    assert result.usage.tokens == 11

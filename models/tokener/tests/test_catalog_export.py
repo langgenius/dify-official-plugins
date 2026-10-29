@@ -127,7 +127,7 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
         "tokener", ModelType.TEXT_EMBEDDING
     )
     assert model.model_schemas
-    selected = model.model_schemas[0].model
+    selected = "text-embedding-3-small"
     texts = [f"sample-{i}" for i in range(33)]
 
     def reply(*args, **kwargs):
@@ -236,3 +236,13 @@ def test_dify_registry_matches_generated_model_positions():
         for schema in actual:
             assert schema.label.en_us == schema.model
             assert schema.label.zh_hans == schema.model
+
+
+@pytest.mark.parametrize("model_id", ["text-embedding-v3", "text-embedding-v4"])
+def test_dashscope_embedding_sync_preserves_provider_batch_limit(model_id):
+    row = export_row(model_id)
+    row.update(contextLength=8192, inputPricePer1m="0.070000", provider="Alibaba")
+    files = render_catalog(normalize_catalog({"items": [row]}), model_type="text_embedding")
+    from pathlib import Path
+
+    assert files[f"{model_id}.yaml"] == Path(f"models/text_embedding/{model_id}.yaml").read_text()
