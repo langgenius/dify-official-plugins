@@ -223,6 +223,12 @@ model_credential_schema:
         - variable: __model_type
           value: llm
     - label:
+        en_US: Kimi-K3.1-Pro
+      value: Kimi-K3.1-Pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Kimi-K2
       value: Kimi-K2
       show_on:

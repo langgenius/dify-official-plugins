@@ -1,0 +1,93 @@
+identity:
+  name: linear_find_issues_by_url
+  author: langgenius
+  label:
+    en_US: Find Issues by Attachment URL
+    zh_Hans: 按附件链接查找问题
+    pt_BR: Encontrar Problemas por URL de Anexo
+    ja_JP: 添付 URL で課題を検索
+    zh_Hant: 按附件連結查找問題
+description:
+  human:
+    en_US: Find Linear issues linked to an external URL (e.g. a support ticket, pull request or Slack thread) through issue attachments.
+    zh_Hans: 通过问题附件查找关联到外部链接（如客服工单、Pull Request、Slack 讨论）的 Linear 问题。
+    pt_BR: Encontre problemas do Linear vinculados a uma URL externa (ex. ticket de suporte, pull request ou thread do Slack) por meio de anexos.
+    ja_JP: 課題の添付を通じて、外部 URL（サポートチケット、プルリクエスト、Slack スレッドなど）にリンクされた Linear 課題を検索します。
+    zh_Hant: 透過問題附件查找關聯到外部連結（如客服工單、Pull Request、Slack 討論）的 Linear 問題。
+  llm: >-
+    Finds Linear issues that have an attachment pointing to the given URL, such as a support ticket, pull request
+    or chat thread linked to the issue by a Linear integration. Returns each issue with its state, assignee, team,
+    project, labels and the matching attachments. Use match_mode "contains" when the exact stored URL is unknown.
+parameters:
+  - name: url
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: URL
+      zh_Hans: 链接
+      pt_BR: URL
+      ja_JP: URL
+      zh_Hant: 連結
+    human_description:
+      en_US: The external URL linked to the issue, or a URL fragment when using "contains" matching.
+      zh_Hans: 关联到问题的外部链接；使用“包含”匹配时可以是链接片段。
+      pt_BR: A URL externa vinculada ao problema, ou um fragmento de URL ao usar a correspondência "contém".
+      ja_JP: 課題にリンクされた外部 URL。「含む」一致の場合は URL の一部でも構いません。
+      zh_Hant: 關聯到問題的外部連結；使用「包含」匹配時可以是連結片段。
+    llm_description: The external URL (or URL fragment for "contains" matching) attached to the Linear issue.
+  - name: match_mode
+    type: select
+    required: false
+    default: exact
+    form: llm
+    options:
+      - value: exact
+        label:
+          en_US: Exact
+          zh_Hans: 精确
+          pt_BR: Exata
+          ja_JP: 完全一致
+          zh_Hant: 精確
+      - value: contains
+        label:
+          en_US: Contains
+          zh_Hans: 包含
+          pt_BR: Contém
+          ja_JP: 含む
+          zh_Hant: 包含
+    label:
+      en_US: Match Mode
+      zh_Hans: 匹配方式
+      pt_BR: Modo de Correspondência
+      ja_JP: 一致方法
+      zh_Hant: 匹配方式
+    human_description:
+      en_US: "Exact: the attachment URL equals the input. Contains: the attachment URL contains the input (case-insensitive), not followed by another letter or digit, so /tickets/123 does not match /tickets/1234."
+      zh_Hans: 精确：附件链接与输入完全一致。包含：附件链接包含输入（不区分大小写），且其后不紧跟字母或数字，因此 /tickets/123 不会匹配 /tickets/1234。
+      pt_BR: "Exata: a URL do anexo é igual à entrada. Contém: a URL do anexo contém a entrada (sem diferenciar maiúsculas), sem ser seguida por letra ou dígito, então /tickets/123 não corresponde a /tickets/1234."
+      ja_JP: 完全一致：添付 URL が入力と一致。含む：添付 URL が入力を含み（大文字小文字を区別しない）、直後に英数字が続かない場合に一致するため、/tickets/123 は /tickets/1234 に一致しません。
+      zh_Hant: 精確：附件連結與輸入完全一致。包含：附件連結包含輸入（不區分大小寫），且其後不緊跟字母或數字，因此 /tickets/123 不會匹配 /tickets/1234。
+    llm_description: '"exact" (default) or "contains". Use "contains" with a distinctive fragment such as "acme.zendesk.com/agent/tickets/123" when the stored URL format is unknown.'
+  - name: limit
+    type: number
+    required: false
+    default: 20
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of attachments to look up (default: 20, max: 100)."
+      zh_Hans: 最多查询的附件数量（默认：20，最大：100）。
+      pt_BR: "Número máximo de anexos a consultar (padrão: 20, máx: 100)."
+      ja_JP: 検索する添付の最大数（デフォルト：20、最大：100）。
+      zh_Hant: 最多查詢的附件數量（默認：20，最大：100）。
+    llm_description: "Max number of attachments to look up (default: 20, max: 100)."
+extra:
+  python:
+    source: tools/linear_find_issues_by_url.py
+    class: LinearFindIssuesByUrlTool

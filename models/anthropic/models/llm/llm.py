@@ -595,6 +595,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "schema": json_schema,
             }
 
+        # API version 2026-10-21 (the Anthropic SDK 2.x default) rejects
+        # temperature/top_p/top_k with a 400 even at their default values,
+        # while older models still honor them under 2023-06-01. The migration
+        # guide's own remedy is to keep such requests on 2023-06-01. When
+        # sampling parameters are forwarded for a model that accepts them,
+        # pin the request to 2023-06-01 so explicitly configured sampling
+        # keeps working after the SDK 2.x upgrade. output_config (structured
+        # output / effort / task budget) requires the newer API version, so
+        # when both apply the sampling parameters are dropped with a warning
+        # instead of breaking the whole request.
+        if sampling_parameters:
+            if "output_config" not in extra_model_kwargs:
+                extra_headers["anthropic-version"] = "2023-06-01"
+            else:
+                logging.warning(
+                    "Model %s: dropping sampling parameters %s; the request "
+                    "carries output_config, which requires API version "
+                    "2026-10-21 (rejecting temperature/top_p/top_k).",
+                    model,
+                    sorted(sampling_parameters),
+                )
+                extra_body = model_parameters.pop("extra_body", {})
+                for key in sampling_parameters:
+                    extra_body.pop(key, None)
+                if extra_body:
+                    model_parameters["extra_body"] = extra_body
+
         # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
         if context_1m and not uses_adaptive_thinking:
