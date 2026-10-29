@@ -266,17 +266,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         entity = super().get_customizable_model_schema(model, credentials)
 
         structured_output_support = credentials.get("structured_output_support", "not_supported")
-        if structured_output_support == "supported":
-            # ----
-            # The following section should be added after the new version of `dify-plugin-sdks`
-            # is released.
-            # Related Commit:
-            # https://github.com/langgenius/dify-plugin-sdks/commit/0690573a879caf43f92494bf411f45a1835d96f6
-            # ----
-            # try:
-            #     entity.features.index(ModelFeature.STRUCTURED_OUTPUT)
-            # except ValueError:
-            #     entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
+        if structured_output_support in {"supported", "native"}:
+            if ModelFeature.STRUCTURED_OUTPUT not in entity.features:
+                entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
 
             entity.parameter_rules.append(
                 ParameterRule(
@@ -556,14 +548,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 stream=stream,
                 user=user,
             )
-        # Compatibility adapter for Dify's 'json_schema' structured output mode.
-        # The base class does not natively handle the 'json_schema' parameter. This block
-        # translates it into a standard OpenAI-compatible request by:
-        # 1. Injecting the JSON schema directly into the system prompt to guide the model.
-        # This ensures models like gpt-4o produce the correct structured output.
-        if model_parameters.get("response_format") == "json_schema":
-            # Use .get() instead of .pop() for safety
-            json_schema_str = model_parameters.get("json_schema")
+        # Preserve the legacy `supported` behavior after advertising structured-output
+        # capability to Dify. The host now supplies json_schema for capable models, while
+        # existing OpenAI-compatible configurations historically used prompt guidance plus
+        # json_object transport. Native json_schema transport remains an explicit opt-in.
+        if (
+            credentials.get("structured_output_support") == "supported"
+            and model_parameters.get("response_format") == "json_schema"
+        ):
+            json_schema_str = model_parameters.pop("json_schema", None)
 
             if json_schema_str:
                 structured_output_prompt = (
@@ -580,6 +573,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 else:
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
+
+            model_parameters["response_format"] = "json_object"
 
         # Handle thinking mode based on model support configuration
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
