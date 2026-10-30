@@ -9,6 +9,8 @@ JSON Insert tool adds a new value to a JSON object.
 
 ## JSON Delete
 JSON Delete tool deletes element in a JSON data sturcture.
+Array elements are deleted by their JSONPath positions, including when equal values appear more than once.
+For example, deleting `$.items[2]` from `{"items": [1, 2, 1]}` returns `{"items": [1, 2]}`.
 ![](./_assets/json_delete.png)
 
 ## JSON Parse

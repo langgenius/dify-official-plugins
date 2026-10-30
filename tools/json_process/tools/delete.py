@@ -32,15 +32,22 @@ class JSONDeleteTool(Tool):
             matches = expr.find(input_data)
             if not matches:
                 return json.dumps(input_data, ensure_ascii=ensure_ascii)
+            array_deletions = {}
             for match in matches:
                 if isinstance(match.context.value, dict):
                     del match.context.value[match.path.fields[-1]]
                 elif isinstance(match.context.value, list):
-                    match.context.value.remove(match.value)
+                    array = match.context.value
+                    indices = array_deletions.setdefault(id(array), (array, set()))[1]
+                    indices.update(index % len(array) for index in match.path.indices)
                 else:
                     parent = match.context.parent
                     if parent:
                         del parent.value[match.path.fields[-1]]
+            # Remove original positions once, from right to left, without comparing values.
+            for array, indices in array_deletions.values():
+                for index in sorted(indices, reverse=True):
+                    del array[index]
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             raise Exception(f"Delete operation failed: {str(e)}")
