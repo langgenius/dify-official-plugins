@@ -9,7 +9,9 @@ class SendBotMessageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         receive_id_type = tool_parameters.get("receive_id_type")
         receive_id = tool_parameters.get("receive_id")
         msg_type = tool_parameters.get("msg_type")
