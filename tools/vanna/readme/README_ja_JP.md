@@ -13,3 +13,10 @@ Vanna.aiは、ユーザーと複雑なSQLデータベース間のやり取りを
 3. Vanna.AI APIキーを入力します。
 4. データベース設定を入力します。
 ![](../_assets/vanna_configure.png)
+
+## データベース接続
+
+SQLite と DuckDB は、既存のローカルデータベースファイルまたは HTTP(S) ダウンロード URL に対応しています。
+DuckDB は `:memory:`、`md:`、`motherduck:` 接続にも対応しています。
+Microsoft SQL Server では、URL/Host/DSN に ODBC 接続文字列を入力してください。
+プラグイン実行環境には unixODBC と対応する SQL Server ODBC ドライバーが必要です。
