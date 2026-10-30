@@ -9,7 +9,9 @@ class GetChatMessagesTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         container_id = tool_parameters.get("container_id")
         page_token = tool_parameters.get("page_token")
         sort_type = tool_parameters.get("sort_type", "ByCreateTimeAsc")

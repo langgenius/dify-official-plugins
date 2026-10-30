@@ -11,7 +11,9 @@ class CreateTaskTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         summary = tool_parameters.get("summary")
         start_time = tool_parameters.get("start_time")
         end_time = tool_parameters.get("end_time")
