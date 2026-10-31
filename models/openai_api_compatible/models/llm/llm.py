@@ -1068,6 +1068,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if image_c.detail:
                     image_part["detail"] = image_c.detail.value
                 content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.VIDEO:
+                # The Responses API has no dedicated video part. OpenAI-compatible
+                # servers accept a video through an input_image part carrying a data
+                # URI (the model extracts frames), mirroring the image_url shape the
+                # Chat Completions path already produces for video.
+                video_c: VideoPromptMessageContent = content_item
+                video_part: dict[str, Any] = {"type": "input_image"}
+                if video_c.url:
+                    video_part["image_url"] = video_c.url
+                else:
+                    video_part["image_url"] = video_c.data
+                content_parts.append(video_part)
+            elif content_item.type == PromptMessageContentType.AUDIO:
+                # The Responses API has no dedicated audio part. Send it as a file so
+                # the attachment is not silently dropped; servers that support audio
+                # can transcribe the payload from the data URI.
+                audio_c: AudioPromptMessageContent = content_item
+                audio_part: dict[str, Any] = {"type": "input_file"}
+                if audio_c.url:
+                    audio_part["file_url"] = audio_c.url
+                else:
+                    audio_part["filename"] = audio_c.filename or "audio"
+                    audio_part["file_data"] = audio_c.data
+                content_parts.append(audio_part)
             elif content_item.type == PromptMessageContentType.DOCUMENT:
                 doc_c: DocumentPromptMessageContent = content_item
                 file_part: dict[str, Any] = {"type": "input_file"}
