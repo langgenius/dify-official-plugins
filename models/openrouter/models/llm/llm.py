@@ -457,6 +457,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         response_json: dict = response.json()
 
@@ -469,11 +470,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         tool_calls = None
         function_calling_type = credentials.get("function_calling_type", "no_call")
         if completion_type is LLMMode.CHAT:
-            response_content = output.get("message", {})["content"]
+            response_message = output.get("message", {})
+            response_content = response_message.get("content")
             if function_calling_type == "tool_call":
-                tool_calls = output.get("message", {}).get("tool_calls")
+                tool_calls = response_message.get("tool_calls")
             elif function_calling_type == "function_call":
-                tool_calls = output.get("message", {}).get("function_call")
+                tool_calls = response_message.get("function_call")
+            if "content" not in response_message and not tool_calls:
+                raise InvokeError("Model response has neither content nor tool calls")
 
         elif completion_type is LLMMode.COMPLETION:
             response_content = output["text"]
@@ -484,7 +488,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             )
         else:
             contents: list[PromptMessageContent] = [
-                TextPromptMessageContent(data=response_content)
+                TextPromptMessageContent(data=response_content or "")
             ]
             contents.extend(self._parse_image_part(output, stream=False))
 
@@ -500,33 +504,19 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                     self._extract_response_function_call(tool_calls)
                 ]
 
-        usage = response_json.get("usage")
-        if usage:
-            # transform usage
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
-        else:
-            # calculate num tokens
-            assert prompt_messages[0].content is not None
-            prompt_tokens = self._num_tokens_from_string(
-                model, prompt_messages[0].content
-            )
-            assert assistant_message.content is not None
-            completion_tokens = self._num_tokens_from_string(
-                model, assistant_message.content
-            )
-
-        # transform usage
-        usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
-        )
-
         # transform response
         result = LLMResult(
             id=message_id,
             model=response_json["model"],
             message=assistant_message,
-            usage=usage,
+            usage=self._get_response_usage(
+                model,
+                credentials,
+                prompt_messages,
+                assistant_message,
+                response_json.get("usage"),
+                tools,
+            ),
         )
 
         return result
@@ -537,6 +527,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
         """
         Handle llm stream response
@@ -581,6 +572,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                         credentials=credentials,
                         prompt_messages=prompt_messages,
                         full_content=full_assistant_content,
+                        tools=tools,
                     )
                     break
                 # handle the error here. for issue #11629
@@ -654,9 +646,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                     if isinstance(delta_content, str):
                         full_assistant_content += delta_content
                     else:
-                        full_assistant_content += "".join(
-                            [content.data for content in delta_content]
-                        )
+                        full_assistant_content += assistant_prompt_message.get_text_content()
                 elif "text" in choice:
                     choice_text = choice.get("text", "")
                     if choice_text == "":
@@ -679,22 +669,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
             chunk_index += 1
 
-        if tools_calls:
-            yield LLMResultChunk(
-                model=model,
-                delta=LLMResultChunkDelta(
-                    index=chunk_index,
-                    message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
-                ),
-            )
-
         yield self._create_final_llm_result_chunk(
             index=chunk_index,
-            message=AssistantPromptMessage(content=""),
+            message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
             finish_reason=finish_reason,
             usage=usage,
             model=model,
             credentials=credentials,
             prompt_messages=prompt_messages,
             full_content=full_assistant_content,
+            tools=tools,
         )

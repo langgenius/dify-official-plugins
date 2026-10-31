@@ -1,3 +1,4 @@
+import codecs
 import json
 import math
 import uuid
@@ -6,15 +7,15 @@ from collections.abc import Generator
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import ModelFeature
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageContentType,
-    PromptMessageFunction,
     PromptMessageTool,
 )
 from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
+from dify_plugin.interfaces.model.openai_compatible.llm import _iter_stream_json
 
 from models._credentials import ENDPOINT_URL, validate_model_access
 
@@ -28,29 +29,31 @@ def _has_complete_arguments(arguments: str) -> bool:
 
 
 class _ToolCallStreamResponse(requests.Response):
-    def __init__(self, response: requests.Response) -> None:
+    def __init__(self, response: requests.Response, delimiter: str) -> None:
         super().__init__()
         self.response = response
+        self.delimiter = delimiter
+        self.encoding = "utf-8"
         self.tool_calls: list[AssistantPromptMessage.ToolCall] = []
         self.indexed_calls: dict[int, AssistantPromptMessage.ToolCall] = {}
 
-    def iter_lines(self, chunk_size=512, decode_unicode=False, delimiter=None):
-        for line in self.response.iter_lines(
-            chunk_size=chunk_size, decode_unicode=decode_unicode, delimiter=delimiter
-        ):
-            decoded = line.strip().removeprefix("data:").lstrip()
-            try:
-                payload = json.loads(decoded)
-            except (ValueError, TypeError):
-                yield line
-                continue
-            if not isinstance(payload, dict) or not payload.get("choices"):
-                yield line
+    def close(self):
+        self.response.close()
+
+    def iter_content(self, chunk_size=512, decode_unicode=False):
+        for line in self._iter_events():
+            event = line + "\n\n"
+            yield event if decode_unicode else event.encode()
+
+    def _iter_events(self):
+        for payload in _iter_stream_json(self.response, self.delimiter):
+            if not payload.get("choices"):
+                yield json.dumps(payload)
                 continue
             delta = payload["choices"][0].get("delta", {})
             fragments = delta.get("tool_calls")
             if not fragments:
-                yield line
+                yield json.dumps(payload)
                 continue
             for fragment in fragments:
                 index = fragment.get("index")
@@ -117,7 +120,18 @@ class _ToolCallStreamResponse(requests.Response):
                     current.function.name = name
                 current.function.arguments += function.get("arguments") or ""
             delta["tool_calls"] = [{}]
-            yield f"data: {json.dumps(payload)}"
+            yield json.dumps(payload)
+
+        calls = []
+        for call in self.tool_calls:
+            if not (call.function.name or call.function.arguments):
+                continue
+            if not call.id:
+                call.id = f"chatcmpl-tool-{uuid.uuid4().hex}"
+            calls.append({"index": len(calls), **call.model_dump()})
+        if calls:
+            yield json.dumps({"choices": [{"delta": {"tool_calls": calls}}]})
+        yield "data: [DONE]"
 
 
 class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -167,36 +181,24 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
         if credentials.get("function_calling_type") != "tool_call":
             yield from super()._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, tools=tools
             )
             return
-        adapted = _ToolCallStreamResponse(response)
-        for chunk in super()._handle_generate_stream_response(
-            model, credentials, adapted, prompt_messages
-        ):
-            if adapted.tool_calls and chunk.delta.usage is not None:
-                calls = [
-                    call
-                    for call in adapted.tool_calls
-                    if call.function.name or call.function.arguments
-                ]
-                for call in calls:
-                    if not call.id:
-                        call.id = f"chatcmpl-tool-{uuid.uuid4().hex}"
-                if calls:
-                    yield LLMResultChunk(
-                        model=model,
-                        delta=LLMResultChunkDelta(
-                            index=chunk.delta.index,
-                            message=AssistantPromptMessage(content="", tool_calls=calls),
-                        ),
-                    )
-                adapted.tool_calls.clear()
-                adapted.indexed_calls.clear()
-            yield chunk
+        delimiter = codecs.decode(
+            credentials.get("stream_mode_delimiter", "\n\n"), "unicode_escape"
+        )
+        adapted = _ToolCallStreamResponse(response, delimiter)
+        yield from super()._handle_generate_stream_response(
+            model,
+            {**credentials, "stream_mode_delimiter": "\n\n"},
+            adapted,
+            prompt_messages,
+            tools=tools,
+        )
 
     def _validate_and_filter_model_parameters(
         self, model: str, model_parameters: dict, credentials: dict
@@ -235,17 +237,11 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        if (
+        if not (
             tools
             and model_parameters.get("tool_choice") is not None
             and credentials.get("function_calling_type") == "tool_call"
         ):
-            model_parameters = {
-                **model_parameters,
-                "tools": [PromptMessageFunction(function=tool).model_dump() for tool in tools],
-            }
-            tools = None
-        else:
             model_parameters = {
                 key: value for key, value in model_parameters.items() if key != "tool_choice"
             }

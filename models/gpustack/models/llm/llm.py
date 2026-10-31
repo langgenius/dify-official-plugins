@@ -705,31 +705,13 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         )
         return assistant_message
 
-    def _calculate_completion_tokens(
-        self,
-        response_json: dict,
-        prompt_messages: list[PromptMessage],
-        assistant_message: AssistantPromptMessage,
-        credentials: dict,
-    ) -> tuple[int, int]:
-        usage = response_json.get("usage")
-        if usage:
-            return usage["prompt_tokens"], usage["completion_tokens"]
-
-        prompt_tokens = self._num_tokens_from_messages(
-            prompt_messages, credentials=credentials
-        )
-        completion_tokens = self._num_tokens_from_string(
-            assistant_message.content or ""
-        )
-        return prompt_tokens, completion_tokens
-
     def _handle_generate_response(
         self,
         model: str,
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         response_json: dict = response.json()
         completion_type = LLMMode.value_of(credentials["mode"])
@@ -741,15 +723,16 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         assistant_message = self._build_assistant_message(
             choices[0], completion_type, function_calling_type
         )
-        prompt_tokens, completion_tokens = self._calculate_completion_tokens(
-            response_json, prompt_messages, assistant_message, credentials
-        )
-
         return LLMResult(
             id=response_json.get("id"),
             model=response_json.get("model", model),
             message=assistant_message,
-            usage=self._calc_response_usage(
-                model, credentials, prompt_tokens, completion_tokens
+            usage=self._get_response_usage(
+                model,
+                credentials,
+                prompt_messages,
+                assistant_message,
+                response_json.get("usage"),
+                tools,
             ),
         )

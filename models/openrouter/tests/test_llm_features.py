@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 import yaml
@@ -11,6 +11,7 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import InvokeError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -20,6 +21,36 @@ from models.llm.llm import OpenRouterLargeLanguageModel
 @pytest.fixture
 def llm() -> OpenRouterLargeLanguageModel:
     return OpenRouterLargeLanguageModel(model_schemas=[])
+
+
+@pytest.mark.parametrize("has_tools", [False, True])
+def test_missing_content_requires_tool_calls(llm, has_tools):
+    message = {}
+    if has_tools:
+        message["tool_calls"] = [
+            {
+                "id": "call0",
+                "type": "function",
+                "function": {"name": "search", "arguments": "{}"},
+            }
+        ]
+    response = Mock()
+    response.json.return_value = {"model": "model", "choices": [{"message": message}]}
+    with llm.timing_context():
+        if not has_tools:
+            with pytest.raises(InvokeError, match="neither content nor tool calls"):
+                llm._handle_generate_response(
+                    "model", {"mode": "chat"}, response, [UserPromptMessage(content="Hello")]
+                )
+            return
+        result = llm._handle_generate_response(
+            "model",
+            {"mode": "chat", "function_calling_type": "tool_call"},
+            response,
+            [UserPromptMessage(content="Hello")],
+        )
+    assert result.message.tool_calls[0].function.name == "search"
+    assert result.usage.completion_tokens > 0
 
 
 def _llm_schemas() -> list[dict]:
