@@ -12,10 +12,10 @@ class RegexExpressionTool(Tool):
         """
         invoke tools
         """
-        content = tool_parameters.get("content", "").strip()
+        content = tool_parameters.get("content", "")
         if not content:
             yield self.create_text_message("Invalid content")
-        expression = tool_parameters.get("expression", "").strip()
+        expression = tool_parameters.get("expression", "")
         if not expression:
             yield self.create_text_message("Invalid expression")
         try:
