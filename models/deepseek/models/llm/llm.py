@@ -7,7 +7,6 @@ from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
-    PromptMessageFunction,
     PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -53,12 +52,6 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         self._normalize_model_parameters(model, model_parameters)
         if user:
             model_parameters["user_id"] = user
-        if tools:
-            model_parameters["tools"] = [
-                PromptMessageFunction(function=tool).model_dump() for tool in tools
-            ]
-            tools = None
-
         return super()._invoke(
             model,
             credentials,
@@ -169,12 +162,14 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         result = super()._handle_generate_response(
             model,
             credentials,
             response,
             prompt_messages,
+            tools=tools,
         )
         response_message = response.json()["choices"][0].get("message", {})
         reasoning_content = response_message.get("reasoning_content")

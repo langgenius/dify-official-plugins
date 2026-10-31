@@ -61,18 +61,17 @@ class YiLargeLanguageModel(OAICompatLargeLanguageModel):
         super().validate_credentials(model, credentials)
 
     def _num_tokens_from_string(
-        self, model: str, text: str, tools: Optional[list[PromptMessageTool]] = None
+        self, text: str, tools: Optional[list[PromptMessageTool]] = None
     ) -> int:
         """
         Calculate num tokens for text completion model with tiktoken package.
 
-        :param model: model name
         :param text: prompt text
         :param tools: tools for tool calling
         :return: number of tokens
         """
         encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = len(encoding.encode(text))
+        num_tokens = len(encoding.encode(text, disallowed_special=()))
         if tools:
             num_tokens += self._num_tokens_for_tools(tools)
         return num_tokens

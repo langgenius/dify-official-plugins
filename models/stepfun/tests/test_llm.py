@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import yaml
@@ -92,12 +92,12 @@ def test_reasoning_and_answer_in_same_chunk(llm, field):
 
 
 def test_reasoning_only_closes_and_missing_usage_estimates(llm):
-    llm.get_num_tokens = Mock(return_value=12)
+    llm._num_tokens_from_messages = Mock(return_value=12)
     llm._num_tokens_from_string = Mock(return_value=3)
     chunks = stream(llm, [event({"reasoning_content": "plan"}, "length"), "[DONE]"])
     assert "".join(c.delta.message.content or "" for c in chunks) == "<think>plan</think>"
     assert chunks[-1].delta.finish_reason == "length"
-    llm.get_num_tokens.assert_called_once()
+    llm._num_tokens_from_messages.assert_called_once()
     llm._calc_response_usage.assert_called_once_with("step-5-preview", {}, 12, 3)
 
 
@@ -154,7 +154,7 @@ def test_invoke_serializes_step5_request(llm):
     )
     llm.get_model_schema = Mock(return_value=schema)
     llm._calc_response_usage = lambda *args: LLMUsage.empty_usage()
-    response = Mock(status_code=200, encoding="utf-8")
+    response = MagicMock(status_code=200, encoding="utf-8")
     response.json.return_value = {
         "choices": [{"message": {"content": '{"ok":true}', "reasoning_content": "plan"}}],
         "usage": {"prompt_tokens": 50, "completion_tokens": 10},

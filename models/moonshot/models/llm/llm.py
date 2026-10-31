@@ -20,7 +20,6 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
-    UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from requests import Response
@@ -222,12 +221,14 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         result = super()._handle_generate_response(
             model,
             credentials,
             response,
             prompt_messages,
+            tools=tools,
         )
         if LLMMode.value_of(credentials["mode"]) is not LLMMode.CHAT:
             return result
