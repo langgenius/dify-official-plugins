@@ -41,10 +41,9 @@ class QRCodeGeneratorTool(Tool):
         embedded_image: Optional[File] = tool_parameters.get("embedded_image")
         embedded_image_path: Optional[str] = None
         if embedded_image:
-            tmp_embedded_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp_embedded_file.write(embedded_image.blob)
-            tmp_embedded_file.flush()
-            embedded_image_path = tmp_embedded_file.name
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_embedded_file:
+                tmp_embedded_file.write(embedded_image.blob)
+                embedded_image_path = tmp_embedded_file.name
 
         output_filename: Optional[str] = tool_parameters.get("output_filename")
         if output_filename and not output_filename.lower().endswith(".png"):
