@@ -1,0 +1,102 @@
+identity:
+  name: sharepoint_list_files
+  author: langgenius
+  label:
+    en_US: List Files
+    zh_Hans: 列出文件
+    ja_JP: ファイルを一覧表示
+description:
+  human:
+    en_US: Files and folders in the site's document library
+    zh_Hans: 站点文档库中的文件和文件夹
+    ja_JP: サイトのドキュメント ライブラリのファイルとフォルダー
+  llm: List the files and folders in a folder of the site's default document library, with their IDs.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: folder_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Folder ID
+    zh_Hans: 文件夹 ID
+    ja_JP: フォルダー ID
+  human_description:
+    en_US: Folder ID; empty or root for the library's top folder
+    zh_Hans: 文件夹 ID；留空或 root 表示文档库顶层
+    ja_JP: フォルダー ID。空欄または root でライブラリの最上位
+  llm_description: The folder's ID (from the list files tool). Empty or root for the top folder of the site's document library.
+- name: limit
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum items (default 100)
+    zh_Hans: 最多返回条数（默认 100）
+    ja_JP: 最大件数（既定 100）
+  llm_description: Maximum number of items to return, default 100, up to 1000.
+  default: 100
+  min: 1
+  max: 1000
+output_schema:
+  type: object
+  properties:
+    files:
+      type: array
+      description: Files and folders
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: File or folder ID
+          name:
+            type: string
+            description: Name
+          is_folder:
+            type: boolean
+            description: True for a folder
+          size:
+            type: integer
+            description: Size in bytes
+          mime_type:
+            type: string
+            description: MIME type of a file
+          web_url:
+            type: string
+            description: Link
+          path:
+            type: string
+            description: Parent folder path
+          last_modified:
+            type: string
+            description: Last modified
+    count:
+      type: integer
+      description: Number of items
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_list_files.py

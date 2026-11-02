@@ -1,0 +1,146 @@
+identity:
+  name: confluence_update_page
+  author: langgenius
+  label:
+    en_US: Update Page
+    zh_Hans: 更新页面
+    ja_JP: ページを更新
+description:
+  human:
+    en_US: Change a page's title or content, or add to it
+    zh_Hans: 修改页面标题或内容，或追加内容
+    ja_JP: ページのタイトルや本文を変更、または追記します
+  llm: 'Update a Confluence page: new title and/or content. mode ''replace'' replaces the content, ''append'' adds to the
+    end, ''prepend'' adds to the start. Content is Markdown unless body_format is storage.'
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+- name: title
+  type: string
+  required: false
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: New title (empty = keep)
+    zh_Hans: 新标题（留空则不变）
+    ja_JP: 新しいタイトル（空なら変更なし）
+  llm_description: New title; leave empty to keep it.
+  form: llm
+- name: body
+  type: string
+  required: false
+  label:
+    en_US: Content
+    zh_Hans: 内容
+    ja_JP: 本文
+  human_description:
+    en_US: New content, or what to add
+    zh_Hans: 新内容，或要追加的内容
+    ja_JP: 新しい本文、または追記する内容
+  llm_description: The new content (or the content to append / prepend).
+  form: llm
+- name: mode
+  type: select
+  required: false
+  label:
+    en_US: Mode
+    zh_Hans: 方式
+    ja_JP: モード
+  human_description:
+    en_US: Replace the content, or add to its end or start
+    zh_Hans: 替换内容，或追加到末尾/开头
+    ja_JP: 本文を置き換えるか、末尾・先頭に追記
+  llm_description: replace (default), append or prepend.
+  form: llm
+  default: replace
+  options:
+  - value: replace
+    label:
+      en_US: Replace
+      zh_Hans: 替换
+      ja_JP: 置き換え
+  - value: append
+    label:
+      en_US: Append
+      zh_Hans: 追加到末尾
+      ja_JP: 末尾に追記
+  - value: prepend
+    label:
+      en_US: Prepend
+      zh_Hans: 追加到开头
+      ja_JP: 先頭に追記
+- name: body_format
+  type: select
+  required: false
+  label:
+    en_US: Body Format
+    zh_Hans: 内容格式
+    ja_JP: 本文の形式
+  human_description:
+    en_US: Markdown (converted) or Confluence storage format (XHTML)
+    zh_Hans: Markdown（自动转换）或 Confluence 存储格式（XHTML）
+    ja_JP: Markdown（変換されます）または Confluence ストレージ形式（XHTML）
+  llm_description: markdown (default) or storage (Confluence XHTML).
+  form: form
+  default: markdown
+  options:
+  - value: markdown
+    label:
+      en_US: Markdown
+      zh_Hans: Markdown
+      ja_JP: Markdown
+  - value: storage
+    label:
+      en_US: Storage format (XHTML)
+      zh_Hans: 存储格式（XHTML）
+      ja_JP: ストレージ形式（XHTML）
+- name: version_message
+  type: string
+  required: false
+  label:
+    en_US: Version Comment
+    zh_Hans: 版本说明
+    ja_JP: バージョン コメント
+  human_description:
+    en_US: Shown in the page history
+    zh_Hans: 显示在页面历史中
+    ja_JP: ページ履歴に表示されます
+  llm_description: Optional note for the page history.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    page_id:
+      type: string
+      description: Page ID
+    title:
+      type: string
+      description: Title
+    version:
+      type: integer
+      description: The new version number
+    url:
+      type: string
+      description: Link to the page
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_update_page.py

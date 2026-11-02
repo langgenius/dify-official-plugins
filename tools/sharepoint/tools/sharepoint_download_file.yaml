@@ -1,0 +1,68 @@
+identity:
+  name: sharepoint_download_file
+  author: langgenius
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    ja_JP: ファイルをダウンロード
+description:
+  human:
+    en_US: Download a file (up to 15 MB)
+    zh_Hans: 下载文件（最大 15 MB）
+    ja_JP: ファイルをダウンロードします（最大 15 MB）
+  llm: Download a file from the site's document library; it is returned as a file.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: file_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: The file's ID
+    zh_Hans: 文件的 ID
+    ja_JP: ファイルの ID
+  llm_description: The file's ID (from the list files tool).
+output_schema:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Name
+    size:
+      type: integer
+      description: Size in bytes
+    mime_type:
+      type: string
+      description: MIME type of a file
+    web_url:
+      type: string
+      description: Link
+    downloaded:
+      type: boolean
+      description: True when the content was returned in files
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_download_file.py

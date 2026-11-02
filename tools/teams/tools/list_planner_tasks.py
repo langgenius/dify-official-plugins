@@ -13,7 +13,7 @@ class ListPlannerTasksTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             (plan_id,) = require(tool_parameters, "plan_id")
             try:
                 limit = min(max(int(tool_parameters.get("limit") or 50), 1), 200)

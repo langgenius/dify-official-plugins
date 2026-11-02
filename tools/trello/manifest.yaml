@@ -13,6 +13,7 @@ meta:
   arch:
   - amd64
   - arm64
+  minimum_dify_version: 1.7.0
   runner:
     entrypoint: main
     language: python
@@ -20,17 +21,25 @@ meta:
   version: 0.0.1
 name: trello
 plugins:
+  endpoints:
+  - group/trello_signin.yaml
   tools:
   - provider/trello.yaml
+privacy: PRIVACY.md
 resource:
-  memory: 1048576
+  memory: 268435456
   permission:
+    endpoint:
+      enabled: true
     model:
       enabled: true
       llm: true
+    storage:
+      enabled: true
+      size: 10485760
     tool:
       enabled: true
 tags:
 - productivity
 type: plugin
-version: 0.0.10
+version: 1.0.0

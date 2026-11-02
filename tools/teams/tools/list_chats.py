@@ -20,7 +20,7 @@ class ListChatsTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             top = bounded_int(tool_parameters.get("top"), 20, 1, 50, "top")
             max_pages = bounded_int(tool_parameters.get("max_pages"), 5, 1, 10, "max_pages")
             name = (tool_parameters.get("participant_name") or "").strip()

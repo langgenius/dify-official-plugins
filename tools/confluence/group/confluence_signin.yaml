@@ -1,0 +1,5 @@
+# Only needed for the "Each user signs in" credential mode: Atlassian redirects users here after they sign in.
+# Its URL (…/confluence/callback) goes into the credential's Sign-in Callback URL and the OAuth app's callback URL (Atlassian developer console > Authorization).
+settings: []
+endpoints:
+  - endpoints/signin_callback.yaml

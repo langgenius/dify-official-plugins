@@ -17,7 +17,7 @@ class ListCalendarGroupsTool(Tool):
         """
         try:
             try:
-                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"), tool=self)
             except GraphAuthError as e:
                 yield self.create_text_message(str(e))
                 return

@@ -24,7 +24,7 @@ class GetFileByIdTool(Tool):
             return
 
         try:
-            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"))
+            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"), tool=self)
             item = graph_request(graph, "GET", f"{graph.drive_base}/items/{segment(file_id)}").json()
         except GraphAuthError as e:
             yield self.create_json_message({"error": str(e)})
