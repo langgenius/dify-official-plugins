@@ -31,7 +31,7 @@ def http(monkeypatch):
 def sign_in_link(tool) -> str:
     with pytest.raises(TrelloAuthError) as exc:
         resolve_context(tool.runtime.credentials, tool=tool)
-    return exc.value.args[0].rsplit("\n", 1)[-1]
+    return follow_short_link(tool.session.storage, exc.value.args[0].rsplit("\n", 1)[-1])
 
 
 def state_of(link: str) -> str:
@@ -178,3 +178,22 @@ def test_missing_user_or_callback_url():
     no_url = {**PER_USER, "redirect_uri": ""}
     with pytest.raises(TrelloAuthError, match="Sign-in Callback URL"):
         resolve_context(no_url, tool=make_tool(FakeStorage(), credentials=no_url))
+
+
+def follow_short_link(storage, link: str) -> str:
+    """The agent gets a short link to the sign-in endpoint, which redirects to the sign-in page."""
+    from tools.user_auth import is_valid_start
+
+    base, _, start = link.partition("?start=")
+    assert base.endswith("/trello/callback") and is_valid_start(start) and "state=" not in link, link
+    request = Request(EnvironBuilder(path="/trello/callback", query_string={"start": start}).get_environ())
+    response = SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {})
+    assert response.status_code == 302
+    return response.headers["Location"]
+
+
+def test_mistyped_or_unknown_short_link_is_refused():
+    storage = SimpleNamespace(exist=lambda key: False)
+    for start in ("a" * 12, "ABCDEFGHJKMN", "short"):
+        request = Request(EnvironBuilder(path="/trello/callback", query_string={"start": start}).get_environ())
+        assert SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {}).status_code == 400
