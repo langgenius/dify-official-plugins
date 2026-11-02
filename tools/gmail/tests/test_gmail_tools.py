@@ -154,7 +154,7 @@ def test_original_tool_with_oauth_and_per_user(http):
     result = run(make_tool(SearchMessagesTool, OAUTH), {"query": "from:bob"})
     assert http.calls[0].url.startswith(f"{API}/messages") and result.messages
     per_user = run(make_tool(SearchMessagesTool, PER_USER), {"query": "from:bob"})
-    assert "https://accounts.google.com/o/oauth2/v2/auth?" in per_user.texts[0]
+    assert "/gmail/callback?start=" in per_user.texts[0]
 
 
 def test_sign_out_modes(http):
