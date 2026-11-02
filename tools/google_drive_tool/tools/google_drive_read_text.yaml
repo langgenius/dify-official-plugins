@@ -1,0 +1,47 @@
+identity:
+  name: google_drive_read_text
+  author: langgenius
+  label:
+    en_US: Read as Text
+    zh_Hans: 读取为文本
+    ja_JP: テキストとして読む
+description:
+  human:
+    en_US: The text of a Doc, Sheet, Slides or text file
+    zh_Hans: 读取文档、表格、幻灯片或文本文件的内容
+    ja_JP: ドキュメント・表・スライド・テキストの内容
+  llm: Read a Google Doc (as Markdown), Google Sheet (first sheet as CSV), Google Slides deck or text file as text, to answer
+    questions about it.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    text:
+      type: string
+    name:
+      type: string
+    mime_type:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_read_text.py

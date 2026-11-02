@@ -1,0 +1,174 @@
+identity:
+  name: google_drive_search
+  author: langgenius
+  label:
+    en_US: Search Files
+    zh_Hans: 搜索文件
+    ja_JP: ファイルを検索
+description:
+  human:
+    en_US: Find files by name, content, type or folder
+    zh_Hans: 按名称、内容、类型或文件夹查找文件
+    ja_JP: 名前・内容・種類・フォルダーで検索
+  llm: Search Google Drive (My Drive and shared drives). Give name and/or text (full-text search), file_type, folder_id, or
+    a raw Drive query (e.g. "modifiedTime > '2026-01-01' and 'me' in owners"). recent=true lists the most recently modified
+    files.
+parameters:
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  human_description:
+    en_US: Part of the file name
+    zh_Hans: 文件名的一部分
+    ja_JP: ファイル名の一部
+  llm_description: Text the file name contains.
+  form: llm
+- name: text
+  type: string
+  required: false
+  label:
+    en_US: Content Contains
+    zh_Hans: 内容包含
+    ja_JP: 内容に含む
+  human_description:
+    en_US: Words in the file's content
+    zh_Hans: 文件内容中的文字
+    ja_JP: ファイル内容の語句
+  llm_description: Words to find in the files' content (full-text search).
+  form: llm
+- name: file_type
+  type: select
+  required: false
+  label:
+    en_US: File Type
+    zh_Hans: 文件类型
+    ja_JP: ファイルの種類
+  human_description:
+    en_US: Only this kind of file
+    zh_Hans: 仅此类文件
+    ja_JP: この種類のみ
+  llm_description: any, folder, document, spreadsheet, presentation or pdf.
+  form: llm
+  options:
+  - value: any
+    label:
+      en_US: Any
+      zh_Hans: 全部
+      ja_JP: すべて
+  - value: folder
+    label:
+      en_US: Folders
+      zh_Hans: 文件夹
+      ja_JP: フォルダー
+  - value: document
+    label:
+      en_US: Google Docs
+      zh_Hans: Google 文档
+      ja_JP: Google ドキュメント
+  - value: spreadsheet
+    label:
+      en_US: Google Sheets
+      zh_Hans: Google 表格
+      ja_JP: Google スプレッドシート
+  - value: presentation
+    label:
+      en_US: Google Slides
+      zh_Hans: Google 幻灯片
+      ja_JP: Google スライド
+  - value: pdf
+    label:
+      en_US: PDF
+      zh_Hans: PDF
+      ja_JP: PDF
+  default: any
+- name: folder_id
+  type: string
+  required: false
+  label:
+    en_US: In Folder
+    zh_Hans: 所在文件夹
+    ja_JP: フォルダー内
+  human_description:
+    en_US: Only directly in this folder
+    zh_Hans: 仅限此文件夹（不含子文件夹）
+    ja_JP: このフォルダー直下のみ
+  llm_description: Only files directly in this folder.
+  form: llm
+- name: recent
+  type: boolean
+  required: false
+  label:
+    en_US: Recent
+    zh_Hans: 最近
+    ja_JP: 最近
+  human_description:
+    en_US: List recently modified files
+    zh_Hans: 列出最近修改的文件
+    ja_JP: 最近変更したファイル
+  llm_description: true lists the most recently modified files when no other filter is given.
+  form: llm
+  default: false
+- name: query
+  type: string
+  required: false
+  label:
+    en_US: Drive Query
+    zh_Hans: Drive 查询
+    ja_JP: Drive クエリ
+  human_description:
+    en_US: Raw query (overrides the fields above)
+    zh_Hans: 原始查询（会忽略上面的字段）
+    ja_JP: 生のクエリ（上の項目より優先）
+  llm_description: A raw Google Drive query; overrides the other filters.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 25, max 500
+    zh_Hans: 默认 25，最多 500
+    ja_JP: 既定 25、最大 500
+  llm_description: Maximum number of results (default 25, max 500).
+  form: llm
+  default: 25
+output_schema:
+  type: object
+  properties:
+    files:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          mime_type:
+            type: string
+          is_folder:
+            type: boolean
+          size:
+            type: integer
+          modified:
+            type: string
+          url:
+            type: string
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_search.py
