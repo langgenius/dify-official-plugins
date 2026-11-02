@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.message import UserPromptMessage
-from dify_plugin.errors.model import InvokeConnectionError
+from dify_plugin.errors.model import InvokeConnectionError, InvokeError
 
 from models.llm.llm import TongyiLargeLanguageModel
 
@@ -111,8 +111,9 @@ def test_stream_closes_session_for_all_exit_paths(outcome, session) -> None:
             assert next(stream) == "chunk"
             stream.close()
         else:
-            with pytest.raises(RuntimeError, match="broken stream"):
+            with pytest.raises(InvokeError, match="broken stream") as caught:
                 list(stream)
+            assert isinstance(caught.value.__cause__, RuntimeError)
     session.close.assert_called_once_with()
 
 

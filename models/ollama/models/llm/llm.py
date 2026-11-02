@@ -5,6 +5,7 @@ from collections.abc import Generator
 from decimal import Decimal
 from typing import Any, Optional, Union, cast
 from urllib.parse import urljoin
+from uuid import uuid4
 
 import requests
 from dify_plugin.entities.model import (
@@ -366,7 +367,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
             # create new entry if it doesn't exist
             existing = tool_calls_by_index.get(idx)
             if existing is None:
-                tc_id_value = tool_call_stream.get("id") or func_name or str(idx)
+                tc_id_value = tool_call_stream.get("id") or str(uuid4())
                 tool_calls_by_index[idx] = AssistantPromptMessage.ToolCall(
                     id=tc_id_value,
                     type="function",
@@ -378,10 +379,14 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
             else:
                 # merge into existing entry
                 tool_call_obj = existing
+                if tool_call_stream.get("id"):
+                    tool_call_obj.id = tool_call_stream["id"]
                 if func_name:
                     # overwrite name to avoid duplication
                     tool_call_obj.function.name = func_name
-                if args_chunk:
+                if isinstance(function_data.get("arguments"), (dict, list)):
+                    tool_call_obj.function.arguments = args_chunk
+                elif args_chunk:
                     tool_call_obj.function.arguments += args_chunk
 
     def _handle_generate_stream_response(
@@ -509,7 +514,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         message_obj, is_reasoning_started
                      )
 
-                # If this chunk contains tool_calls, yield a dedicated tool_calls delta.
+                # Buffer tool calls until their arguments are complete.
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
                     if is_reasoning_started == 1:
                         # Yield the end of the thinking tag
@@ -532,23 +537,6 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         message_obj.get("tool_calls"),
                     )
                     tool_phase = True
-                    assistant_prompt_message = AssistantPromptMessage(content="")
-                    if tool_calls_by_index:
-                        assistant_prompt_message.tool_calls = [
-                            tool_calls_by_index[i]
-                            for i in sorted(tool_calls_by_index)
-                            if tool_calls_by_index[i] is not None
-                        ]
-                    yield LLMResultChunk(
-                        model=chunk_json.get("model", model or "default_model"),
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=chunk_index,
-                            message=assistant_prompt_message,
-                            finish_reason="tool_calls",
-                        ),
-                    )
-                    chunk_index += 1
             else:
                 if not chunk_json:
                     continue
@@ -630,13 +618,17 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 usage = self._calc_response_usage(
                     model, credentials, prompt_tokens, completion_tokens
                 )
-                # final chunk: include finish_reason and usage, no extra tool_calls
                 yield LLMResultChunk(
                     model=chunk_json.get("model", model or "default_model"),
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=chunk_index,
-                        message=AssistantPromptMessage(content=""),
+                        message=AssistantPromptMessage(
+                            content="",
+                            tool_calls=[
+                                tool_calls_by_index[i] for i in sorted(tool_calls_by_index)
+                            ],
+                        ),
                         finish_reason=chunk_json.get("done_reason") or "stop",
                         usage=usage,
                     ),
@@ -706,7 +698,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
             message_dict = {"role": "tool", "content": message.content}
             # Ollama's native API expects tool_name; keep tool_call_id for compatibility.
             if hasattr(message, "tool_call_id") and message.tool_call_id:
-                message_dict["tool_name"] = message.tool_call_id
+                message_dict["tool_name"] = message.name or message.tool_call_id
                 message_dict["tool_call_id"] = message.tool_call_id
         else:
             raise ValueError(f"Got unknown type {message}")
@@ -819,8 +811,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 arguments=arguments,
             )
             tool_call = AssistantPromptMessage.ToolCall(
-                id=response_tool_call.get("id")
-                or response_tool_call.get("function", {}).get("name"),
+                id=response_tool_call.get("id") or str(uuid4()),
                 type="function",
                 function=function,
             )

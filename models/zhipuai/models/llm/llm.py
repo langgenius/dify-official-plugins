@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
 from typing import Optional, Union
+from uuid import uuid4
 
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -20,7 +21,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from zai import ZhipuAiClient
 from zai.core import StreamResponse
@@ -372,19 +373,9 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         text = ""
         assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
         for choice in response.choices:
-            if choice.message.tool_calls:
-                for tool_call in choice.message.tool_calls:
-                    if tool_call.type == "function":
-                        assistant_tool_calls.append(
-                            AssistantPromptMessage.ToolCall(
-                                id=tool_call.id,
-                                type=tool_call.type,
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=tool_call.function.name,
-                                    arguments=tool_call.function.arguments,
-                                ),
-                            )
-                        )
+            assistant_tool_calls.extend(
+                self._convert_tool_calls(choice.message.tool_calls or [], choice.finish_reason)
+            )
             if choice.message.reasoning_content:
                 text += "<think>\n" + choice.message.reasoning_content + "\n</think>"
             text += choice.message.content or ""
@@ -401,6 +392,33 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             ),
             usage=usage,
         )
+        return result
+
+    def _convert_tool_calls(self, tool_calls, finish_reason) -> list[AssistantPromptMessage.ToolCall]:
+        result = []
+        for tool_call in tool_calls:
+            if tool_call.type != "function":
+                continue
+            if finish_reason not in ("stop", "tool_calls"):
+                raise InvokeError("The model stopped before completing its tool calls.")
+            function = tool_call.function
+            if function is None or not function.name or not function.name.strip():
+                raise InvokeError("The model returned a tool call without a function name.")
+            try:
+                parameters = json.loads(function.arguments)
+            except (TypeError, ValueError) as error:
+                raise InvokeError("The model returned invalid tool arguments.") from error
+            if not isinstance(parameters, dict):
+                raise InvokeError("Tool arguments must be a JSON object.")
+            result.append(
+                AssistantPromptMessage.ToolCall(
+                    id=tool_call.id or str(uuid4()),
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=function.name, arguments=function.arguments,
+                    ),
+                )
+            )
         return result
 
     def _handle_generate_stream_response(
@@ -420,74 +438,75 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :return: llm response chunk generator result
         """
         is_reasoning = False
-        full_assistant_content = ""
-        for chunk in responses:
-            if len(chunk.choices) == 0:
-                continue
-            delta = chunk.choices[0]
-            if (
-                delta.finish_reason is None
-                and (delta.delta.content is None or delta.delta.content == "")
-                and (delta.delta.reasoning_content is None or delta.delta.reasoning_content == "")
-                and delta.delta.tool_calls is None
-            ):
-                continue
-
-            # Remove BOX_TOKEN from the channel of the `glm-4.5v`
-            # In final_answer, the model will not directly output
-            # the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
-            # Therefore, there's no need to worry about contaminating the integrity of the response.
-            if delta.delta.content == TOKEN_BEGIN_OF_BOX or delta.delta.content == TOKEN_END_OF_BOX:
-                continue
-
-            assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
-            for tool_call in delta.delta.tool_calls or []:
-                if tool_call.type == "function":
-                    assistant_tool_calls.append(
-                        AssistantPromptMessage.ToolCall(
-                            id=tool_call.id,
-                            type=tool_call.type,
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=tool_call.function.name,
-                                arguments=tool_call.function.arguments,
-                            ),
-                        )
+        calls: dict[int, AssistantPromptMessage.ToolCall] = {}
+        finish_reason = None
+        usage = None
+        response_model = model
+        index = 0
+        try:
+            for chunk in responses:
+                response_model = chunk.model or response_model
+                if chunk.usage is not None:
+                    usage = self._calc_response_usage(
+                        model, credentials, chunk.usage.prompt_tokens, chunk.usage.completion_tokens
                     )
-            resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                delta.delta, is_reasoning
-            )
-            assistant_prompt_message = AssistantPromptMessage(
-                content=resp_content, tool_calls=assistant_tool_calls
-            )
-            full_assistant_content += resp_content
-            if delta.finish_reason is not None and chunk.usage is not None:
-                completion_tokens = chunk.usage.completion_tokens
-                prompt_tokens = chunk.usage.prompt_tokens
-                usage = self._calc_response_usage(
-                    model, credentials, prompt_tokens, completion_tokens
+                if len(chunk.choices) == 0:
+                    continue
+                delta = chunk.choices[0]
+                index = delta.index
+                if delta.finish_reason:
+                    finish_reason = delta.finish_reason
+
+                for part in delta.delta.tool_calls or []:
+                    if part.type not in (None, "function"):
+                        continue
+                    if part.index not in calls:
+                        calls[part.index] = AssistantPromptMessage.ToolCall(
+                            id="", type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+                        )
+                    call = calls[part.index]
+                    if part.id:
+                        call.id = part.id
+                    if part.function:
+                        if part.function.name:
+                            call.function.name = part.function.name
+                        call.function.arguments += part.function.arguments or ""
+
+                # Remove BOX_TOKEN from the channel of the `glm-4.5v`
+                # In final_answer, the model will not directly output
+                # the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
+                # Therefore, there's no need to worry about contaminating the integrity of the response.
+                if delta.delta.content == TOKEN_BEGIN_OF_BOX or delta.delta.content == TOKEN_END_OF_BOX:
+                    continue
+
+                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                    delta.delta, is_reasoning
                 )
-                yield LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint="",
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                        finish_reason=delta.finish_reason,
-                        usage=usage,
-                    ),
-                )
-            else:
-                yield LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint="",
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                        finish_reason=delta.finish_reason,
-                    ),
-                )
+                if resp_content:
+                    yield LLMResultChunk(
+                        model=response_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=resp_content),
+                        ),
+                    )
+
+        except Exception as error:
+            raise self._transform_invoke_error(error) from error
+
+        tool_calls = self._convert_tool_calls(calls.values(), finish_reason)
+        yield LLMResultChunk(
+            model=response_model,
+            prompt_messages=prompt_messages,
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                finish_reason=finish_reason,
+                usage=usage,
+            ),
+        )
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """

@@ -7,9 +7,13 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.9.0",
+    "dify_plugin>=0.11.0,<0.12.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+# Non-streaming tool loops require the SDK replay fix until its next release.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "0fa060a11fd774fe8ed70c915d7881e20a765b64" }

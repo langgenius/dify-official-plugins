@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import Generator
 from decimal import Decimal
 from typing import Optional, Union
@@ -352,6 +353,15 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         if completion_type is LLMMode.CHAT:
             endpoint_url = urljoin(endpoint_url, "chat/completions")
             data["messages"] = [self._convert_prompt_message_to_dict(m, credentials) for m in prompt_messages]
+            if credentials.get("function_calling_type") == "function_call":
+                tool_names = {
+                    call.id: call.function.name
+                    for message in prompt_messages if isinstance(message, AssistantPromptMessage)
+                    for call in message.tool_calls
+                }
+                for message, converted in zip(prompt_messages, data["messages"]):
+                    if isinstance(message, ToolPromptMessage):
+                        converted["name"] = tool_names.get(message.tool_call_id, message.tool_call_id)
         elif completion_type is LLMMode.COMPLETION:
             endpoint_url = urljoin(endpoint_url, "completions")
             data["prompt"] = prompt_messages[0].content
@@ -454,150 +464,143 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
         delimiter = credentials.get("stream_mode_delimiter", "\n\n")
         delimiter = codecs.decode(delimiter, "unicode_escape")
 
-        tools_calls: list[AssistantPromptMessage.ToolCall] = []
+        tools_calls: dict[int, AssistantPromptMessage.ToolCall] = {}
 
-        def increase_tool_call(new_tool_calls: list[AssistantPromptMessage.ToolCall]):
-            def get_tool_call(tool_call_id: str):
-                if not tool_call_id:
-                    return tools_calls[-1]
-
-                tool_call = next(
-                    (tool_call for tool_call in tools_calls if tool_call.id == tool_call_id),
-                    None,
-                )
-                if tool_call is None:
-                    tool_call = AssistantPromptMessage.ToolCall(
-                        id=tool_call_id,
-                        type="function",
+        def increase_tool_call(new_tool_calls: list[dict]):
+            for position, new_tool_call in enumerate(new_tool_calls):
+                tool_call = tools_calls.setdefault(
+                    new_tool_call.get("index", position),
+                    AssistantPromptMessage.ToolCall(
+                        id=uuid.uuid4().hex, type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
-                    )
-                    tools_calls.append(tool_call)
-
-                return tool_call
-
-            for new_tool_call in new_tool_calls:
-                # get tool call
-                tool_call = get_tool_call(new_tool_call.function.name)
-                # update tool call
-                if new_tool_call.id:
-                    tool_call.id = new_tool_call.id
-                if new_tool_call.type:
-                    tool_call.type = new_tool_call.type
-                if new_tool_call.function.name:
-                    tool_call.function.name = new_tool_call.function.name
-                if new_tool_call.function.arguments:
-                    tool_call.function.arguments += new_tool_call.function.arguments
+                    ),
+                )
+                if new_tool_call.get("id"):
+                    tool_call.id = new_tool_call["id"]
+                if new_tool_call.get("type"):
+                    tool_call.type = new_tool_call["type"]
+                function = new_tool_call.get("function") or {}
+                tool_call.function.name += function.get("name") or ""
+                tool_call.function.arguments += function.get("arguments") or ""
 
         finish_reason = None  # The default value of finish_reason is None
         message_id, usage = None, None
-        for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
-            chunk = chunk.strip()
-            if chunk:
-                # ignore sse comments
-                if chunk.startswith(":"):
-                    continue
-                decoded_chunk = chunk.strip().removeprefix("data: ").lstrip()
-                if decoded_chunk == "[DONE]":  # Some provider returns "data: [DONE]"
-                    continue
+        try:
+            for chunk in response.iter_lines(decode_unicode=True, delimiter=delimiter):
+                chunk = chunk.strip()
+                if chunk:
+                    # ignore sse comments
+                    if chunk.startswith(":"):
+                        continue
+                    decoded_chunk = chunk.strip().removeprefix("data: ").lstrip()
+                    if decoded_chunk == "[DONE]":  # Some provider returns "data: [DONE]"
+                        continue
 
-                try:
-                    chunk_json: dict = json.loads(decoded_chunk)
-                # stream ended
-                except json.JSONDecodeError:
-                    yield create_final_llm_result_chunk(
-                        id=message_id,
-                        index=chunk_index + 1,
-                        message=AssistantPromptMessage(content=""),
-                        finish_reason="Non-JSON encountered.",
-                        usage=usage or {},
+                    try:
+                        chunk_json: dict = json.loads(decoded_chunk)
+                    except json.JSONDecodeError as exc:
+                        raise InvokeError("Invalid JSON in streamed response") from exc
+                    if chunk_json.get("error"):
+                        raise InvokeError(str(chunk_json["error"]))
+                    if chunk_json and (u := chunk_json.get("usage")):
+                        usage = u
+                    if not chunk_json or len(chunk_json["choices"]) == 0:
+                        continue
+
+                    choice = chunk_json["choices"][0]
+                    finish_reason = choice.get("finish_reason") or finish_reason
+                    message_id = chunk_json.get("id")
+                    chunk_index += 1
+
+                    if "delta" in choice:
+                        delta = choice["delta"]
+                        delta_content = delta.get("content")
+
+                        assistant_message_tool_calls = None
+
+                        if "tool_calls" in delta and credentials.get("function_calling_type", "no_call") == "tool_call":
+                            assistant_message_tool_calls = delta.get("tool_calls", None)
+                        elif (
+                            "function_call" in delta
+                            and credentials.get("function_calling_type", "no_call") == "function_call"
+                        ):
+                            assistant_message_tool_calls = [
+                                {
+                                    "index": 0,
+                                    "type": "function",
+                                    "function": delta.get("function_call", {}),
+                                }
+                            ]
+
+                        if assistant_message_tool_calls:
+                            increase_tool_call(assistant_message_tool_calls)
+
+                        if tools_calls and finish_reason and finish_reason not in {"stop", "tool_calls", "function_call"}:
+                            raise InvokeError(f"Tool call stream ended with {finish_reason}")
+
+                        # Check for reasoning_content if thinking is enabled
+                        if delta.get("reasoning_content") or is_reasoning:
+                            processed_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                                delta, is_reasoning
+                            )
+                            if processed_content:
+                                delta_content = processed_content
+                            else:
+                                continue
+                        elif delta_content is None or delta_content == "":
+                            continue
+
+                        # transform assistant message to prompt message
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=delta_content,
+                        )
+
+                        full_assistant_content += delta_content
+                    elif "text" in choice:
+                        choice_text = choice.get("text", "")
+                        if choice_text == "":
+                            continue
+
+                        # transform assistant message to prompt message
+                        assistant_prompt_message = AssistantPromptMessage(content=choice_text)
+                        full_assistant_content += choice_text
+                    else:
+                        continue
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk_index,
+                            message=assistant_prompt_message,
+                        ),
                     )
-                    break
-                if chunk_json and (u := chunk_json.get("usage")):
-                    usage = u
-                if not chunk_json or len(chunk_json["choices"]) == 0:
-                    continue
 
-                choice = chunk_json["choices"][0]
-                finish_reason = chunk_json["choices"][0].get("finish_reason")
-                message_id = chunk_json.get("id")
                 chunk_index += 1
 
-                if "delta" in choice:
-                    delta = choice["delta"]
-                    delta_content = delta.get("content")
-
-                    assistant_message_tool_calls = None
-
-                    if "tool_calls" in delta and credentials.get("function_calling_type", "no_call") == "tool_call":
-                        assistant_message_tool_calls = delta.get("tool_calls", None)
-                    elif (
-                        "function_call" in delta
-                        and credentials.get("function_calling_type", "no_call") == "function_call"
-                    ):
-                        assistant_message_tool_calls = [
-                            {
-                                "id": "tool_call_id",
-                                "type": "function",
-                                "function": delta.get("function_call", {}),
-                            }
-                        ]
-
-                    # assistant_message_function_call = delta.delta.function_call
-
-                    # extract tool calls from response
-                    if assistant_message_tool_calls:
-                        tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-                        increase_tool_call(tool_calls)
-
-                    # Check for reasoning_content if thinking is enabled
-                    if delta.get("reasoning_content") or is_reasoning:
-                        processed_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                            delta, is_reasoning
-                        )
-                        if processed_content:
-                            delta_content = processed_content
-                        else:
-                            continue
-                    elif delta_content is None or delta_content == "":
-                        continue
-
-                    # transform assistant message to prompt message
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_content,
-                    )
-
-                    # reset tool calls
-                    tool_calls = []
-                    full_assistant_content += delta_content
-                elif "text" in choice:
-                    choice_text = choice.get("text", "")
-                    if choice_text == "":
-                        continue
-
-                    # transform assistant message to prompt message
-                    assistant_prompt_message = AssistantPromptMessage(content=choice_text)
-                    full_assistant_content += choice_text
-                else:
-                    continue
-
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=chunk_index,
-                        message=assistant_prompt_message,
-                    ),
-                )
-
-            chunk_index += 1
+        except requests.RequestException as exc:
+            raise InvokeError("Failed to read streamed response") from exc
 
         if tools_calls:
+            if finish_reason not in {"stop", "tool_calls", "function_call"}:
+                raise InvokeError("Tool call stream ended without a successful finish reason")
+            for tool_call in tools_calls.values():
+                if not tool_call.function.name.strip():
+                    raise InvokeError("Tool call is missing a function name")
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError as exc:
+                    raise InvokeError("Tool call arguments are not valid JSON") from exc
+                if not isinstance(arguments, dict):
+                    raise InvokeError("Tool call arguments must be a JSON object")
             yield LLMResultChunk(
                 model=model,
                 prompt_messages=prompt_messages,
                 delta=LLMResultChunkDelta(
                     index=chunk_index,
-                    message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
+                    message=AssistantPromptMessage(
+                        tool_calls=[tools_calls[index] for index in sorted(tools_calls)], content=""
+                    ),
                 ),
             )
 
@@ -889,8 +892,8 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
                 )
 
                 tool_call = AssistantPromptMessage.ToolCall(
-                    id=response_tool_call.get("id", ""),
-                    type=response_tool_call.get("type", ""),
+                    id=response_tool_call.get("id") or uuid.uuid4().hex,
+                    type=response_tool_call.get("type") or "function",
                     function=function,
                 )
                 tool_calls.append(tool_call)
@@ -912,7 +915,7 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             )
 
             tool_call = AssistantPromptMessage.ToolCall(
-                id=response_function_call.get("id", ""),
+                id=response_function_call.get("id") or uuid.uuid4().hex,
                 type="function",
                 function=function,
             )

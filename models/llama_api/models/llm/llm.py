@@ -1,10 +1,11 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates
+import json
 import logging
+import uuid
 from collections.abc import Generator
-from typing import cast, Optional, Union
+from typing import Optional, Union, cast
 
 import openai
-
 from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType
@@ -39,11 +40,6 @@ from openai.types.chat import (
     ChatCompletionChunk,
     ChatCompletionMessageToolCall,
 )
-from openai.types.chat.chat_completion_chunk import (
-    ChoiceDeltaFunctionCall,
-    ChoiceDeltaToolCall,
-)
-from openai.types.chat.chat_completion_message import FunctionCall
 
 logger = logging.getLogger(__name__)
 
@@ -296,13 +292,13 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
         """
         assistant_message = response.choices[0].message
         assistant_message_tool_calls = assistant_message.tool_calls
+        if assistant_message_tool_calls and response.choices[0].finish_reason in (None, "length", "content_filter"):
+            raise InvokeError("The response ended before the tool calls completed.")
         # extract tool calls from response
         tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
 
         # transform assistant message to prompt message
-        assistant_prompt_message = AssistantPromptMessage(
-            content=assistant_message.content, tool_calls=tool_calls
-        )
+        assistant_prompt_message = AssistantPromptMessage(content=assistant_message.content, tool_calls=tool_calls)
 
         # calculate num tokens
         if response.usage:
@@ -311,17 +307,11 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
             completion_tokens = response.usage.completion_tokens
         else:
             # calculate num tokens
-            prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
-            )
-            completion_tokens = self._num_tokens_from_messages(
-                model, [assistant_prompt_message]
-            )
+            prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
+            completion_tokens = self._num_tokens_from_messages(model, [assistant_prompt_message])
 
         # transform usage
-        usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
-        )
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
         # transform response
         return LLMResult(
@@ -398,134 +388,68 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> Generator:
-        """
-        Handle llm chat stream response
-
-        :param model: model name
-        :param response: response
-        :param prompt_messages: prompt messages
-        :param tools: tools for tool calling
-        :return: llm response chunk generator
-        """
         full_assistant_content = ""
-        delta_assistant_message_function_call_storage: Optional[
-            ChoiceDeltaFunctionCall
-        ] = None
-        prompt_tokens = 0
-        completion_tokens = 0
-        final_tool_calls = []
+        tool_calls: dict[int, AssistantPromptMessage.ToolCall] = {}
+        response_usage = None
         final_chunk = LLMResultChunk(
             model=model,
             prompt_messages=prompt_messages,
-            delta=LLMResultChunkDelta(
-                index=0,
-                message=AssistantPromptMessage(content=""),
-            ),
+            delta=LLMResultChunkDelta(index=0, message=AssistantPromptMessage(content="")),
         )
-
         for chunk in response:
-            if len(chunk.choices) == 0:
-                if chunk.usage:
-                    # calculate num tokens
-                    prompt_tokens = chunk.usage.prompt_tokens
-                    completion_tokens = chunk.usage.completion_tokens
+            if chunk.usage is not None:
+                response_usage = chunk.usage
+            if not chunk.choices:
                 continue
-
-            delta = chunk.choices[0]
-            has_finish_reason = delta.finish_reason is not None
-            if (
-                not has_finish_reason
-                and (delta.delta.content is None or delta.delta.content == "")
-                and delta.delta.function_call is None
-            ):
-                continue
-
-            assistant_message_tool_calls = delta.delta.tool_calls
-            assistant_message_function_call = delta.delta.function_call
-            # extract tool calls from response
-            if delta_assistant_message_function_call_storage is not None:
-                # handle process of stream function call
-                if assistant_message_function_call:
-                    # message has not ended ever
-                    assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments, str
+            choice = chunk.choices[0]
+            for fragment in choice.delta.tool_calls or []:
+                if fragment.index not in tool_calls:
+                    tool_calls[fragment.index] = AssistantPromptMessage.ToolCall(
+                        id="",
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
                     )
-                    assert isinstance(assistant_message_function_call.arguments, str)
+                tool_call = tool_calls[fragment.index]
+                if fragment.id:
+                    tool_call.id = fragment.id
+                if fragment.function is not None:
+                    if fragment.function.name:
+                        tool_call.function.name += fragment.function.name
+                    tool_call.function.arguments += fragment.function.arguments or ""
 
-                    delta_assistant_message_function_call_storage.arguments += (
-                        assistant_message_function_call.arguments
-                    )
-                    continue
-                else:
-                    # message has ended
-                    assistant_message_function_call = (
-                        delta_assistant_message_function_call_storage
-                    )
-                    delta_assistant_message_function_call_storage = None
-            else:
-                if assistant_message_function_call:
-                    # start of stream function call
-                    delta_assistant_message_function_call_storage = (
-                        assistant_message_function_call
-                    )
-                    if delta_assistant_message_function_call_storage.arguments is None:
-                        delta_assistant_message_function_call_storage.arguments = ""
-                    if not has_finish_reason:
-                        continue
-
-            tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-            if tool_calls:
-                final_tool_calls.extend(tool_calls)
-
-            # transform assistant message to prompt message
-            assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content if delta.delta.content else "",
-                tool_calls=tool_calls,
+            content = choice.delta.content or ""
+            full_assistant_content += content
+            result_chunk = LLMResultChunk(
+                model=chunk.model,
+                prompt_messages=prompt_messages,
+                system_fingerprint=chunk.system_fingerprint,
+                delta=LLMResultChunkDelta(
+                    index=choice.index,
+                    message=AssistantPromptMessage(content=content),
+                    finish_reason=choice.finish_reason,
+                ),
             )
+            if choice.finish_reason is not None:
+                final_chunk = result_chunk
+            elif content:
+                yield result_chunk
 
-            full_assistant_content += delta.delta.content if delta.delta.content else ""
-
-            if has_finish_reason:
-                final_chunk = LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint=chunk.system_fingerprint,
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                        finish_reason=delta.finish_reason,
-                    ),
-                )
-            else:
-                yield LLMResultChunk(
-                    model=chunk.model,
-                    prompt_messages=prompt_messages,
-                    system_fingerprint=chunk.system_fingerprint,
-                    delta=LLMResultChunkDelta(
-                        index=delta.index,
-                        message=assistant_prompt_message,
-                    ),
-                )
-
-        if not prompt_tokens:
-            prompt_tokens = self._num_tokens_from_messages(
-                model, prompt_messages, tools
+        if tool_calls:
+            if final_chunk.delta.finish_reason in (None, "length", "content_filter"):
+                raise InvokeError("The stream ended before the tool calls completed.")
+            final_chunk.delta.message.tool_calls = self._extract_response_tool_calls(
+                [tool_calls[index] for index in sorted(tool_calls)]
             )
-
-        if not completion_tokens:
-            full_assistant_prompt_message = AssistantPromptMessage(
-                content=full_assistant_content, tool_calls=final_tool_calls
+        if response_usage is not None:
+            prompt_tokens = response_usage.prompt_tokens
+            completion_tokens = response_usage.completion_tokens
+        else:
+            prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
+            full_message = AssistantPromptMessage(
+                content=full_assistant_content, tool_calls=final_chunk.delta.message.tool_calls
             )
-            completion_tokens = self._num_tokens_from_messages(
-                model, [full_assistant_prompt_message]
-            )
-
-        # transform usage
-        usage = self._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
-        )
-        final_chunk.delta.usage = usage
-
+            completion_tokens = self._num_tokens_from_messages(model, [full_message])
+        final_chunk.delta.usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         yield final_chunk
 
     def _num_tokens_from_messages(
@@ -542,28 +466,31 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
 
     def _extract_response_tool_calls(
         self,
-        response_tool_calls: list[ChatCompletionMessageToolCall | ChoiceDeltaToolCall],
+        response_tool_calls: list[ChatCompletionMessageToolCall | AssistantPromptMessage.ToolCall] | None,
     ) -> list[AssistantPromptMessage.ToolCall]:
-        """
-        Extract tool calls from response
-
-        :param response_tool_calls: response tool calls
-        :return: list of tool calls
-        """
         tool_calls = []
-        if response_tool_calls:
-            for response_tool_call in response_tool_calls:
-                assert isinstance(response_tool_call, ChatCompletionMessageToolCall)
-                function = AssistantPromptMessage.ToolCall.ToolCallFunction(
-                    name=response_tool_call.function.name,
-                    arguments=response_tool_call.function.arguments,
+        seen_ids = set()
+        for response_tool_call in response_tool_calls or []:
+            arguments = response_tool_call.function.arguments or "{}"
+            try:
+                parameters = json.loads(arguments)
+            except (TypeError, ValueError) as error:
+                raise InvokeError("The model returned invalid tool arguments.") from error
+            if not response_tool_call.function.name or not isinstance(parameters, dict):
+                raise InvokeError("The model returned an incomplete tool call.")
+            call_id = getattr(response_tool_call, "id", None)
+            if not call_id:
+                call_id = f"call_{uuid.uuid4().hex}"
+            if call_id in seen_ids:
+                raise InvokeError("The model returned duplicate tool call IDs.")
+            seen_ids.add(call_id)
+            tool_calls.append(
+                AssistantPromptMessage.ToolCall(
+                    id=call_id,
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=response_tool_call.function.name, arguments=arguments
+                    ),
                 )
-
-                tool_call = AssistantPromptMessage.ToolCall(
-                    id=response_tool_call.id,
-                    type=response_tool_call.type,
-                    function=function,
-                )
-                tool_calls.append(tool_call)
-
+            )
         return tool_calls

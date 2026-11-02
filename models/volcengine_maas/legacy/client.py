@@ -39,11 +39,19 @@ class MaaSClient(MaasService):
         return client
 
     def chat(self, params: dict, messages: list[PromptMessage], stream=False, **extra_model_kwargs) -> Generator | dict:
+        tool_names = {
+            call.id: call.function.name
+            for message in messages if isinstance(message, AssistantPromptMessage)
+            for call in message.tool_calls
+        }
         req = {
             "parameters": params,
             "messages": [self.convert_prompt_message_to_maas_message(prompt) for prompt in messages],
             **extra_model_kwargs,
         }
+        for message, converted in zip(messages, req["messages"]):
+            if isinstance(message, ToolPromptMessage):
+                converted["name"] = tool_names.get(message.tool_call_id, message.tool_call_id)
         if not stream:
             return super().chat(
                 self.endpoint_id,

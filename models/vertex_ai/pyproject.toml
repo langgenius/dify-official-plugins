@@ -9,7 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
     # 0.10.0 introduces get_current_session(), required to resolve the
     # current Dify app_id for Vertex AI request labels.
-    "dify_plugin>=0.10.2",
+    "dify_plugin>=0.11.0,<0.12.0",
     "anthropic[vertex]>=1.4.0",
     "google-genai>=2.22.0",
     "google-api-core>=2.36.0",
@@ -33,3 +33,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.uv.sources]
+# Pin the complete tool-call contract until a containing SDK release is published.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "0fa060a11fd774fe8ed70c915d7881e20a765b64" }

@@ -13,7 +13,7 @@ meta:
   runner:
     entrypoint: main
     language: python
-    version: '3.10'
+    version: '3.12'
   version: 0.0.1
 name: perfxcloud
 plugins:
@@ -33,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.1.3
+version: 0.1.4

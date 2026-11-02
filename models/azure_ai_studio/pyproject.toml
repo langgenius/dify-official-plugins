@@ -11,9 +11,13 @@ dependencies = [
     "azure-ai-ml>=1.34.1",
     "azure-core>=1.41.0",
     "azure-identity>=1.25.3",
-    "dify_plugin>=0.10.2",
+    "dify_plugin>=0.11.0,<0.12.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = []
+
+[tool.uv.sources]
+# Pin the complete tool-call contract until a containing SDK release is published.
+dify-plugin = { git = "https://github.com/langgenius/dify-plugin-sdks.git", rev = "0fa060a11fd774fe8ed70c915d7881e20a765b64" }

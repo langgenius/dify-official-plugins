@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 from collections.abc import Generator, Iterator
 from typing import Optional, Union, cast
 import cohere
@@ -393,7 +394,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         if response.tool_calls:
             for cohere_tool_call in response.tool_calls:
                 tool_call = AssistantPromptMessage.ToolCall(
-                    id=cohere_tool_call.name,
+                    id=uuid.uuid4().hex,
                     type="function",
                     function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=cohere_tool_call.name,
@@ -490,7 +491,7 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                 if chunk.tool_calls:
                     for cohere_tool_call in chunk.tool_calls:
                         tool_call = AssistantPromptMessage.ToolCall(
-                            id=cohere_tool_call.name,
+                            id=uuid.uuid4().hex,
                             type="function",
                             function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                                 name=cohere_tool_call.name,
@@ -514,20 +515,18 @@ class CohereLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         chat_histories = []
-        latest_tool_call_n_outputs = []
+        latest_tool_call_n_outputs = {}
         for prompt_message in prompt_messages:
             if prompt_message.role == PromptMessageRole.ASSISTANT:
                 prompt_message = cast(AssistantPromptMessage, prompt_message)
                 if prompt_message.tool_calls:
                     for tool_call in prompt_message.tool_calls:
-                        latest_tool_call_n_outputs.append(
-                            ToolResult(
-                                call=ToolCall(
-                                    name=tool_call.function.name,
-                                    parameters=json.loads(tool_call.function.arguments),
-                                ),
-                                outputs=[],
-                            )
+                        latest_tool_call_n_outputs[tool_call.id] = ToolResult(
+                            call=ToolCall(
+                                name=tool_call.function.name,
+                                parameters=json.loads(tool_call.function.arguments),
+                            ),
+                            outputs=[],
                         )
                 else:
                     cohere_prompt_message = self._convert_prompt_message_to_dict(
@@ -537,39 +536,24 @@ class CohereLargeLanguageModel(LargeLanguageModel):
                         chat_histories.append(cohere_prompt_message)
             elif prompt_message.role == PromptMessageRole.TOOL:
                 prompt_message = cast(ToolPromptMessage, prompt_message)
-                if latest_tool_call_n_outputs:
-                    i = 0
-                    for tool_call_n_outputs in latest_tool_call_n_outputs:
-                        if tool_call_n_outputs.call.name == prompt_message.tool_call_id:
-                            latest_tool_call_n_outputs[i] = (
-                                ToolResult(
-                                    call=ToolCall(
-                                        name=tool_call_n_outputs.call.name,
-                                        parameters=tool_call_n_outputs.call.parameters,
-                                    ),
-                                    outputs=[{"result": prompt_message.content}],
-                                )
-                            )
-                            break
-                        i += 1
+                tool_result = latest_tool_call_n_outputs.get(prompt_message.tool_call_id)
+                if tool_result is not None:
+                    tool_result.outputs = [{"result": prompt_message.content}]
             else:
                 cohere_prompt_message = self._convert_prompt_message_to_dict(
                     prompt_message
                 )
                 if cohere_prompt_message:
                     chat_histories.append(cohere_prompt_message)
-        if latest_tool_call_n_outputs:
-            new_latest_tool_call_n_outputs = []
-            for tool_call_n_outputs in latest_tool_call_n_outputs:
-                if tool_call_n_outputs.outputs:
-                    new_latest_tool_call_n_outputs.append(tool_call_n_outputs)
-            latest_tool_call_n_outputs = new_latest_tool_call_n_outputs
+        tool_results = [
+            result for result in latest_tool_call_n_outputs.values() if result.outputs
+        ]
         if len(chat_histories) > 0:
             latest_message = chat_histories.pop()
             message = latest_message.message
         else:
             raise ValueError("Prompt messages is empty")
-        return (message, chat_histories, latest_tool_call_n_outputs)
+        return (message, chat_histories, tool_results)
 
     def _convert_prompt_message_to_dict(
         self, message: PromptMessage

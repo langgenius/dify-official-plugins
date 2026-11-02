@@ -1,8 +1,10 @@
 import json
 import logging
+import uuid
 from collections.abc import Generator
 from typing import Optional
 
+from httpx import TransportError
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -49,6 +51,8 @@ from models.llm.models import (
     get_v3_req_params,
 )
 from volcenginesdkarkruntime.types.chat import ChatCompletion, ChatCompletionChunk
+from volcenginesdkarkruntime.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
+from volcenginesdkarkruntime._exceptions import ArkAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +230,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             if message["tool_calls"]:
                 for call in message["tool_calls"]:
                     tool_call = AssistantPromptMessage.ToolCall(
-                        id=call["function"]["name"],
+                        id=call.get("id") or uuid.uuid4().hex,
                         type=call["type"],
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name=call["function"]["name"],
@@ -348,46 +352,64 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             full_assistant_content = ""
             finish_reason = None
             usage = None
-            tools_calls: list[AssistantPromptMessage.ToolCall] = []
-            for chunk in chunks:
-                chunk_index += 1
-                if chunk:
-                    delta_content = ""
-                    if chunk.usage:
-                        usage = self._calc_response_usage(
-                            model=model,
-                            credentials=credentials,
-                            prompt_tokens=chunk.usage.prompt_tokens,
-                            completion_tokens=chunk.usage.completion_tokens,
+            tools_calls: dict[int, AssistantPromptMessage.ToolCall] = {}
+            try:
+                for chunk in chunks:
+                    chunk_index += 1
+                    if chunk:
+                        delta_content = ""
+                        if chunk.usage:
+                            usage = self._calc_response_usage(
+                                model=model,
+                                credentials=credentials,
+                                prompt_tokens=chunk.usage.prompt_tokens,
+                                completion_tokens=chunk.usage.completion_tokens,
+                            )
+                        if chunk.choices:
+                            finish_reason = chunk.choices[0].finish_reason or finish_reason
+                            delta = chunk.choices[0].delta
+                            delta_content, is_reasoning_started = self.wrap_thinking(delta, is_reasoning_started)
+
+                            if delta.tool_calls:
+                                tools_calls = self._increase_tool_call(delta.tool_calls, tools_calls)
+                            if tools_calls and finish_reason and finish_reason not in {"stop", "tool_calls", "function_call"}:
+                                raise InvokeError(f"Tool call stream ended with {finish_reason}")
+
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=delta_content,
                         )
-                    if chunk.choices:
-                        finish_reason = chunk.choices[0].finish_reason
-                        delta = chunk.choices[0].delta
-                        delta_content, is_reasoning_started = self.wrap_thinking(delta, is_reasoning_started)
-
-                        if delta.tool_calls:
-                            tools_calls = self._increase_tool_call(delta.tool_calls, tools_calls)
-
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_content,
-                    )
-                    full_assistant_content += delta_content
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=chunk_index,
-                            message=assistant_prompt_message,
-                        ),
-                    )
+                        full_assistant_content += delta_content
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk_index,
+                                message=assistant_prompt_message,
+                            ),
+                        )
+            except (json.JSONDecodeError, ArkAPIError, TransportError) as exc:
+                raise InvokeError("Failed to read streamed response") from exc
 
             if tools_calls:
+                if finish_reason not in {"stop", "tool_calls", "function_call"}:
+                    raise InvokeError("Tool call stream ended without a successful finish reason")
+                for tool_call in tools_calls.values():
+                    if not tool_call.function.name.strip():
+                        raise InvokeError("Tool call is missing a function name")
+                    try:
+                        arguments = json.loads(tool_call.function.arguments)
+                    except json.JSONDecodeError as exc:
+                        raise InvokeError("Tool call arguments are not valid JSON") from exc
+                    if not isinstance(arguments, dict):
+                        raise InvokeError("Tool call arguments must be a JSON object")
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=chunk_index,
-                        message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
+                        message=AssistantPromptMessage(
+                            tool_calls=[tools_calls[index] for index in sorted(tools_calls)], content=""
+                        ),
                     ),
                 )
 
@@ -415,7 +437,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             if message.tool_calls:
                 for call in message.tool_calls:
                     tool_call = AssistantPromptMessage.ToolCall(
-                        id=call.id,
+                        id=getattr(call, "id", None) or uuid.uuid4().hex,
                         type=call.type,
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                             name=call.function.name, arguments=call.function.arguments
@@ -490,50 +512,32 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
 
                 tool_call = AssistantPromptMessage.ToolCall(
-                    id=response_tool_call.get("id", ""), type=response_tool_call.get("type", ""), function=function
+                    id=response_tool_call.get("id") or uuid.uuid4().hex,
+                    type=response_tool_call.get("type", "function"), function=function
                 )
                 tool_calls.append(tool_call)
 
         return tool_calls
 
     def _increase_tool_call(
-        self, new_tool_calls: list[AssistantPromptMessage.ToolCall], tools_calls: list[AssistantPromptMessage.ToolCall]
-    ) -> list[AssistantPromptMessage.ToolCall]:
+        self, new_tool_calls: list[ChoiceDeltaToolCall], tools_calls: dict[int, AssistantPromptMessage.ToolCall]
+    ) -> dict[int, AssistantPromptMessage.ToolCall]:
         for new_tool_call in new_tool_calls:
-            # get tool call
-            tool_call, tools_calls = self._get_tool_call(new_tool_call.function.name, tools_calls)
-            # update tool call
+            tool_call = tools_calls.setdefault(
+                new_tool_call.index,
+                AssistantPromptMessage.ToolCall(
+                    id=uuid.uuid4().hex, type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+                ),
+            )
             if new_tool_call.id:
                 tool_call.id = new_tool_call.id
             if new_tool_call.type:
                 tool_call.type = new_tool_call.type
-            if new_tool_call.function.name:
-                tool_call.function.name = new_tool_call.function.name
-            if new_tool_call.function.arguments:
-                tool_call.function.arguments += new_tool_call.function.arguments
+            if new_tool_call.function:
+                tool_call.function.name += new_tool_call.function.name or ""
+                tool_call.function.arguments += new_tool_call.function.arguments or ""
         return tools_calls
-
-    def _get_tool_call(self, tool_call_id: str, tools_calls: list[AssistantPromptMessage.ToolCall]):
-        """
-        Get or create a tool call by ID
-
-        :param tool_call_id: tool call ID
-        :param tools_calls: list of existing tool calls
-        :return: existing or new tool call, updated tools_calls
-        """
-        if not tool_call_id:
-            return tools_calls[-1], tools_calls
-
-        tool_call = next((tool_call for tool_call in tools_calls if tool_call.id == tool_call_id), None)
-        if tool_call is None:
-            tool_call = AssistantPromptMessage.ToolCall(
-                id=tool_call_id,
-                type="function",
-                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
-            )
-            tools_calls.append(tool_call)
-
-        return tool_call, tools_calls
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
