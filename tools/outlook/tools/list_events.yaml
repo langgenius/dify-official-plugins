@@ -139,6 +139,12 @@ output_schema:
           owner_address:
             type: string
             description: Owner of that calendar (calendar-group searches)
+          is_online_meeting:
+            type: boolean
+            description: True for an online meeting (a Teams meeting, or a meeting link in the invitation)
+          online_meeting_url:
+            type: string
+            description: Join link of the online meeting (Teams, Zoom, Google Meet, Webex), empty if none
     count:
       type: integer
       description: Number of items returned

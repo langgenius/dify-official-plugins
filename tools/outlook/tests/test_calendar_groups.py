@@ -201,3 +201,41 @@ def test_get_schedule_validates_input(monkeypatch, params, message):
     monkeypatch.setattr(schedule_module.requests, "post", lambda *a, **k: pytest.fail("must not call Graph"))
     out = run(GetScheduleTool, params)
     assert message in out[0][1]
+
+
+STANDUP = {
+    "id": "e1", "subject": "Engineering Daily Standup",
+    "start": {"dateTime": "2026-08-07T00:00:00"}, "end": {"dateTime": "2026-08-07T00:15:00"},
+    "location": {"displayName": "Microsoft Teams"}, "isOnlineMeeting": False, "onlineMeeting": None,
+    "bodyPreview": "Brief format. Join Microsoft Teams: https://teams.microsoft.com/l/meetup-join/19%3ameeting_a7/0",
+}
+TEAMS_MEETING = {
+    "id": "e2", "subject": "Sprint Planning",
+    "start": {"dateTime": "2026-08-07T00:30:00"}, "end": {"dateTime": "2026-08-07T01:30:00"},
+    "isOnlineMeeting": True, "onlineMeeting": {"joinUrl": "https://teams.microsoft.com/l/meetup-join/real"},
+    "bodyPreview": "Agenda: https://zoom.us/j/1 (old link)",
+}
+
+
+def test_list_events_shows_online_meetings_without_get_event(monkeypatch):
+    fake = Recorder([("/events", FakeResponse({"value": [STANDUP, TEAMS_MEETING]}))])
+    monkeypatch.setattr(events_module.requests, "get", fake)
+    text = run(ListEventsTool, {})[0][1]
+    assert {"isOnlineMeeting", "onlineMeeting", "bodyPreview", "location"} <= set(fake.calls[0].params["$select"].split(","))
+    # A link pasted into the invitation counts, and Graph's own join link wins over one in the text.
+    assert "at Microsoft Teams; online meeting: https://teams.microsoft.com/l/meetup-join/19%3ameeting_a7/0" in text
+    assert "online meeting: https://teams.microsoft.com/l/meetup-join/real" in text
+
+
+@pytest.mark.parametrize(
+    "preview, link",
+    [
+        ("Zoom: https://us02web.zoom.us/j/8123456789?pwd=abc.", "https://us02web.zoom.us/j/8123456789?pwd=abc"),
+        ("Meet at https://meet.google.com/abc-defg-hij, thanks", "https://meet.google.com/abc-defg-hij"),
+        ("Docs: https://example.com/meet/123", ""),
+        ("", ""),
+    ],
+)
+def test_meeting_link_from_the_invitation_text(preview, link):
+    assert graph_module.meeting_link({"bodyPreview": preview}) == link
+    assert graph_module.event_vars({"bodyPreview": preview})["is_online_meeting"] is bool(link)
