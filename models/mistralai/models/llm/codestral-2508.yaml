@@ -1,13 +1,13 @@
-model: mistral-saba-latest
+model: codestral-2508
 label:
-  zh_Hans: Mistral Saba (Latest)
-  en_US: Mistral Saba (Latest)
+  zh_Hans: Codestral (2508)
+  en_US: Codestral (2508)
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 32000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +23,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 32000
+    max: 128000
   - name: safe_prompt
     default: false
     type: boolean
@@ -67,7 +67,7 @@ parameter_rules:
     min: -2
     max: 2
 pricing:
-  input: '0.2'
-  output: '0.6'
+  input: '0.3'
+  output: '0.9'
   unit: '0.000001'
   currency: USD
