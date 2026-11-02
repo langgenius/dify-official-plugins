@@ -1,0 +1,82 @@
+identity:
+  name: trello_update_checklist_item
+  author: langgenius
+  label:
+    en_US: Update Checklist Item
+    zh_Hans: 更新清单项
+    ja_JP: チェック項目を更新
+description:
+  human:
+    en_US: Tick, untick or rename an item
+    zh_Hans: 勾选、取消勾选或重命名条目
+    ja_JP: 項目の完了・未完了・名前を変更
+  llm: Mark a checklist item complete or incomplete, or rename it.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Checklist Item ID
+    zh_Hans: 清单项 ID
+    ja_JP: チェック項目 ID
+  human_description:
+    en_US: Checklist Item ID (from the list or search tools)
+    zh_Hans: 清单项 ID（可从列表或搜索工具获取）
+    ja_JP: チェック項目 ID（一覧または検索ツールから）
+  llm_description: The checklist item ID, from trello_list_checklists.
+  form: llm
+- name: complete
+  type: boolean
+  required: false
+  label:
+    en_US: Done
+    zh_Hans: 已完成
+    ja_JP: 完了
+  human_description:
+    en_US: Mark done (true) or not done (false)
+    zh_Hans: 标记为完成（true）或未完成（false）
+    ja_JP: 完了（true）または未完了（false）にする
+  llm_description: true marks it complete, false incomplete.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: New Text
+    zh_Hans: 新内容
+    ja_JP: 新しい内容
+  human_description:
+    en_US: Rename the item
+    zh_Hans: 重命名条目
+    ja_JP: 項目の名前を変更
+  llm_description: New item text.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    item_id:
+      type: string
+    state:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_update_checklist_item.py

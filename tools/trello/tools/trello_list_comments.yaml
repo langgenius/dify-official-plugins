@@ -1,0 +1,59 @@
+identity:
+  name: trello_list_comments
+  author: langgenius
+  label:
+    en_US: List Comments
+    zh_Hans: 列出评论
+    ja_JP: コメント一覧
+description:
+  human:
+    en_US: A card's comments
+    zh_Hans: 卡片的评论
+    ja_JP: カードのコメント
+  llm: List the comments on a Trello card, newest first.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 50, max 1000
+    zh_Hans: 默认 50，最多 1000
+    ja_JP: 既定 50、最大 1000
+  llm_description: Maximum number of results (default 50, max 1000).
+  form: llm
+  default: 50
+output_schema:
+  type: object
+  properties:
+    comments:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_list_comments.py
