@@ -1,0 +1,32 @@
+identity:
+  name: sharepoint_sign_out
+  display_name: Sign Out of SharePoint
+  author: Dify
+  label:
+    en_US: Sign Out of SharePoint
+    zh_Hans: 退出 SharePoint 登录
+    ja_JP: SharePoint からサインアウト
+description:
+  human:
+    en_US: 'Each user signs in mode only: forget the current user''s Microsoft sign-in'
+    zh_Hans: 仅限“每个用户自己登录”模式：清除当前用户的 Microsoft 登录
+    ja_JP: 'ユーザーごとのサインイン モードのみ: 現在のユーザーの Microsoft サインインを削除します'
+  llm: Sign the current user out of the SharePoint tools (forget their stored SharePoint sign-in; other Microsoft tools such
+    as Outlook or OneDrive keep theirs). Use only when the user asks to sign out of SharePoint, or to sign out or switch accounts
+    in general.
+parameters: []
+output_schema:
+  type: object
+  properties:
+    signed_out:
+      type: boolean
+      description: True when a stored sign-in was removed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_sign_out.py

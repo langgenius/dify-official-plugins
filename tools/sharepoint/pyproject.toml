@@ -1,0 +1,17 @@
+[project]
+name = "sharepoint"
+version = "1.0.0"
+description = "Microsoft SharePoint tools for Dify (lists, items and document library files via Microsoft Graph)"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Managed with uv; refresh the lockfile with `uv lock`.
+dependencies = [
+    "cryptography>=44.0.0",
+    "dify_plugin>=0.10.2",
+    "requests>=2.34.2",
+    "werkzeug>=3.1.8",
+]
+
+[dependency-groups]
+dev = []

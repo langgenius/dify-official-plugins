@@ -1,0 +1,218 @@
+identity:
+  author: langgenius
+  name: sharepoint
+  label:
+    en_US: Microsoft SharePoint
+    zh_Hans: Microsoft SharePoint
+    ja_JP: Microsoft SharePoint
+  description:
+    en_US: Read and write SharePoint lists, list items and document library files
+    zh_Hans: 读写 SharePoint 列表、列表条目和文档库文件
+    ja_JP: SharePoint のリスト、リスト アイテム、ドキュメント ライブラリのファイルを読み書きします
+  icon: icon.svg
+  icon_dark: icon-dark.svg
+  tags:
+  - productivity
+credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: service_principal
+    label:
+      en_US: Mode
+      zh_Hans: 模式
+      ja_JP: モード
+    options:
+    - value: service_principal
+      label:
+        en_US: Service Principal (app identity)
+        zh_Hans: Service Principal（应用身份）
+        ja_JP: サービス プリンシパル（アプリ ID）
+    - value: per_user
+      label:
+        en_US: Each user signs in (own permissions, for chat agents)
+        zh_Hans: 每个用户自己登录（各自的权限，适用于对话 Agent）
+        ja_JP: ユーザーごとにサインイン（本人の権限、チャット エージェント向け）
+    help:
+      en_US: 'Each user signs in: the first time a chat user needs SharePoint, the tool returns a Microsoft sign-in link for
+        them; after signing in, the tools act with that user''s own SharePoint permissions. Needs the Sign-in Callback URL
+        below and delegated Graph permissions on the app.'
+      zh_Hans: 每个用户自己登录：聊天用户第一次用到 SharePoint 时，工具会返回 Microsoft 登录链接；登录后，工具以该用户自己的 SharePoint 权限操作。需要填写下方的登录回调 URL，并为应用配置委托的
+        Graph 权限。
+      ja_JP: 'ユーザーごとにサインイン: チャットのユーザーが初めて SharePoint を使うとき、ツールが Microsoft のサインイン リンクを返します。サインイン後は、そのユーザー本人の SharePoint の権限で操作します。下のサインイン
+        コールバック URL と、アプリへの委任された Graph のアクセス許可が必要です。'
+  tenant_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Tenant ID
+      zh_Hans: 租户 ID
+      ja_JP: テナント ID
+    placeholder:
+      en_US: Directory (tenant) ID, e.g. 00000000-0000-0000-0000-000000000000
+      zh_Hans: 目录（租户）ID，例如 00000000-0000-0000-0000-000000000000
+      ja_JP: 'ディレクトリ（テナント）ID、例: 00000000-0000-0000-0000-000000000000'
+    help:
+      en_US: Your directory (tenant) ID, from Microsoft Entra ID > Overview or the app registration's Overview. Service Principal
+        must use it ('common' does not work); with Each user signs in it limits sign-in to your organization.
+      zh_Hans: 目录（租户）ID，可在 Microsoft Entra ID > 概述或应用注册的概述页找到。Service Principal 必须填它（不能用 'common'）；“每个用户自己登录”模式下，填它可以只允许本组织的账号登录。
+      ja_JP: ディレクトリ（テナント）ID です。Microsoft Entra ID > 概要、またはアプリ登録の概要で確認できます。サービス プリンシパルでは必須です（'common' は使えません）。ユーザーごとのサインインでは、自組織のアカウントだけがサインインできるようにします。
+    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
+  client_id:
+    type: text-input
+    required: true
+    label: &id001
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+    placeholder: &id002
+      en_US: Application (client) ID of the app registration
+      zh_Hans: 应用注册的应用程序（客户端）ID
+      ja_JP: アプリ登録のアプリケーション（クライアント）ID
+    help: &id003
+      en_US: The Application (client) ID on the app registration's Overview page.
+      zh_Hans: 应用注册“概述”页上的“应用程序(客户端) ID”。
+      ja_JP: アプリ登録の「概要」ページにある「アプリケーション (クライアント) ID」です。
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアントシークレット
+    placeholder:
+      en_US: Client secret value of the app registration
+      zh_Hans: 应用注册的客户端密钥值
+      ja_JP: アプリ登録のクライアントシークレットの値
+    help: &id004
+      en_US: Copy the secret's Value (not its Secret ID). Service Principal needs the Graph application permission Sites.ReadWrite.All
+        (or Sites.Selected with per-site grants) with admin consent. OAuth and Each user signs in need the delegated permissions
+        Sites.ReadWrite.All, User.Read, offline_access.
+      zh_Hans: 复制密钥的“值”（不是“机密 ID”）。Service Principal 需要已获管理员同意的 Graph 应用程序权限 Sites.ReadWrite.All（或按站点授权的 Sites.Selected）；OAuth
+        和“每个用户自己登录”需要委托权限 Sites.ReadWrite.All、User.Read、offline_access。
+      ja_JP: シークレットの「値」をコピーしてください（シークレット ID ではありません）。サービス プリンシパルには管理者の同意を付与した Graph のアプリケーションのアクセス許可 Sites.ReadWrite.All（またはサイトごとに付与する
+        Sites.Selected）、OAuth とユーザーごとのサインインには委任されたアクセス許可 Sites.ReadWrite.All、User.Read、offline_access が必要です。
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  redirect_uri:
+    type: text-input
+    required: false
+    label:
+      en_US: Sign-in Callback URL
+      zh_Hans: 登录回调 URL
+      ja_JP: サインイン コールバック URL
+    placeholder:
+      en_US: Only for "Each user signs in", e.g. https://dify.example.com/e/xxxx/sharepoint/callback
+      zh_Hans: 仅用于“每个用户自己登录”，例如 https://dify.example.com/e/xxxx/sharepoint/callback
+      ja_JP: 'ユーザーごとのサインインのみ。例: https://dify.example.com/e/xxxx/sharepoint/callback'
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints), paste its /sharepoint/callback URL here, and add
+        the same URL to the app registration's Web redirect URIs.
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /sharepoint/callback URL 粘贴到这里，并把同一个 URL 加到应用注册的 Web 重定向 URI 中。
+      ja_JP: このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /sharepoint/callback の URL をここに貼り付け、同じ URL をアプリ登録の Web リダイレクト URI
+        に追加してください。
+  cloud:
+    type: select
+    required: false
+    default: global
+    label:
+      en_US: Microsoft Cloud
+      zh_Hans: Microsoft 云
+      ja_JP: Microsoft クラウド
+    help: &id005
+      en_US: Choose a national cloud only if your Microsoft 365 tenant lives there; it changes the sign-in and Graph endpoints.
+      zh_Hans: 仅当您的 Microsoft 365 租户位于国家云时才选择；它会同时改变登录和 Graph 地址。
+      ja_JP: Microsoft 365 テナントが各国のクラウドにある場合のみ選択します。サインインと Graph のエンドポイントが変わります。
+    options: &id006
+    - value: global
+      label:
+        en_US: Global (graph.microsoft.com)
+        zh_Hans: 全球 (graph.microsoft.com)
+        ja_JP: グローバル (graph.microsoft.com)
+    - value: usgov
+      label:
+        en_US: US Government (graph.microsoft.us)
+        zh_Hans: 美国政府 (graph.microsoft.us)
+        ja_JP: 米国政府 (graph.microsoft.us)
+    - value: dod
+      label:
+        en_US: US Government DoD (dod-graph.microsoft.us)
+        zh_Hans: 美国政府 DoD (dod-graph.microsoft.us)
+        ja_JP: 米国政府 DoD (dod-graph.microsoft.us)
+    - value: china
+      label:
+        en_US: China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)
+        zh_Hans: 中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)
+        ja_JP: 中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)
+oauth_schema:
+  client_schema:
+  - type: text-input
+    required: true
+    label: *id001
+    placeholder: *id002
+    help: *id003
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    name: client_id
+  - name: client_secret
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアントシークレット
+    help: *id004
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  - name: tenant_id
+    type: text-input
+    required: false
+    default: common
+    label:
+      en_US: Tenant ID
+      zh_Hans: 租户 ID
+      ja_JP: テナント ID
+    help:
+      en_US: Your directory (tenant) ID limits sign-in to your organization; 'common' allows any work or school account.
+      zh_Hans: 填写目录（租户）ID 则只允许本组织的账号；common 允许任何工作或学校账号。
+      ja_JP: ディレクトリ（テナント）ID で自組織のアカウントに限定します。common は職場または学校のどのアカウントでも可。
+  - name: cloud
+    type: select
+    required: false
+    default: global
+    label:
+      en_US: Microsoft Cloud
+      zh_Hans: Microsoft 云
+      ja_JP: Microsoft クラウド
+    help: *id005
+    options: *id006
+  credentials_schema:
+  - name: access_token
+    type: secret-input
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+      ja_JP: アクセス トークン
+  - name: refresh_token
+    type: secret-input
+    label:
+      en_US: Refresh Token
+      zh_Hans: 刷新令牌
+      ja_JP: リフレッシュ トークン
+tools:
+- tools/sharepoint_search_sites.yaml
+- tools/sharepoint_get_site.yaml
+- tools/sharepoint_list_lists.yaml
+- tools/sharepoint_get_list.yaml
+- tools/sharepoint_list_items.yaml
+- tools/sharepoint_get_item.yaml
+- tools/sharepoint_create_item.yaml
+- tools/sharepoint_update_item.yaml
+- tools/sharepoint_upsert_item.yaml
+- tools/sharepoint_delete_item.yaml
+- tools/sharepoint_list_files.yaml
+- tools/sharepoint_download_file.yaml
+- tools/sharepoint_upload_file.yaml
+- tools/sharepoint_update_file.yaml
+- tools/sharepoint_sign_out.yaml
+extra:
+  python:
+    source: provider/sharepoint.py
