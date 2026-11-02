@@ -1,0 +1,55 @@
+identity:
+  name: gmail_trash_thread
+  author: langgenius
+  label:
+    en_US: Trash Conversation
+    zh_Hans: 会话移到回收站
+    ja_JP: スレッドをゴミ箱へ
+description:
+  human:
+    en_US: Move a whole conversation to the trash, or restore it
+    zh_Hans: 把整个会话移到回收站或恢复
+    ja_JP: スレッド全体をゴミ箱へ移動・復元
+  llm: Move a whole Gmail conversation to the trash (or restore it). Only when the user clearly asks for it.
+parameters:
+- name: thread_id
+  type: string
+  required: true
+  label:
+    en_US: Thread ID
+    zh_Hans: 会话 ID
+    ja_JP: スレッド ID
+  human_description:
+    en_US: From search_messages or get_message
+    zh_Hans: 可从搜索或获取邮件得到
+    ja_JP: メール検索・取得から
+  llm_description: The thread (conversation) ID, from search_messages or get_message.
+  form: llm
+- name: restore
+  type: boolean
+  required: false
+  label:
+    en_US: Restore
+    zh_Hans: 恢复
+    ja_JP: 復元
+  human_description:
+    en_US: Take it back out of the trash
+    zh_Hans: 从回收站恢复
+    ja_JP: ゴミ箱から戻す
+  llm_description: true restores it from the trash instead.
+  form: llm
+  default: false
+output_schema:
+  type: object
+  properties:
+    thread_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_trash_thread.py

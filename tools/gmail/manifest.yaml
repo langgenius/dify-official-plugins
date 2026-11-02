@@ -1,4 +1,4 @@
-version: 0.2.8
+version: 1.0.0
 type: plugin
 author: langgenius
 name: dify-gmail
@@ -15,10 +15,20 @@ description:
 icon: icon.svg
 resource:
   memory: 268435456
-  permission: {}
+  # endpoint + storage: only used by the "Each user signs in" credential mode (sign-in callback, per-user tokens).
+  permission:
+    tool:
+      enabled: true
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 10485760
 plugins:
   tools:
     - provider/dify-gmail.yaml
+  endpoints:
+    - group/gmail_signin.yaml
 meta:
   version: 0.2.0
   arch:
@@ -30,4 +40,5 @@ meta:
     entrypoint: main
   minimum_dify_version: 1.7.1
 created_at: 2025-01-27T00:00:00.000000+00:00
-verified: false 
+verified: false
+privacy: PRIVACY.md
