@@ -30,7 +30,7 @@ def http(monkeypatch):
 
 def test_manifest_declares_endpoint_and_storage():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.0"
+    assert manifest["version"] == "1.0.1"
     assert manifest["plugins"]["endpoints"] == ["group/jira_signin.yaml"]
     assert manifest["resource"]["permission"]["storage"]["enabled"]
     group = yaml.safe_load((ROOT / "group" / "jira_signin.yaml").read_text(encoding="utf-8"))
@@ -92,7 +92,7 @@ def test_original_tools_work_with_oauth(monkeypatch):
 
 def test_original_tool_returns_the_sign_in_link_per_user(http):
     result = run(make_tool(ListProjectTool, PER_USER))
-    assert "https://auth.atlassian.com/authorize?" in result.texts[0]
+    assert "/jira/callback?start=" in result.texts[0]
     assert http.calls == []
 
 

@@ -41,6 +41,11 @@ _EXPIRY_MARGIN = 120
 
 # Storage keys: per-user state under user/<hash>, callback codes under signin/<state>.
 _STATE_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+# The agent gets a short link to the callback endpoint (signin/go/<start>), which redirects
+# to the sign-in page: agents retype links, and a long random state does not always survive that.
+# Lowercase without look-alikes (0/o, 1/l).
+_START_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"
+_START_LENGTH = 12
 
 
 class SignInRequired(Exception):
@@ -65,6 +70,14 @@ def signin_key(state: str) -> str:
 
 def code_key(state: str) -> str:
     return f"signin/{state}.code"
+
+
+def is_valid_start(start: str) -> bool:
+    return len(start) == _START_LENGTH and set(start) <= set(_START_ALPHABET)
+
+
+def start_key(start: str) -> str:
+    return f"signin/go/{start}"
 
 
 def _user_key(credentials: Mapping[str, Any], user_id: str, name: str) -> str:
@@ -163,7 +176,7 @@ class UserSignIn:
         had_token = self.store.load("token") is not None
         pending = self.store.load("pending")
         if pending:
-            self._forget_state(pending["state"])
+            self._forget_state(pending)
         self.store.delete("token")
         self.store.delete("pending")
         return had_token
@@ -174,17 +187,17 @@ class UserSignIn:
         pending = self.store.load("pending")
         if pending is None or pending["expires_at"] < time.time():
             if pending:
-                self._forget_state(pending["state"])
+                self._forget_state(pending)
             raise SignInRequired(self._start_sign_in())
 
         callback = self._take_code(pending["state"])
         if callback is None:
             raise SignInRequired(
-                "Sign-in has not been completed yet. Ask the user to open this link, sign in with their "
-                f"Microsoft account, then tell you when they are done:\n{pending['url']}"
+                "Sign-in has not been completed yet. Ask the user to open this exact link, sign in with their "
+                f"Microsoft account, then tell you when they are done:\n{pending['link']}"
             )
         self.store.delete("pending")
-        self._forget_state(pending["state"])
+        self._forget_state(pending)
         if callback.get("error"):
             raise UserAuthError(f"Microsoft sign-in failed: {callback['error']}. Ask the user to try again.")
 
@@ -239,13 +252,18 @@ class UserSignIn:
             }
         )
         expires_at = time.time() + _PENDING_TTL
-        self.store.save("pending", {"state": state, "verifier": verifier, "url": url, "expires_at": expires_at})
+        start = "".join(secrets.choice(_START_ALPHABET) for _ in range(_START_LENGTH))
+        link = f"{self.redirect_uri}{'&' if '?' in self.redirect_uri else '?'}start={start}"
+        self.store.save(
+            "pending", {"state": state, "verifier": verifier, "start": start, "link": link, "expires_at": expires_at}
+        )
         # Lets the callback endpoint tell a link it issued from a forged or expired one.
-        self.storage.set(signin_key(state), json.dumps({"expires_at": expires_at}).encode())
+        self.storage.set(signin_key(state), json.dumps({"expires_at": expires_at, "url": url}).encode())
+        self.storage.set(start_key(start), json.dumps({"state": state}).encode())
         return (
-            "The user has not signed in to Microsoft yet. Give them this link to sign in with their own "
+            "The user has not signed in to Microsoft yet. Give them this exact link to sign in with their own "
             "Microsoft account (valid for 15 minutes), and call this tool again after they say they are done:\n"
-            f"{url}"
+            f"{link}"
         )
 
     def _take_code(self, state: str) -> dict[str, Any] | None:
@@ -257,8 +275,11 @@ class UserSignIn:
         except ValueError:
             return {"error": "the sign-in response could not be read"}
 
-    def _forget_state(self, state: str) -> None:
-        for key in (signin_key(state), code_key(state)):
+    def _forget_state(self, pending: Mapping[str, Any]) -> None:
+        keys = [signin_key(pending["state"]), code_key(pending["state"])]
+        if pending.get("start"):
+            keys.append(start_key(pending["start"]))
+        for key in keys:
             if self.storage.exist(key):
                 self.storage.delete(key)
 

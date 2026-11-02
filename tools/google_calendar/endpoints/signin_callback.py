@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from werkzeug import Request, Response
 
 from dify_plugin import Endpoint
-from tools.user_auth import code_key, is_valid_state, signin_key
+from tools.user_auth import code_key, is_valid_start, is_valid_state, signin_key, start_key
 
 _PAGE = """<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,6 +38,9 @@ class SignInCallbackEndpoint(Endpoint):
     """
 
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
+        if "start" in r.args:
+            return self._start(r.args.get("start", ""))
+
         state = r.args.get("state", "")
         if not is_valid_state(state) or not self.session.storage.exist(signin_key(state)):
             return _page("Sign-in link not recognized", "This sign-in link is invalid or was already used. "
@@ -70,3 +73,18 @@ class SignInCallbackEndpoint(Endpoint):
             "You can close this tab, go back to the chat and say you are done.",
             extra=_NOT_YOU.format(cancel=html.escape(cancel)),
         )
+
+    def _start(self, start: str) -> Response:
+        """The short link the agent hands out: send the browser on to the sign-in page."""
+        storage = self.session.storage
+        if not is_valid_start(start) or not storage.exist(start_key(start)):
+            return _page("Sign-in link not recognized", "This sign-in link is invalid or was already used. "
+                         "Go back to the chat and ask again to get a new link.", 400)
+        state = json.loads(storage.get(start_key(start))).get("state", "")
+        if not is_valid_state(state) or not storage.exist(signin_key(state)):
+            return _page("Sign-in link not recognized", "This sign-in link was already used. "
+                         "Go back to the chat and ask again to get a new link.", 400)
+        issued = json.loads(storage.get(signin_key(state)))
+        if issued.get("expires_at", 0) < time.time() or not issued.get("url"):
+            return _page("Sign-in link expired", "Go back to the chat and ask again to get a new link.", 400)
+        return Response(status=302, headers={"Location": issued["url"], "Cache-Control": "no-store"})
