@@ -1,5 +1,4 @@
-import tools.create_worksheet as create_module
-import tools.write_worksheet_data as write_module
+import tools.graph_client as graph_module
 from tools.create_worksheet import CreateWorksheetTool
 from tools.write_worksheet_data import WriteWorksheetDataTool
 
@@ -25,11 +24,11 @@ def _run(tool, parameters: dict) -> None:
 def test_write_targets_the_site_drive_when_site_id_is_given(monkeypatch) -> None:
     urls = []
 
-    def fake_patch(url, headers, json, timeout):
+    def fake_patch(method, url, headers=None, params=None, timeout=None, json=None):
         urls.append(url)
         return FakeResponse({"rowCount": 1, "columnCount": 1, "address": "A1"})
 
-    monkeypatch.setattr(write_module.requests, "patch", fake_patch)
+    monkeypatch.setattr(graph_module.requests, "request", fake_patch)
 
     tool = WriteWorksheetDataTool.from_credentials({"access_token": "access-token"})
     _run(
@@ -53,11 +52,11 @@ def test_write_targets_the_site_drive_when_site_id_is_given(monkeypatch) -> None
 def test_write_targets_the_user_drive_without_site_id(monkeypatch) -> None:
     urls = []
 
-    def fake_patch(url, headers, json, timeout):
+    def fake_patch(method, url, headers=None, params=None, timeout=None, json=None):
         urls.append(url)
         return FakeResponse({"rowCount": 1, "columnCount": 1, "address": "A1"})
 
-    monkeypatch.setattr(write_module.requests, "patch", fake_patch)
+    monkeypatch.setattr(graph_module.requests, "request", fake_patch)
 
     tool = WriteWorksheetDataTool.from_credentials({"access_token": "access-token"})
     _run(
@@ -76,11 +75,11 @@ def test_write_targets_the_user_drive_without_site_id(monkeypatch) -> None:
 def test_create_worksheet_targets_the_site_drive(monkeypatch) -> None:
     urls = []
 
-    def fake_post(url, headers, json, timeout):
+    def fake_post(method, url, headers=None, params=None, timeout=None, json=None):
         urls.append(url)
         return FakeResponse({"id": "1", "name": "Sheet2"}, status_code=201)
 
-    monkeypatch.setattr(create_module.requests, "post", fake_post)
+    monkeypatch.setattr(graph_module.requests, "request", fake_post)
 
     tool = CreateWorksheetTool.from_credentials({"access_token": "access-token"})
     _run(

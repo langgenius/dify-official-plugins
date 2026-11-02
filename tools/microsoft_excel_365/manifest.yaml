@@ -21,6 +21,8 @@ name: microsoft_excel365
 plugins:
   tools:
     - provider/microsoft_excel365.yaml
+  endpoints:
+    - group/excel_signin.yaml
 resource:
   memory: 1048576
   permission:
@@ -29,7 +31,13 @@ resource:
       llm: true
     tool:
       enabled: true
+    # endpoint + storage: only used by the "Each user signs in" credential mode (sign-in callback, per-user tokens).
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 10485760
 tags:
   - utilities
 type: plugin
-version: 0.2.2
+version: 1.0.0
