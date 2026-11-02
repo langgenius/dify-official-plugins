@@ -75,7 +75,7 @@ def token_endpoint(monkeypatch):
 def sign_in_link(storage, tool) -> str:
     with pytest.raises(GraphAuthError) as exc:
         resolve_graph_context(PER_USER, tool=tool)
-    return exc.value.args[0].rsplit("\n", 1)[-1]
+    return follow_short_link(storage, exc.value.args[0].rsplit("\n", 1)[-1])
 
 
 def call_callback(storage, query: dict):
@@ -236,7 +236,7 @@ def test_china_cloud_uses_china_hosts_and_qualified_scopes():
     creds = dict(PER_USER, cloud="china")
     with pytest.raises(GraphAuthError) as exc:
         resolve_graph_context(creds, tool=make_tool(storage, credentials=creds))
-    link = urllib.parse.urlparse(exc.value.args[0].rsplit("\n", 1)[-1])
+    link = urllib.parse.urlparse(follow_short_link(storage, exc.value.args[0].rsplit("\n", 1)[-1]))
     scope = urllib.parse.parse_qs(link.query)["scope"][0]
     assert link.netloc == "login.partner.microsoftonline.cn"
     assert "https://microsoftgraph.chinacloudapi.cn/Files.ReadWrite.All" in scope
@@ -345,3 +345,22 @@ def test_callback_page_warns_and_cancel_withdraws_the_code(token_endpoint):
     with pytest.raises(GraphAuthError, match="cancelled"):
         resolve_graph_context(PER_USER, tool=tool)
     assert token_endpoint.calls == []
+
+
+def follow_short_link(storage, link: str) -> str:
+    """The agent gets a short link to the sign-in endpoint, which redirects to the sign-in page."""
+    from tools.user_auth import is_valid_start
+
+    base, _, start = link.partition("?start=")
+    assert base.endswith("/onedrive/callback") and is_valid_start(start) and "state=" not in link, link
+    request = Request(EnvironBuilder(path="/onedrive/callback", query_string={"start": start}).get_environ())
+    response = SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {})
+    assert response.status_code == 302
+    return response.headers["Location"]
+
+
+def test_mistyped_or_unknown_short_link_is_refused():
+    storage = SimpleNamespace(exist=lambda key: False)
+    for start in ("a" * 12, "ABCDEFGHJKMN", "short"):
+        request = Request(EnvironBuilder(path="/onedrive/callback", query_string={"start": start}).get_environ())
+        assert SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {}).status_code == 400
