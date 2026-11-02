@@ -1,10 +1,11 @@
-model: codestral-2501
+model: ministral-8b-2512
 label:
-  zh_Hans: Codestral (25.01)
-  en_US: Codestral (25.01)
+  zh_Hans: Ministral 3 8B (2512)
+  en_US: Ministral 3 8B (2512)
 model_type: llm
 features:
   - agent-thought
+  - vision
 model_properties:
   mode: chat
   context_size: 256000
@@ -67,7 +68,7 @@ parameter_rules:
     min: -2
     max: 2
 pricing:
-  input: '0.3'
-  output: '0.9'
+  input: '0.15'
+  output: '0.15'
   unit: '0.000001'
   currency: USD

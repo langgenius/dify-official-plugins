@@ -1,13 +1,14 @@
-model: mathstral
+model: mistral-large-4
 label:
-  zh_Hans: Mathstral
-  en_US: Mathstral
+  zh_Hans: Mistral Large 4 (Preview)
+  en_US: Mistral Large 4 (Preview)
 model_type: llm
 features:
   - agent-thought
+  - vision
 model_properties:
   mode: chat
-  context_size: 32000
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +24,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 32000
+    max: 1000000
   - name: safe_prompt
     default: false
     type: boolean
@@ -66,4 +67,8 @@ parameter_rules:
     default: 0
     min: -2
     max: 2
-# Note: Mathstral is not available via API according to documentation
+pricing:
+  input: '0.7'
+  output: '2.1'
+  unit: '0.000001'
+  currency: USD

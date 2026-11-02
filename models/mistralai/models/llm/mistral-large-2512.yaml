@@ -1,13 +1,14 @@
-model: mistral-saba-2502
+model: mistral-large-2512
 label:
-  zh_Hans: Mistral Saba (25.02)
-  en_US: Mistral Saba (25.02)
+  zh_Hans: Mistral Large 3 (2512)
+  en_US: Mistral Large 3 (2512)
 model_type: llm
 features:
   - agent-thought
+  - vision
 model_properties:
   mode: chat
-  context_size: 32000
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +24,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 32000
+    max: 256000
   - name: safe_prompt
     default: false
     type: boolean
@@ -67,7 +68,7 @@ parameter_rules:
     min: -2
     max: 2
 pricing:
-  input: '0.2'
-  output: '0.6'
+  input: '0.5'
+  output: '1.5'
   unit: '0.000001'
   currency: USD
