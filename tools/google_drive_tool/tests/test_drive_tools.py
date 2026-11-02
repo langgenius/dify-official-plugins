@@ -141,7 +141,7 @@ def test_ids_are_encoded(http):
 
 def test_per_user_returns_the_sign_in_link(http):
     result = run(make_tool(GoogleDriveSearchTool, PER_USER), {"name": "x"})
-    assert "https://accounts.google.com/o/oauth2/v2/auth?" in result.texts[0] and http.calls == []
+    assert "/google_drive/callback?start=" in result.texts[0] and http.calls == []
 
 
 def test_sign_out_modes(http):
