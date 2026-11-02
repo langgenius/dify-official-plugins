@@ -1,0 +1,95 @@
+identity:
+  name: jira_notify_issue
+  author: langgenius
+  label:
+    en_US: Send Issue Notification
+    zh_Hans: 发送问题通知
+    ja_JP: 課題の通知を送信
+description:
+  human:
+    en_US: Email people about an issue through Jira
+    zh_Hans: 通过 Jira 给相关人员发问题通知邮件
+    ja_JP: Jira から課題について関係者にメールします
+  llm: Send an email notification about a Jira issue to its reporter, assignee, watchers, voters and/or specific users. Use
+    only when the user asks to notify people.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: subject
+  type: string
+  required: true
+  label:
+    en_US: Subject
+    zh_Hans: 主题
+    ja_JP: 件名
+  human_description:
+    en_US: Email subject
+    zh_Hans: 邮件主题
+    ja_JP: メールの件名
+  llm_description: Email subject.
+  form: llm
+- name: text
+  type: string
+  required: true
+  label:
+    en_US: Message
+    zh_Hans: 内容
+    ja_JP: 本文
+  human_description:
+    en_US: Email text
+    zh_Hans: 邮件正文
+    ja_JP: メールの本文
+  llm_description: Plain-text email body.
+  form: llm
+- name: recipients
+  type: string
+  required: false
+  label:
+    en_US: Recipients
+    zh_Hans: 收件人
+    ja_JP: 宛先
+  human_description:
+    en_US: 'Comma-separated: reporter, assignee, watchers, voters (default watchers)'
+    zh_Hans: 逗号分隔：reporter、assignee、watchers、voters（默认 watchers）
+    ja_JP: 'カンマ区切り: reporter、assignee、watchers、voters（既定 watchers）'
+  llm_description: 'Comma-separated roles to notify: reporter, assignee, watchers, voters. Default: watchers.'
+  form: llm
+- name: user_ids
+  type: string
+  required: false
+  label:
+    en_US: Users
+    zh_Hans: 用户
+    ja_JP: ユーザー
+  human_description:
+    en_US: Comma-separated account IDs (Cloud) or usernames (Server)
+    zh_Hans: 逗号分隔的账号 ID（Cloud）或用户名（Server）
+    ja_JP: カンマ区切りのアカウント ID（Cloud）またはユーザー名（Server）
+  llm_description: 'Extra people to notify: comma-separated account IDs (from the search users tool).'
+  form: llm
+output_schema:
+  type: object
+  properties:
+    issue_key:
+      type: string
+      description: The issue
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_notify_issue.py
