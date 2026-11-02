@@ -12,6 +12,8 @@ from dify_plugin.errors.tool import (
 )
 from werkzeug import Request
 
+from tools.google_client import is_per_user
+
 
 class GoogleCalendarProvider(ToolProvider):
     _AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -139,6 +141,9 @@ class GoogleCalendarProvider(ToolProvider):
         """
         Validate the credentials by making a test API call.
         """
+        if is_per_user(credentials):
+            self._validate_per_user(credentials)
+            return
         try:
             if "access_token" not in credentials or not credentials.get("access_token"):
                 raise ToolProviderCredentialValidationError(
@@ -179,4 +184,27 @@ class GoogleCalendarProvider(ToolProvider):
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Unexpected error during credential validation: {str(e)}"
+            )
+
+    @staticmethod
+    def _validate_per_user(credentials: Mapping[str, Any]) -> None:
+        """No user to sign in as yet: check the fields users' sign-ins will depend on."""
+        if not (credentials.get("client_id") or "").strip() or not (credentials.get("client_secret") or "").strip():
+            raise ToolProviderCredentialValidationError("Each user signs in needs the OAuth client's Client ID and Client Secret.")
+        parsed = urllib.parse.urlparse((credentials.get("redirect_uri") or "").strip())
+        if parsed.scheme not in ("https", "http") or not parsed.netloc:
+            raise ToolProviderCredentialValidationError(
+                "Each user signs in needs the Sign-in Callback URL: create the plugin's 'Google Calendar sign-in' "
+                "endpoint and paste its /google_calendar/callback URL."
+            )
+        if parsed.scheme != "https" and (parsed.hostname or "").lower() not in ("localhost", "127.0.0.1"):
+            raise ToolProviderCredentialValidationError("Google only accepts https redirect URIs (or http://localhost).")
+        if (parsed.hostname or "").lower() in ("localhost", "127.0.0.1", "::1"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL points to localhost, so users' browsers cannot reach it. Replace "
+                "'localhost' with your Dify domain (or set ENDPOINT_URL_TEMPLATE so Dify shows the right URL)."
+            )
+        if not parsed.path.endswith("/google_calendar/callback"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL should be the 'Google Calendar sign-in' endpoint URL ending in /google_calendar/callback."
             )

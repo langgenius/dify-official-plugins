@@ -19,17 +19,25 @@ meta:
   version: 0.0.1
 name: google_calendar
 plugins:
+  endpoints:
+  - group/google_calendar_signin.yaml
   tools:
   - provider/google_calendar.yaml
+privacy: PRIVACY.md
 resource:
-  memory: 1048576
+  memory: 268435456
   permission:
+    endpoint:
+      enabled: true
     model:
       enabled: true
       llm: true
+    storage:
+      enabled: true
+      size: 10485760
     tool:
       enabled: true
 tags:
 - utilities
 type: plugin
-version: 0.1.7
+version: 1.0.0
