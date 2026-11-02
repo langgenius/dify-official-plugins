@@ -1,0 +1,49 @@
+identity:
+  name: google_docs_get_document
+  author: langgenius
+  label:
+    en_US: Read Document
+    zh_Hans: 读取文档
+    ja_JP: ドキュメントを読む
+description:
+  human:
+    en_US: A document as Markdown
+    zh_Hans: 以 Markdown 读取文档
+    ja_JP: ドキュメントを Markdown で取得
+  llm: Read a Google Doc as Markdown (headings, lists, tables, bold/italic, links), with its title and headings.
+parameters:
+- name: document_id
+  type: string
+  required: true
+  label:
+    en_US: Document
+    zh_Hans: 文档
+    ja_JP: ドキュメント
+  human_description:
+    en_US: ID or URL of the document
+    zh_Hans: 文档的 ID 或 URL
+    ja_JP: ドキュメントの ID または URL
+  llm_description: The document ID or its URL (…/document/d/<id>/edit), e.g. from google_docs_find_documents.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    title:
+      type: string
+    text:
+      type: string
+    headings:
+      type: array
+      items:
+        type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_docs_get_document.py
