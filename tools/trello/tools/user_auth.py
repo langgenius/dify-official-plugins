@@ -41,6 +41,11 @@ _PENDING_TTL = 15 * 60
 
 # Storage keys: per-user state under user/<hash>, callback data under signin/<state>.
 _STATE_CHARS = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+# The agent gets a short link to the callback endpoint (signin/go/<start>), which redirects
+# to the sign-in page: agents retype links, and a long random state does not always survive that.
+# Lowercase without look-alikes (0/o, 1/l).
+_START_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"
+_START_LENGTH = 12
 _OAEP = padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
 
 
@@ -62,6 +67,14 @@ def signin_key(state: str) -> str:
 
 def code_key(state: str) -> str:
     return f"signin/{state}.code"
+
+
+def is_valid_start(start: str) -> bool:
+    return len(start) == _START_LENGTH and set(start) <= set(_START_ALPHABET)
+
+
+def start_key(start: str) -> str:
+    return f"signin/go/{start}"
 
 
 def seal(public_key_pem: str, token: str) -> str:
@@ -151,7 +164,7 @@ class UserSignIn:
         had_token = self.store.load("token") is not None
         pending = self.store.load("pending")
         if pending:
-            self._forget_state(pending["state"])
+            self._forget_state(pending)
         self.store.delete("token")
         self.store.delete("pending")
         return had_token
@@ -160,7 +173,7 @@ class UserSignIn:
         """Trello rejected the stored token (revoked or expired): forget it and start a new sign-in."""
         self.store.delete("token")
         return self._start_sign_in(
-            "The user's Trello sign-in has expired or was revoked. Give them this link to sign in again "
+            "The user's Trello sign-in has expired or was revoked. Give them this exact link to sign in again "
             "(valid for 15 minutes), and call this tool again after they say they are done:\n"
         )
 
@@ -170,17 +183,17 @@ class UserSignIn:
         pending = self.store.load("pending")
         if pending is None or pending["expires_at"] < time.time():
             if pending:
-                self._forget_state(pending["state"])
+                self._forget_state(pending)
             raise SignInRequired(self._start_sign_in())
 
         callback = self._take_callback(pending["state"])
         if callback is None:
             raise SignInRequired(
-                "Sign-in has not been completed yet. Ask the user to open this link, sign in to Trello and "
-                f"click Allow, then tell you when they are done:\n{pending['url']}"
+                "Sign-in has not been completed yet. Ask the user to open this exact link, sign in to Trello and "
+                f"click Allow, then tell you when they are done:\n{pending['link']}"
             )
         self.store.delete("pending")
-        self._forget_state(pending["state"])
+        self._forget_state(pending)
         if callback.get("error"):
             raise UserAuthError(f"Trello sign-in failed: {callback['error']}. Ask the user to try again.")
         try:
@@ -233,13 +246,20 @@ class UserSignIn:
             }
         )
         expires_at = time.time() + _PENDING_TTL
-        self.store.save("pending", {"state": state, "private_key": private_pem, "url": url, "expires_at": expires_at})
+        start = "".join(secrets.choice(_START_ALPHABET) for _ in range(_START_LENGTH))
+        link = f"{self.redirect_uri}{'&' if '?' in self.redirect_uri else '?'}start={start}"
+        self.store.save(
+            "pending",
+            {"state": state, "private_key": private_pem, "start": start, "link": link, "expires_at": expires_at},
+        )
         # Lets the callback endpoint tell a link it issued from a forged or expired one, and seal the token.
-        self.storage.set(signin_key(state), json.dumps({"expires_at": expires_at, "public_key": public_pem}).encode())
+        issued = {"expires_at": expires_at, "url": url, "public_key": public_pem}
+        self.storage.set(signin_key(state), json.dumps(issued).encode())
+        self.storage.set(start_key(start), json.dumps({"state": state}).encode())
         return (intro or (
-            "The user has not signed in to Trello yet. Give them this link to sign in with their own Trello "
+            "The user has not signed in to Trello yet. Give them this exact link to sign in with their own Trello "
             "account and click Allow (valid for 15 minutes), and call this tool again after they say they are done:\n"
-        )) + url
+        )) + link
 
     def _take_callback(self, state: str) -> dict[str, Any] | None:
         key = code_key(state)
@@ -250,7 +270,10 @@ class UserSignIn:
         except ValueError:
             return {"error": "the sign-in response could not be read"}
 
-    def _forget_state(self, state: str) -> None:
-        for key in (signin_key(state), code_key(state)):
+    def _forget_state(self, pending: Mapping[str, Any]) -> None:
+        keys = [signin_key(pending["state"]), code_key(pending["state"])]
+        if pending.get("start"):
+            keys.append(start_key(pending["start"]))
+        for key in keys:
             if self.storage.exist(key):
                 self.storage.delete(key)
