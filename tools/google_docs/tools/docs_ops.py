@@ -69,6 +69,11 @@ class Paragraph:
     spans: list[tuple[int, int, dict[str, Any], str]] = field(default_factory=list)  # (start, end, style, fields)
 
 
+def _utf16_length(text: str) -> int:
+    """Google Docs indexes count UTF-16 code units, including both halves of emoji."""
+    return len(text.encode("utf-16-le")) // 2
+
+
 def parse_markdown(content: str) -> list[Paragraph]:
     paragraphs = []
     for line in str(content).replace("\r\n", "\n").split("\n"):
@@ -82,16 +87,16 @@ def parse_markdown(content: str) -> list[Paragraph]:
         plain, spans, pos = "", [], 0
         for m in _INLINE.finditer(text):
             plain += text[pos:m.start()]
-            start = len(plain)
+            start = _utf16_length(plain)
             if m.group("bold") is not None:
                 plain += m.group("bold")
-                spans.append((start, len(plain), {"bold": True}, "bold"))
+                spans.append((start, _utf16_length(plain), {"bold": True}, "bold"))
             elif m.group("italic") is not None:
                 plain += m.group("italic")
-                spans.append((start, len(plain), {"italic": True}, "italic"))
+                spans.append((start, _utf16_length(plain), {"italic": True}, "italic"))
             else:
                 plain += m.group("label")
-                spans.append((start, len(plain), {"link": {"url": m.group("url")}}, "link"))
+                spans.append((start, _utf16_length(plain), {"link": {"url": m.group("url")}}, "link"))
             pos = m.end()
         plain += text[pos:]
         paragraphs.append(Paragraph(plain, style, kind, spans))
@@ -108,12 +113,12 @@ def write_requests(paragraphs: list[Paragraph], index: int, prefix_newline: bool
     requests: list[dict[str, Any]] = [{"insertText": {"location": {"index": index}, "text": text}}]
     if body:
         # New paragraphs inherit the style around the insertion point: reset them, then style them.
-        requests.append({"updateParagraphStyle": {"range": {"startIndex": base, "endIndex": base + len(body)},
+        requests.append({"updateParagraphStyle": {"range": {"startIndex": base, "endIndex": base + _utf16_length(body)},
                                                   "paragraphStyle": {"namedStyleType": "NORMAL_TEXT"}, "fields": "namedStyleType"}})
     offset, ranges = base, []
     for p in paragraphs:
-        ranges.append((offset, offset + len(p.text)))
-        offset += len(p.text) + 1
+        ranges.append((offset, offset + _utf16_length(p.text)))
+        offset += _utf16_length(p.text) + 1
     for p, (start, end) in zip(paragraphs, ranges):
         if p.style != "NORMAL_TEXT" and end > start:
             requests.append({"updateParagraphStyle": {"range": {"startIndex": start, "endIndex": end},
@@ -326,7 +331,7 @@ def insert_table(ctx: GoogleContext, p: Mapping[str, Any]) -> Result:
     for index, text, bold in sorted(inserts, reverse=True):
         requests.append({"insertText": {"location": {"index": index}, "text": text}})
         if bold:
-            requests.append({"updateTextStyle": {"range": {"startIndex": index, "endIndex": index + len(text)}, "textStyle": {"bold": True}, "fields": "bold"}})
+            requests.append({"updateTextStyle": {"range": {"startIndex": index, "endIndex": index + _utf16_length(text)}, "textStyle": {"bold": True}, "fields": "bold"}})
     if requests:
         batch(ctx, document, requests)
     return ({"rows": rows, "columns": columns}, {"document_id": document, "rows": rows, "columns": columns},

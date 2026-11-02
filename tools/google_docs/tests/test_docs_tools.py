@@ -69,6 +69,34 @@ def test_write_requests_at_the_start_keeps_a_newline():
     assert reqs[0]["insertText"] == {"location": {"index": 1}, "text": "Intro\n"}
 
 
+def test_inline_styles_use_utf16_offsets():
+    (paragraph,) = parse_markdown("😀 **B😀** *I😀* [L😀](https://a.b)")
+    assert [(s, e, field) for s, e, _, field in paragraph.spans] == [
+        (3, 6, "bold"), (7, 10, "italic"), (11, 14, "link")]
+
+
+def test_paragraph_and_list_ranges_use_utf16_offsets():
+    reqs = write_requests(parse_markdown("# 😀\n- 😀\n- x\n😀 **y**"), 10, True, False)
+    assert reqs[1]["updateParagraphStyle"]["range"] == {"startIndex": 11, "endIndex": 23}
+    heading = next(r["updateParagraphStyle"] for r in reqs
+                   if r.get("updateParagraphStyle", {}).get("paragraphStyle", {}).get("namedStyleType") == "HEADING_1")
+    assert heading["range"] == {"startIndex": 11, "endIndex": 13}
+    bold = next(r["updateTextStyle"] for r in reqs if "updateTextStyle" in r)
+    assert bold["range"] == {"startIndex": 22, "endIndex": 23}
+    bullets = next(r["createParagraphBullets"] for r in reqs if "createParagraphBullets" in r)
+    assert bullets["range"] == {"startIndex": 14, "endIndex": 18}
+
+
+def test_table_header_style_uses_utf16_offsets(http):
+    table = {"table": {"tableRows": [{"tableCells": [{"content": [{"startIndex": 5}]}]}]}}
+    http.on("POST", ":batchUpdate", {})
+    http.on("GET", f"{API}/d1", {"body": {"content": [table]}})
+    result = run(make_tool(GoogleDocsInsertTableTool, OAUTH), {"document_id": "d1", "values": '[["😀"]]'})
+    assert result.vars["success"]
+    bold = next(r["updateTextStyle"] for r in http.calls[-1].json["requests"] if "updateTextStyle" in r)
+    assert bold["range"] == {"startIndex": 5, "endIndex": 7}
+
+
 def test_body_end():
     assert body_end(DOC) == (60, False)
     assert body_end({"body": {"content": [{"endIndex": 1}, para("Hi")]}}) == (3, True)
