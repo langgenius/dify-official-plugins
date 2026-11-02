@@ -254,7 +254,7 @@ def test_api_errors_become_tool_errors(http):
 def test_per_user_tool_returns_the_sign_in_link(http):
     result = run(make_tool(JiraSearchIssuesTool, PER_USER), {"jql": "x"})
     assert not result.vars["success"]
-    assert "https://auth.atlassian.com/authorize?" in result.texts[0]
+    assert "/jira/callback?start=" in result.texts[0]
     assert http.calls == []
 
 
