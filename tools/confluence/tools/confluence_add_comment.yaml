@@ -1,0 +1,55 @@
+identity:
+  name: confluence_add_comment
+  author: langgenius
+  label:
+    en_US: Add Comment
+    zh_Hans: 添加评论
+    ja_JP: コメントを追加
+description:
+  human:
+    en_US: Comment on a page
+    zh_Hans: 给页面添加评论
+    ja_JP: ページにコメントします
+  llm: Add a comment (Markdown) at the bottom of a Confluence page.
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+- name: comment
+  type: string
+  required: true
+  label:
+    en_US: Comment
+    zh_Hans: 评论
+    ja_JP: コメント
+  human_description:
+    en_US: Comment text (Markdown)
+    zh_Hans: 评论内容（Markdown）
+    ja_JP: コメント本文（Markdown）
+  llm_description: The comment text; Markdown is supported.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    comment_id:
+      type: string
+      description: ID of the new comment
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_add_comment.py
