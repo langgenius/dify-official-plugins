@@ -240,10 +240,10 @@ def test_invoke_restores_prefilled_think_tag_and_filters_reasoning():
     result = _invoke_non_stream(
         model,
         {"mode": "chat", "agent_thought_support": "supported"},
-        "reasoning</think>\n{\"class\":\"x\"}",
+        "reasoning\n</think>\n\n{\"class\":\"x\"}",
     )
 
-    assert result.message.content == "<think>\nreasoning</think>\n{\"class\":\"x\"}"
+    assert result.message.content == "<think>\nreasoning\n</think>\n\n{\"class\":\"x\"}"
 
     filtered_result = model._filter_thinking_result(result)
 
@@ -257,7 +257,7 @@ def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
     result = _invoke_non_stream(
         model,
         {"mode": "chat"},
-        "Format: {\"class\": \"...\"}</think>\n{\"class\":\"x\"}",
+        "Format: {\"class\": \"...\"}\n</think>\n\n{\"class\":\"x\"}",
     )
 
     assert result.message.content == "{\"class\":\"x\"}"
@@ -277,6 +277,12 @@ def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
         "{\"tag\":\"</think>\"}",
         "```json\n{\"tag\":\"</think>\"}\n```",
         "The closing tag is </think>.",
+        # A closing tag that ends a line or the response but shares it with prose.
+        "The closing tag is </think>\n",
+        "The closing tag is </think>",
+        "Qwen ends reasoning with </think>\nand then answers.",
+        # A closing tag on its own line inside a fenced example.
+        "Qwen output looks like:\n```\nreasoning\n</think>\n\nanswer\n```\nDone.",
     ],
 )
 def test_invoke_preserves_literal_closing_think_tag_in_answer(credentials, model_parameters, content):

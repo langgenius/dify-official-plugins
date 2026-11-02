@@ -42,7 +42,7 @@ from openai import OpenAI
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
-    _PREFILLED_THINK_END = re.compile(r"</think>[ \t]*(?:\r?\n|$)")
+    _PREFILLED_THINK_END = re.compile(r"(?:^|\n)[ \t]*</think>[ \t]*(?:\r?\n|$)")
     # Models that require max_completion_tokens (OpenAI Responses API family)
     # Dotted provider/geo prefixes are allowed because Amazon Bedrock's
     # OpenAI-compatible endpoints take IDs like openai.gpt-6-sol / us.openai.gpt-6-sol.
@@ -743,7 +743,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         closing = cls._PREFILLED_THINK_END.search(content)
         # The template ends reasoning with the closing tag on its own line, which keeps a
         # literal `</think>` inside prose or JSON strings from being taken as reasoning.
-        if closing and (opening < 0 or closing.start() < opening):
+        # An odd number of fences before it means the tag sits inside a code example.
+        if (
+            closing
+            and (opening < 0 or closing.start() < opening)
+            and content.count("```", 0, closing.start()) % 2 == 0
+        ):
             result.message.content = "<think>\n" + content
         return result
 
