@@ -1,4 +1,4 @@
-version: 0.2.1
+version: 1.0.0
 type: plugin
 author: langgenius
 name: teams
@@ -16,12 +16,20 @@ icon: icon.svg
 icon_dark: icon-dark.svg
 resource:
   memory: 268435456
+  # endpoint + storage: only used by the "Each user signs in" credential mode (sign-in callback, per-user tokens).
   permission:
     tool:
       enabled: true
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 10485760
 plugins:
   tools:
     - provider/teams.yaml
+  endpoints:
+    - group/teams_signin.yaml
 meta:
   version: 0.0.1
   arch:
