@@ -1,0 +1,105 @@
+identity:
+  name: todo_list_linked_resources
+  author: langgenius
+  label:
+    en_US: List Linked Resources
+    zh_Hans: 列出关联资源
+    ja_JP: リンク リソースを一覧表示
+description:
+  human:
+    en_US: Links from a task to items in other apps
+    zh_Hans: 任务关联到其他应用中条目的链接
+    ja_JP: タスクから他のアプリの項目へのリンク
+  llm: 'List a task''s linked resources: links to the item in another app the task came from (an email, a ticket...).'
+parameters:
+- name: list_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: The ID of the task list
+    zh_Hans: 任务列表的 ID
+    ja_JP: タスク リストの ID
+  llm_description: The ID of the task list (from the get lists tool).
+- name: task_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Task ID
+    zh_Hans: 任务 ID
+    ja_JP: タスク ID
+  human_description:
+    en_US: The ID of the task
+    zh_Hans: 任务的 ID
+    ja_JP: タスクの ID
+  llm_description: The ID of the task (from a get tasks tool).
+- name: limit
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum items (default 50)
+    zh_Hans: 最多返回条数（默认 50）
+    ja_JP: 最大件数（既定 50）
+  llm_description: Maximum number of items to return, default 50, up to 1000.
+  default: 50
+  min: 1
+  max: 1000
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    linked_resources:
+      type: array
+      description: Linked resources
+      items:
+        type: object
+        properties:
+          linked_resource_id:
+            type: string
+            description: Linked resource ID
+          display_name:
+            type: string
+            description: Title
+          application_name:
+            type: string
+            description: App the item is in
+          external_id:
+            type: string
+            description: The item's ID in that app
+          web_url:
+            type: string
+            description: Link to the item
+    count:
+      type: integer
+      description: Number of linked resources
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/todo_list_linked_resources.py
