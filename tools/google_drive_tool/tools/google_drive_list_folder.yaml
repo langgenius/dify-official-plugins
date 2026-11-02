@@ -1,0 +1,74 @@
+identity:
+  name: google_drive_list_folder
+  author: langgenius
+  label:
+    en_US: List Folder
+    zh_Hans: 列出文件夹
+    ja_JP: フォルダーの一覧
+description:
+  human:
+    en_US: Files and folders in a folder
+    zh_Hans: 文件夹中的文件和子文件夹
+    ja_JP: フォルダー内のファイルとフォルダー
+  llm: List the files and folders in a Google Drive folder (folders first). Empty folder_id = the root of My Drive.
+parameters:
+- name: folder_id
+  type: string
+  required: false
+  label:
+    en_US: Folder ID
+    zh_Hans: 文件夹 ID
+    ja_JP: フォルダー ID
+  human_description:
+    en_US: Empty = My Drive root
+    zh_Hans: 留空为“我的云端硬盘”根目录
+    ja_JP: 空なら マイドライブ のルート
+  llm_description: Folder ID; empty means the root of My Drive. A shared drive's ID is the root of that shared drive.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 100, max 1000
+    zh_Hans: 默认 100，最多 1000
+    ja_JP: 既定 100、最大 1000
+  llm_description: Maximum number of results (default 100, max 1000).
+  form: llm
+  default: 100
+output_schema:
+  type: object
+  properties:
+    files:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          mime_type:
+            type: string
+          is_folder:
+            type: boolean
+          size:
+            type: integer
+          modified:
+            type: string
+          url:
+            type: string
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_list_folder.py
