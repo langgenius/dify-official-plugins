@@ -51,7 +51,7 @@ class GetScheduleTool(Tool):
                 return
 
             try:
-                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"), tool=self)
                 if calendar_group_id:
                     for calendar in calendars_in_group(graph, calendar_group_id):
                         address = ((calendar.get("owner") or {}).get("address") or "").strip()

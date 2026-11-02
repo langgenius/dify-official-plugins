@@ -12,7 +12,7 @@ class ListChannelMessagesTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
         except GraphError as e:
             yield self.create_text_message(str(e))
             return

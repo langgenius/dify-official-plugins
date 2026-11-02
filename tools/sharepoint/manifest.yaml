@@ -1,0 +1,45 @@
+version: 1.0.0
+type: plugin
+author: langgenius
+name: sharepoint
+label:
+  en_US: Microsoft SharePoint
+  zh_Hans: Microsoft SharePoint
+  ja_JP: Microsoft SharePoint
+description:
+  en_US: Read and write SharePoint lists, list items and document library files through Microsoft Graph.
+  zh_Hans: 通过 Microsoft Graph 读写 SharePoint 列表、列表条目和文档库文件。
+  ja_JP: Microsoft Graph を通じて SharePoint のリスト、リスト アイテム、ドキュメント ライブラリのファイルを読み書きします。
+icon: icon.svg
+icon_dark: icon-dark.svg
+tags:
+- productivity
+resource:
+  memory: 268435456
+  # endpoint + storage: only used by the "Each user signs in" credential mode (sign-in callback, per-user tokens).
+  permission:
+    tool:
+      enabled: true
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 10485760
+plugins:
+  tools:
+  - provider/sharepoint.yaml
+  endpoints:
+  - group/sharepoint_signin.yaml
+meta:
+  version: 0.0.1
+  arch:
+  - amd64
+  - arm64
+  runner:
+    language: python
+    version: '3.12'
+    entrypoint: main
+  minimum_dify_version: 1.7.0
+created_at: '2026-11-01T12:00:00Z'
+privacy: PRIVACY.md
+verified: false

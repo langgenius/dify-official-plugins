@@ -49,6 +49,8 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 ## GPT-6 models
 
+GPT-6.1 Sol and Terra require Responses for function calling. Sol supports reasoning effort `low` through `max`, while Terra also supports `none`.
+
 GPT-6 Astra, Sol, and Luna support text, vision, structured outputs, and streaming, with reasoning effort set to `medium` by default.
 GPT-6 Astra requires Responses for function calling and does not support reasoning effort `none`.
 GPT-6 Sol and Luna support function calling through Chat Completions only with reasoning effort `none`; use Responses to combine reasoning and tools.
