@@ -74,7 +74,7 @@ def test_original_tool_sends_no_token_in_url(monkeypatch):
 
 def test_original_tool_returns_the_sign_in_link_per_user(http):
     result = run(make_tool(FetchAllBoardsTool, PER_USER), {})
-    assert "https://trello.com/1/authorize?" in result.texts[0] and http.calls == []
+    assert "/trello/callback?start=" in result.texts[0] and http.calls == []
 
 
 def test_update_card_accepts_more_fields(monkeypatch):
@@ -213,7 +213,7 @@ def test_new_tools_emit_every_declared_output(tool_file, http):
 
 def test_manifest_and_endpoints():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.0" and manifest["plugins"]["endpoints"] == ["group/trello_signin.yaml"]
+    assert manifest["version"] == "1.0.1" and manifest["plugins"]["endpoints"] == ["group/trello_signin.yaml"]
     group = yaml.safe_load((ROOT / "group" / "trello_signin.yaml").read_text(encoding="utf-8"))
     routes = {(e["method"], e["path"]) for e in (yaml.safe_load((ROOT / f).read_text(encoding="utf-8")) for f in group["endpoints"])}
     assert routes == {("GET", "/trello/callback"), ("POST", "/trello/callback")}
