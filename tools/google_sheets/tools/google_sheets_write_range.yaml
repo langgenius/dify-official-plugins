@@ -1,0 +1,83 @@
+identity:
+  name: google_sheets_write_range
+  author: langgenius
+  label:
+    en_US: Write Range
+    zh_Hans: 写入区域
+    ja_JP: 範囲に書き込む
+description:
+  human:
+    en_US: Write a grid of values
+    zh_Hans: 写入一组值
+    ja_JP: 値のグリッドを書き込む
+  llm: Write rows of values into an A1 range, starting at its top-left cell. Values are entered as if typed (numbers, dates
+    and =formulas work).
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: range
+  type: string
+  required: true
+  label:
+    en_US: Range
+    zh_Hans: 区域
+    ja_JP: 範囲
+  human_description:
+    en_US: Top-left cell or range, e.g. A1 or Sheet1!B2
+    zh_Hans: 左上单元格或区域，如 A1 或 Sheet1!B2
+    ja_JP: '左上のセルまたは範囲（例: A1、Sheet1!B2）'
+  llm_description: 'Where to write: a top-left cell or a range, optionally with a sheet name.'
+  form: llm
+- name: values
+  type: string
+  required: true
+  label:
+    en_US: Values (JSON)
+    zh_Hans: 值（JSON）
+    ja_JP: 値（JSON）
+  human_description:
+    en_US: e.g. [["Name","Score"],["Kim",90]]
+    zh_Hans: 例如 [["Name","Score"],["Kim",90]]
+    ja_JP: '例: [["Name","Score"],["Kim",90]]'
+  llm_description: Rows of values as JSON, e.g. [["Name", "Score"], ["Kim", 90]].
+  form: llm
+output_schema:
+  type: object
+  properties:
+    updated_cells:
+      type: integer
+    range:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_write_range.py
