@@ -135,7 +135,7 @@ def test_create_and_find(http):
 
 
 def test_per_user_and_sign_out(http):
-    assert "https://accounts.google.com/o/oauth2/v2/auth?" in run(make_tool(GoogleSheetsReadRowsTool, PER_USER), {"spreadsheet_id": "s1"}).texts[0]
+    assert "/google_sheets/callback?start=" in run(make_tool(GoogleSheetsReadRowsTool, PER_USER), {"spreadsheet_id": "s1"}).texts[0]
     assert run(make_tool(SignOutTool, PER_USER)).vars == {"signed_out": False, "success": True, "error": ""}
 
 
