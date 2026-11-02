@@ -1,0 +1,43 @@
+version: 1.0.0
+type: plugin
+author: langgenius
+name: google_docs
+label:
+  en_US: Google Docs
+  zh_Hans: Google Docs
+  ja_JP: Google Docs
+description:
+  en_US: 'Read, create and edit Google Docs: Markdown in and out, find and replace, tables'
+  zh_Hans: 读取、创建和编辑 Google 文档：Markdown 读写、查找替换、表格
+  ja_JP: Google ドキュメントの読み取り・作成・編集（Markdown の入出力、検索と置換、表）
+icon: icon.svg
+tags:
+- productivity
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 10485760
+plugins:
+  tools:
+  - provider/google_docs.yaml
+  endpoints:
+  - group/google_docs_signin.yaml
+meta:
+  version: 0.0.1
+  arch:
+  - amd64
+  - arm64
+  runner:
+    language: python
+    version: '3.12'
+    entrypoint: main
+  minimum_dify_version: 1.7.0
+created_at: '2026-11-02T12:00:00Z'
+privacy: PRIVACY.md
+verified: false
