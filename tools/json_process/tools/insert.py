@@ -22,7 +22,8 @@ class JSONParseTool(Tool):
         if not new_value:
             yield self.create_text_message("Invalid parameter new_value")
         index = tool_parameters.get("index")
-        create_path = tool_parameters.get("create_path", False)
+        create_path_value = tool_parameters.get("create_path", False)
+        create_path = create_path_value is True or create_path_value == "True"
         value_decode = tool_parameters.get("value_decode", False)
         ensure_ascii = tool_parameters.get("ensure_ascii", True)
         try:
