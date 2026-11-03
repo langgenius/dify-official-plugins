@@ -54,6 +54,8 @@ class JSONParseTool(Tool):
                             current[array_name] = []
                         while len(current[array_name]) <= index:
                             current[array_name].append({})
+                        if i == len(path_parts) - 1:
+                            current[array_name][index] = new_value
                         current = current[array_name][index]
                     else:
                         if i == len(path_parts) - 1:
