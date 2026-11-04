@@ -2,7 +2,7 @@
 
 Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and calendar**: read, send and organize mail, and manage calendar events.
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 
 ## Choose how to authorize
 
@@ -177,7 +177,7 @@ In the app registration, open **Authentication** → **Add Redirect URI** → **
 
 ### 5. What users see
 
-1. The first question returns a sign-in link, valid for 15 minutes.
+1. The first question returns a short sign-in link to the plugin's endpoint, valid for 15 minutes. Opening it redirects the browser to Microsoft's sign-in page.
 
    ![Sign-in link](_assets/chat-sign-in-link.png)
 
