@@ -105,10 +105,12 @@ class SnowflakeQueryTool(Tool):
             "GRANT_REVOKE": r"\b(?:GRANT|REVOKE)\b",
             "FILE_OPERATIONS": r"\b(?:GET|PUT|LS|RM)\s+@",
             "SESSION_MANAGEMENT": r"\b(?:KILL\s+SESSION|ALTER\s+SESSION)\b",
+            "USER_ROLE_MANAGEMENT": r"\b(?:DROP\s+(?:USER|ROLE)|ALTER\s+USER)\b",
         }
 
         # ステートメントを文字列に変換して検査
-        sql_text = str(statement).upper()
+        # Comments may separate the keywords of a restricted operation.
+        sql_text = sqlparse.format(str(statement), strip_comments=True).upper()
 
         for pattern_name, pattern in dangerous_patterns.items():
             if re.search(pattern, sql_text, re.IGNORECASE):
@@ -175,9 +177,9 @@ class SnowflakeQueryTool(Tool):
                 if keyword and keyword not in ["", " ", "\n", "\t"]:
                     first_keyword = keyword
                     break
-            elif token.ttype is tokens.Keyword.DML:
-                # DMLキーワード（SELECT, INSERT, UPDATE, DELETE）
-                first_keyword = str(token).upper().strip()
+            elif token.ttype in (tokens.Keyword.DML, tokens.Keyword.DDL):
+                # DDL tokens can contain a compound verb such as CREATE OR REPLACE.
+                first_keyword = str(token).upper().strip().split()[0]
                 break
 
         if not first_keyword:
@@ -333,6 +335,7 @@ class SnowflakeQueryTool(Tool):
 
         # DDL操作の追加制限
         if declared_sql_type in ["CREATE", "DROP", "ALTER"]:
+            ddl_text = sqlparse.format(sql_query, strip_comments=True).upper()
             restricted_ddl_patterns = [
                 (
                     r"\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:SECURE\s+)?USER\b",
@@ -357,7 +360,7 @@ class SnowflakeQueryTool(Tool):
             ]
 
             for pattern, message in restricted_ddl_patterns:
-                if re.search(pattern, sql_upper, re.IGNORECASE):
+                if re.search(pattern, ddl_text, re.IGNORECASE):
                     return False, message
 
         return True, ""
