@@ -76,6 +76,10 @@ class AWSS3StorageDataSource(OnlineDriveDatasource):
             config=Config(s3={"addressing_style": "path"}),
         )
         response = client.get_object(Bucket=bucket_name, Key=key)
-        b64bytes = response["Body"].read()
+        body = response["Body"]
+        try:
+            b64bytes = body.read()
+        finally:
+            body.close()
 
         yield self.create_blob_message(b64bytes, meta={"file_name": key, "mime_type": response["ContentType"]})
