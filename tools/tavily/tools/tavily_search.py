@@ -65,6 +65,11 @@ class TavilySearch:
                 "auto_parameters",
                 "include_favicon",
                 "include_usage",
+                "filter_by_language",
+                "include_published_date",
+                "filter_by_published_date",
+                "safe_search",
+                "exact_match",
             ]:
                 if isinstance(value, str):
                     processed_params[key] = value.lower() == "true"
@@ -96,13 +101,27 @@ class TavilySearch:
                         processed_params[key] = value.lower() == "true"
                 elif value:
                     processed_params[key] = "markdown"
-            elif key in ["max_results", "chunks_per_source"]:
+            elif key == "chunks_per_source":
+                if isinstance(value, bool) or (
+                    isinstance(value, float) and not value.is_integer()
+                ):
+                    raise ValueError("chunks_per_source must be an integer from 1 to 3")
+                chunks = int(value)
+                if not 1 <= chunks <= 3:
+                    raise ValueError("chunks_per_source must be an integer from 1 to 3")
+                processed_params[key] = chunks
+            elif key == "max_results":
                 if isinstance(value, str):
                     processed_params[key] = int(value)
                 else:
                     processed_params[key] = value
-            elif key in ["search_depth", "topic", "query", "time_range", "country", "start_date", "end_date"]:
+            elif key in [
+                "search_depth", "topic", "query", "time_range", "country",
+                "start_date", "end_date", "include_domains_mode",
+            ]:
                 processed_params[key] = value
+            elif key == "language" and isinstance(value, str) and value.strip():
+                processed_params[key] = value.strip()
             else:
                 pass
         processed_params.setdefault("search_depth", "basic")
@@ -110,8 +129,19 @@ class TavilySearch:
         processed_params.setdefault("max_results", 5)
         if processed_params.get("search_depth") in {"advanced", "fast"}:
             processed_params.setdefault("chunks_per_source", 3)
-        else:
+        elif processed_params.get("search_depth") == "ultra-fast":
             processed_params.pop("chunks_per_source", None)
+        if "include_domains_mode" in processed_params:
+            if processed_params["include_domains_mode"] not in {"restrict", "prefer"}:
+                raise ValueError("include_domains_mode must be 'restrict' or 'prefer'")
+            if not processed_params.get("include_domains"):
+                raise ValueError("include_domains_mode requires include_domains")
+        if processed_params.get("filter_by_language") and not processed_params.get("language"):
+            raise ValueError("filter_by_language requires language")
+        if processed_params.get("safe_search") and processed_params["search_depth"] in {
+            "fast", "ultra-fast"
+        }:
+            raise ValueError("safe_search is supported only for basic and advanced search")
         return processed_params
 
 
@@ -207,7 +237,11 @@ class TavilySearchTool(Tool):
                 published_date = result.get("published_date", "")
                 score = result.get("score", "")
                 output_lines.append(f"# Result {idx}: [{title}]({url})\n")
-                if tool_parameters.get("topic") == "news" and published_date:
+                if published_date and (
+                    tool_parameters.get("topic") == "news"
+                    or tool_parameters.get("include_published_date") in (True, "true")
+                    or tool_parameters.get("filter_by_published_date") in (True, "true")
+                ):
                     output_lines.append(f"**Published Date:** {published_date}\n")
                 output_lines.append(f"**URL:** {url}\n")
                 if score:
