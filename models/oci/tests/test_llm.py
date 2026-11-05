@@ -64,6 +64,8 @@ def _fake_client(payload=None, events=None):
         base_client = oci.base_client.BaseClient(
             "generative_ai_inference", {"region": "us-chicago-1"}, MagicMock(),
             oci.generative_ai_inference.models.generative_ai_inference_type_mapping,
+            service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+            base_path="/20231130",
         )
     base_client.call_api = MagicMock(return_value=_FakeResponse(payload, events))
     return SimpleNamespace(base_client=base_client)
