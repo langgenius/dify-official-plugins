@@ -444,6 +444,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             ):
                 entity.features.append(feature)
 
+        if (
+            credentials.get("stream_function_calling", "not_supported") == "supported"
+            and ModelFeature.STREAM_TOOL_CALL not in entity.features
+        ):
+            entity.features.append(ModelFeature.STREAM_TOOL_CALL)
+
         return entity
 
     @classmethod
