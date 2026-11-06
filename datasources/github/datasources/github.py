@@ -1,4 +1,6 @@
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
+import logging
 import requests
 import time
 import base64
@@ -13,6 +15,13 @@ from dify_plugin.entities.datasource import (
     OnlineDocumentInfo,
 )
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
+
+
+logger = logging.getLogger(__name__)
+
+
+class GitHubRepositoryBlockedError(Exception):
+    """Keep blocked repositories separate from optional-resource ValueErrors."""
 
 
 class GitHubDataSource(OnlineDocumentDatasource):
@@ -33,14 +42,24 @@ class GitHubDataSource(OnlineDocumentDatasource):
         }
     
     def _handle_rate_limit(self, response: requests.Response) -> None:
-        """Handle API rate limiting"""
+        """Handle GitHub API errors, including rate limits and blocked repositories."""
         if response.status_code == 403:
-            rate_limit_remaining = response.headers.get("X-RateLimit-Remaining", "0")
+            rate_limit_remaining = response.headers.get("X-RateLimit-Remaining")
             if rate_limit_remaining == "0":
                 reset_time = int(response.headers.get("X-RateLimit-Reset", "0"))
                 current_time = int(time.time())
                 sleep_time = max(reset_time - current_time + 1, 60)
                 raise ValueError(f"GitHub API rate limit exceeded. Please wait {sleep_time} seconds.")
+            try:
+                error = response.json()
+            except ValueError:
+                error = {}
+            if isinstance(error, dict) and error.get("message") == "Repository access blocked":
+                block = error.get("block")
+                reason = block.get("reason") if isinstance(block, dict) else None
+                detail = f" ({reason})" if reason else ""
+                raise GitHubRepositoryBlockedError(f"GitHub repository access blocked{detail}: {response.url}")
+            raise ValueError(f"GitHub API error: 403 - {response.text}")
         elif response.status_code == 401:
             raise ValueError("Invalid GitHub access token. Please check your credentials.")
         elif response.status_code >= 400:
@@ -87,8 +106,25 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         # Get user repositories
         repos = self._get_repositories(visibility=visibility, affiliation=affiliation, _type=_type)
-        for repo in repos:
-            # Add repository as page
+        # Bound the per-repository API fanout so page listing does not wait on 20 repositories serially.
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            for repository_pages in executor.map(self._get_repository_pages, repos):
+                pages.extend(repository_pages)
+
+        online_document_info = OnlineDocumentInfo(
+            workspace_name=workspace_name,
+            workspace_icon=workspace_icon,
+            workspace_id=workspace_id,
+            pages=pages,
+            total=len(pages),
+        )
+
+        return DatasourceGetPagesResponse(result=[online_document_info])
+
+    def _get_repository_pages(self, repo: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Load one repository's pages without letting a blocked repo fail the list."""
+        pages: List[Dict[str, Any]] = []
+        try:
             pages.append({
                 "page_id": f"repo:{repo['full_name']}",
                 "page_name": repo['name'],
@@ -172,16 +208,10 @@ class GitHubDataSource(OnlineDocumentDatasource):
                     })
             except ValueError:
                 pass  # PRs access failed
-        
-        online_document_info = OnlineDocumentInfo(
-            workspace_name=workspace_name,
-            workspace_icon=workspace_icon,
-            workspace_id=workspace_id,
-            pages=pages,
-            total=len(pages),
-        )
-        
-        return DatasourceGetPagesResponse(result=[online_document_info])
+        except GitHubRepositoryBlockedError as error:
+            logger.warning("Skipping GitHub repository %s: %s", repo["full_name"], error)
+            return []
+        return pages
     
     def _get_repositories(self,
                           max_repos: int = 20,
