@@ -1,0 +1,617 @@
+provider: nvidia_api_compatible
+label:
+  en_US: NVIDIA API Compatible
+description:
+  en_US: NVIDIA NIM / build.nvidia.com models (LLM, Text Embedding, Rerank) with configurable endpoint, model name and per-type request parameters such as input_type and truncate.
+  zh_Hans: NVIDIA NIM / build.nvidia.com 模型（LLM、文本向量、重排序），可配置端点、模型名称以及 input_type、truncate 等参数。
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+supported_model_types:
+  - llm
+  - text-embedding
+  - rerank
+configurate_methods:
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Full model name, e.g. nvidia/nemotron-3.5-embed-8b
+      zh_Hans: 输入模型全称
+  credential_form_schemas:
+    - variable: display_name
+      label:
+        en_US: Model display name
+        zh_Hans: 模型显示名称
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: 模型在界面的显示名称
+        en_US: The display name of the model in the interface.
+    - variable: api_key
+      label:
+        zh_Hans: API Key
+        en_US: API Key
+      type: secret-input
+      required: false
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+    - variable: endpoint_url
+      label:
+        zh_Hans: API Base URL
+        en_US: API Base URL
+      type: text-input
+      required: true
+      default: "https://integrate.api.nvidia.com/v1"
+      placeholder:
+        zh_Hans: Base URL, e.g. https://integrate.api.nvidia.com/v1
+        en_US: Base URL, e.g. https://integrate.api.nvidia.com/v1
+      help:
+        en_US: OpenAI-compatible base URL. LLM calls {base}/chat/completions, Text Embedding calls {base}/embeddings. For a self-hosted NIM use e.g. http://host:8000/v1
+        zh_Hans: OpenAI 兼容的 Base URL。LLM 调用 {base}/chat/completions，文本向量调用 {base}/embeddings。
+    - variable: rerank_endpoint_url
+      label:
+        zh_Hans: 重排序端点 URL
+        en_US: Rerank Endpoint URL
+      type: text-input
+      required: false
+      show_on:
+        - variable: __model_type
+          value: rerank
+      placeholder:
+        zh_Hans: 例如 https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking
+        en_US: e.g. https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking
+      help:
+        en_US: Full rerank URL (copy it from the model's code sample on build.nvidia.com). If empty, uses API Base URL + /ranking (NVIDIA format) or + /rerank (Cohere/Jina format). Do not include credentials or tokens.
+        zh_Hans: 完整的重排序 URL（可从 build.nvidia.com 的示例代码复制）。留空时使用 API Base URL + /ranking（NVIDIA 格式）或 + /rerank（Cohere/Jina 格式）。请勿包含凭据或令牌。
+    - variable: rerank_api_format
+      label:
+        en_US: Rerank API format
+        zh_Hans: 重排序 API 格式
+      show_on:
+        - variable: __model_type
+          value: rerank
+      type: select
+      required: false
+      default: nvidia
+      options:
+        - value: nvidia
+          label:
+            en_US: NVIDIA (query.text / passages / rankings)
+            zh_Hans: NVIDIA（query.text / passages / rankings）
+        - value: cohere
+          label:
+            en_US: Cohere / Jina (query / documents / results)
+            zh_Hans: Cohere / Jina（query / documents / results）
+      help:
+        en_US: Request/response format of the rerank endpoint. NVIDIA logits are converted to 0-1 scores with a sigmoid.
+        zh_Hans: 重排序接口的请求/响应格式。NVIDIA 的 logit 会通过 sigmoid 转换为 0-1 分数。
+    - variable: rerank_truncate
+      label:
+        en_US: Truncate
+        zh_Hans: 截断方式
+      show_on:
+        - variable: __model_type
+          value: rerank
+      type: select
+      required: false
+      default: END
+      options:
+        - value: not_set
+          label:
+            en_US: Not set
+            zh_Hans: 不发送
+        - value: NONE
+          label:
+            en_US: NONE (error if input is too long)
+            zh_Hans: NONE（超长时报错）
+        - value: END
+          label:
+            en_US: END (cut the end)
+            zh_Hans: END（截掉结尾）
+      help:
+        en_US: Only used with the NVIDIA format.
+        zh_Hans: 仅在 NVIDIA 格式下使用。
+    - variable: endpoint_model_name
+      label:
+        zh_Hans: API endpoint中的模型名称
+        en_US: model name for API endpoint
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: endpoint model name, e.g. chatgpt4.0
+        en_US: endpoint model name, e.g. chatgpt4.0
+    - variable: mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 对话类型
+        en_US: Completion mode
+      type: select
+      required: false
+      default: chat
+      placeholder:
+        zh_Hans: 选择对话类型
+        en_US: Select completion mode
+      options:
+        - value: completion
+          label:
+            en_US: Completion
+            zh_Hans: 补全
+        - value: chat
+          label:
+            en_US: Chat
+            zh_Hans: 对话
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: text-input
+      default: "4096"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: max_chunks
+      label:
+        zh_Hans: 模型每批的最大分块数
+        en_US: Model max chunks per batch
+      required: true
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: "1"
+      placeholder:
+        zh_Hans: 在此输入您的模型每批次的最大分块数量
+        en_US: Enter your Model maximum chunks per batch size
+      help:
+        en_US: Texts sent per request. Keep 1 for the hosted build.nvidia.com endpoint, which randomly returns 500 "service inference failed" when one request carries more than ~1000 tokens. Raise it (e.g. 16) for a self-hosted NIM to index faster.
+        zh_Hans: 每个请求发送的文本数。使用 build.nvidia.com 托管端点时建议保持 1（单个请求超过约 1000 token 时会随机返回 500 "service inference failed"）。自托管 NIM 可调大（如 16）以加快索引。
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: "32768"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: encoding_format
+      label:
+        zh_Hans: Embedding encoding format
+        en_US: Embedding encoding format
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: select
+      default: float
+      options:
+        - value: not_set
+          label:
+            zh_Hans: Not set
+            en_US: Not set
+        - value: float
+          label:
+            zh_Hans: float
+            en_US: float
+      help:
+        zh_Hans: Set this to float for strict OpenAI-compatible gateways such as LiteLLM that require an explicit embedding encoding_format.
+        en_US: Set this to float for strict OpenAI-compatible gateways such as LiteLLM that require an explicit embedding encoding_format.
+    - variable: input_type_document
+      label:
+        en_US: Input type for documents (indexing)
+        zh_Hans: 文档的 input_type（索引时）
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      required: false
+      default: passage
+      placeholder:
+        en_US: e.g. passage. Leave empty to not send input_type
+        zh_Hans: 例如 passage。留空则不发送 input_type
+      help:
+        en_US: Value sent as "input_type" when Dify embeds knowledge-base chunks. NVIDIA retrieval models (nemotron, nv-embedqa) expect "passage".
+        zh_Hans: Dify 对知识库分段做向量化时发送的 "input_type" 值。NVIDIA 检索模型需要 "passage"。
+    - variable: input_type_query
+      label:
+        en_US: Input type for queries (retrieval)
+        zh_Hans: 查询的 input_type（检索时）
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      required: false
+      default: query
+      placeholder:
+        en_US: e.g. query. Leave empty to not send input_type
+        zh_Hans: 例如 query。留空则不发送 input_type
+      help:
+        en_US: Value sent as "input_type" when Dify embeds a search query. NVIDIA retrieval models expect "query".
+        zh_Hans: Dify 对检索问题做向量化时发送的 "input_type" 值。NVIDIA 检索模型需要 "query"。
+    - variable: truncate
+      label:
+        en_US: Truncate
+        zh_Hans: 截断方式
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: select
+      required: false
+      default: END
+      options:
+        - value: not_set
+          label:
+            en_US: Not set
+            zh_Hans: 不发送
+        - value: NONE
+          label:
+            en_US: NONE (error if input is too long)
+            zh_Hans: NONE（超长时报错）
+        - value: START
+          label:
+            en_US: START (cut the beginning)
+            zh_Hans: START（截掉开头）
+        - value: END
+          label:
+            en_US: END (cut the end)
+            zh_Hans: END（截掉结尾）
+      help:
+        en_US: How the server handles inputs longer than the model context. Choose "Not set" for providers that do not support this field.
+        zh_Hans: 输入超过模型上下文长度时服务端的处理方式。若服务商不支持此字段请选择“不发送”。
+    - variable: modality
+      label:
+        en_US: Modality
+        zh_Hans: 模态
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: select
+      required: false
+      default: not_set
+      options:
+        - value: not_set
+          label:
+            en_US: Not set
+            zh_Hans: 不发送
+        - value: text
+          label:
+            en_US: text
+            zh_Hans: text
+      help:
+        en_US: Sends "modality" in the request. Only needed for models that require it (e.g. some multimodal NVIDIA embedders).
+        zh_Hans: 在请求中发送 "modality"。仅部分模型需要。
+    - variable: dimensions
+      label:
+        en_US: Output dimensions
+        zh_Hans: 输出维度
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      required: false
+      default: ""
+      placeholder:
+        en_US: Optional, e.g. 1024. Leave empty to use the model default
+        zh_Hans: 可选，例如 1024。留空使用模型默认值
+      help:
+        en_US: Only for models that support Matryoshka dimensions. Changing it after a knowledge base was indexed requires re-indexing.
+        zh_Hans: 仅适用于支持可变维度的模型。知识库建立索引后修改需要重新索引。
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      label:
+        zh_Hans: 视觉支持
+        en_US: Vision Support
+      type: select
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: rerank
+      type: text-input
+      default: "4096"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: rerank
+      label:
+        zh_Hans: 视觉支持
+        en_US: Vision Support
+      type: select
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: max_tokens_to_sample
+      label:
+        zh_Hans: 最大 token 上限
+        en_US: Upper bound for max tokens
+      show_on:
+        - variable: __model_type
+          value: llm
+      default: "4096"
+      type: text-input
+    - variable: agent_thought_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Thinking Mode Support
+        zh_Hans: 思考模式支持
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: only_thinking_supported
+          label:
+            en_US: Only Thinking Mode
+            zh_Hans: 仅支持思考模式
+        - value: not_supported
+          label:
+            en_US: Only Non-Thinking Mode
+            zh_Hans: 仅支持非思考模式
+        - value: supported
+          label:
+            en_US: Both Modes
+            zh_Hans: 两种模式都支持
+      help:
+        en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
+        zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
+    - variable: compatibility_mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Compatibility mode
+        zh_Hans: 兼容模式
+      type: select
+      required: false
+      default: strict
+      options:
+        - value: strict
+          label:
+            en_US: OpenAI compatible
+            zh_Hans: 严格（OpenAI 兼容）
+        - value: extended
+          label:
+            en_US: Enable extra settings
+            zh_Hans: 扩展（启用额外设置）
+      help:
+        en_US: Choose strict OpenAI compatibility or extended settings that add extra parameters (e.g., thinking, chat_template_kwargs, enable_thinking).
+        zh_Hans: 选择严格的 OpenAI 兼容或扩展设置（会添加额外参数，例如 thinking、chat_template_kwargs、enable_thinking）。
+    - variable: token_param_name
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Token parameter name
+        zh_Hans: token 参数名
+      type: select
+      required: false
+      default: auto
+      options:
+        - value: auto
+          label:
+            en_US: Auto (detect by model)
+            zh_Hans: 自动（按模型判断）
+        - value: max_tokens
+          label:
+            en_US: Use max_tokens
+            zh_Hans: 使用 max_tokens
+        - value: max_completion_tokens
+          label:
+            en_US: Use max_completion_tokens
+            zh_Hans: 使用 max_completion_tokens
+      help:
+        en_US: Some OpenAI-compatible endpoints require max_completion_tokens (Responses API). Choose explicitly if auto-detection is wrong.
+        zh_Hans: 一些兼容端要求使用 max_completion_tokens（Responses API）。若自动判断不准确，可在此显式指定。
+    - variable: user_identity_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: User Identity Support
+        zh_Hans: 用户标识支持
+      type: select
+      required: false
+      default: support
+      help:
+        en_US: >
+          Whether the endpoint accepts the optional top-level user parameter.
+          Some OpenAI-compatible gateways reject it as an unsupported parameter.
+          Choose Not Support to omit it from the request body.
+        zh_Hans: >
+          端点是否接受可选的顶层 user 参数。
+          部分 OpenAI 兼容网关会将其视为不支持的参数而拒绝请求。
+          选择「不支持」可将其从请求体中省略。
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: stream_include_usage
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Include Usage in Stream
+        zh_Hans: 流式中包含用量
+      type: select
+      required: false
+      default: enabled
+      help:
+        en_US: >
+          Whether to send `stream_options: {include_usage: true}` so the endpoint
+          returns prompt/completion token counts in the final stream chunk.
+          OpenAI-compatible servers (vLLM, SGLang, llama.cpp, ...) only emit
+          `usage` when this is requested; without it, Dify falls back to local
+          token estimation that counts only the first prompt message, which
+          undercounts multi-message prompts (e.g. a long user prompt after a
+          system prompt). Choose Disabled only if the endpoint rejects the
+          field.
+        zh_Hans: >
+          是否发送 `stream_options: {include_usage: true}`，让端点在流式最后一片
+          中返回 prompt / completion token 数量。OpenAI 兼容服务端（vLLM、SGLang、
+          llama.cpp 等）只有在请求中显式要求时才会返回 `usage`；否则 Dify 会
+          回退到本地估算，仅对第一条 prompt 消息计 token，导致多消息 prompt
+          （例如系统提示后跟很长的用户消息）被少算。仅在端点拒绝该字段时
+          选择「禁用」。
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 禁用
+    - variable: function_calling_type
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 函数调用类型
+        en_US: Function Call Type
+      type: select
+      required: false
+      default: no_call
+      options:
+        - value: function_call
+          label:
+            en_US: Function Call
+            zh_Hans: 函数调用
+        - value: tool_call
+          label:
+            en_US: Tool Call
+            zh_Hans: 工具调用
+        - value: no_call
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: stream_function_calling
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 流式函数调用
+        en_US: Stream function calling
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 视觉支持
+        en_US: Vision Support
+        ja_JP: 画像入力対応
+      type: select
+      required: false
+      default: no_support
+      help:
+        en_US: Whether the model can accept image input. Covers IMAGE content only; enable video_support / audio_support / document_support independently for other modalities.
+        zh_Hans: 模型是否支持图像输入。仅覆盖 IMAGE 类型内容；视频/音频/文档请分别启用对应的开关。
+        ja_JP: モデルが画像入力を受け付けるかどうか。IMAGE タイプのみを対象。動画・音声・文書はそれぞれ独立した設定で有効化してください。
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: structured_output_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 结构化输出
+        en_US: Structured Output
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: extra_body
+      label:
+        en_US: Extra Body (JSON)
+        zh_Hans: 额外请求参数（JSON）
+      type: text-input
+      required: false
+      default: ""
+      placeholder:
+        en_US: 'Optional JSON object merged into every request, e.g. {"truncate": "END"}'
+        zh_Hans: '可选，合并到每个请求中的 JSON 对象，例如 {"truncate": "END"}'
+      help:
+        en_US: Extra top-level fields added to the request body for this model. Overrides the fields above on conflicts. Cannot override model / messages / input / query / passages / documents / stream.
+        zh_Hans: 为此模型在请求体顶层追加的字段，冲突时覆盖上面的设置。不能覆盖 model / messages / input / query / passages / documents / stream。
+extra:
+  python:
+    provider_source: provider/nvidia_api_compatible.py
+    model_sources:
+      - "models/llm/llm.py"
+      - "models/text_embedding/text_embedding.py"
+      - "models/rerank/rerank.py"
