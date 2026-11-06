@@ -74,7 +74,7 @@ class JSONParseTool(Tool):
                         else:
                             match.value.insert(int(index), new_value)
                     else:
-                        match.full_path.update(input_data, new_value)
+                        input_data = match.full_path.update(input_data, new_value)
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             return str(e)
