@@ -219,9 +219,12 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         # Like Moonshot, preserve reasoning for non-streaming callers too.
-        result = super()._handle_generate_response(model, credentials, response, prompt_messages)
+        result = super()._handle_generate_response(
+            model, credentials, response, prompt_messages, tools=tools
+        )
         message = response.json()["choices"][0].get("message", {})
         reasoning = message.get("reasoning_content") or message.get("reasoning")
         if reasoning:
@@ -251,6 +254,7 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> Generator:
         full_content = ""
         usage = {}
@@ -318,36 +322,19 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                 ),
             )
             index += 1
-        if tool_calls:
-            yield LLMResultChunk(
-                model=model,
-                delta=LLMResultChunkDelta(
-                    index=index,
-                    message=AssistantPromptMessage(
-                        content="",
-                        tool_calls=self._extract_response_tool_calls(
-                            [tool_calls[k] for k in sorted(tool_calls)]
-                        ),
-                    ),
-                ),
-            )
-            index += 1
-        prompt_tokens = usage.get("prompt_tokens")
-        if prompt_tokens is None:
-            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = usage.get("completion_tokens")
-        if completion_tokens is None:
-            completion_tokens = self._num_tokens_from_string(
-                text=full_content + json.dumps(list(tool_calls.values()), ensure_ascii=False)
-            )
-        yield LLMResultChunk(
+        yield self._create_final_llm_result_chunk(
+            index=index,
             model=model,
-            delta=LLMResultChunkDelta(
-                index=index,
-                message=AssistantPromptMessage(content=""),
-                finish_reason=finish_reason,
-                usage=self._calc_response_usage(
-                    model, credentials, prompt_tokens, completion_tokens
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            message=AssistantPromptMessage(
+                content="",
+                tool_calls=self._extract_response_tool_calls(
+                    [tool_calls[k] for k in sorted(tool_calls)]
                 ),
             ),
+            finish_reason=finish_reason,
+            usage=usage,
+            full_content=full_content,
+            tools=tools,
         )

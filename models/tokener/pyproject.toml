@@ -5,7 +5,7 @@ description = "Tokener.ai model provider for Dify"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "dify_plugin>=0.9.0,<0.11.0",
+    "dify-plugin @ git+https://github.com/langgenius/dify-plugin-sdks.git@c378d255ea6155d5dcdd91f31ded9bd24ad9d446",
     "requests>=2.32.4",
 ]
 

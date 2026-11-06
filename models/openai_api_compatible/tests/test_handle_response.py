@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -253,21 +253,15 @@ def test_handle_generate_response_counts_all_prompt_messages_when_usage_missing(
     ]
     credentials = {"mode": "chat", "function_calling_type": "tool_call"}
 
-    with (
-        patch.object(model, "_num_tokens_from_messages", return_value=11) as mock_prompt_counter,
-        patch.object(model, "_num_tokens_from_string", return_value=3) as mock_string_counter,
-    ):
-        result = model._handle_generate_response(
-            model="gpt-5-mini",
-            credentials=credentials,
-            response=response,
-            prompt_messages=prompt_messages,
-        )
+    result = model._handle_generate_response(
+        model="gpt-5-mini",
+        credentials=credentials,
+        response=response,
+        prompt_messages=prompt_messages,
+    )
 
-    mock_prompt_counter.assert_called_once_with(prompt_messages, credentials=credentials)
-    mock_string_counter.assert_called_once_with("")
-    assert result.usage.prompt_tokens == 11
-    assert result.usage.completion_tokens == 3
+    assert result.usage.prompt_tokens == 16
+    assert result.usage.completion_tokens > 0
 
 
 def test_handle_generate_response_raises_when_choices_missing():

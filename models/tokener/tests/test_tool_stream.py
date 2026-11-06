@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -8,6 +8,7 @@ import yaml
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
+from dify_plugin.errors.model import InvokeError
 
 from models._credentials import ENDPOINT_URL
 from models.llm.llm import TokenerLargeLanguageModel
@@ -24,8 +25,8 @@ def _stream_response(events: list[dict]) -> requests.Response:
     response = requests.Response()
     response.status_code = 200
     response.encoding = "utf-8"
-    response.iter_lines = Mock(
-        return_value=[
+    response._content = "\n\n".join(
+        [
             f"data: {json.dumps(event)}"
             for event in [
                 *events,
@@ -39,7 +40,8 @@ def _stream_response(events: list[dict]) -> requests.Response:
                 },
             ]
         ]
-    )
+    ).encode()
+    response._content_consumed = True
     return response
 
 
@@ -267,7 +269,7 @@ def test_stream_reasoning_and_usage_only_chunks_are_preserved() -> None:
     assert "".join(chunk.delta.message.content or "" for chunk in chunks) == (
         "<think>\nreason\n</think>answer"
     )
-    assert chunks[-2].delta.message.tool_calls[0].id == "call0"
+    assert chunks[-1].delta.message.tool_calls[0].id == "call0"
     assert chunks[-1].delta.finish_reason == "tool_calls"
     assert chunks[-1].delta.usage.total_tokens == 20
 
@@ -285,42 +287,38 @@ def test_stream_without_indices_keeps_legacy_single_tool_behavior() -> None:
     _assert_stream_result(chunks, {"call0": ("foo", '{"x":1}')})
 
 
-def test_stream_non_json_termination_preserves_collected_tools() -> None:
+@pytest.mark.parametrize("ending", [b"data: not-json\n\n", b""])
+def test_stream_invalid_or_missing_termination_rejects_the_result(ending) -> None:
     response = _stream_response([])
-    response.iter_lines = Mock(
-        return_value=[
-            ": keepalive",
-            "data: [DONE]",
-            'data: {"choices": [{"delta": {"content": "answer", "tool_calls": '
-            '[{"index": 0, "id": "call0", "function": {"name": "foo", "arguments": "{}"}}]}, '
-            '"finish_reason": "tool_calls"}], '
-            '"usage": {"prompt_tokens": 13, "completion_tokens": 7}}',
-            "data: not-json",
-        ]
+    response._content = (
+        b': keepalive\n\ndata: {"choices": [{"delta": {"content": "answer", "tool_calls": '
+        b'[{"index": 0, "id": "call0", "function": {"name": "foo", "arguments": "{}"}}]}}]}\n\n'
+        + ending
     )
+    chunks = []
     with patch("requests.post", return_value=response):
-        chunks = list(
-            _model().invoke(
-                MODEL,
-                {"api_key": "test-key"},
-                [UserPromptMessage(content="Run tools")],
-                {},
-                stream=True,
+        with pytest.raises(InvokeError):
+            chunks.extend(
+                _model().invoke(
+                    MODEL,
+                    {"api_key": "test-key"},
+                    [UserPromptMessage(content="Run tools")],
+                    {},
+                    stream=True,
+                )
             )
-        )
-    assert any(chunk.delta.finish_reason == "Non-JSON encountered." for chunk in chunks)
-    assert [
-        (call.id, call.function.name, call.function.arguments)
-        for chunk in chunks
-        for call in chunk.delta.message.tool_calls
-    ] == [("call0", "foo", "{}")]
-    assert chunks[-1].delta.usage.total_tokens == 20
+    assert "".join(chunk.delta.message.get_text_content() for chunk in chunks) == "answer"
+    assert all(chunk.delta.usage is None for chunk in chunks)
+    assert not any(chunk.delta.message.tool_calls for chunk in chunks)
 
 
 def test_stream_upstream_error_is_propagated() -> None:
     response = _stream_response([])
-    response.iter_lines = Mock(return_value=['data: {"error": "upstream rejected request"}'])
-    with patch("requests.post", return_value=response), pytest.raises(ValueError, match="upstream"):
+    response._content = b'data: {"error": "upstream rejected request"}\n\n'
+    with (
+        patch("requests.post", return_value=response),
+        pytest.raises(InvokeError, match="upstream"),
+    ):
         list(
             _model().invoke(
                 MODEL,
@@ -514,7 +512,7 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
 
 
 @pytest.mark.parametrize(
-    "events",
+    ("events", "expected_tools", "expected_content"),
     [
         pytest.param(
             [
@@ -525,6 +523,8 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                     [_tool_delta(0, id="call0", function={"name": "foo", "arguments": "1}"})]
                 ),
             ],
+            [("call0", "foo", '{"x":1}')],
+            "",
             id="repeated-id-name",
         ),
         pytest.param(
@@ -538,6 +538,8 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                 _stream_event([_tool_delta(0, id="call0", function={"arguments": "1}"})]),
                 _stream_event([_tool_delta(0, id="call1", function={"arguments": "2}"})]),
             ],
+            [("call0", "foo", '{"x":1}'), ("call1", "bar", '{"y":2}')],
+            "",
             id="shared-index-id-lookup",
         ),
         pytest.param(
@@ -545,6 +547,8 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                 _stream_event([{"id": "call0", "function": {"name": "foo", "arguments": '{"x":'}}]),
                 _stream_event([_tool_delta(0, function={"arguments": "1}"})]),
             ],
+            [("call0", "foo", '{"x":1}')],
+            "",
             id="S4-late-index",
         ),
         pytest.param(
@@ -554,6 +558,8 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                 ),
                 _stream_event([{"function": {"arguments": "1}"}}]),
             ],
+            [("call0", "foo", '{"x":1}')],
+            "",
             id="unindexed-continuation",
         ),
         *[
@@ -577,6 +583,8 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                         ]
                     ),
                 ],
+                [("generated", "foo", '{"x":1}'), ("call1", name, '{"y":2}')],
+                "",
                 id=f"new-id-after-idless-{indexed}-{name}",
             )
             for indexed in (True, False)
@@ -602,18 +610,65 @@ def test_stream_new_id_and_name_start_a_call_after_an_idless_call(indexed, secon
                 {"choices": [{"delta": {"reasoning_content": "c"}}]},
                 {"choices": [{"delta": {"content": "ans"}}]},
             ],
+            [("call0", "foo", "{}")],
+            "<think>\nab\n</think><think>\nc\n</think>ans",
             id="G3-reasoning-resumes",
         ),
     ],
 )
-def test_stream_preserves_sdk_baseline_values(events) -> None:
-    schema = yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text(encoding="utf-8"))
-    reference = OAICompatLargeLanguageModel(model_schemas=[AIModelEntity(**schema)])
-    expected = _stream_values(_invoke_stream(events, reference))
-    assert expected["tools"]
-    assert expected["finish"] == ["tool_calls"]
-    assert expected["usage"] == [(13, 7, 20)]
-    assert _stream_values(_invoke_stream(events)) == expected
+def test_stream_preserves_tool_values(events, expected_tools, expected_content) -> None:
+    assert _stream_values(_invoke_stream(events)) == {
+        "tools": expected_tools,
+        "content": expected_content,
+        "finish": ["tool_calls"],
+        "usage": [(13, 7, 20)],
+    }
+
+
+def test_missing_usage_counts_tool_definitions_and_collected_arguments() -> None:
+    arguments = json.dumps({"query": "word " * 100})
+    response = _stream_response([])
+    response._content = (
+        "data: "
+        + json.dumps(
+            {
+                "choices": [
+                    {
+                        "delta": {
+                            "tool_calls": [
+                                {
+                                    "index": 0,
+                                    "id": "call0",
+                                    "function": {"name": "foo", "arguments": arguments},
+                                }
+                            ]
+                        },
+                        "finish_reason": "tool_calls",
+                    }
+                ]
+            }
+        )
+        + "\n\ndata: [DONE]\n\n"
+    ).encode()
+    tool = PromptMessageTool(
+        name="foo", description="long schema " * 20, parameters={"type": "object"}
+    )
+    with patch("requests.post", return_value=response):
+        chunks = list(
+            _model().invoke(
+                MODEL,
+                {"api_key": "test-key"},
+                [UserPromptMessage(content="Use foo")],
+                tools=[tool],
+                stream=True,
+            )
+        )
+
+    usage = chunks[-1].delta.usage
+    assert usage.prompt_tokens >= 40
+    assert usage.completion_tokens >= 100
+    assert chunks[-1].delta.message.tool_calls[0].function.arguments == arguments
+    assert sum(bool(chunk.delta.message.tool_calls) for chunk in chunks) == 1
 
 
 def test_stream_new_arguments_after_a_complete_idless_call_keep_calls_separate() -> None:
@@ -681,17 +736,16 @@ def test_stream_stray_index_without_function_values_does_not_emit_an_empty_call(
 
 
 @pytest.mark.parametrize("index", [0, 1])
-def test_stream_late_index_for_identified_unnamed_call_matches_sdk(index) -> None:
+def test_stream_late_index_for_identified_unnamed_call_keeps_tool_values(index) -> None:
     events = [
         _stream_event([{"id": "call0", "function": {"arguments": '{"x":'}}]),
         _stream_event([_tool_delta(index, function={"arguments": "1}"})]),
         _stream_event([{"id": "call0", "function": {"name": "foo"}}]),
     ]
-    schema = yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text(encoding="utf-8"))
-    reference = OAICompatLargeLanguageModel(model_schemas=[AIModelEntity(**schema)])
-    expected = _stream_values(_invoke_stream(events, reference))
-    assert expected["tools"] == [("call0", "foo", '{"x":1}')]
-    assert _stream_values(_invoke_stream(events)) == expected
+    values = _stream_values(_invoke_stream(events))
+    assert values["tools"] == [("call0", "foo", '{"x":1}')]
+    assert values["finish"] == ["tool_calls"]
+    assert values["usage"] == [(13, 7, 20)]
 
 
 def test_stream_named_arguments_after_complete_unnamed_call_matches_sdk() -> None:
@@ -700,14 +754,13 @@ def test_stream_named_arguments_after_complete_unnamed_call_matches_sdk() -> Non
         _stream_event([_tool_delta(0, function={"name": "bar", "arguments": '{"y":2}'})]),
         _stream_event([_tool_delta(0, id="call0", function={"name": "foo"})]),
     ]
-    schema = yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text(encoding="utf-8"))
-    reference = OAICompatLargeLanguageModel(model_schemas=[AIModelEntity(**schema)])
-    expected = _stream_values(_invoke_stream(events, reference))
-    assert expected["tools"] == [
+    values = _stream_values(_invoke_stream(events))
+    assert values["tools"] == [
         ("call0", "foo", '{"x":1}'),
         ("generated", "bar", '{"y":2}'),
     ]
-    assert _stream_values(_invoke_stream(events)) == expected
+    assert values["finish"] == ["tool_calls"]
+    assert values["usage"] == [(13, 7, 20)]
 
 
 @pytest.mark.xfail(
@@ -786,11 +839,10 @@ def test_stream_unbound_index_continuation_of_identified_unnamed_call_matches_sd
         _stream_event([_tool_delta(1, function={"arguments": "1}"})]),
         _stream_event([_tool_delta(0, id="call0", function={"name": "foo"})]),
     ]
-    schema = yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text(encoding="utf-8"))
-    reference = OAICompatLargeLanguageModel(model_schemas=[AIModelEntity(**schema)])
-    expected = _stream_values(_invoke_stream(events, reference))
-    assert expected["tools"] == [("call0", "foo", '{"x":1}')]
-    assert _stream_values(_invoke_stream(events)) == expected
+    values = _stream_values(_invoke_stream(events))
+    assert values["tools"] == [("call0", "foo", '{"x":1}')]
+    assert values["finish"] == ["tool_calls"]
+    assert values["usage"] == [(13, 7, 20)]
 
 
 @pytest.mark.parametrize("dialect", ["indexed", "late-index"])
@@ -810,11 +862,10 @@ def test_stream_whitespace_continuation_with_unbound_index_matches_sdk(dialect) 
             _stream_event([{"id": "call0", "function": {"name": "foo"}}]),
         ]
         arguments = '{"x":1} '
-    schema = yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text(encoding="utf-8"))
-    reference = OAICompatLargeLanguageModel(model_schemas=[AIModelEntity(**schema)])
-    expected = _stream_values(_invoke_stream(events, reference))
-    assert expected["tools"] == [("call0", "foo", arguments)]
-    assert _stream_values(_invoke_stream(events)) == expected
+    values = _stream_values(_invoke_stream(events))
+    assert values["tools"] == [("call0", "foo", arguments)]
+    assert values["finish"] == ["tool_calls"]
+    assert values["usage"] == [(13, 7, 20)]
 
 
 @pytest.mark.xfail(

@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import requests
 import yaml
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity
@@ -75,7 +76,7 @@ def test_current_catalog_and_parameter_boundaries() -> None:
             DeepseekLargeLanguageModel, "_invoke", return_value=iter(())
         ) as invoke:
             list(llm.invoke(model, {}, [], {"max_tokens": maximum}))
-            assert invoke.call_args.args[3]["max_tokens"] == maximum
+            assert invoke.call_args.kwargs["model_parameters"]["max_tokens"] == maximum
             with pytest.raises(ValueError, match=f"max_tokens.*{maximum}"):
                 list(llm.invoke(model, {}, [], {"max_tokens": maximum + 1}))
             assert invoke.call_count == 1
@@ -302,18 +303,14 @@ def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
     assert result == "ok"
     assert captured["model"] == model
     assert captured["parameters"]["user_id"] == "user-1"
-    assert captured["parameters"]["tools"] == [
+    assert [tool.model_dump() for tool in captured["tools"]] == [
         {
-            "type": "function",
-            "function": {
-                "name": "search",
-                "description": "Search",
-                "parameters": {"type": "object", "properties": {}},
-            },
+            "name": "search",
+            "description": "Search",
+            "parameters": {"type": "object", "properties": {}},
         }
     ]
     assert "tool_choice" not in captured["parameters"]
-    assert captured["tools"] is None
     assert captured["user"] is None
     assert credentials["_current_model"] == model
     assert credentials["endpoint_url"] == "https://api.deepseek.com"
@@ -368,15 +365,15 @@ def test_vision_images_reach_chat_completions(
     ]
     originals = [message.model_copy(deep=True) for message in messages]
     usage = {"prompt_tokens": 400, "completion_tokens": 2, "total_tokens": 402}
-    response = Mock(status_code=200, encoding="utf-8")
-    response.json.return_value = {
+    response = requests.Response()
+    response.status_code = 200
+    response.encoding = "utf-8"
+    response_payload = {
         "model": model,
-        "choices": [
-            {"message": {"content": "Different colors."}, "finish_reason": "stop"}
-        ],
+        "choices": [{"message": {"content": "Different colors."}, "finish_reason": "stop"}],
         "usage": usage,
     }
-    response.iter_lines.return_value = [
+    events = [
         'data: {"choices":[{"delta":{"content":"Different colors."},"finish_reason":null}]}',
         "data: "
         + json.dumps(
@@ -387,6 +384,8 @@ def test_vision_images_reach_chat_completions(
         ),
         "data: [DONE]",
     ]
+    response._content = ("\n\n".join(events) if stream else json.dumps(response_payload)).encode()
+    response._content_consumed = True
 
     with patch("requests.post", return_value=response) as post:
         result = llm.invoke(

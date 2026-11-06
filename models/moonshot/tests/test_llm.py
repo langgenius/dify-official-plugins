@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import yaml
@@ -287,7 +287,7 @@ def test_json_schema_is_sent_to_api(model, reasoning_effort):
             "additionalProperties": False,
         },
     }
-    response = Mock()
+    response = MagicMock()
     response.status_code = 200
     response.encoding = "utf-8"
     response.json.return_value = {

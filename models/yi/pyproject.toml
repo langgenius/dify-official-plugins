@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.10.2",
+    "dify-plugin @ git+https://github.com/langgenius/dify-plugin-sdks.git@c378d255ea6155d5dcdd91f31ded9bd24ad9d446",
     "tiktoken>=0.14.0",
 ]
 

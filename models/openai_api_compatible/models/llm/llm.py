@@ -793,13 +793,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         credentials: dict,
         response: requests.Response,
         prompt_messages: list[PromptMessage],
+        tools: list[PromptMessageTool] | None = None,
     ) -> LLMResult:
         """
         Handle non-streaming chat responses that need OpenAI-compatible normalization.
 
-        Some OpenAI-compatible gateways, including LiteLLM-backed Azure deployments, may
-        legitimately return tool calls without a `content` field. The SDK base class indexes
-        `message["content"]` directly, which raises `KeyError('content')` in that case.
         vLLM/SGLang-compatible reasoning models can also return thinking traces in
         `message.reasoning` or `message.reasoning_content`, while the final answer remains in
         `message.content`.
@@ -846,21 +844,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 function_call = self._extract_response_function_call(tool_calls)
                 assistant_message.tool_calls = [function_call] if function_call else []
 
-        usage = response_json.get("usage")
-        if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
-        else:
-            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
-            completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
-
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-
         return LLMResult(
             id=message_id,
             model=response_json.get("model", model),
             message=assistant_message,
-            usage=usage,
+            usage=self._get_response_usage(
+                model,
+                credentials,
+                prompt_messages,
+                assistant_message,
+                response_json.get("usage"),
+                tools,
+            ),
         )
 
     @staticmethod

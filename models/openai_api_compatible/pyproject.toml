@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Refresh the lockfile with: uv lock
 dependencies = [
-    "dify_plugin>=0.9.0",
+    "dify-plugin @ git+https://github.com/langgenius/dify-plugin-sdks.git@c378d255ea6155d5dcdd91f31ded9bd24ad9d446",
     "httpx>=0.28.1",
     "openai>=2.38.0",
     "requests>=2.34.2",
