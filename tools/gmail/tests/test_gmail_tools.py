@@ -188,7 +188,7 @@ def test_new_tools_emit_every_declared_output(tool_file, http):
 
 def test_manifest_and_endpoint():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.0" and manifest["plugins"]["endpoints"] == ["group/gmail_signin.yaml"]
+    assert manifest["version"] == "1.0.1" and manifest["plugins"]["endpoints"] == ["group/gmail_signin.yaml"]
     group = yaml.safe_load((ROOT / "group" / "gmail_signin.yaml").read_text(encoding="utf-8"))
     assert yaml.safe_load((ROOT / group["endpoints"][0]).read_text(encoding="utf-8"))["path"] == "/gmail/callback"
 
