@@ -70,7 +70,8 @@ class SignInCallbackEndpoint(Endpoint):
         cancel = "?" + urllib.parse.urlencode({"state": state, "cancel": "1"})
         return _page(
             "Signed in",
-            "You can close this tab, go back to the chat and say you are done.",
+            "Go back to the chat now and say you are done: the sign-in has to be finished there "
+            "within 10 minutes. You can close this tab.",
             extra=_NOT_YOU.format(cancel=html.escape(cancel)),
         )
 
