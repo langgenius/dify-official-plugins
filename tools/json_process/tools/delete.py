@@ -32,15 +32,38 @@ class JSONDeleteTool(Tool):
             matches = expr.find(input_data)
             if not matches:
                 return json.dumps(input_data, ensure_ascii=ensure_ascii)
+            # Collect list-element removals first so that every matched position
+            # refers to the original list, then delete by position in descending
+            # order. Deferring the mutation avoids the off-by-one that a naive
+            # per-match ``list.remove``/``del`` introduces for wildcard and
+            # duplicate-value matches.
+            list_removals: dict[int, tuple[list, set[int]]] = {}
             for match in matches:
                 if isinstance(match.context.value, dict):
                     del match.context.value[match.path.fields[-1]]
                 elif isinstance(match.context.value, list):
-                    match.context.value.remove(match.value)
+                    indices = getattr(match.path, "indices", None)
+                    if indices:
+                        target = match.context.value
+                        bucket = list_removals.setdefault(id(target), (target, set()))
+                        # Normalize negative indices against the original list
+                        # length so they stay correct regardless of later
+                        # removals.
+                        for i in indices:
+                            if i < 0:
+                                i += len(target)
+                            if 0 <= i < len(target):
+                                bucket[1].add(i)
                 else:
                     parent = match.context.parent
                     if parent:
                         del parent.value[match.path.fields[-1]]
+
+            for target, indices in list_removals.values():
+                for index in sorted(indices, reverse=True):
+                    if 0 <= index < len(target):
+                        del target[index]
+
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             raise Exception(f"Delete operation failed: {str(e)}")
