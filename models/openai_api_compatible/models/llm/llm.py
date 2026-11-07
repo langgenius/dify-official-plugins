@@ -444,6 +444,17 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             ):
                 entity.features.append(feature)
 
+        # The stream_function_calling credential was carried over from the
+        # legacy built-in runtime but its feature declaration was never ported
+        # to get_customizable_model_schema. Without STREAM_TOOL_CALL on
+        # entity.features, Agent nodes always invoke the model non-streaming,
+        # ignoring this setting entirely.
+        if (
+            credentials.get("stream_function_calling", "not_supported") == "supported"
+            and ModelFeature.STREAM_TOOL_CALL not in entity.features
+        ):
+            entity.features.append(ModelFeature.STREAM_TOOL_CALL)
+
         return entity
 
     @classmethod
