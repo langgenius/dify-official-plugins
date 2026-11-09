@@ -140,6 +140,24 @@ oauth_schema:
 
 ## Rate Limits and Performance
 
+### Tree preview integration
+
+The `get_online_document_pages` invocation accepts request-scoped
+`datasource_parameters` for the future tree preview:
+
+- `view: tree` lists repository pages at the root. `parent_id: repo:owner/name`
+  lists only that repository's README, recent Issues, and recent PRs.
+- `limit` (1–200) and `cursor` (an offset string) paginate the requested level.
+  The response includes `next_cursor`; repository pages include `has_children`.
+  Child pages keep their existing `page_id` and include `parent_id`.
+- Without `view: tree`, the plugin returns the existing flat list. Pass
+  `view` only for interactive preview requests; do not save it in the source
+  configuration used by imports and background synchronization.
+
+The preview has the same inventory scope as the default listing: up to 20
+recently updated repositories, with up to five recent Issues and five recent
+PRs per repository. Browsing a branch does not expand that inventory.
+
 ### GitHub API Limits
 
 - **Personal Access Token**: 5,000 requests per hour

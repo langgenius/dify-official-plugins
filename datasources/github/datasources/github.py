@@ -13,6 +13,7 @@ from dify_plugin.entities.datasource import (
     DatasourceMessage,
     GetOnlineDocumentPageContentRequest,
     OnlineDocumentInfo,
+    OnlineDocumentPage,
 )
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
 
@@ -22,6 +23,19 @@ logger = logging.getLogger(__name__)
 
 class GitHubRepositoryBlockedError(Exception):
     """Keep blocked repositories separate from optional-resource ValueErrors."""
+
+
+class GitHubTreePage(OnlineDocumentPage):
+    has_children: bool = False
+
+
+class GitHubTreeInfo(OnlineDocumentInfo):
+    pages: list[GitHubTreePage]
+
+
+class GitHubTreePagesResponse(DatasourceGetPagesResponse):
+    result: list[GitHubTreeInfo]
+    next_cursor: str | None = None
 
 
 class GitHubDataSource(OnlineDocumentDatasource):
@@ -106,6 +120,15 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         # Get user repositories
         repos = self._get_repositories(visibility=visibility, affiliation=affiliation, _type=_type)
+        if datasource_parameters.get("view") == "tree":
+            return self._get_tree_pages(
+                datasource_parameters,
+                repos,
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                workspace_icon=workspace_icon,
+            )
+
         # Bound the per-repository API fanout so page listing does not wait on 20 repositories serially.
         with ThreadPoolExecutor(max_workers=5) as executor:
             for repository_pages in executor.map(self._get_repository_pages, repos):
@@ -120,6 +143,77 @@ class GitHubDataSource(OnlineDocumentDatasource):
         )
 
         return DatasourceGetPagesResponse(result=[online_document_info])
+
+    def _get_tree_pages(
+        self,
+        parameters: dict[str, Any],
+        repos: list[dict[str, Any]],
+        *,
+        workspace_id: str,
+        workspace_name: str,
+        workspace_icon: str,
+    ) -> GitHubTreePagesResponse:
+        """List only one preview level; the default full inventory remains unchanged."""
+        limit = self._preview_number(parameters.get("limit", 50), "limit", minimum=1, maximum=200)
+        offset = self._preview_number(parameters.get("cursor", "0"), "cursor", minimum=0)
+        parent_id = parameters.get("parent_id")
+
+        if parent_id is None:
+            # /user/repos can include repositories blocked from direct access. Preserve the
+            # default inventory's behavior of hiding those repositories before selection.
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                available = list(executor.map(self._repository_is_available, repos))
+            visible_repos = [repo for repo, is_available in zip(repos, available) if is_available]
+            pages = [
+                {
+                    "page_id": f"repo:{repo['full_name']}",
+                    "page_name": repo["name"],
+                    "last_edited_time": repo.get("updated_at", ""),
+                    "type": "repository",
+                    "has_children": True,
+                }
+                for repo in visible_repos
+            ]
+        else:
+            if not isinstance(parent_id, str) or not parent_id.startswith("repo:"):
+                raise ValueError("'parent_id' must be a repository page id")
+            repo = next((repo for repo in repos if f"repo:{repo['full_name']}" == parent_id), None)
+            if repo is None:
+                raise ValueError("Repository is not available in this datasource")
+            pages = [
+                {**page, "parent_id": parent_id, "has_children": False}
+                for page in self._get_repository_pages(repo)
+                if page["page_id"] != parent_id
+            ]
+
+        total = len(pages)
+        selected = pages[offset : offset + limit]
+        next_cursor = str(offset + limit) if offset + limit < total else None
+        info = GitHubTreeInfo(
+            workspace_name=workspace_name,
+            workspace_icon=workspace_icon,
+            workspace_id=workspace_id,
+            pages=selected,
+            total=total,
+        )
+        return GitHubTreePagesResponse(result=[info], next_cursor=next_cursor)
+
+    @staticmethod
+    def _preview_number(value: Any, name: str, *, minimum: int, maximum: int | None = None) -> int:
+        if isinstance(value, bool) or not str(value).isdecimal():
+            raise ValueError(f"'{name}' must be an integer")
+        parsed = int(value)
+        if parsed < minimum or (maximum is not None and parsed > maximum):
+            raise ValueError(f"'{name}' is outside the supported range")
+        return parsed
+
+    def _repository_is_available(self, repo: dict[str, Any]) -> bool:
+        try:
+            self._make_request(f"{self.base_url}/repos/{repo['full_name']}")
+        except GitHubRepositoryBlockedError as error:
+            logger.warning("Skipping GitHub repository %s: %s", repo["full_name"], error)
+            return False
+        return True
 
     def _get_repository_pages(self, repo: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Load one repository's pages without letting a blocked repo fail the list."""
