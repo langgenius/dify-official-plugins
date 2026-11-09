@@ -11,9 +11,11 @@ from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLan
 
 import json
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import requests
+from jinja2 import Environment, TemplateError
 
 # isort: on
 
@@ -85,6 +87,34 @@ class SystemOnlyTests(unittest.TestCase):
         prepared = counter.call_args.args[2]
         self.assertEqual([m.role.value for m in prepared], ["system", "user"])
         self.assertEqual(len(messages), 1)
+
+    def test_multiple_system_messages_preserve_order_but_qwen_template_rejects(self):
+        messages = [
+            SystemPromptMessage(content="Follow the review rules."),
+            SystemPromptMessage(content="Use the required output format."),
+        ]
+        originals = [message.model_dump() for message in messages]
+        payload = self.capture(messages)
+        self.assertEqual([m["role"] for m in payload["messages"]], ["system", "system", "user"])
+        self.assertEqual(
+            [m["content"] for m in payload["messages"][:2]],
+            [message.content for message in messages],
+        )
+        self.assertEqual([message.model_dump() for message in messages], originals)
+
+        # Frozen official template keeps this contract check offline.
+        template_path = Path(__file__).parent / "fixtures" / "qwen35-chat-template.jinja"
+        environment = Environment()
+
+        def reject(message):
+            raise TemplateError(message)
+
+        environment.globals["raise_exception"] = reject
+        template = environment.from_string(template_path.read_text(encoding="utf-8"))
+        single = self.capture([SystemPromptMessage(content="Follow the review rules.")])
+        template.render(messages=single["messages"], tools=[], add_generation_prompt=True)
+        with self.assertRaisesRegex(TemplateError, r"^System message must be at the beginning\.$"):
+            template.render(messages=payload["messages"], tools=[], add_generation_prompt=True)
 
     def test_completion_token_estimation_keeps_the_original_messages(self):
         self.credentials["mode"] = "completion"

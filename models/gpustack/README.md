@@ -39,3 +39,11 @@ instructions. Invocation uses copied prompt messages so retries can reuse the
 caller's inputs without accumulating generated instructions. This compatibility
 step applies only to nonempty System-only chat requests. Preflight token
 estimation includes the same execution turn.
+
+The verified Qwen3.5 case consists of one nonempty System message followed by
+the appended User turn. Multiple System messages retain their order, so two
+System messages produce `[system, system, user]`. The tested Qwen3.5 template
+rejects this sequence with `System message must be at the beginning.` because
+only the first message may have the System role. This is a known compatibility
+boundary. For such templates, place the combined system rules in a single
+initial System message.
