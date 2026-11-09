@@ -38,6 +38,10 @@ parameters:
       en_US: GPT Image 2.5 Sunburst
       zh_Hans: GPT Image 2.5 Sunburst
     value: gpt-image-2.5-sunburst
+  - label:
+      en_US: GPT Image 2.5 Sunburst (2026-09-08)
+      zh_Hans: GPT Image 2.5 Sunburst (2026-09-08)
+    value: gpt-image-2.5-sunburst-2026-09-08
   required: false
   type: select
 - form: llm
@@ -197,3 +201,25 @@ parameters:
     value: low
   required: false
   type: select
+
+- form: form
+  human_description:
+    en_US: Non-negative integer. Set 0 to disable SDK retries; leave unset for the SDK default.
+    zh_Hans: 非负整数。设为 0 可禁用 SDK 重试；不设置则使用 SDK 默认值。
+  label:
+    en_US: Maximum SDK retries
+    zh_Hans: SDK 最大重试次数
+  name: max_retries
+  required: false
+  type: number
+  min: 0
+- form: form
+  human_description:
+    en_US: Positive finite seconds for SDK network timeouts, not a total workflow deadline. Leave unset for the SDK default.
+    zh_Hans: SDK 网络超时的正有限秒数，并非工作流总时限。不设置则使用 SDK 默认值。
+  label:
+    en_US: Request timeout (seconds)
+    zh_Hans: 请求超时（秒）
+  name: request_timeout
+  required: false
+  type: number

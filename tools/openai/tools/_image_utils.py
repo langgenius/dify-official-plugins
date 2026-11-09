@@ -9,6 +9,7 @@ def build_image_args(parameters: dict[str, Any]) -> dict[str, Any]:
         "gpt-image-2",
         "gpt-image-2.5-flare",
         "gpt-image-2.5-sunburst",
+        "gpt-image-2.5-sunburst-2026-09-08",
     }:
         raise ValueError("Invalid model. Choose GPT Image 2, GPT Image 2.5 Flare, or Sunburst.")
 

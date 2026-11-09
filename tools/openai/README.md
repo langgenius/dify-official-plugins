@@ -50,7 +50,9 @@ Choose a GPT Image 2.5 model explicitly in the **Model** field to use the new mo
 | [`gpt-image-2.5-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) | Fast, high-quality generation and editing. | `gpt-image-2.5-flare-2026-09-08` |
 | [`gpt-image-2.5-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) | Detailed creative work and precise editing. | `gpt-image-2.5-sunburst-2026-09-08` |
 
-The model selector uses the API model IDs; the snapshot IDs are reference metadata.
+The model selector supports the undated IDs and the dated Sunburst snapshot
+`gpt-image-2.5-sunburst-2026-09-08`. The selected ID is sent unchanged to the API;
+the default remains `gpt-image-2`.
 The Generate tool sends a text prompt to the Images API, while Edit sends a prompt and image files.
 For another editing pass, feed a previous image output into the next Edit call.
 
@@ -69,6 +71,12 @@ For another editing pass, feed a previous image output into the next Edit call.
 | `moderation` | `auto` | Generate only: `auto` or `low`. |
 | `image` | Required for Edit | One or more Dify image files, up to 16. |
 | `mask` | Unset | Edit only: an optional PNG mask for localized changes. |
+| `max_retries` | SDK default | Optional non-negative integer; `0` disables SDK retries for this Generate/Edit invocation. |
+| `request_timeout` | SDK default | Optional positive finite seconds for SDK network timeouts, not a total workflow deadline. |
+
+Unset transport controls preserve the SDK defaults. Configure Dify node and outer
+workflow retries separately. These options apply to the GPT Image 2 / 2.5 tools only;
+they are not image API parameters or provider-wide settings for other tools.
 
 Custom dimensions must satisfy all of these conditions:
 

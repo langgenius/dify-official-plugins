@@ -45,6 +45,24 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: max_retries
+      label:
+        en_US: Maximum SDK retries (optional)
+        zh_Hans: SDK 最大重试次数（可选）
+      type: text-input
+      required: false
+      help:
+        en_US: Non-negative integer. Set 0 to disable SDK retries; leave blank for the SDK default.
+        zh_Hans: 非负整数。设为 0 可禁用 SDK 重试；留空则使用 SDK 默认值。
+    - variable: request_timeout
+      label:
+        en_US: Request timeout in seconds (optional)
+        zh_Hans: 请求超时秒数（可选）
+      type: text-input
+      required: false
+      help:
+        en_US: Positive finite seconds for SDK network timeouts, not a total workflow deadline. Leave blank for the SDK default.
+        zh_Hans: SDK 网络超时的正有限秒数，并非工作流总时限。留空则使用 SDK 默认值。
     - variable: openai_organization
       label:
         zh_Hans: 组织 ID
@@ -111,6 +129,24 @@ provider_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: max_retries
+      label:
+        en_US: Maximum SDK retries (optional)
+        zh_Hans: SDK 最大重试次数（可选）
+      type: text-input
+      required: false
+      help:
+        en_US: Non-negative integer. Set 0 to disable SDK retries; leave blank for the SDK default.
+        zh_Hans: 非负整数。设为 0 可禁用 SDK 重试；留空则使用 SDK 默认值。
+    - variable: request_timeout
+      label:
+        en_US: Request timeout in seconds (optional)
+        zh_Hans: 请求超时秒数（可选）
+      type: text-input
+      required: false
+      help:
+        en_US: Positive finite seconds for SDK network timeouts, not a total workflow deadline. Leave blank for the SDK default.
+        zh_Hans: SDK 网络超时的正有限秒数，并非工作流总时限。留空则使用 SDK 默认值。
     - variable: openai_organization
       label:
         zh_Hans: 组织 ID

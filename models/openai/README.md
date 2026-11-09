@@ -37,6 +37,14 @@ Add an OpenAI API key and, when needed, an Organization ID or custom API base UR
 
 The API base may be entered with or without the trailing `/v1`.
 
+`Maximum SDK retries` and `Request timeout in seconds` are optional in both provider
+and custom-model credentials. Leave them blank to preserve the SDK defaults. Set
+`max_retries` to `0` to disable automatic SDK retries, or a non-negative integer to
+select a retry count. `request_timeout` must be positive finite seconds and is passed
+to the SDK's network timeout setting; it is not a total workflow deadline. These
+controls apply to clients constructed with the configured credentials, including
+credential validation. Dify node/outer retries must be configured separately.
+
 Responses is the recommended protocol and the default for official models that support it.
 
 Choose Chat Completions only for a compatible endpoint or a model whose documented API surface requires it.

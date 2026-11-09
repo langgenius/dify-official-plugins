@@ -6,7 +6,7 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 from openai import OpenAI
-from openai_client import normalize_openai_base_url
+from openai_client import normalize_openai_base_url, request_options
 from tools._image_utils import (
     build_image_args,
     build_usage_metadata,
@@ -21,6 +21,7 @@ class GPTImage2EditTool(Tool):
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         try:
             edit_args = build_image_args(tool_parameters)
+            client_options = request_options(tool_parameters)
         except ValueError as e:
             yield self.create_text_message(str(e))
             return
@@ -72,6 +73,7 @@ class GPTImage2EditTool(Tool):
                 api_key=self.runtime.credentials["openai_api_key"],
                 base_url=normalize_openai_base_url(self.runtime.credentials.get("openai_base_url")),
                 organization=self.runtime.credentials.get("openai_organization_id") or None,
+                **client_options,
             )
             logger.info(
                 "image edit: model=%s size=%s quality=%s n=%s has_mask=%s",

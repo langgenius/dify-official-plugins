@@ -1,4 +1,5 @@
 import hashlib
+import math
 import re
 from collections.abc import Generator, Iterable, Mapping
 from typing import TypeVar
@@ -92,6 +93,26 @@ class _CommonOpenAI:
 
         if organization := credentials.get("openai_organization"):
             credentials_kwargs["organization"] = organization
+
+        value = credentials.get("max_retries")
+        if value not in (None, ""):
+            try:
+                retries = int(value)
+                if isinstance(value, bool) or retries < 0 or retries != float(value):
+                    raise ValueError
+            except (TypeError, ValueError, OverflowError) as error:
+                raise ValueError("max_retries must be a non-negative integer") from error
+            credentials_kwargs["max_retries"] = retries
+
+        value = credentials.get("request_timeout")
+        if value not in (None, ""):
+            try:
+                timeout = float(value)
+                if isinstance(value, bool) or not math.isfinite(timeout) or timeout <= 0:
+                    raise ValueError
+            except (TypeError, ValueError, OverflowError) as error:
+                raise ValueError("request_timeout must be positive finite seconds") from error
+            credentials_kwargs["timeout"] = timeout
 
         return credentials_kwargs
 

@@ -1,10 +1,14 @@
+import base64
 import importlib.util
 import io
+import json
 import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import httpx
+import openai
 import pytest
 
 PLUGIN_DIR = Path("tools") / "openai"
@@ -113,6 +117,126 @@ def test_normalize_openai_base_url(raw_url, expected):
     assert helpers.normalize_openai_base_url(raw_url) == expected
 
 
+def test_unset_image_transport_controls_preserve_sdk_defaults():
+    helpers = import_plugin_module("openai_helpers", "openai_client.py")
+    assert helpers.request_options({}) == {}
+    assert helpers.request_options({"max_retries": None, "request_timeout": ""}) == {}
+    assert helpers.request_options({"max_retries": 0, "request_timeout": 12.5}) == {
+        "max_retries": 0,
+        "timeout": 12.5,
+    }
+
+
+@pytest.mark.parametrize("operation", ["generate", "edit"])
+@pytest.mark.parametrize("failure", [500, 429, "timeout"])
+def test_image_sdk_makes_one_attempt_when_retries_disabled(operation, failure):
+    module = import_plugin_module(
+        f"gpt_image_2_{operation}_tool", f"tools/gpt_image_2_{operation}.py"
+    )
+    tool = create_tool_instance(getattr(module, f"GPTImage2{operation.title()}Tool"))
+    tool.runtime.credentials = {
+        "openai_api_key": "local-test-key",
+        "openai_base_url": "https://example.test/v1",
+    }
+    observed = []
+
+    def handle(request):
+        observed.append(request)
+        assert request.extensions["timeout"]["read"] == 12.5
+        if failure == "timeout":
+            raise httpx.ReadTimeout("controlled timeout", request=request)
+        return httpx.Response(failure, json={"error": {"message": "controlled failure"}})
+
+    parameters = {
+        "prompt": "exact request",
+        "model": "gpt-image-2.5-sunburst-2026-09-08",
+        "max_retries": 0,
+        "request_timeout": 12.5,
+    }
+    if operation == "edit":
+        parameters["image"] = [FakeFile(b"original-a"), FakeFile(b"original-b")]
+    with httpx.Client(transport=httpx.MockTransport(handle)) as http_client:
+        with patch.object(
+            module, "OpenAI", side_effect=lambda **kw: openai.OpenAI(http_client=http_client, **kw)
+        ):
+            result = list(tool._invoke(parameters))
+    assert len(observed) == 1
+    assert len(result) == 1 and "Failed to" in result[0]
+
+
+@pytest.mark.parametrize("operation", ["generate", "edit"])
+def test_image_sdk_preserves_snapshot_prompt_settings_originals_and_usage(operation):
+    module = import_plugin_module(
+        f"gpt_image_2_{operation}_tool", f"tools/gpt_image_2_{operation}.py"
+    )
+    tool = create_tool_instance(getattr(module, f"GPTImage2{operation.title()}Tool"))
+    tool.runtime.credentials = {
+        "openai_api_key": "local-test-key",
+        "openai_base_url": "https://example.test/v1",
+    }
+    output_bytes = [b"unchanged-output-a", b"unchanged-output-b"]
+    prompt = "  Exact lettering: مرحبا e\u0301 😀\n  "
+    model = "gpt-image-2.5-sunburst-2026-09-08"
+    observed = []
+
+    def handle(request):
+        observed.append(request)
+        assert request.url.path == "/v1/images/" + (
+            "generations" if operation == "generate" else "edits"
+        )
+        if operation == "generate":
+            body = json.loads(request.content)
+            for key, value in {
+                "model": model,
+                "prompt": prompt,
+                "n": 2,
+                "size": "1024x1536",
+                "quality": "high",
+                "background": "opaque",
+                "output_format": "png",
+            }.items():
+                assert body[key] == value
+            assert "max_retries" not in body and "request_timeout" not in body
+        else:
+            body = request.read()
+            assert prompt.encode("utf-8") in body and model.encode() in body
+            assert body.index(b"original-a") < body.index(b"original-b")
+            for value in (b"1024x1536", b"high", b"opaque", b"png"):
+                assert value in body
+        return httpx.Response(
+            200,
+            json={
+                "created": 1,
+                "data": [{"b64_json": base64.b64encode(b).decode()} for b in output_bytes],
+                "usage": {"total_tokens": 15, "input_tokens": 10, "output_tokens": 5},
+            },
+        )
+
+    parameters = {
+        "model": model,
+        "prompt": prompt,
+        "n": 2,
+        "size": "1024x1536",
+        "quality": "high",
+        "background": "opaque",
+        "output_format": "png",
+        "max_retries": 0,
+        "request_timeout": 12.5,
+    }
+    if operation == "edit":
+        parameters["image"] = [FakeFile(b"original-a", "a.png"), FakeFile(b"original-b", "b.png")]
+    with httpx.Client(transport=httpx.MockTransport(handle)) as http_client:
+        with patch.object(
+            module, "OpenAI", side_effect=lambda **kw: openai.OpenAI(http_client=http_client, **kw)
+        ):
+            result = list(tool._invoke(parameters))
+    assert len(observed) == 1
+    assert [x["blob"] for x in result[:2]] == output_bytes
+    assert all(x["meta"]["mime_type"] == "image/png" for x in result[:2])
+    assert result[2]["data"][0]["model"] == model
+    assert result[2]["data"][0]["usage"]["total_tokens"] == 15
+
+
 def test_provider_validate_credentials_uses_models_list():
     provider_module = import_plugin_module("openai_provider", "provider/openai.py")
     provider = provider_module.OpenAIProvider.__new__(provider_module.OpenAIProvider)
@@ -178,6 +302,7 @@ def test_gpt_image_2_generate_uses_normalized_base_url():
         (None, "high", "png", "transparent", "1024x1024"),
         ("gpt-image-2.5-flare", "xhigh", "webp", "transparent", "3840x2160"),
         ("gpt-image-2.5-sunburst", "max", "jpeg", "opaque", "1024x640"),
+        ("gpt-image-2.5-sunburst-2026-09-08", "max", "png", "opaque", "1024x1536"),
         ("gpt-image-2.5-flare", "auto", "auto", "transparent", "auto"),
     ],
 )
@@ -282,6 +407,14 @@ def test_gpt_image_requests_and_outputs(operation, model, quality, output_format
         {"n": 11},
         {"n": True},
         {"n": 1.5},
+        {"max_retries": -1},
+        {"max_retries": 0.5},
+        {"max_retries": True},
+        {"max_retries": float("inf")},
+        {"request_timeout": 0},
+        {"request_timeout": True},
+        {"request_timeout": float("nan")},
+        {"request_timeout": float("inf")},
     ],
 )
 def test_gpt_image_rejects_invalid_parameters_without_api_calls(operation, invalid):
