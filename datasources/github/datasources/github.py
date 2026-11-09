@@ -6,7 +6,7 @@ import time
 import base64
 import markdown
 from typing import Dict, List, Optional, Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from dify_plugin.entities.datasource import (
     DatasourceGetPagesResponse,
@@ -80,11 +80,15 @@ class GitHubDataSource(OnlineDocumentDatasource):
         elif response.status_code >= 400:
             raise ValueError(f"GitHub API error: {response.status_code} - {response.text}")
     
-    def _make_request(self, url: str, params: Optional[Dict] = None) -> Dict:
-        """Make API request and handle errors"""
+    def _request_response(self, url: str, params: Optional[Dict] = None) -> requests.Response:
         headers = self._get_headers()
         response = requests.get(url, headers=headers, params=params, timeout=30)
         self._handle_rate_limit(response)
+        return response
+
+    def _make_request(self, url: str, params: Optional[Dict] = None) -> Dict:
+        """Make API request and handle errors"""
+        response = self._request_response(url, params)
         return response.json()
     
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
@@ -156,8 +160,8 @@ class GitHubDataSource(OnlineDocumentDatasource):
     ) -> GitHubTreePagesResponse:
         """List only one preview level; the default full inventory remains unchanged."""
         limit = self._preview_number(parameters.get("limit", 50), "limit", minimum=1, maximum=200)
-        offset = self._preview_number(parameters.get("cursor", "0"), "cursor", minimum=0)
         parent_id = parameters.get("parent_id")
+        next_cursor: str | None
 
         if parent_id is None:
             # /user/repos can include repositories blocked from direct access. Preserve the
@@ -165,7 +169,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             with ThreadPoolExecutor(max_workers=5) as executor:
                 available = list(executor.map(self._repository_is_available, repos))
             visible_repos = [repo for repo, is_available in zip(repos, available) if is_available]
-            pages = [
+            all_pages = [
                 {
                     "page_id": f"repo:{repo['full_name']}",
                     "page_name": repo["name"],
@@ -175,30 +179,129 @@ class GitHubDataSource(OnlineDocumentDatasource):
                 }
                 for repo in visible_repos
             ]
+            pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+            total = len(all_pages)
         else:
-            if not isinstance(parent_id, str) or not parent_id.startswith("repo:"):
-                raise ValueError("'parent_id' must be a repository page id")
-            repo = next((repo for repo in repos if f"repo:{repo['full_name']}" == parent_id), None)
-            if repo is None:
+            if not isinstance(parent_id, str) or ":" not in parent_id:
+                raise ValueError("Invalid GitHub preview parent_id")
+            kind, identifier = parent_id.split(":", 1)
+            repo_name = identifier.split(":", 1)[0] if kind == "dir" else identifier
+            repo = next((item for item in repos if item["full_name"] == repo_name), None)
+            if repo is None or not self._repository_is_available(repo):
                 raise ValueError("Repository is not available in this datasource")
-            pages = [
-                {**page, "parent_id": parent_id, "has_children": False}
-                for page in self._get_repository_pages(repo)
-                if page["page_id"] != parent_id
-            ]
+            if kind == "repo":
+                all_pages = self._repository_preview_folders(repo, parent_id)
+                pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+                total = len(all_pages)
+            elif kind in {"contents", "dir"}:
+                path = identifier.split(":", 1)[1] if kind == "dir" and ":" in identifier else ""
+                if kind == "dir" and (not path or any(part in {"", ".", ".."} for part in path.split("/"))):
+                    raise ValueError("Invalid GitHub directory path")
+                all_pages = self._directory_preview_pages(repo, parent_id, path)
+                pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+                total = len(all_pages)
+            elif kind in {"issues", "prs"}:
+                pages, next_cursor = self._discussion_preview_pages(repo, parent_id, kind, parameters, limit)
+                total = len(pages)
+            else:
+                raise ValueError("Unsupported GitHub preview parent_id")
 
-        total = len(pages)
-        selected = pages[offset : offset + limit]
-        next_cursor = str(offset + limit) if offset + limit < total else None
         info = GitHubTreeInfo(
             workspace_name=workspace_name,
             workspace_icon=workspace_icon,
             workspace_id=workspace_id,
-            pages=selected,
+            pages=pages,
             total=total,
             next_cursor=next_cursor,
         )
         return GitHubTreePagesResponse(result=[info], next_cursor=next_cursor)
+
+    def _slice_preview_pages(
+        self, pages: list[dict[str, Any]], parameters: dict[str, Any], limit: int
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        offset = self._preview_number(parameters.get("cursor", "0"), "cursor", minimum=0)
+        next_cursor = str(offset + limit) if offset + limit < len(pages) else None
+        return pages[offset : offset + limit], next_cursor
+
+    def _repository_preview_folders(self, repo: dict[str, Any], parent_id: str) -> list[dict[str, Any]]:
+        name = repo["full_name"]
+        folders = [("contents", "Contents")]
+        if repo.get("has_issues") is not False:
+            folders.append(("issues", "Issues"))
+        folders.append(("prs", "Pull requests"))
+        return [
+            {
+                "page_id": f"{kind}:{name}",
+                "page_name": label,
+                "last_edited_time": repo.get("updated_at", ""),
+                "type": "github_collection",
+                "parent_id": parent_id,
+                "has_children": True,
+            }
+            for kind, label in folders
+        ]
+
+    def _directory_preview_pages(
+        self, repo: dict[str, Any], parent_id: str, path: str
+    ) -> list[dict[str, Any]]:
+        name = repo["full_name"]
+        suffix = f"/{quote(path, safe='/')}" if path else ""
+        entries = self._make_request(f"{self.base_url}/repos/{name}/contents{suffix}")
+        if not isinstance(entries, list):
+            raise ValueError("GitHub directory listing did not return a list")
+        pages = []
+        for entry in entries:
+            if not isinstance(entry, dict) or entry.get("type") not in {"dir", "file"}:
+                continue
+            entry_path = entry.get("path")
+            if not isinstance(entry_path, str) or not entry_path:
+                continue
+            is_dir = entry["type"] == "dir"
+            pages.append({
+                "page_id": f"{'dir' if is_dir else 'file'}:{name}:{entry_path}",
+                "page_name": entry.get("name") or entry_path.rsplit("/", 1)[-1],
+                "last_edited_time": entry.get("sha", ""),
+                "type": "github_directory" if is_dir else "file",
+                "parent_id": parent_id,
+                "has_children": is_dir,
+            })
+        return pages
+
+    def _discussion_preview_pages(
+        self,
+        repo: dict[str, Any],
+        parent_id: str,
+        kind: str,
+        parameters: dict[str, Any],
+        limit: int,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        page_number = self._preview_number(parameters.get("cursor", "1"), "cursor", minimum=1)
+        name = repo["full_name"]
+        endpoint = "issues" if kind == "issues" else "pulls"
+        response = self._request_response(
+            f"{self.base_url}/repos/{name}/{endpoint}",
+            params={"state": "all", "per_page": min(limit, 100), "sort": "updated", "page": page_number},
+        )
+        items = response.json()
+        if not isinstance(items, list):
+            raise ValueError("GitHub discussion listing did not return a list")
+        pages = []
+        for item in items:
+            if not isinstance(item, dict) or (kind == "issues" and "pull_request" in item):
+                continue
+            number = item.get("number")
+            if not isinstance(number, int):
+                continue
+            pages.append({
+                "page_id": f"{'issue' if kind == 'issues' else 'pr'}:{name}:{number}",
+                "page_name": f"{'Issue' if kind == 'issues' else 'PR'} #{number}: {item.get('title', '')}",
+                "last_edited_time": item.get("updated_at", ""),
+                "type": "issue" if kind == "issues" else "pull_request",
+                "parent_id": parent_id,
+                "has_children": False,
+            })
+        next_cursor = str(page_number + 1) if "next" in response.links else None
+        return pages, next_cursor
 
     @staticmethod
     def _preview_number(value: Any, name: str, *, minimum: int, maximum: int | None = None) -> int:
@@ -390,7 +493,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         repo_name = parts[1]
         file_path = parts[2]
         
-        file_info = self._make_request(f"{self.base_url}/repos/{repo_name}/contents/{file_path}")
+        file_info = self._make_request(f"{self.base_url}/repos/{repo_name}/contents/{quote(file_path, safe='/')}")
         
         if file_info.get("type") != "file":
             raise ValueError("Can only get content for files, not directories")
@@ -401,7 +504,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         else:
             download_url = file_info.get("download_url")
             if download_url:
-                response = requests.get(download_url, timeout=30)
+                response = requests.get(download_url, headers=self._get_headers(), timeout=30)
                 response.raise_for_status()
                 content = response.text
             else:
