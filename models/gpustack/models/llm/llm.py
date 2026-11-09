@@ -23,6 +23,7 @@ from dify_plugin.entities.model.message import (
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
+    UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
@@ -118,6 +119,35 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
                 f"must be '{expected_object}', response body {response.text}"
             )
 
+    @staticmethod
+    def _prepare_prompt_messages(
+        credentials: dict, prompt_messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
+        messages = [message.model_copy(deep=True) for message in prompt_messages]
+        # Templates requiring a user query need an explicit execution turn
+        # when a workflow supplies its entire task in System messages.
+        if (
+            credentials.get("mode") == LLMMode.CHAT.value
+            and messages
+            and all(isinstance(message, SystemPromptMessage) for message in messages)
+            and any(message.get_text_content().strip() for message in messages)
+        ):
+            messages.append(
+                UserPromptMessage(content="Please respond according to the instructions above.")
+            )
+        return messages
+
+    def get_num_tokens(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> int:
+        return super().get_num_tokens(
+            model, credentials, self._prepare_prompt_messages(credentials, prompt_messages), tools
+        )
+
     def _invoke(
         self,
         model: str,
@@ -130,6 +160,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         model = model.strip()
+        prompt_messages = self._prepare_prompt_messages(credentials, prompt_messages)
 
         if model_parameters.get("response_format") == "json_schema":
             json_schema_str = model_parameters.get("json_schema")

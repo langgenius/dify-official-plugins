@@ -26,3 +26,16 @@ After setting up your GPUStack server, you will need the following to configure 
 - GPUStack API Key
 
 Obtain these from your GPUStack server, then enter them into the settings. Click "Save" to activate the plugin.
+
+## System-only chat workflows
+
+Some chat templates require a User query even when the full task is supplied in
+System messages. For a chat request containing only System messages with real
+text, the plugin preserves the instructions and appends the neutral User turn
+`Please respond according to the instructions above.`.
+
+The compatibility step checks the original task before adding JSON Schema
+instructions. Invocation uses copied prompt messages so retries can reuse the
+caller's inputs without accumulating generated instructions. This compatibility
+step applies only to nonempty System-only chat requests. Preflight token
+estimation includes the same execution turn.
