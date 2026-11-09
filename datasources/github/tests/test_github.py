@@ -116,9 +116,12 @@ class GitHubDataSourceTests(unittest.TestCase):
         self.assertEqual([page.page_id for page in first.result[0].pages], ["repo:FFXN/dify"])
         self.assertTrue(first.result[0].pages[0].has_children)
         self.assertEqual(first.next_cursor, "1")
+        self.assertEqual(first.result[0].next_cursor, "1")
         self.assertEqual([page.page_id for page in second.result[0].pages], ["repo:FFXN/checkin"])
         self.assertIsNone(second.next_cursor)
+        self.assertIsNone(second.result[0].next_cursor)
         self.assertEqual(first.model_dump()["next_cursor"], "1")
+        self.assertEqual(first.model_dump()["result"][0]["next_cursor"], "1")
         self.assertTrue(first.model_dump()["result"][0]["pages"][0]["has_children"])
         self.assertFalse(any(call.args[0].endswith(("/readme", "/issues", "/pulls")) for call in mocked_get.call_args_list))
 

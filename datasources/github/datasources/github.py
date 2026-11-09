@@ -31,6 +31,7 @@ class GitHubTreePage(OnlineDocumentPage):
 
 class GitHubTreeInfo(OnlineDocumentInfo):
     pages: list[GitHubTreePage]
+    next_cursor: str | None = None
 
 
 class GitHubTreePagesResponse(DatasourceGetPagesResponse):
@@ -195,6 +196,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             workspace_id=workspace_id,
             pages=selected,
             total=total,
+            next_cursor=next_cursor,
         )
         return GitHubTreePagesResponse(result=[info], next_cursor=next_cursor)
 
