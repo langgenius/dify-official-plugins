@@ -58,7 +58,7 @@ parameters:
 output_schema:
   type: object
   properties:
-    files:
+    items:
       type: array
       description: Files and folders
       items:
