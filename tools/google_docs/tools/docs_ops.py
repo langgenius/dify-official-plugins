@@ -237,7 +237,7 @@ def get_document(ctx: GoogleContext, p: Mapping[str, Any]) -> Result:
     text, headings = to_markdown(doc)
     title = doc.get("title", "")
     cut = text if len(text) <= MAX_TEXT else text[:MAX_TEXT] + "\n[… truncated]"
-    return ({"title": title, "text": text, "headings": headings, "url": doc_url(document)},
+    return ({"title": title, "content": text, "headings": headings, "url": doc_url(document)},
             {"document_id": document, "title": title, "headings": headings, "url": doc_url(document), "length": len(text)},
             f"# {title}\n{doc_url(document)}\n\n{cut}")
 
