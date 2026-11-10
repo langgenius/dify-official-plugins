@@ -201,6 +201,23 @@ def test_general_search_publication_date_is_visible_when_requested(transport):
     assert "Published Date:** 2026-10-01" in texts(messages)
 
 
+@pytest.mark.parametrize("flag", ["true", "True", "TRUE"])
+def test_publication_date_flag_is_case_insensitive_in_text(transport, flag):
+    """The API lower-cases string flags, so the text formatter must agree."""
+    _, response = transport
+    response.body["results"][0]["published_date"] = "2026-10-01"
+    messages = invoke(TavilySearchTool, {"query": "q", "include_published_date": flag})
+    assert "Published Date:** 2026-10-01" in texts(messages)
+
+
+@pytest.mark.parametrize("flag", ["false", "False", "FALSE"])
+def test_publication_date_stays_hidden_when_flag_disabled(transport, flag):
+    _, response = transport
+    response.body["results"][0]["published_date"] = "2026-10-01"
+    messages = invoke(TavilySearchTool, {"query": "q", "include_published_date": flag})
+    assert "Published Date" not in texts(messages)
+
+
 def test_research_close_after_creation_does_not_poll(transport):
     calls, response = transport
     response.body = {"request_id": "task-123", "status": "pending"}

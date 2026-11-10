@@ -5,6 +5,19 @@ from dify_plugin import Tool
 from .utils import process_images, process_favicons
 
 
+def _is_enabled(value: Any) -> bool:
+    """Normalize a tool flag exactly like TavilySearch._process_params does.
+
+    _process_params lower-cases string flags before sending them to the API,
+    so "True"/"TRUE" reach Tavily as true. Consumers that read the raw
+    tool_parameters must apply the same normalization, otherwise the formatted
+    output disagrees with what the API was actually asked for.
+    """
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return bool(value)
+
+
 class TavilySearch:
     """
     A class for performing search operations using the Tavily Search API.
@@ -239,8 +252,8 @@ class TavilySearchTool(Tool):
                 output_lines.append(f"# Result {idx}: [{title}]({url})\n")
                 if published_date and (
                     tool_parameters.get("topic") == "news"
-                    or tool_parameters.get("include_published_date") in (True, "true")
-                    or tool_parameters.get("filter_by_published_date") in (True, "true")
+                    or _is_enabled(tool_parameters.get("include_published_date"))
+                    or _is_enabled(tool_parameters.get("filter_by_published_date"))
                 ):
                     output_lines.append(f"**Published Date:** {published_date}\n")
                 output_lines.append(f"**URL:** {url}\n")
