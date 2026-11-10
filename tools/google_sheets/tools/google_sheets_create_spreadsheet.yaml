@@ -1,0 +1,69 @@
+identity:
+  name: google_sheets_create_spreadsheet
+  author: langgenius
+  label:
+    en_US: Create Spreadsheet
+    zh_Hans: 创建电子表格
+    ja_JP: スプレッドシートを作成
+description:
+  human:
+    en_US: A new spreadsheet, optionally with headers
+    zh_Hans: 新建电子表格（可带表头）
+    ja_JP: 新しいスプレッドシート（見出し付き可）
+  llm: Create a new Google Sheets spreadsheet, optionally with named sheets and a header row on the first sheet.
+parameters:
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: Spreadsheet title
+    zh_Hans: 电子表格标题
+    ja_JP: スプレッドシートのタイトル
+  llm_description: The spreadsheet title.
+  form: llm
+- name: sheets
+  type: string
+  required: false
+  label:
+    en_US: Sheets
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Comma-separated sheet names
+    zh_Hans: 逗号分隔的工作表名
+    ja_JP: カンマ区切りのシート名
+  llm_description: Comma-separated sheet names (default Sheet1).
+  form: llm
+- name: headers
+  type: string
+  required: false
+  label:
+    en_US: Headers
+    zh_Hans: 表头
+    ja_JP: 見出し
+  human_description:
+    en_US: Comma-separated column names
+    zh_Hans: 逗号分隔的列名
+    ja_JP: カンマ区切りの列名
+  llm_description: Comma-separated column names for row 1 of the first sheet.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    spreadsheet_id:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_create_spreadsheet.py

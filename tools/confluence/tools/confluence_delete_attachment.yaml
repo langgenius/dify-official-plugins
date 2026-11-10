@@ -1,0 +1,42 @@
+identity:
+  name: confluence_delete_attachment
+  author: langgenius
+  label:
+    en_US: Delete Attachment
+    zh_Hans: 删除附件
+    ja_JP: 添付ファイルを削除
+description:
+  human:
+    en_US: Delete an attachment
+    zh_Hans: 删除附件
+    ja_JP: 添付ファイルを削除します
+  llm: Delete an attachment from a Confluence page. Only when the user clearly asks for it.
+parameters:
+- name: attachment_id
+  type: string
+  required: true
+  label:
+    en_US: Attachment ID
+    zh_Hans: 附件 ID
+    ja_JP: 添付ファイル ID
+  human_description:
+    en_US: The attachment's ID, e.g. att65900 (from List Attachments)
+    zh_Hans: 附件 ID，如 att65900（可从“列出附件”获取）
+    ja_JP: '添付ファイル ID（例: att65900、添付ファイル一覧から）'
+  llm_description: The attachment ID, e.g. att65900, from the list attachments tool.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+      description: True when the attachment was deleted
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_delete_attachment.py

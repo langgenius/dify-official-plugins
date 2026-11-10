@@ -1,0 +1,5 @@
+path: "/trello/callback"
+method: "POST"
+extra:
+  python:
+    source: "endpoints/signin_token.py"

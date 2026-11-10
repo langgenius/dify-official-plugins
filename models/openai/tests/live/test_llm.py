@@ -2,20 +2,24 @@ from __future__ import annotations
 
 import base64
 import json
+import runpy
 from pathlib import Path
 
 import pytest
 from dify_plugin.errors.model import InvokeBadRequestError
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
     AudioPromptMessageContent,
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessageTool,
+    SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
+from models.llm.decisions import MODEL as DECISIONS_MODEL
 
 pytestmark = pytest.mark.live
 
@@ -25,6 +29,7 @@ _RED_IMAGE = (
     "AAzCMP5/un0CNkuZ41wybXsHAAAAAAAAAAAAxR4yw/wuPL6QkAAAAABJRU5ErkJggg=="
 )
 _AUDIO_FILE = Path(__file__).resolve().parents[2] / "_assets" / "audio.mp3"
+_CLASSIFIER_CATEGORIES = {"billing": "账单、退款", "technical": "产品报错"}
 
 
 def _parameters(llm, model: str, max_tokens: int = 32) -> dict:
@@ -103,24 +108,66 @@ def _audio_message(prompt: str) -> UserPromptMessage:
     )
 
 
+def _classifier_messages() -> list:
+    template = runpy.run_path(
+        str(Path(__file__).resolve().parents[1] / "fixtures/graphon_0_7_0.py")
+    )
+    return [
+        SystemPromptMessage(
+            content=template["QUESTION_CLASSIFIER_SYSTEM_PROMPT"].format(histories="")
+        ),
+        UserPromptMessage(content=template["QUESTION_CLASSIFIER_USER_PROMPT_1"]),
+        AssistantPromptMessage(
+            content=template["QUESTION_CLASSIFIER_ASSISTANT_PROMPT_1"]
+        ),
+        UserPromptMessage(content=template["QUESTION_CLASSIFIER_USER_PROMPT_2"]),
+        AssistantPromptMessage(
+            content=template["QUESTION_CLASSIFIER_ASSISTANT_PROMPT_2"]
+        ),
+        UserPromptMessage(
+            content=template["QUESTION_CLASSIFIER_USER_PROMPT_3"].format(
+                input_text="我想申请退款",
+                classification_instructions="按当前诉求分类",
+                categories=json.dumps(
+                    [
+                        {"category_id": key, "category_name": value}
+                        for key, value in _CLASSIFIER_CATEGORIES.items()
+                    ]
+                ),
+            )
+        ),
+    ]
+
+
 def test_every_presented_llm_accepts_a_minimal_request(
     live_llm, live_credentials, llm_model
 ):
     schema = live_llm.get_model_schema(llm_model, live_credentials)
-    message = (
-        _audio_message("Does this audio contain speech? Reply briefly.")
-        if ModelFeature.AUDIO in (schema.features or [])
-        else UserPromptMessage(content="Reply with OK.")
-    )
+    if llm_model == DECISIONS_MODEL:
+        messages = _classifier_messages()
+    else:
+        message = (
+            _audio_message("Does this audio contain speech? Reply briefly.")
+            if ModelFeature.AUDIO in (schema.features or [])
+            else UserPromptMessage(content="Reply with OK.")
+        )
+        messages = [message]
     chunks = _invoke(
         live_llm,
         live_credentials,
         llm_model,
-        [message],
+        messages,
         stream=ModelFeature.STREAM_TOOL_CALL in (schema.features or []),
     )
 
     _terminal(chunks)
+    if llm_model == DECISIONS_MODEL:
+        result = json.loads(_text(chunks))
+        assert result["category_id"] in _CLASSIFIER_CATEGORIES
+        assert result == {
+            "category_id": result["category_id"],
+            "category_name": _CLASSIFIER_CATEGORIES[result["category_id"]],
+        }
 
 
 @pytest.mark.parametrize("stream", [False, True], ids=["nonstream", "stream"])

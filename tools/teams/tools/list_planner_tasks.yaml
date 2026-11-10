@@ -1,0 +1,113 @@
+identity:
+  name: list_planner_tasks
+  author: langgenius
+  label:
+    en_US: List Planner Tasks
+    zh_Hans: 列出 Planner 任务
+    pt_BR: Listar Tarefas do Planner
+    ja_JP: Planner タスク一覧
+    zh_Hant: 列出 Planner 任務
+description:
+  human:
+    en_US: List the tasks of a Planner plan
+    zh_Hans: 列出 Planner 计划中的任务
+    pt_BR: Listar as tarefas de um plano do Planner
+    ja_JP: Planner プランのタスクを一覧表示
+    zh_Hant: 列出 Planner 計畫中的任務
+  llm: List the tasks in a Microsoft Planner plan with title, bucket, progress, due date and assignees.
+parameters:
+- name: plan_id
+  type: string
+  required: true
+  label:
+    en_US: Plan ID
+    zh_Hans: 计划 ID
+    pt_BR: ID do Plano
+    ja_JP: プラン ID
+    zh_Hant: 計畫 ID
+  human_description:
+    en_US: The ID of the Planner plan (from List Planner Plans)
+    zh_Hans: Planner 计划 ID（来自“列出 Planner 计划”）
+    pt_BR: O ID do plano do Planner (de Listar Planos do Planner)
+    ja_JP: Planner プランの ID（Planner プラン一覧から取得）
+    zh_Hant: Planner 計畫 ID（來自「列出 Planner 計畫」）
+  llm_description: The ID of the Planner plan, as returned by List Planner Plans
+  form: llm
+- name: limit
+  type: number
+  required: false
+  default: 50
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    pt_BR: Limite
+    ja_JP: 上限
+    zh_Hant: 數量上限
+  human_description:
+    en_US: Maximum number of tasks (1-200, default 50)
+    zh_Hans: 最多返回的任务数（1-200，默认 50）
+    pt_BR: Número máximo de tarefas (1-200, padrão 50)
+    ja_JP: 返すタスクの最大数（1〜200、既定 50）
+    zh_Hant: 最多回傳的任務數（1-200，預設 50）
+  llm_description: Maximum number of tasks to return, 1-200, default 50
+  form: llm
+- name: include_completed
+  type: boolean
+  required: false
+  default: true
+  label:
+    en_US: Include Completed
+    zh_Hans: 包含已完成
+    pt_BR: Incluir Concluídas
+    ja_JP: 完了済みを含める
+    zh_Hant: 包含已完成
+  human_description:
+    en_US: Include tasks that are 100% complete
+    zh_Hans: 包含已 100% 完成的任务
+    pt_BR: Incluir tarefas 100% concluídas
+    ja_JP: 100% 完了したタスクも含める
+    zh_Hant: 包含已 100% 完成的任務
+  llm_description: Whether to include completed tasks, default true
+  form: llm
+output_schema:
+  type: object
+  properties:
+    tasks:
+      type: array
+      description: Tasks of the plan
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Task ID
+          title:
+            type: string
+            description: Title
+          bucket_id:
+            type: string
+            description: Bucket ID
+          percent_complete:
+            type: integer
+            description: Progress 0-100
+          due_datetime:
+            type: string
+            description: Due date
+          assignee_ids:
+            type: array[string]
+            description: Assigned user IDs
+          created_datetime:
+            type: string
+            description: Created time
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/list_planner_tasks.py

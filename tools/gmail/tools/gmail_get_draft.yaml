@@ -1,0 +1,47 @@
+identity:
+  name: gmail_get_draft
+  author: langgenius
+  label:
+    en_US: Get Draft
+    zh_Hans: 获取草稿
+    ja_JP: 下書きを取得
+description:
+  human:
+    en_US: One draft with its text
+    zh_Hans: 单个草稿及正文
+    ja_JP: 下書きと本文
+  llm: 'Get a Gmail draft: recipients, subject and text.'
+parameters:
+- name: draft_id
+  type: string
+  required: true
+  label:
+    en_US: Draft ID
+    zh_Hans: 草稿 ID
+    ja_JP: 下書き ID
+  human_description:
+    en_US: From list_drafts
+    zh_Hans: 可从列出草稿获取
+    ja_JP: 下書き一覧から
+  llm_description: The draft ID, from list_drafts.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    draft:
+      type: object
+    subject:
+      type: string
+    to:
+      type: string
+    body:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_get_draft.py

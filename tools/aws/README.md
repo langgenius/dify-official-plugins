@@ -13,6 +13,7 @@ The tools based on the AWS Services.
 - AWS S3 Batch File Download: Download multiple S3 objects (`s3_uris: array` of `s3://...` URIs) as Dify file variables in a single invocation, with per-URI failure isolation.
 - Content Moderation Guardrails: Content Moderation Guardrails utilizes the ApplyGuardrail API, a feature of Guardrails for Amazon Bedrock. This API is capable of evaluating input prompts and model responses for all Foundation Models (FMs), including those on Amazon Bedrock, custom FMs, and third-party FMs. By implementing this functionality, organizations can achieve centralized governance across all their generative AI applications, thereby enhancing control and consistency in content moderation.
 - AWS Bedrock Nova Canvas: A tool for generating and modifying images using AWS Bedrock's Nova Canvas model. Supports text-to-image, color-guided generation, image variation, inpainting, outpainting, and background removal. Input parameters reference https://docs.aws.amazon.com/nova/latest/userguide/image-gen-req-resp-structure.html.
+- AWS Bedrock Image Generation (`bedrock_image`): A tool for generating images with Stability AI models on Amazon Bedrock via InvokeModel (Stable Diffusion 3.5 Large, Stable Image Core, Stable Image Ultra; default region `us-west-2`). Supports text-to-image for all three models, and image-to-image (one reference image) for Stable Diffusion 3.5 Large and Stable Image Ultra only (Stable Image Core rejects reference images). Optional parameters include negative prompt, aspect ratio, strength, seed, and output format (png/jpeg/webp; webp is supported by SD 3.5 only). Optionally uploads the generated image to S3 via `image_output_s3uri`; the image is still returned if the upload fails. Supports explicit AWS credentials or the default credential chain.
 - TranscribeASR: A tool for ASR (Automatic Speech Recognition) - https://github.com/aws-samples/dify-aws-tool.
 - TranslateTool: A util tools for LLM translation, extra deployment is needed on AWS. Please refer Github Repo - https://github.com/aws-samples/rag-based-translation-with-dynamodb-and-bedrock.
 
@@ -20,6 +21,11 @@ The tools based on the AWS Services.
 1. Install this plugin from the Dify Marketplace.
 2. Open the plugin settings in Dify.
 3. Save the configuration.
+
+Translation evaluation uses the `wordnet` and `omw-1.4` NLTK corpora.
+With NLTK 3.10.4, store these resources in a private directory configured through `NLTK_DATA`.
+For installations behind an outbound proxy, preload the corpora there, or set `NLTK_ALLOW_PROXIED_URLOPEN=1` only when the proxy is trusted to prevent SSRF.
+See the [NLTK security changes](https://github.com/nltk/nltk/releases/tag/v3.10.4) for the resource and download requirements.
 
 ## Usage
 Add the AWS Tools tools to an agent or workflow, fill in the required inputs, and run the node to call the upstream service.

@@ -2,8 +2,8 @@ background: '#faf7f5'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by Xiaomi MiMo, such as mimo-v2.5-pro, mimo-v2.5, mimo-v2-flash. Supports Token Plan subscription.
-  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2.5-pro、mimo-v2.5、mimo-v2-flash。支持 Token Plan 订阅计划。
+  en_US: Models provided by Xiaomi MiMo, such as mimo-v2.6-pro, mimo-v2.6-flash, mimo-v2.6-pro-ultraspeed. Supports Token Plan subscription.
+  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2.6-pro、mimo-v2.6-flash、mimo-v2.6-pro-ultraspeed。支持 Token Plan 订阅计划。
 extra:
   python:
     model_sources:

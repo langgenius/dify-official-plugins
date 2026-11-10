@@ -303,10 +303,10 @@ provider_credential_schema:
         zh_Hans: User-Agent
       type: text-input
       required: false
-      default: dify-opencode-go-plugin/0.4.0
+      default: dify-opencode-go-plugin/0.5.0
       placeholder:
-        en_US: dify-opencode-go-plugin/0.4.0
-        zh_Hans: dify-opencode-go-plugin/0.4.0
+        en_US: dify-opencode-go-plugin/0.5.0
+        zh_Hans: dify-opencode-go-plugin/0.5.0
     - variable: session_id
       label:
         en_US: Session ID (optional)
