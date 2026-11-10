@@ -15,7 +15,7 @@ import mimetypes
 import re
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import requests
 
@@ -78,6 +78,14 @@ class Credentials:
             base_url = DEFAULT_CLOUD_BASE_URL
         if not base_url.startswith(("http://", "https://")):
             raise MineruError(f"Base URL must start with http:// or https://, got: {base_url}")
+
+        if server_type == SERVER_TYPE_LOCAL:
+            parts = urlsplit(base_url)
+            path = parts.path.rstrip("/")
+            if path.endswith("/v1"):
+                # Accept the V1 API base as well as the server root. Keep any
+                # reverse-proxy prefix; request paths already include /v1.
+                base_url = urlunsplit(parts._replace(path=path[:-3]))
 
         token = (credentials.get("token") or "").strip()
         if server_type == SERVER_TYPE_REMOTE and not token:
@@ -551,7 +559,7 @@ class LocalLegacyClient:
 
 
 def detect_local_api(http: MineruHttp) -> str:
-    """Return API_LOCAL_V1 for MinerU 4.x servers and API_LOCAL_LEGACY otherwise."""
+    """Use legacy parsing only when the server has no V1 health endpoint."""
     response = http.request("GET", "/v1/health", timeout=15)
     body = _json_or_none(response)
     if response.status_code == 200 and isinstance(body, dict) and "version" in body and "features" in body:
@@ -561,7 +569,18 @@ def detect_local_api(http: MineruHttp) -> str:
     if response.status_code in (401, 403):
         # /v1/health is public on MinerU itself, so this came from a gateway.
         raise MineruAuthError(_gateway_hint(http.credentials))
-    return API_LOCAL_LEGACY
+    if response.status_code in (404, 405):
+        return API_LOCAL_LEGACY
+    if response.status_code >= 500:
+        raise MineruNetworkError(
+            f"MinerU health check failed (HTTP {response.status_code}). "
+            "Check the MinerU service and its gateway, then try again."
+        )
+    raise MineruError(
+        f"Unexpected response from the MinerU V1 health endpoint (HTTP {response.status_code}). "
+        "Check the Base URL: use the document parsing service started with mineru-kit api-server, "
+        "not the WebUI or the OpenAI-compatible VLM server."
+    )
 
 
 def make_client(credentials: Credentials, timeout: float = 60) -> CloudV4Client | LocalV1Client | LocalLegacyClient:

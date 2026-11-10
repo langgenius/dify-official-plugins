@@ -1,0 +1,91 @@
+identity:
+  name: sharepoint_update_file
+  author: langgenius
+  label:
+    en_US: Update File
+    zh_Hans: 更新文件
+    ja_JP: ファイルを更新
+description:
+  human:
+    en_US: Rename a file and/or replace its content
+    zh_Hans: 重命名文件和/或替换其内容
+    ja_JP: ファイル名の変更と内容の置き換え
+  llm: Rename a file, replace its content with a new file, or both.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: file_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: The file's ID
+    zh_Hans: 文件的 ID
+    ja_JP: ファイルの ID
+  llm_description: The file's ID (from the list files tool).
+- name: new_name
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  human_description:
+    en_US: New file name, with extension
+    zh_Hans: 新文件名（含扩展名）
+    ja_JP: 新しいファイル名（拡張子を含む）
+  llm_description: New file name, including the extension.
+- name: file
+  type: file
+  required: false
+  form: llm
+  label:
+    en_US: New Content
+    zh_Hans: 新内容
+    ja_JP: 新しい内容
+  human_description:
+    en_US: A file whose content replaces the current one
+    zh_Hans: 用来替换当前内容的文件
+    ja_JP: 現在の内容を置き換えるファイル
+  llm_description: A file whose content replaces the file's content.
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: File or folder ID
+    name:
+      type: string
+      description: Name
+    size:
+      type: integer
+      description: Size in bytes
+    web_url:
+      type: string
+      description: Link
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_update_file.py

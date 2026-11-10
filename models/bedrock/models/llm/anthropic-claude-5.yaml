@@ -12,8 +12,8 @@ features:
 model_properties:
   mode: chat
   context_size: 1000000
-# Claude 5 generation models (Opus 5.5 / Sonnet 5.5 / Fable 5.1 / Opus 5 /
-# Sonnet 5 / Fable 5).
+# Claude 5 generation models (Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 /
+# Opus 5 / Sonnet 5 / Fable 5).
 # - Invocable ONLY via inference profiles (us. / eu. / au. / global., varies
 #   per model); no on-demand bare-ID calls.
 # - Adaptive thinking is on by default; depth is controlled by the effort
@@ -23,6 +23,7 @@ model_properties:
 # docs:
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-5-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-1.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
@@ -41,6 +42,7 @@ parameter_rules:
     options:
       - Opus 5.5
       - Sonnet 5.5
+      - Haiku 5.5
       - Fable 5.1
       - Opus 5
       - Sonnet 5
@@ -56,8 +58,8 @@ parameter_rules:
       - global
       - geographic
     help:
-      zh_Hans: Claude 5 模型仅支持通过推理配置文件调用。Global 可从几乎所有区域调用（推荐）；Geographic 使用地理配置文件（Opus 5.5 / Opus 5 / Sonnet 5 支持 us./eu./au.，Sonnet 5.5 支持 us./eu.，Fable 5.1 / Fable 5 仅支持 us.），不支持的区域请选择 Global。
-      en_US: Claude 5 models can only be invoked through inference profiles. Global works from virtually all regions (recommended); Geographic uses geo profiles (us./eu./au. for Opus 5.5, Opus 5 and Sonnet 5, us./eu. for Sonnet 5.5, us. only for Fable 5.1 and Fable 5) — use Global elsewhere.
+      zh_Hans: Claude 5 模型仅支持通过推理配置文件调用。Global 可从几乎所有区域调用（推荐）；Geographic 使用地理配置文件（Opus 5.5 / Opus 5 / Sonnet 5 / Haiku 5.5 支持 us./eu./au.，Sonnet 5.5 支持 us./eu.，Fable 5.1 / Fable 5 仅支持 us.），不支持的区域请选择 Global。
+      en_US: Claude 5 models can only be invoked through inference profiles. Global works from virtually all regions (recommended); Geographic uses geo profiles (us./eu./au. for Opus 5.5, Opus 5, Sonnet 5 and Haiku 5.5, us./eu. for Sonnet 5.5, us. only for Fable 5.1 and Fable 5) — use Global elsewhere.
   - name: max_tokens
     use_template: max_tokens
     required: true
@@ -87,6 +89,19 @@ parameter_rules:
     help:
       zh_Hans: 控制自适应思考的深度与整体 token 消耗（替代思考预算）。编码/智能体任务推荐 high 或 xhigh。
       en_US: Controls adaptive thinking depth and overall token spend (replaces thinking budget). Use high or xhigh for coding/agentic tasks.
+  - name: thinking_display
+    label:
+      zh_Hans: 推理内容展示
+      en_US: Thinking Display
+    type: string
+    required: false
+    default: omitted
+    options:
+      - omitted
+      - summarized
+    help:
+      zh_Hans: 响应中推理内容的展示方式。omitted 为 API 默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，摘要会随流式输出持续到达，因此即使思考时间很长，连接也不会处于无通信状态。
+      en_US: How thinking content is exposed in the response. `omitted` is the API default (thinking text is not returned); `summarized` returns summarized reasoning that arrives on the stream, so the connection does not go idle during long thinking.
   - name: refusal_fallback
     label:
       zh_Hans: 拒答回落到 Claude 4.8 Opus

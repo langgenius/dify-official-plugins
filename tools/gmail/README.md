@@ -2,6 +2,25 @@
 
 A comprehensive Gmail integration plugin for Dify that provides essential mail-related actions using OAuth2.0 authentication. This plugin extends beyond basic email reading to offer a complete Gmail management solution.
 
+## What's new in 1.0.0
+
+- **Each user signs in**: in a chat agent, every user works in their own mailbox.
+  - The first time someone needs Gmail, the agent gives them a Google sign-in link.
+  - After they sign in, the tools act as that person.
+  - The OAuth credential (one shared account) keeps working as before.
+- **New tools**:
+  - `gmail_reply`: reply in a conversation.
+  - `gmail_trash_message`, `gmail_trash_thread`: trash and restore.
+  - `gmail_mark_read`: mark read or unread.
+  - `gmail_modify_labels`: add and remove labels on a message or conversation.
+  - `gmail_list_labels`, `gmail_create_label`, `gmail_delete_label`.
+  - `gmail_get_thread`: read a whole conversation.
+  - `gmail_get_draft`, `gmail_delete_draft`.
+  - `gmail_sign_out`.
+
+  They return typed output variables for workflows.
+- **Fix**: `download_attachment` existed but was never registered with the provider, so it did not appear in Dify. It does now.
+
 ## Features
 
 ### **Email Management**
@@ -51,6 +70,44 @@ The plugin requests the following Gmail API scopes:
 - `https://www.googleapis.com/auth/gmail.compose` - Create drafts
 - `https://www.googleapis.com/auth/gmail.modify` - Modify emails (labels, flags)
 - `https://www.googleapis.com/auth/gmail.labels` - Manage labels
+
+### Each user signs in (for chat agents)
+
+With the OAuth credential, everybody uses the one Google account that authorized the plugin. With **Each user signs in**, every chat user signs in with their own Google account.
+
+1. **Create the sign-in endpoint**: open the plugin's details › **Endpoints** and create an endpoint (no settings). Copy its URL ending in `/gmail/callback`.
+   - If the URL starts with `http://localhost`, set `ENDPOINT_URL_TEMPLATE` on the Dify API service to your public address, e.g. `https://dify.example.com/e/{hook_id}`.
+   - Google only accepts `https://` redirect URIs, except for `localhost`.
+2. **Register the URL with Google**: in Google Cloud Console › Google Auth Platform › **Clients**, open your Web application client and add that URL to **Authorized redirect URIs**. One client can serve the OAuth callback and the sign-in endpoints of several Google plugins.
+3. **Add a credential in Dify**: in the plugin's authorization, add an API-key style credential with:
+   - **Mode**: *Each user signs in*.
+   - **Client ID** and **Client Secret** of that client.
+   - **Sign-in Callback URL**: the endpoint URL.
+4. **Use it in an agent**: add the Gmail tools to a chat agent with this credential.
+
+**What users see**:
+1. The agent replies with a Google sign-in link.
+2. The user picks their account and allows the Gmail permissions. They must keep every box ticked; if a permission is unticked, the plugin asks them to sign in again.
+3. The page shows *Signed in*. Back in the chat, the user says they are done.
+4. The agent continues and says which account was signed in.
+
+![The agent asks the user to sign in, then works in their mailbox](_assets/agent_signin.png)
+
+![Replying, labelling and marking as read as the signed-in user](_assets/agent_reply.png)
+
+**App status**: while the app's publishing status is **Testing**:
+- Google shows "Google hasn't verified this app" first; users click **Continue**.
+- Only the app's **Test users** can sign in.
+- Refresh tokens expire after 7 days.
+
+The Gmail scopes are *restricted*: an app published for users outside your Google Workspace organization needs Google's verification. Within one organization, an **Internal** app avoids all of this.
+
+**Good to know**:
+- **Signing out**: asking the agent to sign out of Gmail (`gmail_sign_out`) forgets that user's sign-in. Other Google plugins keep their own sign-ins.
+- **Security**:
+  - The endpoint only stores the one-time authorization code. The tool redeems it with the client secret and a PKCE verifier.
+  - Per-user tokens are encrypted with a key derived from the Client Secret and never appear in tool output.
+- **Tool name clashes**: the original tool names (`get_message`, `send_message`, …) are also used by Outlook. Dify's new Agent refuses duplicate tool names across plugins, so don't add both plugins to one agent.
 
 ## Usage Examples
 
@@ -140,6 +197,19 @@ parameters:
 | `add_attachment_to_draft` | Add file to draft | `draft_id`, `file_path` |
 | `flag_message` | Flag/unflag for follow-up | `message_id`, `action` |
 
+### Conversations, labels and more (1.0.0)
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `gmail_reply` | Reply in the message's conversation (subject and threading headers kept); `reply_all` copies the other recipients, never you | `message_id`, `body`, `reply_all`, `body_html` |
+| `gmail_get_thread` | Every message of a conversation with sender, date and text (HTML-only messages are reduced to text) | `thread_id` |
+| `gmail_mark_read` | Mark a message read or unread | `message_id`, `read` |
+| `gmail_modify_labels` | Add or remove labels by name or ID on a message or a whole conversation. Remove `INBOX` to archive, add `STARRED` to star | `message_id` or `thread_id`, `add_labels`, `remove_labels`, `create_missing` |
+| `gmail_trash_message` / `gmail_trash_thread` | Move to the trash, or restore with `restore: true` | `message_id` / `thread_id`, `restore` |
+| `gmail_list_labels` / `gmail_create_label` / `gmail_delete_label` | Manage labels (`/` in a name nests it) | `name`, `label` |
+| `gmail_get_draft` / `gmail_delete_draft` | Read or delete a draft | `draft_id` |
+| `gmail_sign_out` | Each user signs in only: forget the current user's sign-in | |
+
 ## Error Handling
 
 The plugin provides comprehensive error handling:
@@ -164,6 +234,9 @@ The plugin provides comprehensive error handling:
 2. **"File not found"**: Ensure the file path is accessible from the plugin environment
 3. **"Draft not found"**: Verify the draft ID is valid and hasn't been deleted
 4. **"Permission denied"**: Check that all required Gmail scopes are granted
+5. **`Error 403: access_denied`** when signing in: the app is in Testing and the account is not a test user. Add it under Google Auth Platform › Audience › **Test users**.
+6. **`Error 400: redirect_uri_mismatch`**: add the exact endpoint URL (or Dify's OAuth redirect URL) to the client's Authorized redirect URIs.
+7. **`Duplicate Dify Tool name 'get_message'`**: Outlook is in the same agent. Use separate agents.
 
 ### Getting Help
 

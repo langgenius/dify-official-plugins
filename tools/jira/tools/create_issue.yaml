@@ -10,7 +10,7 @@ description:
     en_US: Creates a new issue in Jira.
     zh_Hans: 在 Jira 中创建一个新的问题。
     pt_BR: Criar uma nova issue em um projeto.
-  llm: Creates a new issue in Jira using the provided description. Returns the details of the created issue.
+  llm: Creates a new issue in Jira. Needs the project key or ID and an issue type ID (from the list issue types tool); summary and description, and optionally assignee, priority, labels, due date, parent and custom fields. Returns the details of the created issue.
 parameters:
   - name: project_key
     type: string
@@ -63,6 +63,85 @@ parameters:
       zh_Hans: 新 Jira 问题的详细描述信息。
       pt_BR: Uma descrição detalhada da issue.
     llm_description: The detailed description of the issue to be created in Jira. This field is optional.
+    form: llm
+  - name: assignee
+    type: string
+    required: false
+    label:
+      en_US: Assignee
+      zh_Hans: 经办人
+      ja_JP: 担当者
+    human_description:
+      en_US: Account ID (Cloud) or username (Server); 'none' unassigns
+      zh_Hans: 账号 ID（Cloud）或用户名（Server）；填 none 取消分配
+      ja_JP: アカウント ID（Cloud）またはユーザー名（Server）。none で割り当て解除
+    llm_description: Assignee's account ID on Jira Cloud (find it with the search users tool) or username on Jira Server; 'none'
+      unassigns.
+    form: llm
+  - name: priority
+    type: string
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+      ja_JP: 優先度
+    human_description:
+      en_US: Priority name, e.g. High
+      zh_Hans: 优先级名称，如 High
+      ja_JP: '優先度の名前（例: High）'
+    llm_description: Priority name such as Highest, High, Medium, Low.
+    form: llm
+  - name: labels
+    type: string
+    required: false
+    label:
+      en_US: Labels
+      zh_Hans: 标签
+      ja_JP: ラベル
+    human_description:
+      en_US: Comma-separated labels (replaces the existing ones); 'none' clears them
+      zh_Hans: 逗号分隔的标签（替换现有标签）；填 none 清空
+      ja_JP: カンマ区切りのラベル（既存のラベルを置き換え）。none で全削除
+    llm_description: Comma-separated labels; they replace the issue's labels. 'none' removes all labels.
+    form: llm
+  - name: due_date
+    type: string
+    required: false
+    label:
+      en_US: Due Date
+      zh_Hans: 截止日期
+      ja_JP: 期限
+    human_description:
+      en_US: YYYY-MM-DD; 'none' clears it
+      zh_Hans: YYYY-MM-DD；填 none 清空
+      ja_JP: YYYY-MM-DD。none で削除
+    llm_description: Due date as YYYY-MM-DD, or 'none' to clear it.
+    form: llm
+  - name: parent_key
+    type: string
+    required: false
+    label:
+      en_US: Parent Issue Key
+      zh_Hans: 父问题 Key
+      ja_JP: 親課題キー
+    human_description:
+      en_US: Parent issue (for a sub-task, or an epic in team-managed projects)
+      zh_Hans: 父问题（子任务的父问题，或团队管理项目中的史诗）
+      ja_JP: 親課題（サブタスクの親、またはチーム管理対象プロジェクトのエピック）
+    llm_description: Key of the parent issue, for a sub-task or to put the issue under an epic.
+    form: llm
+  - name: custom_fields
+    type: string
+    required: false
+    label:
+      en_US: Custom Fields (JSON)
+      zh_Hans: 自定义字段（JSON）
+      ja_JP: カスタム フィールド（JSON）
+    human_description:
+      en_US: 'JSON object of other fields, e.g. {"customfield_10016": 3}'
+      zh_Hans: '其他字段的 JSON 对象，如 {"customfield_10016": 3}'
+      ja_JP: 'その他のフィールドの JSON オブジェクト（例: {"customfield_10016": 3}）'
+    llm_description: 'Any other fields as a JSON object of field ID to value, e.g. {"customfield_10016": 3}.'
     form: llm
 extra:
   python:

@@ -7,9 +7,9 @@ subscription_schema:
     en_US: "Webhook Secret"
     ja_JP: "Webhookシークレット"
   help:
-    en_US: "Optional secret to validate incoming Zendesk webhook requests. If left empty, signature validation will be skipped."
-    ja_JP: "受信する Zendesk Webhook リクエストの検証に使用する任意のシークレット。空の場合は署名検証をスキップします。"
-    zh_Hans: "用于验证 Zendesk Webhook 请求的可选密钥。留空则跳过签名校验。"
+    en_US: "Signing secret used to validate incoming Zendesk webhook requests. Subscriptions created with API Token / OAuth fetch it from Zendesk automatically; for manual setup copy it from Admin Center > Webhooks > your webhook > Signing secret. If left empty, signature validation will be skipped."
+    ja_JP: "受信する Zendesk Webhook リクエストの検証に使用する署名シークレット。API トークン / OAuth で作成したサブスクリプションは Zendesk から自動取得します。手動設定の場合は管理センター > Webhook > 対象 Webhook > 署名シークレット からコピーしてください。空の場合は署名検証をスキップします。"
+    zh_Hans: "用于验证 Zendesk Webhook 请求的签名密钥。通过 API Token / OAuth 自动创建的订阅会从 Zendesk 自动获取；手动配置时请在管理中心 > Webhooks > 对应 Webhook > 签名密钥 中复制。留空则跳过签名校验。"
   url: https://developer.zendesk.com/documentation/webhooks/verifying/
 
 subscription_constructor:
@@ -82,9 +82,9 @@ subscription_constructor:
       url: https://developer.zendesk.com/api-reference/introduction/security-and-auth/#api-token
     email:
       help:
-        en_US: Your Zendesk admin email address
-        ja_JP: Zendesk 管理者のメールアドレス
-        zh_Hans: 你的 Zendesk 管理员邮箱地址
+        en_US: Email of a Zendesk admin (webhook management requires the admin role)
+        ja_JP: Zendesk 管理者のメールアドレス（Webhook の管理には管理者ロールが必要です）
+        zh_Hans: Zendesk 管理员邮箱（管理 Webhook 需要管理员角色）
       label:
         en_US: Email Address
         ja_JP: メールアドレス

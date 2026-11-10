@@ -3,28 +3,130 @@ identity:
   author: langgenius
   label:
     en_US: Get Tasks By List Id
-    zh_CN: 根据列表ID获取任务
+    zh_Hans: 根据列表ID获取任务
     ja_JP: リストIDでタスクを取得
 description:
   human:
     en_US: Get all tasks from the Microsoft To Do list by list id
-    zh_CN: 根据列表ID从 Microsoft To Do 列表获取所有任务
+    zh_Hans: 根据列表ID从 Microsoft To Do 列表获取所有任务
     ja_JP: Microsoft To Do リストからリストIDで全タスクを取得
-  llm: Get all tasks from the Microsoft To Do list by list id
+  llm: 'Get the tasks of one Microsoft To Do list, not completed ones by default (status_filter: not_completed, completed
+    or all).'
 parameters:
 - name: list_id
   type: string
   required: true
   label:
     en_US: List Id
-    zh_CN: 列表ID
+    zh_Hans: 列表ID
     ja_JP: リストID
   human_description:
     en_US: The id of the list to get
-    zh_CN: 要获取的列表ID
+    zh_Hans: 要获取的列表ID
     ja_JP: 取得するリストのID
   llm_description: The id of the list to get, type is string
   form: llm
+- name: status_filter
+  type: select
+  required: false
+  form: llm
+  label:
+    en_US: Status
+    zh_Hans: 状态
+    ja_JP: 状態
+  human_description:
+    en_US: 'Which tasks: not completed (default), completed, or all'
+    zh_Hans: 返回哪些任务：未完成（默认）、已完成或全部
+    ja_JP: '対象のタスク: 未完了（既定）、完了、すべて'
+  llm_description: not_completed (default), completed or all.
+  default: not_completed
+  options:
+  - value: not_completed
+    label:
+      en_US: Not completed
+      zh_Hans: 未完成
+      ja_JP: 未完了
+  - value: completed
+    label:
+      en_US: Completed
+      zh_Hans: 已完成
+      ja_JP: 完了
+  - value: all
+    label:
+      en_US: All
+      zh_Hans: 全部
+      ja_JP: すべて
+- name: limit
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum items (default 1000)
+    zh_Hans: 最多返回条数（默认 1000）
+    ja_JP: 最大件数（既定 1000）
+  llm_description: Maximum number of items to return, default 1000, up to 1000.
+  default: 1000
+  min: 1
+  max: 1000
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    tasks:
+      type: array
+      description: Tasks
+      items:
+        type: object
+        properties:
+          task_id:
+            type: string
+            description: Task ID
+          title:
+            type: string
+            description: Title
+          status:
+            type: string
+            description: notStarted, inProgress, completed, waitingOnOthers or deferred
+          body_text:
+            type: string
+            description: Notes
+          due_date:
+            type: string
+            description: Due date and time
+          created_date:
+            type: string
+            description: Created (UTC)
+          importance:
+            type: string
+            description: low, normal or high
+          reminder:
+            type: string
+            description: Reminder date and time, empty if none
+    count:
+      type: integer
+      description: Number of tasks
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_tasks_by_list_id.py

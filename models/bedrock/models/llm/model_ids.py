@@ -10,6 +10,7 @@ BEDROCK_MODEL_IDS = {
     'anthropic claude 5': {
         'Opus 5.5': 'anthropic.claude-opus-5-5',
         'Sonnet 5.5': 'anthropic.claude-sonnet-5-5',
+        'Haiku 5.5': 'anthropic.claude-haiku-5-5',
         'Fable 5.1': 'anthropic.claude-fable-5-1',
         'Opus 5': 'anthropic.claude-opus-5',
         'Sonnet 5': 'anthropic.claude-sonnet-5',
@@ -195,11 +196,13 @@ def resolve_japan_profile_id(model_id, region_name):
 # (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
 # converse returns ValidationException). Geo profile coverage varies per
 # model (live-verified via list-inference-profiles): Opus 5.5, Opus 5 and
-# Sonnet 5 have us./eu./au. geo profiles, Sonnet 5.5 us./eu., Fable 5.1 and
-# Fable 5 only us. — there is no apac. geo profile for any of them. Opus 5.5
-# also has a jp. profile, which is not wired up here yet. See the model cards:
+# Sonnet 5 have us./eu./au. geo profiles, Sonnet 5.5 us./eu., Haiku 5.5
+# us./eu./au., Fable 5.1 and Fable 5 only us. — there is no apac. geo profile
+# for any of them. Opus 5.5 and Haiku 5.5 also have a jp. profile, which is
+# not wired up here yet. See the model cards:
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-5-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-1.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-opus-5.html
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
@@ -207,6 +210,7 @@ def resolve_japan_profile_id(model_id, region_name):
 CLAUDE5_PROFILE_PREFIXES = {
     'anthropic.claude-opus-5-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-sonnet-5-5': ('us', 'eu', 'global'),
+    'anthropic.claude-haiku-5-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-fable-5-1': ('us', 'global'),
     'anthropic.claude-opus-5': ('us', 'eu', 'au', 'global'),
     'anthropic.claude-sonnet-5': ('us', 'eu', 'au', 'global'),

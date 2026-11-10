@@ -27,6 +27,15 @@ class TestClaude5CacheRegistration:
             assert cfg["min_tokens"] == 512
             assert cfg["supported_fields"] == ["system", "messages", "tools"]
 
+    def test_haiku55_supported_with_min_512(self):
+        # Haiku 5.5 model card: min 512 tokens, 4 checkpoints, system/messages/tools
+        assert cache_config.is_cache_supported("anthropic.claude-haiku-5-5")
+        assert cache_config.is_cache_supported("global.anthropic.claude-haiku-5-5")
+        cfg = cache_config.get_cache_config("us.anthropic.claude-haiku-5-5")
+        assert cfg["min_tokens"] == 512
+        assert cfg["max_checkpoints"] == 4
+        assert cfg["supported_fields"] == ["system", "messages", "tools"]
+
     def test_opus5_supported_with_min_512(self):
         # Opus 5 model card: min 512 tokens per cache checkpoint
         assert cache_config.is_cache_supported("anthropic.claude-opus-5")

@@ -1,0 +1,123 @@
+identity:
+  name: trello_create_label
+  author: langgenius
+  label:
+    en_US: Create Label
+    zh_Hans: 创建标签
+    ja_JP: ラベルを作成
+description:
+  human:
+    en_US: Create a label on a board
+    zh_Hans: 在看板上创建标签
+    ja_JP: ボードにラベルを作成
+  llm: Create a label on a Trello board.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_Hans: 看板 ID
+    ja_JP: ボード ID
+  human_description:
+    en_US: Board ID (from the list or search tools)
+    zh_Hans: 看板 ID（可从列表或搜索工具获取）
+    ja_JP: ボード ID（一覧または検索ツールから）
+  llm_description: The board ID, from fetch_all_boards or search.
+  form: llm
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: Label name
+    zh_Hans: 标签名称
+    ja_JP: ラベル名
+  llm_description: The label name.
+  form: llm
+- name: color
+  type: select
+  required: false
+  label:
+    en_US: Color
+    zh_Hans: 颜色
+    ja_JP: 色
+  human_description:
+    en_US: Label color
+    zh_Hans: 标签颜色
+    ja_JP: ラベルの色
+  llm_description: green, yellow, orange, red, purple, blue, sky, lime, pink, black, or none.
+  form: llm
+  options:
+  - value: green
+    label:
+      en_US: green
+      zh_Hans: green
+      ja_JP: green
+  - value: yellow
+    label:
+      en_US: yellow
+      zh_Hans: yellow
+      ja_JP: yellow
+  - value: orange
+    label:
+      en_US: orange
+      zh_Hans: orange
+      ja_JP: orange
+  - value: red
+    label:
+      en_US: red
+      zh_Hans: red
+      ja_JP: red
+  - value: purple
+    label:
+      en_US: purple
+      zh_Hans: purple
+      ja_JP: purple
+  - value: blue
+    label:
+      en_US: blue
+      zh_Hans: blue
+      ja_JP: blue
+  - value: sky
+    label:
+      en_US: sky
+      zh_Hans: sky
+      ja_JP: sky
+  - value: lime
+    label:
+      en_US: lime
+      zh_Hans: lime
+      ja_JP: lime
+  - value: pink
+    label:
+      en_US: pink
+      zh_Hans: pink
+      ja_JP: pink
+  - value: black
+    label:
+      en_US: black
+      zh_Hans: black
+      ja_JP: black
+  - value: none
+    label:
+      en_US: none
+      zh_Hans: none
+      ja_JP: none
+output_schema:
+  type: object
+  properties:
+    label_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_create_label.py
