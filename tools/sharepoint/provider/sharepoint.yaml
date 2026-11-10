@@ -210,6 +210,7 @@ tools:
 - tools/sharepoint_delete_item.yaml
 - tools/sharepoint_list_files.yaml
 - tools/sharepoint_download_file.yaml
+- tools/sharepoint_read_file.yaml
 - tools/sharepoint_upload_file.yaml
 - tools/sharepoint_update_file.yaml
 - tools/sharepoint_sign_out.yaml

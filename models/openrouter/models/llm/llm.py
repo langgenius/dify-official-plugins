@@ -8,6 +8,7 @@ import requests
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import (
     AIModelEntity,
+    FetchFrom,
     I18nObject,
     ModelFeature,
     ParameterRule,
@@ -25,6 +26,8 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     TextPromptMessageContent,
     ImagePromptMessageContent,
+    DocumentPromptMessageContent,
+    MultiModalPromptMessageContent,
     PromptMessageContentType,
     AssistantPromptMessage,
     PromptMessageContent,
@@ -58,55 +61,47 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             "X-Title": "Dify",
         }
 
-    def _convert_files_to_text(
-        self, messages: list[PromptMessage]
+    @staticmethod
+    def _file_description(content: MultiModalPromptMessageContent) -> str:
+        if isinstance(content, ImagePromptMessageContent):
+            label = "Image file"
+        elif isinstance(content, DocumentPromptMessageContent):
+            label = "Document file"
+        else:
+            return f"[File uploaded]: {content.url}"
+        return f"[{label} uploaded]: {content.url}" if content.url else f"[{label} uploaded]"
+
+    def _prepare_media(
+        self, messages: list[PromptMessage], *, vision: bool, video: bool
     ) -> list[PromptMessage]:
-        """
-        Convert any file content in messages to text descriptions to avoid validation issues
-        """
-        converted_messages = []
+        """Keep supported media structured and describe other files as text."""
+        if vision and video:
+            return messages
+        prepared = messages
+        for index, message in enumerate(messages):
+            if not isinstance(message, UserPromptMessage) or not isinstance(message.content, list):
+                continue
 
-        for message in messages:
-            if isinstance(message, UserPromptMessage) and isinstance(
-                message.content, list
-            ):
-                # Process multimodal content
-                text_parts = []
-                for content in message.content:
-                    if isinstance(content, TextPromptMessageContent):
-                        text_parts.append(content.data)
-                    elif isinstance(content, ImagePromptMessageContent):
-                        # Convert image to text description
-                        if hasattr(content, "url") and content.url:
-                            text_parts.append(f"[Image file uploaded]: {content.url}")
-                        else:
-                            text_parts.append("[Image file uploaded]")
-                    elif (
-                        hasattr(content, "type")
-                        and content.type == PromptMessageContentType.DOCUMENT
-                    ):
-                        # Handle document files like PDF
-                        if hasattr(content, "url") and content.url:
-                            text_parts.append(
-                                f"[Document file uploaded]: {content.url}"
-                            )
-                        else:
-                            text_parts.append("[Document file uploaded]")
-                    else:
-                        # Handle any other content types
-                        if hasattr(content, "url"):
-                            text_parts.append(f"[File uploaded]: {content.url}")
-                        else:
-                            text_parts.append(str(content))
+            parts = []
+            for part in message.content:
+                supported = video if part.type == PromptMessageContentType.VIDEO else vision
+                if isinstance(part, TextPromptMessageContent) or supported:
+                    parts.append(part)
+                else:
+                    parts.append(TextPromptMessageContent(data=self._file_description(part)))
 
-                # Create new text-only message
-                converted_message = UserPromptMessage(content=" ".join(text_parts))
-                converted_messages.append(converted_message)
+            if not vision and all(isinstance(part, TextPromptMessageContent) for part in parts):
+                # Keep the plain string expected by text-only endpoints.
+                content = " ".join(part.data for part in parts)
+            elif parts != message.content:
+                content = parts
             else:
-                # Keep non-multimodal messages as is
-                converted_messages.append(message)
+                continue
 
-        return converted_messages
+            if prepared is messages:
+                prepared = messages.copy()
+            prepared[index] = message.model_copy(update={"content": content})
+        return prepared
 
     @staticmethod
     def _set_reasoning_params(model_parameters: dict):
@@ -219,11 +214,18 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
 
-        # Only convert file content to text descriptions for models that don't support vision
         model_schema = self.get_model_schema(model, credentials)
-        model_features = getattr(model_schema, "features", None) or []
-        if ModelFeature.VISION not in model_features:
-            prompt_messages = self._convert_files_to_text(prompt_messages)
+        features = getattr(model_schema, "features", None) or []
+        vision = ModelFeature.VISION in features
+        # Catalog models and older custom configurations used the vision switch for all media.
+        video = vision
+        if (
+            model_schema
+            and model_schema.fetch_from == FetchFrom.CUSTOMIZABLE_MODEL
+            and "video_support" in credentials
+        ):
+            video = ModelFeature.VIDEO in features
+        prompt_messages = self._prepare_media(prompt_messages, vision=vision, video=video)
 
         if model in IMAGE_GENERATION_MODELS:
             model_parameters["modalities"] = ["image", "text"]

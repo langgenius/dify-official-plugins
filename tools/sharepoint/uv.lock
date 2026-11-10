@@ -1072,6 +1072,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pypdf"
+version = "7.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/19/3e8223d0618bd441eb2b3e105de83ce4187e76f5823d876f60a109ee9072/pypdf-7.0.0.tar.gz", hash = "sha256:061aa78dec270854c912dde80c6bc060486fa955399d643da27ea30afeb6571b", size = 7201622, upload-time = "2026-11-06T12:10:03.447Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/21/e83122a25e334c718a4da67004fa94acd7215fe9f8e63a9d7c7f979eb52b/pypdf-7.0.0-py3-none-any.whl", hash = "sha256:112a2c7cbabefd8dfe498f7a13977e575e762d58cdb0d832acb8886922602c6f", size = 413949, upload-time = "2026-11-06T12:10:01.205Z" },
+]
+
+[[package]]
 name = "python-dotenv"
 version = "1.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1252,6 +1261,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "cryptography" },
     { name = "dify-plugin" },
+    { name = "pypdf" },
     { name = "requests" },
     { name = "werkzeug" },
 ]
@@ -1260,6 +1270,7 @@ dependencies = [
 requires-dist = [
     { name = "cryptography", specifier = ">=44.0.0" },
     { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "pypdf", specifier = ">=5.1.0" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "werkzeug", specifier = ">=3.1.8" },
 ]

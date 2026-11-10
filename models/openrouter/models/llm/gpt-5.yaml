@@ -3,6 +3,7 @@ label:
   en_US: gpt-5
 model_type: llm
 features:
+  - structured-output
   - multi-tool-call
   - agent-thought
   - stream-tool-call

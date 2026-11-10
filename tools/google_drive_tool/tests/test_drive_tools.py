@@ -52,7 +52,7 @@ def test_search_needs_a_filter(http):
 def test_list_folder_defaults_to_root(http):
     http.on("GET", f"{API}/files", {"files": [{"id": "f1", "name": "Docs", "mimeType": "application/vnd.google-apps.folder"}]})
     result = run(make_tool(GoogleDriveListFolderTool, OAUTH))
-    assert http.calls[0].params["q"] == "'root' in parents and trashed = false" and result.vars["files"][0]["is_folder"]
+    assert http.calls[0].params["q"] == "'root' in parents and trashed = false" and result.vars["items"][0]["is_folder"]
 
 
 def test_read_text_exports_docs_as_markdown_with_fallback(http):
@@ -60,7 +60,7 @@ def test_read_text_exports_docs_as_markdown_with_fallback(http):
     http.on("GET", "/files/d1", DOC)
     result = run(make_tool(GoogleDriveReadTextTool, OAUTH), {"file_id": "d1"})
     exports = [c.params["mimeType"] for c in http.calls if c.url.endswith("/export")]
-    assert exports == ["text/markdown", "text/plain"] and result.vars["text"] == "plain text"
+    assert exports == ["text/markdown", "text/plain"] and result.vars["content"] == "plain text"
 
 
 def test_read_text_refuses_binary(http):

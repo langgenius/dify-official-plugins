@@ -30,8 +30,9 @@ output_schema:
   properties:
     title:
       type: string
-    text:
+    content:
       type: string
+      description: The document as Markdown
     headings:
       type: array
       items:
