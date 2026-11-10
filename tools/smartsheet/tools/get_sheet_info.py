@@ -39,7 +39,7 @@ class GetSheetInfoTool(Tool):
                 column_info = {
                     "id": str(column.id),
                     "title": column.title,
-                    "type": column.type,
+                    "type": str(column.type),
                     "index": column.index,
                     "primary": column.primary
                 }
@@ -78,4 +78,4 @@ class GetSheetInfoTool(Tool):
             yield self.create_text_message(error_message)
         except Exception as e:
             error_message = f"Error: {str(e)}"
-            yield self.create_text_message(error_message) 
+            yield self.create_text_message(error_message)

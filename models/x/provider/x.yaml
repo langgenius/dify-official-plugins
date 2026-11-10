@@ -21,9 +21,13 @@ help:
   url:
     en_US: https://x.ai/api
 icon_large:
-  en_US: x-ai-logo.svg
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: x-ai-logo.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: xAI
 provider: x

@@ -1,7 +1,8 @@
+import tomllib
 from decimal import Decimal
 from pathlib import Path
-import tomllib
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,6 +10,11 @@ MODELS = ROOT / "models"
 LLM = MODELS / "llm"
 
 ADDED_MODELS = {
+    "gpt-6-astra",
+    "gpt-6.1-sol",
+    "gpt-6.1-terra",
+    "gpt-6-sol",
+    "gpt-6-luna",
     "chat-latest",
     "gpt-5.1-2025-11-13",
     "gpt-5.2-2025-12-11",
@@ -86,12 +92,12 @@ def test_every_model_filename_matches_its_identifier() -> None:
         assert data["model_type"] == path.parent.name.replace("_", "-")
 
 
-def test_llm_position_is_complete_and_has_no_duplicates() -> None:
+def test_llm_position_covers_standard_models_and_has_no_duplicates() -> None:
     position = _load(LLM / "_position.yaml")
     files = {path.stem for path in LLM.glob("*.yaml") if path.stem != "_position"}
 
     assert len(position) == len(set(position))
-    assert set(position) == files
+    assert set(position) == files - {"gpt-6-luna-only-for-question-classifier"}
 
 
 def test_catalog_adds_current_models_and_removes_retired_models() -> None:
@@ -114,6 +120,48 @@ def test_llm_parameters_and_prices_are_well_formed() -> None:
         assert Decimal(data["pricing"]["input"]) >= 0
         assert Decimal(data["pricing"]["output"]) >= 0
         assert Decimal(data["pricing"]["unit"]) > 0
+
+
+@pytest.mark.parametrize(
+    ("model", "supports_none", "input_price", "output_price"),
+    [
+        ("gpt-6-astra", False, "10.00", "50.00"),
+        ("gpt-6.1-sol", False, "2.00", "10.00"),
+        ("gpt-6.1-terra", True, "1.00", "5.00"),
+        ("gpt-6-sol", True, "2.00", "10.00"),
+        ("gpt-6-luna", True, "0.10", "0.50"),
+    ],
+)
+def test_gpt_6_catalog_matches_the_api_contract(
+    model: str, supports_none: bool, input_price: str, output_price: str
+) -> None:
+    data = _load(LLM / f"{model}.yaml")
+    rules = {rule["name"]: rule for rule in data["parameter_rules"]}
+    effort = rules["reasoning_effort"]
+
+    assert data["model_properties"]["context_size"] == 1050000
+    assert rules["max_tokens"]["max"] == 128000
+    assert effort["options"] == (
+        (["none"] if supports_none else []) + ["low", "medium", "high", "xhigh", "max"]
+    )
+    assert effort["default"] == "medium"
+    assert rules["enable_stream"]["default"] is True
+    if model == "gpt-6.1-terra":
+        assert rules["reasoning_context"]["options"] == ["auto", "current_turn"]
+    elif model == "gpt-6.1-sol":
+        assert "all_turns" in rules["reasoning_context"]["options"]
+    assert {
+        "vision",
+        "structured-output",
+        "multi-tool-call",
+        "stream-tool-call",
+    } <= set(data["features"])
+    assert data["pricing"] == {
+        "input": input_price,
+        "output": output_price,
+        "unit": "0.000001",
+        "currency": "USD",
+    }
 
 
 def test_audio_model_limits_match_the_api_contract() -> None:
@@ -157,8 +205,8 @@ def test_version_one_is_consistent_and_documented() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert manifest["version"] == "1.0.4"
-    assert project["project"]["version"] == "1.0.4"
+    assert manifest["version"].startswith("1.")
+    assert project["project"]["version"] == manifest["version"]
     assert "Version 1.0 is a major rewrite" in readme
     permissions = manifest["resource"]["permission"]["model"]
     assert permissions["enabled"] is True

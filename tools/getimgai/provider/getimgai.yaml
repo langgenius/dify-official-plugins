@@ -24,7 +24,8 @@ identity:
   author: Matri Qi
   description:
     en_US: GetImg API integration for image generation and scraping.
-  icon: icon.svg
+  icon: icon.png
+  icon_dark: icon-dark.png
   label:
     en_US: getimg.ai
     zh_CN: getimg.ai

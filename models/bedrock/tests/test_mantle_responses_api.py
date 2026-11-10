@@ -25,12 +25,14 @@ from __future__ import annotations
 
 import importlib
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import httpx
 import openai
 import pytest
+import yaml
 from dify_plugin.entities.model.llm import LLMUsage
 
 llm_mod = importlib.import_module("models.llm.llm")
@@ -47,12 +49,17 @@ UserPromptMessage = llm_mod.UserPromptMessage
 # the elif chain in _generate_with_responses_api and the openai.yaml
 # model_name options.
 MANTLE_MODELS = [
+    ("openai.gpt-6.1-sol", "GPT-6.1 Sol"),
+    ("openai.gpt-6-sol", "GPT-6 Sol"),
+    ("openai.gpt-6-luna", "GPT-6 Luna"),
+    ("openai.gpt-6-astra", "GPT-6 Astra"),
     ("openai.gpt-5.6-sol", "GPT-5.6 Sol"),
     ("openai.gpt-5.6-terra", "GPT-5.6 Terra"),
     ("openai.gpt-5.6-luna", "GPT-5.6 Luna"),
     ("openai.gpt-5.5", "GPT-5.5"),
     ("openai.gpt-5.4", "GPT-5.4"),
 ]
+GPT6_MODEL_IDS = [m[0] for m in MANTLE_MODELS if m[0].startswith("openai.gpt-6")]
 
 
 # Minimal stand-ins for the openai Responses API stream events. The handlers
@@ -63,6 +70,11 @@ class ResponseTextDeltaEvent:
 
 
 class ResponseCompletedEvent:
+    def __init__(self, response=None) -> None:
+        self.response = response
+
+
+class ResponseIncompleteEvent:
     def __init__(self, response=None) -> None:
         self.response = response
 
@@ -118,7 +130,20 @@ class TestIsBedrockMantleModel:
     def test_other_models_are_not_in_set(self, model_id: str) -> None:
         assert BedrockLLM._is_bedrock_mantle_model(model_id) is False
 
-    def test_set_is_exactly_the_five_documented_models(self) -> None:
+    @pytest.mark.parametrize(
+        "model_id, name", MANTLE_MODELS, ids=[m[0] for m in MANTLE_MODELS]
+    )
+    def test_model_is_selectable_in_openai_family(self, model_id: str, name: str) -> None:
+        # invoke() rejects a model_name that is not an openai.yaml option before
+        # the request reaches the mantle path, so both lists must know the model.
+        schema = yaml.safe_load(
+            (Path(__file__).resolve().parent.parent / "models" / "llm" / "openai.yaml").read_text()
+        )
+        rule = next(r for r in schema["parameter_rules"] if r["name"] == "model_name")
+        assert name in rule["options"]
+        assert llm_mod.model_ids.get_model_id("openai", name) == model_id
+
+    def test_set_is_exactly_the_documented_models(self) -> None:
         # Belt-and-braces: a new mantle model must be added here deliberately
         # (and covered by the tests above), not accidentally.
         assert BedrockLLM._BEDROCK_MANTLE_MODEL_IDS == frozenset(
@@ -228,10 +253,90 @@ class TestGetMantleAuthToken:
         fake.provide_token.assert_called_once()
         kwargs = fake.provide_token.call_args.kwargs
         assert kwargs["region"] == "us-west-2"
-        creds = kwargs["aws_credentials_provider"]
+        provider = kwargs["aws_credentials_provider"]
+        # aws-bedrock-token-generator calls provider.load() — must not be a
+        # raw botocore Credentials object.
+        assert hasattr(provider, "load")
+        creds = provider.load()
         assert creds.access_key == "AKIAEXAMPLE"
         assert creds.secret_key == "secret"
         assert creds.token == "session"
+
+    @pytest.mark.parametrize("session_token", ["", "   "])
+    def test_access_secret_key_blank_session_token_is_omitted(
+        self, session_token: str
+    ) -> None:
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        credentials = {
+            "auth_method": "Access_Secret_Key",
+            "aws_region": "us-west-2",
+            "aws_access_key_id": "AKIAEXAMPLE",
+            "aws_secret_access_key": "secret",
+            "aws_session_token": session_token,
+        }
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(credentials)
+        creds = fake.provide_token.call_args.kwargs["aws_credentials_provider"].load()
+        assert creds.token is None
+
+    def test_missing_auth_method_uses_configured_access_keys(self) -> None:
+        # Same default as get_bedrock_client: keys in credentials must be used.
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        credentials = {
+            "aws_region": "us-east-1",
+            "aws_access_key_id": "AKIAEXAMPLE",
+            "aws_secret_access_key": "secret",
+        }
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(credentials)
+        kwargs = fake.provide_token.call_args.kwargs
+        creds = kwargs["aws_credentials_provider"].load()
+        assert kwargs["region"] == "us-east-1"
+        assert creds.access_key == "AKIAEXAMPLE"
+
+    def test_iam_role_ignores_leftover_access_keys(self) -> None:
+        # Switching auth_method in the UI can leave AK/SK in the payload.
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            instance._get_mantle_auth_token(
+                {
+                    "auth_method": "IAM_Role",
+                    "aws_region": "us-west-2",
+                    "aws_access_key_id": "AKIA-SHOULD-IGNORE",
+                    "aws_secret_access_key": "secret-should-ignore",
+                }
+            )
+        fake.provide_token.assert_called_once_with(region="us-west-2")
+
+    def test_api_key_ignores_leftover_access_keys(self) -> None:
+        instance = _make_instance()
+        fake = self._fake_token_module()
+        with patch.dict(sys.modules, {"aws_bedrock_token_generator": fake}):
+            token = instance._get_mantle_auth_token(
+                {
+                    "auth_method": "API_Key",
+                    "bedrock_api_key": "long-term-key",
+                    "aws_access_key_id": "AKIA-SHOULD-IGNORE",
+                    "aws_secret_access_key": "secret-should-ignore",
+                }
+            )
+        assert token == "long-term-key"
+        fake.provide_token.assert_not_called()
+
+    def test_static_provider_satisfies_real_provide_token_load_contract(self) -> None:
+        # Regression for Credentials-has-no-load: sign locally, no network.
+        from aws_bedrock_token_generator import provide_token
+
+        provider = llm_mod._StaticCredentialsProvider(
+            access_key="AKIAEXAMPLE",
+            secret_key="secret",
+            token="session",
+        )
+        token = provide_token(region="us-west-2", aws_credentials_provider=provider)
+        assert token.startswith("bedrock-api-key-")
 
     def test_iam_role_auth_uses_environment_credentials_and_default_region(
         self,
@@ -456,7 +561,9 @@ class TestGenerateWithResponsesApi:
         # GPT-5.5/5.6 reject top_p outright and GPT-5.4 rejects it once
         # reasoning is active — the mantle path must never forward it.
         _, _, mock_client = self._invoke(
-            self._make_instance(), model_id=model_id, model_parameters={"top_p": 0.9}
+            self._make_instance(),
+            model_id=model_id,
+            model_parameters={"top_p": 0.9, "cross-region": "global"},
         )
         assert "top_p" not in mock_client.responses.create.call_args.kwargs
 
@@ -509,9 +616,71 @@ class TestGenerateWithResponsesApi:
         self, model_id: str, expected_name: str
     ) -> None:
         instance = self._make_instance()
-        self._invoke(instance, model_id=model_id)
+        self._invoke(
+            instance, model_id=model_id, model_parameters={"cross-region": "global"}
+        )
         pricing_credentials = instance._handle_responses_api_response.call_args[0][1]
         assert pricing_credentials["model_parameters"]["model_name"] == expected_name
+
+    @pytest.mark.parametrize("model_id", GPT6_MODEL_IDS)
+    @pytest.mark.parametrize(
+        ("cross_region", "region", "prefix"),
+        [
+            ("geographic", "us-east-1", "us"),
+            ("geographic", "ca-central-1", "us"),
+            ("global", "eu-west-1", "global"),
+        ],
+    )
+    def test_gpt6_goes_to_bedrock_runtime_with_inference_profile(
+        self, model_id: str, cross_region: str, region: str, prefix: str
+    ) -> None:
+        # bedrock-mantle serves GPT-6 in few regions, so GPT-6 uses
+        # bedrock-runtime's OpenAI-compatible endpoint with a us./global.
+        # profile (the bare ID is rejected there: on-demand not supported).
+        _, openai_ctor, mock_client = self._invoke(
+            self._make_instance(),
+            model_id=model_id,
+            credentials={"aws_region": region},
+            model_parameters={"cross-region": cross_region},
+        )
+        assert openai_ctor.call_args.kwargs["base_url"] == (
+            f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
+        )
+        assert mock_client.responses.create.call_args.kwargs["model"] == (
+            f"{prefix}.{model_id}"
+        )
+
+    @pytest.mark.parametrize(
+        ("cross_region", "region"),
+        [("disabled", "us-east-1"), ("geographic", "eu-west-1")],
+    )
+    def test_gpt6_without_a_profile_for_the_region_raises_bad_request(
+        self, cross_region: str, region: str
+    ) -> None:
+        with pytest.raises(llm_mod.InvokeBadRequestError, match="Cross-Region Inference"):
+            self._invoke(
+                self._make_instance(),
+                model_id="openai.gpt-6-sol",
+                credentials={"aws_region": region},
+                model_parameters={"cross-region": cross_region},
+            )
+
+    def test_gpt5_models_stay_on_mantle_with_the_bare_id(self) -> None:
+        _, openai_ctor, mock_client = self._invoke(
+            self._make_instance(),
+            model_id="openai.gpt-5.6-sol",
+            credentials={"aws_region": "us-east-2"},
+            model_parameters={"cross-region": "global"},
+        )
+        assert openai_ctor.call_args.kwargs["base_url"] == (
+            "https://bedrock-mantle.us-east-2.api.aws/openai/v1"
+        )
+        assert mock_client.responses.create.call_args.kwargs["model"] == "openai.gpt-5.6-sol"
+
+    def test_gpt61_sol_has_global_pricing(self) -> None:
+        # Model card: Global CRIS $2.00 / $10.00 per 1M tokens (272K input or fewer)
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", "GPT-6.1 Sol", [])
+        assert (pricing["input"], pricing["output"]) == ("0.002", "0.01")
 
     def test_explicit_model_name_overrides_resolution(self) -> None:
         instance = self._make_instance()
@@ -685,6 +854,38 @@ class TestHandleResponsesApiStream:
         assert final.delta.index == 1  # counted from the yielded delta, not the event
         instance._calc_response_usage.assert_called_once_with(
             "openai.gpt-5.5", {"aws_region": "us-west-2"}, 3, 5
+        )
+
+    @pytest.mark.parametrize(
+        ("reason", "expected"),
+        [
+            ("max_output_tokens", "length"),
+            ("content_filter", "content_filter"),
+            (None, "incomplete"),
+        ],
+    )
+    def test_incomplete_event_yields_final_chunk_with_usage(
+        self, reason, expected
+    ) -> None:
+        # Live: a GPT-6 / GPT-5.6 stream stopped by max_output_tokens ends with
+        # ResponseIncompleteEvent (status "incomplete", usage attached).
+        instance, usage = self._make_instance()
+        incomplete = ResponseIncompleteEvent(
+            response=SimpleNamespace(
+                usage=SimpleNamespace(input_tokens=13, output_tokens=20),
+                incomplete_details=SimpleNamespace(reason=reason),
+            )
+        )
+        chunks = list(
+            instance._handle_responses_api_stream(
+                "openai.gpt-5.5", {}, [ResponseTextDeltaEvent("Hi"), incomplete], []
+            )
+        )
+        assert len(chunks) == 2
+        assert chunks[-1].delta.finish_reason == expected
+        assert chunks[-1].delta.usage is usage
+        instance._calc_response_usage.assert_called_once_with(
+            "openai.gpt-5.5", {}, 13, 20
         )
 
     def test_empty_deltas_and_unknown_events_are_skipped(self) -> None:

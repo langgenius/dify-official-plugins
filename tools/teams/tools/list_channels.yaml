@@ -33,6 +33,42 @@ parameters:
       zh_Hant: 要列出頻道的團隊 ID
     llm_description: The ID of the Microsoft Teams team to list channels from
     form: llm
+output_schema:
+  type: object
+  properties:
+    channels:
+      type: array
+      description: Channels of the team
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Channel ID
+          name:
+            type: string
+            description: Channel name
+          description:
+            type: string
+            description: Description
+          membership_type:
+            type: string
+            description: standard, private or shared
+          web_url:
+            type: string
+            description: Link to the channel
+          email:
+            type: string
+            description: Channel email address
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_channels.py

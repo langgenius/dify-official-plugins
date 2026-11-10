@@ -1,10 +1,12 @@
 from typing import Any
 
+from provider.client import create_client
+
 from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 try:
-    from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
+    from simple_salesforce import SalesforceAuthenticationFailed
 except ImportError:
     raise ImportError(
         "simple-salesforce is declared in pyproject.toml. Run `uv sync` in the plugin directory."
@@ -18,38 +20,17 @@ class SalesforceProvider(ToolProvider):
         Validate Salesforce credentials by attempting to authenticate
         """
         try:
-            # Extract credentials
-            username = credentials.get("username")
-            password = credentials.get("password")
-            security_token = credentials.get("security_token")
-            domain = credentials.get("domain")  # Optional: 'test' for sandbox, None for production
-            
-            # Validate required fields
-            if not username:
-                raise ToolProviderCredentialValidationError("Salesforce username is required.")
-            
-            if not password:
-                raise ToolProviderCredentialValidationError("Salesforce password is required.")
-            
-            if not security_token:
-                raise ToolProviderCredentialValidationError("Salesforce security token is required.")
-            
             # Attempt to authenticate with Salesforce
             try:
                 # Create Salesforce connection
-                sf = Salesforce(
-                    username=username,
-                    password=password,
-                    security_token=security_token,
-                    domain=domain if domain else None
-                )
+                sf = create_client(credentials)
                 
                 # Test the connection by making a simple query
                 sf.query("SELECT Id FROM User LIMIT 1")
                 
             except SalesforceAuthenticationFailed as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Invalid Salesforce credentials. Please check your username, password, and security token. Error: {str(e)}"
+                    f"Invalid Salesforce credentials. Please check the credentials for your selected authentication method. Error: {str(e)}"
                 )
             except Exception as e:
                 raise ToolProviderCredentialValidationError(

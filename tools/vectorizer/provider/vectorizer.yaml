@@ -34,7 +34,7 @@ identity:
       Convert your PNG and JPG images to SVG vectors quickly and easily. Fully
       automatically. Using AI.
     zh_Hans: 一个将 PNG 和 JPG 图像快速轻松地转换为 SVG 矢量图的工具。
-  icon: icon.png
+  icon: icon.svg
   label:
     en_US: Vectorizer.AI
     zh_Hans: Vectorizer.AI

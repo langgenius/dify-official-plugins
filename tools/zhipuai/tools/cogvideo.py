@@ -3,15 +3,15 @@ from typing import Any, Generator
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from zhipuai import ZhipuAI
-from zhipuai.types.video import VideoObject
+from zai import ZhipuAiClient
+from zai.types.video import VideoObject
 
 
 class CogVideoTool(Tool):
     def _invoke(
             self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        client = ZhipuAI(
+        client = ZhipuAiClient(
             base_url=self.runtime.credentials["zhipuai_base_url"],
             api_key=self.runtime.credentials["zhipuai_api_key"],
         )
@@ -27,7 +27,7 @@ class CogVideoTool(Tool):
             return
         yield self.create_json_message(completion.model_dump())
 
-    def _start_video_generation(self, client: ZhipuAI,
+    def _start_video_generation(self, client: ZhipuAiClient,
                                 tool_parameters: dict[str, Any]) -> ToolInvokeMessage | VideoObject:
         model = tool_parameters.get("model", "")
         if not model:
@@ -57,7 +57,7 @@ class CogVideoTool(Tool):
         )
         return response
 
-    def _wait_for_completion(self, client: ZhipuAI, video_id: str,
+    def _wait_for_completion(self, client: ZhipuAiClient, video_id: str,
                              tool_parameters: dict[str, Any]) -> ToolInvokeMessage | VideoObject:
         """Wait for video generation completion and handle the result."""
         retry_count = tool_parameters.get("retry_count", 10)

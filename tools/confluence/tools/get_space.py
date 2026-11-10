@@ -1,10 +1,11 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class GetSpaceTool(Tool):
@@ -12,14 +13,13 @@ class GetSpaceTool(Tool):
         """
         Get info of a space in Confluence.
         """
-        confluence = auth(self.runtime.credentials)
+        confluence = yield from connect(self)
+        if confluence is None:
+            return
 
         space_key = tool_parameters.get("space_key")
 
-        space = confluence.get_space(
-            space_key=space_key,
-            expand=None,
-        )
+        space = confluence.get_space_by_key(space_key) if isinstance(confluence, ConfluenceV2) else confluence.get_space(space_key)
 
         if not space:
             yield self.create_text_message("Space not found")

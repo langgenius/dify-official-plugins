@@ -502,6 +502,7 @@ identity:
     ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスで、webhook トリガーのサポートがあります。
     zh_Hans: GitHub 是一个在线软件源代码托管服务平台，支持 webhook 触发器。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: GitHub Triggers
     zh_Hans: GitHub 触发器

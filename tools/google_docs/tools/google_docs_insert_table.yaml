@@ -1,0 +1,70 @@
+identity:
+  name: google_docs_insert_table
+  author: langgenius
+  label:
+    en_US: Insert Table
+    zh_Hans: 插入表格
+    ja_JP: 表を挿入
+description:
+  human:
+    en_US: Add a filled table at the end
+    zh_Hans: 在末尾添加填好内容的表格
+    ja_JP: 末尾に内容入りの表を追加
+  llm: Add a table at the end of a Google Doc, filled from a JSON grid; the first row is the header (bold by default).
+parameters:
+- name: document_id
+  type: string
+  required: true
+  label:
+    en_US: Document
+    zh_Hans: 文档
+    ja_JP: ドキュメント
+  human_description:
+    en_US: ID or URL of the document
+    zh_Hans: 文档的 ID 或 URL
+    ja_JP: ドキュメントの ID または URL
+  llm_description: The document ID or its URL (…/document/d/<id>/edit), e.g. from google_docs_find_documents.
+  form: llm
+- name: values
+  type: string
+  required: true
+  label:
+    en_US: Values (JSON)
+    zh_Hans: 值（JSON）
+    ja_JP: 値（JSON）
+  human_description:
+    en_US: e.g. [["Name","Score"],["Kim","90"]]
+    zh_Hans: 例如 [["Name","Score"],["Kim","90"]]
+    ja_JP: '例: [["Name","Score"],["Kim","90"]]'
+  llm_description: The table as JSON rows, e.g. [["Name", "Score"], ["Kim", "90"]].
+  form: llm
+- name: bold_header
+  type: boolean
+  required: false
+  label:
+    en_US: Bold Header
+    zh_Hans: 表头加粗
+    ja_JP: 見出しを太字
+  human_description:
+    en_US: Make the first row bold
+    zh_Hans: 第一行加粗
+    ja_JP: 1 行目を太字に
+  llm_description: Whether the first row is bold (default true).
+  form: llm
+  default: true
+output_schema:
+  type: object
+  properties:
+    rows:
+      type: integer
+    columns:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_docs_insert_table.py

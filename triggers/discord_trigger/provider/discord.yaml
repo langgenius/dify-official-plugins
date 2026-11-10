@@ -1,7 +1,7 @@
 subscription_constructor:
   parameters:
     - name: application_public_key
-      type: secret-input
+      type: string
       required: true
       label:
         en_US: Application Public Key

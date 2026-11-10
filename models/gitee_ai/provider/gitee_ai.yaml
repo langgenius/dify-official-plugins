@@ -20,9 +20,9 @@ help:
   url:
     en_US: https://ai.gitee.com/dashboard/settings/tokens
 icon_large:
-  en_US: Gitee-AI-Logo-full.svg
+  en_US: icon.svg
 icon_small:
-  en_US: Gitee-AI-Logo.svg
+  en_US: icon.svg
 label:
   en_US: Gitee AI
   zh_Hans: 模力方舟

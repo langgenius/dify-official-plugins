@@ -17,7 +17,6 @@ from anthropic.types import (
     MessageStartEvent,
     MessageStopEvent,
     MessageStreamEvent,
-    completion_create_params,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -128,6 +127,7 @@ class PromptCachingHandler:
         cache_creation_5m_input_tokens: int = 0,
         cache_creation_1h_input_tokens: int = 0,
         cache_creation_fallback_multiplier: float = CACHE_WRITE_5M_MULTIPLIER,
+        cache_read_multiplier: float = CACHE_READ_MULTIPLIER,
     ) -> int:
         adjusted = base_prompt_tokens
 
@@ -138,7 +138,7 @@ class PromptCachingHandler:
             adjusted += int(cache_creation_input_tokens * cache_creation_fallback_multiplier)
 
         if cache_read_input_tokens > 0:
-            adjusted += int(cache_read_input_tokens * cls.CACHE_READ_MULTIPLIER)
+            adjusted += int(cache_read_input_tokens * cache_read_multiplier)
 
         return adjusted
 
@@ -153,6 +153,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-sonnet-5",
         "claude-fable-5",
+        "claude-haiku-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-fable-5",
@@ -166,9 +167,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
     )
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -203,6 +206,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if self._prompt_cache_ttl == "1h":
             return PromptCachingHandler.CACHE_WRITE_1H_MULTIPLIER
         return PromptCachingHandler.CACHE_WRITE_5M_MULTIPLIER
+
+    @staticmethod
+    def _cache_read_multiplier(model: str) -> float:
+        if (model or "").lower() == "claude-fable-5-1":
+            return 0.025
+        return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
     @staticmethod
     def _get_cache_creation_input_tokens_by_ttl(usage: Any) -> tuple[int, int]:
@@ -430,9 +439,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
-            extra_model_kwargs["metadata"] = completion_create_params.Metadata(
-                user_id=user
-            )
+            extra_model_kwargs["metadata"] = {"user_id": user}
         self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
         self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)
@@ -899,6 +906,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             cache_creation_5m_input_tokens,
             cache_creation_1h_input_tokens,
             self._cache_write_fallback_multiplier(),
+            self._cache_read_multiplier(model),
         )
 
         usage = super()._calc_response_usage(
@@ -1132,6 +1140,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     cache_creation_5m_input_tokens,
                     cache_creation_1h_input_tokens,
                     self._cache_write_fallback_multiplier(),
+                    self._cache_read_multiplier(model),
                 )
                 
                 usage = super()._calc_response_usage(

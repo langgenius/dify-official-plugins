@@ -1,0 +1,15 @@
+[project]
+name = "typesafe-ai"
+version = "0.0.1"
+description = "Jev adapter for Dify question classifiers"
+requires-python = ">=3.12"
+dependencies = ["dify-plugin==0.10.2", "typesafe-sdk>=0.7.0,<0.8"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.12"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

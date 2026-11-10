@@ -16,6 +16,36 @@ description:
     zh_Hant: 列出您已加入的 Microsoft Teams 團隊
   llm: List the Microsoft Teams the user has joined using the Microsoft Graph API, returns team id, displayName and description
 parameters: []
+output_schema:
+  type: object
+  properties:
+    teams:
+      type: array
+      description: Teams the user belongs to
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Team ID
+          name:
+            type: string
+            description: Team name
+          description:
+            type: string
+            description: Description
+          web_url:
+            type: string
+            description: Link to the team
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_teams.py

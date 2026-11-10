@@ -44,7 +44,8 @@ identity:
   description:
     en_US: GitLab plugin, API v4 only.
     zh_Hans: 用于获取GitLab内容的插件，目前仅支持 API v4。
-  icon: gitlab.svg
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: GitLab
     zh_Hans: GitLab

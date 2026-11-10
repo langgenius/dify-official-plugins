@@ -18,9 +18,13 @@ help:
     en_US: https://learn.microsoft.com/en-us/azure/ai-studio/how-to/deploy-models
     zh_Hans: https://learn.microsoft.com/zh-cn/azure/ai-studio/how-to/deploy-models
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Azure AI Studio
   zh_Hans: Azure AI Studio

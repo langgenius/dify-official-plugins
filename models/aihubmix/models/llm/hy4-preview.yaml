@@ -1,0 +1,49 @@
+model: hy4-preview
+label:
+  en_US: Hunyuan 4 Preview
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 64000
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理深度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - none
+      - high
+    help:
+      zh_Hans: 控制推理深度。公网投影给出的官方枚举只有 none 与 high，默认 high。
+      en_US: Controls reasoning depth. The projection's official enum is none and high only, defaulting to high.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0.845'
+  output: '2.535'
+  unit: "0.000001"
+  currency: USD

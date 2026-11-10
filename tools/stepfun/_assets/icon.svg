@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1264 -1690)"><g id="stepfun_tool_light">
+<rect width="40" height="40" transform="translate(1264 1690)" fill="white"/>
+<rect width="40" height="40" transform="translate(1264 1690)" fill="#005AFF"/>
+<g id="Frame_19" clip-path="url(#clip36_18015_5351)">
+<path id="Vector_302" fill-rule="evenodd" clip-rule="evenodd" d="M1294.01 1698H1295.04V1698.93H1296V1699.89H1295.04V1701.78H1294.01V1699.9H1292.13V1698.93H1294.01V1698ZM1274.6 1710.37V1699.87H1275.57V1710.37H1274.6L1274.6 1710.37ZM1285.02 1711.03H1295.97V1711.95H1289.76V1721.53H1285.02V1711.03V1711.03ZM1277.63 1701.33V1713.69H1272V1718.2H1282.39V1706H1292.86L1292.86 1701.33L1277.63 1701.33Z" fill="white"/>
+</g>
+</g>
+</g>
+  <defs><clipPath id="clip36_18015_5351">
+<rect width="24" height="24" fill="white" transform="translate(1272 1698)"/>
+</clipPath>
+</defs>
+</svg>

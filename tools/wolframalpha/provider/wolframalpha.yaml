@@ -27,6 +27,7 @@ identity:
     pt_BR: WolframAlpha is a powerful computational knowledge engine.
     zh_Hans: WolframAlpha 是一个强大的计算知识引擎。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: WolframAlpha
     pt_BR: WolframAlpha

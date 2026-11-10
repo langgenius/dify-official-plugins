@@ -12,9 +12,9 @@ help:
   url:
     en_US: https://docs.vessl.ai/guides/get-started/llama3-deployment
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
 label:
   en_US: VESSL AI
 model_credential_schema:

@@ -1,0 +1,68 @@
+identity:
+  name: google_sheets_find_spreadsheets
+  author: langgenius
+  label:
+    en_US: Find Spreadsheets
+    zh_Hans: 查找电子表格
+    ja_JP: スプレッドシートを探す
+description:
+  human:
+    en_US: Spreadsheets by name
+    zh_Hans: 按名称查找电子表格
+    ja_JP: 名前でスプレッドシートを検索
+  llm: Find Google Sheets spreadsheets by name (most recently modified first). Empty name lists recent spreadsheets.
+parameters:
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  human_description:
+    en_US: Part of the name
+    zh_Hans: 名称的一部分
+    ja_JP: 名前の一部
+  llm_description: Text the spreadsheet name contains.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 20, max 200
+    zh_Hans: 默认 20，最多 200
+    ja_JP: 既定 20、最大 200
+  llm_description: Maximum results (default 20, max 200).
+  form: llm
+  default: 20
+output_schema:
+  type: object
+  properties:
+    spreadsheets:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          modified:
+            type: string
+          url:
+            type: string
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_find_spreadsheets.py

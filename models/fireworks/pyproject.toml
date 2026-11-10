@@ -7,9 +7,9 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.10.0",
-    "numpy>=2.4.6",
-    "openai>=2.38.0",
+    "dify_plugin>=0.10.2",
+    "numpy>=2.5.3",
+    "openai>=3.8.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

@@ -33,7 +33,7 @@ identity:
   description:
     en_US: Translate text using Baidu
     zh_Hans: 使用百度进行翻译
-  icon: icon.png
+  icon: icon.svg
   label:
     en_US: Baidu Translate
     zh_Hans: 百度翻译

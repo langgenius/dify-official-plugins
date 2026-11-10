@@ -7,7 +7,7 @@ extra:
     source: tools/text2image.py
 identity:
   author: Matri Qi
-  icon: icon.svg
+  icon: icon.png
   label:
     en_US: text2image
   name: text2image

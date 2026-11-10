@@ -7,7 +7,7 @@ identity:
     ja_JP: GitLab プロジェクト
     pt_BR: Projeto GitLab
     zh_Hant: GitLab 專案
-  icon: icon.png
+  icon: icon.svg
 description:
   en_US: Access GitLab projects, issues, merge requests, and files
   zh_Hans: 访问 GitLab 项目、问题、合并请求和文件

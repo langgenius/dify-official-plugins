@@ -38,7 +38,8 @@ identity:
     en_US: ZhipuAI
     pt_BR: ZhipuAI
     zh_Hans: ZhipuAI
-  icon: icon_s_en.svg
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: ZhipuAI
     pt_BR: ZhipuAI

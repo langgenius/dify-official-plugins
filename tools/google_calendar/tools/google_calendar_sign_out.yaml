@@ -1,0 +1,30 @@
+identity:
+  name: google_calendar_sign_out
+  author: langgenius
+  label:
+    en_US: Sign Out of Google Calendar
+    zh_Hans: 退出 Google Calendar 登录
+    ja_JP: Google Calendar からサインアウト
+description:
+  human:
+    en_US: 'Each user signs in mode only: forget the current user''s Google sign-in for this plugin'
+    zh_Hans: 仅限“每个用户自己登录”模式：清除当前用户在本插件中的 Google 登录
+    ja_JP: 'ユーザーごとのサインイン モードのみ: このプラグインでの現在のユーザーの Google サインインを削除します'
+  llm: Sign the current user out of the Google Calendar tools (forget their stored Google sign-in for Google Calendar; other
+    Google tools keep theirs). Use only when the user asks to sign out or switch accounts.
+parameters: []
+output_schema:
+  type: object
+  properties:
+    signed_out:
+      type: boolean
+      description: True when a stored sign-in was removed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_calendar_sign_out.py

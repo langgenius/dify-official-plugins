@@ -48,7 +48,7 @@ class UpdateRowsTool(Tool):
             client.errors_as_exceptions(True)
             
             # Get sheet information to get column map
-            sheet = client.Sheets.get_sheet(sheet_id, include="columnIds")
+            sheet = client.Sheets.get_sheet(sheet_id)
             
             # Create column map: name -> id
             column_map = {col.title: col.id for col in sheet.columns}
@@ -76,7 +76,7 @@ class UpdateRowsTool(Tool):
                 
                 # Create row
                 if cells:
-                    updated_rows.append(smartsheet.models.Row(id=row_id, cells=cells))
+                    updated_rows.append(smartsheet.models.Row({"id": row_id, "cells": cells}))
             
             # Update rows
             if updated_rows:
@@ -102,4 +102,4 @@ class UpdateRowsTool(Tool):
             yield self.create_text_message(error_message)
         except Exception as e:
             error_message = f"Error: {str(e)}"
-            yield self.create_text_message(error_message) 
+            yield self.create_text_message(error_message)

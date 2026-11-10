@@ -11,7 +11,8 @@ identity:
     zh_Hans: "连接到 NocoDB 以管理数据库记录并执行 CRUD 操作"
     pt_BR: "Conecte-se ao NocoDB para gerenciar registros de banco de dados e executar operações CRUD"
     ja_JP: "NocoDB に接続してデータベースレコードを管理し、CRUD操作を実行します"
-  icon: icon.svg
+  icon: icon.png
+  icon_dark: icon-dark.png
 
 credentials_for_provider:
   nocodb_url:

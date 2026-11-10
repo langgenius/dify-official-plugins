@@ -87,8 +87,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
         run: |
-          echo "toolkit_sha=$(gh api repos/langgenius/dify-marketplace-toolkit/commits/HEAD --jq .sha)" >> $GITHUB_OUTPUT
-          echo "cli_tag=$(gh release view -R langgenius/dify-plugin-daemon --json tagName --jq .tagName)" >> $GITHUB_OUTPUT
+          toolkit_sha=$(gh api repos/langgenius/dify-marketplace-toolkit/commits/HEAD --jq '.sha // empty')
+          cli_tag=$(gh release view -R langgenius/dify-plugin-daemon --json tagName --jq '.tagName // empty')
+          : "${toolkit_sha:?Marketplace toolkit commit is empty}" "${cli_tag:?Dify CLI release tag is empty}"
+          echo "toolkit_sha=$toolkit_sha" >> "$GITHUB_OUTPUT"
+          echo "cli_tag=$cli_tag" >> "$GITHUB_OUTPUT"
 
       - name: Cache .scripts (toolkit + CLI)
         id: scripts-cache
@@ -101,8 +104,11 @@ jobs:
         if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+          TOOLKIT_SHA: ${{ steps.external.outputs.toolkit_sha }}
         run: |
+          rm -rf .scripts
           gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
+          git -C .scripts checkout "$TOOLKIT_SHA"
 
       - name: Setup Python
         uses: actions/setup-python@v5

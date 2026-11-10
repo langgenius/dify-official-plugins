@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 from nacl.signing import SigningKey
 from werkzeug.test import EnvironBuilder
 from werkzeug.wrappers import Request
@@ -14,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from events.webhook_event import DiscordWebhookEvent
 from provider.discord import DiscordSubscriptionConstructor, DiscordTrigger
 from dify_plugin.entities.provider_config import CredentialType
+from dify_plugin.entities.trigger import TriggerProviderConfiguration
 from dify_plugin.errors.trigger import SubscriptionError, TriggerDispatchError, TriggerValidationError
 
 
@@ -61,6 +63,14 @@ def _constructor():
     constructor = object.__new__(DiscordSubscriptionConstructor)
     constructor.runtime = SimpleNamespace()
     return constructor
+
+
+def test_provider_schema_accepts_public_key_parameter():
+    provider = Path(__file__).resolve().parents[1] / "provider/discord.yaml"
+    config = TriggerProviderConfiguration(**yaml.safe_load(provider.read_text()))
+    public_key = config.subscription_constructor.parameters[0]
+    assert public_key.name == "application_public_key"
+    assert public_key.type == "string"
 
 
 def test_create_subscription_stores_public_key_and_event_filter():

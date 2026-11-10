@@ -1,4 +1,12 @@
 - openrouter/auto
+- openai/gpt-6.1-sol-pro
+- openai/gpt-6.1-sol
+- openai/gpt-6-astra-pro
+- openai/gpt-6-astra
+- openai/gpt-6-sol-pro
+- openai/gpt-6-sol
+- openai/gpt-6-luna-pro
+- openai/gpt-6-luna
 - openai/gpt-5.6-sol-pro
 - openai/gpt-5.6-sol
 - openai/gpt-5.6-terra
@@ -19,6 +27,11 @@
 - openai/gpt-4o-mini
 - openai/gpt-4
 - openai/gpt-3.5-turbo
+- anthropic/claude-fable-5.1
+- anthropic/claude-fable-5
+- anthropic/claude-opus-5.5
+- anthropic/claude-sonnet-5.5
+- anthropic/claude-haiku-5.5
 - anthropic/claude-opus-5
 - anthropic/claude-opus-5-fast
 - anthropic/claude-opus-4.6
@@ -30,6 +43,7 @@
 - anthropic/claude-sonnet-4.5
 - anthropic/claude-sonnet-4
 - anthropic/claude-haiku-4.5
+- google/gemini-3.8-flash
 - google/gemini-3.7-flash
 - google/gemini-3.5-flash-lite
 - google/gemini-3.1-pro-preview
@@ -67,6 +81,7 @@
 - deepseek/deepseek-r1-0528
 - deepseek/deepseek-r1-distill-llama-70b
 - minimax/minimax-m3
+- moonshotai/kimi-k3.1-pro
 - moonshotai/kimi-k3
 - moonshotai/kimi-k2-0905
 - xiaomi/mimo-v2.5-pro

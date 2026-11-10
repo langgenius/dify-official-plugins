@@ -8,7 +8,11 @@ and the Responses API path already use.
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.interfaces.model.openai_compatible.llm import (
+    OAICompatLargeLanguageModel,
+)
 
 from models.llm.llm import OpenAILargeLanguageModel
 
@@ -113,3 +117,43 @@ def test_existing_max_completion_tokens_is_preserved():
 
     assert params.get("max_completion_tokens") == 256
     assert params.get("max_tokens") == 128
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        "openai.gpt-6-sol",
+        "us.openai.gpt-6-sol",
+        "global.openai.gpt-6-luna",
+        "openai.gpt-5.6-sol",
+        "gpt-6-sol",
+    ],
+)
+def test_auto_detects_provider_prefixed_and_gpt_6_models(model):
+    """Amazon Bedrock's OpenAI-compatible endpoints take provider/geo-prefixed IDs."""
+    params = _capture_invoke({"mode": "chat", "token_param_name": "auto"}, model=model)
+
+    assert params.get("max_completion_tokens") == 128
+    assert "max_tokens" not in params
+
+
+def test_auto_keeps_max_tokens_for_prefixed_gpt_oss():
+    params = _capture_invoke(
+        {"mode": "chat", "token_param_name": "auto"}, model="openai.gpt-oss-120b"
+    )
+
+    assert params.get("max_tokens") == 128
+    assert "max_completion_tokens" not in params
+
+
+def test_validate_credentials_takes_max_completion_tokens_path_for_prefixed_ids():
+    """'Add model' must not probe with max_tokens, which these models reject."""
+    llm = OpenAILargeLanguageModel(model_schemas=[])
+    with (
+        patch.object(OpenAILargeLanguageModel, "_retry_with_safe_min_tokens") as retry,
+        patch.object(OAICompatLargeLanguageModel, "validate_credentials") as base_validate,
+    ):
+        llm.validate_credentials("openai.gpt-6-sol", {"mode": "chat", "token_param_name": "auto"})
+
+    retry.assert_called_once()
+    base_validate.assert_not_called()

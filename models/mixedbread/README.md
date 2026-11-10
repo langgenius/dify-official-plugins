@@ -13,4 +13,4 @@ The results are impressive outperforming open and closed source competitors such
 Install the Mixedbread plugin, then configure it in Model Provider settings with the API Key.
 Get your API key from [Mixedbread AI](https://www.mixedbread.com) and save your settings.
 
-<img src="./_assets/icon_l_en.png" width="400" />
+<img src="./_assets/icon.svg" width="400" />

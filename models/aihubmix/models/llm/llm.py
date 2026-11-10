@@ -20,6 +20,7 @@ from dify_plugin.errors.model import (
 from .anthropic import AnthropicLargeLanguageModel
 from .google import GoogleLargeLanguageModel
 from .openai_response import AihubmixOpenAIResponses
+from .kimi import KimiK31ReasoningMixin
 
 # 如果两个类都继承自同一个基类，可以使用相同的初始化方式
 model_schemas = []  # 或者从某处获取适当的模型模式
@@ -29,11 +30,12 @@ logger = logging.getLogger(__name__)
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
-RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "gpt-5.6", "o3-pro")
+RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "gpt-5.5-pro", "gpt-5.6", "o3-pro")
 
 
-class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
+class AihubmixLargeLanguageModel(KimiK31ReasoningMixin, OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
+        credentials["_kimi_k31"] = model in self._KIMI_K31_MODELS
         api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         credentials["endpoint_url"] = f"{api_url}/v1"
         credentials["mode"] = self.get_model_mode(model).value
@@ -126,7 +128,25 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             )
         
         # 默认使用父类的生成方法
+        model_parameters = self._normalize_thinking_switch(model_parameters)
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+
+    @staticmethod
+    def _normalize_thinking_switch(model_parameters: dict) -> dict:
+        """把 Dify 只能表达的布尔 thinking 转成上游要求的对象形式。
+
+        Dify 的 parameter_rules 只支持标量类型，写不出对象；而豆包 / GLM / Kimi 在
+        chat completions 上的官方字段是 ``thinking: {"type": "enabled"|"disabled"}``。
+        裸布尔发上去要么 400（豆包、Kimi、coding-glm），要么被静默忽略、思考照跑照计费
+        （glm-5.2）。这里只转换走 OpenAI 兼容通道的模型：Claude 由 anthropic.py 自己
+        消费布尔 thinking，Gemini 走 google.py 的 thinking_mode，都不经过这里。
+        """
+        thinking = model_parameters.get("thinking")
+        if isinstance(thinking, bool):
+            params = dict(model_parameters)
+            params["thinking"] = {"type": "enabled" if thinking else "disabled"}
+            return params
+        return model_parameters
 
     def _invoke(
         self,

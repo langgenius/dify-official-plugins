@@ -294,7 +294,7 @@ identity:
     en_US: Linear is a modern issue tracking tool designed for software development teams, with webhook trigger support.
     ja_JP: Linearは、ソフトウェア開発チーム向けに設計された最新の課題管理ツールで、webhookトリガーのサポートがあります。
     zh_Hans: Linear是一个为软件开发团队设计的现代化问题跟踪工具，支持webhook触发器。
-  icon: image.png
+  icon: icon.svg
   label:
     en_US: Linear Triggers
     zh_Hans: Linear 触发器

@@ -3,6 +3,7 @@ label:
   en_US: grok-4.20-multi-agent
 model_type: llm
 features:
+  - structured-output
   - multi-tool-call
   - agent-thought
   - stream-tool-call

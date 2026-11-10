@@ -32,7 +32,8 @@ identity:
     en_US:
       The SiliconFlow plugin provides current image generation, image editing, and video generation tools.
     zh_CN: 硅基流动插件提供当前可用的图片生成、图片编辑和视频生成工具。
-  icon: siliconflow_square.svg
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: SiliconFlow
     zh_CN: 硅基流动

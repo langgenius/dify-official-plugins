@@ -123,6 +123,6 @@ parameter_rules:
 # https://aihubmix.com/model/gemini-3.5-flash-lite
 pricing:
   input: "0.3"
-  output: "2.5"
+  output: '2.499999'
   unit: "0.000001"
   currency: USD

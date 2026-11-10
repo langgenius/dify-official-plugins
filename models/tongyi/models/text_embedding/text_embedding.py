@@ -1,5 +1,6 @@
 import base64
 import logging
+from decimal import Decimal
 import time
 import os
 import yaml
@@ -15,6 +16,16 @@ from models._common import _CommonTongyi, get_http_base_address
 from ..constant import BURY_POINT_HEADER
 
 vision_models = dict()
+
+# qwen3-vl-embedding bills image/video tokens at $0.258 per MTok against text at
+# $0.1 per MTok (https://www.alibabacloud.com/help/en/model-studio/multimodal-embedding-api-reference).
+# The model pricing schema carries a single flat input rate (the text rate), so
+# when DashScope returns the per-type token split, image tokens are priced at
+# 2.58x the text rate to keep the reported total_price accurate.
+IMAGE_TOKEN_PRICE_RATIO = Decimal("2.58")
+# Models whose DashScope usage object carries a per-modality token split
+# (input_tokens = text tokens, image_tokens, total_tokens).
+_SPLIT_USAGE_MODELS = ("qwen3-vl-embedding",)
 
 logger = logging.getLogger(__name__)
 
@@ -89,25 +100,31 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 inputs.append(text)
             indices += [i]
         batched_embeddings = []
+        text_tokens = 0
+        image_tokens = 0
         _iter = range(0, len(inputs), max_chunks)
-        session = requests.Session()
-        try:
-            for i in _iter:
-                (embeddings_batch, embedding_used_tokens) = self.embed_documents(
-                    credentials_kwargs=credentials_kwargs,
-                    model=model,
-                    texts=inputs[i : i + max_chunks],
-                    base_address=http_base_address,
-                    session=session,
-                )
-                used_tokens += embedding_used_tokens
-                batched_embeddings += embeddings_batch
-            usage = self._calc_response_usage(
-                model=model, credentials=credentials, tokens=used_tokens
+        for i in _iter:
+            (embeddings_batch, embedding_used_tokens) = self.embed_documents(
+                credentials_kwargs=credentials_kwargs,
+                model=model,
+                texts=inputs[i : i + max_chunks],
+                base_address=http_base_address,
             )
-            return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
-        finally:
-            session.close()
+            if isinstance(embedding_used_tokens, dict):
+                used_tokens += embedding_used_tokens["total"]
+                text_tokens += embedding_used_tokens["text"]
+                image_tokens += embedding_used_tokens["image"]
+            else:
+                used_tokens += embedding_used_tokens
+            batched_embeddings += embeddings_batch
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=credentials,
+            tokens=used_tokens,
+            text_tokens=text_tokens,
+            image_tokens=image_tokens,
+        )
+        return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
@@ -133,7 +150,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param credentials: model credentials
         :return:
         """
-        session = requests.Session()
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
             http_base_address = get_http_base_address(credentials)
@@ -142,12 +158,9 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 model=model,
                 texts=["ping"],
                 base_address=http_base_address,
-                session=session,
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-        finally:
-            session.close()
 
     @staticmethod
     def embed_documents(
@@ -155,7 +168,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         model: str,
         texts: list[str],
         base_address: str,
-        session: requests.Session,
     ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
@@ -163,10 +175,10 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             texts: The list of texts to embed.
-            session: The requests session for this invocation.
 
         Returns:
-            List of embeddings, one for each text, and tokens usage.
+            List of embeddings, one for each text, and tokens usage: an int for
+            text models, or a {"total", "text", "image"} dict for vision models.
         """
 
         # If the model is vision model, it has different endpoint
@@ -178,20 +190,18 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 model,
                 documents,
                 base_address,
-                session,
             )
 
         embeddings = []
         embedding_used_tokens = 0
         
         def call_embedding_api(text):
-            if model in ["multimodal-embedding-v1"]:
+            if model in ["multimodal-embedding-v1", "qwen3-vl-embedding"]:
                 return dashscope.MultiModalEmbedding.call(
                     api_key=credentials_kwargs["dashscope_api_key"],
                     model=model,
                     input=[{"text": text}],
                     base_address=base_address,
-                    session=session,
                 )
             else:
                 return dashscope.TextEmbedding.call(
@@ -201,7 +211,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     headers=BURY_POINT_HEADER,
                     text_type="document",
                     base_address=base_address,
-                    session=session,
                 )
 
         for text in texts:
@@ -263,23 +272,38 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             vision_models[model] = False
         return vision_models[model]
 
-    def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
+    def _calc_response_usage(
+        self,
+        model: str,
+        credentials: dict,
+        tokens: int,
+        text_tokens: int = 0,
+        image_tokens: int = 0,
+    ) -> EmbeddingUsage:
         """
         Calculate response usage
 
         :param model: model name
-        :param tokens: input tokens
+        :param tokens: total input tokens (text + image)
+        :param text_tokens: text tokens, when the API returns the per-modality split
+        :param image_tokens: image tokens, when the API returns the per-modality split
         :return: usage
         """
         input_price_info = self.get_price(
             model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
         )
+        total_price = input_price_info.total_amount
+        if model in _SPLIT_USAGE_MODELS and image_tokens > 0:
+            # Image tokens are billed at 2.58x the text rate; the flat schema
+            # prices `tokens` at the text rate, so recompute the exact amount.
+            weighted_tokens = Decimal(text_tokens) + IMAGE_TOKEN_PRICE_RATIO * Decimal(image_tokens)
+            total_price = input_price_info.unit_price * input_price_info.unit * weighted_tokens
         usage = EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
             unit_price=input_price_info.unit_price,
             price_unit=input_price_info.unit,
-            total_price=input_price_info.total_amount,
+            total_price=total_price,
             currency=input_price_info.currency,
             latency=time.perf_counter() - self.started_at,
         )
@@ -304,27 +328,24 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         """
         http_base_address = get_http_base_address(credentials)
         credentials_kwargs = self._to_credential_kwargs(credentials)
-        session = requests.Session()
-        try:
-            (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
-                credentials_kwargs=credentials_kwargs,
-                model=model,
-                documents=documents,
-                base_address=http_base_address,
-                session=session,
-            )
-            usage = self._calc_response_usage(
-                model=model,
-                credentials=credentials,
-                tokens=embedding_used_tokens,
-            )
-            return MultiModalEmbeddingResult(
-                model=model,
-                embeddings=embeddings_batch,
-                usage=usage,
-            )
-        finally:
-            session.close()
+        (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
+            credentials_kwargs=credentials_kwargs,
+            model=model,
+            documents=documents,
+            base_address=http_base_address,
+        )
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=credentials,
+            tokens=embedding_used_tokens["total"],
+            text_tokens=embedding_used_tokens["text"],
+            image_tokens=embedding_used_tokens["image"],
+        )
+        return MultiModalEmbeddingResult(
+            model=model,
+            embeddings=embeddings_batch,
+            usage=usage,
+        )
 
     @staticmethod
     def embed_multimodal_documents(
@@ -332,7 +353,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         model: str,
         documents: list[MultiModalContent],
         base_address: str,
-        session: requests.Session,
     ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
@@ -340,10 +360,10 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             documents: The list of documents to embed.
-            session: The requests session for this invocation.
 
         Returns:
-            List of embeddings, one for each text, and tokens usage.
+            List of embeddings, one for each document, and a usage dict
+            {"total", "text", "image"} with the per-modality token split.
         """
         def detect_image_format(base64_str: str) -> str:
             """
@@ -370,14 +390,15 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 return "unknown"
         embeddings = []
         embedding_used_tokens = 0
-        
+        text_used_tokens = 0
+        image_used_tokens = 0
+
         def call_embedding_api(input):
             return dashscope.MultiModalEmbedding.call(
                 api_key=credentials_kwargs["dashscope_api_key"],
                 model=model,
                 input=[input],
                 base_address=base_address,
-                session=session,
             )
 
         for document in documents:
@@ -415,11 +436,24 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
                 
             if hasattr(response, 'usage') and response.usage:
-                if response.output["embeddings"][0]["type"] == "text":
+                response_type = response.output["embeddings"][0]["type"]
+                if response_type == "text":
                     embedding_used_tokens += response.usage["input_tokens"]
-                elif response.output["embeddings"][0]["type"] == "image":
+                    text_used_tokens += response.usage["input_tokens"]
+                elif response_type == "image":
                     embedding_used_tokens += response.usage["image_tokens"]
+                    image_used_tokens += response.usage["image_tokens"]
+                elif response_type in ("vl", "fusion") and "total_tokens" in response.usage:
+                    # qwen3-vl-embedding returns type "vl" (independent) or "fusion"
+                    # (fused) with usage.total_tokens = input_tokens + image_tokens,
+                    # where input_tokens counts text tokens only.
+                    embedding_used_tokens += response.usage["total_tokens"]
+                    text_used_tokens += response.usage.get("input_tokens", 0)
+                    image_used_tokens += response.usage.get("image_tokens", 0)
             else:
                 raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
-                
-        return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
+
+        return (
+            [list(map(float, e)) for e in embeddings],
+            {"total": embedding_used_tokens, "text": text_used_tokens, "image": image_used_tokens},
+        )

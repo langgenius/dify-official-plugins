@@ -16,9 +16,13 @@ help:
   url:
     en_US: https://openrouter.ai/keys
 icon_large:
-  en_US: openrouter.svg
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: openrouter_square.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: OpenRouter
 model_credential_schema:
@@ -99,6 +103,25 @@ model_credential_schema:
       variable: __model_type
     type: radio
     variable: vision_support
+  - default: no_support
+    label:
+      en_US: Video Support
+      zh_Hans: 是否支持视频输入
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: support
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: video_support
   - default: no_support
     label:
       en_US: Reasoning Support

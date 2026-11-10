@@ -27,3 +27,16 @@ Both Chatflow and Workflow applications support adding DuckDuckGo tool nodes. Tw
 #### - Agent applications
 
 Add the DuckDuckGo tool in the Agent application, then enter the search command to call this tool.
+
+## Rate limiting and blocked hosts
+
+`ddgs` scrapes public search engines rather than calling an API, so a host that runs many searches in a short window (for example a workflow that loops over several search nodes) gets rate-limited or served captcha pages. When that happens the tool no longer fails the node: it returns a plain-language report of what each engine did, plus the `search_status` / `engine_status` outputs, so a workflow can fall back to another search API only when this host is blocked (set `DDG_FAIL_SOFT=0` to restore the hard failure).
+
+The plugin already spaces searches 1 second apart per process and retries with exponential backoff. If you still get no results:
+
+- **Reduce volume.** Merge overlapping queries into one search node and lower loop counts.
+- **Pin `Search engines`.** Set it to a comma-separated list of engines that still answer from your host, e.g. `google,yahoo,brave`. Leave empty to ask all of them.
+- **Set `Proxy server`.** Route through an http/https/socks proxy (rotating proxies work best), or `tb` for a local Tor Browser.
+- **Handle failures in the workflow.** Enable *Retry on failure* and an *Error handling* strategy on the tool node so one blocked search degrades instead of aborting the run.
+
+For sustained high-volume use, an API-backed search plugin (Tavily, Serper, Brave Search) is more reliable than scraping.

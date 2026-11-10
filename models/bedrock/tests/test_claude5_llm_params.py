@@ -5,6 +5,7 @@ plugin venv — run via `uv run`). Pure methods are exercised without
 instantiating the model class.
 """
 import importlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -97,6 +98,31 @@ class TestClaude5RegionResolutionInGetModelInfo:
         info, _ = self._get_model_info("Opus 5", "global", "ap-northeast-1")
         assert info["model"] == "global.anthropic.claude-opus-5"
 
+    @pytest.mark.parametrize("cross_region,region,expected", [
+        ("global", "us-east-1", "global.anthropic.claude-opus-5-5"),
+        ("geographic", "us-east-1", "us.anthropic.claude-opus-5-5"),
+        ("geographic", "eu-west-1", "eu.anthropic.claude-opus-5-5"),
+        ("geographic", "ap-southeast-2", "au.anthropic.claude-opus-5-5"),
+    ])
+    def test_opus55_resolution(self, cross_region, region, expected):
+        info, _ = self._get_model_info("Opus 5.5", cross_region, region)
+        assert info["model"] == expected
+        assert info["support_tool_use"] is True
+
+    @pytest.mark.parametrize("model_name,cross_region,region,expected", [
+        ("Sonnet 5.5", "global", "us-east-1", "global.anthropic.claude-sonnet-5-5"),
+        ("Sonnet 5.5", "geographic", "eu-west-1", "eu.anthropic.claude-sonnet-5-5"),
+        ("Haiku 5.5", "global", "us-east-1", "global.anthropic.claude-haiku-5-5"),
+        ("Haiku 5.5", "geographic", "eu-west-1", "eu.anthropic.claude-haiku-5-5"),
+        ("Haiku 5.5", "geographic", "ap-southeast-2", "au.anthropic.claude-haiku-5-5"),
+        ("Fable 5.1", "global", "eu-west-1", "global.anthropic.claude-fable-5-1"),
+        ("Fable 5.1", "geographic", "ca-central-1", "us.anthropic.claude-fable-5-1"),
+    ])
+    def test_sonnet55_fable51_resolution(self, model_name, cross_region, region, expected):
+        info, _ = self._get_model_info(model_name, cross_region, region)
+        assert info["model"] == expected
+        assert info["support_tool_use"] is True
+
     def test_geographic_us(self):
         info, _ = self._get_model_info("Fable 5", "geographic", "us-west-2")
         assert info["model"] == "us.anthropic.claude-fable-5"
@@ -128,3 +154,77 @@ class TestClaude5RegionResolutionInGetModelInfo:
     def test_cross_region_param_is_consumed(self):
         _, params = self._get_model_info("Sonnet 5", "global", "us-east-1")
         assert "cross-region" not in params
+
+
+class TestOpus55CustomProfileSchema:
+    """Custom models (Inference Profile ID) inherit parameters and pricing
+    from the matching predefined family. Opus 5.5 must get the Claude 5
+    surface (effort, no temperature/top_p/top_k/reasoning budget) — the
+    legacy one sends fields Opus 5.5 rejects with ValidationException."""
+
+    @pytest.mark.parametrize("family,expected", [
+        ("anthropic claude 5", True),
+        ("anthropic claude", False),
+    ])
+    def test_opus55_matches_claude5_family_not_legacy(self, family, expected):
+        schema = SimpleNamespace(model=family)
+        matched = BedrockLLM._model_id_matches_schema(None, "anthropic.claude-opus-5-5", schema)
+        assert matched is expected
+
+    def test_opus55_pricing(self):
+        name = BedrockLLM._map_model_id_to_name(None, "anthropic.claude-opus-5-5")
+        assert name == "Opus 5.5"
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
+        assert pricing["input"] == "0.004"
+        assert pricing["output"] == "0.02"
+
+
+class TestSonnet55Fable51CustomProfileSchema:
+    """Same as Opus 5.5 above: custom profiles on Sonnet 5.5 / Fable 5.1 must
+    get the Claude 5 surface and their own (global-rate) pricing."""
+
+    @pytest.mark.parametrize("model_id,name,price_in,price_out", [
+        ("anthropic.claude-sonnet-5-5", "Sonnet 5.5", "0.002", "0.01"),
+        ("anthropic.claude-haiku-5-5", "Haiku 5.5", "0.0001", "0.0005"),
+        ("anthropic.claude-fable-5-1", "Fable 5.1", "0.01", "0.05"),
+    ])
+    def test_claude5_schema_and_pricing(self, model_id, name, price_in, price_out):
+        assert BedrockLLM._model_id_matches_schema(None, model_id, SimpleNamespace(model="anthropic claude 5"))
+        assert not BedrockLLM._model_id_matches_schema(None, model_id, SimpleNamespace(model="anthropic claude"))
+        assert BedrockLLM._map_model_id_to_name(None, model_id) == name
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
+        assert (pricing["input"], pricing["output"]) == (price_in, price_out)
+
+
+class TestHaiku55CustomProfileRegression:
+    """Issue #4044: a custom model (Inference Profile ID) on Haiku 5.5 used to
+    fall into the legacy 'anthropic claude' parameter rules, so temperature
+    was sent and Bedrock rejected it with ValidationException. Every geo
+    profile ID of Haiku 5.5 must select the 'anthropic claude 5' schema."""
+
+    @pytest.mark.parametrize("profile_id", [
+        "anthropic.claude-haiku-5-5",
+        "us.anthropic.claude-haiku-5-5",
+        "eu.anthropic.claude-haiku-5-5",
+        "au.anthropic.claude-haiku-5-5",
+        "global.anthropic.claude-haiku-5-5",
+    ])
+    def test_profile_id_selects_claude5_schema(self, profile_id):
+        assert model_ids.is_claude5_profile_id(profile_id)
+        assert BedrockLLM._model_id_matches_schema(
+            None, profile_id, SimpleNamespace(model="anthropic claude 5")
+        )
+        assert not BedrockLLM._model_id_matches_schema(
+            None, profile_id, SimpleNamespace(model="anthropic claude")
+        )
+
+    @pytest.mark.parametrize("profile_id", [
+        "us.anthropic.claude-haiku-5-5",
+        "global.anthropic.claude-haiku-5-5",
+    ])
+    def test_profile_id_maps_to_haiku55_pricing(self, profile_id):
+        base_id = model_ids.strip_profile_prefix(profile_id)
+        name = BedrockLLM._map_model_id_to_name(None, base_id)
+        assert name == "Haiku 5.5"
+        pricing = BedrockLLM._get_model_specific_pricing(None, "", name, [])
+        assert (pricing["input"], pricing["output"]) == ("0.0001", "0.0005")

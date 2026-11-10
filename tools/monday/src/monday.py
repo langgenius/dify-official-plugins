@@ -301,10 +301,10 @@ class MondayPlugin(BasePlugin):
     ) -> Generator[dict, None, None]:
         client = MondayClient(token=self.credentials.token)
         try:
-            res = client.updates.create_update(
+            response = client.updates.create_update(
                 item_id=int(item_id), update_value=update_value
-            ).data
-            yield asdict(res)
+            )
+            yield response.response_data["data"]["create_update"]
         except Exception as e:
             raise ValueError(f"Failed to create item update: {e}")
 
@@ -362,13 +362,13 @@ class MondayPlugin(BasePlugin):
     ) -> Generator[dict, None, None]:
         client = MondayClient(token=self.credentials.token)
         try:
-            res = client.items.change_status_column_value(
+            response = client.items.change_status_column_value(
                 board_id=int(board_id),
                 item_id=int(item_id),
                 column_id=column_id,
                 value=status_label,
             )
-            yield asdict(res)
+            yield response.response_data["data"]["change_column_value"]
         except Exception as e:
             raise ValueError(f"Failed to change item status: {e}")
 
@@ -426,13 +426,13 @@ class MondayPlugin(BasePlugin):
     ) -> Generator[dict, None, None]:
         client = MondayClient(token=self.credentials.token)
         try:
-            res = client.items.change_simple_column_value(
+            response = client.items.change_simple_column_value(
                 board_id=int(board_id),
                 item_id=int(item_id),
                 column_id=column_id,
                 value=value,
             )
-            yield asdict(res)
+            yield response.response_data["data"]["change_simple_column_value"]
         except Exception as e:
             raise ValueError(f"Failed to change item column value: {e}")
 
