@@ -1,0 +1,32 @@
+author: langgenius
+created_at: "2026-11-10T00:00:00Z"
+description:
+  en_US: MiniMax-H3-Image text-to-image generation and image editing
+  zh_Hans: MiniMax-H3-Image 文生图与图像编辑
+icon: icon.svg
+icon_dark: icon-dark.svg
+label:
+  en_US: MiniMax Image
+  zh_Hans: MiniMax Image
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: minimax_image
+plugins:
+  tools:
+    - provider/minimax_image.yaml
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+tags:
+  - image
+type: plugin
+version: 0.0.1

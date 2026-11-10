@@ -42,6 +42,12 @@ Add a Node → Tool → Tavily. All five actions are available:
   <img src="./_assets/actions.png" />
 </p>
 
+## Search Options and Research Waiting
+
+Search keeps a default of five results. Optional controls let you prefer included domains, boost or filter a language, request publication dates (beta), use safe search, and match quoted phrases exactly. Domain mode requires included domains; language filtering requires a language. Safe search supports basic and advanced depths. Chunk limits of 1–3 apply to basic, advanced and fast search; ultra-fast ignores them.
+
+Research creates one task and polls for up to ten minutes between responses. If the task remains pending, the tool returns a timeout message with its request ID instead of submitting another task. This polling limit does not cancel the remote task; an in-flight SDK request or a Dify host timeout has its own lifetime.
+
 ## Common Patterns
 
 **Fact-checking workflow:**  

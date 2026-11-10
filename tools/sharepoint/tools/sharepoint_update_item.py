@@ -14,7 +14,7 @@ def update_fields(ctx, site_id: str, list_id: str, item_id: str, fields: dict[st
 
 
 class UpdateItemTool(Tool):
-    """Change fields of a list item; columns left out keep their value (n8n: Item > Update)."""
+    """Change fields of a list item; columns left out keep their value."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

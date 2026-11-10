@@ -1442,12 +1442,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
+        default_headers: dict[str, str] = {}
         api_url = credentials.get("anthropic_api_url")
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
             # Spoof the User-Agent if using a third-party proxy (non-official API)
             if "api.anthropic.com" not in api_url:
-                credentials_kwargs["default_headers"] = {"User-Agent": "python-httpx"}
+                default_headers["User-Agent"] = "python-httpx"
+        # Identity-linked and service-account API keys are bound to a workspace
+        # and are rejected with a 400 unless the request names that workspace.
+        workspace_id = str(credentials.get("anthropic_workspace_id") or "").strip()
+        if workspace_id:
+            default_headers["anthropic-workspace-id"] = workspace_id
+        if default_headers:
+            credentials_kwargs["default_headers"] = default_headers
 
         return credentials_kwargs
 

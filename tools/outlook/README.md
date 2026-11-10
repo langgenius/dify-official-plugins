@@ -2,7 +2,7 @@
 
 Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and calendar**: read, send and organize mail, and manage calendar events.
 
-**Version:** 1.0.1
+**Version:** 1.0.3
 
 ## Choose how to authorize
 
@@ -185,8 +185,8 @@ In the app registration, open **Authentication** → **Add Redirect URI** → **
 
    ![Choose an account](_assets/chat-choose-account.png)
 
-3. A page titled **Signed in** asks them to go back to the chat and say they are done. It also says to continue only if they started the sign-in themselves; if someone else sent them the link, they can cancel it there.
-4. They reply "done", and the agent answers from their own mailbox. The first answer after signing in mentions the account used, so a wrong account is easy to spot.
+3. A page titled **Signed in** asks them to go back to the chat right away and say they are done: sign-in must be finished there within 10 minutes. It also says to continue only if they started the sign-in themselves; if someone else sent them the link, they can cancel it there.
+4. They reply "done", and the agent answers from their own mailbox. The first answer after signing in mentions the account used, so a wrong account is easy to spot. If Microsoft rejects the authorization code as expired or already used, the tool immediately returns a fresh sign-in link, valid for 15 minutes, for the agent to give the user. The user signs in again and replies right away so the agent can call the tool again.
 
    ![Answer from the user's mailbox](_assets/chat-answer.png)
 
