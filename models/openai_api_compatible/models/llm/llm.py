@@ -1069,7 +1069,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         base_url = None
         if endpoint_url:
             base_url = endpoint_url.rstrip("/")
-            if not base_url.endswith("/v1"):
+            # Keep an already versioned base URL (/v1, /v3, ...) as given.
+            if not re.search(r"/v\d+$", base_url):
                 base_url += "/v1"
         extra_headers = credentials.get("extra_headers") or None
         return OpenAI(api_key=api_key, base_url=base_url, default_headers=extra_headers)
