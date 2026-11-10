@@ -33,11 +33,15 @@ The tool has two modes:
 | --- | --- | --- |
 | URL | | The page to scrape, or the page a crawl starts from |
 | Mode | crawl | `scrape` for one page, `crawl` to follow links |
-| Limit | 0 | Maximum pages per crawl. 0 means no limit. |
-| Depth | 0 | Maximum link depth for a crawl. 0 means no limit. |
+| Limit | 10 | Maximum pages per crawl. 0 means no limit. |
+| Depth | 25 | Maximum link depth for a crawl. 0 means no limit. |
+| URL patterns to exclude | | Paths to skip, separated by commas. Regex works. |
+| URL patterns to include | | Only crawl paths that match, separated by commas. Regex works. |
 | Readability | false | Run the page through a reader view before converting it to markdown |
 
-Set **Limit** before you crawl a large site. With 0, the crawl keeps going until it runs out of pages or your credit balance runs out.
+Raise **Limit** with care on a large site. With 0, the crawl keeps going until it runs out of pages or your credit balance runs out.
+
+Saving the API key checks it against your credit balance. It does not run a scrape or spend credits.
 
 The output is plain text, with a `URL:` line and a `CONTENT:` block for each page.
 

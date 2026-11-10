@@ -45,12 +45,13 @@ parameters:
     value: crawl
   required: true
   type: select
-- default: 0
+- default: 10
   form: form
   human_description:
     en_US: specify the maximum number of pages to crawl per website. the crawler will
-      stop after reaching this limit.
-    zh_Hans: 指定每个网站要爬取的最大页面数。爬虫将在达到此限制后停止。
+      stop after reaching this limit. 0 removes the limit, and the crawl runs until it
+      finds no more pages or the credit balance runs out.
+    zh_Hans: 指定每个网站要爬取的最大页面数。爬虫将在达到此限制后停止。0 表示不限制，爬取会持续到没有更多页面或额度用完。
   label:
     en_US: maximum number of pages to crawl
     zh_Hans: 最大爬取页面数
@@ -58,11 +59,11 @@ parameters:
   name: limit
   required: false
   type: number
-- default: 0
+- default: 25
   form: form
   human_description:
-    en_US: the crawl limit for maximum depth.
-    zh_Hans: 最大爬取深度的限制。
+    en_US: the crawl limit for maximum depth. 0 removes the limit.
+    zh_Hans: 最大爬取深度的限制。0 表示不限制。
   label:
     en_US: maximum depth of pages to crawl
     zh_Hans: 最大爬取深度
@@ -72,8 +73,8 @@ parameters:
   type: number
 - form: form
   human_description:
-    en_US: blacklist a set of paths that you do not want to crawl. you can use regex
-      patterns to help with the list.
+    en_US: blacklist a set of paths that you do not want to crawl, separated by commas.
+      you can use regex patterns to help with the list.
     zh_Hans: 指定一组不想爬取的路径。您可以使用正则表达式模式来帮助定义列表。
   label:
     en_US: url patterns to exclude
@@ -85,9 +86,9 @@ parameters:
   type: string
 - form: form
   human_description:
-    en_US: Whitelist a set of paths that you want to crawl, ignoring all other routes
-      that do not match the patterns. You can use regex patterns to help with the
-      list.
+    en_US: Whitelist a set of paths that you want to crawl, separated by commas, ignoring
+      all other routes that do not match the patterns. You can use regex patterns to
+      help with the list.
     zh_Hans: 指定一组要爬取的路径，忽略所有不匹配模式的其他路由。您可以使用正则表达式模式来帮助定义列表。
   label:
     en_US: URL patterns to include
