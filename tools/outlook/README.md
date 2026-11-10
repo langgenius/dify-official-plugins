@@ -2,7 +2,7 @@
 
 Dify's integration with Microsoft Outlook (via Microsoft Graph) for **email and calendar**: read, send and organize mail, and manage calendar events.
 
-**Version:** 1.0.2
+**Version:** 1.0.3
 
 ## Choose how to authorize
 
