@@ -1,0 +1,67 @@
+identity:
+  name: gmail_create_label
+  author: langgenius
+  label:
+    en_US: Create Label
+    zh_Hans: 创建标签
+    ja_JP: ラベルを作成
+description:
+  human:
+    en_US: Create a label
+    zh_Hans: 创建标签
+    ja_JP: ラベルを作成
+  llm: Create a Gmail label. Use / in the name for a nested label, e.g. Projects/Dify.
+parameters:
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: Label name; use / to nest
+    zh_Hans: 标签名；用 / 表示层级
+    ja_JP: ラベル名。/ で階層化
+  llm_description: The label name.
+  form: llm
+- name: background_color
+  type: string
+  required: false
+  label:
+    en_US: Background Color
+    zh_Hans: 背景色
+    ja_JP: 背景色
+  human_description:
+    en_US: 'Gmail palette hex, e.g. #16a766'
+    zh_Hans: 'Gmail 色板中的颜色，如 #16a766'
+    ja_JP: 'Gmail パレットの色（例: #16a766）'
+  llm_description: Optional background color from Gmail's palette (needs text_color).
+  form: llm
+- name: text_color
+  type: string
+  required: false
+  label:
+    en_US: Text Color
+    zh_Hans: 文字颜色
+    ja_JP: 文字色
+  human_description:
+    en_US: 'Gmail palette hex, e.g. #ffffff'
+    zh_Hans: 'Gmail 色板中的颜色，如 #ffffff'
+    ja_JP: 'Gmail パレットの色（例: #ffffff）'
+  llm_description: Optional text color from Gmail's palette.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    label_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_create_label.py

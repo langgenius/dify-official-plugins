@@ -109,11 +109,13 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _validate_credentials_v3(credentials: dict) -> None:
         client = ArkClientV3.from_credentials(credentials)
+        sampling = {} if credentials.get("base_model_name", "").lower() == "kimi-k3.1-pro" else {
+            "temperature": 0.7, "top_p": 0.9,
+        }
         try:
             client.chat(
                 max_tokens=16,
-                temperature=0.7,
-                top_p=0.9,
+                **sampling,
                 messages=[UserPromptMessage(content="ping\nAnswer: ")],
             )
         except Exception as e:
@@ -331,7 +333,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if "thinking" in model_parameters:
             thinking_type = model_parameters.get("thinking")
             if thinking_type == "disabled":
-                model_parameters["reasoning_effort"] = "minimal"
+                model_parameters["reasoning_effort"] = (
+                    "none" if credentials.get("base_model_name", "").lower() == "deepseek-v4.1-flash"
+                    else "minimal"
+                )
 
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
@@ -400,6 +405,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         def _handle_chat_response(resp: ChatCompletion) -> LLMResult:
             choice = resp.choices[0]
             message = choice.message
+            content = message.content or ""
+            if credentials.get("base_model_name", "").lower() == "kimi-k3.1-pro":
+                reasoning = getattr(message, "reasoning_content", None)
+                if isinstance(reasoning, str) and reasoning:
+                    content = f"<think>{reasoning}</think>{content}"
             # parse tool calls
             tool_calls = []
             if message.tool_calls:
@@ -418,7 +428,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 model=model,
                 prompt_messages=prompt_messages,
                 message=AssistantPromptMessage(
-                    content=message.content or "",
+                    content=content,
                     tool_calls=tool_calls,
                 ),
                 usage=self._calc_response_usage(
@@ -631,8 +641,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             "doubao-seed-2.0-code",
             "doubao-seed-2.1-pro",
             "doubao-seed-2.1-turbo",
+            "doubao-seed-2.1-lite",
             "deepseek-v4-pro-ga",
             "deepseek-v4-flash-ga",
+            "deepseek-v4.1-flash",
         ):
             rules.append(
                 ParameterRule(
@@ -664,6 +676,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if base_model.lower() in (
             "doubao-seed-2.1-pro",
             "doubao-seed-2.1-turbo",
+            "doubao-seed-2.1-lite",
             "deepseek-v4-pro-ga",
             "deepseek-v4-flash-ga",
         ):
@@ -678,6 +691,34 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     if is_deepseek else ["minimal", "low", "medium", "high"],
                 )
             )
+
+        if base_model.lower() == "deepseek-v4.1-flash":
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="high",
+                    label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
+                    options=["none", "low", "high", "max"],
+                )
+            )
+
+        if base_model.lower() in ("glm-5.3-flash", "kimi-k3.1-pro"):
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="max",
+                    label=I18nObject(zh_hans="思考强度", en_us="Reasoning Effort"),
+                    options=["low", "high", "max"],
+                )
+            )
+
+        if base_model.lower() == "kimi-k3.1-pro":
+            # K3.1 Pro always thinks and uses fixed sampling settings.
+            rules = [rule for rule in rules if rule.name not in {
+                "temperature", "top_p", "top_k", "presence_penalty", "frequency_penalty",
+            }]
 
         # Add structured output parameters for supported models
         if ModelFeature.STRUCTURED_OUTPUT in model_config.features:

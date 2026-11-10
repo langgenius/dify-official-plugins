@@ -1,0 +1,41 @@
+identity:
+  name: trello_delete_label
+  author: langgenius
+  label:
+    en_US: Delete Label
+    zh_Hans: 删除标签
+    ja_JP: ラベルを削除
+description:
+  human:
+    en_US: Delete a label from the board
+    zh_Hans: 从看板删除标签
+    ja_JP: ボードからラベルを削除
+  llm: Delete a label from its board (it is removed from every card). Only when the user clearly asks for it.
+parameters:
+- name: label_id
+  type: string
+  required: true
+  label:
+    en_US: Label ID
+    zh_Hans: 标签 ID
+    ja_JP: ラベル ID
+  human_description:
+    en_US: Label ID (from the list or search tools)
+    zh_Hans: 标签 ID（可从列表或搜索工具获取）
+    ja_JP: ラベル ID（一覧または検索ツールから）
+  llm_description: The label ID, from trello_list_labels.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_delete_label.py

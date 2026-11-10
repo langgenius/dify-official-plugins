@@ -1,0 +1,67 @@
+identity:
+  name: trello_create_checklist
+  author: langgenius
+  label:
+    en_US: Create Checklist
+    zh_Hans: 创建清单
+    ja_JP: チェックリストを作成
+description:
+  human:
+    en_US: Add a checklist (with items) to a card
+    zh_Hans: 给卡片添加清单（可带条目）
+    ja_JP: カードにチェックリスト（項目付き）を追加
+  llm: Create a checklist on a Trello card, optionally with items.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: Checklist name
+    zh_Hans: 清单名称
+    ja_JP: チェックリスト名
+  llm_description: The checklist name.
+  form: llm
+- name: items
+  type: string
+  required: false
+  label:
+    en_US: Items
+    zh_Hans: 条目
+    ja_JP: 項目
+  human_description:
+    en_US: Comma-separated items to add
+    zh_Hans: 逗号分隔的条目
+    ja_JP: カンマ区切りの項目
+  llm_description: Optional comma-separated items to add.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    checklist_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_create_checklist.py

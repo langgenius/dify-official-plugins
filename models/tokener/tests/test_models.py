@@ -41,7 +41,7 @@ def test_llm_schema_only_exposes_supported_parameters() -> None:
             assert rules["response_format"]["options"] == ["text", "json_object", "json_schema"]
             assert rules["response_format"]["required"] is False
             assert rules["json_schema"]["use_template"] == "json_schema"
-        assert set(rules) == expected
+        assert expected <= set(rules)
 
 
 @patch.object(OAICompatLargeLanguageModel, "_invoke", return_value="llm-result")

@@ -1,0 +1,13 @@
+[project]
+name = "deepseek-tools"
+version = "0.1.0"
+description = "DeepSeek web search and page fetching tools for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dify_plugin>=0.10.2,<0.11.0",
+    "requests>=2.32.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]

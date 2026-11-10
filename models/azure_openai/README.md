@@ -4,6 +4,27 @@ Azure OpenAI Service is a cloud-based platform that provides access to advanced 
 ## Configure
 Once the plugin is installed, configure your Azure OpenAI Service Model by providing the Model Type, Deployment Name, API Endpoint URL, Authentication Method, and the Base Model. The API Version is optional when your endpoint already uses the Azure OpenAI `v1` path, for example `https://<resource>.openai.azure.com/openai/v1/`.
 
+### Base Model Configuration
+
+The Base Model field determines how the plugin routes requests and handles model parameters. You can choose from predefined base models (e.g., gpt-4o, gpt-4-turbo) or use the **Custom** option for unlisted Azure OpenAI model families.
+
+#### When to Use Custom
+
+Select **Custom** when:
+- Your Azure OpenAI resource has a model family not yet available in the predefined list (e.g., gpt-6.1-sol, gpt-7, or other future model generations)
+- You want to use a deployment without waiting for a plugin release that adds explicit support
+
+When **Custom** is selected, you must provide:
+1. **Custom Base Model** — the underlying model-family name (e.g., `gpt-6`, `gpt-5.5`) that identifies the model generation. This drives parameter routing and API selection (not the deployment name).
+2. **Model Context Size** — the model's context window (default: 128,000 tokens). Adjust this to match your model's actual context limit.
+3. **Upper Bound for Max Tokens** — the maximum output token limit for this model (default: 16,384 tokens). Set this to the model's maximum completion length.
+
+The Custom option enables version-agnostic routing for new model generations: gpt-5+ models automatically use the Responses API or Chat Completions route as appropriate, and reasoning families (o-series, gpt-5+) have parameters mapped correctly without manual intervention.
+
+#### Credential Validation
+
+When you validate credentials, the plugin performs a test request to your Azure OpenAI resource. If validation fails, the error message will include a list of models actually available in your resource (e.g., "Available models in this resource: gpt-4o, gpt-6.1-sol, ..."). This advisory information helps you verify that your Base Model selection and Deployment Name match what your Azure resource serves.
+
 ### Web Search (Azure native)
 
 This plugin supports Azure OpenAI native Web Search for models that use the Responses API path in this provider.
