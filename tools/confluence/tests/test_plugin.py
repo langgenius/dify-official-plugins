@@ -49,7 +49,7 @@ def session_send(monkeypatch, payload, status=200, get_payload=None):
 
 def test_manifest_declares_endpoint_and_storage():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.1"
+    assert manifest["version"] == "1.0.2"
     assert manifest["plugins"]["endpoints"] == ["group/confluence_signin.yaml"]
     assert manifest["resource"]["permission"]["storage"]["enabled"]
     group = yaml.safe_load((ROOT / "group" / "confluence_signin.yaml").read_text(encoding="utf-8"))
