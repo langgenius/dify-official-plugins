@@ -3,6 +3,7 @@ label:
   en_US: gemini-2.5-pro
 model_type: llm
 features:
+  - structured-output
   - multi-tool-call
   - agent-thought
   - stream-tool-call

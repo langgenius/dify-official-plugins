@@ -270,17 +270,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         entity = super().get_customizable_model_schema(model, credentials)
 
         structured_output_support = credentials.get("structured_output_support", "not_supported")
-        if structured_output_support == "supported":
-            # ----
-            # The following section should be added after the new version of `dify-plugin-sdks`
-            # is released.
-            # Related Commit:
-            # https://github.com/langgenius/dify-plugin-sdks/commit/0690573a879caf43f92494bf411f45a1835d96f6
-            # ----
-            # try:
-            #     entity.features.index(ModelFeature.STRUCTURED_OUTPUT)
-            # except ValueError:
-            #     entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
+        if structured_output_support in {"supported", "native"}:
+            if ModelFeature.STRUCTURED_OUTPUT not in entity.features:
+                entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
 
             entity.parameter_rules.append(
                 ParameterRule(
@@ -383,6 +375,27 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 )
             )
 
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="extra_headers",
+                label=I18nObject(en_us="Extra Headers", zh_hans="额外请求头"),
+                help=I18nObject(
+                    en_us=(
+                        'JSON object of HTTP request headers sent with each invocation. '
+                        'Values support Dify variables, e.g. '
+                        '{"x-opencode-session": "{{#sys.conversation_id#}}"}'
+                    ),
+                    zh_hans=(
+                        "随每次调用发送的 HTTP 请求头 JSON 对象。"
+                        "值支持 Dify 变量，例如 "
+                        '{"x-opencode-session": "{{#sys.conversation_id#}}"}'
+                    ),
+                ),
+                type=ParameterType.STRING,
+                required=False,
+            )
+        )
+
         if api_type == "responses":
             entity.parameter_rules.append(
                 ParameterRule(
@@ -484,9 +497,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # The base SDK implementation only handles TEXT and IMAGE content for user
         # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
         # OpenAI-compatible request shape carries the additional modalities. The
-        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
-        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
-        #     which providers like Vertex Gemini convert into inline_data.
+        # encoding follows what each provider accepts:
+        #   - VIDEO: video_url with a data URI (mime_type carried in the URI).
+        #     Providers that define the video_url content part (vLLM, LiteLLM
+        #     hosted_vllm, ...) decode the video correctly. #3090 used image_url
+        #     with a video data URI for Vertex Gemini via LiteLLM; that path
+        #     silently fails on backends that don't have an image decoder for
+        #     the video MIME (vLLM rejects with "Failed to load image"). Sending
+        #     video_url with the same data URI matches what the vLLM and
+        #     LiteLLM-vLLM providers expect.
+        #   - AUDIO: image_url with a data URI (mime_type carried in the URI).
+        #     Some providers accept input_audio instead, but image_url with
+        #     the audio MIME is the conservative default that Vertex Gemini
+        #     and others convert to inline_data.
         #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
         #     to the data URI.
         if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
@@ -509,8 +532,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     video_c: VideoPromptMessageContent = c
                     sub_messages.append(
                         {
-                            "type": "image_url",
-                            "image_url": {"url": video_c.data},
+                            "type": "video_url",
+                            "video_url": {"url": video_c.data},
                         }
                     )
                 elif c.type == PromptMessageContentType.AUDIO:
@@ -538,6 +561,52 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             return message_dict
         return super()._convert_prompt_message_to_dict(message, credentials)
 
+    @staticmethod
+    def _parse_extra_headers(raw: Any) -> dict[str, str]:
+        if raw is None:
+            return {}
+        if isinstance(raw, dict):
+            return {str(key): str(value) for key, value in raw.items()}
+        if isinstance(raw, str):
+            value = raw.strip()
+            if not value:
+                return {}
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise InvokeError(
+                    "extra_headers must be a JSON object of header names to values"
+                ) from exc
+            if not isinstance(parsed, dict):
+                raise InvokeError("extra_headers must be a JSON object")
+            return {str(key): str(value) for key, value in parsed.items()}
+        raise InvokeError("extra_headers must be a JSON object or JSON string")
+
+    def _apply_extra_headers(self, credentials: dict, model_parameters: dict) -> dict:
+        """Return credentials with model-parameter headers merged in.
+
+        Works on a copy rather than writing into the caller's dict: a per-invocation
+        header must not outlive its invocation, or one conversation's session header
+        would leak into later requests that never set it.
+        """
+        raw_extra_headers = model_parameters.pop("extra_headers", None)
+        if raw_extra_headers is None:
+            return credentials
+
+        parsed_headers = self._parse_extra_headers(raw_extra_headers)
+        if not parsed_headers:
+            return credentials
+
+        existing_headers = credentials.get("extra_headers")
+        if existing_headers:
+            merged_headers = {
+                **self._parse_extra_headers(existing_headers),
+                **parsed_headers,
+            }
+        else:
+            merged_headers = parsed_headers
+        return {**credentials, "extra_headers": merged_headers}
+
     def _invoke(
         self,
         model: str,
@@ -549,6 +618,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        credentials = self._apply_extra_headers(credentials, model_parameters)
+
         if credentials.get("api_type") == "responses":
             return self._chat_generate_with_responses(
                 model=model,
@@ -560,14 +631,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 stream=stream,
                 user=user,
             )
-        # Compatibility adapter for Dify's 'json_schema' structured output mode.
-        # The base class does not natively handle the 'json_schema' parameter. This block
-        # translates it into a standard OpenAI-compatible request by:
-        # 1. Injecting the JSON schema directly into the system prompt to guide the model.
-        # This ensures models like gpt-4o produce the correct structured output.
-        if model_parameters.get("response_format") == "json_schema":
-            # Use .get() instead of .pop() for safety
-            json_schema_str = model_parameters.get("json_schema")
+        # Preserve the legacy `supported` behavior after advertising structured-output
+        # capability to Dify. The host now supplies json_schema for capable models, while
+        # existing OpenAI-compatible configurations historically used prompt guidance plus
+        # json_object transport. Native json_schema transport remains an explicit opt-in.
+        if (
+            credentials.get("structured_output_support") == "supported"
+            and model_parameters.get("response_format") == "json_schema"
+        ):
+            json_schema_str = model_parameters.pop("json_schema", None)
 
             if json_schema_str:
                 structured_output_prompt = (
@@ -584,6 +656,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 else:
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
+
+            model_parameters["response_format"] = "json_object"
 
         # Handle thinking mode based on model support configuration
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
@@ -1074,7 +1148,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         base_url = None
         if endpoint_url:
             base_url = endpoint_url.rstrip("/")
-            if not base_url.endswith("/v1"):
+            # Keep an already versioned base URL (/v1, /v3, ...) as given.
+            if not re.search(r"/v\d+$", base_url):
                 base_url += "/v1"
         extra_headers = credentials.get("extra_headers") or None
         return OpenAI(api_key=api_key, base_url=base_url, default_headers=extra_headers)
@@ -1216,8 +1291,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             elif content_item.type == PromptMessageContentType.VIDEO:
                 # The Responses API has no dedicated video part. OpenAI-compatible
                 # servers accept a video through an input_image part carrying a data
-                # URI (the model extracts frames), mirroring the image_url shape the
-                # Chat Completions path already produces for video.
+                # URI (the model extracts frames). The Chat Completions path uses the
+                # video_url part instead, which the Responses API does not define.
                 video_c: VideoPromptMessageContent = content_item
                 video_part: dict[str, Any] = {"type": "input_image"}
                 if video_c.url:
