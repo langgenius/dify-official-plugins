@@ -25,7 +25,7 @@ from tools.graph_client import (
 class SharePointProvider(ToolProvider):
     """Microsoft SharePoint through Microsoft Graph: OAuth, Service Principal, or each chat user signing in."""
 
-    # Lists, items and the sites' document libraries; n8n's SharePoint node asks for the same.
+    # Lists, items and the sites' document libraries.
     _SCOPE = "offline_access User.Read Sites.ReadWrite.All"
 
     # ── OAuth ──────────────────────────────────────────────────────────

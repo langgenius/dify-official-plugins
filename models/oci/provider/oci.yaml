@@ -5,8 +5,9 @@ label:
   zh_Hans: OCI 生成式 AI 服务
 
 description:
-  en_US: Models provided by OCI, such as Grok, Cohere Command and Llama.
-  zh_Hans: OCI 提供的模型，例如 Grok、Cohere Command 和 Llama。
+  en_US: Models provided by OCI Generative AI, such as Grok 4.x, Gemini 2.5, gpt-oss, Llama 4, Cohere Command A, Embed 4 and Rerank 4.
+  zh_Hans: OCI 生成式 AI 提供的模型，例如 Grok 4.x、Gemini 2.5、gpt-oss、Llama 4、Cohere Command A、Embed 4 和 Rerank 4。
+  ja_JP: OCI Generative AI が提供する Grok 4.x、Gemini 2.5、gpt-oss、Llama 4、Cohere Command A、Embed 4、Rerank 4 などのモデル。
 
 icon_large:
   en_US: icon.svg
@@ -25,6 +26,7 @@ help:
 supported_model_types:
   - llm
   - text-embedding
+  - rerank
 
 configurate_methods:
   - predefined-model
@@ -126,11 +128,16 @@ models:
     position: models/text_embedding/_position.yaml
     predefined:
       - models/text_embedding/models/*.yaml
+  rerank:
+    position: models/rerank/_position.yaml
+    predefined:
+      - models/rerank/models/*.yaml
 
 extra:
   python:
     model_sources:
       - models/llm/llm.py
       - models/text_embedding/text_embedding.py
+      - models/rerank/rerank.py
     provider_source: provider/oci.py
 

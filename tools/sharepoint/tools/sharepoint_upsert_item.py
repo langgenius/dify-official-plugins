@@ -22,8 +22,8 @@ NON_INDEXED = {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"}
 
 class UpsertItemTool(Tool):
     """
-    Update the item whose match columns equal the given values, or create it (n8n: Item >
-    Create or Update). More than one matching item is an error, as in n8n.
+    Update the item whose match columns equal the given values, or create it.
+    More than one matching item is an error.
     """
 
     @with_outputs

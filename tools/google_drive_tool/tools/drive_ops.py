@@ -159,7 +159,7 @@ def search(ctx: GoogleContext, p: Mapping[str, Any]) -> Result:
             raise GoogleAuthError("Give a name, text, file_type, folder_id or a raw query.")
         query = " and ".join(parts)
     files = list_files(ctx, query, _limit(p, 25, 500), "modifiedTime desc" if "fullText" not in query else None)
-    return ({"files": files, "count": len(files)}, {"query": query, "files": files},
+    return ({"items": files, "count": len(files)}, {"query": query, "files": files},
             f"Found {len(files)} file(s):\n{_listing(files)}" if files else f"Nothing matches: {query}")
 
 
@@ -167,7 +167,7 @@ def list_folder(ctx: GoogleContext, p: Mapping[str, Any]) -> Result:
     folder = folder_id(p)
     query = f"{q_string(folder)} in parents and trashed = false"
     files = list_files(ctx, query, _limit(p, 100, 1000), "folder,name")
-    return ({"files": files, "count": len(files)}, {"folder_id": folder, "files": files},
+    return ({"items": files, "count": len(files)}, {"folder_id": folder, "files": files},
             f"{len(files)} item(s) in the folder:\n{_listing(files)}" if files else "The folder is empty.")
 
 
@@ -200,7 +200,7 @@ def read_text(ctx: GoogleContext, p: Mapping[str, Any]) -> Result:
     else:
         raise GoogleAuthError(f"{meta.get('name')} is a {mime or 'binary'} file, not text: use google_drive_download_file to get it.")
     cut = text if len(text) <= MAX_TEXT else text[:MAX_TEXT] + "\n[… truncated]"
-    return ({"text": text, "name": meta.get("name", ""), "mime_type": mime},
+    return ({"content": text, "name": meta.get("name", ""), "mime_type": mime},
             {"file_id": file_id, "name": meta.get("name", ""), "mime_type": mime, "length": len(text)}, f"# {meta.get('name', '')}\n\n{cut}")
 
 
