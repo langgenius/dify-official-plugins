@@ -17,6 +17,10 @@ This is a **tool** plugin. To import Drive documents into a knowledge base, use 
 
 All tools work across My Drive and shared drives, and return typed output variables (`success` / `error` plus their fields) for workflows.
 
+**In an agent**: to read a file, use `google_drive_read_text`, which returns its text. `google_drive_download_file` returns a file; agent strategies that cannot handle file outputs fail on it, so use it in a workflow **Tool** node.
+
+**Errors in workflows**: a tool that cannot do its job (no access, not found, sign-in needed) still finishes, with `success = false` and the reason in `error`. It does not raise an error, so the node's **Fail Branch** is not taken: branch on `success` with an **If/Else** node instead.
+
 ## Setup
 
 You need a Google OAuth client:

@@ -30,8 +30,9 @@ parameters:
 output_schema:
   type: object
   properties:
-    text:
+    content:
       type: string
+      description: The file's text
     name:
       type: string
     mime_type:

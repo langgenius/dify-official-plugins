@@ -1,0 +1,217 @@
+identity:
+  name: bedrock_image
+  author: AWS
+  label:
+    en_US: AWS Bedrock Image Generation
+    zh_Hans: AWS Bedrock 图像生成
+  icon: icon.svg
+description:
+  human:
+    en_US: Generate images with Stability AI models on Amazon Bedrock (Stable Diffusion 3.5 Large, Stable Image Core, Stable Image Ultra). Supports text-to-image for all three models and image-to-image for SD 3.5 Large and Ultra. Uses InvokeModel in us-west-2 by default.
+    zh_Hans: 使用 Amazon Bedrock 上的 Stability AI 模型生成图像（Stable Diffusion 3.5 Large、Stable Image Core、Stable Image Ultra）。三个模型均支持文生图；SD 3.5 Large 与 Ultra 支持图生图。默认在 us-west-2 调用 InvokeModel。
+  llm: Generate or transform images with Stability AI models on Amazon Bedrock. Prefer stability.sd3-5-large-v1:0. Core is text-to-image only. Provide at most one reference image for image-to-image.
+parameters:
+  - name: model
+    type: select
+    required: false
+    default: stability.sd3-5-large-v1:0
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: Bedrock Stability image model. Core is text-to-image only. SD 3.5 Large and Ultra also support image-to-image. Available in us-west-2.
+      zh_Hans: Bedrock Stability 图像模型。Core 仅支持文生图；SD 3.5 Large 与 Ultra 还支持图生图。通常在 us-west-2 可用。
+    options:
+      - value: stability.sd3-5-large-v1:0
+        label:
+          en_US: Stable Diffusion 3.5 Large
+          zh_Hans: Stable Diffusion 3.5 Large
+      - value: stability.stable-image-core-v1:1
+        label:
+          en_US: Stable Image Core
+          zh_Hans: Stable Image Core
+      - value: stability.stable-image-ultra-v1:1
+        label:
+          en_US: Stable Image Ultra
+          zh_Hans: Stable Image Ultra
+    form: form
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    human_description:
+      en_US: Text description of the image to generate or transform. Maximum 10000 characters.
+      zh_Hans: 要生成或变换的图像描述。最多 10000 字符。
+    llm_description: Describe the desired image clearly. Max 10000 characters.
+    form: llm
+  - name: images
+    type: files
+    required: false
+    label:
+      en_US: Reference image
+      zh_Hans: 参考图像
+    human_description:
+      en_US: Optional single reference image for image-to-image (JPEG, PNG, or WebP, max 10MB). Not supported with Stable Image Core. Provide at most one file.
+      zh_Hans: 可选的一张参考图，用于图生图（JPEG、PNG 或 WebP，最大 10MB）。Stable Image Core 不支持。最多一张。
+    llm_description: Optional single reference image for image-to-image. Not supported with Stable Image Core.
+    form: llm
+  - name: negative_prompt
+    type: string
+    required: false
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 负面提示词
+    human_description:
+      en_US: Elements to exclude from the output image. Maximum 10000 characters.
+      zh_Hans: 不希望出现在输出图像中的内容。最多 10000 字符。
+    form: llm
+  - name: aspect_ratio
+    type: select
+    required: false
+    default: "1:1"
+    label:
+      en_US: Aspect Ratio
+      zh_Hans: 宽高比
+    human_description:
+      en_US: Output aspect ratio for text-to-image only. Ignored when a reference image is provided.
+      zh_Hans: 仅用于文生图的输出宽高比。提供参考图时忽略。
+    options:
+      - value: "1:1"
+        label:
+          en_US: "1:1"
+          zh_Hans: "1:1"
+      - value: "16:9"
+        label:
+          en_US: "16:9"
+          zh_Hans: "16:9"
+      - value: "9:16"
+        label:
+          en_US: "9:16"
+          zh_Hans: "9:16"
+      - value: "21:9"
+        label:
+          en_US: "21:9"
+          zh_Hans: "21:9"
+      - value: "9:21"
+        label:
+          en_US: "9:21"
+          zh_Hans: "9:21"
+      - value: "2:3"
+        label:
+          en_US: "2:3"
+          zh_Hans: "2:3"
+      - value: "3:2"
+        label:
+          en_US: "3:2"
+          zh_Hans: "3:2"
+      - value: "4:5"
+        label:
+          en_US: "4:5"
+          zh_Hans: "4:5"
+      - value: "5:4"
+        label:
+          en_US: "5:4"
+          zh_Hans: "5:4"
+    form: form
+  - name: strength
+    type: number
+    required: false
+    default: 0.5
+    label:
+      en_US: Strength
+      zh_Hans: 强度
+    human_description:
+      en_US: Image-to-image influence of the reference image, range 0.0 to 1.0. Lower values keep more of the input image. Tool default is 0.5 (Ultra docs default 0.35; SD 3.5 examples often use 0.7). Ignored for text-to-image.
+      zh_Hans: 图生图时参考图的影响程度，范围 0.0 到 1.0。数值越低越接近原图。工具默认 0.5（Ultra 文档默认 0.35；SD 3.5 示例常用 0.7）。文生图时忽略。
+    form: form
+  - name: seed
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    human_description:
+      en_US: Random seed. 0 means a random seed. Success messages report the seed returned by the model.
+      zh_Hans: 随机种子。0 表示随机。成功消息会打印模型返回的种子。
+    form: form
+  - name: output_format
+    type: select
+    required: false
+    default: png
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+    human_description:
+      en_US: Output image format. webp is only supported by Stable Diffusion 3.5 Large.
+      zh_Hans: 输出图像格式。webp 仅 Stable Diffusion 3.5 Large 支持。
+    options:
+      - value: png
+        label:
+          en_US: PNG
+          zh_Hans: PNG
+      - value: jpeg
+        label:
+          en_US: JPEG
+          zh_Hans: JPEG
+      - value: webp
+        label:
+          en_US: WebP (SD 3.5 only)
+          zh_Hans: WebP（仅 SD 3.5）
+    form: form
+  - name: image_output_s3uri
+    type: string
+    required: false
+    label:
+      en_US: Output S3 URI
+      zh_Hans: 输出 S3 URI
+    human_description:
+      en_US: Optional S3 URI prefix (s3://bucket/prefix). When set, the image is also uploaded. Generation still returns the image blob if upload fails.
+      zh_Hans: 可选的 S3 URI 前缀（s3://bucket/prefix）。设置后会同时上传；上传失败时仍返回图像 blob。
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    default: us-west-2
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+    human_description:
+      en_US: AWS region for Bedrock Runtime. Stability image models are documented with us-west-2 examples.
+      zh_Hans: Bedrock Runtime 所在区域。Stability 图像模型文档示例使用 us-west-2。
+    form: form
+  - name: aws_access_key_id
+    type: string
+    required: false
+    label:
+      en_US: AWS Access Key ID
+      zh_Hans: AWS Access Key ID
+    human_description:
+      en_US: Optional Access Key. Provide together with Secret Access Key, or leave both empty to use the default credential chain.
+      zh_Hans: 可选 Access Key。需与 Secret Access Key 同时提供，或都留空以使用默认凭证链。
+    form: form
+  - name: aws_secret_access_key
+    type: secret-input
+    required: false
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS Secret Access Key
+    human_description:
+      en_US: Optional Secret Access Key. Provide together with Access Key ID, or leave both empty to use the default credential chain.
+      zh_Hans: 可选 Secret Access Key。需与 Access Key ID 同时提供，或都留空以使用默认凭证链。
+    form: form
+  - name: aws_session_token
+    type: secret-input
+    required: false
+    label:
+      en_US: AWS Session Token
+      zh_Hans: AWS Session Token
+    human_description:
+      en_US: Optional session token for temporary credentials (STS/SSO). Requires Access Key and Secret Access Key.
+      zh_Hans: 临时凭证（STS/SSO）的 session token。需要同时提供 Access Key 与 Secret Access Key。
+    form: form
+extra:
+  python:
+    source: tools/bedrock_image.py

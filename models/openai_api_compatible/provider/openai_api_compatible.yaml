@@ -472,8 +472,12 @@ model_credential_schema:
       options:
         - value: supported
           label:
-            en_US: Support
-            zh_Hans: 支持
+            en_US: Prompt-based (compatible)
+            zh_Hans: 提示词模式（兼容）
+        - value: native
+          label:
+            en_US: Native JSON Schema
+            zh_Hans: 原生 JSON Schema
         - value: not_supported
           label:
             en_US: Not Support

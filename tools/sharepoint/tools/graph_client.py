@@ -341,7 +341,7 @@ def list_dict(item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-# Fields SharePoint adds to every item; left out of the simplified output, like n8n's "simplify".
+# Fields SharePoint adds to every item; left out of the simplified output.
 _SYSTEM_FIELDS = {
     "@odata.etag", "ContentType", "_UIVersionString", "Attachments", "Edit", "LinkTitleNoMenu", "LinkTitle",
     "ItemChildCount", "FolderChildCount", "_ComplianceFlags", "_ComplianceTag", "_ComplianceTagWrittenTime",

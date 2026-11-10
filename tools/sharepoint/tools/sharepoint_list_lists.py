@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class ListListsTool(Tool):
-    """The lists and document libraries of a site (n8n: List > Get Many)."""
+    """The lists and document libraries of a site."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

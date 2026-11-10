@@ -111,7 +111,7 @@ def test_to_markdown():
 def test_get_document_accepts_a_url(http):
     http.on("GET", f"{API}/d1", DOC)
     result = run(make_tool(GoogleDocsGetDocumentTool, OAUTH), {"document_id": "https://docs.google.com/document/d/d1/edit"})
-    assert result.vars["title"] == "Plan" and result.vars["text"].startswith("# Goals") and http.calls[0].url == f"{API}/d1"
+    assert result.vars["title"] == "Plan" and result.vars["content"].startswith("# Goals") and http.calls[0].url == f"{API}/d1"
 
 
 def test_create_with_content(http):
