@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class GetItemTool(Tool):
-    """One list item with its fields (n8n: Item > Get)."""
+    """One list item with its fields."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

@@ -6,7 +6,7 @@
 
 ## Overview
 
-Read and write SharePoint **lists**, **list items** and **document library files** through Microsoft Graph, from workflows and agents. The tools cover every operation of n8n's Microsoft SharePoint node, plus the lookups an agent needs to find sites, lists and files by itself.
+Read and write SharePoint **lists**, **list items** and **document library files** through Microsoft Graph, from workflows and agents. Besides reading and writing, the tools include the lookups an agent needs to find sites, lists and files by itself.
 
 To search content across all of SharePoint and OneDrive, or to import documents into a knowledge base, use the **SharePoint datasource** plugin instead; this plugin works on lists and files you point it at.
 
@@ -57,13 +57,15 @@ The first time a user needs SharePoint, the tool returns a Microsoft sign-in lin
    ```
    You can use the SharePoint tools on behalf of the current user.
    - Find a site with sharepoint_search_sites or sharepoint_get_site (a site URL works), its lists with sharepoint_list_lists, and a list's column names with sharepoint_get_list before writing items.
-   - If a tool says the user needs to sign in and returns a link, give the link to the user exactly as returned. Ask them to open it, sign in with their own Microsoft account, and reply "done" when finished. After they reply, call the same tool again.
+   - If a tool says the user needs to sign in and returns a link, give the link to the user exactly as returned. Ask them to open it, sign in with their own Microsoft account, and reply "done" right after signing in. After they reply, call the same tool again.
    - Before deleting an item or replacing a file, tell the user what will change and ask them to confirm.
    - Never make up data. If a tool returns an error, tell the user what it says.
    - If the user asks to sign out or switch accounts, call sharepoint_sign_out.
    ```
 
 What to know:
+- Users should reply right after signing in. The sign-in is completed when the agent calls a tool again, and Microsoft's one-time code expires after about 10 minutes (error `AADSTS70008`). If the user comes back later, the tool hands out a new sign-in link at once.
+- Every user must pass the tenant's **Conditional Access** policies. For example, a policy that requires MFA blocks users who have not registered an MFA method ("your sign-in was successful but does not meet the criteria to access this resource"). Entra's **Sign-in logs** show which policy applied.
 - Each user's tokens are kept in the plugin's storage, encrypted with a key derived from the client secret. They never reach the agent or the logs. The endpoint only holds a one-time authorization code briefly; turning it into a token also needs the client secret and a PKCE verifier it never sees.
 - Users stay signed in while they keep using it (the access token is renewed hourly; Microsoft's refresh token expires after about 90 days unused). They sign in again after signing out, a password change, an administrator revoking their sessions, or a client secret rotation.
 - Users are told apart by Dify's user ID. It is stable in the console and for Service API callers that always send the same `user`; in a public web app without login, each browser is a new anonymous user. The Service API `user` value is chosen by the caller, so call the API only from a trusted backend.
@@ -74,23 +76,28 @@ What to know:
 
 Every tool takes a **Site**: its URL (`https://contoso.sharepoint.com/sites/Team`, a link to a page or file in the site works too), its ID from **Search Sites**, or `root`. Lists are named by ID or name; files and folders by ID (from **List Files**). Files are in the site's default document library.
 
-| Tool | n8n operation | What it does |
-|---|---|---|
-| `sharepoint_search_sites` | (site picker) | Find sites by name |
-| `sharepoint_get_site` | (site picker) | A site from its URL, ID or `root` |
-| `sharepoint_list_lists` | List: Get Many | Lists and document libraries of a site (hidden system lists only on request) |
-| `sharepoint_get_list` | List: Get | A list and its columns: internal names, types, required, choices |
-| `sharepoint_list_items` | Item: Get Many | Items with their fields; optional OData `filter` such as `fields/Status eq 'Done'` (allowed on non-indexed columns), `limit` up to 5000 |
-| `sharepoint_get_item` | Item: Get | One item |
-| `sharepoint_create_item` | Item: Create | Add an item from a JSON object of column values |
-| `sharepoint_update_item` | Item: Update | Change some columns of an item |
-| `sharepoint_upsert_item` | Item: Create or Update | Update the item whose `match_columns` equal the given values, or create it; more than one match is an error |
-| `sharepoint_delete_item` | Item: Delete | Delete an item (to the recycle bin) |
-| `sharepoint_list_files` | (folder and file pickers) | Files and folders in a folder of the document library |
-| `sharepoint_download_file` | File: Download | Download a file (up to 15 MB) |
-| `sharepoint_upload_file` | File: Upload | Upload a file, or save text as a file, into a folder; same name replaces |
-| `sharepoint_update_file` | File: Update | Rename a file and/or replace its content |
-| `sharepoint_sign_out` | – | *Each user signs in* only: forget the current user's SharePoint sign-in |
+| Tool | What it does |
+|---|---|
+| `sharepoint_search_sites` | Find sites by name |
+| `sharepoint_get_site` | A site from its URL, ID or `root` |
+| `sharepoint_list_lists` | Lists and document libraries of a site (hidden system lists only on request) |
+| `sharepoint_get_list` | A list and its columns: internal names, types, required, choices |
+| `sharepoint_list_items` | Items with their fields; optional OData `filter` such as `fields/Status eq 'Done'` (allowed on non-indexed columns), `limit` up to 5000 |
+| `sharepoint_get_item` | One item |
+| `sharepoint_create_item` | Add an item from a JSON object of column values |
+| `sharepoint_update_item` | Change some columns of an item |
+| `sharepoint_upsert_item` | Update the item whose `match_columns` equal the given values, or create it; more than one match is an error |
+| `sharepoint_delete_item` | Delete an item (to the recycle bin) |
+| `sharepoint_list_files` | Files and folders in a folder of the document library |
+| `sharepoint_download_file` | Download a file (up to 15 MB) |
+| `sharepoint_read_file` | The text of a text, Word, Excel, PowerPoint or PDF file (up to 15 MB), for agents |
+| `sharepoint_upload_file` | Upload a file, or save text as a file, into a folder; same name replaces |
+| `sharepoint_update_file` | Rename a file and/or replace its content |
+| `sharepoint_sign_out` | *Each user signs in* only: forget the current user's SharePoint sign-in |
+
+**In an agent**:
+- **Reading a document**: use `sharepoint_read_file`. It returns the document's text, which the agent can read and summarize.
+- **Downloading a file**: `sharepoint_download_file` returns a file. Agent strategies that cannot handle file outputs fail on it, so use it in a workflow **Tool** node, for example followed by a **Document Extractor**.
 
 Column values use the columns' **internal** names (e.g. `Title`, `Status`, `Due_x0020_Date`); `sharepoint_get_list` shows them. Item fields are returned without SharePoint's system columns.
 
@@ -109,10 +116,15 @@ Besides `text` and `json`, every tool returns typed variables that later workflo
 | sharepoint_update_item | `item_id`, `updated_fields` |
 | sharepoint_upsert_item | `item_id`, `action` (`created` or `updated`) |
 | sharepoint_delete_item | `item_id` |
-| sharepoint_list_files | `files`, `count` |
+| sharepoint_list_files | `items`, `count` |
 | sharepoint_download_file | `name`, `size`, `mime_type`, `web_url`, `downloaded` |
+| sharepoint_read_file | `name`, `mime_type`, `web_url`, `content`, `length`, `truncated` |
 | sharepoint_upload_file, sharepoint_update_file | `file_id`, `name`, `size`, `web_url` |
 | sharepoint_sign_out | `signed_out` |
+
+**Errors in workflows**: a tool that cannot do its job (no access, not found, invalid input, sign-in needed) still finishes. It returns `success = false` and the reason in `error`, which is also the tool's text. It does not raise an error, so the node's **Fail Branch** is not taken. Branch on `success` with an **If/Else** node after the tool, and show `error` to the user.
+
+In *Each user signs in* mode, `error` holds the sign-in link when the user has not signed in yet.
 
 ## Privacy
 

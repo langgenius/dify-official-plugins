@@ -4,6 +4,7 @@ label:
   en_US: gemini-3.7-flash
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call

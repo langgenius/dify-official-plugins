@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class DeleteItemTool(Tool):
-    """Delete a list item; it goes to the site's recycle bin (n8n: Item > Delete)."""
+    """Delete a list item; it goes to the site's recycle bin."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

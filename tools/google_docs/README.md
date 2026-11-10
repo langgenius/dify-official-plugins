@@ -25,7 +25,8 @@ Everything else becomes normal paragraphs.
 
 More details:
 - **Document IDs**: tools accept a document's ID or its URL.
-- **Output variables**: every tool returns typed output variables (`success` / `error` plus its fields) for workflows.
+- **Output variables**: every tool returns typed output variables (`success` / `error` plus its fields) for workflows. `google_docs_get_document` returns the Markdown in `content`.
+- **Errors in workflows**: a tool that cannot do its job (no access, not found, sign-in needed) still finishes, with `success = false` and the reason in `error`. It does not raise an error, so the node's **Fail Branch** is not taken: branch on `success` with an **If/Else** node instead.
 
 ## Setup
 

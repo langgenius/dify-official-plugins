@@ -142,7 +142,7 @@ parameters:
 output_schema:
   type: object
   properties:
-    files:
+    items:
       type: array
       items:
         type: object
