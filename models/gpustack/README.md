@@ -82,3 +82,19 @@ Run the plugin contract tests from this directory after `uv sync --frozen`:
 ```bash
 uv run python -m unittest discover -s tests -v
 ```
+## Configurable LLM timeout (0.0.19)
+
+In Dify's **Add/Edit model** form, LLM models expose **Request read timeout
+(seconds)** / **请求读取超时（秒）**. Set a positive number such as `300`, `600`,
+or `900`. The value is applied independently for each model, to streaming and
+non-streaming inference, credential validation, and validation retries. The
+connection timeout remains 10 seconds. This setting is a read inactivity timeout,
+not a total generation deadline: a stream that continues receiving data can run
+longer. It is not sent as an inference parameter to GPUStack.
+
+If the field is absent or blank, the plugin reads `MAX_REQUEST_TIMEOUT` from its
+process environment (SDK default: 300 seconds). The plugin entrypoint also reads
+this environment setting instead of fixing it at 120. For Serverless installations,
+set that environment value high enough for the desired wait between plugin
+messages; the per-model field does not change this separate server-level deadline.
+Dify/plugin-daemon and reverse proxy deadlines must also accommodate the request.
