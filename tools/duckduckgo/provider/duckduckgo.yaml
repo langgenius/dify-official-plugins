@@ -1,8 +1,8 @@
 identity:
   author: yash_parmar
-  name: duckduckgo_hardened
+  name: duckduckgo
   label:
-    en_US: DuckDuckGo (hardened)
+    en_US: DuckDuckGo
     zh_Hans: DuckDuckGo
   description:
     en_US: A privacy-focused search engine.
