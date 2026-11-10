@@ -30,7 +30,7 @@ def http(monkeypatch):
 
 def test_manifest_declares_endpoint_and_storage():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.2"
+    assert manifest["version"] == "1.0.3"
     assert manifest["plugins"]["endpoints"] == ["group/jira_signin.yaml"]
     assert manifest["resource"]["permission"]["storage"]["enabled"]
     group = yaml.safe_load((ROOT / "group" / "jira_signin.yaml").read_text(encoding="utf-8"))
