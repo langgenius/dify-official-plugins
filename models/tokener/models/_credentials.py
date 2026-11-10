@@ -3,7 +3,7 @@ from http import HTTPStatus
 import requests
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
-ENDPOINT_URL = "https://api.tokener.dev/v1"
+ENDPOINT_URL = "https://api.tokener.ai/v1"
 VALIDATION_TIMEOUT = (10, 30)
 
 
@@ -35,9 +35,7 @@ def validate_model_access(credentials: dict, model: str | None = None) -> None:
     try:
         payload = response.json()
     except ValueError as ex:
-        raise CredentialsValidateFailedError(
-            "Tokener.ai returned an invalid model list"
-        ) from ex
+        raise CredentialsValidateFailedError("Tokener.ai returned an invalid model list") from ex
 
     items = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(items, list):

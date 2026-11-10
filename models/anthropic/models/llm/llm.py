@@ -64,6 +64,13 @@ from PIL import Image
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
 
 
+def _debug_logging_enabled() -> bool:
+    """Whether DEBUG-level logging is active, guarding expensive payload
+    serialization (request/response/tool payloads are large and contain user
+    content that should not be serialized at INFO)."""
+    return logging.getLogger().isEnabledFor(logging.DEBUG)
+
+
 class PromptCachingHandler:
     CACHE_CONTROL_TYPE = "ephemeral"
 
@@ -185,6 +192,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -197,6 +205,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-7",
         "claude-opus-4-8",
         "claude-opus-5",
+        "claude-haiku-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -207,6 +216,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-sonnet-5",
         "claude-opus-5",
+        "claude-haiku-5",
     )
     # Models where thinking can be disabled only at effort `high` or below
     # (thinking.type=disabled combined with effort xhigh/max returns a 400). GA on
@@ -214,6 +224,15 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     # on these models so the request still succeeds.
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
+        "claude-sonnet-5-5",
+    )
+    # Models where up-front thinking is turned off with thinking.type=between_tools
+    # instead of "disabled" (which returns a 400 naming between_tools). between_tools
+    # takes no other field and is accepted only at effort low/medium/high, so these
+    # models also sit in DISABLED_THINKING_EFFORT_CAP_MODELS for the clamp.
+    BETWEEN_TOOLS_THINKING_OFF_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -250,6 +269,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _supports_task_budget(self, model: str) -> bool:
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
+
+    def _uses_between_tools_thinking_off(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.BETWEEN_TOOLS_THINKING_OFF_MODELS
+        )
 
     def _enforces_disabled_thinking_effort_cap(self, model: str) -> bool:
         model_id = (model or "").lower()
@@ -293,7 +319,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         model_id = (model or "").lower()
         if model_id == "claude-fable-5-1":
             return 0.025
-        if model_id == "claude-opus-5-5":
+        if model_id in ("claude-opus-5-5", "claude-sonnet-5-5"):
             return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
 
@@ -358,7 +384,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     name="effort",
                     label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
-                    default="medium" if model.lower() == "claude-opus-5-5" else "high",
+                    default=(
+                        "medium"
+                        if model.lower() == "claude-opus-5-5"
+                        or model.lower().startswith("claude-haiku-5")
+                        else "high"
+                    ),
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
@@ -494,6 +525,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
                 }
+            elif thinking_was_set and self._uses_between_tools_thinking_off(model):
+                # Sonnet 5.5: thinking.type=disabled is rejected with a 400 that
+                # points to between_tools. Send exactly {"type": "between_tools"}:
+                # display/budget_tokens/block_binding alongside it also return 400.
+                # Must be checked before the adaptive-default-on branch because the
+                # "claude-sonnet-5" prefix there also matches claude-sonnet-5-5.
+                extra_model_kwargs["thinking"] = {"type": "between_tools"}
+                disabling_thinking = True
             elif adaptive_thinking_default_on and thinking_was_set:
                 # Sonnet 5 / Opus 5: thinking is on by default. An explicit false
                 # turns it off; omitting the field uses the API's adaptive-on default.
@@ -562,6 +601,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "type": "json_schema",
                 "schema": json_schema,
             }
+
+        # API version 2026-10-21 (the Anthropic SDK 2.x default) rejects
+        # temperature/top_p/top_k with a 400 even at their default values,
+        # while older models still honor them under 2023-06-01. The migration
+        # guide's own remedy is to keep such requests on 2023-06-01. When
+        # sampling parameters are forwarded for a model that accepts them,
+        # pin the request to 2023-06-01 so explicitly configured sampling
+        # keeps working after the SDK 2.x upgrade. output_config (structured
+        # output / effort / task budget) requires the newer API version, so
+        # when both apply the sampling parameters are dropped with a warning
+        # instead of breaking the whole request.
+        if sampling_parameters:
+            if "output_config" not in extra_model_kwargs:
+                extra_headers["anthropic-version"] = "2023-06-01"
+            else:
+                logging.warning(
+                    "Model %s: dropping sampling parameters %s; the request "
+                    "carries output_config, which requires API version "
+                    "2026-10-21 (rejecting temperature/top_p/top_k).",
+                    model,
+                    sorted(sampling_parameters),
+                )
+                extra_body = model_parameters.pop("extra_body", {})
+                for key in sampling_parameters:
+                    extra_body.pop(key, None)
+                if extra_body:
+                    model_parameters["extra_body"] = extra_body
 
         # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
@@ -650,7 +716,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Sort by priority (lower number = higher priority), then by length descending
             blocks.sort(key=lambda x: (x[0], x[1]))
 
-            logging.info(f"Blocks: {blocks}")
+            if _debug_logging_enabled():
+                logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
             for idx, (_, _, block_dict) in enumerate(blocks):
@@ -687,18 +754,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if model == "claude-3-5-sonnet-20240620":
             if model_parameters.get("max_tokens", 0) > 4096:
                 extra_headers["anthropic-beta"] = "max-tokens-3-5-sonnet-2024-07-15"
-        if any(
-            (
-                isinstance(content, DocumentPromptMessageContent)
-                for prompt_message in prompt_messages
-                if isinstance(prompt_message.content, list)
-                for content in prompt_message.content
-            )
-        ):
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
-            else:
-                extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+        # Note: PDF (document) support is GA and no longer requires the
+        # `pdfs-2024-09-25` beta header
+        # (https://platform.claude.com/docs/en/build-with-claude/pdf-support).
 
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -710,15 +768,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             ]
             
             # Log the transformed tools to verify cache_control is added
-            logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+            if _debug_logging_enabled():
+                logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
             
             request_payload["tools"] = extra_model_kwargs["tools"]
 
             # Now prune cache blocks to respect Anthropic limit
             _prune_cache_blocks(request_payload)
 
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if _debug_logging_enabled():
+                loggable_request = _sanitize_for_logging(request_payload)
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -731,8 +791,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         else:
             _prune_cache_blocks(request_payload)
 
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if _debug_logging_enabled():
+                loggable_request = _sanitize_for_logging(request_payload)
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -747,7 +808,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        logging.info(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+        if _debug_logging_enabled():
+            logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -1140,8 +1202,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        current_block_type = None
         current_block_index = None
+        # The think tag opens on the first non-empty thinking text, not at block start:
+        # with display "omitted" the only thinking_delta is empty.
+        think_open = False
         
         current_tool_name = None
         current_tool_id = None
@@ -1161,7 +1225,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_creation_1h_input_tokens = 0
         
         for chunk in response:
-            logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+            if _debug_logging_enabled():
+                logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
@@ -1215,7 +1280,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    if think_open:
+                        think_open = False
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1226,25 +1292,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                     
                     current_block_index = chunk.index
-                    if hasattr(chunk.delta, "thinking"):
-                        current_block_type = "thinking"
-                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
-                        yield LLMResultChunk(
-                            model=return_model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=chunk.index, message=assistant_prompt_message
-                            ),
-                        )
-                    elif hasattr(chunk.delta, "text"):
-                        current_block_type = "text"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
-                        # Tool-use block: mark as non-thinking so the closing
-                        # think tag (already emitted at the block transition
-                        # above) is not emitted a second time at stream end.
-                        current_block_type = "tool_use"
-                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                        current_block_type = "redacted_thinking"
+                    if hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
+                        think_open = True
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -1261,6 +1310,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     if current_thinking_blocks:
                         current_thinking_blocks[-1]["thinking"] += thinking_text
                     
+                    if thinking_text and not think_open:
+                        think_open = True
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk.index, message=AssistantPromptMessage(content="<think>\n")
+                            ),
+                        )
+
                     assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
                     index = chunk.index
                     yield LLMResultChunk(
@@ -1308,7 +1367,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
                 )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                if think_open:
+                    think_open = False
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,

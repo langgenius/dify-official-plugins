@@ -20,6 +20,7 @@ from dify_plugin.entities.model.message import (
 
 MODEL_ALIASES: Mapping[str, str] = MappingProxyType(
     {
+        "minimax-m3.1-flash": "MiniMax-M3.1-Flash",
         "minimax-m3": "MiniMax-M3",
         "minimax-m2.7": "MiniMax-M2.7",
         "minimax-m2.7-highspeed": "MiniMax-M2.7-highspeed",
@@ -35,6 +36,9 @@ MODEL_ALIASES: Mapping[str, str] = MappingProxyType(
         "minimax-m1": "MiniMax-M2.5",
     }
 )
+
+EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
+HIDDEN_THINKING_MODELS = ("MiniMax-M3", "MiniMax-M3.1-Flash")
 
 FINISH_REASONS: Mapping[str, str] = MappingProxyType(
     {"end_turn": "stop", "stop_sequence": "stop", "max_tokens": "length", "tool_use": "tool_calls"}
@@ -65,6 +69,7 @@ class GenerationOptions:
     max_tokens: int
     thinking: Any
     thinking_budget: int
+    effort: str | None
     exclude_reasoning_tokens: bool
     sampling: tuple[tuple[str, Any], ...]
 
@@ -91,8 +96,9 @@ def generation_options(parameters: Mapping[str, Any], request_model: str) -> Gen
         max_tokens=max_tokens if max_tokens > 0 else 1024,
         thinking=values.get("thinking"),
         thinking_budget=int(values.get("thinking_budget", 1024) or 1024),
+        effort=values.get("effort") if values.get("effort") in EFFORT_LEVELS else None,
         exclude_reasoning_tokens=(
-            values.get("exclude_reasoning_tokens", request_model == "MiniMax-M3") is True
+            values.get("exclude_reasoning_tokens", request_model in HIDDEN_THINKING_MODELS) is True
         ),
         sampling=tuple(
             (name, values[name])

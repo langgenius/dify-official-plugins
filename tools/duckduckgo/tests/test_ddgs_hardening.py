@@ -133,13 +133,23 @@ def test_desktop_layout_still_uses_the_stock_parser():
     assert len(results) == 1 and results[0].title == "T"
 
 
-def test_cooldown_excludes_blocked_engines(monkeypatch):
-    monkeypatch.setattr(ddgs_hardening, "_cooldown_until", {})
-    monkeypatch.setattr(ddgs_hardening, "ENGINE_COOLDOWN_SECONDS", 60.0)
-    assert ddgs_hardening.healthy_backend("text") is None  # nothing blocked -> leave 'auto'
+def test_answered_engines_are_not_retried():
+    """A retry only goes to engines that refused, timed out or dropped.
+
+    The removed per-engine cooldown skipped engines that had just refused; under a burst
+    every web engine refuses within a minute, so the retry list collapsed to the
+    encyclopedias, which cannot answer ordinary queries. An engine that served a proper
+    page answers the same page when asked again, so a retry must not spend an attempt on
+    it, while a refused or timed-out engine stays worth another ask.
+    """
+    ddgs_hardening.clear_diagnostics("q")
     ddgs_hardening._record("q", "brave", 429, 10, "429-ratelimit")
-    ddgs_hardening._record("q", "google", 429, 10, "429-ratelimit")
-    healthy = ddgs_hardening.healthy_backend("text")
-    assert healthy is not None
-    assert "brave" not in healthy.split(",") and "google" not in healthy.split(",")
-    assert "yahoo" in healthy.split(",")
+    ddgs_hardening._record("q", "yahoo", 200, 334, "ok-desktop")
+    ddgs_hardening._record("q", "google", 200, 12, "empty")
+    rows = ddgs_hardening.diagnostics_for("q")
+    assert ddgs_hardening.answered_engines(rows) == {"google", "yahoo"}
+    assert "brave" not in ddgs_hardening.answered_engines(rows)
+
+    ddgs_hardening.clear_diagnostics("q2")
+    ddgs_hardening._record("q2", "brave", None, 0, "exception:Timeout")
+    assert ddgs_hardening.answered_engines(ddgs_hardening.diagnostics_for("q2")) == set()

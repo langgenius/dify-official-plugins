@@ -1,0 +1,72 @@
+identity:
+  name: create_database_record
+  author: langgenius
+  label:
+    en_US: Create Notion Database Record
+    zh_Hans: 创建 Notion 数据库记录
+    pt_BR: Criar Registro no Banco de Dados do Notion
+    ja_JP: Notion データベースにレコードを作成
+    zh_Hant: 建立 Notion 資料庫記錄
+description:
+  human:
+    en_US: Create a new record (row) in a Notion database with the given property values
+    zh_Hans: 在 Notion 数据库中使用指定的属性值创建新记录（行）
+    pt_BR: Criar um novo registro (linha) em um banco de dados do Notion com os valores de propriedade informados
+    ja_JP: プロパティ値を指定して Notion データベースに新しいレコード（行）を作成します
+    zh_Hant: 在 Notion 資料庫中使用指定的屬性值建立新記錄（列）
+  llm: Create a new record (row) in a Notion database and set its property values in one step. Values are given as a simple JSON object keyed by property name and converted to the right Notion format based on each property's type, which is read from the database schema (use retrieve_database to see the property names and types). Optionally adds plain-text body content to the record. The JSON result has a "status" of created, partially_created (the record was created but part of its content could not be added), not_accessible (the database does not exist or is not shared with the integration), invalid_input or error, plus the new record's id and url.
+parameters:
+  - name: database_id
+    type: string
+    required: true
+    label:
+      en_US: Database ID
+      zh_Hans: 数据库 ID
+      pt_BR: ID do Banco de Dados
+      ja_JP: データベース ID
+      zh_Hant: 資料庫 ID
+    human_description:
+      en_US: 'Database to add the record to.'
+      zh_Hans: '要添加记录的数据库。'
+      pt_BR: 'Banco de dados onde o registro será criado.'
+      ja_JP: 'レコードを追加するデータベース。'
+      zh_Hant: '要新增記錄的資料庫。'
+    llm_description: The ID (or URL) of the Notion database to create the record in, or of one of its data sources (search_notion returns databases as data sources). For a database ID, the record is added to its first data source.
+    form: llm
+  - name: properties
+    type: string
+    required: true
+    label:
+      en_US: Properties
+      zh_Hans: 属性
+      pt_BR: Propriedades
+      ja_JP: プロパティ
+      zh_Hant: 屬性
+    human_description:
+      en_US: 'Values as JSON, e.g. {"Name": "Task A", "Status": "Todo", "Tags": ["a"]}.'
+      zh_Hans: '以 JSON 指定值，例如 {"Name": "Task A", "Status": "Todo", "Tags": ["a"]}。'
+      pt_BR: 'Valores em JSON, ex. {"Name": "Task A", "Status": "Todo", "Tags": ["a"]}.'
+      ja_JP: '値を JSON で指定。例：{"名前": "タスクA", "ステータス": "未着手", "タグ": ["a"]}'
+      zh_Hant: '以 JSON 指定值，例如 {"Name": "Task A", "Status": "Todo", "Tags": ["a"]}。'
+    llm_description: 'JSON object mapping property names to values, e.g. {"Name": "Task A", "Count": 3, "Done": true}. Property names must match the database exactly; include the title property to name the record (otherwise it is "Untitled"). Omitted properties, null and "" are left empty; at least one non-empty value (or content) is required. Values by property type - title/rich_text/url/email/phone_number: string; number: number; checkbox: true or false; select/status: option name (an unknown select option is created by Notion; status must be an existing option); multi_select: list of option names; date: ISO 8601 string (e.g. "2026-10-01" or "2026-10-01T09:00:00+09:00") or {"start": ..., "end": ...}; people: list of user IDs; relation: list of page IDs; files: list of external file URLs. Formula, rollup, unique_id and created/last-edited properties are set by Notion and cannot be given. A value given as a dict keyed by the property type (raw Notion format, e.g. {"rich_text": [...]}) is sent as-is.'
+    form: llm
+  - name: content
+    type: string
+    required: false
+    label:
+      en_US: Content
+      zh_Hans: 内容
+      pt_BR: Conteúdo
+      ja_JP: 本文
+      zh_Hant: 內容
+    human_description:
+      en_US: 'Optional body text of the record. Each line becomes a paragraph.'
+      zh_Hans: '记录的正文（可选）。每行成为一个段落。'
+      pt_BR: 'Texto do corpo do registro (opcional). Cada linha vira um parágrafo.'
+      ja_JP: 'レコードの本文（任意）。1 行が 1 段落になります。'
+      zh_Hant: '記錄的內文（選填）。每行成為一個段落。'
+    llm_description: Optional plain-text body of the record (the page content shown below the properties). Each line becomes a paragraph; Markdown is not interpreted.
+    form: llm
+extra:
+  python:
+    source: tools/create_database_record.py

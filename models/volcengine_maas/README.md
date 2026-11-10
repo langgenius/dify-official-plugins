@@ -72,3 +72,15 @@ Specifications and standard online token prices checked on 2026-09-07:
 - **404 / model not found**: `endpoint_id` is incorrect or not available in the selected region.
 - **Invalid URL**: `api_endpoint_host` must include `/api/v3`.
 - **Timeout / connection error**: ensure your Dify deployment can reach Volcengine endpoints.
+
+## Kimi K3.1 Pro
+
+For an Ark endpoint serving `kimi-k3-1-pro-261024`, select **Kimi-K3.1-Pro** as
+the base model and enter the endpoint ID. The profile supports a 1,048,576-token
+context, up to 131,072 output tokens, image/video input, tools, and structured
+output. Thinking is always enabled; choose `low`, `high`, or `max` reasoning
+effort. Sampling controls are omitted, including during credential validation.
+
+Limits and pricing follow the Ark [model list](https://console.volcengine.com/ark/region:cn-beijing/docs/model-list),
+[reasoning guide](https://console.volcengine.com/ark/region:cn-beijing/docs/deep-thinking),
+and [price list](https://console.volcengine.com/ark/region:cn-beijing/docs/model-pricing).

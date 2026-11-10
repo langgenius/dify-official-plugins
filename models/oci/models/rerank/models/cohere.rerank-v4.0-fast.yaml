@@ -1,0 +1,6 @@
+model: cohere.rerank-v4.0-fast
+label:
+  en_US: cohere.rerank-v4.0-fast
+model_type: rerank
+model_properties:
+  context_size: 32768

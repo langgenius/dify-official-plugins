@@ -49,6 +49,8 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 ## GPT-6 models
 
+GPT-6.1 Sol and Terra require Responses for function calling. Sol supports reasoning effort `low` through `max`, while Terra also supports `none`.
+
 GPT-6 Astra, Sol, and Luna support text, vision, structured outputs, and streaming, with reasoning effort set to `medium` by default.
 GPT-6 Astra requires Responses for function calling and does not support reasoning effort `none`.
 GPT-6 Sol and Luna support function calling through Chat Completions only with reasoning effort `none`; use Responses to combine reasoning and tools.
@@ -85,7 +87,7 @@ See the [official Decisions guide](https://developers.openai.com/api/docs/guides
 The plugin sends `store=false` by default and requests encrypted reasoning content when it uses the Responses API. Enabling `Enable request metadata` switches `store` to `true`, but encrypted reasoning content is still requested, so reasoning replay behaves the same either way.
 
 Complete response output items are stored in the assistant message's opaque payload and replayed in original order when that payload returns on the next turn.
-Existing SDK, daemon, Dify, and Agent paths can lose or reject this payload during tool continuations; adding GPT-6 model support does not resolve those limitations.
+The daemon preserves opaque JSON payloads across invocation and Agent history, including integers above `2^53`. End-to-end replay still depends on SDK, Dify, and Agent paths returning this payload during tool continuations; adding GPT-6 model support does not resolve those limitations.
 
 Reasoning summaries are user-visible only when `reasoning_summary` is enabled for a supported model.
 

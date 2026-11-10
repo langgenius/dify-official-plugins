@@ -17,6 +17,7 @@ from models.llm.models import get_v3_req_params
     [
         ("DeepSeek-V4.1-Flash", 393216, ["none", "low", "high", "max"], "high", True),
         ("GLM-5.3-Flash", 131072, ["low", "high", "max"], "max", False),
+        ("Kimi-K3.1-Pro", 131072, ["low", "high", "max"], "max", False),
         ("Doubao-Seed-2.1-lite", 262144, ["minimal", "low", "medium", "high"], "high", True),
     ],
 )
@@ -61,10 +62,29 @@ def test_new_models_are_selectable_for_llm_endpoints():
         field for field in provider["model_credential_schema"]["credential_form_schemas"]
         if field["variable"] == "base_model_name"
     )
-    for name in ("DeepSeek-V4.1-Flash", "GLM-5.3-Flash", "Doubao-Seed-2.1-lite"):
+    for name in ("DeepSeek-V4.1-Flash", "GLM-5.3-Flash", "Doubao-Seed-2.1-lite", "Kimi-K3.1-Pro"):
         options = [option for option in base_model_field["options"] if option["value"] == name]
         assert len(options) == 1
         assert options[0]["show_on"] == [{"variable": "__model_type", "value": "llm"}]
+
+
+def test_kimi_credential_validation_omits_fixed_sampling(monkeypatch):
+    client = Mock()
+    monkeypatch.setattr(ArkClientV3, "from_credentials", lambda credentials: client)
+    llm = VolcengineMaaSLargeLanguageModel([])
+    credentials = {"base_model_name": "Kimi-K3.1-Pro", "endpoint_id": "ep-test"}
+
+    llm._validate_credentials_v3(credentials)
+    assert "temperature" not in client.chat.call_args.kwargs
+    assert "top_p" not in client.chat.call_args.kwargs
+
+    schema = llm.get_customizable_model_schema("my-endpoint", credentials)
+    rules = {rule.name: rule for rule in schema.parameter_rules}
+    assert not {"temperature", "top_p", "top_k", "presence_penalty", "frequency_penalty", "thinking"}.intersection(rules)
+    assert ModelFeature.STRUCTURED_OUTPUT in schema.features
+    assert "json_schema" in rules
+    assert schema.pricing.input * schema.pricing.unit == Decimal("0.000013")
+    assert schema.pricing.output * schema.pricing.unit == Decimal("0.000068")
 
 
 def test_seed_lite_audio_structured_output_and_pricing():
@@ -79,6 +99,28 @@ def test_seed_lite_audio_structured_output_and_pricing():
     assert schema.pricing.output == Decimal("0.0027")
     assert schema.pricing.unit == Decimal("0.001")
     assert schema.pricing.currency == "RMB"
+
+
+def test_kimi_non_stream_response_preserves_reasoning(monkeypatch):
+    client = Mock()
+    client.chat.return_value = Mock(
+        choices=[Mock(message=Mock(content="42", reasoning_content="Use the tool result.", tool_calls=[]))],
+        usage=Mock(prompt_tokens=10, completion_tokens=5),
+    )
+    monkeypatch.setattr(ArkClientV3, "from_credentials", lambda credentials: client)
+    llm = VolcengineMaaSLargeLanguageModel([])
+    result = llm._generate_v3(
+        model="my-endpoint",
+        credentials={"base_model_name": "Kimi-K3.1-Pro", "endpoint_id": "ep-test"},
+        prompt_messages=[UserPromptMessage(content="Answer the question.")],
+        model_parameters={"max_tokens": 128, "reasoning_effort": "low"},
+        stream=False,
+    )
+    assert result.message.content == "<think>Use the tool result.</think>42"
+    payload = ArkClientV3.convert_prompt_message(result.message)
+    assert payload["reasoning_content"] == "Use the tool result."
+    assert payload["content"] == "42"
+    assert client.chat.call_args.kwargs["reasoning_effort"] == "low"
 
 
 @pytest.mark.parametrize(

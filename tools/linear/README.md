@@ -19,6 +19,7 @@ This plugin integrates Linear's project management capabilities with Dify, allow
 - **List Issue Statuses**: List workflow states, optionally filtered by team.
 - **List Project Labels**: List project labels and their colors.
 - **Get Issue**: Retrieve issue details by ID.
+- **Find Issues by Attachment URL**: Find issues linked to an external URL (support ticket, pull request, chat thread, etc.).
 - **Get Project**: Retrieve project details by ID.
 - **Get Team**: Retrieve team details by ID.
 - **Get User**: Retrieve user details by ID.
@@ -192,6 +193,19 @@ Retrieves a specific issue by ID.
 
 Required parameters:
 - `id`: ID of the issue to retrieve.
+
+### Find Issues by Attachment URL
+
+Finds issues that have an attachment pointing to an external URL. Linear integrations (Zendesk, Intercom, GitHub, Slack, ...) link external resources to issues as attachments, so this answers "which Linear issues are linked to this ticket / PR / thread?".
+
+Required parameters:
+- `url`: The external URL, or a URL fragment when `match_mode` is `contains`.
+
+Optional parameters:
+- `match_mode`: `exact` (default) or `contains`. `contains` is case-insensitive and does not match when the fragment is followed by another letter or digit, so `acme.zendesk.com/agent/tickets/123` does not match ticket `1234`.
+- `limit`: Maximum number of attachments to look up (default: 20, max: 100).
+
+Returns `issues`, each with state, assignee, team, project, labels and the matching `attachments`.
 
 ### Get Linear Project
 

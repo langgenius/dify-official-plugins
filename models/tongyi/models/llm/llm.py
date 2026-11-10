@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import re
 import tempfile
 import uuid
 from collections.abc import Generator
@@ -77,6 +78,10 @@ from .qwen_long import MAX_DOCUMENT_INPUT_BASE64_BYTES, QwenLongFiles
 
 logger = logging.getLogger(__name__)
 
+# 仅匹配 Dify 历史协议的完整块，不跨越其他 think 标签去补全损坏的历史。
+# 无来源标记时，同格式的正文示例也会被视为思考块；不推断其真实来源。
+_HISTORY_THINK_PATTERN = re.compile(r"<think>\n(?:(?!</?think>).)*\n</think>", re.DOTALL)
+
 
 class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
@@ -136,19 +141,29 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:
         """
-        if self.get_customizable_model_schema(model, credentials) is not None:
-            return 0
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
             model = model.replace("-chat", "")
         if model == "farui-plus":
             model = "qwen-farui-plus"
+
+        prompt = self._convert_messages_to_prompt(prompt_messages)
+
+        # DashScope only ships a local tokenizer for the Qwen series. Any other
+        # model -- hosted third-party models (kimi/glm/deepseek/...) or
+        # user-defined customizable models -- is unsupported there, so fall back
+        # to the offline gpt2 estimator. This keeps Dify's prompt trimming and
+        # max_tokens budgeting working with a usable, non-zero token count
+        # instead of the previous behaviour of always returning 0.
         if model in self.tokenizers:
             tokenizer = self.tokenizers[model]
         else:
-            tokenizer = get_tokenizer(model)
+            try:
+                tokenizer = get_tokenizer(model)
+            except UnsupportedModel:
+                return self._get_num_tokens_by_gpt2(prompt)
             self.tokenizers[model] = tokenizer
-        tokens = tokenizer.encode(self._convert_messages_to_prompt(prompt_messages))
-        return len(tokens)
+
+        return len(tokenizer.encode(prompt))
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -289,6 +304,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             **credentials_kwargs,
             **extra_model_kwargs,
         }
+        # 使用归一化后的有效参数；本轮关闭思考时，旧历史仍可能包含思考块。
+        strip_history_thinking = (
+            model == "qwen3.8-max" and params.get("preserve_thinking") is False
+        )
         model_schema = self.get_model_schema(model, credentials)
 
         incremental_output = False if tools else stream
@@ -356,7 +375,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         try:
             if ModelFeature.VISION in (model_schema.features or []):
                 params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                    prompt_messages, rich_content=True
+                    prompt_messages,
+                    rich_content=True,
+                    strip_history_thinking=strip_history_thinking,
                 )
                 response = MultiModalConversation.call(
                     **params,
@@ -395,7 +416,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 else:
                     params["messages"] = (
                         self._convert_prompt_messages_to_tongyi_messages(
-                            prompt_messages
+                            prompt_messages,
+                            strip_history_thinking=strip_history_thinking,
                         )
                     )
                 response = Generation.call(
@@ -819,11 +841,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         self,
         prompt_messages: list[PromptMessage],
         rich_content: bool = False,
+        *,
+        strip_history_thinking: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
 
         :param prompt_messages: prompt messages
+        :param strip_history_thinking: 仅从出站 assistant 文本移除完整历史思考协议块
         :return: tongyi messages
         """
         tongyi_messages = []
@@ -897,6 +922,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     tongyi_messages.append({"role": "user", "content": user_messages})
             elif isinstance(prompt_message, AssistantPromptMessage):
                 content = prompt_message.content
+                if strip_history_thinking and isinstance(content, str):
+                    content = _HISTORY_THINK_PATTERN.sub("", content)
                 if not content:
                     content = " "
                 message = {

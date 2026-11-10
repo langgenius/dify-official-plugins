@@ -19,6 +19,11 @@ from dify_plugin.integration.run import PluginRunner
 UNAVAILABLE_IN_CI = {
     "doubao-seed-1-6-lite-251015",
     "doubao-1-5-pro-32k-character-250228",
+    "doubao-seed-2-1-pro-260915",
+    "doubao-seed-2-1-lite-260915",
+    "kimi-k3-1-pro-261024",
+    "deepseek-v4-1-flash-261017",
+    "deepseek-v4-1-flash-economy-261017",
 }
 
 

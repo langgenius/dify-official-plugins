@@ -1,0 +1,45 @@
+identity:
+  name: trello_list_labels
+  author: langgenius
+  label:
+    en_US: List Labels
+    zh_Hans: 列出标签
+    ja_JP: ラベル一覧
+description:
+  human:
+    en_US: A board's labels
+    zh_Hans: 看板的标签
+    ja_JP: ボードのラベル
+  llm: List the labels defined on a Trello board.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_Hans: 看板 ID
+    ja_JP: ボード ID
+  human_description:
+    en_US: Board ID (from the list or search tools)
+    zh_Hans: 看板 ID（可从列表或搜索工具获取）
+    ja_JP: ボード ID（一覧または検索ツールから）
+  llm_description: The board ID, from fetch_all_boards or search.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    labels:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_list_labels.py

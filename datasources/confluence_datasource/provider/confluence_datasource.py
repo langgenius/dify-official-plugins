@@ -108,6 +108,7 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
         response_json = response.json()
         new_access_token = response_json.get("access_token")
         new_refresh_token = response_json.get("refresh_token", refresh_token)  # Some providers return new refresh token
+        expires_in = response_json.get("expires_in")
         
         if not new_access_token:
             raise DatasourceOAuthError(f"Token refresh failed: {response_json}")
@@ -123,6 +124,7 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
                 "workspace_name": credentials.get("workspace_name"),
                 "workspace_icon": credentials.get("workspace_icon"),
             },
+            expires_at=int(time.time()) + expires_in if expires_in else -1,
         )
 
     def _validate_credentials(self, credentials: Mapping[str, Any]):

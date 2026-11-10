@@ -298,3 +298,11 @@ dify plugin package models/opencode-go -o dist/opencode_go-0.5.0.difypkg
 ## Disclaimer
 
 This is an unofficial community plugin. It is not affiliated with OpenCode / Anomaly or Dify.
+
+### Kimi K3.1 Pro (0.5.2)
+
+Added `kimi-k3.1-pro` through Chat Completions with a 1,048,576-token context
+and a 131,072-token output limit. Reasoning effort supports `low`, `high`, and
+`max` (default), with always-on thinking. Input/output prices are $2/$10 per
+million tokens; cache charges are separate. See the [Go catalog](https://opencode.ai/v2/docs/console/go)
+and [model limits](https://stats.opencode.ai/data/moonshotai/kimi-k3-1-pro).

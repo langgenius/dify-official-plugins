@@ -1,0 +1,84 @@
+identity:
+  name: sharepoint_list_lists
+  author: langgenius
+  label:
+    en_US: List Lists
+    zh_Hans: 列出列表
+    ja_JP: リストを一覧表示
+description:
+  human:
+    en_US: The lists and libraries of a site
+    zh_Hans: 站点中的列表和文档库
+    ja_JP: サイトのリストとライブラリ
+  llm: List the lists and document libraries of a site.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: include_hidden
+  type: boolean
+  required: false
+  form: llm
+  label:
+    en_US: Include Hidden
+    zh_Hans: 包含隐藏列表
+    ja_JP: 非表示を含める
+  human_description:
+    en_US: Also list hidden system lists
+    zh_Hans: 同时列出隐藏的系统列表
+    ja_JP: 非表示のシステム リストも含めます
+  llm_description: Also return hidden system lists. Default false.
+  default: false
+output_schema:
+  type: object
+  properties:
+    lists:
+      type: array
+      description: Lists
+      items:
+        type: object
+        properties:
+          list_id:
+            type: string
+            description: List ID
+          name:
+            type: string
+            description: List name
+          description:
+            type: string
+            description: Description
+          template:
+            type: string
+            description: genericList, documentLibrary...
+          web_url:
+            type: string
+            description: Link
+          hidden:
+            type: boolean
+            description: True for a hidden system list
+    count:
+      type: integer
+      description: Number of lists
+    site_id:
+      type: string
+      description: Site ID
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_list_lists.py

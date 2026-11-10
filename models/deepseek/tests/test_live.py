@@ -21,7 +21,11 @@ sys.path.insert(0, str(ROOT))
 
 from models.llm.llm import DeepseekLargeLanguageModel
 
-MODELS = tuple(yaml.safe_load((ROOT / "models" / "llm" / "_position.yaml").read_text()))
+MODELS = tuple(
+    yaml.safe_load(
+        (ROOT / "models" / "llm" / "_position.yaml").read_text(encoding="utf-8")
+    )
+)
 API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
 LIVE_ENABLED = os.getenv("RUN_DEEPSEEK_LIVE") == "1"
 
@@ -43,7 +47,9 @@ class _Credentials(dict[str, str]):
 
 schemas = [
     AIModelEntity.model_validate(
-        yaml.safe_load((ROOT / "models" / "llm" / f"{model}.yaml").read_text())
+        yaml.safe_load(
+            (ROOT / "models" / "llm" / f"{model}.yaml").read_text(encoding="utf-8")
+        )
     )
     for model in MODELS
 ]
@@ -101,7 +107,9 @@ def test_every_current_model_accepts_a_minimal_request(model: str) -> None:
 
 
 @pytest.mark.parametrize("stream", [False, True])
-@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-flash-vision-exp"])
+@pytest.mark.parametrize(
+    "model", ["deepseek-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"]
+)
 def test_vision_recognizes_an_inline_image(model: str, stream: bool) -> None:
     # A 32x32 red PNG keeps the live request small and independent of external URLs.
     image = ImagePromptMessageContent(

@@ -1,4 +1,5 @@
 import json
+import math
 import uuid
 from collections.abc import Generator
 
@@ -9,9 +10,11 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultC
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageFunction,
     PromptMessageTool,
 )
+from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 
 from models._credentials import ENDPOINT_URL, validate_model_access
 
@@ -129,6 +132,19 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        if model == "qwen-long" and any(
+            content.type == PromptMessageContentType.DOCUMENT
+            for message in prompt_messages
+            if isinstance(message.content, list)
+            for content in message.content
+        ):
+            raise InvokeBadRequestError(
+                "Tokener.ai cannot process document attachments with qwen-long. "
+                "Extract the document text and paste it into the message "
+                "instead of attaching the document. "
+                "In Workflow or Chatflow, connect a Doc Extractor node's text output "
+                "to the LLM node."
+            )
         return super()._invoke(
             model=model,
             credentials=self._model_credentials(model, credentials),
@@ -139,6 +155,11 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
             stream=stream,
             user=user,
         )
+
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InvokeBadRequestError):
+            return error
+        return super()._transform_invoke_error(error)
 
     def _handle_generate_stream_response(
         self,
@@ -180,6 +201,22 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel):
     def _validate_and_filter_model_parameters(
         self, model: str, model_parameters: dict, credentials: dict
     ) -> dict:
+        rules = self.get_parameter_rules(model, credentials)
+        declared = {rule.name for rule in rules} | {
+            rule.use_template for rule in rules if rule.use_template
+        }
+        for name, value in model_parameters.items():
+            if name in declared and name in {
+                "temperature",
+                "top_p",
+                "presence_penalty",
+                "frequency_penalty",
+                "seed",
+            }:
+                if isinstance(value, bool) or (
+                    isinstance(value, float) and not math.isfinite(value)
+                ):
+                    raise ValueError(f"Invalid numeric parameter: {name}")
         filtered = super()._validate_and_filter_model_parameters(
             model, model_parameters, credentials
         )

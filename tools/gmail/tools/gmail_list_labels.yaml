@@ -1,0 +1,39 @@
+identity:
+  name: gmail_list_labels
+  author: langgenius
+  label:
+    en_US: List Labels
+    zh_Hans: 列出标签
+    ja_JP: ラベル一覧
+description:
+  human:
+    en_US: All labels of the mailbox
+    zh_Hans: 邮箱的所有标签
+    ja_JP: メールボックスのラベル一覧
+  llm: List the Gmail labels (system and the user's own) with their IDs.
+parameters: []
+output_schema:
+  type: object
+  properties:
+    labels:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          type:
+            type: string
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_list_labels.py

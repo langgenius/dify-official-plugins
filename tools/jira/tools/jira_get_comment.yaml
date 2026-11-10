@@ -1,0 +1,72 @@
+identity:
+  name: jira_get_comment
+  author: langgenius
+  label:
+    en_US: Get Comment
+    zh_Hans: 获取评论
+    ja_JP: コメントを取得
+description:
+  human:
+    en_US: One comment of an issue
+    zh_Hans: 获取问题的某条评论
+    ja_JP: 課題のコメントを 1 件取得します
+  llm: Get one comment of a Jira issue by its ID.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: comment_id
+  type: string
+  required: true
+  label:
+    en_US: Comment ID
+    zh_Hans: 评论 ID
+    ja_JP: コメント ID
+  human_description:
+    en_US: The comment's ID (from List Comments)
+    zh_Hans: 评论 ID（可从“列出评论”获取）
+    ja_JP: コメント ID（コメント一覧から取得）
+  llm_description: The comment ID, from the list comments tool.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    comment:
+      type: object
+      description: The comment
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        body:
+          type: string
+        created:
+          type: string
+        updated:
+          type: string
+    body:
+      type: string
+      description: Comment text
+    author:
+      type: string
+      description: Comment author
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_get_comment.py
