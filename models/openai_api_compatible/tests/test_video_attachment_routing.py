@@ -1,12 +1,12 @@
-"""Regression test for #3696.
+r"""Regression test for #3696.
 
 VIDEO content was serialized as an OpenAI-compatible
-\`image_url\` content part carrying a data URI. That broke
+`image_url` content part carrying a data URI. That broke
 vLLM / LiteLLM-hosted_vllm backends that define a separate
-\`video_url\` content part — they tried to decode the URI as an
+`video_url` content part — they tried to decode the URI as an
 image, got a wrong MIME, and returned HTTP 400 "cannot identify
-image file". The fix routes VIDEO content through \`video_url\`
-instead of \`image_url\`; the data URI itself is unchanged.
+image file". The fix routes VIDEO content through `video_url`
+instead of `image_url`; the data URI itself is unchanged.
 """
 
 from __future__ import annotations
@@ -127,7 +127,7 @@ def test_image_content_still_serializes_as_image_url():
         format="data",
         base64_data="AAAA",
         mime_type="image/png",
-        
+
     )
     msg = UserPromptMessage(content=[image_c])
     rendered = model._convert_prompt_message_to_dict(msg)
