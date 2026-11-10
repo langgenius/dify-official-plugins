@@ -88,8 +88,8 @@ With the OAuth credential, everybody uses the one Google account that authorized
 **What users see**:
 1. The agent replies with a Google sign-in link.
 2. The user picks their account and allows the Gmail permissions. They must keep every box ticked; if a permission is unticked, the plugin asks them to sign in again.
-3. The page shows *Signed in*. The user returns to the chat right away and says they are done; sign-in must be finished there within about 10 minutes.
-4. The agent continues and says which account was signed in. If the sign-in code has expired or was already used, the agent gives the user a replacement sign-in link (valid for 15 minutes) and asks them to sign in again and reply right away.
+3. The page shows *Signed in*. The user returns to the chat immediately and says they are done; sign-in must be finished there within about 10 minutes.
+4. The agent continues and says which account was signed in. If the sign-in code has expired, the agent gives the user a fresh sign-in link (valid for 15 minutes) and asks them to reply as soon as they have signed in again.
 
 ![The agent asks the user to sign in, then works in their mailbox](_assets/agent_signin.png)
 
