@@ -250,17 +250,41 @@ def test_invoke_restores_prefilled_think_tag_and_filters_reasoning():
     assert filtered_result.message.content == "{\"class\":\"x\"}"
 
 
-def test_invoke_restores_prefilled_think_tag_past_fenced_example():
+@pytest.mark.parametrize(
+    "content",
+    [
+        # Reasoning quotes a backtick-fenced `</think>` before the real delimiter.
+        "```\nreasoning\n</think>\n```\nreal reasoning\n</think>\n\n{\"class\":\"x\"}",
+        # Same with a tilde fence, which Markdown also allows.
+        "~~~\nreasoning\n</think>\n~~~\nreal reasoning\n</think>\n\n{\"class\":\"x\"}",
+    ],
+)
+def test_invoke_restores_prefilled_think_tag_past_fenced_example(content):
     model = OpenAILargeLanguageModel(model_schemas=[])
 
-    # Reasoning may quote a fenced `</think>` before the real delimiter; the
-    # example tag must be skipped instead of blocking restoration entirely.
-    content = "```\nreasoning\n</think>\n```\nreal reasoning\n</think>\n\n{\"class\":\"x\"}"
     result = _invoke_non_stream(
         model, {"mode": "chat", "agent_thought_support": "supported"}, content
     )
 
+    # The example tag must be skipped instead of blocking restoration entirely.
     assert result.message.content == "<think>\n" + content
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "```\nreasoning\n</think>\n```\nreal reasoning\n</think>\n\n{\"class\":\"x\"}",
+        "~~~\nreasoning\n</think>\n~~~\nreal reasoning\n</think>\n\n{\"class\":\"x\"}",
+    ],
+)
+def test_invoke_strips_prefilled_reasoning_quoted_inside_fence(content):
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    # Restoration and filtering must agree on the real delimiter, otherwise the
+    # quoted tag truncates the block and leaves the reasoning in the answer.
+    result = _invoke_non_stream(model, {"mode": "chat"}, content)
+
+    assert result.message.content == "{\"class\":\"x\"}"
 
 
 def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
@@ -296,6 +320,12 @@ def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
         "Qwen ends reasoning with </think>\nand then answers.",
         # A closing tag on its own line inside a fenced example.
         "Qwen output looks like:\n```\nreasoning\n</think>\n\nanswer\n```\nDone.",
+        # A tilde fence is a code block too.
+        "Example:\n~~~\n</think>\n~~~\nDone.",
+        # A longer opening fence is only closed by an at-least-as-long one.
+        "~~~~\nreasoning\n</think>\n~~~\nstill inside\n~~~~\nDone.",
+        # An unterminated fence swallows the rest of the response.
+        "```\nreasoning\n</think>\n{\"class\":\"x\"}",
     ],
 )
 def test_invoke_preserves_literal_closing_think_tag_in_answer(credentials, model_parameters, content):
