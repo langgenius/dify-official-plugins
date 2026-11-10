@@ -133,6 +133,24 @@ def test_embedding_2_public_invoke_preserves_retrieval_purpose(input_type, prefi
     assert "task_type" not in body
 
 
+@pytest.mark.parametrize("model_id", ["embed-english-v3", "embed-multilingual-v3", "embed-v4"])
+@pytest.mark.parametrize(
+    "input_type,upstream_type",
+    [
+        (EmbeddingInputType.QUERY, "search_query"),
+        (EmbeddingInputType.DOCUMENT, "search_document"),
+    ],
+)
+def test_cohere_public_invoke_preserves_retrieval_purpose(
+    model_id, input_type, upstream_type, upstream
+):
+    model = TokenerTextEmbeddingModel(model_schemas=[schema("text_embedding", model_id)])
+    model.invoke(model_id, {"api_key": "test"}, ["same text"], input_type=input_type)
+    body = upstream.call_args.kwargs["json"]
+    assert body["input"] == ["same text"]
+    assert body["input_type"] == upstream_type
+
+
 @pytest.mark.parametrize("model_id", ["gpt-4o-mini", "qwen-long"])
 def test_catalog_sync_retains_semantic_contracts(model_id):
     path = Path(f"models/llm/{model_id}.yaml")

@@ -16,6 +16,8 @@ Embedding models appear in the provider list after installation. Embeddings reta
 For `text-embedding-v3` and `text-embedding-v4`, the plugin sends up to 10 texts per request.
 Both models accept up to 8192 tokens per text and retain the default 1024 vector dimensions.
 Other embedding models use up to 32 texts per request. The plugin does not truncate texts.
+For `embed-english-v3`, `embed-multilingual-v3`, and `embed-v4`, the plugin sends `input_type=search_query` for queries and `input_type=search_document` for documents.
+These models retain their default vector dimensions: 1024 for both v3 models and 1536 for v4.
 For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents. Existing knowledge bases need cache cleanup and reindexing after all plugin instances are updated.
 Self-hosted administrators must clear document caches for provider `langgenius/tokener/tokener` and model `gemini-embedding-2-preview`. Also clear matching query caches: Redis prefix `langgenius/tokener/tokener_gemini-embedding-2-preview_`, prefixed with `REDIS_KEY_PREFIX` and a colon when configured. These caches are shared across knowledge bases.
 Then, during low traffic, switch each affected knowledge base to another configured embedding model, then back. After each switch, wait for indexing and resolve document errors.
@@ -35,6 +37,7 @@ New reasoning models expose no sampling controls unless a profile explicitly per
 Unknown families expose the output limit and catalog-declared structured output controls.
 
 GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
+For `glm-4.7`, `glm-4.7-flash`, `qwen3-coder-30b-a3b`, `qwen3-coder-next`, and `qwen3-vl-235b-a22b`, temperature ranges from 0 to 1.
 
 The existing GPT-5.6 profile retains seed and reasoning effort controls.
 The existing DeepSeek V4, GLM-5.2, and Kimi K3 profiles retain their verified sampling controls and seed.
@@ -70,6 +73,7 @@ Synchronization validates all selected types before writing. It deletes model YA
 An empty type produces an empty position list and removes its model definitions. `--check` reports drift without writing.
 
 Embedding prices use the catalog input price. Rerank and audio definitions omit optional Dify prices because their billing units differ.
+LLM prices show the catalog base input and output rates. Dify's model definitions cannot represent cache read, cache write, or context-tier prices.
 Tokener.ai determines charges. Audio models require complete voice or upload metadata and prices.
 New audio models use their catalog type and metadata, without an ID allowlist.
 

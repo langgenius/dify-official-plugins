@@ -1,0 +1,30 @@
+model: "qwen3-vl-235b-a22b"
+label:
+  en_US: "qwen3-vl-235b-a22b"
+  zh_Hans: "qwen3-vl-235b-a22b"
+model_type: llm
+features:
+  - vision
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8000
+    min: 1
+    max: 8000
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 1
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+pricing:
+  input: "0.530000"
+  output: "2.660000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false
