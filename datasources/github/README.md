@@ -143,20 +143,33 @@ oauth_schema:
 ### Tree preview integration
 
 The `get_online_document_pages` invocation accepts request-scoped
-`datasource_parameters` for the future tree preview:
+`datasource_parameters` for the tree preview:
 
-- `view: tree` lists repository pages at the root. `parent_id: repo:owner/name`
-  lists only that repository's README, recent Issues, and recent PRs.
-- `limit` (1–200) and `cursor` (an offset string) paginate the requested level.
-  The response includes `next_cursor`; repository pages include `has_children`.
-  Child pages keep their existing `page_id` and include `parent_id`.
+- `view: tree` lists repositories at the root. `parent_id: repo:owner/name`
+  returns three preview-only groups: `contents:owner/name`,
+  `issues:owner/name`, and `prs:owner/name` (when Issues are enabled).
+- Expanding `contents:owner/name` or `dir:owner/name:path` lists one directory
+  on the repository's default branch. Only recognized text and source file
+  names appear as selectable leaves; binary asset types are excluded. File
+  contents must be UTF-8 text. Expanding `issues:owner/name` or
+  `prs:owner/name` lists that discussion type.
+- `limit` (1–200) limits each response. Omit `cursor` for the first request,
+  then pass the returned `next_cursor` unchanged with the same `parent_id`.
+  Cursors are scoped to a parent and may be offsets or GitHub page numbers.
+  Pages include `has_children` and, below the root, `parent_id`. The
+  `github_collection` and `github_directory` groups are navigation nodes,
+  not importable pages. File, Issue, and PR leaves retain their existing IDs.
 - Without `view: tree`, the plugin returns the existing flat list. Pass
   `view` only for interactive preview requests; do not save it in the source
   configuration used by imports and background synchronization.
 
-The preview has the same inventory scope as the default listing: up to 20
-recently updated repositories, with up to five recent Issues and five recent
-PRs per repository. Browsing a branch does not expand that inventory.
+Both views start from up to 20 recently updated repositories. The flat list
+includes repository metadata, a README, and up to five recent Issues and PRs
+per repository. The tree preview can browse deeper files and additional Issues
+and PRs. Only explicitly selected pages and already loaded descendants selected
+with a parent checkbox are imported. Scheduled sync needs a KnowledgeFS
+implementation that reads those selected page IDs directly rather than
+rediscovering them through the flat list.
 
 ### GitHub API Limits
 

@@ -112,8 +112,8 @@ class GitHubDataSourceTests(unittest.TestCase):
             raise AssertionError(f"Tree root loaded a child: {url}")
 
         with patch("datasources.github.requests.get", side_effect=get) as mocked_get:
-            first = self.datasource._get_pages({"view": "tree", "limit": 1})
-            second = self.datasource._get_pages({"view": "tree", "limit": 1, "cursor": first.next_cursor})
+            first = self.datasource.get_pages({"view": "tree", "limit": 1})
+            second = self.datasource.get_pages({"view": "tree", "limit": 1, "cursor": first.next_cursor})
 
         self.assertEqual(first.result[0].total, 2)
         self.assertEqual([page.page_id for page in first.result[0].pages], ["repo:FFXN/dify"])
@@ -126,6 +126,7 @@ class GitHubDataSourceTests(unittest.TestCase):
         self.assertEqual(first.model_dump()["next_cursor"], "1")
         self.assertEqual(first.model_dump()["result"][0]["next_cursor"], "1")
         self.assertTrue(first.model_dump()["result"][0]["pages"][0]["has_children"])
+        self.assertTrue(json.loads(first.model_dump_json())["result"][0]["pages"][0]["has_children"])
         self.assertFalse(any(call.args[0].endswith(("/readme", "/issues", "/pulls")) for call in mocked_get.call_args_list))
 
     def test_tree_repository_exposes_lazy_contents_issues_and_pr_groups(self):
@@ -197,7 +198,7 @@ class GitHubDataSourceTests(unittest.TestCase):
         self.assertEqual([call.kwargs["params"]["page"] for call in discussion_calls], [1, 2, 1, 2])
 
     def test_tree_contents_browses_nested_directories_and_paginates_files(self):
-        repositories = [{"full_name": "FFXN/dify", "name": "dify"}]
+        repositories = [{"full_name": "FFXN/dify", "name": "dify", "updated_at": "2026-11-10T00:00:00Z"}]
 
         def get(url, **kwargs):
             if url.endswith("/user"):
@@ -209,11 +210,17 @@ class GitHubDataSourceTests(unittest.TestCase):
             if url.endswith("/contents"):
                 return self.response(200, [
                     {"type": "dir", "path": "src", "name": "src", "sha": "dir-sha"},
+                    {"type": "file", "path": "logo.png", "name": "logo.png", "sha": "image-sha"},
                     {"type": "file", "path": "README.md", "name": "README.md", "sha": "readme-sha"},
+                    {"type": "file", "path": "Dockerfile", "name": "Dockerfile", "sha": "docker-sha"},
+                    {"type": "file", "path": ".coveragerc", "name": ".coveragerc", "sha": "config-sha"},
+                    {"type": "file", "path": "uv.lock", "name": "uv.lock", "sha": "lock-sha"},
+                    {"type": "file", "path": ".DS_Store", "name": ".DS_Store", "sha": "binary-sha"},
                 ], url=url)
             if url.endswith("/contents/src"):
                 return self.response(200, [
                     {"type": "file", "path": "src/main.py", "name": "main.py", "sha": "file-sha"},
+                    {"type": "file", "path": "src/data.pdf", "name": "data.pdf", "sha": "pdf-sha"},
                 ], url=url)
             raise AssertionError(f"Unexpected URL: {url}")
 
@@ -224,12 +231,29 @@ class GitHubDataSourceTests(unittest.TestCase):
 
         self.assertEqual(root.result[0].pages[0].page_id, "dir:FFXN/dify:src")
         self.assertTrue(root.result[0].pages[0].has_children)
+        self.assertEqual(root.result[0].pages[0].last_edited_time, "2026-11-10T00:00:00Z")
         self.assertEqual(root.next_cursor, "1")
         self.assertEqual(next_page.result[0].pages[0].page_id, "file:FFXN/dify:README.md")
         self.assertEqual(next_page.result[0].pages[0].parent_id, "contents:FFXN/dify")
+        self.assertEqual(next_page.result[0].pages[0].last_edited_time, "2026-11-10T00:00:00Z")
         self.assertEqual(nested.result[0].pages[0].page_id, "file:FFXN/dify:src/main.py")
         self.assertEqual(nested.result[0].pages[0].parent_id, "dir:FFXN/dify:src")
         self.assertIsNone(nested.next_cursor)
+
+        with patch("datasources.github.requests.get", side_effect=get):
+            remaining = self.datasource._get_pages(
+                {"view": "tree", "parent_id": "contents:FFXN/dify", "limit": 30}
+            )
+        self.assertEqual(
+            [page.page_id for page in remaining.result[0].pages],
+            [
+                "dir:FFXN/dify:src",
+                "file:FFXN/dify:README.md",
+                "file:FFXN/dify:Dockerfile",
+                "file:FFXN/dify:.coveragerc",
+                "file:FFXN/dify:uv.lock",
+            ],
+        )
 
     def test_code_file_content_uses_encoded_github_path(self):
         page_id = "file:FFXN/dify:src/a #b.py"
@@ -248,6 +272,21 @@ class GitHubDataSourceTests(unittest.TestCase):
             messages = list(self.datasource._get_content(SimpleNamespace(page_id=page_id)))
 
         self.assertTrue(messages)
+
+    def test_binary_file_content_has_clear_error(self):
+        page_id = "file:FFXN/dify:logo.png"
+
+        def get(url, **kwargs):
+            return self.response(200, {
+                "type": "file",
+                "name": "logo.png",
+                "encoding": "base64",
+                "content": base64.b64encode(b"\x89PNG\x00").decode(),
+            }, url=url)
+
+        with patch("datasources.github.requests.get", side_effect=get):
+            with self.assertRaisesRegex(ValueError, "not UTF-8 text: FFXN/dify/logo.png"):
+                list(self.datasource._get_content(SimpleNamespace(page_id=page_id)))
 
     def test_tree_rejects_invalid_parent_and_pagination(self):
         with patch.object(self.datasource, "_make_request", return_value={"login": "FFXN", "id": 1}), \

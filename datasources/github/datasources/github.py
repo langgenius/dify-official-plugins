@@ -20,6 +20,33 @@ from dify_plugin.interfaces.datasource.online_document import OnlineDocumentData
 
 logger = logging.getLogger(__name__)
 
+# GitHub's directory endpoint does not identify a file's encoding. Only expose
+# known text files as selectable pages so a binary asset cannot fail an import.
+TEXT_FILE_EXTENSIONS = {
+    "adoc", "astro", "bash", "bat", "c", "cc", "cfg", "clj", "cljs", "cljc",
+    "cmd", "conf", "cpp", "cs", "css", "csv", "cts", "cxx", "dart", "edn",
+    "elm", "env", "erl", "ex", "exs", "fish", "fs", "fsx", "go", "gql",
+    "graphql", "h", "hcl", "hpp", "hrl", "htm", "html", "hxx", "ini",
+    "ipynb", "java", "jl", "js", "json", "jsonl", "jsx", "kt", "kts",
+    "less", "lock", "lua", "m", "markdown", "md", "mdx", "mjs", "mm", "mts",
+    "org", "php", "pl", "pm", "proto", "ps1", "py", "pyi", "r", "rb",
+    "rs", "rst", "sass", "scala", "scm", "scss", "sh", "sql", "svelte",
+    "svg", "swift", "tf", "tfvars", "toml", "ts", "tsv", "tsx", "txt",
+    "vue", "xml", "yaml", "yml", "zsh",
+}
+TEXT_FILE_NAMES = {
+    ".babelrc", ".coveragerc", ".dockerignore", ".editorconfig", ".eslintignore",
+    ".eslintrc", ".gitattributes", ".gitignore", ".gitmodules",
+    ".npmrc", ".nvmrc", ".prettierignore", ".prettierrc",
+    ".python-version", ".tool-versions", "dockerfile", "gemfile",
+    "justfile", "license", "makefile", "procfile", "rakefile", "readme",
+}
+
+
+def _is_supported_text_file(path: str) -> bool:
+    name = path.rsplit("/", 1)[-1].lower()
+    return name in TEXT_FILE_NAMES or name.startswith(".env.") or name.rsplit(".", 1)[-1] in TEXT_FILE_EXTENSIONS
+
 
 class GitHubRepositoryBlockedError(Exception):
     """Keep blocked repositories separate from optional-resource ValueErrors."""
@@ -257,10 +284,13 @@ class GitHubDataSource(OnlineDocumentDatasource):
             if not isinstance(entry_path, str) or not entry_path:
                 continue
             is_dir = entry["type"] == "dir"
+            if not is_dir and not _is_supported_text_file(entry_path):
+                continue
             pages.append({
                 "page_id": f"{'dir' if is_dir else 'file'}:{name}:{entry_path}",
                 "page_name": entry.get("name") or entry_path.rsplit("/", 1)[-1],
-                "last_edited_time": entry.get("sha", ""),
+                # A contents entry has no edit timestamp; SHA is a Git object ID.
+                "last_edited_time": repo.get("updated_at", ""),
                 "type": "github_directory" if is_dir else "file",
                 "parent_id": parent_id,
                 "has_children": is_dir,
@@ -500,15 +530,20 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         # Get file content
         if file_info.get("encoding") == "base64":
-            content = base64.b64decode(file_info["content"]).decode("utf-8")
+            raw_content = base64.b64decode(file_info["content"])
         else:
             download_url = file_info.get("download_url")
             if download_url:
                 response = requests.get(download_url, headers=self._get_headers(), timeout=30)
                 response.raise_for_status()
-                content = response.text
+                raw_content = response.content
             else:
-                content = file_info.get("content", "")
+                raw_content = (file_info.get("content") or "").encode("utf-8")
+
+        try:
+            content = raw_content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"GitHub file is not UTF-8 text: {repo_name}/{file_path}") from error
         
         # If it's a Markdown file, add title
         file_name = file_info["name"]
