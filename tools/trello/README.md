@@ -59,7 +59,7 @@ Both modes start with an API key from the [Trello Power-Up admin portal](https:/
    ![Trello tools in an agent, using the per-user credential](_assets/agent-tools.png)
 
 **What users see**:
-1. The agent replies with a Trello link.
+1. The agent replies with a short sign-in link to the plugin's endpoint, which redirects the browser to Trello. The agent should give the link exactly as returned by the tool.
 2. The user opens it, checks the account and clicks **Allow**.
 3. The page shows *Signed in*. Back in the chat, the user says they are done.
 4. The agent continues and says which Trello account was connected.

@@ -91,7 +91,7 @@ def test_original_tool_with_oauth_and_per_user(http):
     result = run(make_tool(ListCalendarsTool, OAUTH))
     assert http.calls[0].headers["Authorization"] == "Bearer oauth-token" and result.json
     per_user = run(make_tool(ListCalendarsTool, PER_USER))
-    assert "https://accounts.google.com/o/oauth2/v2/auth?" in per_user.texts[0]
+    assert "/google_calendar/callback?start=" in per_user.texts[0]
 
 
 def test_sign_out_modes(http):
@@ -125,7 +125,7 @@ def test_new_tools_emit_every_declared_output(tool_file, http):
 
 def test_manifest_and_endpoint():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.0" and manifest["plugins"]["endpoints"] == ["group/google_calendar_signin.yaml"]
+    assert manifest["version"] == "1.0.2" and manifest["plugins"]["endpoints"] == ["group/google_calendar_signin.yaml"]
     group = yaml.safe_load((ROOT / "group" / "google_calendar_signin.yaml").read_text(encoding="utf-8"))
     assert yaml.safe_load((ROOT / group["endpoints"][0]).read_text(encoding="utf-8"))["path"] == "/google_calendar/callback"
     assert "oauth_schema" in PROVIDER and set(PROVIDER["credentials_for_provider"]) == {"auth_mode", "client_id", "client_secret", "redirect_uri"}

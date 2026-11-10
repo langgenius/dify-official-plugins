@@ -1,0 +1,70 @@
+identity:
+  name: google_drive_copy_file
+  author: langgenius
+  label:
+    en_US: Copy File
+    zh_Hans: 复制文件
+    ja_JP: ファイルをコピー
+description:
+  human:
+    en_US: Copy a file
+    zh_Hans: 复制文件
+    ja_JP: ファイルをコピー
+  llm: Copy a Google Drive file, optionally with a new name and into another folder.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  human_description:
+    en_US: 'Default: Copy of …'
+    zh_Hans: 默认：…的副本
+    ja_JP: '既定: … のコピー'
+  llm_description: Name of the copy.
+  form: llm
+- name: folder_id
+  type: string
+  required: false
+  label:
+    en_US: Into Folder
+    zh_Hans: 复制到文件夹
+    ja_JP: コピー先フォルダー
+  human_description:
+    en_US: 'Default: same folder'
+    zh_Hans: 默认：同一文件夹
+    ja_JP: '既定: 同じフォルダー'
+  llm_description: Folder to put the copy in.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_copy_file.py

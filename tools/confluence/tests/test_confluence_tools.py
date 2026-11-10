@@ -213,7 +213,7 @@ def test_api_errors_become_tool_errors(http):
 
 def test_per_user_tool_returns_the_sign_in_link(http):
     result = run(make_tool(ConfluenceSearchTool, PER_USER), {"text": "x"})
-    assert "https://auth.atlassian.com/authorize?" in result.texts[0] and http.calls == []
+    assert "/confluence/callback?start=" in result.texts[0] and http.calls == []
 
 
 def test_sign_out_tool_modes(http):

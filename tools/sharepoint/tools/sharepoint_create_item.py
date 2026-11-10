@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class CreateItemTool(Tool):
-    """Add an item to a list (n8n: Item > Create)."""
+    """Add an item to a list."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

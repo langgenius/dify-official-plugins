@@ -1,0 +1,55 @@
+identity:
+  name: gmail_trash_message
+  author: langgenius
+  label:
+    en_US: Trash Message
+    zh_Hans: 移到回收站
+    ja_JP: ゴミ箱に移動
+description:
+  human:
+    en_US: Move a message to the trash, or restore it
+    zh_Hans: 把邮件移到回收站或恢复
+    ja_JP: メールをゴミ箱へ移動・復元
+  llm: Move a Gmail message to the trash (or restore it with restore=true). Only when the user clearly asks for it.
+parameters:
+- name: message_id
+  type: string
+  required: true
+  label:
+    en_US: Message ID
+    zh_Hans: 邮件 ID
+    ja_JP: メッセージ ID
+  human_description:
+    en_US: From search_messages
+    zh_Hans: 可从搜索邮件获取
+    ja_JP: メール検索から
+  llm_description: The message ID, from search_messages.
+  form: llm
+- name: restore
+  type: boolean
+  required: false
+  label:
+    en_US: Restore
+    zh_Hans: 恢复
+    ja_JP: 復元
+  human_description:
+    en_US: Take it back out of the trash
+    zh_Hans: 从回收站恢复
+    ja_JP: ゴミ箱から戻す
+  llm_description: true restores it from the trash instead.
+  form: llm
+  default: false
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_trash_message.py
