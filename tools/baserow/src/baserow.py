@@ -78,10 +78,10 @@ class BaserowPlugin(BasePlugin):
         ],
     ) -> Generator:
         baserow = Baserow(url=self.credentials.url, token=self.credentials.token)
-        table = baserow.get_table(table_id)
+        table = baserow.get_table(int(table_id))
         rows = table.get_rows()
 
-        rows_list = [row.to_dict() for row in rows]
+        rows_list = [dict(row.raw_values) for row in rows]
 
         yield rows_list
         yield str(rows_list)
@@ -116,11 +116,11 @@ class BaserowPlugin(BasePlugin):
         ],
     ) -> Generator:
         baserow = Baserow(url=self.credentials.url, token=self.credentials.token)
-        table = baserow.get_table(table_id)
+        table = baserow.get_table(int(table_id))
         row = table.get_row(row_id)
 
-        yield row.to_dict()
-        yield str(row.to_dict())
+        yield dict(row.raw_values)
+        yield str(dict(row.raw_values))
 
     @tool(
         name="create_a_row",
@@ -153,13 +153,11 @@ class BaserowPlugin(BasePlugin):
         ],
     ) -> Generator:
         baserow = Baserow(url=self.credentials.url, token=self.credentials.token)
-        table = baserow.get_table(table_id)
-        new_row = table.add_rows(json.loads(content))
+        table = baserow.get_table(int(table_id))
+        new_row = table.add_row(json.loads(content))
 
-        assert len(new_row) == 1, "Failed to create a new row."
-
-        yield new_row[0].to_dict()
-        yield str(new_row[0].to_dict())
+        yield dict(new_row.raw_values)
+        yield str(dict(new_row.raw_values))
 
     @tool(
         name="update_a_row",
@@ -202,20 +200,11 @@ class BaserowPlugin(BasePlugin):
         ],
     ) -> Generator:
         baserow = Baserow(url=self.credentials.url, token=self.credentials.token)
-        table = baserow.get_table(table_id)
+        table = baserow.get_table(int(table_id))
+        updated_row = table.update_row(row_id, json.loads(content))
 
-        try:
-            row = table.get_row(row_id)
-        except Exception as e:
-            raise ValueError(
-                f"Row with ID {row_id} not found in table {table_id}."
-            ) from e
-
-        updated_rows = table.update_rows([{"id": row_id, **json.loads(content)}])
-        assert len(updated_rows) == 1, "Failed to update the row."
-
-        yield updated_rows[0].to_dict()
-        yield str(updated_rows[0].to_dict())
+        yield dict(updated_row.raw_values)
+        yield str(dict(updated_row.raw_values))
 
     @provider
     def verify(self):

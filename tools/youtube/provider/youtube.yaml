@@ -26,6 +26,7 @@ identity:
       usuários podem fazer upload, assistir e compartilhar vídeos.
     zh_Hans: YouTube（油管）是全球最大的视频分享网站，用户可以在上面上传、观看和分享视频。
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: YouTube
     pt_BR: YouTube

@@ -19,7 +19,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 384000
+    max: 393216
   - name: reasoning_effort
     label:
       zh_Hans: 推理强度
@@ -48,7 +48,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.154'
-  output: '0.308'
+  input: '0.142'
+  output: '0.284'
   unit: '0.000001'
   currency: USD

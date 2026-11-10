@@ -4,13 +4,15 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class ListIssueTypeTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
 
-        jira = auth(self.runtime.credentials)
+        jira = yield from connect(self)
+        if jira is None:
+            return
 
         project_key = tool_parameters.get("project_key")
 
@@ -21,6 +23,6 @@ class ListIssueTypeTool(Tool):
 
         yield self.create_json_message(
             jira.issue_createmeta_issuetypes(
-                project, start=None, limit=None
+                project_key, start=None, limit=None
             )  # Get create metadata issue types for a project
         )

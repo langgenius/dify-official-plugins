@@ -1,0 +1,41 @@
+identity:
+  name: trello_delete_checklist
+  author: langgenius
+  label:
+    en_US: Delete Checklist
+    zh_Hans: 删除清单
+    ja_JP: チェックリストを削除
+description:
+  human:
+    en_US: Delete a checklist
+    zh_Hans: 删除清单
+    ja_JP: チェックリストを削除
+  llm: Delete a checklist from a Trello card. Only when the user clearly asks for it.
+parameters:
+- name: checklist_id
+  type: string
+  required: true
+  label:
+    en_US: Checklist ID
+    zh_Hans: 清单 ID
+    ja_JP: チェックリスト ID
+  human_description:
+    en_US: Checklist ID (from the list or search tools)
+    zh_Hans: 清单 ID（可从列表或搜索工具获取）
+    ja_JP: チェックリスト ID（一覧または検索ツールから）
+  llm_description: The checklist ID, from trello_list_checklists.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_delete_checklist.py

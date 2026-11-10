@@ -1,1 +1,13 @@
-<svg id="_层_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 274.37 172.76"><defs><style>.cls-2{fill:#36cfd1}.cls-3{fill:#624aff}</style></defs><g id="_层_1-2"><path class="cls-3" d="M24.78 73.55h25.65V99.2H24.78zm99.14 25.66h25.65v25.65h-25.65zm76.95 25.65h-25.65v22.19h47.84V99.21h-22.19v25.65z"/><path class="cls-2" d="M149.57 73.55h25.65V99.2h-25.65zM24.78 47.9h25.65v25.65H24.78z"/><path class="cls-3" d="M223.06 73.55h25.65V99.2h-25.65z"/><path class="cls-2" d="M223.06 47.9h25.65v25.65h-25.65z"/><path class="cls-3" d="M175.22 25.71V47.9h25.65v25.65h22.19V25.71h-47.84z"/><path class="cls-2" d="M98.27 73.55h25.65V99.2H98.27z"/><path class="cls-3" d="M72.62 47.9h25.65V25.71H50.43v47.84h22.19V47.9zm0 51.31H50.43v47.84h47.84v-22.19H72.62V99.21z"/><path style="fill:none" d="M0 0h274.37v172.76H0z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g id="modelscope_light">
+<rect width="40" height="40" fill="white"/>
+<g id="Group 8">
+<path id="Vector" d="M4 18.8364H7.66543V22.5019H4V18.8364ZM18.1673 22.5019H21.8327V26.1673H18.1673V22.5019ZM29.1636 26.1673H25.4981V29.3383H32.3346V22.5019H29.1636V26.1673Z" fill="#624AFF"/>
+<path id="Vector_2" d="M21.8327 18.8366H25.4981V22.502H21.8327V18.8366ZM4 15.1711H7.66543V18.8366H4V15.1711Z" fill="#36CFD1"/>
+<path id="Vector_3" d="M32.3347 18.8364H36.0001V22.5019H32.3347V18.8364Z" fill="#624AFF"/>
+<path id="Vector_4" d="M32.3347 15.1711H36.0001V18.8366H32.3347V15.1711Z" fill="#36CFD1"/>
+<path id="Vector_5" d="M25.4983 12V15.171H29.1637V18.8364H32.3347V12H25.4983Z" fill="#624AFF"/>
+<path id="Vector_6" d="M14.502 18.8364H18.1674V22.5019H14.502V18.8364Z" fill="#36CFD1"/>
+<path id="Vector_7" d="M10.8365 15.171H14.5019V12H7.66553V18.8364H10.8365V15.171ZM10.8365 22.5019H7.66553V29.3383H14.5019V26.1673H10.8365V22.5019Z" fill="#624AFF"/>
+</g>
+</g>
+</svg>

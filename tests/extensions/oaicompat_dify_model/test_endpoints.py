@@ -29,6 +29,7 @@ def build_raw_http_request(method: str, path: str, headers: dict, body: dict | N
     """
     # Build body string
     body_str = json.dumps(body) if body else ""
+    headers = {"Host": "localhost", **headers}
     
     # Add Content-Length header
     if body_str:
@@ -181,4 +182,3 @@ def test_embedding_endpoint_unauthorized(plugin_runner):
     assert len(response_chunks) == 1
     # Should return 401 Unauthorized
     assert response_chunks[0].status == 401
-

@@ -1,7 +1,7 @@
 model: mistral
 label:
   en_US: Mistral AI
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - tool-call

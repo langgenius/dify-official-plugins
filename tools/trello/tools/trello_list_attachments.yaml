@@ -1,0 +1,45 @@
+identity:
+  name: trello_list_attachments
+  author: langgenius
+  label:
+    en_US: List Attachments
+    zh_Hans: 列出附件
+    ja_JP: 添付ファイル一覧
+description:
+  human:
+    en_US: A card's attachments
+    zh_Hans: 卡片的附件
+    ja_JP: カードの添付ファイル
+  llm: List the files and links attached to a Trello card.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    attachments:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_list_attachments.py

@@ -480,6 +480,41 @@ def test_qwen_long_rejects_international_endpoint_before_upload() -> None:
     call.assert_not_called()
 
 
+def test_qwen_long_uses_workspace_host_and_skips_the_region_guard() -> None:
+    model = _model()
+    model._handle_generate_response = MagicMock(return_value="result")
+    client = _client()
+
+    with (
+        patch("models.llm.llm.openai.OpenAI", return_value=client) as openai_client,
+        patch("models.llm.llm.Generation.call", return_value=MagicMock()),
+    ):
+        result = model._generate(
+            model="qwen-long",
+            credentials={
+                "dashscope_api_key": "test-key",
+                "api_host": "llm-abc123.cn-beijing.maas.aliyuncs.com",
+                # A workspace host must win even if this stale toggle is left on.
+                "use_international_endpoint": "true",
+            },
+            prompt_messages=[
+                SystemPromptMessage(content="You are a document analyst."),
+                UserPromptMessage(content="Summarize this document."),
+                UserPromptMessage(content=[_document()]),
+            ],
+            model_parameters={},
+            stream=False,
+        )
+
+    assert result == "result"
+    openai_client.assert_called_once_with(
+        api_key="test-key",
+        base_url="https://llm-abc123.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+        max_retries=0,
+        timeout=120,
+    )
+
+
 def test_qwen_long_preserves_standard_invoke_errors() -> None:
     error = InvokeBadRequestError("invalid input")
 

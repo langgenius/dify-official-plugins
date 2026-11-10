@@ -5,6 +5,7 @@ import xlwt
 from docx import Document as WordDocument
 from dify_plugin.invocations.file import UploadFileResponse
 from openpyxl import Workbook
+from openpyxl.worksheet.hyperlink import Hyperlink
 from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches
@@ -200,6 +201,22 @@ def test_xlsx_extractor_preserves_hyperlinks_and_metadata():
         "sheet": "People",
         "row": 0,
     }
+
+
+def test_xlsx_extractor_keeps_text_of_internal_hyperlinks():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Contents"
+    sheet.append(["section"])
+    sheet.append(["Details"])
+    sheet["A2"].hyperlink = Hyperlink(ref="A2", location="'Details'!A1")
+    workbook.create_sheet("Details")
+
+    result = ExcelExtractor(_context(_save_workbook(workbook), "toc.xlsx", ".xlsx")).extract()
+
+    assert "(None)" not in result.md_content
+    assert "| Details |" in result.md_content
+    assert result.documents[0].page_content == "section: Details"
 
 
 def test_xls_extractor_uses_native_xlrd_path():

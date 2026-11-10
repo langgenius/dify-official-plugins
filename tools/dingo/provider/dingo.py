@@ -4,7 +4,7 @@ from dify_plugin import ToolProvider
 
 class DingoProvider(ToolProvider):
     """
-    Dingo tool provider for text quality evaluation and resume optimization.
+    Dingo tool provider for job search, resume optimization, and job matching.
 
     This provider does not require credentials as it provides stateless tools.
     """

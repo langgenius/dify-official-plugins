@@ -49,6 +49,9 @@ IMAGE_GENERATION_MODELS = {
     "gemini-2.5-flash-image-preview",
     "gemini-2.5-flash-image",
     "gemini-3-pro-image-preview",
+    "gemini-3-pro-image",
+    "gemini-3.1-flash-image",
+    "gemini-3.1-flash-lite-image",
 }
 NO_SAMPLING_OR_PREFILL_MODELS = {"gemini-3.6-flash", "gemini-3.8-flash"}
 
@@ -407,6 +410,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             "9:16",
             "16:9",
             "21:9",
+            # Only the Gemini 3.1 Flash Image models accept these; the others
+            # reject them upstream with an explicit 400.
+            "4:1",
+            "8:1",
         ]:
             aspect_ratio = None
 

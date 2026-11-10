@@ -142,25 +142,21 @@ def sleeps(monkeypatch) -> list:
 
 
 def _embed_documents():
-    session = MagicMock(spec=requests.Session)
     return TongyiTextEmbeddingModel.embed_documents(
         credentials_kwargs=CREDENTIALS,
         model=TEXT_MODEL,
         texts=["hello"],
         base_address=BASE_ADDRESS,
-        session=session,
     )
 
 
 def _embed_multimodal_documents():
     documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content="hello")]
-    session = MagicMock(spec=requests.Session)
     return TongyiTextEmbeddingModel.embed_multimodal_documents(
         credentials_kwargs=CREDENTIALS,
         model=MULTIMODAL_MODEL,
         documents=documents,
         base_address=BASE_ADDRESS,
-        session=session,
     )
 
 
@@ -189,7 +185,7 @@ def test_transient_connection_error_is_retried_for_multimodal(monkeypatch, sleep
     caller = _Caller(response=_MultiModalResponse(), error=_connection_error(), failures=1)
     monkeypatch.setattr(te.dashscope.MultiModalEmbedding, "call", caller)
 
-    assert _embed_multimodal_documents() == ([[0.4, 0.5]], 5)
+    assert _embed_multimodal_documents() == ([[0.4, 0.5]], {"total": 5, "text": 5, "image": 0})
     assert caller.calls == 2
     assert sleeps == [1]
 

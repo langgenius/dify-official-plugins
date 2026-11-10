@@ -1,7 +1,7 @@
 model: nova-lite
 label:
   en_US: Nova Lite
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 features:
   - agent-thought

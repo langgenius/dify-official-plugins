@@ -7,7 +7,8 @@ identity:
     en_US: Wecom group bot
     pt_BR: Wecom group bot
     zh_Hans: 企业微信群机器人
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Wecom
     pt_BR: Wecom

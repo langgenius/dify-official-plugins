@@ -1,0 +1,105 @@
+identity:
+  name: get-parse-result
+  author: langgenius
+  label:
+    en_US: Get Parse Result
+    zh_Hans: 查询解析结果
+    ja_JP: 解析結果を取得
+    pt_BR: Obter resultado da análise
+description:
+  human:
+    en_US: Check a MinerU parse job started by parse-file or parse-url and return its result once it is done. Works with the MinerU official API and self-hosted MinerU 4.x.
+    zh_Hans: 查询由「解析文件」或「解析 URL」提交的 MinerU 解析任务，完成后返回解析结果。支持 MinerU 官方 API 和本地部署的 MinerU 4.x。
+    ja_JP: parse-file または parse-url で開始した MinerU の解析ジョブを確認し、完了していれば結果を返します。MinerU 公式 API とセルフホストの MinerU 4.x に対応しています。
+    pt_BR: Verifica um trabalho de análise do MinerU iniciado por parse-file ou parse-url e retorna o resultado quando concluído. Funciona com a API oficial do MinerU e com o MinerU 4.x auto-hospedado.
+  llm: Fetch the status or result of a MinerU parse job using the task_id or batch_id returned by parse-file or parse-url. Use the same credentials that submitted the job. Returns the same Markdown/JSON/images as parse-file when done, otherwise the current state and progress.
+parameters:
+- name: task_id
+  type: string
+  required: false
+  label:
+    en_US: task_id
+    zh_Hans: task_id
+    ja_JP: task_id
+    pt_BR: task_id
+  human_description:
+    en_US: Task id returned by parse-url, or by parse-file on a self-hosted MinerU 4.x server
+    zh_Hans: parse-url 返回的 task_id，或本地部署 MinerU 4.x 时 parse-file 返回的 task_id
+    ja_JP: parse-url が返した task_id、またはセルフホストの MinerU 4.x で parse-file が返した task_id
+    pt_BR: task_id retornado pelo parse-url, ou pelo parse-file em um MinerU 4.x auto-hospedado
+  llm_description: The task_id returned by parse-file or parse-url. Provide either task_id or batch_id.
+  form: llm
+- name: batch_id
+  type: string
+  required: false
+  label:
+    en_US: batch_id
+    zh_Hans: batch_id
+    ja_JP: batch_id
+    pt_BR: batch_id
+  human_description:
+    en_US: (Official API) Batch id returned by parse-file
+    zh_Hans: （官方API）parse-file 返回的 batch_id
+    ja_JP: （公式API）parse-file が返した batch_id
+    pt_BR: (API oficial) batch_id retornado pelo parse-file
+  llm_description: The batch_id returned by parse-file on the official API. Provide either task_id or batch_id.
+  form: llm
+- name: wait_for_result
+  type: boolean
+  required: false
+  default: false
+  label:
+    en_US: Wait for result
+    zh_Hans: 等待解析结果
+    ja_JP: 結果を待つ
+    pt_BR: Aguardar resultado
+  human_description:
+    en_US: Keep polling until parsing finishes (up to the timeout). If off, the tool returns the current state immediately.
+    zh_Hans: 持续查询直到解析完成（不超过超时时间）。关闭时立即返回当前状态。
+    ja_JP: 解析が完了するまで（タイムアウトまで）問い合わせを続けます。オフの場合は現在の状態をすぐに返します。
+    pt_BR: Continua consultando até a análise terminar (até o tempo limite). Se desativado, retorna o estado atual imediatamente.
+  llm_description: Whether to keep waiting until parsing finishes; false returns the current state immediately.
+  form: form
+- name: timeout_seconds
+  type: number
+  required: false
+  default: 540
+  min: 10
+  label:
+    en_US: Timeout (seconds)
+    zh_Hans: 超时时间（秒）
+    ja_JP: タイムアウト（秒）
+    pt_BR: Tempo limite (segundos)
+  human_description:
+    en_US: How long to wait for the result. Keep it below Dify's tool limit (PLUGIN_MAX_EXECUTION_TIMEOUT, 600 by default).
+    zh_Hans: 最多等待多久。请小于 Dify 的工具执行上限（PLUGIN_MAX_EXECUTION_TIMEOUT，默认 600）。
+    ja_JP: 結果を待つ最大時間。Dify のツール実行上限（PLUGIN_MAX_EXECUTION_TIMEOUT、デフォルト 600）より短くしてください。
+    pt_BR: Quanto tempo aguardar o resultado. Mantenha abaixo do limite de ferramentas do Dify (PLUGIN_MAX_EXECUTION_TIMEOUT, 600 por padrão).
+  llm_description: Maximum seconds to wait for the result.
+  form: form
+output_schema:
+  type: object
+  properties:
+    images:
+      type: array
+      items:
+        type: object
+      description: The images extracted from the file
+    full_zip_url:
+      type: string
+      description: (Official API) The zip URL of the complete parsed result
+    task_id:
+      type: string
+      description: Task id of the parse job (official API URL tasks and MinerU 4.x); pass it to get-parse-result
+    batch_id:
+      type: string
+      description: (Official API) Batch id of an uploaded file; pass it to get-parse-result
+    state:
+      type: string
+      description: pending, running or done
+    server_type:
+      type: string
+      description: remote (official API) or local (self-hosted)
+extra:
+  python:
+    source: tools/get_parse_result.py

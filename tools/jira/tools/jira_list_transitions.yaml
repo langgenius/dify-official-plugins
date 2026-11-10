@@ -1,0 +1,51 @@
+identity:
+  name: jira_list_transitions
+  author: langgenius
+  label:
+    en_US: List Transitions
+    zh_Hans: 列出状态流转
+    ja_JP: トランジション一覧
+description:
+  human:
+    en_US: Statuses an issue can move to now
+    zh_Hans: 问题当前可以流转到的状态
+    ja_JP: 課題が今移動できるステータス
+  llm: List the workflow transitions available on a Jira issue right now (their names and target statuses).
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    transitions:
+      type: array
+      description: Available transitions (id, name, to_status)
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          to_status:
+            type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_list_transitions.py

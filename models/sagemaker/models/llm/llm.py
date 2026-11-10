@@ -3,12 +3,11 @@ import time
 import logging
 import re
 from collections.abc import Generator, Iterator
+from contextlib import closing
 from typing import Any, Optional, Union, cast
 
 import boto3  # type: ignore
-from sagemaker import Predictor, serializers  # type: ignore
-from sagemaker.session import Session  # type: ignore
-        
+
 from dify_plugin.entities.model import (
     AIModelEntity,
     DefaultParameterName,
@@ -51,10 +50,19 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 logger = logging.getLogger(__name__)
 
 
-def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any], stop: list, model_id: str, stream=False):
+def inference(
+    client,
+    endpoint_name: str,
+    messages: list[dict[str, Any]],
+    params: dict[str, Any],
+    stop: list,
+    model_id: str,
+    stream=False,
+):
     """
     params:
-    predictor : Sagemaker Predictor
+    client : SageMaker Runtime client
+    endpoint_name (str): deployed SageMaker endpoint.
     messages (List[Dict[str,Any]]): message list。
                 messages = [
                 {"role": "system", "content":"please answer in Chinese"},
@@ -78,21 +86,31 @@ def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any],
         "stop": stop,
     }
 
-    if not stream:
-        response = predictor.predict(payload)
-        return response
-    else:
-        response_stream = predictor.predict_stream(payload)
-        return response_stream
+    request = {
+        "EndpointName": endpoint_name,
+        "ContentType": "application/json",
+        "Body": json.dumps(payload).encode("utf-8"),
+    }
+    if stream:
+        response = client.invoke_endpoint_with_response_stream(**request)
+
+        def chunks() -> Iterator[bytes]:
+            with closing(response["Body"]) as body:
+                for event in body:
+                    yield event["PayloadPart"]["Bytes"]
+
+        return chunks()
+    response = client.invoke_endpoint(**request)
+    with closing(response["Body"]) as body:
+        return body.read()
 
 
 class SageMakerLargeLanguageModel(LargeLanguageModel):
     """
-    Model class for Cohere large language model.
+    Model class for SageMaker large language models.
     """
 
-    sagemaker_session: Any = None
-    predictor: Any = None
+    runtime_client: Any = None
     sagemaker_endpoint: str | None = None
     access_key: str = None
     secret_key : str = None
@@ -316,17 +334,17 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
 
                 boto_session = boto3.Session(botocore_session=session)
 
-            sagemaker_client = boto_session.client("sagemaker")
-            self.sagemaker_session = Session(boto_session=boto_session, sagemaker_client=sagemaker_client)
-            self.predictor = Predictor(
-                endpoint_name=self.sagemaker_endpoint,
-                sagemaker_session=self.sagemaker_session,
-                serializer=serializers.JSONSerializer(),
-            )
+            self.runtime_client = boto_session.client("sagemaker-runtime")
 
         messages: list[dict[str, Any]] = [self._convert_prompt_message_to_dict(p) for p in prompt_messages]
         response = inference(
-            predictor=self.predictor, messages=messages, params=model_parameters, stop=stop, model_id=credentials.get("model_id", ""), stream=stream
+            client=self.runtime_client,
+            endpoint_name=self.sagemaker_endpoint,
+            messages=messages,
+            params=model_parameters,
+            stop=stop,
+            model_id=credentials.get("model_id", ""),
+            stream=stream,
         )
 
         if stream:

@@ -1,10 +1,11 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class GetPageTool(Tool):
@@ -12,11 +13,16 @@ class GetPageTool(Tool):
         """
         Get info of a page (including content) in Confluence.
         """
-        confluence = auth(self.runtime.credentials)
+        confluence = yield from connect(self)
+        if confluence is None:
+            return
 
         page_id = tool_parameters.get("page_id")
 
-        page = confluence.get_page_by_id(page_id, expand="body.storage")
+        if isinstance(confluence, ConfluenceV2):
+            page = confluence.get_page_by_id(page_id, body_format="storage")
+        else:
+            page = confluence.get_page_by_id(page_id, expand="body.storage")
         if not page:
             yield self.create_text_message("Page not found")
             return

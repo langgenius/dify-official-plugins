@@ -7,7 +7,8 @@ identity:
   description:
     en_US: TTS tools provided by Minimax.
     zh_Hans: Minimax 提供的 TTS 工具。
-  icon: minimax_tts.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   tags:
     - utilities
     - productivity

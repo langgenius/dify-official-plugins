@@ -1,10 +1,11 @@
 from collections.abc import Generator
 from typing import Any
 
+from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class ListPageofSpaceTool(Tool):
@@ -12,12 +13,16 @@ class ListPageofSpaceTool(Tool):
         """
         List all pages in a space in Confluence.
         """
-        confluence = auth(self.runtime.credentials)
+        confluence = yield from connect(self)
+        if confluence is None:
+            return
 
         space_key = tool_parameters.get("space_key")
 
-        pages = confluence.get_all_pages_from_space(
-            space_key, start=0, limit=100, status=None, expand=None, content_type="page"
-        )
+        if isinstance(confluence, ConfluenceV2):
+            space = confluence.get_space_by_key(space_key)
+            pages = confluence.get_pages(space_id=space["id"], limit=100, get_body=True)
+        else:
+            pages = list(confluence.get_all_pages_from_space(space_key, limit=100))
 
         yield self.create_json_message({"pages": pages})

@@ -55,6 +55,28 @@ parameters:
       en_US: "Supports http/https/socks proxies. Example: http://user:pass@example.com:3128."
       zh_Hans: "支持 http/https/socks 代理。示例：http://user:pass@example.com:3128。"
     form: form
+  - name: backend
+    type: string
+    required: false
+    placeholder:
+      en_US: "google,yahoo,brave"
+      zh_Hans: "google,yahoo,brave"
+    label:
+      en_US: Search engines
+      zh_Hans: 搜索引擎
+    human_description:
+      en_US: "Comma-separated engines to query. Available: google, yahoo, brave. Leave empty to ask all of them. The last JSON row and the search_status / engine_status outputs report what each engine did."
+      zh_Hans: "逗号分隔的搜索引擎列表。可选：google, yahoo, brave。留空则全部查询。最后一行 JSON 以及 search_status / engine_status 输出会说明每个引擎的结果。"
+    form: form
+output_schema:
+  type: object
+  properties:
+    search_status:
+      type: string
+      description: "Outcome of the search: successful, no_result or blocked (every primary engine refused or timed out)."
+    engine_status:
+      type: object
+      description: "Per engine: successful, no_result, blocked or not_applied."
 extra:
   python:
     source: tools/ddgo_search.py

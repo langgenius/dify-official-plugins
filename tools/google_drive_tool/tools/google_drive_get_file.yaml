@@ -1,0 +1,63 @@
+identity:
+  name: google_drive_get_file
+  author: langgenius
+  label:
+    en_US: Get File Info
+    zh_Hans: 获取文件信息
+    ja_JP: ファイル情報
+description:
+  human:
+    en_US: A file's details and link
+    zh_Hans: 文件详情和链接
+    ja_JP: ファイルの詳細とリンク
+  llm: 'Get a Google Drive file''s details: name, type, size, owner, modified time and link.'
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    file:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mime_type:
+          type: string
+        is_folder:
+          type: boolean
+        size:
+          type: integer
+        modified:
+          type: string
+        url:
+          type: string
+    name:
+      type: string
+    url:
+      type: string
+    mime_type:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_get_file.py

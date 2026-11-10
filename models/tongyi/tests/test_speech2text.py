@@ -44,7 +44,7 @@ def _run_worker_main(monkeypatch, payload: dict) -> tuple[int, str, str]:
 def _worker_payload() -> dict:
     return {
         "file_path": "/tmp/audio.wav",
-        "model": "paraformer-realtime-v1",
+        "model": "paraformer-realtime-v2",
         "audio_format": "wav",
         "sample_rate": 16000,
         "api_key": "test-key",
@@ -129,7 +129,7 @@ def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
             with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
                 assert (
                     _model()._invoke(
-                        model="paraformer-realtime-v1",
+                        model="paraformer-realtime-v2",
                         credentials={"dashscope_api_key": "test-key"},
                         file=file_obj,
                     )
@@ -154,7 +154,7 @@ def test_invoke_normalizes_non_dict_sentences() -> None:
             with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
                 assert (
                     _model()._invoke(
-                        model="paraformer-realtime-v1",
+                        model="paraformer-realtime-v2",
                         credentials={"dashscope_api_key": "test-key"},
                         file=file_obj,
                     )
@@ -183,7 +183,7 @@ def test_invoke_raises_dashscope_status_error() -> None:
         pytest.raises(ValueError) as exc_info,
     ):
         _model()._invoke(
-            model="paraformer-realtime-v1",
+            model="paraformer-realtime-v2",
             credentials={"dashscope_api_key": "test-key"},
             file=_wav_file(),
         )
@@ -490,7 +490,7 @@ def test_invoke_patches_dashscope_async_bridge_by_default(monkeypatch) -> None:
                     side_effect=AssertionError("subprocess path should stay disabled"),
                 ) as run_mock:
                     result_text = _model()._invoke(
-                        model="paraformer-realtime-v1",
+                        model="paraformer-realtime-v2",
                         credentials={"dashscope_api_key": "test-key"},
                         file=_wav_file(),
                     )
@@ -532,7 +532,7 @@ def test_invoke_uses_subprocess_when_env_is_true() -> None:
                 return_value=("ok", [{"text": "hello"}, {"text": "world"}]),
             ) as run_mock:
                 result = _model()._invoke(
-                    model="paraformer-realtime-v1",
+                    model="paraformer-realtime-v2",
                     credentials={"dashscope_api_key": "test-key"},
                     file=_wav_file(),
                 )
@@ -557,7 +557,7 @@ def test_invoke_raises_when_subprocess_returns_error() -> None:
             ):
                 try:
                     _model()._invoke(
-                        model="paraformer-realtime-v1",
+                        model="paraformer-realtime-v2",
                         credentials={"dashscope_api_key": "test-key"},
                         file=_wav_file(),
                     )
@@ -572,7 +572,7 @@ def test_run_recognition_in_subprocess_returns_error_for_missing_file() -> None:
 
     status, data = st2._run_recognition_in_subprocess(
         file_path="/missing/audio.wav",
-        model="paraformer-realtime-v1",
+        model="paraformer-realtime-v2",
         audio_format="wav",
         sample_rate=16000,
         api_key="test-key",

@@ -1,0 +1,91 @@
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/deepseek-v4-1-flash
+model: deepseek-v4.1-flash
+label:
+  zh_Hans: DeepSeek-V4.1-Flash
+  en_US: DeepSeek-V4.1-Flash
+model_type: llm
+features:
+  - vision
+  - structured-output
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 2.0
+    help:
+      zh_Hans: 采样温度，控制模型生成文本的多样性。
+      en_US: Sampling temperature, which controls the diversity of generated text.
+  - name: max_completion_tokens
+    use_template: max_tokens
+    type: int
+    default: 393216
+    min: 1
+    max: 393216
+    help:
+      zh_Hans: 模型输出的最大 Token 数，包含思维链和模型回答。
+      en_US: The maximum number of output tokens, including reasoning and the model response.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: int
+    required: false
+    min: 1
+    max: 100
+    help:
+      zh_Hans: 控制模型的推理力度，取值范围为 1～100，数值越大推理力度越强。
+      en_US: Controls reasoning effort. Values range from 1 to 100; higher values enable stronger reasoning.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+    help:
+      zh_Hans: 指定模型必须输出的格式。
+      en_US: Specifies the format that the model must output.
+  - name: enable_search
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    help:
+      zh_Hans: 是否在生成文本时参考联网搜索结果。
+      en_US: Whether to use web search results as a reference when generating text.
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: true
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+  - name: extra_headers
+    required: false
+    type: string
+    label:
+      zh_Hans: 额外请求头，Json字符串格式
+      en_US: Extra Headers
+    help:
+      zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
+      en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
+pricing:
+  input: "0.002"
+  output: "0.008"
+  unit: "0.001"
+  currency: RMB

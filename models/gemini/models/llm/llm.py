@@ -31,14 +31,18 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
+    InvokeAuthorizationError,
     InvokeBadRequestError,
-    InvokeConnectionError,
     InvokeError,
+    InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
+from google.genai._gaos.lib.compat_errors import (
+    APIStatusError as InteractionsAPIStatusError,
+)
 
 from .file_parts import GeminiFileMode, GeminiFilePartFactory
 from .model_schema import with_inline_file_parameter
@@ -48,6 +52,7 @@ file_cache = FileCache()
 
 IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
 NO_SAMPLING_OR_PREFILL_MODELS = {
+    "gemini-4-argon",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -147,6 +152,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             message_text = f"{human_prompt} {content}"
         elif isinstance(message, AssistantPromptMessage):
             message_text = f"{ai_prompt} {content}"
+            if message.tool_calls:
+                message_text += "\n" + "\n".join(
+                    f"{call.function.name} {call.function.arguments}"
+                    for call in message.tool_calls
+                )
         elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
             message_text = f"{human_prompt} {content}"
         else:
@@ -172,15 +182,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         Map model invoke error to unified error
         """
         return {
-            InvokeConnectionError: [errors.APIError, errors.ClientError],
-            InvokeServerUnavailableError: [errors.ServerError],
             InvokeBadRequestError: [
-                errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
                 errors.UnsupportedFunctionError,
                 errors.FunctionInvocationError,
             ],
         }
+
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InteractionsAPIStatusError):
+            error = errors.APIError(error.status_code, error.body)
+        if not isinstance(error, errors.APIError):
+            return super()._transform_invoke_error(error)
+
+        # APIError.__str__ includes the entire response JSON, including details.
+        message = (
+            f"[gemini] {error.message or error.status or 'Gemini API request failed.'}"
+        )
+        if error.code == 429:
+            return InvokeRateLimitError(message)
+        if error.code in (401, 403):
+            return InvokeAuthorizationError(message)
+        if error.code >= 500:
+            return InvokeServerUnavailableError(message)
+        return InvokeBadRequestError(message)
 
     @staticmethod
     def _calculate_tokens_from_usage_metadata(
@@ -221,7 +246,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # The reasoning content and final answer of the Gemini model are priced using the same standard.
         completion_tokens = thoughts_token_count + candidates_token_count
         # The `prompt_tokens` includes the historical conversation QA plus the current input.
-        prompt_tokens = prompt_tokens_standard
+        prompt_tokens = usage_metadata.prompt_token_count or prompt_tokens_standard
 
         return prompt_tokens, completion_tokens
 
@@ -452,8 +477,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.response_modalities = [types.Modality.AUDIO.value]
 
     @staticmethod
-    def _is_gemini3_plus(model: Optional[str]) -> bool:
-        """Return True for Gemini 3+ model names.
+    def _is_gemini3(model: Optional[str]) -> bool:
+        """Return True for Gemini 3 model names.
 
         Matches names like ``gemini-3-flash``, ``gemini-3.5-flash``,
         ``gemini-3-pro-preview``, and the bare ``gemini-3``. Does NOT
@@ -493,11 +518,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         Feature compatibility rules:
         1. Structured output (json_schema) is exclusive on Gemini <= 2.5
            (the legacy ``generate_content`` endpoint rejects the combination
-           with HTTP 400). Gemini 3+ supports structured output together with
-           built-in tools (grounding, url_context, code_execution) via the
-           Interactions API; Rule 1 is relaxed for those models and the
-           validator returns the parameters unchanged so the caller can
-           dispatch to the right path.
+           with HTTP 400). Gemini 3 uses the Interactions API for this
+           combination; Gemini 4 Argon supports it through generateContent.
         2. url_context and grounding can be used together
         3. url_context and code_execution cannot be used together
         4. grounding and code_execution can be used together
@@ -542,16 +564,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if not enabled_features:
             return adjusted_params
 
-        # Rule 1: json_schema is mutually exclusive with all other features
-        # Relaxed for Gemini 3+: the combination is supported natively via
-        # the Interactions API; the caller is responsible for routing the
-        # request to the right endpoint (see _generate_via_interactions).
+        # Gemini 4 uses generateContent so SDK continuation also works with tools.
         if features["json_schema"] and len(enabled_features) > 1:
-            if GoogleLargeLanguageModel._is_gemini3_plus(model):
-                logging.debug(
-                    "Gemini 3+ detected; allowing json_schema + native tools; "
-                    "Interactions API handles the combination natively"
-                )
+            if model == "gemini-4-argon" or GoogleLargeLanguageModel._is_gemini3(model):
+                logging.debug("Allowing structured output with tools for %s", model)
             else:
                 other_features = [f for f in enabled_features if f != "json_schema"]
                 raise InvokeError(
@@ -868,8 +884,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             response.usage_metadata
         )
 
-        # Fallback to manual calculation if tokens are not available
-        if prompt_tokens == 0 or completion_tokens == 0:
+        # API usage includes thinking and continuation hops, even with no visible text.
+        if response.usage_metadata is None:
             prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
             completion_tokens = self.get_num_tokens(
                 model, credentials, [assistant_prompt_message]
@@ -934,20 +950,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         index = -1
         self.is_thinking = False
+        response_message = AssistantPromptMessage(content=[])
 
         for chunk in response:
-            if (
-                not chunk.candidates
-                or not chunk.candidates[0].content
-                or (
-                    not chunk.candidates[0].content.parts
-                    and not chunk.candidates[0].finish_reason
+            if not chunk.candidates or (
+                not chunk.candidates[0].finish_reason
+                and (
+                    not chunk.candidates[0].content
+                    or not chunk.candidates[0].content.parts
                 )
             ):
                 continue
             candidate = chunk.candidates[0]
             parts = candidate.content.parts if candidate.content else []
             message = self._parse_parts(parts)
+
+            if candidate.finish_reason and self.is_thinking:
+                message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+            response_message.content.extend(message.content)
+            response_message.tool_calls.extend(message.tool_calls)
 
             index += len(parts) if parts else 0
 
@@ -960,25 +981,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 )
             # if the stream is finished, yield the chunk and the finish reason
             else:
-                # If we're still in thinking mode at the end, close it
-                if self.is_thinking:
-                    message.content.append(
-                        TextPromptMessageContent(data="\n\n</think>")
-                    )
-
                 prompt_tokens, completion_tokens = (
                     self._calculate_tokens_from_usage_metadata(chunk.usage_metadata)
                 )
 
-                # Fallback to manual calculation if tokens are not available
-                if prompt_tokens == 0 or completion_tokens == 0:
+                if chunk.usage_metadata is None:
                     prompt_tokens = self.get_num_tokens(
                         model=model,
                         credentials=credentials,
                         prompt_messages=prompt_messages,
                     )
                     completion_tokens = self.get_num_tokens(
-                        model=model, credentials=credentials, prompt_messages=[message]
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=[response_message],
                     )
                 usage = self._calc_response_usage(
                     model=model,
@@ -1197,15 +1213,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         if model in NO_SAMPLING_OR_PREFILL_MODELS:
-            for parameter in ("temperature", "top_p", "top_k", "thinking_budget"):
+            for parameter in (
+                "temperature",
+                "top_p",
+                "top_k",
+                "thinking_budget",
+                "thinking_mode",
+            ):
                 model_parameters.pop(parameter, None)
 
         # == Interactions API Routing == #
-        # Gemini 3+ models with json_schema + native tools use the
+        # Gemini 3 models with json_schema + native tools use the
         # Interactions API, which supports combining structured output with
         # grounding/url_context/code_execution in a single call (the legacy
         # generateContent endpoint silently drops grounding instead).
-        _is_gemini3 = self._is_gemini3_plus(model)
+        _is_gemini3 = self._is_gemini3(model)
         _has_json_schema = bool(model_parameters.get("json_schema"))
         _has_native_tools = any(
             model_parameters.get(f)
@@ -1237,7 +1259,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         genai_client = genai.Client(
             api_key=credentials["google_api_key"],
             http_options=types.HttpOptions(
-                base_url=credentials.get("google_base_url", None)
+                base_url=credentials.get("google_base_url", None),
+                # Argon's reasoning can take several minutes before producing text.
+                timeout=900_000 if model == "gemini-4-argon" else None,
             ),
         )
 
@@ -1358,7 +1382,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             model, credentials, response, prompt_messages, config.service_tier
         )
 
-    # ---- Interactions API (Gemini 3+ json_schema + native tools) ---- #
+    # ---- Interactions API (Gemini 3 json_schema + native tools) ---- #
 
     def _generate_via_interactions(
         self,
@@ -1372,7 +1396,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         """Generate via the Interactions API (``client.interactions.create``).
 
-        Used for Gemini 3+ models when ``json_schema`` + native tools
+        Used for Gemini 3 models when ``json_schema`` + native tools
         (grounding, url_context, code_execution) are active together. The
         Interactions API supports this combination natively; the legacy
         ``generateContent`` endpoint does not — it silently drops grounding
@@ -1461,13 +1485,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 str(_tl).strip().lower(), "medium"
             )
         if (include_thoughts := model_parameters.get("include_thoughts")) is not None:
-            gen_config["thinking_summaries"] = (
-                "auto" if include_thoughts else "none"
-            )
+            gen_config["thinking_summaries"] = "auto" if include_thoughts else "none"
 
-        media_resolution = str(
-            model_parameters.get("media_resolution", "")
-        ).strip().lower()
+        media_resolution = (
+            str(model_parameters.get("media_resolution", "")).strip().lower()
+        )
         if media_resolution not in {"low", "medium", "high"}:
             media_resolution = ""
 
@@ -1621,8 +1643,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             for _step in steps
             if getattr(_step, "type", None) == "thought"
             for _part in (getattr(_step, "summary", None) or [])
-            if getattr(_part, "type", None) == "text"
-            and getattr(_part, "text", None)
+            if getattr(_part, "type", None) == "text" and getattr(_part, "text", None)
         )
         text = getattr(interaction, "output_text", None) or ""
         if not text:
@@ -1790,7 +1811,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         else "Unknown Interactions API error"
                     )
                     raise InvokeError(f"Interactions API error: {_err_msg}")
-        except InvokeError:
+        except (InvokeError, errors.APIError, InteractionsAPIStatusError):
             raise
         except Exception as exc:
             raise InvokeError(f"Interactions API stream error: {exc}") from exc

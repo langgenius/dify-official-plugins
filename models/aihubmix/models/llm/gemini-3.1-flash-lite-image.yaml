@@ -1,0 +1,73 @@
+model: gemini-3.1-flash-lite-image
+label:
+  en_US: Gemini 3.1 Flash-Lite Image
+model_type: llm
+features:
+  - vision
+model_properties:
+  mode: chat
+  context_size: 65536
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+    default: 0.95
+  - name: aspect_ratio
+    type: string
+    required: false
+    default: "Auto"
+    options:
+      - "Auto"
+      - "1:1"
+      - "9:16"
+      - "16:9"
+      - "3:4"
+      - "4:3"
+      - "3:2"
+      - "2:3"
+      - "5:4"
+      - "4:5"
+      - "21:9"
+      - "4:1"
+      - "8:1"
+    label:
+      en_US: Aspect ratio
+      zh_Hans: 宽高比
+    help:
+      en_US: Aspect ratio of the generated image. Auto lets the model choose.
+      zh_Hans: 生成图片的宽高比，Auto 表示交给模型决定。
+  - name: resolution
+    type: string
+    required: false
+    default: "1K"
+    options:
+      - "1K"
+    label:
+      en_US: Resolution
+      zh_Hans: 分辨率
+    help:
+      en_US: This model only renders at 1K; 2K and 4K are rejected upstream.
+      zh_Hans: 该模型只支持 1K，传 2K / 4K 会被上游拒绝。
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 4096
+    min: 1
+    max: 4096
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
+# https://ai.google.dev/gemini-api/docs/pricing
+pricing:
+  input: '0.25'
+  output: '1.5'
+  unit: '0.000001'
+  currency: USD

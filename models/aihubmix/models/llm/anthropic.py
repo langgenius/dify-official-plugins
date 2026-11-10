@@ -17,7 +17,6 @@ from anthropic.types import (
     MessageStartEvent,
     MessageStopEvent,
     MessageStreamEvent,
-    completion_create_params,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -154,6 +153,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-opus-4-8",
         "claude-sonnet-5",
         "claude-fable-5",
+        "claude-haiku-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-fable-5",
@@ -167,9 +167,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
         "claude-opus-5",
         "claude-sonnet-5",
+        "claude-haiku-5",
     )
     DISABLED_THINKING_EFFORT_CAP_MODELS: tuple[str, ...] = (
         "claude-opus-5",
+        "claude-haiku-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -437,9 +439,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
-            extra_model_kwargs["metadata"] = completion_create_params.Metadata(
-                user_id=user
-            )
+            extra_model_kwargs["metadata"] = {"user_id": user}
         self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
         self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)

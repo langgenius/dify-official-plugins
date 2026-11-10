@@ -24,7 +24,7 @@ identity:
     en_US: Innovative AI for Image Generation
     pt_BR: Innovative AI for Image Generation
     zh_Hans: 用于图像生成的创新人工智能。
-  icon: icon.ico
+  icon: icon.svg
   label:
     en_US: Novita AI
     pt_BR: Novita AI

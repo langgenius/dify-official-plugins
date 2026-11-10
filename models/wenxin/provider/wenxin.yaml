@@ -16,11 +16,17 @@ help:
   url:
     en_US: https://cloud.baidu.com/wenxin.html
 icon_large:
-  en_US: icon_l_en.png
-  zh_Hans: icon_l_zh.png
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.png
-  zh_Hans: icon_s_en.png
+  en_US: icon.svg
+  zh_Hans: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+  zh_Hans: icon-dark.svg
 label:
   en_US: WenXin
   zh_Hans: 文心一言

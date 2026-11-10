@@ -18,9 +18,13 @@ help:
   url:
     en_US: https://console.cloud.tencent.com/cam/capi
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 icon_small:
-  en_US: icon_s_en.png
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 label:
   en_US: Hunyuan
   zh_Hans: 腾讯混元

@@ -7,6 +7,7 @@ identity:
     en_US: Get transcripts from YouTube videos
     zh_Hans: 获取 YouTube 视频的字幕/转录文本
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Transcript
     zh_Hans: Transcript

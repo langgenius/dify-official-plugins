@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" fill="none" xmlns:v="https://vecta.io/nano"><path fill="#0061ff" d="M0 0h512v512H0z"/><path d="M158 372l98 63 98-63-98-62-98 62zm0-271l-99 63 295 188 99-63-197-125 98-63 99 63-295 188-99-63 197-125" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <g transform="translate(-1536 -1546)"><g id="dropbox_light">
+<rect width="40" height="40" transform="translate(1536 1546)" fill="white"/>
+<rect width="40" height="40" transform="translate(1536 1546)" fill="#0061FF"/>
+<path id="Vector_469" d="M1548.34 1575.06L1556 1579.98L1563.66 1575.06L1556 1570.22L1548.34 1575.06ZM1548.34 1553.89L1540.61 1558.81L1563.66 1573.5L1571.39 1568.58L1556 1558.81L1563.66 1553.89L1571.39 1558.81L1548.34 1573.5L1540.61 1568.58L1556 1558.81" fill="white"/>
+</g>
+</g>
+</svg>

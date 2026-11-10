@@ -25,6 +25,7 @@ identity:
     pt_BR: Activating humanity's potential through generative AI
     zh_Hans: 通过生成式 AI 激活人类的潜力
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Stability
     pt_BR: Stability

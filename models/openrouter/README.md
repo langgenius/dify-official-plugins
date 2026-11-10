@@ -7,3 +7,10 @@ This plugin supports language, text embedding, and text rerank models exposed by
 After installation, you need to get API keys from [OpenRouter](https://openrouter.ai/keys) and setup in Settings -> Model Provider.
 
 ![](_assets/openrouter.PNG)
+
+## Kimi K3.1 Pro
+
+`moonshotai/kimi-k3.1-pro` supports text, image, and video input, tools, structured
+output, and configurable reasoning. Context and output limits, reasoning options,
+and USD pricing follow the [OpenRouter model catalog](https://openrouter.ai/api/v1/models).
+Highspeed is an upstream provider route for this model, rather than a separate model ID.

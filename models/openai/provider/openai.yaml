@@ -5,9 +5,13 @@ description:
   en_US: Current language, embedding, moderation, and audio models from OpenAI.
   zh_Hans: OpenAI 当前的语言、嵌入、内容审核与音频模型。
 icon_small:
-  en_US: icon_s_en.svg
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
 background: "#E5E7EB"
 help:
   title:

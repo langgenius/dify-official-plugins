@@ -17,7 +17,8 @@ identity:
   description:
     en_US: Generate presentation slides using SlideSpeak API
     zh_Hans: 使用 SlideSpeak API 生成演示幻灯片
-  icon: icon.png
+  icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: SlideSpeak
     zh_Hans: SlideSpeak

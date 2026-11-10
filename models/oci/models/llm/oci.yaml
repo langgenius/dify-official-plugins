@@ -11,13 +11,11 @@ description:
   ja_JP: OCI が提供する Grok 3/4、Gemini、gpt-oss、Llama、Cohere Command などのモデル。
 
 icon_large:
-  en_US: icon_l_en.png
+  en_US: icon.svg
+  ja_JP: icon.svg
 icon_small:
-  en_US: icon_s_en.png
-icon_large:
-  ja_JP: icon_l_ja.png
-icon_small:
-  ja_JP: icon_s_ja.png
+  en_US: icon.svg
+  ja_JP: icon.svg
 
 background: '#FFFFFF'
 
@@ -149,4 +147,3 @@ extra:
       - models/llm/llm.py
       - models/text_embedding/text_embedding.py
     provider_source: provider/oci.py
-

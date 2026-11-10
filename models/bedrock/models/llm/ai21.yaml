@@ -1,7 +1,7 @@
 model: ai21
 label:
   en_US: AI21 Labs
-icon: icon_s_en.svg
+icon: icon.svg
 model_type: llm
 model_properties:
   mode: completion

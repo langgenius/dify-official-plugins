@@ -34,6 +34,7 @@ identity:
     pt_BR: Brave
     zh_Hans: Brave
   icon: icon.svg
+  icon_dark: icon-dark.svg
   label:
     en_US: Brave
     pt_BR: Brave

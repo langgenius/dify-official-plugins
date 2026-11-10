@@ -4,13 +4,15 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class GetRecentProjectsTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
 
-        jira = auth(self.runtime.credentials)
+        jira = yield from connect(self)
+        if jira is None:
+            return
 
         expand = tool_parameters.get("expand", "")
         properties = tool_parameters.get("properties", "")
@@ -25,7 +27,7 @@ class GetRecentProjectsTool(Tool):
             if properties:
                 params["properties"] = properties
 
-            recent_projects = jira.get("project/recent", params=params)
+            recent_projects = jira.get(jira.resource_url("project/recent"), params=params)
 
             if not recent_projects:
                 yield self.create_json_message(

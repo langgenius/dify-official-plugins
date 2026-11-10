@@ -1,3 +1,71 @@
+credentials_for_provider:
+  auth_mode:
+    default: per_user
+    help:
+      en_US: The first time a chat user needs Google Calendar, the tool returns a Google sign-in link; after they sign in,
+        the tools act as that user. (To use one shared account instead, use OAuth.) Needs a Google OAuth client (Web application)
+        and the Sign-in Callback URL below.
+      ja_JP: チャットのユーザーが初めて Google Calendar を使うとき、ツールが Google のサインイン リンクを返し、サインイン後はそのユーザー本人として操作します。（共有アカウントを使う場合は OAuth を使用）Google
+        OAuth クライアント（ウェブ アプリケーション）と下のサインイン コールバック URL が必要です。
+      zh_Hans: 聊天用户第一次用到 Google Calendar 时，工具会返回 Google 登录链接；登录后，工具以该用户的身份操作。（要共用一个账号，请用 OAuth。）需要一个 Google OAuth 客户端（Web
+        应用）以及下方的登录回调 URL。
+    label:
+      en_US: Mode
+      ja_JP: モード
+      zh_Hans: 模式
+    options:
+    - label:
+        en_US: Each user signs in (own Google account, for chat agents)
+        ja_JP: ユーザーごとにサインイン（本人の Google アカウント、チャット エージェント向け）
+        zh_Hans: 每个用户自己登录（各自的 Google 账号，适用于对话 Agent）
+      value: per_user
+    required: false
+    type: select
+  client_id:
+    help:
+      en_US: Google Cloud Console > Google Auth Platform > Clients > your Web application client.
+      ja_JP: Google Cloud コンソール > Google Auth Platform > クライアント > ウェブ アプリケーションのクライアント。
+      zh_Hans: Google Cloud 控制台 > Google Auth Platform > Clients > 你的 Web 应用客户端。
+    label:
+      en_US: Client ID
+      ja_JP: クライアント ID
+      zh_Hans: 客户端 ID
+    placeholder:
+      en_US: xxxx.apps.googleusercontent.com
+      ja_JP: xxxx.apps.googleusercontent.com
+      zh_Hans: xxxx.apps.googleusercontent.com
+    required: true
+    type: text-input
+    url: https://console.cloud.google.com/auth/clients
+  client_secret:
+    help:
+      en_US: The client's secret. Rotating it signs every user out.
+      ja_JP: クライアントのシークレット。変更すると全員がサインアウトされます。
+      zh_Hans: 该客户端的密钥。更换后所有用户都需要重新登录。
+    label:
+      en_US: Client Secret
+      ja_JP: クライアント シークレット
+      zh_Hans: 客户端密钥
+    required: true
+    type: secret-input
+    url: https://console.cloud.google.com/auth/clients
+  redirect_uri:
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints), paste its /google_calendar/callback URL here, and
+        add the same URL to the OAuth client's Authorized redirect URIs.
+      ja_JP: このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /google_calendar/callback の URL をここに貼り付け、同じ URL を OAuth クライアントの承認済みのリダイレクト
+        URI に追加してください。
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /google_calendar/callback URL 粘贴到这里，并把同一个 URL 加到 OAuth 客户端的“已获授权的重定向 URI”中。
+    label:
+      en_US: Sign-in Callback URL
+      ja_JP: サインイン コールバック URL
+      zh_Hans: 登录回调 URL
+    placeholder:
+      en_US: e.g. https://dify.example.com/e/xxxx/google_calendar/callback
+      ja_JP: '例: https://dify.example.com/e/xxxx/google_calendar/callback'
+      zh_Hans: 例如 https://dify.example.com/e/xxxx/google_calendar/callback
+    required: true
+    type: text-input
 extra:
   python:
     source: provider/google_calendar.py
@@ -67,3 +135,8 @@ tools:
 - tools/list_events.yaml
 - tools/create_event.yaml
 - tools/search_events.yaml
+- tools/google_calendar_get_event.yaml
+- tools/google_calendar_update_event.yaml
+- tools/google_calendar_delete_event.yaml
+- tools/google_calendar_check_availability.yaml
+- tools/google_calendar_sign_out.yaml

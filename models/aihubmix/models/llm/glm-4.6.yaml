@@ -4,7 +4,7 @@ label:
 model_type: llm
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 200000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +20,7 @@ parameter_rules:
     type: int
     default: 8192
     min: 1
-    max: 16384
+    max: 131072
     help:
       zh_Hans: 用于指定模型在生成内容时token的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
@@ -67,7 +67,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.600'
-  output: '2.200'
+  input: '0.273974'
+  output: '1.095896'
   unit: '0.000001'
   currency: USD

@@ -1,6 +1,6 @@
 import random
 from typing import Any, Generator
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
@@ -14,7 +14,7 @@ class CogView3Tool(Tool):
         """
         Invoke CogView3 tool
         """
-        client = ZhipuAI(
+        client = ZhipuAiClient(
             base_url=self.runtime.credentials["zhipuai_base_url"],
             api_key=self.runtime.credentials["zhipuai_api_key"],
         )

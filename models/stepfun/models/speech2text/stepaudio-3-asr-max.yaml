@@ -1,0 +1,8 @@
+model: stepaudio-3-asr-max
+label:
+  en_US: StepAudio 3 ASR Max
+  zh_Hans: StepAudio 3 ASR Max
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: mp3,m4a,ogg,wav

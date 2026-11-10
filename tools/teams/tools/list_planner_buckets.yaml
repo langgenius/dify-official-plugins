@@ -1,0 +1,62 @@
+identity:
+  name: list_planner_buckets
+  author: langgenius
+  label:
+    en_US: List Planner Buckets
+    zh_Hans: 列出 Planner 分组
+    pt_BR: Listar Buckets do Planner
+    ja_JP: Planner バケット一覧
+    zh_Hant: 列出 Planner 分組
+description:
+  human:
+    en_US: List the buckets (columns) of a Planner plan
+    zh_Hans: 列出 Planner 计划的分组（列）
+    pt_BR: Listar os buckets (colunas) de um plano do Planner
+    ja_JP: Planner プランのバケット（列）を一覧表示
+    zh_Hant: 列出 Planner 計畫的分組（欄）
+  llm: List the buckets of a Microsoft Planner plan.
+parameters:
+- name: plan_id
+  type: string
+  required: true
+  label:
+    en_US: Plan ID
+    zh_Hans: 计划 ID
+    pt_BR: ID do Plano
+    ja_JP: プラン ID
+    zh_Hant: 計畫 ID
+  human_description:
+    en_US: The ID of the Planner plan (from List Planner Plans)
+    zh_Hans: Planner 计划 ID（来自“列出 Planner 计划”）
+    pt_BR: O ID do plano do Planner (de Listar Planos do Planner)
+    ja_JP: Planner プランの ID（Planner プラン一覧から取得）
+    zh_Hant: Planner 計畫 ID（來自「列出 Planner 計畫」）
+  llm_description: The ID of the Planner plan, as returned by List Planner Plans
+  form: llm
+output_schema:
+  type: object
+  properties:
+    buckets:
+      type: array
+      description: Buckets of the plan
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Bucket ID
+          name:
+            type: string
+            description: Bucket name
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/list_planner_buckets.py

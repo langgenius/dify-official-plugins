@@ -41,42 +41,60 @@ output_schema:
   properties:
     ticket:
       type: object
+      description: Ticket details (the `detail` object of the Zendesk event). IDs are strings; enum values are upper-case, e.g. OPEN.
       properties:
         id:
           type: string
         subject:
           type: ["string", "null"]
+        description:
+          type: ["string", "null"]
         status:
+          type: ["string", "null"]
+        custom_status:
           type: ["string", "null"]
         priority:
           type: ["string", "null"]
-        description:
+        type:
           type: ["string", "null"]
-        requester_id:
-          type: ["string", "null"]
-        submitter_id:
+        is_public:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        actor_id:
           type: ["string", "null"]
         assignee_id:
+          type: ["string", "null"]
+        brand_id:
+          type: ["string", "null"]
+        external_id:
+          type: ["string", "null"]
+        form_id:
           type: ["string", "null"]
         group_id:
           type: ["string", "null"]
         organization_id:
           type: ["string", "null"]
-        tags:
-          type: array
-          items:
-            type: string
+        requester_id:
+          type: ["string", "null"]
+        submitter_id:
+          type: ["string", "null"]
         created_at:
-          type: ["string", "null"]
+          type: string
+          format: date-time
         updated_at:
-          type: ["string", "null"]
+          type: string
+          format: date-time
         via:
           type: object
           properties:
             channel:
               type: string
-          required:
-          - channel
+    ticket_url:
+      type: ["string", "null"]
+      description: Agent URL of the ticket, e.g. https://acme.zendesk.com/agent/tickets/123
   required:
   - ticket
 
