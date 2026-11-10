@@ -1,0 +1,157 @@
+identity:
+  name: confluence_search
+  author: langgenius
+  label:
+    en_US: Search (CQL)
+    zh_Hans: 搜索（CQL）
+    ja_JP: 検索（CQL）
+description:
+  human:
+    en_US: Find pages by text, space, label or a CQL query
+    zh_Hans: 按文字、空间、标签或 CQL 查询查找页面
+    ja_JP: テキスト、スペース、ラベル、または CQL で検索します
+  llm: Search Confluence. Either pass a CQL query (e.g. 'type = page AND space = DEV AND text ~ "onboarding"', 'label = "release-notes"',
+    'contributor = currentUser() ORDER BY lastmodified DESC'), or text / space_key / label and the query is built for you.
+    Returns IDs, titles, spaces, excerpts and links.
+parameters:
+- name: text
+  type: string
+  required: false
+  label:
+    en_US: Text
+    zh_Hans: 文字
+    ja_JP: テキスト
+  human_description:
+    en_US: Words to look for
+    zh_Hans: 要查找的文字
+    ja_JP: 探す語句
+  llm_description: Words to search for in titles and content.
+  form: llm
+- name: space_key
+  type: string
+  required: false
+  label:
+    en_US: Space Key
+    zh_Hans: 空间 Key
+    ja_JP: スペース キー
+  human_description:
+    en_US: Only in this space, e.g. DEV
+    zh_Hans: 仅在此空间内，如 DEV
+    ja_JP: 'このスペース内のみ（例: DEV）'
+  llm_description: Limit to one space by key.
+  form: llm
+- name: label
+  type: string
+  required: false
+  label:
+    en_US: Label
+    zh_Hans: 标签
+    ja_JP: ラベル
+  human_description:
+    en_US: Only content with this label
+    zh_Hans: 仅含此标签的内容
+    ja_JP: このラベルの付いたコンテンツのみ
+  llm_description: Limit to content with this label.
+  form: llm
+- name: content_type
+  type: select
+  required: false
+  label:
+    en_US: Content Type
+    zh_Hans: 内容类型
+    ja_JP: コンテンツの種類
+  human_description:
+    en_US: What to search for
+    zh_Hans: 搜索对象
+    ja_JP: 検索対象
+  llm_description: page (default), blogpost, attachment, comment or any.
+  form: form
+  default: page
+  options:
+  - value: page
+    label:
+      en_US: Pages
+      zh_Hans: 页面
+      ja_JP: ページ
+  - value: blogpost
+    label:
+      en_US: Blog posts
+      zh_Hans: 博客
+      ja_JP: ブログ
+  - value: attachment
+    label:
+      en_US: Attachments
+      zh_Hans: 附件
+      ja_JP: 添付ファイル
+  - value: comment
+    label:
+      en_US: Comments
+      zh_Hans: 评论
+      ja_JP: コメント
+  - value: any
+    label:
+      en_US: Anything
+      zh_Hans: 全部
+      ja_JP: すべて
+- name: cql
+  type: string
+  required: false
+  label:
+    en_US: CQL
+    zh_Hans: CQL
+    ja_JP: CQL
+  human_description:
+    en_US: A full CQL query (overrides the fields above)
+    zh_Hans: 完整的 CQL 查询（会忽略上面的字段）
+    ja_JP: 完全な CQL クエリ（上の項目より優先）
+  llm_description: A complete CQL query; when given, text / space_key / label / content_type are ignored.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 25, max 200)
+    zh_Hans: 最多返回条数（默认 25，最多 200）
+    ja_JP: 返す件数の上限（既定 25、最大 200）
+  llm_description: Maximum number of results (default 25, max 200).
+  form: llm
+  default: 25
+output_schema:
+  type: object
+  properties:
+    results:
+      type: array
+      description: Matching content
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          type:
+            type: string
+          title:
+            type: string
+          space:
+            type: string
+          excerpt:
+            type: string
+          last_modified:
+            type: string
+          url:
+            type: string
+    count:
+      type: integer
+      description: Number of results
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_search.py

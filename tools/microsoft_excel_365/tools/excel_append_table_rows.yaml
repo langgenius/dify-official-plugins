@@ -1,0 +1,95 @@
+identity:
+  name: excel_append_table_rows
+  author: langgenius
+  label:
+    en_US: Append Rows to Table
+    zh_Hans: 向表格追加行
+    ja_JP: テーブルに行を追加
+description:
+  human:
+    en_US: Add rows at the end of a table
+    zh_Hans: 在表格末尾追加行
+    ja_JP: テーブルの末尾に行を追加します
+  llm: Add rows at the end of an Excel table. Give objects keyed by column name (missing columns stay empty) or lists in column
+    order.
+parameters:
+- name: site_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Site ID (only if editing SharePoint Site content)
+    zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+    ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+  human_description:
+    en_US: Optional SharePoint site ID. When provided, uses this site's drive instead of the personal OneDrive.
+    zh_Hans: 可选的 SharePoint 站点 ID。若提供，则使用该站点的驱动器而非个人 OneDrive。
+    ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブを使います。
+  llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
+- name: workbook_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Workbook ID
+    zh_Hans: 工作簿 ID
+    ja_JP: ブック ID
+  human_description:
+    en_US: The ID of the Excel workbook
+    zh_Hans: Excel 工作簿的 ID
+    ja_JP: Excel ブックの ID
+  llm_description: The ID of the Excel workbook (from the list workbooks tool).
+- name: table
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Table
+    zh_Hans: 表格
+    ja_JP: テーブル
+  human_description:
+    en_US: The table's name (e.g. Table1) or ID
+    zh_Hans: 表格名称（例如 Table1）或 ID
+    ja_JP: 'テーブル名（例: Table1）または ID'
+  llm_description: The table's name (e.g. Table1) or ID, from the list tables tool.
+- name: rows
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Rows
+    zh_Hans: 行
+    ja_JP: 行
+  human_description:
+    en_US: 'JSON array of rows: objects keyed by column header, e.g. [{"Name": "Kim", "Score": 90}], or lists of cell values'
+    zh_Hans: 'JSON 数组：以列标题为键的对象，例如 [{"Name": "Kim", "Score": 90}]，或单元格值的列表'
+    ja_JP: 'JSON 配列: 列見出しをキーにしたオブジェクト（例: [{"Name": "Kim", "Score": 90}]）、またはセル値のリスト'
+  llm_description: 'JSON array, e.g. [{"Name": "Kim", "Score": 90}] (keys must be column names) or [["Kim", 90]].'
+- name: drive_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive holds the workbooks. Leave empty
+      for the credential''s default, or use a Site ID.'
+    zh_Hans: 仅限 Service Principal：工作簿所在 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值，或使用站点 ID。
+    ja_JP: 'サービス プリンシパルのみ: ブックがある OneDrive のユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値、またはサイト ID を使います。'
+output_schema:
+  type: object
+  properties:
+    rows_appended:
+      type: integer
+      description: Rows added
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/excel_append_table_rows.py

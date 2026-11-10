@@ -1,0 +1,97 @@
+identity:
+  name: trello_invite_board_member
+  author: langgenius
+  label:
+    en_US: Invite to Board
+    zh_Hans: 邀请加入看板
+    ja_JP: ボードに招待
+description:
+  human:
+    en_US: Invite someone to a board by email
+    zh_Hans: 通过邮箱邀请他人加入看板
+    ja_JP: メールでボードに招待
+  llm: Invite someone to a Trello board by email.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_Hans: 看板 ID
+    ja_JP: ボード ID
+  human_description:
+    en_US: Board ID (from the list or search tools)
+    zh_Hans: 看板 ID（可从列表或搜索工具获取）
+    ja_JP: ボード ID（一覧または検索ツールから）
+  llm_description: The board ID, from fetch_all_boards or search.
+  form: llm
+- name: email
+  type: string
+  required: true
+  label:
+    en_US: Email
+    zh_Hans: 邮箱
+    ja_JP: メール
+  human_description:
+    en_US: Email to invite
+    zh_Hans: 被邀请人的邮箱
+    ja_JP: 招待するメール
+  llm_description: Email address to invite.
+  form: llm
+- name: type
+  type: select
+  required: false
+  label:
+    en_US: Role
+    zh_Hans: 角色
+    ja_JP: ロール
+  human_description:
+    en_US: normal, admin or observer
+    zh_Hans: normal、admin 或 observer
+    ja_JP: normal、admin、observer
+  llm_description: 'The member''s role on the board: normal (default), admin or observer.'
+  form: llm
+  default: normal
+  options:
+  - value: normal
+    label:
+      en_US: normal
+      zh_Hans: normal
+      ja_JP: normal
+  - value: admin
+    label:
+      en_US: admin
+      zh_Hans: admin
+      ja_JP: admin
+  - value: observer
+    label:
+      en_US: observer
+      zh_Hans: observer
+      ja_JP: observer
+- name: full_name
+  type: string
+  required: false
+  label:
+    en_US: Full Name
+    zh_Hans: 全名
+    ja_JP: 氏名
+  human_description:
+    en_US: Shown if they have no account
+    zh_Hans: 对方没有账号时显示
+    ja_JP: アカウントがない場合に表示
+  llm_description: Optional full name.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    invited:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_invite_board_member.py

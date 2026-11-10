@@ -11,7 +11,7 @@ class ListPlannerBucketsTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             (plan_id,) = require(tool_parameters, "plan_id")
             data = graph.request("GET", f"/planner/plans/{segment(plan_id)}/buckets").json()
         except GraphError as e:

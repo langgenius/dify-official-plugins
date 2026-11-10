@@ -1,0 +1,86 @@
+identity:
+  name: jira_list_comments
+  author: langgenius
+  label:
+    en_US: List Comments
+    zh_Hans: 列出评论
+    ja_JP: コメント一覧
+description:
+  human:
+    en_US: An issue's comments
+    zh_Hans: 问题的所有评论
+    ja_JP: 課題のコメント
+  llm: List the comments on a Jira issue (author, text, time).
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 50, max 1000)
+    zh_Hans: 最多返回条数（默认 50，最多 1000）
+    ja_JP: 返す件数の上限（既定 50、最大 1000）
+  llm_description: Maximum number of results to return (default 50, max 1000).
+  form: llm
+  default: 50
+- name: newest_first
+  type: boolean
+  required: false
+  label:
+    en_US: Newest First
+    zh_Hans: 最新的在前
+    ja_JP: 新しい順
+  human_description:
+    en_US: List the newest comments first
+    zh_Hans: 按时间倒序
+    ja_JP: 新しいコメントから表示
+  llm_description: List the newest comments first.
+  form: llm
+  default: false
+output_schema:
+  type: object
+  properties:
+    comments:
+      type: array
+      description: Comments
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          author:
+            type: string
+          body:
+            type: string
+          created:
+            type: string
+          updated:
+            type: string
+    count:
+      type: integer
+      description: Number of comments returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_list_comments.py

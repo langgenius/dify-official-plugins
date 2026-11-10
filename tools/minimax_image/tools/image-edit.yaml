@@ -1,0 +1,86 @@
+description:
+  human:
+    en_US: Edit images with MiniMax-H3-Image.
+    zh_Hans: 使用 MiniMax-H3-Image 编辑图片。
+  llm: Edit one or more reference images with MiniMax-H3-Image. Accepts 1 to 16 images.
+extra:
+  python:
+    source: tools/image-edit.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Image Edit
+    zh_Hans: 图片编辑
+  name: image_edit
+parameters:
+  - form: llm
+    human_description:
+      en_US: The prompt describing the target edit result.
+      zh_Hans: 描述目标编辑结果的提示词。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Prompt describing the image edit to perform.
+    name: prompt
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: One to 16 reference images to edit.
+      zh_Hans: 1 到 16 张用于编辑的参考图。
+    label:
+      en_US: Images
+      zh_Hans: 参考图
+    llm_description: Reference images to edit (1-16).
+    name: images
+    required: true
+    type: files
+  - default: "1:1"
+    form: form
+    human_description:
+      en_US: Image aspect ratio. Combined with Area.
+      zh_Hans: 图片宽高比，与分辨率档位一起使用。
+    label:
+      en_US: Aspect Ratio
+      zh_Hans: 宽高比
+    name: aspect_ratio
+    options:
+      - label:
+          en_US: "1:1"
+        value: "1:1"
+      - label:
+          en_US: "16:9"
+        value: "16:9"
+      - label:
+          en_US: "9:16"
+        value: "9:16"
+      - label:
+          en_US: "4:3"
+        value: "4:3"
+      - label:
+          en_US: "3:4"
+        value: "3:4"
+    required: false
+    type: select
+  - default: "1K"
+    form: form
+    human_description:
+      en_US: Output resolution. 1K, 2K, or 4K.
+      zh_Hans: 输出分辨率，可选 1K、2K 或 4K。
+    label:
+      en_US: Area
+      zh_Hans: 分辨率
+    name: area
+    options:
+      - label:
+          en_US: 1K
+        value: "1K"
+      - label:
+          en_US: 2K
+        value: "2K"
+      - label:
+          en_US: 4K
+        value: "4K"
+    required: false
+    type: select

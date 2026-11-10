@@ -20,13 +20,16 @@ def _user_digest(user: str) -> str:
     return hashlib.sha256(user.encode()).hexdigest()
 
 
+def _is_gpt6_model(model: str) -> bool:
+    return model.startswith(("gpt-6-", "gpt-6.1-"))
+
+
 def _normalize_gpt6_parameters(model: str, params: dict, effort: str | None) -> None:
-    if not model.startswith("gpt-6-"):
+    if not _is_gpt6_model(model):
         return
-    if model == "gpt-6-astra" and effort == "none":
-        raise InvokeBadRequestError(
-            "GPT-6 Astra does not support reasoning effort none"
-        )
+    if model in ("gpt-6-astra", "gpt-6.1-sol") and effort == "none":
+        name = "GPT-6 Astra" if model == "gpt-6-astra" else "GPT-6.1 Sol"
+        raise InvokeBadRequestError(f"{name} does not support reasoning effort none")
     if effort != "none":
         for name in ("temperature", "top_p", "top_logprobs", "logprobs"):
             params.pop(name, None)

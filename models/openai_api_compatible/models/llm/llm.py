@@ -42,6 +42,10 @@ from openai import OpenAI
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+    _PREFILLED_THINK_END = re.compile(r"(?:^|\n)[ \t]*</think>[ \t]*(?:\r?\n|$)")
+    # A Markdown fence opens a code block with three or more backticks or tildes on its own line.
+    _FENCE_PATTERN = re.compile(r"(?:^|\n)[ \t]*(`{3,}|~{3,})")
+    _THINK_END = re.compile(r"</think>")
     # Models that require max_completion_tokens (OpenAI Responses API family)
     # Dotted provider/geo prefixes are allowed because Amazon Bedrock's
     # OpenAI-compatible endpoints take IDs like openai.gpt-6-sol / us.openai.gpt-6-sol.
@@ -266,17 +270,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         entity = super().get_customizable_model_schema(model, credentials)
 
         structured_output_support = credentials.get("structured_output_support", "not_supported")
-        if structured_output_support == "supported":
-            # ----
-            # The following section should be added after the new version of `dify-plugin-sdks`
-            # is released.
-            # Related Commit:
-            # https://github.com/langgenius/dify-plugin-sdks/commit/0690573a879caf43f92494bf411f45a1835d96f6
-            # ----
-            # try:
-            #     entity.features.index(ModelFeature.STRUCTURED_OUTPUT)
-            # except ValueError:
-            #     entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
+        if structured_output_support in {"supported", "native"}:
+            if ModelFeature.STRUCTURED_OUTPUT not in entity.features:
+                entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
 
             entity.parameter_rules.append(
                 ParameterRule(
@@ -480,9 +476,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # The base SDK implementation only handles TEXT and IMAGE content for user
         # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
         # OpenAI-compatible request shape carries the additional modalities. The
-        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
-        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
-        #     which providers like Vertex Gemini convert into inline_data.
+        # encoding follows what each provider accepts:
+        #   - VIDEO: video_url with a data URI (mime_type carried in the URI).
+        #     Providers that define the video_url content part (vLLM, LiteLLM
+        #     hosted_vllm, ...) decode the video correctly. #3090 used image_url
+        #     with a video data URI for Vertex Gemini via LiteLLM; that path
+        #     silently fails on backends that don't have an image decoder for
+        #     the video MIME (vLLM rejects with "Failed to load image"). Sending
+        #     video_url with the same data URI matches what the vLLM and
+        #     LiteLLM-vLLM providers expect.
+        #   - AUDIO: image_url with a data URI (mime_type carried in the URI).
+        #     Some providers accept input_audio instead, but image_url with
+        #     the audio MIME is the conservative default that Vertex Gemini
+        #     and others convert to inline_data.
         #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
         #     to the data URI.
         if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
@@ -505,8 +511,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     video_c: VideoPromptMessageContent = c
                     sub_messages.append(
                         {
-                            "type": "image_url",
-                            "image_url": {"url": video_c.data},
+                            "type": "video_url",
+                            "video_url": {"url": video_c.data},
                         }
                     )
                 elif c.type == PromptMessageContentType.AUDIO:
@@ -556,14 +562,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 stream=stream,
                 user=user,
             )
-        # Compatibility adapter for Dify's 'json_schema' structured output mode.
-        # The base class does not natively handle the 'json_schema' parameter. This block
-        # translates it into a standard OpenAI-compatible request by:
-        # 1. Injecting the JSON schema directly into the system prompt to guide the model.
-        # This ensures models like gpt-4o produce the correct structured output.
-        if model_parameters.get("response_format") == "json_schema":
-            # Use .get() instead of .pop() for safety
-            json_schema_str = model_parameters.get("json_schema")
+        # Preserve the legacy `supported` behavior after advertising structured-output
+        # capability to Dify. The host now supplies json_schema for capable models, while
+        # existing OpenAI-compatible configurations historically used prompt guidance plus
+        # json_object transport. Native json_schema transport remains an explicit opt-in.
+        if (
+            credentials.get("structured_output_support") == "supported"
+            and model_parameters.get("response_format") == "json_schema"
+        ):
+            json_schema_str = model_parameters.pop("json_schema", None)
 
             if json_schema_str:
                 structured_output_prompt = (
@@ -580,6 +587,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                 else:
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
+
+            model_parameters["response_format"] = "json_object"
 
         # Handle thinking mode based on model support configuration
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
@@ -708,6 +717,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
+        # Chat templates such as Qwen3.5's prefill `<think>\n` in the prompt, so the model
+        # output starts with reasoning and only contains the closing tag. This can happen
+        # even when thinking is disabled here, because strict mode does not send the switch.
+        is_chat = credentials.get("mode") == LLMMode.CHAT.value
+        if is_chat and not stream:
+            result = self._restore_prefilled_think_tag(result)
+
         # Filter thinking content from responses if thinking mode is disabled
         # This is necessary for models like Minimax M2.1 that don't support server-side thinking control
         if enable_thinking_value is False:
@@ -716,14 +732,140 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 return self._filter_thinking_result(result)
 
+        # A stream must decide before the closing tag arrives, so only trust an explicit
+        # switch: hybrid models may default to non-thinking when it is left unset.
+        if is_chat and stream and enable_thinking_value is True:
+            return self._restore_prefilled_think_stream(result)
+
         return result
+
+    @classmethod
+    def _fenced_regions(cls, content: str) -> list[tuple[int, int]]:
+        """Half-open [start, end) spans of Markdown fenced code blocks.
+
+        Both backtick and tilde fences count, and a closing fence must use the same
+        character and be at least as long as the opening one. An unterminated fence
+        runs to the end of the response.
+        """
+        regions: list[tuple[int, int]] = []
+        pos = 0
+        open_start = -1
+        open_marker = ""
+        while True:
+            match = cls._FENCE_PATTERN.search(content, pos)
+            if match is None:
+                break
+            marker = match.group(1)
+            if open_start < 0:
+                open_start, open_marker = match.start(), marker
+            elif marker[0] == open_marker[0] and len(marker) >= len(open_marker):
+                regions.append((open_start, match.end()))
+                open_start, open_marker = -1, ""
+            pos = match.end()
+        if open_start >= 0:
+            regions.append((open_start, len(content)))
+        return regions
+
+    @classmethod
+    def _find_think_end(cls, content: str, start: int) -> int | None:
+        """Index just past the first `</think>` outside a code fence, or None."""
+        regions = cls._fenced_regions(content)
+        for match in cls._THINK_END.finditer(content, start):
+            if not any(begin <= match.start() < end for begin, end in regions):
+                return match.end()
+        return None
+
+    @classmethod
+    def _find_prefilled_think_end(cls, content: str) -> re.Match | None:
+        """First standalone `</think>` that is not quoted inside a code fence.
+
+        The chat template ends reasoning with the closing tag on its own line, which keeps
+        a literal `</think>` inside prose or JSON strings from being read as reasoning.
+        Reasoning may also quote a fenced `</think>` before the real delimiter, so an
+        in-fence candidate is skipped instead of blocking restoration outright.
+        """
+        regions = cls._fenced_regions(content)
+        for match in cls._PREFILLED_THINK_END.finditer(content):
+            if not any(begin <= match.start() < end for begin, end in regions):
+                return match
+        return None
+
+    @classmethod
+    def _restore_prefilled_think_tag(cls, result: LLMResult) -> LLMResult:
+        """Restore the opening think tag when the chat template prefilled it."""
+        if not isinstance(result, LLMResult) or not result.message:
+            return result
+        content = result.message.content
+        if not isinstance(content, str):
+            return result
+        opening = content.find("<think>")
+        closing = cls._find_prefilled_think_end(content)
+        if closing and (opening < 0 or closing.start() < opening):
+            result.message.content = "<think>\n" + content
+        return result
+
+    @classmethod
+    def _strip_think_blocks(cls, content: str) -> str:
+        """Drop every `<think>...</think>` block, ending each at a real delimiter.
+
+        Restoration and filtering have to agree on where reasoning ends, otherwise a
+        closing tag quoted inside a fenced example truncates the block early and leaves
+        the rest of the reasoning in the answer.
+        """
+        parts: list[str] = []
+        pos = 0
+        while True:
+            opening = content.find("<think>", pos)
+            if opening < 0:
+                parts.append(content[pos:])
+                return "".join(parts)
+            end = cls._find_think_end(content, opening + len("<think>"))
+            if end is None:
+                # Unclosed block: keep it verbatim, as the non-greedy pattern did.
+                parts.append(content[pos:])
+                return "".join(parts)
+            parts.append(content[pos:opening])
+            # The previous pattern also swallowed the whitespace that followed the tag.
+            rest = content[end:]
+            pos = end + (len(rest) - len(rest.lstrip()))
+
+    @staticmethod
+    def _restore_prefilled_think_stream(stream: Generator) -> Generator:
+        """Prepend the opening think tag when a thinking stream starts without one."""
+        held: list | None = []
+        head = ""
+        for chunk in stream:
+            if held is None:
+                yield chunk
+                continue
+            held.append(chunk)
+            if isinstance(chunk.delta.message.content, str):
+                head += chunk.delta.message.content
+            # Hold the first few characters so a split `<think>` or `</think>` is recognized.
+            stripped = head.lstrip()
+            if not stripped or (
+                len(stripped) < len("</think>")
+                and ("<think>".startswith(stripped) or "</think>".startswith(stripped))
+            ):
+                continue
+            if not stripped.startswith("<think>"):
+                first = next(
+                    c.delta.message
+                    for c in held
+                    if isinstance(c.delta.message.content, str) and c.delta.message.content.strip()
+                )
+                first.content = "<think>\n" + first.content
+            yield from held
+            held = None
+        if held:
+            yield from held
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
             if isinstance(content, str) and "<think>" in content:
-                filtered_content = self._THINK_PATTERN.sub("", content)
+                filtered_content = self._strip_think_blocks(content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result
@@ -848,8 +990,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         usage = response_json.get("usage")
         if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
+            # Gateways differ here: most report prompt_tokens/completion_tokens,
+            # Anthropic-compatible proxies report input_tokens/output_tokens, and
+            # some report only total_tokens. Indexing the OpenAI names raised
+            # KeyError on a response whose content was perfectly usable.
+            prompt_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+            completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+            if prompt_tokens is None:
+                prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            if completion_tokens is None:
+                completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
         else:
             prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
@@ -929,7 +1079,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         base_url = None
         if endpoint_url:
             base_url = endpoint_url.rstrip("/")
-            if not base_url.endswith("/v1"):
+            # Keep an already versioned base URL (/v1, /v3, ...) as given.
+            if not re.search(r"/v\d+$", base_url):
                 base_url += "/v1"
         extra_headers = credentials.get("extra_headers") or None
         return OpenAI(api_key=api_key, base_url=base_url, default_headers=extra_headers)
@@ -1068,6 +1219,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if image_c.detail:
                     image_part["detail"] = image_c.detail.value
                 content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.VIDEO:
+                # The Responses API has no dedicated video part. OpenAI-compatible
+                # servers accept a video through an input_image part carrying a data
+                # URI (the model extracts frames). The Chat Completions path uses the
+                # video_url part instead, which the Responses API does not define.
+                video_c: VideoPromptMessageContent = content_item
+                video_part: dict[str, Any] = {"type": "input_image"}
+                if video_c.url:
+                    video_part["image_url"] = video_c.url
+                else:
+                    video_part["image_url"] = video_c.data
+                content_parts.append(video_part)
+            elif content_item.type == PromptMessageContentType.AUDIO:
+                # The Responses API has no dedicated audio part. Send it as a file so
+                # the attachment is not silently dropped; servers that support audio
+                # can transcribe the payload from the data URI.
+                audio_c: AudioPromptMessageContent = content_item
+                audio_part: dict[str, Any] = {"type": "input_file"}
+                if audio_c.url:
+                    audio_part["file_url"] = audio_c.url
+                else:
+                    audio_part["filename"] = audio_c.filename or "audio"
+                    audio_part["file_data"] = audio_c.data
+                content_parts.append(audio_part)
             elif content_item.type == PromptMessageContentType.DOCUMENT:
                 doc_c: DocumentPromptMessageContent = content_item
                 file_part: dict[str, Any] = {"type": "input_file"}
