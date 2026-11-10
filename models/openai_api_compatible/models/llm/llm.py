@@ -740,15 +740,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if not isinstance(content, str):
             return result
         opening = content.find("<think>")
-        closing = cls._PREFILLED_THINK_END.search(content)
         # The template ends reasoning with the closing tag on its own line, which keeps a
         # literal `</think>` inside prose or JSON strings from being taken as reasoning.
-        # An odd number of fences before it means the tag sits inside a code example.
-        if (
-            closing
-            and (opening < 0 or closing.start() < opening)
-            and content.count("```", 0, closing.start()) % 2 == 0
-        ):
+        # An odd number of fences before a candidate means it sits inside a code example, so
+        # keep scanning past it: reasoning may quote a fenced `</think>` before the real one.
+        closing = next(
+            (
+                match
+                for match in cls._PREFILLED_THINK_END.finditer(content)
+                if content.count("```", 0, match.start()) % 2 == 0
+            ),
+            None,
+        )
+        if closing and (opening < 0 or closing.start() < opening):
             result.message.content = "<think>\n" + content
         return result
 
@@ -913,8 +917,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         usage = response_json.get("usage")
         if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
+            # Gateways differ here: most report prompt_tokens/completion_tokens,
+            # Anthropic-compatible proxies report input_tokens/output_tokens, and
+            # some report only total_tokens. Indexing the OpenAI names raised
+            # KeyError on a response whose content was perfectly usable.
+            prompt_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+            completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+            if prompt_tokens is None:
+                prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            if completion_tokens is None:
+                completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
         else:
             prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
@@ -1133,6 +1145,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if image_c.detail:
                     image_part["detail"] = image_c.detail.value
                 content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.VIDEO:
+                # The Responses API has no dedicated video part. OpenAI-compatible
+                # servers accept a video through an input_image part carrying a data
+                # URI (the model extracts frames), mirroring the image_url shape the
+                # Chat Completions path already produces for video.
+                video_c: VideoPromptMessageContent = content_item
+                video_part: dict[str, Any] = {"type": "input_image"}
+                if video_c.url:
+                    video_part["image_url"] = video_c.url
+                else:
+                    video_part["image_url"] = video_c.data
+                content_parts.append(video_part)
+            elif content_item.type == PromptMessageContentType.AUDIO:
+                # The Responses API has no dedicated audio part. Send it as a file so
+                # the attachment is not silently dropped; servers that support audio
+                # can transcribe the payload from the data URI.
+                audio_c: AudioPromptMessageContent = content_item
+                audio_part: dict[str, Any] = {"type": "input_file"}
+                if audio_c.url:
+                    audio_part["file_url"] = audio_c.url
+                else:
+                    audio_part["filename"] = audio_c.filename or "audio"
+                    audio_part["file_data"] = audio_c.data
+                content_parts.append(audio_part)
             elif content_item.type == PromptMessageContentType.DOCUMENT:
                 doc_c: DocumentPromptMessageContent = content_item
                 file_part: dict[str, Any] = {"type": "input_file"}

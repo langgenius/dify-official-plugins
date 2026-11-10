@@ -250,6 +250,19 @@ def test_invoke_restores_prefilled_think_tag_and_filters_reasoning():
     assert filtered_result.message.content == "{\"class\":\"x\"}"
 
 
+def test_invoke_restores_prefilled_think_tag_past_fenced_example():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+
+    # Reasoning may quote a fenced `</think>` before the real delimiter; the
+    # example tag must be skipped instead of blocking restoration entirely.
+    content = "```\nreasoning\n</think>\n```\nreal reasoning\n</think>\n\n{\"class\":\"x\"}"
+    result = _invoke_non_stream(
+        model, {"mode": "chat", "agent_thought_support": "supported"}, content
+    )
+
+    assert result.message.content == "<think>\n" + content
+
+
 def test_invoke_strips_prefilled_reasoning_when_thinking_disabled():
     model = OpenAILargeLanguageModel(model_schemas=[])
 

@@ -1,0 +1,98 @@
+identity:
+  name: google_sheets_append_rows
+  author: langgenius
+  label:
+    en_US: Append Rows
+    zh_Hans: 追加行
+    ja_JP: 行を追加
+description:
+  human:
+    en_US: Add rows below the data
+    zh_Hans: 在数据下方追加行
+    ja_JP: データの下に行を追加
+  llm: Append rows (objects keyed by column header) below the existing data. On an empty sheet the keys become the header
+    row.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: rows
+  type: string
+  required: true
+  label:
+    en_US: Rows (JSON)
+    zh_Hans: 行（JSON）
+    ja_JP: 行（JSON）
+  human_description:
+    en_US: 'e.g. [{"Name": "Kim", "Score": 90}]'
+    zh_Hans: '例如 [{"Name": "Kim", "Score": 90}]'
+    ja_JP: '例: [{"Name": "Kim", "Score": 90}]'
+  llm_description: 'Rows as a JSON array of objects keyed by column header, e.g. [{"Name": "Kim", "Score": 90}].'
+  form: llm
+- name: add_missing_columns
+  type: boolean
+  required: false
+  label:
+    en_US: Add Missing Columns
+    zh_Hans: 添加缺少的列
+    ja_JP: 足りない列を追加
+  human_description:
+    en_US: Add unknown keys as new columns
+    zh_Hans: 把未知的键作为新列添加
+    ja_JP: 未知のキーを新しい列として追加
+  llm_description: true adds keys that are not yet columns to the header row; otherwise unknown keys are an error.
+  form: llm
+  default: false
+- name: header_row
+  type: number
+  required: false
+  label:
+    en_US: Header Row
+    zh_Hans: 表头行
+    ja_JP: 見出し行
+  human_description:
+    en_US: Row with the column names (default 1)
+    zh_Hans: 列名所在的行（默认 1）
+    ja_JP: 列名の行（既定 1）
+  llm_description: The row number holding the column names (default 1).
+  form: form
+  default: 1
+output_schema:
+  type: object
+  properties:
+    appended:
+      type: integer
+    range:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_append_rows.py
