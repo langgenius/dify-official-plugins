@@ -1,3 +1,4 @@
+import math
 from typing import Any, Generator, Optional
 
 from dify_plugin import Tool
@@ -25,9 +26,16 @@ def to_int(value: Any, default: int) -> int:
     if value is None or value == "":
         return default
     try:
-        return max(0, int(value))
+        number = float(value)
     except (TypeError, ValueError):
         return default
+    # Only an explicit 0 means no limit. A fraction such as 0.5 rounds up so it
+    # stays a bounded crawl; negative or non-finite input falls back to the default.
+    if number == 0:
+        return 0
+    if number < 0 or not math.isfinite(number):
+        return default
+    return math.ceil(number)
 
 
 def build_options(tool_parameters: dict[str, Any]) -> RequestParamsDict:

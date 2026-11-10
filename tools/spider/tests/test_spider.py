@@ -98,6 +98,14 @@ def test_defaults_bound_the_crawl():
     assert "blacklist" not in options and "whitelist" not in options
 
 
+@pytest.mark.parametrize(
+    ("raw", "limit"),
+    [(0, 0), ("0", 0), (0.5, 1), ("2.2", 3), (-1, 10), ("abc", 10), (float("inf"), 10), (float("nan"), 10)],
+)
+def test_only_an_explicit_zero_is_unlimited(raw, limit):
+    assert build_options({"url": "https://example.com", "limit": raw})["limit"] == limit
+
+
 def test_parse_patterns_drops_empty_items():
     assert parse_patterns(" , ,") is None
     assert parse_patterns(None) is None
