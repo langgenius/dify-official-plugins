@@ -34,4 +34,8 @@ resource:
 tags:
 - utilities
 type: plugin
+<<<<<<< HEAD
 version: 0.0.13
+=======
+version: 0.0.12
+>>>>>>> origin/main
