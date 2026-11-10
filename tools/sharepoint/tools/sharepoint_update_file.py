@@ -11,7 +11,7 @@ _INVALID = set('"*:<>?/\\|')
 
 
 class UpdateFileTool(Tool):
-    """Rename a file and/or replace its content (n8n: File > Update)."""
+    """Rename a file and/or replace its content."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

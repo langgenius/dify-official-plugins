@@ -215,3 +215,27 @@ def test_sign_out(google):
 
 def test_scope_override_keeps_openid_email():
     assert user_auth.scope({"scopes": MODIFY}) == f"email openid {MODIFY}"
+
+
+def test_expired_code_hands_out_a_new_link(google):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = state_of(sign_in_link(tool))
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_grant", "error_description": "Bad Request"}
+    google.token_responses.append(FakeResponse(body, 400))
+    with pytest.raises(GoogleAuthError, match="expired") as exc:
+        resolve_context(PER_USER, tool=tool)
+    assert "/callback?start=" in exc.value.args[0]
+
+
+def test_rejected_client_is_reported_not_retried(google):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = state_of(sign_in_link(tool))
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_client", "error_description": "The OAuth client was not found."}
+    google.token_responses.append(FakeResponse(body, 401))
+    with pytest.raises(GoogleAuthError, match="OAuth client was not found") as exc:
+        resolve_context(PER_USER, tool=tool)
+    assert "start=" not in exc.value.args[0]

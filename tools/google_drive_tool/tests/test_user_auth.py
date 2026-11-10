@@ -207,3 +207,27 @@ def test_mistyped_or_unknown_short_link_is_refused():
     for start in ("a" * 12, "ABCDEFGHJKMN", "short"):
         request = Request(EnvironBuilder(path="/google_drive/callback", query_string={"start": start}).get_environ())
         assert SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {}).status_code == 400
+
+
+def test_expired_code_hands_out_a_new_link(google):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = state_of(sign_in_link(tool))
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_grant", "error_description": "Bad Request"}
+    google.token_responses.append(FakeResponse(body, 400))
+    with pytest.raises(GoogleAuthError, match="expired") as exc:
+        resolve_context(PER_USER, tool=tool)
+    assert "/callback?start=" in exc.value.args[0]
+
+
+def test_rejected_client_is_reported_not_retried(google):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = state_of(sign_in_link(tool))
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_client", "error_description": "The OAuth client was not found."}
+    google.token_responses.append(FakeResponse(body, 401))
+    with pytest.raises(GoogleAuthError, match="OAuth client was not found") as exc:
+        resolve_context(PER_USER, tool=tool)
+    assert "start=" not in exc.value.args[0]
