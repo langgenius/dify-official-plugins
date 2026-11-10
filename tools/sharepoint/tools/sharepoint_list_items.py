@@ -12,7 +12,7 @@ NON_INDEXED = {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"}
 
 
 class ListItemsTool(Tool):
-    """Items of a list, optionally filtered (n8n: Item > Get Many)."""
+    """Items of a list, optionally filtered."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

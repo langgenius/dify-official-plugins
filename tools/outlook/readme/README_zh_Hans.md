@@ -2,7 +2,7 @@
 
 Dify 的 Microsoft Outlook 集成（通过 Microsoft Graph），支持**邮件和日历**：读取、发送和整理邮件，管理日历事件。
 
-**版本：** 1.0.0
+**版本：** 1.0.1
 
 ## 选择授权方式
 
@@ -177,7 +177,7 @@ Dify 的 Microsoft Outlook 集成（通过 Microsoft Graph），支持**邮件�
 
 ### 5. 用户看到的流程
 
-1. 第一次提问会得到一个登录链接，15 分钟内有效。
+1. 第一次提问会得到一个指向插件 Endpoint 的短登录链接，15 分钟内有效。打开后，浏览器会跳转到 Microsoft 登录页。
 
    ![登录链接](../_assets/chat-sign-in-link.png)
 

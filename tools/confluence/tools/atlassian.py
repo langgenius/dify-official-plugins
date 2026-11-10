@@ -34,9 +34,11 @@ DEFAULT_SCOPE = (
 class AtlassianAuthError(Exception):
     """Atlassian refused a request or could not be reached; the message is shown to the user."""
 
-    def __init__(self, message: str, status: int | None = None):
+    def __init__(self, message: str, status: int | None = None, error: str | None = None):
         super().__init__(message)
         self.status = status
+        # The OAuth error code (``invalid_grant``...), when the token endpoint gave one.
+        self.error = error
 
 
 def scope(credentials: Mapping[str, Any]) -> str:
@@ -73,7 +75,9 @@ def token_request(data: Mapping[str, str]) -> dict[str, Any]:
         payload = {}
     if response.status_code != 200 or not payload.get("access_token"):
         detail = payload.get("error_description") or payload.get("error") or response.text[:300]
-        raise AtlassianAuthError(f"Atlassian sign-in failed ({response.status_code}): {detail}", response.status_code)
+        raise AtlassianAuthError(
+            f"Atlassian sign-in failed ({response.status_code}): {detail}", response.status_code, payload.get("error")
+        )
     return payload
 
 

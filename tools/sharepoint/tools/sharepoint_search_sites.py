@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class SearchSitesTool(Tool):
-    """Find SharePoint sites by name (n8n's site picker)."""
+    """Find SharePoint sites by name."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

@@ -364,3 +364,27 @@ def test_mistyped_or_unknown_short_link_is_refused():
     for start in ("a" * 12, "ABCDEFGHJKMN", "short"):
         request = Request(EnvironBuilder(path="/todo/callback", query_string={"start": start}).get_environ())
         assert SignInCallbackEndpoint(SimpleNamespace(storage=storage)).invoke(request, {}, {}).status_code == 400
+
+
+def test_expired_code_hands_out_a_new_link(token_endpoint):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = urllib.parse.parse_qs(urllib.parse.urlparse(sign_in_link(storage, tool)).query)["state"][0]
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_grant", "error_description": "AADSTS70008: The provided authorization code has expired."}
+    token_endpoint.responses.append(FakeResponse(body, 400))
+    with pytest.raises(GraphAuthError, match="expired") as exc:
+        resolve_graph_context(PER_USER, tool=tool)
+    assert "/callback?start=" in exc.value.args[0]
+
+
+def test_rejected_client_is_reported_not_retried(token_endpoint):
+    storage = FakeStorage()
+    tool = make_tool(storage)
+    state = urllib.parse.parse_qs(urllib.parse.urlparse(sign_in_link(storage, tool)).query)["state"][0]
+    call_callback(storage, {"state": state, "code": "c"})
+    body = {"error": "invalid_client", "error_description": "AADSTS7000215: Invalid client secret provided."}
+    token_endpoint.responses.append(FakeResponse(body, 401))
+    with pytest.raises(GraphAuthError, match="AADSTS7000215") as exc:
+        resolve_graph_context(PER_USER, tool=tool)
+    assert "start=" not in exc.value.args[0]
