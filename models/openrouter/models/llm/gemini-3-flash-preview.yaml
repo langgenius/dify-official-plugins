@@ -3,6 +3,7 @@ label:
   en_US: gemini-3-flash-preview
 model_type: llm
 features:
+  - structured-output
   - multi-tool-call
   - agent-thought
   - stream-tool-call
