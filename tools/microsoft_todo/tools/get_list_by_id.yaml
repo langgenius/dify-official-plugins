@@ -3,12 +3,12 @@ identity:
   author: langgenius
   label:
     en_US: Get List By Id
-    zh_CN: 根据ID获取列表
+    zh_Hans: 根据ID获取列表
     ja_JP: IDでリストを取得
 description:
   human:
     en_US: Get a list by id from the Microsoft To Do list
-    zh_CN: 根据ID从 Microsoft To Do 列表获取列表
+    zh_Hans: 根据ID从 Microsoft To Do 列表获取列表
     ja_JP: Microsoft To Do リストからIDでリストを取得
   llm: Get a list by id from the Microsoft To Do list
 parameters:
@@ -17,14 +17,42 @@ parameters:
   required: true
   label:
     en_US: List Id
-    zh_CN: 列表ID
+    zh_Hans: 列表ID
     ja_JP: リストID
   human_description:
     en_US: The id of the list to get
-    zh_CN: 要获取的列表ID
+    zh_Hans: 要获取的列表ID
     ja_JP: 取得するリストのID
   llm_description: The id of the list to get, type is string
   form: llm
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    list_id:
+      type: string
+      description: List ID
+    display_name:
+      type: string
+      description: List name
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_list_by_id.py

@@ -204,3 +204,45 @@ def test_result_validation_accepts_only_meaningful_documents():
             ExtractorResult(md_content="heading", documents=[Document(page_content="")]),
             "empty.txt",
         )
+
+
+def test_strict_invalid_json_raises():
+    with pytest.raises(ExtractionError):
+        list(_make_tool()._invoke({"file": _file(b"not json", filename="bad.json"), "fail_on_error": True}))
+
+
+def test_strict_missing_raises():
+    with pytest.raises(ExtractionError, match="required"):
+        list(_make_tool()._invoke({"fail_on_error": True}))
+
+
+def test_strict_empty_raises():
+    with pytest.raises(ExtractionError, match="empty"):
+        list(_make_tool()._invoke({"file": _file(b""), "fail_on_error": True}))
+
+
+def test_strict_success_unchanged():
+    assert list(_make_tool()._invoke({"file": _file(b"hello")})) == list(_make_tool()._invoke({"file": _file(b"hello"), "fail_on_error": True}))
+
+
+def test_strict_unexpected_error_safe(monkeypatch):
+    class Broken(BaseExtractor):
+        def extract(self):
+            raise RuntimeError("private-server-host")
+    monkeypatch.setattr(DifyExtractorTool, "_resolve_extractor", staticmethod(lambda *args: (Broken, ".txt")))
+    with pytest.raises(ExtractionError, match="See the plugin logs") as error:
+        list(_make_tool()._invoke({"file": _file(b"hello"), "fail_on_error": True}))
+    assert "private-server-host" not in str(error.value)
+
+
+def test_strict_unreadable_error_safe():
+    class Unreadable:
+        filename = "private.txt"
+        extension = ".txt"
+        mime_type = "text/plain"
+        @property
+        def blob(self):
+            raise OSError("private-network-details")
+    with pytest.raises(ExtractionError, match="FILES_URL") as error:
+        list(_make_tool()._invoke({"file": Unreadable(), "fail_on_error": True}))
+    assert "private-network-details" not in str(error.value)

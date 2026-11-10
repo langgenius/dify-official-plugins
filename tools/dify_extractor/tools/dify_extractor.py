@@ -76,15 +76,20 @@ _OOXML_EXTENSIONS = {".docx", ".pptx", ".xlsx"}
 
 class DifyExtractorTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+        fail_on_error = tool_parameters.get("fail_on_error", False) is True
         file = tool_parameters.get("file")
         if file is None:
+            if fail_on_error:
+                raise ExtractionError("A file is required.")
             yield self.create_text_message("A file is required.")
             return
 
         file_name, extension, mime_type = self._resolve_file_identity(file)
         try:
             file_bytes = file.blob
-        except Exception:
+        except Exception as exc:
+            if fail_on_error:
+                raise ExtractionError("Failed to read file. Check that Dify FILES_URL is reachable from the plugin runtime.") from exc
             logger.exception("Failed to read file '%s'", file_name)
             yield self.create_text_message(
                 f"Failed to read file '{file_name}'. Check that Dify's FILES_URL is "
@@ -93,6 +98,8 @@ class DifyExtractorTool(Tool):
             return
 
         if not isinstance(file_bytes, (bytes, bytearray)) or not file_bytes:
+            if fail_on_error:
+                raise ExtractionError(f"File '{file_name}' is empty.")
             yield self.create_text_message(f"File '{file_name}' is empty.")
             return
 
@@ -115,10 +122,14 @@ class DifyExtractorTool(Tool):
             result = extractor_class(context).extract()
             self._validate_result(result, file_name)
         except ExtractionError as exc:
+            if fail_on_error:
+                raise
             logger.warning("Could not extract '%s': %s", file_name, exc)
             yield self.create_text_message(str(exc))
             return
-        except Exception:
+        except Exception as exc:
+            if fail_on_error:
+                raise ExtractionError(f"Failed to extract '{file_name}'. See the plugin logs for details.") from exc
             logger.exception("Unexpected failure while extracting '%s'", file_name)
             yield self.create_text_message(
                 f"Failed to extract '{file_name}'. See the plugin logs for details."

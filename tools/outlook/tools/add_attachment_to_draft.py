@@ -25,7 +25,7 @@ class AddAttachmentToDraftTool(Tool):
             attachment_name = tool_parameters.get("attachment_name", "")  
             # Resolve the Graph token and target mailbox (OAuth or Service Principal)
             try:
-                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"), tool=self)
             except GraphAuthError as e:
                 yield self.create_text_message(str(e))
                 return

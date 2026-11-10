@@ -9,6 +9,11 @@ import yaml
 from tools import graph_client
 from tools.delete_file_by_id import DeleteFileByIdTool
 from tools.get_file_by_id import GetFileByIdTool
+from tools.onedrive_copy import CopyTool
+from tools.onedrive_create_folder import CreateFolderTool
+from tools.onedrive_list_folder import ListFolderTool
+from tools.onedrive_rename import RenameTool
+from tools.onedrive_share import ShareTool
 from tools.search_file import SearchFileTool
 from tools.upload_file import UploadFileTool
 
@@ -20,8 +25,8 @@ ITEM = {"id": "i1", "name": "a.txt", "size": 3, "file": {"mimeType": "text/plain
 
 
 class FakeResponse:
-    def __init__(self, payload=None, status_code=200, content=None):
-        self._payload, self.status_code = payload, status_code
+    def __init__(self, payload=None, status_code=200, content=None, headers=None):
+        self._payload, self.status_code, self.headers = payload, status_code, headers or {}
         self.content = content if content is not None else (b"" if payload is None else json.dumps(payload).encode())
         self.text = self.content.decode(errors="replace")
 
@@ -30,7 +35,7 @@ class FakeResponse:
 
 
 def invoke(cls, params, routes):
-    def fake_request(method, url, headers=None, params=None, data=None, timeout=None):
+    def fake_request(method, url, headers=None, params=None, data=None, timeout=None, json=None):
         for (m, suffix), response in routes.items():
             if m == method and suffix in url:
                 return response
@@ -59,6 +64,14 @@ CASES = [
     (GetFileByIdTool, "get_file_by_id", {"file_id": "i1"}, {("GET", "/items/i1"): FakeResponse(ITEM)}),
     (UploadFileTool, "upload_file", {"file": SimpleNamespace(blob=b"abc", filename="a.txt")}, {("PUT", "/content"): FakeResponse(ITEM, 201)}),
     (DeleteFileByIdTool, "delete_file_by_id", {"file_id": "i1"}, {("DELETE", "/items/i1"): FakeResponse(None, 204)}),
+    (ListFolderTool, "onedrive_list_folder", {}, {("GET", "/root/children"): FakeResponse({"value": [ITEM]})}),
+    (CreateFolderTool, "onedrive_create_folder", {"name": "Reports"},
+     {("POST", "/root/children"): FakeResponse({"id": "f1", "name": "Reports", "folder": {}, "webUrl": "https://x/f1"}, 201)}),
+    (RenameTool, "onedrive_rename", {"item_id": "i1", "new_name": "b.txt"}, {("PATCH", "/items/i1"): FakeResponse(dict(ITEM, name="b.txt"))}),
+    # No monitor URL: the copy is reported as still running.
+    (CopyTool, "onedrive_copy", {"file_id": "i1"}, {("GET", "/items/i1"): FakeResponse(ITEM), ("POST", "/copy"): FakeResponse(None, 202)}),
+    (ShareTool, "onedrive_share", {"item_id": "i1"},
+     {("POST", "/createLink"): FakeResponse({"id": "p1", "link": {"type": "view", "scope": "organization", "webUrl": "https://share/x"}}, 201)}),
 ]
 
 

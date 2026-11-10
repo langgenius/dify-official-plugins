@@ -1,0 +1,6 @@
+# Only needed for the "Each user signs in" credential mode: Trello sends users here after they allow access.
+# Its URL (…/trello/callback) goes into the credential's Sign-in Callback URL; its origin must be in the API key's Allowed Origins.
+settings: []
+endpoints:
+  - endpoints/signin_callback.yaml
+  - endpoints/signin_token.yaml
