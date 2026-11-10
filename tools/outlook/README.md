@@ -185,8 +185,8 @@ In the app registration, open **Authentication** → **Add Redirect URI** → **
 
    ![Choose an account](_assets/chat-choose-account.png)
 
-3. A page titled **Signed in** asks them to go back to the chat right away and say they are done: sign-in must be finished in the chat within about 10 minutes. It also says to continue only if they started the sign-in themselves; if someone else sent them the link, they can cancel it there.
-4. They reply "done", and the agent answers from their own mailbox. The first answer after signing in mentions the account used, so a wrong account is easy to spot. If the authorization code has expired or was already used, the tool returns a fresh sign-in link immediately, valid for 15 minutes, so the agent can give it to the user in the same reply. The user signs in again and replies as soon as they are done; the agent then calls the tool again.
+3. A page titled **Signed in** asks them to go back to the chat right away and say they are done: sign-in must be finished there within 10 minutes. It also says to continue only if they started the sign-in themselves; if someone else sent them the link, they can cancel it there.
+4. They reply "done", and the agent answers from their own mailbox. The first answer after signing in mentions the account used, so a wrong account is easy to spot. If Microsoft rejects the authorization code as expired or already used, the tool immediately returns a fresh sign-in link, valid for 15 minutes, for the agent to give the user. The user signs in again and replies right away so the agent can call the tool again.
 
    ![Answer from the user's mailbox](_assets/chat-answer.png)
 
