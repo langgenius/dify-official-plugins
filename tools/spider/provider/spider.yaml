@@ -1,8 +1,8 @@
 credentials_for_provider:
   spider_api_key:
     help:
-      en_US: Get your Spider API key from your Spider dashboard
-      zh_CN: 从您的 Spider 仪表板中获取 Spider API 密钥。
+      en_US: Create a Spider API key at spider.cloud/api-keys
+      zh_CN: 在 spider.cloud/api-keys 创建 Spider API 密钥。
     label:
       en_US: Spider API Key
       zh_CN: Spider API 密钥
@@ -11,7 +11,7 @@ credentials_for_provider:
       zh_CN: 请输入您的 Spider API 密钥
     required: true
     type: secret-input
-    url: https://spider.cloud/
+    url: https://spider.cloud/api-keys?utm_source=dify&utm_medium=directory&utm_campaign=dify-plugin
 extra:
   python:
     source: provider/spider.py
