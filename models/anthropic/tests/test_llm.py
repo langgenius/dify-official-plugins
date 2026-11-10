@@ -151,3 +151,52 @@ def test_model_cache_read_multipliers() -> None:
     assert llm._cache_read_multiplier("claude-fable-5") == 0.1
     assert llm._cache_read_multiplier("claude-opus-5-5") == 0.05
     assert llm._cache_read_multiplier("claude-opus-5") == 0.1
+
+
+def test_credential_kwargs_omit_headers_for_account_level_key() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs({"anthropic_api_key": "sk-test"})
+
+    assert "base_url" not in kwargs
+    assert "default_headers" not in kwargs
+
+
+def test_credential_kwargs_send_workspace_id_header() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_workspace_id": " wrkspc_abc "}
+    )
+
+    assert kwargs["default_headers"] == {"anthropic-workspace-id": "wrkspc_abc"}
+
+
+def test_credential_kwargs_keep_official_base_url_without_user_agent_spoof() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_api_url": "https://api.anthropic.com/"}
+    )
+
+    assert kwargs["base_url"] == "https://api.anthropic.com"
+    assert "default_headers" not in kwargs
+
+
+def test_credential_kwargs_merge_workspace_id_with_proxy_user_agent() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {
+            "anthropic_api_key": "sk-test",
+            "anthropic_api_url": "https://gateway.example.com/anthropic/",
+            "anthropic_workspace_id": "wrkspc_abc",
+        }
+    )
+
+    assert kwargs["base_url"] == "https://gateway.example.com/anthropic"
+    assert kwargs["default_headers"] == {
+        "User-Agent": "python-httpx",
+        "anthropic-workspace-id": "wrkspc_abc",
+    }
+
+
+@pytest.mark.parametrize("blank", ["", "   ", None])
+def test_credential_kwargs_ignore_blank_workspace_id(blank: str | None) -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_workspace_id": blank}
+    )
+
+    assert "default_headers" not in kwargs
