@@ -342,6 +342,22 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: request_timeout
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 请求读取超时（秒）
+        en_US: Request read timeout (seconds)
+      type: text-input
+      required: false
+      default: "300"
+      placeholder:
+        zh_Hans: "例如 300、600、900"
+        en_US: "For example: 300, 600, 900"
+      help:
+        zh_Hans: "等待模型响应数据的超时，必须大于 0。用于保存验证及模型调用；流式请求持续收到数据时可以超过该时长。外层服务的等待限制仍需单独配置。"
+        en_US: "Positive timeout for receiving response data, used for credential checks and model calls. Active streams may run longer. Outer service deadlines must be configured separately."
     - variable: stream_mode_auth
       show_on:
         - variable: __model_type

@@ -82,3 +82,39 @@ Run the plugin contract tests from this directory after `uv sync --frozen`:
 ```bash
 uv run python -m unittest discover -s tests -v
 ```
+## Configurable LLM timeout (0.0.19)
+
+In Dify's **Add/Edit model** form, LLM models expose **Request read timeout
+(seconds)** / **请求读取超时（秒）**. Set a positive number such as `300`, `600`,
+or `900`. The value is applied independently for each model, to streaming and
+non-streaming inference, credential validation, and validation retries. The
+connection timeout remains 10 seconds. This setting is a read inactivity timeout,
+not a total generation deadline: a stream that continues receiving data can run
+longer. It is not sent as an inference parameter to GPUStack.
+
+If the field is absent or blank, the plugin reads `MAX_REQUEST_TIMEOUT` from its
+process environment (SDK default: 300 seconds). The plugin entrypoint also reads
+this environment setting instead of fixing it at 120. For Serverless installations,
+set that environment value high enough for the desired wait between plugin
+messages; the per-model field does not change this separate server-level deadline.
+Dify/plugin-daemon and reverse proxy deadlines must also accommodate the request.
+## System-only chat workflows
+
+Some chat templates require a User query even when the full task is supplied in
+System messages. For a chat request containing only System messages with real
+text, the plugin preserves the instructions and appends the neutral User turn
+`Please respond according to the instructions above.`.
+
+The compatibility step checks the original task before adding JSON Schema
+instructions. Invocation uses copied prompt messages so retries can reuse the
+caller's inputs without accumulating generated instructions. This compatibility
+step applies only to nonempty System-only chat requests. Preflight token
+estimation includes the same execution turn.
+
+The verified Qwen3.5 case consists of one nonempty System message followed by
+the appended User turn. Multiple System messages retain their order, so two
+System messages produce `[system, system, user]`. The tested Qwen3.5 template
+rejects this sequence with `System message must be at the beginning.` because
+only the first message may have the System role. This is a known compatibility
+boundary. For such templates, place the combined system rules in a single
+initial System message.

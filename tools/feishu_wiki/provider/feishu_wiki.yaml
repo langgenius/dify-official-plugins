@@ -1,4 +1,17 @@
 credentials_for_provider:
+  api_base_url:
+    label:
+      en_US: API Base URL
+      zh_Hans: API 基础地址
+    type: text-input
+    required: false
+    default: https://lark-plugin-api.solutionsuite.cn/lark-plugin
+    placeholder:
+      en_US: https://lark-plugin-api.solutionsuite.cn/lark-plugin
+      zh_Hans: https://lark-plugin-api.solutionsuite.cn/lark-plugin
+    help:
+      en_US: Base URL of a compatible proxy service, including its path prefix. Leave blank to use the default service. The Feishu Open Platform API is not a direct replacement.
+      zh_Hans: 兼容代理服务的基础地址，需包含路径前缀。留空使用默认服务，不能直接替换为飞书开放平台 API 地址。
   app_id:
     help:
       en_US: Get your app_id and app_secret from Feishu

@@ -11,7 +11,9 @@ class CreateSpreadsheetTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         title = tool_parameters.get("title")
         folder_token = tool_parameters.get("folder_token")
         res = client.create_spreadsheet(title, folder_token)
