@@ -461,3 +461,121 @@ def test_explicit_credentials_passed_to_client(tool: BedrockImageTool):
     assert kwargs["aws_access_key_id"] == "AKIATEST"
     assert kwargs["aws_secret_access_key"] == "SECRET"
     assert kwargs["aws_session_token"] == "TOKEN"
+
+def test_url_backed_reference_image_is_downloaded(tool: BedrockImageTool):
+    """A files entry that arrives as a url-only dict still works for image-to-image.
+
+    The SDK only promotes a files entry to a File object when it carries
+    dify_model_identity; a file-list variable from a START node arrives as a plain
+    dict with url/remote_url and no inline blob.
+    """
+    bedrock_client = MagicMock()
+    bedrock_client.invoke_model.return_value = _success_response()
+    session = MagicMock()
+    session.client.return_value = bedrock_client
+
+    with patch.object(bedrock_image_mod.boto3, "Session", return_value=session), patch.object(
+        bedrock_image_mod.requests,
+        "get",
+        return_value=SimpleNamespace(content=TINY_PNG, raise_for_status=lambda: None),
+    ) as get_mock:
+        messages = _consume(
+            tool._invoke(
+                {
+                    "prompt": "a robot",
+                    "model": MODEL_SD35,
+                    "images": [
+                        {
+                            "url": "https://files.example.com/robot.png",
+                            "remote_url": "https://files.example.com/robot.png",
+                            "mime_type": "image/png",
+                            "type": "image",
+                        }
+                    ],
+                }
+            )
+        )
+
+    get_mock.assert_called_once()
+    assert get_mock.call_args.args[0] == "https://files.example.com/robot.png"
+    body = json.loads(bedrock_client.invoke_model.call_args.kwargs["body"])
+    assert body["mode"] == "image-to-image"
+    assert body["image"] == TINY_PNG_B64
+    assert body["strength"] == 0.5
+    assert any(m[0] == "blob" for m in messages)
+
+
+def test_remote_url_only_reference_image_is_supported(tool: BedrockImageTool):
+    bedrock_client = MagicMock()
+    bedrock_client.invoke_model.return_value = _success_response()
+    session = MagicMock()
+    session.client.return_value = bedrock_client
+
+    with patch.object(bedrock_image_mod.boto3, "Session", return_value=session), patch.object(
+        bedrock_image_mod.requests,
+        "get",
+        return_value=SimpleNamespace(content=TINY_PNG, raise_for_status=lambda: None),
+    ) as get_mock:
+        messages = _consume(
+            tool._invoke(
+                {
+                    "prompt": "a robot",
+                    "model": MODEL_ULTRA,
+                    "images": [
+                        {
+                            "remote_url": "https://files.example.com/robot.webp",
+                            "mime_type": "image/webp",
+                        }
+                    ],
+                }
+            )
+        )
+
+    get_mock.assert_called_once()
+    assert get_mock.call_args.args[0] == "https://files.example.com/robot.webp"
+    body = json.loads(bedrock_client.invoke_model.call_args.kwargs["body"])
+    assert body["image"] == TINY_PNG_B64
+    assert "mode" not in body
+    assert any(m[0] == "blob" for m in messages)
+
+
+def test_url_download_failure_is_reported_without_invoke(tool: BedrockImageTool):
+    with patch.object(bedrock_image_mod.boto3, "Session") as session_cls, patch.object(
+        bedrock_image_mod.requests, "get", side_effect=OSError("connection refused")
+    ):
+        messages = _consume(
+            tool._invoke(
+                {
+                    "prompt": "a cat",
+                    "model": MODEL_SD35,
+                    "images": [
+                        {"url": "https://files.example.com/cat.png", "mime_type": "image/png"}
+                    ],
+                }
+            )
+        )
+
+    session_cls.assert_not_called()
+    assert len(messages) == 1
+    assert messages[0][0] == "text"
+    assert "field=images" in messages[0][1]
+    assert "could not download" in messages[0][1]
+
+
+def test_reference_image_without_blob_or_url_is_reported(tool: BedrockImageTool):
+    with patch.object(bedrock_image_mod.boto3, "Session") as session_cls:
+        messages = _consume(
+            tool._invoke(
+                {
+                    "prompt": "a cat",
+                    "model": MODEL_SD35,
+                    "images": [{"mime_type": "image/png", "filename": "cat.png"}],
+                }
+            )
+        )
+
+    session_cls.assert_not_called()
+    assert len(messages) == 1
+    assert messages[0][0] == "text"
+    assert "field=images" in messages[0][1]
+    assert "no inline blob and no url/remote_url" in messages[0][1]

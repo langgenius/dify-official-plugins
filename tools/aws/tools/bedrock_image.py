@@ -13,10 +13,16 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 import boto3
+import requests
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+
+try:  # pragma: no cover - import shape varies across SDK versions
+    from dify_plugin.file.file import File as _DifyFile
+except Exception:  # pragma: no cover - older SDK or refactor
+    _DifyFile = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +181,64 @@ def _file_attr(file_obj: Any, name: str, default: Any = None) -> Any:
     if isinstance(file_obj, dict):
         return file_obj.get(name, default)
     return getattr(file_obj, name, default)
+
+
+class _ImageReadError(Exception):
+    """A files entry could not be turned into bytes (missing content or fetch failed)."""
+
+
+def _file_bytes(image_file: Any) -> bytes:
+    """Return the raw bytes of one files parameter entry.
+
+    Dify hands files parameters to plugins in more than one shape, and the SDK's
+    parameter conversion only promotes an entry to a File object when it carries
+    dify_model_identity == __dify__file__. Without that tag (for example a file-list
+    variable coming from a START node) the entry arrives as a plain dict, which may
+    hold the content inline or only point at it:
+
+    * SDK File object, or dict with an inline blob -> already have the bytes
+    * dict with url / remote_url -> fetch the bytes
+
+    tools/aws/tools/s3_files_uploader.py resolves the same shapes, so this helper
+    mirrors its loading order. Failures raise _ImageReadError so the caller can
+    report them as a normal validation message.
+    """
+    blob = _file_attr(image_file, "blob", None)
+    if isinstance(blob, memoryview):
+        blob = blob.tobytes()
+    if isinstance(blob, (bytes, bytearray)) and blob:
+        return bytes(blob)
+
+    url = _file_attr(image_file, "url", None) or _file_attr(image_file, "remote_url", None)
+    if isinstance(url, str) and url:
+        if _DifyFile is not None:
+            try:
+                file_kwargs: dict[str, Any] = {
+                    "url": url,
+                    "type": _file_attr(image_file, "type", None) or "image",
+                }
+                for key in ("mime_type", "filename", "extension", "size"):
+                    value = _file_attr(image_file, key, None)
+                    if value is not None:
+                        file_kwargs[key] = value
+                fetched = _DifyFile(**file_kwargs).blob
+                if isinstance(fetched, memoryview):
+                    fetched = fetched.tobytes()
+                if isinstance(fetched, (bytes, bytearray)) and fetched:
+                    return bytes(fetched)
+            except Exception:  # noqa: BLE001 - fall back to a plain HTTP fetch
+                pass
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            if response.content:
+                return response.content
+        except Exception as exc:  # noqa: BLE001 - reported by the caller
+            raise _ImageReadError(f"could not download {url}: {type(exc).__name__}: {exc}") from exc
+        raise _ImageReadError(f"{url} returned no content")
+
+    keys = sorted(image_file) if isinstance(image_file, dict) else "n/a"
+    raise _ImageReadError(f"no inline blob and no url/remote_url (keys={keys})")
 
 
 class BedrockImageTool(Tool):
@@ -517,28 +581,20 @@ class BedrockImageTool(Tool):
                         "allowed": "image/jpeg,image/png,image/webp",
                     },
                 )
-            blob = _file_attr(image_file, "blob")
-            if blob is None:
+            try:
+                blob = _file_bytes(image_file)
+            except _ImageReadError as exc:
                 return _format_debug_message(
                     "Invalid parameter.",
                     {
-                        "field": "images.blob",
-                        "value": "(missing)",
-                        "allowed": "binary image content from a Dify file variable",
+                        "field": "images",
+                        "value": str(exc),
+                        "allowed": (
+                            "one image file with inline content or a reachable "
+                            "url/remote_url (image/jpeg, image/png, image/webp)"
+                        ),
                     },
                 )
-            if isinstance(blob, memoryview):
-                blob = blob.tobytes()
-            if not isinstance(blob, (bytes, bytearray)):
-                return _format_debug_message(
-                    "Invalid parameter.",
-                    {
-                        "field": "images.blob",
-                        "value": type(blob).__name__,
-                        "allowed": "bytes",
-                    },
-                )
-            blob = bytes(blob)
             if len(blob) > MAX_INPUT_IMAGE_BYTES:
                 return _format_debug_message(
                     "Invalid parameter.",
