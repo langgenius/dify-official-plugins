@@ -8,6 +8,7 @@ from collections.abc import Generator
 from typing import Optional, Union
 import requests
 import oci
+from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -29,11 +30,18 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from .call_api import patched_call_api
+from utils.oci_private_key import normalize_private_key
 from oci.base_client import BaseClient 
 BaseClient.call_api = patched_call_api
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Cohere models that OCI only serves through the v2 chat format (CohereChatRequestV2,
+# apiFormat COHEREV2). The remaining Cohere models keep using the v1 format below.
+COHERE_V2_MODELS = {
+    "cohere.command-a-vision",
+}
 
 class OCILargeLanguageModel(LargeLanguageModel):
     def _get_oci_credentials(self, credentials: dict) -> dict:
@@ -54,14 +62,8 @@ class OCILargeLanguageModel(LargeLanguageModel):
             if "compartment_ocid" not in credentials:
                 raise CredentialsValidateFailedError("need to set compartment_ocid in credentials ")
 
-            pem_prefix = '-----BEGIN RSA PRIVATE KEY-----\n'
-            pem_suffix = '\n-----END RSA PRIVATE KEY-----'
-            key_string = credentials.get("key_content")
-            for part in key_string.split("-"):
-                if len(part.strip()) > 64:
-                    key_b64 = part.strip()
-            key_content = pem_prefix + "\n".join(key_b64.split(" "))+ pem_suffix
-            
+            key_content = normalize_private_key(credentials.get("key_content"))
+
             config = {
                 "tenancy": credentials.get("tenancy_ocid"),
                 "user": credentials.get("user_ocid"),
@@ -73,6 +75,10 @@ class OCILargeLanguageModel(LargeLanguageModel):
             
             oci.config.validate_config(config)
             oci_credentials = {"config": config}
+        else:
+            raise CredentialsValidateFailedError(
+                f"unsupported authentication_method: {credentials.get('authentication_method')}"
+            )
         return oci_credentials
 
 
@@ -208,8 +214,9 @@ class OCILargeLanguageModel(LargeLanguageModel):
             raise InvokeBadRequestError("Cannot set both frequency penalty and presence penalty")
 
         
-        if "tool-call" in model_schema.features and tools is not None and len(tools) > 0:
-            raise InvokeBadRequestError("Does not support function calling")        
+        if tools and model_schema is not None and model_schema.features is not None \
+                and ModelFeature.TOOL_CALL not in model_schema.features:
+            raise InvokeBadRequestError(f"{model} does not support function calling")
 
         oci_credentials = self._get_oci_credentials(credentials)
         client = oci.generative_ai_inference.GenerativeAiInferenceClient(**oci_credentials)
@@ -236,8 +243,20 @@ class OCILargeLanguageModel(LargeLanguageModel):
             "presence_penalty": model_parameters.get("presencePenalty"),
         }
         
-        # Cohere model call
-        if vendor == "cohere":
+        # Cohere model call, v2 chat format (Command A Vision only accepts this format)
+        if vendor == "cohere" and model in COHERE_V2_MODELS:
+            chat_request = oci.generative_ai_inference.models.CohereChatRequestV2(
+                stop_sequences = stop,
+                **infer_params
+            )
+            chat_request.messages = [
+                Convertor()._parse_prompt_message_to_cohere_v2(message) for message in prompt_messages
+            ]
+            if tools:
+                chat_request.tools = Convertor().convert_tools_to_cohere_v2(tools)
+
+        # Cohere model call, v1 chat format
+        elif vendor == "cohere":
             chat_request = oci.generative_ai_inference.models.CohereChatRequest(
                 stop_sequences = stop,
                 **infer_params
@@ -279,10 +298,13 @@ class OCILargeLanguageModel(LargeLanguageModel):
         if "isStream" in body["chatRequest"]:
             if body["chatRequest"]["isStream"]:
                 body["chatRequest"]["streamOptions"] = {"isIncludeUsage": True}
-        if model_parameters.get("reasoning_effort"):
-            body["chatRequest"]["reasoning_effort"] = model_parameters.get("reasoning_effort")
+        reasoning_effort = model_parameters.get("reasoningEffort") or model_parameters.get("reasoning_effort")
+        if reasoning_effort:
+            # OCI expects the camelCase key and an upper-case enum value (LOW / MEDIUM / HIGH);
+            # "reasoning_effort" / lower-case values are rejected with HTTP 400.
+            body["chatRequest"]["reasoningEffort"] = str(reasoning_effort).upper()
         body = json.dumps(body)
-        logging.debug("Request body:  "+body)
+        logging.debug("Request body:  %s", body)
         
         response = client.base_client.call_api(
             resource_path="/actions/chat",
@@ -317,36 +339,45 @@ class OCILargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        model_id = response["modelId"]
-        vendor = model_id.split(".")[0].lower()        
-        logging.debug("OCI Response:  "+response)
+        model_id = response.get("modelId") or model
+        vendor = model_id.split(".")[0].lower()
+        logging.debug("OCI Response:  %s", response)
         chat_response = response["chatResponse"]
+        api_format = chat_response.get("apiFormat")
         assistant_prompt_message = AssistantPromptMessage(content = "")
-        # Cohere response
-        if vendor == "cohere":            
-            response_tool_calls = chat_response["toolCalls"]
+        convertor = Convertor()
+
+        # Cohere v2 response: {"message": {"content": [{"type": "TEXT", "text": ...}], "toolCalls": [...]}}
+        if api_format == "COHEREV2":
+            message = chat_response.get("message") or {}
+            response_tool_calls = message.get("toolCalls")
             if response_tool_calls:
-                tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
-                assistant_prompt_message.tool_calls = tool_calls
+                assistant_prompt_message.tool_calls = convertor.convert_response_tool_calls(response_tool_calls, vendor)
+            assistant_prompt_message.content = convertor._join_text_content(message.get("content"))
+        # Cohere v1 response: {"text": ..., "toolCalls": [...]}
+        elif vendor == "cohere":
+            response_tool_calls = chat_response.get("toolCalls")
+            if response_tool_calls:
+                assistant_prompt_message.tool_calls = convertor.convert_response_tool_calls(response_tool_calls, vendor)
             else:
-                assistant_prompt_message.content = chat_response["text"]
-        # Generic response
+                assistant_prompt_message.content = chat_response.get("text") or ""
+        # Generic response: {"choices": [{"message": {"content": [...], "toolCalls": [...]}, "finishReason": ...}]}
         else:
-            choice = response["choices"][0]
-            finish_reason = choice["finishReason"]
-            response_tool_calls = choice["message"]["toolCalls"]
-            assistant_prompt_message = AssistantPromptMessage()
-            if finish_reason == "tool_calls" or response_tool_calls:
-                assistant_prompt_message.tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
-            else:
-                assistant_prompt_message.content = choice["message"]["content"][0]["text"]
-        
-        prompt_tokens = response["usage"]["promptTokens"]
-        total_tokens = response["usage"]["totalTokens"]
-        completion_tokens = total_tokens - prompt_tokens
+            choice = chat_response["choices"][0]
+            message = choice.get("message") or {}
+            response_tool_calls = message.get("toolCalls")
+            if choice.get("finishReason") == "tool_calls" or response_tool_calls:
+                assistant_prompt_message.tool_calls = convertor.convert_response_tool_calls(response_tool_calls or [], vendor)
+            assistant_prompt_message.content = convertor._join_text_content(message.get("content"))
+
+        usage_info = chat_response.get("usage") or response.get("usage") or {}
+        prompt_tokens = int(usage_info.get("promptTokens") or 0)
+        total_tokens = int(usage_info.get("totalTokens") or prompt_tokens)
+        # total - prompt also covers reasoning tokens, which OCI bills as output.
+        completion_tokens = max(total_tokens - prompt_tokens, 0)
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
-        logging.debug("OCI Response to Dify:  "+result)
+        logging.debug("OCI Response to Dify:  %s", result)
         return result
 
     def _handle_generate_stream_response(
@@ -359,6 +390,10 @@ class OCILargeLanguageModel(LargeLanguageModel):
             """
             Handle llm stream response
 
+            Content deltas are yielded as they arrive. Tool calls are accumulated (some
+            models, e.g. gpt-oss, stream the name once and then argument fragments) and
+            emitted together with the finish reason and usage in a single terminal chunk.
+
             :param model: model name
             :param credentials: credentials
             :param response: response
@@ -367,77 +402,81 @@ class OCILargeLanguageModel(LargeLanguageModel):
             """
             index = -1
             vendor = model.split(".")[0].lower()
+            # Cohere v1 streams {"text": ..., "toolCalls": ...}; Cohere v2 and the generic
+            # format both stream {"message": {"content": [...], "toolCalls": [...]}}.
+            cohere_v1_stream = vendor == "cohere" and model not in COHERE_V2_MODELS
+            convertor = Convertor()
             finish_reason = None
             usage = None
-            for stream in response.data.events():
-                chunk = json.loads(stream.data)
-                    
+            pending_tool_calls: list[dict] = []
+            terminal_emitted = False
+
+            def terminal_chunk() -> LLMResultChunk:
+                message = AssistantPromptMessage(
+                    content="",
+                    tool_calls=convertor.build_tool_calls(pending_tool_calls),
+                )
+                return LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=index,
+                        message=message,
+                        finish_reason=finish_reason,
+                        usage=usage,
+                    ),
+                )
+
+            for event in response.data.events():
+                raw = event.data
+                # Some models (e.g. Llama 4) terminate the SSE stream with a literal [DONE].
+                if not raw or raw.strip() == "[DONE]":
+                    continue
+                try:
+                    chunk = json.loads(raw)
+                except json.JSONDecodeError:
+                    logging.debug("Skipping non-JSON stream event: %r", raw[:200])
+                    continue
+                if not isinstance(chunk, dict):
+                    continue
+
                 if "finishReason" not in chunk:
-                    assistant_prompt_message = AssistantPromptMessage()
-                    if vendor == "cohere":
-                        assistant_prompt_message.content = ""      
+                    assistant_prompt_message = AssistantPromptMessage(content="")
+                    if cohere_v1_stream:
                         if chunk.get("toolCalls"):
-                            tool_calls = Convertor().convert_response_tool_calls(chunk["toolCalls"],vendor)
-                            assistant_prompt_message.tool_calls = tool_calls
+                            assistant_prompt_message.tool_calls = convertor.convert_response_tool_calls(chunk["toolCalls"], vendor)
                         elif chunk.get("text"):
                             assistant_prompt_message.content = chunk["text"]
-                            #logging.debug(chunk["text"])
                     else:
-                        if chunk.get("message", {}).get("content", [{}])[0].get("text"):
-                            text = chunk["message"]["content"][0]["text"]
-                            assistant_prompt_message.content = text
-                            #logging.debug(text)
-                        if chunk.get("message", {}).get("toolCalls"):
-                            tool_calls = Convertor().convert_response_tool_calls(chunk["message"]["toolCalls"],vendor)
-                            assistant_prompt_message.tool_calls = tool_calls
-                    
-                    if assistant_prompt_message:
+                        message = chunk.get("message") or {}
+                        assistant_prompt_message.content = convertor._join_text_content(message.get("content"))
+                        for tool_call in message.get("toolCalls") or []:
+                            convertor.accumulate_tool_call_delta(pending_tool_calls, tool_call)
+
+                    if assistant_prompt_message.content or assistant_prompt_message.tool_calls:
                         index += 1
                         yield LLMResultChunk(
                             model=model,
                             prompt_messages=prompt_messages,
                             delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                         )
-                if "finishReason" in chunk:
-                    finish_reason = chunk["finishReason"]
-                    logging.debug("Stream finishReason:  "+ str(chunk))
-                if "usage" in chunk:
-                    logging.debug("Stream usage:  "+ str(chunk))
-                    prompt_tokens = chunk["usage"]["promptTokens"]
-                    total_tokens = chunk["usage"]["totalTokens"]
-                    completion_tokens = total_tokens - prompt_tokens
-                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)              
-                if finish_reason and usage:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=AssistantPromptMessage(content=""),
-                            finish_reason=str(finish_reason),
-                            usage=usage,
-                        ),
-                    )
-                elif finish_reason:
-                    yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index,
-                                message=AssistantPromptMessage(content=""),
-                                finish_reason=str(finish_reason),
-                            ),
-                        )
-                elif usage:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=AssistantPromptMessage(content=""),
-                            usage=usage,
-                        ),
-                    )
+
+                if chunk.get("finishReason"):
+                    finish_reason = str(chunk["finishReason"])
+                    logging.debug("Stream finishReason:  %s", chunk)
+                if chunk.get("usage"):
+                    logging.debug("Stream usage:  %s", chunk)
+                    prompt_tokens = int(chunk["usage"].get("promptTokens") or 0)
+                    total_tokens = int(chunk["usage"].get("totalTokens") or prompt_tokens)
+                    # total - prompt also covers reasoning tokens, which OCI bills as output.
+                    usage = self._calc_response_usage(model, credentials, prompt_tokens, max(total_tokens - prompt_tokens, 0))
+
+                if finish_reason and usage and not terminal_emitted:
+                    terminal_emitted = True
+                    yield terminal_chunk()
+
+            if not terminal_emitted and (finish_reason or usage or pending_tool_calls):
+                yield terminal_chunk()
             
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
@@ -506,8 +545,81 @@ class Convertor:
                 elif c.type == PromptMessageContentType.IMAGE:
                     images.append(c.data)                        
         else:
-            raise ValueError(f"Got unknown message type {message}")
+            raise ValueError(f"Got unknown message content type {type(content)}")
         return text
+
+    @staticmethod
+    def _join_text_content(content) -> str:
+        """
+        Join the TEXT parts of an OCI content list ([{"type": "TEXT", "text": ...}, ...]).
+        Tolerates a missing / empty list and non-text parts.
+        """
+        if not content:
+            return ""
+        if isinstance(content, str):
+            return content
+        parts = []
+        for part in content:
+            if isinstance(part, dict) and part.get("text") and part.get("type", "TEXT") == "TEXT":
+                parts.append(part["text"])
+        return "".join(parts)
+
+    ## convert prompt message to cohere v2 message
+    def _parse_prompt_message_to_cohere_v2(self, message: PromptMessage):
+        models = oci.generative_ai_inference.models
+        content = []
+        if isinstance(message.content, str):
+            if message.content:
+                content.append(models.CohereTextContentV2(text = message.content))
+        elif isinstance(message.content, list):
+            for c in message.content:
+                if c.type == PromptMessageContentType.TEXT:
+                    content.append(models.CohereTextContentV2(text = c.data))
+                elif c.type == PromptMessageContentType.IMAGE:
+                    image_url = self._process_image_url(c.data)
+                    content.append(
+                        models.CohereImageContentV2(image_url = models.CohereImageUrlV2(url = image_url))
+                    )
+
+        if isinstance(message, SystemPromptMessage):
+            return models.CohereSystemMessageV2(content = content)
+        if isinstance(message, UserPromptMessage):
+            return models.CohereUserMessageV2(content = content)
+        if isinstance(message, ToolPromptMessage):
+            return models.CohereToolMessageV2(
+                tool_call_id = message.tool_call_id or message.name,
+                content = content or [models.CohereTextContentV2(text = "")],
+            )
+        if isinstance(message, AssistantPromptMessage):
+            oci_message = models.CohereAssistantMessageV2(content = content or None)
+            if message.tool_calls:
+                oci_message.tool_calls = [
+                    models.CohereToolCallV2(
+                        id = tool.id or tool.function.name,
+                        type = "FUNCTION",
+                        function = {"name": tool.function.name, "arguments": tool.function.arguments},
+                    )
+                    for tool in message.tool_calls
+                ]
+            return oci_message
+        raise ValueError(f"Got unknown message type {message}")
+
+    def convert_tools_to_cohere_v2(self, tools: list) -> list:
+        """
+        Convert Dify tool definitions into OCI Cohere v2 tool objects (JSON-schema parameters).
+        """
+        models = oci.generative_ai_inference.models
+        return [
+            models.CohereToolV2(
+                type = "FUNCTION",
+                function = models.Function(
+                    name = tool.name,
+                    description = tool.description,
+                    parameters = tool.parameters,
+                ),
+            )
+            for tool in tools
+        ]
 
     ## convert prompt message to cohere message
     def _parse_prompt_message_to_cohere(self,message: PromptMessage) :
@@ -659,6 +771,44 @@ class Convertor:
             generic_tools.append(generic_tool)     
         return generic_tools
 
+    @staticmethod
+    def accumulate_tool_call_delta(pending: list[dict], tool_call: dict) -> None:
+        """
+        Merge one streamed tool-call delta into ``pending``.
+
+        Generic (gpt-oss) and Cohere v2 streams send the id/name in the first fragment and
+        then argument fragments without a name; Grok / Llama send complete calls.
+        """
+        function = tool_call.get("function") if isinstance(tool_call.get("function"), dict) else tool_call
+        name = function.get("name")
+        arguments = function.get("arguments")
+        if arguments is None and "parameters" in tool_call:
+            arguments = json.dumps(tool_call["parameters"])
+        if arguments is not None and not isinstance(arguments, str):
+            arguments = json.dumps(arguments)
+
+        if name or not pending:
+            pending.append({"id": tool_call.get("id") or name or "", "name": name or "", "arguments": arguments or ""})
+        else:
+            pending[-1]["arguments"] += arguments or ""
+            if tool_call.get("id") and not pending[-1]["id"]:
+                pending[-1]["id"] = tool_call["id"]
+
+    @staticmethod
+    def build_tool_calls(pending: list[dict]) -> list[AssistantPromptMessage.ToolCall]:
+        return [
+            AssistantPromptMessage.ToolCall(
+                id=call["id"] or call["name"],
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name=call["name"],
+                    arguments=call["arguments"] or "{}",
+                ),
+            )
+            for call in pending
+            if call["name"]
+        ]
+
     # Convert OCI response tool calls to Dify tool calls
     def convert_response_tool_calls(self, tool_calls: list, vendor: str) -> list[AssistantPromptMessage.ToolCall]:
         """
@@ -667,14 +817,19 @@ class Convertor:
         """
         dify_tool_calls = []
         for call in tool_calls:  
-            name = call["name"]
-            if vendor == "cohere":
-                arguments = str(call["parameters"])
+            # Cohere v2 and OpenAI-style payloads nest name/arguments under "function".
+            function = call.get("function") if isinstance(call.get("function"), dict) else call
+            name = function["name"]
+            if "parameters" in call and "arguments" not in function:
+                # Cohere v1: {"name": ..., "parameters": {...}}
+                arguments = json.dumps(call["parameters"])
             else:
-                arguments = call["arguments"]
+                arguments = function.get("arguments") or "{}"
+                if not isinstance(arguments, str):
+                    arguments = json.dumps(arguments)
             
             dify_call = AssistantPromptMessage.ToolCall(
-                id = name,
+                id = call.get("id") or name,
                 type = "function",
                 function = AssistantPromptMessage.ToolCall.ToolCallFunction  (
                     name = name,
