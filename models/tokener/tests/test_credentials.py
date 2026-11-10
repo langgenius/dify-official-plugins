@@ -25,7 +25,7 @@ def test_provider_validation_uses_models_endpoint(get) -> None:
     provider.validate_provider_credentials({"api_key": "test-key"})
 
     get.assert_called_once_with(
-        "https://api.tokener.dev/v1/models",
+        "https://api.tokener.ai/v1/models",
         headers={
             "Accept": "application/json",
             "Authorization": "Bearer test-key",

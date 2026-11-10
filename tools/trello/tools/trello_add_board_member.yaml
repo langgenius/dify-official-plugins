@@ -1,0 +1,84 @@
+identity:
+  name: trello_add_board_member
+  author: langgenius
+  label:
+    en_US: Add Board Member
+    zh_Hans: 添加看板成员
+    ja_JP: ボードにメンバーを追加
+description:
+  human:
+    en_US: Add an existing Trello user to a board
+    zh_Hans: 把已有的 Trello 用户加入看板
+    ja_JP: 既存の Trello ユーザーをボードに追加
+  llm: Add a Trello user (by member ID or username) to a board.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_Hans: 看板 ID
+    ja_JP: ボード ID
+  human_description:
+    en_US: Board ID (from the list or search tools)
+    zh_Hans: 看板 ID（可从列表或搜索工具获取）
+    ja_JP: ボード ID（一覧または検索ツールから）
+  llm_description: The board ID, from fetch_all_boards or search.
+  form: llm
+- name: member_id
+  type: string
+  required: true
+  label:
+    en_US: Member ID
+    zh_Hans: 成员 ID
+    ja_JP: メンバー ID
+  human_description:
+    en_US: Member ID (from the list or search tools)
+    zh_Hans: 成员 ID（可从列表或搜索工具获取）
+    ja_JP: メンバー ID（一覧または検索ツールから）
+  llm_description: The member's ID or username.
+  form: llm
+- name: type
+  type: select
+  required: false
+  label:
+    en_US: Role
+    zh_Hans: 角色
+    ja_JP: ロール
+  human_description:
+    en_US: normal, admin or observer
+    zh_Hans: normal、admin 或 observer
+    ja_JP: normal、admin、observer
+  llm_description: 'The member''s role on the board: normal (default), admin or observer.'
+  form: llm
+  default: normal
+  options:
+  - value: normal
+    label:
+      en_US: normal
+      zh_Hans: normal
+      ja_JP: normal
+  - value: admin
+    label:
+      en_US: admin
+      zh_Hans: admin
+      ja_JP: admin
+  - value: observer
+    label:
+      en_US: observer
+      zh_Hans: observer
+      ja_JP: observer
+output_schema:
+  type: object
+  properties:
+    added:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_add_board_member.py

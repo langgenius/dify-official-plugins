@@ -1,0 +1,95 @@
+identity:
+  name: trello_add_attachment
+  author: langgenius
+  label:
+    en_US: Add Attachment
+    zh_Hans: 添加附件
+    ja_JP: 添付ファイルを追加
+description:
+  human:
+    en_US: Attach a file, text or link to a card
+    zh_Hans: 给卡片添加文件、文本或链接
+    ja_JP: カードにファイル・テキスト・リンクを添付
+  llm: Attach a file, text content (with a file name) or a link to a Trello card.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: file
+  type: file
+  required: false
+  label:
+    en_US: File
+    zh_Hans: 文件
+    ja_JP: ファイル
+  human_description:
+    en_US: The file to attach
+    zh_Hans: 要上传的文件
+    ja_JP: 添付するファイル
+  llm_description: The file to attach.
+  form: llm
+- name: file_content
+  type: string
+  required: false
+  label:
+    en_US: Text Content
+    zh_Hans: 文本内容
+    ja_JP: テキスト内容
+  human_description:
+    en_US: Text to attach as a file
+    zh_Hans: 作为文件上传的文本
+    ja_JP: ファイルとして添付するテキスト
+  llm_description: Text to attach as a file; needs name.
+  form: llm
+- name: url
+  type: string
+  required: false
+  label:
+    en_US: Link
+    zh_Hans: 链接
+    ja_JP: リンク
+  human_description:
+    en_US: A link to attach instead of a file
+    zh_Hans: 要附加的链接（代替文件）
+    ja_JP: ファイルの代わりに添付するリンク
+  llm_description: An http(s) link to attach.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: File name or link title
+    zh_Hans: 文件名或链接标题
+    ja_JP: ファイル名またはリンクのタイトル
+  llm_description: File name (required with text content) or link title.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    attachment_id:
+      type: string
+    name:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_add_attachment.py

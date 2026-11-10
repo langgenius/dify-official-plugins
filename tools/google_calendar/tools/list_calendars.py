@@ -6,6 +6,8 @@ from dify_plugin import Tool
 from dify_plugin.entities.invoke_message import InvokeMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from tools.google_client import connect
+
 
 class ListCalendarsTool(Tool):
     """
@@ -18,18 +20,15 @@ class ListCalendarsTool(Tool):
         """
         List all calendars for the authenticated user.
         """
-        # Check if credentials are available
-        if "access_token" not in self.runtime.credentials:
-            yield self.create_text_message(
-                "Google Calendar access token is required. Please configure OAuth authentication."
-            )
+        # The OAuth token, or each user's own (for per-user sign-in, the sign-in link is returned instead).
+        access_token = yield from connect(self)
+        if access_token is None:
             return
-
-        access_token = self.runtime.credentials.get("access_token")
 
         # Start operation log
         operation_log = self.create_log_message(
             label="List Calendars Operation",
+            metadata={},
             data={"operation": "list_calendars"},
             status=InvokeMessage.LogMessage.LogStatus.SUCCESS,
         )
@@ -44,6 +43,7 @@ class ListCalendarsTool(Tool):
             # Make API call to list calendars
             api_log = self.create_log_message(
                 label="API Call",
+                metadata={},
                 data={
                     "endpoint": "https://www.googleapis.com/calendar/v3/users/me/calendarList"
                 },
@@ -111,6 +111,7 @@ class ListCalendarsTool(Tool):
             elif response.status_code == 401:
                 yield self.create_log_message(
                     label="Authentication Error",
+                    metadata={},
                     data={
                         "status_code": response.status_code,
                         "error": "Invalid or expired token",
@@ -124,6 +125,7 @@ class ListCalendarsTool(Tool):
             elif response.status_code == 403:
                 yield self.create_log_message(
                     label="Permission Error",
+                    metadata={},
                     data={
                         "status_code": response.status_code,
                         "error": "Insufficient permissions",
@@ -138,6 +140,7 @@ class ListCalendarsTool(Tool):
                 error_msg = f"API request failed with status {response.status_code}"
                 yield self.create_log_message(
                     label="API Error",
+                    metadata={},
                     data={
                         "status_code": response.status_code,
                         "error": response.text[:200],
@@ -151,6 +154,7 @@ class ListCalendarsTool(Tool):
         except requests.RequestException as e:
             yield self.create_log_message(
                 label="Network Error",
+                metadata={},
                 data={"error": str(e)},
                 status=InvokeMessage.LogMessage.LogStatus.ERROR,
             )
@@ -158,6 +162,7 @@ class ListCalendarsTool(Tool):
         except Exception as e:
             yield self.create_log_message(
                 label="Unexpected Error",
+                metadata={},
                 data={"error": str(e), "type": type(e).__name__},
                 status=InvokeMessage.LogMessage.LogStatus.ERROR,
             )

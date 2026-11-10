@@ -1,0 +1,26 @@
+identity:
+  author: langgenius
+  name: fetch
+  label:
+    en_US: Fetch
+    zh_Hans: 网页抓取
+description:
+  human:
+    en_US: Fetch a web page and return its title and Markdown content using DeepSeek.
+    zh_Hans: 使用 DeepSeek 抓取网页，返回标题与 Markdown 正文。
+  llm: Fetch a public HTTP or HTTPS web page to read its full Markdown content. Use this after search when you need more detail from a result URL.
+parameters:
+  - name: url
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: URL
+      zh_Hans: 网页地址
+    human_description:
+      en_US: HTTP/HTTPS page URL, up to 8192 characters, without embedded credentials.
+      zh_Hans: HTTP/HTTPS 网页地址，最多 8192 个字符，不能包含用户名或密码。
+    llm_description: The HTTP/HTTPS URL of the page to read.
+extra:
+  python:
+    source: tools/fetch.py

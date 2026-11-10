@@ -1,0 +1,42 @@
+identity:
+  name: confluence_delete_comment
+  author: langgenius
+  label:
+    en_US: Delete Comment
+    zh_Hans: 删除评论
+    ja_JP: コメントを削除
+description:
+  human:
+    en_US: Delete a page comment
+    zh_Hans: 删除页面评论
+    ja_JP: ページのコメントを削除します
+  llm: Delete a comment from a Confluence page. Only when the user clearly asks for it.
+parameters:
+- name: comment_id
+  type: string
+  required: true
+  label:
+    en_US: Comment ID
+    zh_Hans: 评论 ID
+    ja_JP: コメント ID
+  human_description:
+    en_US: From List Comments
+    zh_Hans: 可从“列出评论”获取
+    ja_JP: コメント一覧から
+  llm_description: The comment ID, from the list comments tool.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+      description: True when the comment was deleted
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_delete_comment.py

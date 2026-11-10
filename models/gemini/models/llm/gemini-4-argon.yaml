@@ -1,0 +1,130 @@
+# https://ai.google.dev/gemini-api/docs/models/gemini-4-argon
+model: gemini-4-argon
+label:
+  en_US: Gemini 4 Argon
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: include_thoughts
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Include thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Include available thought summaries in the response.
+      zh_Hans: 在响应中返回可用的思考摘要。
+  - name: media_resolution
+    type: string
+    required: true
+    default: "Default"
+    options:
+      - Default
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Media resolution
+      zh_Hans: 媒体分辨率
+    help:
+      en_US: Higher resolution improves visual detail at the cost of more tokens and latency. Default lets the model choose for each media type.
+      zh_Hans: 更高的分辨率有助于识别视觉细节，但会增加 token 用量和延迟。Default 由模型根据媒体类型选择。
+  - name: thinking_level
+    type: string
+    required: true
+    default: "Medium"
+    options:
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Thinking level
+      zh_Hans: 思考层级
+    help:
+      en_US: Medium is recommended for most tasks. Low reduces latency and token usage; High allows deeper reasoning. Thinking cannot be disabled.
+      zh_Hans: 大多数任务推荐使用 Medium。Low 减少延迟和 token 用量，High 支持更深入的推理。无法关闭思考。
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google 検索に基づいた応答をします。
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: URL context
+      zh_Hans: 链接详情
+      ja_JP: 網羅閲覧
+    help:
+      en_US: Retrieve URL content to inform the response.
+      zh_Hans: 获取并分析链接内容，为回答提供参考依据。
+      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Code execution
+      zh_Hans: 代码执行
+      ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks.
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 1048576
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: Total thinking and output tokens. Defaults to 65,536; higher limits enable automatic continuation. Input, thinking, and output share 1,048,576 tokens, so the API caps output to the remaining context. Lower the thinking level to reduce cost without cutting the answer short.
+      zh_Hans: 思考与输出的 token 总上限，默认为 65,536，设置更高值会启用自动续写。输入、思考和输出共用 1,048,576 tokens，API 会按剩余上下文限制输出。若需降低成本，建议降低思考层级，避免截断回答。
+  - name: service_tier
+    type: string
+    required: true
+    default: "standard"
+    options:
+      - flex
+      - standard
+      - priority
+    label:
+      en_US: Service Tier
+      zh_Hans: 推理层级
+    help:
+      en_US: Standard uses regular pricing. Flex costs less with reduced availability. Priority costs more for higher availability and lower latency.
+      zh_Hans: Standard 使用标准价格。Flex 价格更低，但可用性较低。Priority 价格更高，提供更高可用性和更低延迟。
+  - name: json_schema
+    use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-4-argon
+# Introductory pricing through 2026-11-30; $4 input / $20 output per 1M tokens thereafter.
+pricing:
+  input: '2.00'
+  output: '10.00'
+  unit: '0.000001'
+  currency: USD

@@ -624,14 +624,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["reasoning_format"] = reasoning_format_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
-        if enable_thinking_value is True and reasoning_effort_value is not None:
-            # Propagate reasoning_effort to both:
-            # - top-level OpenAI Chat Completions param, and
-            # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
-            # Only apply when thinking mode is explicitly enabled.
+        if reasoning_effort_value is not None:
+            # reasoning_effort is a standard OpenAI Chat Completions parameter.
+            # Forward it whenever the user sets it, independently of the
+            # thinking-mode toggle: the toggle only governs the non-standard
+            # vLLM/SGLang-style thinking parameters, not this one.
             model_parameters["reasoning_effort"] = reasoning_effort_value
-            if strict_compatibility_value is False:
-                # Only apply when `strict_compatibility_value` is False since
+            if enable_thinking_value is True and strict_compatibility_value is False:
+                # Also propagate to chat_template_kwargs for runtimes that read
+                # template kwargs (e.g., llama.cpp). Only apply when
+                # `strict_compatibility_value` is False since
                 # `chat_template_kwargs` is a non-standard parameter.
                 chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
                 chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
@@ -730,44 +732,60 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from streaming result"""
         buffer = ""
         in_thinking = False
-        thinking_started = False
+        strip_leading_whitespace = False
+        held_chunk = None
 
         for chunk in stream:
             if chunk.delta and chunk.delta.message and chunk.delta.message.content:
                 content = chunk.delta.message.content
                 buffer += content
 
-                # Detect start of thinking block
-                if not thinking_started and buffer.startswith("<think>"):
-                    in_thinking = True
-                    thinking_started = True
-                    # Don't continue here - check for end tag in same iteration
+                if not in_thinking:
+                    # Detect start of thinking block
+                    if buffer.startswith("<think>"):
+                        in_thinking = True
+                        held_chunk = None
+                    elif "<think>".startswith(buffer):
+                        # The opening tag may be split across chunks, e.g. "<" + "think>"
+                        held_chunk = chunk
+                        continue
 
-                # Detect end of thinking block
-                if in_thinking and "</think>" in buffer:
-                    # Find the end of thinking block
-                    end_idx = buffer.find("</think>") + len("</think>")
-                    # Skip whitespace after </think>
-                    while end_idx < len(buffer) and buffer[end_idx].isspace():
-                        end_idx += 1
+                if in_thinking:
+                    # Detect end of thinking block
+                    if "</think>" not in buffer:
+                        continue
                     # Remove thinking block and continue with remaining content
+                    end_idx = buffer.find("</think>") + len("</think>")
                     buffer = buffer[end_idx:]
                     in_thinking = False
-                    thinking_started = False
-                    # Yield remaining content if any
-                    if buffer:
-                        chunk.delta.message.content = buffer
-                        buffer = ""
-                        yield chunk
-                    continue
+                    strip_leading_whitespace = True
 
-                # If not in thinking block, yield content
-                if not in_thinking:
-                    yield chunk
-                    buffer = ""
+                # Skip whitespace after </think>, which may arrive in later chunks
+                if strip_leading_whitespace:
+                    buffer = buffer.lstrip()
+                    if not buffer:
+                        continue
+                    strip_leading_whitespace = False
+
+                held_chunk = None
+                chunk.delta.message.content = buffer
+                buffer = ""
+                yield chunk
             else:
+                # Flush content held as a possible opening tag before chunks without content,
+                # such as the final chunk with finish_reason and usage
+                if held_chunk is not None:
+                    held_chunk.delta.message.content = buffer
+                    yield held_chunk
+                    held_chunk = None
+                    buffer = ""
                 # Yield chunks without content as-is
                 yield chunk
+
+        # Flush content held as a possible opening tag when the stream ends
+        if held_chunk is not None:
+            held_chunk.delta.message.content = buffer
+            yield held_chunk
 
     def _handle_generate_response(
         self,
@@ -830,8 +848,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         usage = response_json.get("usage")
         if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
+            # Gateways differ here: most report prompt_tokens/completion_tokens,
+            # Anthropic-compatible proxies report input_tokens/output_tokens, and
+            # some report only total_tokens. Indexing the OpenAI names raised
+            # KeyError on a response whose content was perfectly usable.
+            prompt_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+            completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+            if prompt_tokens is None:
+                prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            if completion_tokens is None:
+                completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
         else:
             prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
@@ -1050,6 +1076,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if image_c.detail:
                     image_part["detail"] = image_c.detail.value
                 content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.VIDEO:
+                # The Responses API has no dedicated video part. OpenAI-compatible
+                # servers accept a video through an input_image part carrying a data
+                # URI (the model extracts frames), mirroring the image_url shape the
+                # Chat Completions path already produces for video.
+                video_c: VideoPromptMessageContent = content_item
+                video_part: dict[str, Any] = {"type": "input_image"}
+                if video_c.url:
+                    video_part["image_url"] = video_c.url
+                else:
+                    video_part["image_url"] = video_c.data
+                content_parts.append(video_part)
+            elif content_item.type == PromptMessageContentType.AUDIO:
+                # The Responses API has no dedicated audio part. Send it as a file so
+                # the attachment is not silently dropped; servers that support audio
+                # can transcribe the payload from the data URI.
+                audio_c: AudioPromptMessageContent = content_item
+                audio_part: dict[str, Any] = {"type": "input_file"}
+                if audio_c.url:
+                    audio_part["file_url"] = audio_c.url
+                else:
+                    audio_part["filename"] = audio_c.filename or "audio"
+                    audio_part["file_data"] = audio_c.data
+                content_parts.append(audio_part)
             elif content_item.type == PromptMessageContentType.DOCUMENT:
                 doc_c: DocumentPromptMessageContent = content_item
                 file_part: dict[str, Any] = {"type": "input_file"}

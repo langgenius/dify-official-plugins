@@ -5,9 +5,15 @@ label:
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+  - video
+  - audio
+  - document
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -18,7 +24,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 16384
+    max: 131072
     help:
       en_US: Maps to Responses API max_output_tokens. Availability may be region-restricted.
       zh_Hans: 映射到 Responses API 的 max_output_tokens。可用性可能受区域限制。
