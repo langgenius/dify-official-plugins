@@ -30,6 +30,13 @@ def headers(credentials: dict[str, str]) -> dict[str, str]:
 def emit_images(
     tool: Tool, credentials: dict[str, str], path: str, payload: dict[str, Any]
 ) -> Generator[ToolInvokeMessage, None, None]:
+    """POST one MiniMax image request and yield the returned images.
+
+    API, transport, parsing and empty-result failures raise instead of yielding text: a text
+    result would let Dify mark the invocation successful even though no image was produced,
+    which bypasses workflow retries and error branches. MiniMax is not idempotent, so nothing
+    here retries the POST - a failed request has to be re-issued deliberately.
+    """
     try:
         response = requests.post(
             base_url(credentials) + path,
@@ -38,14 +45,12 @@ def emit_images(
             timeout=TIMEOUT,
         )
     except requests.RequestException as exc:
-        yield tool.create_text_message(f"Failed to call MiniMax Image API: {exc}")
-        return
+        raise ValueError(f"Failed to call MiniMax Image API: {exc}") from exc
 
     try:
         body = response.json()
-    except ValueError:
-        yield tool.create_text_message(f"Got Error Response: {response.text}")
-        return
+    except ValueError as exc:
+        raise ValueError(f"Got Error Response: {response.text}") from exc
 
     base_resp = body.get("base_resp") if isinstance(body, dict) else None
     if response.status_code != 200 or (
@@ -54,8 +59,7 @@ def emit_images(
         message = None
         if isinstance(base_resp, dict):
             message = base_resp.get("status_msg")
-        yield tool.create_text_message(f"Got Error Response: {message or response.text}")
-        return
+        raise ValueError(f"Got Error Response: {message or response.text}")
 
     images = body.get("data") or []
     yielded = False
@@ -65,4 +69,4 @@ def emit_images(
             yielded = True
             yield tool.create_image_message(url)
     if not yielded:
-        yield tool.create_text_message("MiniMax returned no image data")
+        raise ValueError("MiniMax returned no image data")
