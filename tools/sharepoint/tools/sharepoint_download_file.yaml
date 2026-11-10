@@ -10,7 +10,8 @@ description:
     en_US: Download a file (up to 15 MB)
     zh_Hans: 下载文件（最大 15 MB）
     ja_JP: ファイルをダウンロードします（最大 15 MB）
-  llm: Download a file from the site's document library; it is returned as a file.
+  llm: Download a file from the site's document library; it is returned as a file. To read or summarize a document, use
+    sharepoint_read_file instead, which returns its text.
 parameters:
 - name: site
   type: string

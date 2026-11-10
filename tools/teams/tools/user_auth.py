@@ -37,6 +37,11 @@ DELEGATED_SCOPE = (
     "Chat.ReadWrite ChatMessage.Send Group.Read.All OnlineMeetings.ReadWrite Tasks.ReadWrite offline_access"
 )
 
+_EXPIRED_INTRO = (
+    "The user signed in, but came back to the chat after the sign-in had expired (it has to be finished "
+    "within about 10 minutes). Give them this exact link to sign in again (valid for 15 minutes), ask them "
+    "to reply as soon as they have signed in, and call this tool again after they say they are done:\n"
+)
 # A sign-in link stays usable this long; Entra's authorization codes live ~10 minutes.
 _PENDING_TTL = 15 * 60
 # Refresh an access token this many seconds before it expires.
@@ -58,9 +63,11 @@ class SignInRequired(Exception):
 class UserAuthError(Exception):
     """Per-user sign-in is misconfigured or Microsoft rejected it."""
 
-    def __init__(self, message: str, status: int | None = None):
+    def __init__(self, message: str, status: int | None = None, error: str | None = None):
         super().__init__(message)
         self.status = status
+        # The OAuth error code (``invalid_grant``...), when the token endpoint gave one.
+        self.error = error
 
 
 def is_valid_state(state: str) -> bool:
@@ -204,15 +211,22 @@ class UserSignIn:
         if callback.get("error"):
             raise UserAuthError(f"Microsoft sign-in failed: {callback['error']}. Ask the user to try again.")
 
-        payload = self._token_request(
-            {
-                "grant_type": "authorization_code",
-                "code": callback["code"],
-                "redirect_uri": self.redirect_uri,
-                "code_verifier": pending["verifier"],
-                "scope": self.scope,
-            }
-        )
+        try:
+            payload = self._token_request(
+                {
+                    "grant_type": "authorization_code",
+                    "code": callback["code"],
+                    "redirect_uri": self.redirect_uri,
+                    "code_verifier": pending["verifier"],
+                    "scope": self.scope,
+                }
+            )
+        except UserAuthError as e:
+            if e.error != "invalid_grant":
+                raise
+            # The code is redeemed only when the user is back in the chat, and it expires after about
+            # 10 minutes (or was already used): start over with a link the agent can hand out at once.
+            raise SignInRequired(self._start_sign_in(_EXPIRED_INTRO)) from e
         account = self._account_name(payload["access_token"]) if payload.get("access_token") else None
         self.just_signed_in = account or "an unknown account"
         return self._store_token(payload, account=account)
@@ -237,7 +251,7 @@ class UserSignIn:
         token = self.store.load("token")
         return token.get("account") if token else None
 
-    def _start_sign_in(self) -> str:
+    def _start_sign_in(self, intro: str | None = None) -> str:
         state = secrets.token_urlsafe(32)
         verifier = secrets.token_urlsafe(64)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
@@ -263,11 +277,10 @@ class UserSignIn:
         # Lets the callback endpoint tell a link it issued from a forged or expired one.
         self.storage.set(signin_key(state), json.dumps({"expires_at": expires_at, "url": url}).encode())
         self.storage.set(start_key(start), json.dumps({"state": state}).encode())
-        return (
+        return (intro or (
             "The user has not signed in to Microsoft yet. Give them this exact link to sign in with their own "
             "Microsoft account (valid for 15 minutes), and call this tool again after they say they are done:\n"
-            f"{link}"
-        )
+        )) + link
 
     def _take_code(self, state: str) -> dict[str, Any] | None:
         key = code_key(state)
@@ -334,5 +347,9 @@ class UserSignIn:
             payload = {}
         if response.status_code != 200:
             detail = payload.get("error_description") or payload.get("error") or response.text[:300]
-            raise UserAuthError(f"Microsoft sign-in failed ({response.status_code}): {detail}", response.status_code)
+            raise UserAuthError(
+                f"Microsoft sign-in failed ({response.status_code}): {detail}",
+                response.status_code,
+                payload.get("error"),
+            )
         return payload
