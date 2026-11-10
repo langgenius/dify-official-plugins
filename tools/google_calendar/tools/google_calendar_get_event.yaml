@@ -1,0 +1,62 @@
+identity:
+  name: google_calendar_get_event
+  author: langgenius
+  label:
+    en_US: Get Event
+    zh_Hans: 获取事件
+    ja_JP: イベントを取得
+description:
+  human:
+    en_US: One event with guests and meeting link
+    zh_Hans: 获取单个事件（含参与者和会议链接）
+    ja_JP: ゲストと会議リンク付きのイベント
+  llm: 'Get one Google Calendar event: time, location, description, guests and their responses, and the meeting link.'
+parameters:
+- name: event_id
+  type: string
+  required: true
+  label:
+    en_US: Event ID
+    zh_Hans: 事件 ID
+    ja_JP: イベント ID
+  human_description:
+    en_US: From list or search events
+    zh_Hans: 可从列出或搜索事件获取
+    ja_JP: イベント一覧・検索から
+  llm_description: The event ID, from list_events or search_events.
+  form: llm
+- name: calendar_id
+  type: string
+  required: false
+  label:
+    en_US: Calendar ID
+    zh_Hans: 日历 ID
+    ja_JP: カレンダー ID
+  human_description:
+    en_US: 'Default: primary'
+    zh_Hans: 默认：primary（主日历）
+    ja_JP: '既定: primary'
+  llm_description: Calendar ID from list_calendars; default primary.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    event:
+      type: object
+    title:
+      type: string
+    start:
+      type: string
+    end:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_calendar_get_event.py

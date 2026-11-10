@@ -23,6 +23,15 @@ MinerU is a document parser that can parse complex document data for any downstr
 - Supports running in a pure CPU environment, and also supports GPU(CUDA)/NPU(CANN)/MPS acceleration
 - Compatible with Windows, Linux, and Mac platforms.
 
+## What's New in 0.6.1
+
+- Accept self-hosted V1 API addresses ending in `/v1`, including reverse-proxy prefixes such as `https://example.com/mineru/v1`. The plugin adds the API version exactly once, avoiding `/v1/v1/health` and an incorrect fallback to `/file_parse`.
+- Report health-check failures and unexpected responses instead of treating them as MinerU 1.x–3.x. Legacy fallback is limited to a missing or unsupported V1 health endpoint (HTTP 404/405).
+
+MinerU 4.x support was introduced in **0.6.0**. If an older plugin calls `/file_parse` and receives 404 after upgrading MinerU, update the plugin, select **Local Deployment**, and point Base URL at the document parsing service (`mineru-kit api-server`). The WebUI and OpenAI-compatible VLM service are different endpoints.
+
+The V1 integration follows the official [HTTP API guide](https://opendatalab.github.io/MinerU/usage/http_api/) and [4.0 migration guide](https://opendatalab.github.io/MinerU/reference/migration_4/): upload → parse job → poll → download output files. Existing workflows keep the same tool parameters; `parse_method` maps to V1 `ocr_mode`, `page_ranges` to per-file `page_range`, and `tier` selects parsing quality.
+
 ## What's New in 0.6.0
 
 - **Self-hosted MinerU 4.x support.** MinerU 4.x replaced `/file_parse` with the V1 API (uploads → parse jobs → output files). The plugin detects the server version automatically, so the same configuration works with MinerU 1.x, 2.x, 3.x and 4.x, and you can upgrade the MinerU server without changing the plugin.
@@ -56,7 +65,7 @@ Go to "Tools" → "Plugin Market", add the "MinerU" plugin and fill in its crede
 | Field | Official API | Self-hosted |
 | --- | --- | --- |
 | Server Type | `MinerU Official API` | `Local Deployment` |
-| Base URL | optional, defaults to `https://mineru.net` | required, e.g. `http://10.0.0.5:8000` |
+| Base URL | optional, defaults to `https://mineru.net` | required, e.g. `http://10.0.0.5:8000` or `http://10.0.0.5:8000/v1`; reverse-proxy prefixes are preserved |
 | API Token | required – [get a token](https://mineru.net/apiManage/token). Tokens expire; generate a new one when you see "token has expired". | MinerU 4.x: only if the server was started with `--api-key`. Sent as `Authorization: Bearer <token>`. |
 | Gateway Header Name / Value | not used | optional; a fixed header required by a gateway in front of MinerU |
 

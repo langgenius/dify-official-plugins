@@ -1,0 +1,54 @@
+identity:
+  name: trello_remove_card_label
+  author: langgenius
+  label:
+    en_US: Remove Label from Card
+    zh_Hans: 移除卡片标签
+    ja_JP: カードからラベルを外す
+description:
+  human:
+    en_US: Take a label off a card
+    zh_Hans: 移除卡片上的标签
+    ja_JP: カードからラベルを外す
+  llm: Remove a label from a card (the label stays on the board).
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: label_id
+  type: string
+  required: true
+  label:
+    en_US: Label ID
+    zh_Hans: 标签 ID
+    ja_JP: ラベル ID
+  human_description:
+    en_US: Label ID (from the list or search tools)
+    zh_Hans: 标签 ID（可从列表或搜索工具获取）
+    ja_JP: ラベル ID（一覧または検索ツールから）
+  llm_description: The label ID, from trello_list_labels.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    removed:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_remove_card_label.py

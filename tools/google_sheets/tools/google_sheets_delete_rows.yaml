@@ -1,0 +1,108 @@
+identity:
+  name: google_sheets_delete_rows
+  author: langgenius
+  label:
+    en_US: Delete Rows
+    zh_Hans: 删除行
+    ja_JP: 行を削除
+description:
+  human:
+    en_US: Delete rows by number or by a column value
+    zh_Hans: 按行号或列值删除行
+    ja_JP: 行番号または列の値で行を削除
+  llm: Delete rows by row number (from read rows) or the rows where a column equals a value. Only when the user clearly asks
+    for it.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: row_numbers
+  type: string
+  required: false
+  label:
+    en_US: Row Numbers
+    zh_Hans: 行号
+    ja_JP: 行番号
+  human_description:
+    en_US: Comma-separated, e.g. 4,7
+    zh_Hans: 逗号分隔，如 4,7
+    ja_JP: 'カンマ区切り（例: 4,7）'
+  llm_description: Comma-separated row numbers to delete.
+  form: llm
+- name: filter_column
+  type: string
+  required: false
+  label:
+    en_US: Filter Column
+    zh_Hans: 筛选列
+    ja_JP: 絞り込み列
+  human_description:
+    en_US: Only rows where this column…
+    zh_Hans: 仅保留此列…
+    ja_JP: この列が…の行のみ
+  llm_description: Only rows whose filter_column equals filter_value.
+  form: llm
+- name: filter_value
+  type: string
+  required: false
+  label:
+    en_US: Filter Value
+    zh_Hans: 筛选值
+    ja_JP: 絞り込み値
+  human_description:
+    en_US: …equals this value (case-insensitive)
+    zh_Hans: …等于此值（不区分大小写）
+    ja_JP: …この値に等しい（大文字小文字を区別しない）
+  llm_description: The value filter_column must equal.
+  form: llm
+- name: header_row
+  type: number
+  required: false
+  label:
+    en_US: Header Row
+    zh_Hans: 表头行
+    ja_JP: 見出し行
+  human_description:
+    en_US: Row with the column names (default 1)
+    zh_Hans: 列名所在的行（默认 1）
+    ja_JP: 列名の行（既定 1）
+  llm_description: The row number holding the column names (default 1).
+  form: form
+  default: 1
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_delete_rows.py

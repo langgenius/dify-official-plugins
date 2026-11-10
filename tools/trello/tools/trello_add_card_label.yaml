@@ -1,0 +1,54 @@
+identity:
+  name: trello_add_card_label
+  author: langgenius
+  label:
+    en_US: Add Label to Card
+    zh_Hans: 给卡片加标签
+    ja_JP: カードにラベルを追加
+description:
+  human:
+    en_US: Put a board label on a card
+    zh_Hans: 给卡片加上看板标签
+    ja_JP: カードにボードのラベルを付ける
+  llm: Add one of the board's labels to a card.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: label_id
+  type: string
+  required: true
+  label:
+    en_US: Label ID
+    zh_Hans: 标签 ID
+    ja_JP: ラベル ID
+  human_description:
+    en_US: Label ID (from the list or search tools)
+    zh_Hans: 标签 ID（可从列表或搜索工具获取）
+    ja_JP: ラベル ID（一覧または検索ツールから）
+  llm_description: The label ID, from trello_list_labels.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    added:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_add_card_label.py

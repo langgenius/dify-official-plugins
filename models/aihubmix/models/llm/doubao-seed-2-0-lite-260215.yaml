@@ -9,7 +9,6 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
-  - document
   - video
   - structured-output
 model_properties:

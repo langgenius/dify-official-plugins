@@ -225,3 +225,27 @@ class TestEndpointUrl:
         assert (
             mock_client.call_args.kwargs["endpoint_url"] == "https://vpce.example.com"
         )
+
+
+class TestReadTimeout:
+    def test_bedrock_runtime_uses_long_read_timeout(self) -> None:
+        with patch.object(
+            get_bedrock_client.boto3, "client", return_value=MagicMock()
+        ) as mock_client:
+            get_bedrock_client.get_bedrock_client("bedrock-runtime", _BASE_CREDENTIALS)
+
+        config = mock_client.call_args.kwargs["config"]
+        assert config.read_timeout == 3600
+        assert config.connect_timeout == 60
+
+    @pytest.mark.parametrize("service_name", ["bedrock", "bedrock-agent-runtime"])
+    def test_other_services_keep_botocore_default_timeouts(self, service_name: str) -> None:
+        with patch.object(
+            get_bedrock_client.boto3, "client", return_value=MagicMock()
+        ) as mock_client:
+            get_bedrock_client.get_bedrock_client(service_name, _BASE_CREDENTIALS)
+
+        config = mock_client.call_args.kwargs["config"]
+        default_config = get_bedrock_client.Config(region_name="us-east-1")
+        assert config.read_timeout == default_config.read_timeout
+        assert config.connect_timeout == default_config.connect_timeout

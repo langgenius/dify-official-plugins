@@ -25,8 +25,9 @@ def _load_yaml(path: Path):
 def test_dated_model_listed_in_position():
     position = _load_yaml(MODELS_DIR / "_position.yaml")
     assert DATED_MODEL in position, f"{DATED_MODEL} missing from _position.yaml"
-    # The preview ID must remain for backward compatibility.
-    assert PREVIEW_MODEL in position, f"{PREVIEW_MODEL} removed from _position.yaml"
+    # The preview was retired on 2026-10-10; keep the stable release available.
+    assert PREVIEW_MODEL not in position
+    assert not (MODELS_DIR / f"{PREVIEW_MODEL}.yaml").exists()
 
 
 def test_dated_model_yaml_exists_with_correct_id():
@@ -37,20 +38,16 @@ def test_dated_model_yaml_exists_with_correct_id():
     assert schema["model_type"] == "llm"
 
 
-def test_dated_model_inherits_flash_capabilities():
+def test_dated_model_retains_flash_capabilities():
     dated = _load_yaml(MODELS_DIR / f"{DATED_MODEL}.yaml")
-    preview = _load_yaml(MODELS_DIR / f"{PREVIEW_MODEL}.yaml")
 
-    assert dated["features"] == preview["features"]
     assert set(dated["features"]) >= {
         "agent-thought",
         "tool-call",
         "multi-tool-call",
         "stream-tool-call",
     }
-    assert dated["model_properties"] == preview["model_properties"]
-    assert dated["parameter_rules"] == preview["parameter_rules"]
-    assert dated["pricing"] == preview["pricing"]
+    assert dated["model_properties"]["context_size"] == 1048576
 
     rule_names = {rule["name"] for rule in dated["parameter_rules"]}
     assert "enable_thinking" in rule_names
