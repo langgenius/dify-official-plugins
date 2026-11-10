@@ -12,7 +12,7 @@ _TYPES = ("text", "number", "choice", "dateTime", "boolean", "personOrGroup", "l
 
 
 class GetListTool(Tool):
-    """A list and its columns, so rows can be written with the right column names (n8n: List > Get)."""
+    """A list and its columns, so rows can be written with the right column names."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:

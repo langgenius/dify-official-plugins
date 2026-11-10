@@ -125,7 +125,7 @@ def test_new_tools_emit_every_declared_output(tool_file, http):
 
 def test_manifest_and_endpoint():
     manifest = yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))
-    assert manifest["version"] == "1.0.1" and manifest["plugins"]["endpoints"] == ["group/google_calendar_signin.yaml"]
+    assert manifest["version"] == "1.0.2" and manifest["plugins"]["endpoints"] == ["group/google_calendar_signin.yaml"]
     group = yaml.safe_load((ROOT / "group" / "google_calendar_signin.yaml").read_text(encoding="utf-8"))
     assert yaml.safe_load((ROOT / group["endpoints"][0]).read_text(encoding="utf-8"))["path"] == "/google_calendar/callback"
     assert "oauth_schema" in PROVIDER and set(PROVIDER["credentials_for_provider"]) == {"auth_mode", "client_id", "client_secret", "redirect_uri"}
