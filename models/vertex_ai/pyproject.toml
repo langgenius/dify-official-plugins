@@ -17,6 +17,8 @@ dependencies = [
     "google-cloud-aiplatform>=2.1.0",
     "pillow>=12.3.0",
     "requests>=2.34.2",
+    # Detects the encoding of non-UTF-8 text documents (e.g. Shift_JIS) sent to Claude.
+    "charset-normalizer>=3.5.1",
     "sentencepiece>=0.2.2",
     "tiktoken>=0.14.0",
     "mistralai[gcp]>=2.9.4",

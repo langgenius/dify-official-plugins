@@ -1,0 +1,117 @@
+identity:
+  name: onedrive_list_folder
+  author: langgenius
+  label:
+    en_US: List Folder
+    zh_Hans: 列出文件夹内容
+    ja_JP: フォルダーの内容を一覧表示
+    pt_BR: Listar Pasta
+description:
+  human:
+    en_US: List the files and folders inside a folder (the root if no folder is given)
+    zh_Hans: 列出文件夹中的文件和子文件夹（不指定则为根目录）
+    ja_JP: フォルダー内のファイルとフォルダーを一覧表示します（指定しない場合はルート）
+    pt_BR: Lista os arquivos e pastas dentro de uma pasta (a raiz se nenhuma for informada)
+  llm: List the files and folders directly inside a OneDrive folder, with their IDs. Leave folder_id empty for the root folder.
+    Use it to browse; use the search tool to find something by name anywhere.
+parameters:
+- name: folder_id
+  type: string
+  required: false
+  label:
+    en_US: Folder ID
+    zh_Hans: 文件夹 ID
+    ja_JP: フォルダー ID
+    pt_BR: ID da Pasta
+  human_description:
+    en_US: ID of the folder to list; empty or 'root' for the root folder
+    zh_Hans: 要列出的文件夹 ID；留空或填 root 表示根目录
+    ja_JP: 一覧表示するフォルダーの ID。空欄または root でルート
+    pt_BR: ID da pasta a listar; vazio ou 'root' para a raiz
+  llm_description: ID of the folder to list (from a previous list or search result). Empty or 'root' for the root folder.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+    pt_BR: Limite
+  human_description:
+    en_US: Maximum number of items to return (1–200, default 50)
+    zh_Hans: 最多返回的条目数（1–200，默认 50）
+    ja_JP: 返す項目の最大数（1～200、既定 50）
+    pt_BR: Número máximo de itens (1–200, padrão 50)
+  llm_description: Maximum number of items to return, 1-200 (default 50).
+  form: llm
+  default: 50
+  min: 1
+  max: 200
+- name: drive_user
+  type: string
+  required: false
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+    pt_BR: Proprietário da Unidade
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+    pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão
+      da credencial.'
+  form: form
+output_schema:
+  type: object
+  properties:
+    items:
+      type: array
+      description: Files and folders in the folder
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Drive item ID
+          name:
+            type: string
+            description: File or folder name
+          is_folder:
+            type: boolean
+            description: True for a folder
+          mime_type:
+            type: string
+            description: MIME type of a file, empty for folders
+          size:
+            type: integer
+            description: Size in bytes
+          web_url:
+            type: string
+            description: Link to open the item in OneDrive
+          download_url:
+            type: string
+            description: Short-lived pre-authenticated download link (files only)
+          path:
+            type: string
+            description: Path of the parent folder
+          last_modified:
+            type: string
+            description: Last modified time (ISO 8601)
+    count:
+      type: integer
+      description: Number of items returned
+    has_more:
+      type: boolean
+      description: True when the folder has more items than the limit
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/onedrive_list_folder.py

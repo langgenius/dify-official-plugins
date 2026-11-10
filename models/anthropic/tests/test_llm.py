@@ -128,6 +128,7 @@ def test_validate_credentials_probes_and_wraps_error() -> None:
         ("CLAUDE-FABLE-5-1", (True, True, False, True, False)),
         ("CLAUDE-MYTHOS-5-latest", (True, True, False, True, False)),
         ("CLAUDE-OPUS-5-latest", (True, False, True, True, True)),
+        ("CLAUDE-OPUS-5-5", (True, True, True, True, True)),
         ("CLAUDE-SONNET-4-6", (False, False, False, False, False)),
         ("not-claude-opus-5-latest", (False, False, False, False, False)),
     ],
@@ -143,8 +144,59 @@ def test_model_classification(model: str, expected: tuple[bool, ...]) -> None:
     ) == expected
 
 
-def test_fable_5_1_cache_read_multiplier() -> None:
+def test_model_cache_read_multipliers() -> None:
     llm = AnthropicLargeLanguageModel()
 
     assert llm._cache_read_multiplier("claude-fable-5-1") == 0.025
     assert llm._cache_read_multiplier("claude-fable-5") == 0.1
+    assert llm._cache_read_multiplier("claude-opus-5-5") == 0.05
+    assert llm._cache_read_multiplier("claude-opus-5") == 0.1
+
+
+def test_credential_kwargs_omit_headers_for_account_level_key() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs({"anthropic_api_key": "sk-test"})
+
+    assert "base_url" not in kwargs
+    assert "default_headers" not in kwargs
+
+
+def test_credential_kwargs_send_workspace_id_header() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_workspace_id": " wrkspc_abc "}
+    )
+
+    assert kwargs["default_headers"] == {"anthropic-workspace-id": "wrkspc_abc"}
+
+
+def test_credential_kwargs_keep_official_base_url_without_user_agent_spoof() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_api_url": "https://api.anthropic.com/"}
+    )
+
+    assert kwargs["base_url"] == "https://api.anthropic.com"
+    assert "default_headers" not in kwargs
+
+
+def test_credential_kwargs_merge_workspace_id_with_proxy_user_agent() -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {
+            "anthropic_api_key": "sk-test",
+            "anthropic_api_url": "https://gateway.example.com/anthropic/",
+            "anthropic_workspace_id": "wrkspc_abc",
+        }
+    )
+
+    assert kwargs["base_url"] == "https://gateway.example.com/anthropic"
+    assert kwargs["default_headers"] == {
+        "User-Agent": "python-httpx",
+        "anthropic-workspace-id": "wrkspc_abc",
+    }
+
+
+@pytest.mark.parametrize("blank", ["", "   ", None])
+def test_credential_kwargs_ignore_blank_workspace_id(blank: str | None) -> None:
+    kwargs = AnthropicLargeLanguageModel()._to_credential_kwargs(
+        {"anthropic_api_key": "sk-test", "anthropic_workspace_id": blank}
+    )
+
+    assert "default_headers" not in kwargs

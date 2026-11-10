@@ -1,25 +1,23 @@
-from typing import Any
+from typing import Any, Generator
 
 from atlassian.jira import Jira
 
+from tools.jira_client import JiraAuthError, auth  # noqa: F401  (auth: kept for existing imports)
 
-def auth(credential: dict[str, Any]) -> Jira:
 
-    url = credential.get("url")
-    token_type = credential.get("token_type", "Bearer")
-    token = credential.get("token")
-
-    header = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": f"{token_type} {token}",
-    }
-
-    jira = Jira(
-        url=url,
-        header=header,
-        cloud=token_type == "Basic",
-        api_version="3" if token_type == "Basic" else "2",
-    )
-
+def connect(tool: Any) -> Generator[Any, None, Jira | None]:
+    """
+    ``jira = yield from connect(self)`` in a tool's _invoke: the client for the tool's credential,
+    or None after yielding the reason (for per-user sign-in, the link the user has to open).
+    """
+    try:
+        jira = auth(tool.runtime.credentials, tool)
+    except JiraAuthError as e:
+        yield tool.create_text_message(str(e))
+        return None
+    if getattr(tool, "_signed_in_as", None):
+        yield tool.create_text_message(
+            f"(Signed in to Atlassian as {tool._signed_in_as}. If this is not the user's account, "
+            "they can ask to sign out and sign in again.)"
+        )
     return jira

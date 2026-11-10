@@ -1,0 +1,44 @@
+model: XingChenAGI/Xing4.0-29B
+label:
+  en_US: XingChenAGI/Xing4.0-29B
+  zh_Hans: XingChenAGI/Xing4.0-29B
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式。
+      en_US: Specifies the format that the model must output.
+    required: false
+    options:
+      - text
+      - json_object
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: true
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+pricing:
+  input: "0"
+  output: "0"
+  unit: "0.000001"
+  currency: RMB

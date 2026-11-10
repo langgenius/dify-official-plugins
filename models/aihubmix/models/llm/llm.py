@@ -20,6 +20,7 @@ from dify_plugin.errors.model import (
 from .anthropic import AnthropicLargeLanguageModel
 from .google import GoogleLargeLanguageModel
 from .openai_response import AihubmixOpenAIResponses
+from .kimi import KimiK31ReasoningMixin
 
 # 如果两个类都继承自同一个基类，可以使用相同的初始化方式
 model_schemas = []  # 或者从某处获取适当的模型模式
@@ -32,8 +33,9 @@ THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "gpt-5.5-pro", "gpt-5.6", "o3-pro")
 
 
-class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
+class AihubmixLargeLanguageModel(KimiK31ReasoningMixin, OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
+        credentials["_kimi_k31"] = model in self._KIMI_K31_MODELS
         api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         credentials["endpoint_url"] = f"{api_url}/v1"
         credentials["mode"] = self.get_model_mode(model).value

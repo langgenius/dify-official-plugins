@@ -39,6 +39,79 @@ parameters:
       zh_Hant: 要返回的最大行事曆數
     llm_description: Maximum number of calendars to return, default is 50
     form: llm
+  - name: calendar_group_id
+    type: string
+    required: false
+    label:
+      en_US: Calendar Group ID
+      ko_KR: 캘린더 그룹 ID
+      zh_Hans: 日历组 ID
+      pt_BR: ID do Grupo de Calendários
+      ja_JP: カレンダー グループ ID
+      zh_Hant: 行事曆群組 ID
+    human_description:
+      en_US: 'Optional: only the calendars in this group (from List Calendar Groups), e.g. the calendars shared with you'
+      ko_KR: '선택: 이 그룹의 캘린더만 (캘린더 그룹 목록에서 가져옴). 예: 나와 공유된 캘린더'
+      zh_Hans: 可选：仅此日历组中的日历（来自“列出日历组”），例如他人共享给您的日历
+      pt_BR: 'Opcional: somente os calendários deste grupo (de Listar Grupos de Calendários), ex. os compartilhados com você'
+      ja_JP: '任意: このグループのカレンダーのみ（カレンダー グループ一覧から取得）。例: 共有されたカレンダー'
+      zh_Hant: 選填：僅此行事曆群組中的行事曆（來自「列出行事曆群組」），例如他人共用給您的行事曆
+    llm_description: Optional ID of a calendar group from List Calendar Groups; restricts the result to that group's calendars (for example the 'People's calendars' group that holds calendars shared with the user).
+    form: llm
+  - name: mailbox
+    type: string
+    required: false
+    label:
+      en_US: Mailbox
+      ko_KR: 사서함
+      zh_Hans: 邮箱
+      pt_BR: Caixa de Correio
+      ja_JP: メールボックス
+      zh_Hant: 信箱
+    human_description:
+      en_US: "Service Principal only: the mailbox to act on (user principal name or user ID). Leave empty to use the credential's default mailbox."
+      ko_KR: "서비스 주체 전용: 작업할 사서함(사용자 계정 이름 또는 사용자 ID). 비워 두면 자격 증명의 기본 사서함을 사용합니다."
+      zh_Hans: "仅限 Service Principal：要操作的邮箱（用户主体名称或用户 ID）。留空则使用凭据中的默认邮箱。"
+      pt_BR: "Somente Service Principal: a caixa de correio em que atuar (nome principal do usuário ou ID do usuário). Deixe vazio para usar a caixa padrão da credencial."
+      ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
+      zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
+    form: form
+output_schema:
+  type: object
+  properties:
+    calendars:
+      type: array
+      description: Calendars
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Calendar ID
+          name:
+            type: string
+            description: Name
+          owner_name:
+            type: string
+            description: Owner name
+          owner_address:
+            type: string
+            description: Owner email
+          can_edit:
+            type: boolean
+            description: The user can edit it
+          is_default:
+            type: boolean
+            description: Default calendar
+    count:
+      type: integer
+      description: Number of items returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/list_calendars.py

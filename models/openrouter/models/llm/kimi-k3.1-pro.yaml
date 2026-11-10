@@ -1,0 +1,58 @@
+# https://openrouter.ai/api/v1/models
+model: moonshotai/kimi-k3.1-pro
+label:
+  zh_Hans: kimi-k3.1-pro
+  en_US: kimi-k3.1-pro
+model_type: llm
+features:
+  - vision
+  - video
+  - structured-output
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 943718
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 控制 OpenRouter 推理强度。
+      en_US: Controls reasoning effort through OpenRouter.
+    required: false
+    default: max
+    options:
+      - low
+      - high
+      - max
+      - none
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '2'
+  output: '10'
+  unit: '0.000001'
+  currency: USD

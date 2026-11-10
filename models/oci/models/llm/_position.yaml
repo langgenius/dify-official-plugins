@@ -1,8 +1,8 @@
-- xai.grok-4
-- xai.grok-3
-- xai.grok-3-mini
-- xai.grok-3-fast
-- xai.grok-3-mini-fast
+- xai.grok-4.7
+- xai.grok-4.6
+- xai.grok-4.3
+- xai.grok-4.20-reasoning
+- xai.grok-4.20-non-reasoning
 
 - google.gemini-2.5-pro
 - google.gemini-2.5-flash
@@ -12,12 +12,20 @@
 - openai.gpt-oss-20b
 
 - cohere.command-a-03-2025
-- cohere.command-r-plus-08-2024
-- cohere.command-r-08-2024
+- cohere.command-a-vision
 
 - meta.llama-4-maverick-17b-128e-instruct-fp8
 - meta.llama-4-scout-17b-16e-instruct
-- meta.llama-3.1-405b-instruct
-- meta.llama-3.2-90b-vision-instruct
 - meta.llama-3.3-70b-instruct
 
+# Retired on-demand by OCI (flagged deprecated: true in their model yamls; kept so
+# existing app configurations still resolve).
+- xai.grok-4
+- xai.grok-3
+- xai.grok-3-mini
+- xai.grok-3-fast
+- xai.grok-3-mini-fast
+- cohere.command-r-plus-08-2024
+- cohere.command-r-08-2024
+- meta.llama-3.1-405b-instruct
+- meta.llama-3.2-90b-vision-instruct

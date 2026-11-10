@@ -1,0 +1,56 @@
+identity:
+  name: google_sheets_add_sheet
+  author: langgenius
+  label:
+    en_US: Add Sheet
+    zh_Hans: 添加工作表
+    ja_JP: シートを追加
+description:
+  human:
+    en_US: Add a sheet (tab)
+    zh_Hans: 添加一个工作表
+    ja_JP: シート（タブ）を追加
+  llm: Add a sheet (tab) to a spreadsheet.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: Sheet name
+    zh_Hans: 工作表名称
+    ja_JP: シート名
+  llm_description: The new sheet's name.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    sheet_id:
+      type: integer
+    title:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_add_sheet.py

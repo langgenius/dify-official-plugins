@@ -1,0 +1,84 @@
+identity:
+  name: google_calendar_delete_event
+  author: langgenius
+  label:
+    en_US: Delete Event
+    zh_Hans: 删除事件
+    ja_JP: イベントを削除
+description:
+  human:
+    en_US: Delete an event
+    zh_Hans: 删除事件
+    ja_JP: イベントを削除
+  llm: Delete a Google Calendar event. Only when the user clearly asks for it.
+parameters:
+- name: event_id
+  type: string
+  required: true
+  label:
+    en_US: Event ID
+    zh_Hans: 事件 ID
+    ja_JP: イベント ID
+  human_description:
+    en_US: From list or search events
+    zh_Hans: 可从列出或搜索事件获取
+    ja_JP: イベント一覧・検索から
+  llm_description: The event ID, from list_events or search_events.
+  form: llm
+- name: calendar_id
+  type: string
+  required: false
+  label:
+    en_US: Calendar ID
+    zh_Hans: 日历 ID
+    ja_JP: カレンダー ID
+  human_description:
+    en_US: 'Default: primary'
+    zh_Hans: 默认：primary（主日历）
+    ja_JP: '既定: primary'
+  llm_description: Calendar ID from list_calendars; default primary.
+  form: llm
+- name: send_updates
+  type: select
+  required: false
+  label:
+    en_US: Notify Guests
+    zh_Hans: 通知参与者
+    ja_JP: ゲストに通知
+  human_description:
+    en_US: Who gets an update email
+    zh_Hans: 向谁发送更新邮件
+    ja_JP: 更新メールの送信先
+  llm_description: all (default), externalOnly or none.
+  form: llm
+  default: all
+  options:
+  - value: all
+    label:
+      en_US: All guests
+      zh_Hans: 所有参与者
+      ja_JP: 全員
+  - value: externalOnly
+    label:
+      en_US: External guests only
+      zh_Hans: 仅外部参与者
+      ja_JP: 外部のみ
+  - value: none
+    label:
+      en_US: Nobody
+      zh_Hans: 不通知
+      ja_JP: 通知しない
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_calendar_delete_event.py

@@ -197,15 +197,17 @@ def test_exhausted_no_results_error_explains_the_likely_block(clock, no_throttle
         ddgs_utils.search_with_retry("text", "dify")
 
     message = str(excinfo.value)
-    assert "'dify'" in message
-    assert "2 attempts" in message
+    assert "dify" in message
+    assert "Attempts: 2" in message
     # The helper cannot tell a block from a genuinely empty result set, so the message has
     # to name the likely cause without asserting it, and point at the workarounds.
-    assert "usually" in message
-    assert "no matches" in message
+    assert "may be limiting" in message
+    assert "no result for this query" in message
     assert "proxy_server" in message
-    assert "backend" in message
+    assert "Search engines" in message
     assert excinfo.value.__cause__ is last
+    # The plain-language report a workflow user sees is carried on the exception.
+    assert excinfo.value.user_text.startswith("Search did not return results for query: dify")
 
 
 def test_other_errors_keep_the_upstream_text(clock, no_throttle, monkeypatch):
@@ -283,7 +285,7 @@ def test_parallel_searches_are_spaced_one_slot_apart(clock, monkeypatch):
     _run_concurrently(5)
 
     # First caller starts immediately (no sleep), the rest queue up behind it.
-    assert sorted(clock.sleeps) == [2.0, 4.0, 6.0, 8.0]
+    assert sorted(clock.sleeps) == [1.0, 2.0, 3.0, 4.0]
     assert ddgs_utils._next_slot_at == 5 * ddgs_utils.MIN_INTERVAL_SECONDS
 
 
@@ -294,7 +296,7 @@ def test_looping_over_parallel_searches_keeps_slots_monotonic(clock, monkeypatch
     for round_index in range(3):
         _run_concurrently(5, query_prefix=f"r{round_index}q")
 
-    assert sorted(clock.sleeps) == [2.0 * i for i in range(1, 15)]
+    assert sorted(clock.sleeps) == [1.0 * i for i in range(1, 15)]
     assert ddgs_utils._next_slot_at == 15 * ddgs_utils.MIN_INTERVAL_SECONDS
 
 

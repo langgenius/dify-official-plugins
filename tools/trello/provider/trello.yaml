@@ -1,36 +1,146 @@
 credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: token
+    label:
+      en_US: Mode
+      pt_BR: Modo
+      zh_Hans: 模式
+      ja_JP: モード
+    options:
+    - value: token
+      label:
+        en_US: API key + token
+        pt_BR: Chave de API + token
+        zh_Hans: API key + token
+        ja_JP: API キー + トークン
+    - value: per_user
+      label:
+        en_US: Each user signs in (own Trello account, for chat agents)
+        pt_BR: Cada usuário entra (conta Trello própria, para agentes de chat)
+        zh_Hans: 每个用户自己登录（各自的 Trello 账号，适用于对话 Agent）
+        ja_JP: ユーザーごとにサインイン（本人の Trello アカウント、チャット エージェント向け）
+    help:
+      en_US: 'API key + token: everybody uses the token''s account. Each user signs in: the first time a chat user needs Trello,
+        the tool returns a Trello sign-in link; after they click Allow, the tools act as that user. Needs the API secret,
+        the Sign-in Callback URL below, and the callback''s origin in the API key''s Allowed Origins.'
+      pt_BR: 'Chave + token: todos usam a conta do token. Cada usuário entra: na primeira vez, a ferramenta devolve um link
+        de login do Trello; depois de Permitir, as ferramentas agem como esse usuário.'
+      zh_Hans: API key + token：所有人共用该 token 的账号。每个用户自己登录：聊天用户第一次用到 Trello 时，工具会返回 Trello 登录链接；点击“允许”后，工具以该用户的身份操作。需要 API secret、下方的登录回调
+        URL，并把回调地址的源加入 API key 的 Allowed Origins。
+      ja_JP: 'API キー + トークン: 全員がトークンのアカウントを使います。ユーザーごとにサインイン: チャットのユーザーが初めて Trello を使うとき、ツールが Trello のサインイン リンクを返し、「許可」の後はそのユーザー本人として操作します。API
+        シークレット、下のサインイン コールバック URL、API キーの Allowed Origins へのコールバックのオリジンの追加が必要です。'
   trello_api_key:
     help:
-      en_US: Obtain your API key from Trello's website.
-      pt_BR: Obtenha sua chave API no site do Trello.
-      zh_Hans: 从 Trello 网站获取您的 API key。
+      en_US: From the Trello Power-Up admin portal (trello.com/power-ups/admin) > your integration > API key.
+      pt_BR: Do portal de administração de Power-Ups do Trello (trello.com/power-ups/admin) > sua integração > chave de API.
+      zh_Hans: 在 Trello Power-Up 管理页（trello.com/power-ups/admin）> 你的集成 > API key 中获取。
+      ja_JP: Trello の Power-Up 管理ポータル（trello.com/power-ups/admin）> インテグレーション > API キー。
     label:
       en_US: Trello API key
       pt_BR: Trello API key
       zh_Hans: Trello API key
+      ja_JP: Trello API キー
     placeholder:
       en_US: Enter your Trello API key
       pt_BR: Insira sua chave API do Trello
       zh_Hans: 输入您的 Trello API key
     required: true
     type: secret-input
-    url: https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/
+    url: https://trello.com/power-ups/admin
   trello_api_token:
     help:
-      en_US: Secure your API token from Trello's website.
-      pt_BR: Garanta seu token API no site do Trello.
-      zh_Hans: 从 Trello 网站获取您的 API token。
+      en_US: 'API key + token mode: the token everybody uses. Leave empty for Each user signs in.'
+      pt_BR: 'Modo chave + token: o token que todos usam. Deixe vazio para cada usuário entrar.'
+      zh_Hans: API key + token 模式：所有人共用的 token。“每个用户自己登录”模式请留空。
+      ja_JP: 'API キー + トークン モード: 全員が使うトークン。ユーザーごとのサインインでは空欄にします。'
     label:
       en_US: Trello API token
       pt_BR: Trello API token
       zh_Hans: Trello API token
+      ja_JP: Trello API トークン
     placeholder:
       en_US: Enter your Trello API token
       pt_BR: Insira seu token API do Trello
       zh_Hans: 输入您的 Trello API token
-    required: true
+    required: false
     type: secret-input
     url: https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/
+  trello_api_secret:
+    type: secret-input
+    required: false
+    label:
+      en_US: API Secret
+      pt_BR: Segredo da API
+      zh_Hans: API Secret
+      ja_JP: API シークレット
+    placeholder:
+      en_US: Only for "Each user signs in"
+      pt_BR: Somente para "cada usuário entra"
+      zh_Hans: 仅用于“每个用户自己登录”
+      ja_JP: ユーザーごとのサインインのみ
+    help:
+      en_US: The Secret next to the API key. Only used to encrypt the stored per-user tokens; changing it signs everybody
+        out.
+      pt_BR: O segredo ao lado da chave de API. Usado só para criptografar os tokens guardados; trocá-lo desconecta todos.
+      zh_Hans: API key 旁边的 Secret。只用来加密保存的每个用户的 token；更换后所有用户都需要重新登录。
+      ja_JP: API キーの横にある Secret。保存するユーザーごとのトークンの暗号化にだけ使います。変更すると全員がサインアウトされます。
+    url: https://trello.com/power-ups/admin
+  redirect_uri:
+    type: text-input
+    required: false
+    label:
+      en_US: Sign-in Callback URL
+      pt_BR: URL de retorno do login
+      zh_Hans: 登录回调 URL
+      ja_JP: サインイン コールバック URL
+    placeholder:
+      en_US: Only for "Each user signs in", e.g. https://dify.example.com/e/xxxx/trello/callback
+      pt_BR: Somente para "cada usuário entra", ex. https://dify.example.com/e/xxxx/trello/callback
+      zh_Hans: 仅用于“每个用户自己登录”，例如 https://dify.example.com/e/xxxx/trello/callback
+      ja_JP: 'ユーザーごとのサインインのみ。例: https://dify.example.com/e/xxxx/trello/callback'
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints) and paste its /trello/callback URL. Add its origin
+        (e.g. https://dify.example.com) to the API key's Allowed Origins in the Power-Up admin portal.
+      pt_BR: Crie o endpoint do plugin e cole a URL /trello/callback. Adicione a origem às Allowed Origins da chave de API.
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /trello/callback URL 粘贴到这里，并把它的源（如 https://dify.example.com）加入 Power-Up 管理页中 API key
+        的 Allowed Origins。
+      ja_JP: 'このプラグインのエンドポイントを作成し、その /trello/callback の URL を貼り付けます。オリジン（例: https://dify.example.com）を Power-Up 管理ポータルの API
+        キーの Allowed Origins に追加してください。'
+  token_expiration:
+    type: select
+    required: false
+    default: 30days
+    label:
+      en_US: Sign-in Lasts
+      pt_BR: Duração do login
+      zh_Hans: 登录有效期
+      ja_JP: サインインの有効期間
+    options:
+    - value: 1day
+      label:
+        en_US: 1 day
+        pt_BR: 1 dia
+        zh_Hans: 1 天
+        ja_JP: 1 日
+    - value: 30days
+      label:
+        en_US: 30 days
+        pt_BR: 30 dias
+        zh_Hans: 30 天
+        ja_JP: 30 日
+    - value: never
+      label:
+        en_US: Until revoked
+        pt_BR: Até ser revogado
+        zh_Hans: 直到撤销
+        ja_JP: 取り消すまで
+    help:
+      en_US: 'Only for "Each user signs in": how long a user''s Trello sign-in stays valid before they are asked again.'
+      pt_BR: 'Somente para "cada usuário entra": por quanto tempo o login vale.'
+      zh_Hans: 仅用于“每个用户自己登录”：用户的 Trello 登录多久后需要重新登录。
+      ja_JP: 'ユーザーごとのサインインのみ: Trello のサインインが有効な期間。'
 extra:
   python:
     source: provider/trello.py
@@ -40,11 +150,13 @@ identity:
     en_US: 'Trello: A visual tool for organizing your work and life.'
     pt_BR: 'Trello: Uma ferramenta visual para organizar seu trabalho e vida.'
     zh_Hans: 'Trello: 一个用于组织工作和生活的视觉工具。'
+    ja_JP: 'Trello: 仕事と生活を整理するビジュアル ツール。'
   icon: icon.svg
   label:
     en_US: Trello
     pt_BR: Trello
     zh_Hans: Trello
+    ja_JP: Trello
   name: trello
   tags:
   - productivity
@@ -62,3 +174,33 @@ tools:
 - tools/delete_card.yaml
 - tools/fetch_all_boards.yaml
 - tools/get_board_actions.yaml
+- tools/trello_get_card.yaml
+- tools/trello_search.yaml
+- tools/trello_list_comments.yaml
+- tools/trello_add_comment.yaml
+- tools/trello_update_comment.yaml
+- tools/trello_delete_comment.yaml
+- tools/trello_list_checklists.yaml
+- tools/trello_create_checklist.yaml
+- tools/trello_delete_checklist.yaml
+- tools/trello_add_checklist_item.yaml
+- tools/trello_update_checklist_item.yaml
+- tools/trello_delete_checklist_item.yaml
+- tools/trello_list_labels.yaml
+- tools/trello_create_label.yaml
+- tools/trello_update_label.yaml
+- tools/trello_delete_label.yaml
+- tools/trello_add_card_label.yaml
+- tools/trello_remove_card_label.yaml
+- tools/trello_update_list.yaml
+- tools/trello_get_list_cards.yaml
+- tools/trello_list_board_members.yaml
+- tools/trello_add_board_member.yaml
+- tools/trello_invite_board_member.yaml
+- tools/trello_remove_board_member.yaml
+- tools/trello_list_workspaces.yaml
+- tools/trello_list_attachments.yaml
+- tools/trello_add_attachment.yaml
+- tools/trello_get_attachment.yaml
+- tools/trello_delete_attachment.yaml
+- tools/trello_sign_out.yaml

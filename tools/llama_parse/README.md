@@ -39,6 +39,11 @@ An advanced version with enhanced features:
 
 ## Getting Started
 
+The LlamaIndex dependency uses NLTK 3.10.4 for local text processing.
+If local tokenization needs `stopwords` or `punkt_tab`, keep the corpora in a private directory configured through `NLTK_DATA`.
+For installations behind an outbound proxy, preload the corpora there, or set `NLTK_ALLOW_PROXIED_URLOPEN=1` only when the proxy is trusted to prevent SSRF.
+See the [NLTK security changes](https://github.com/nltk/nltk/releases/tag/v3.10.4) for the resource and download requirements.
+
 ### API Key Setup
 
 1. Visit [https://cloud.llamaindex.ai/api-key](https://cloud.llamaindex.ai/api-key) to create an account

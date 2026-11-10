@@ -14,6 +14,8 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from models.llm import llm_anthropic, llm_responses
 from models.llm.llm import OpenCodeGoLargeLanguageModel, apply_model_parameter_constraints
 from models.llm.session_headers import (
+    ANTHROPIC_MODELS,
+    RESPONSES_MODELS,
     public_headers_for_protocol,
     resolve_protocol,
 )
@@ -21,20 +23,40 @@ from models.llm.session_headers import (
 
 def test_resolve_protocol_defaults_and_whitelists() -> None:
     assert resolve_protocol("glm-5.3-flash", {}) == "chat"
+    # Legacy/custom ids keep their routes even after delisting from Go catalog.
     assert resolve_protocol("union-alpha", {}) == "anthropic"
     assert resolve_protocol("minimax-m2.7", {}) == "anthropic"
     assert resolve_protocol("minimax-m3", {}) == "chat"
-    assert resolve_protocol("minimax-m2.5", {}) == "chat"
+    assert resolve_protocol("grok-4.7", {}) == "responses"
     assert resolve_protocol("grok-4.6", {}) == "responses"
+    assert resolve_protocol("gpt-6-luna", {}) == "responses"
     assert resolve_protocol("gpt-5.6-luna", {}) == "responses"
+    assert resolve_protocol("mimo-v2.6-flash", {}) == "chat"
+    assert resolve_protocol("mimo-v2.6-pro", {}) == "chat"
+    assert resolve_protocol("space-bunny", {}) == "chat"
     assert resolve_protocol("muse-spark-1.3-contributor", {}) == "responses"
     # explicit credential wins
     assert resolve_protocol("union-alpha", {"api_protocol": "chat"}) == "chat"
     assert resolve_protocol("glm-5.3-flash", {"api_protocol": "anthropic"}) == "anthropic"
 
 
+def test_resolve_protocol_0_5_0_new_models() -> None:
+    # claude-haiku-5-5 rides the Anthropic Messages route via ANTHROPIC_MODELS.
+    assert "claude-haiku-5-5" in ANTHROPIC_MODELS
+    assert resolve_protocol("claude-haiku-5-5", {}) == "anthropic"
+    # explicit api_protocol credential still wins over the whitelist
+    assert resolve_protocol("claude-haiku-5-5", {"api_protocol": "chat"}) == "chat"
+    # longcat-2.5-preview-free is plain OAICompat chat, like longcat-2.0
+    assert "longcat-2.5-preview-free" not in ANTHROPIC_MODELS
+    assert "longcat-2.5-preview-free" not in RESPONSES_MODELS
+    assert resolve_protocol("longcat-2.5-preview-free", {}) == "chat"
+    assert resolve_protocol("longcat-2.0", {}) == "chat"
+    # renamed model keeps the plain chat route
+    assert resolve_protocol("space-bunny", {}) == "chat"
+
+
 def test_public_headers_anthropic_drops_bearer() -> None:
-    shared = {"User-Agent": "dify-opencode-go-plugin/0.2.0", "x-opencode-session": "s1"}
+    shared = {"User-Agent": "dify-opencode-go-plugin/0.3.0", "x-opencode-session": "s1"}
     headers = public_headers_for_protocol(shared, "sk-x", "anthropic")
     assert headers["x-api-key"] == "sk-x"
     assert headers["anthropic-version"] == "2023-06-01"
@@ -44,7 +66,7 @@ def test_public_headers_anthropic_drops_bearer() -> None:
 
 def test_public_headers_responses_uses_bearer() -> None:
     shared = {
-        "User-Agent": "dify-opencode-go-plugin/0.2.0",
+        "User-Agent": "dify-opencode-go-plugin/0.3.0",
         "x-opencode-session": "s1",
         "x-api-key": "should-be-removed",
         "anthropic-version": "should-be-removed",

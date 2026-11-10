@@ -7,7 +7,6 @@ features:
   - tool-call
   - multi-tool-call
   - stream-tool-call
-  - audio
 model_properties:
   mode: chat
   context_size: 128000
