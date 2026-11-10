@@ -1,0 +1,55 @@
+model: deepseek-v4-1-flash-economy-261017
+label:
+  en_US: deepseek-v4-1-flash-economy-261017
+  zh_Hans: deepseek-v4-1-flash-economy-261017
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - video
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - none
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制思维链长度，平衡效果、时延与成本。none 关闭思考直接回答；low 轻量思考侧重快速响应；high 深度分析处理复杂问题；max 最高程度思考适配高难度推理任务。
+      en_US: Controls chain-of-thought length to balance quality, latency, and cost. none answers directly without thinking; low favors fast response; high enables deep analysis; max maximizes reasoning for hardest tasks.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: max_tokens
+    use_template: max_tokens
+    max: 393216
+    default: 131072
+pricing:
+  input: "1.6"
+  output: "6.4"
+  unit: "0.000001"
+  currency: RMB

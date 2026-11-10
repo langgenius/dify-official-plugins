@@ -151,13 +151,20 @@ def test_service_principal_validation_errors(monkeypatch, status, match):
 
 def test_provider_yaml():
     data = yaml.safe_load((PLUGIN_ROOT / "provider" / "onedrive.yaml").read_text(encoding="utf-8"))
-    assert set(data["credentials_for_provider"]) == {"tenant_id", "client_id", "client_secret", "drive_user", "cloud"}
+    assert set(data["credentials_for_provider"]) == {
+        "auth_mode", "tenant_id", "client_id", "client_secret", "drive_user", "redirect_uri", "cloud"
+    }
+    assert data["credentials_for_provider"]["auth_mode"]["default"] == "service_principal"
+    # Optional, so that Each user signs in can be saved without one; Service Principal still needs it at run time.
+    assert data["credentials_for_provider"]["drive_user"]["required"] is False
     client = {f["name"]: f for f in data["oauth_schema"]["client_schema"]}
     assert {"client_id", "client_secret", "tenant_id", "cloud"} <= set(client)
     assert client["tenant_id"]["default"] == "common"
     for field in data["oauth_schema"]["client_schema"]:
         assert "zh_CN" not in field["label"] and "en_US" in field["label"], field["name"]
     for tool in data["tools"]:
+        if tool == "tools/onedrive_sign_out.yaml":
+            continue
         spec = yaml.safe_load((PLUGIN_ROOT / tool).read_text(encoding="utf-8"))
         owner = [p for p in spec["parameters"] if p["name"] == "drive_user"]
         assert len(owner) == 1 and owner[0]["form"] == "form", tool
@@ -256,3 +263,60 @@ def test_search_403_with_service_principal_names_sites_read_all(monkeypatch):
     monkeypatch.setattr(graph_client.requests, "request", fake)
     out = run(SearchFileTool, {"query": "x"}, dict(SP))
     assert "Sites.Read.All" in out[0][1]
+
+
+# ── Each user signs in ────────────────────────────────────────────────
+
+PER_USER = dict(
+    SP, auth_mode="per_user", drive_user="", redirect_uri="https://dify.example.com/e/hook/onedrive/callback"
+)
+
+
+def test_per_user_is_not_a_service_principal():
+    assert graph_client.is_per_user(PER_USER) and not graph_client.is_service_principal(PER_USER)
+    # Service Principal credentials saved before the mode existed have no auth_mode.
+    assert graph_client.is_service_principal(SP) and not graph_client.is_per_user(SP)
+
+
+def test_per_user_validation_checks_the_app_secret(monkeypatch):
+    graph_client._token_cache.clear()
+    calls = []
+
+    def fake_post(url, data=None, timeout=None):
+        calls.append(data)
+        return FakeResponse({"access_token": "app", "expires_in": 3599})
+
+    monkeypatch.setattr(graph_client.requests, "post", fake_post)
+    # No drive is opened: there is no user to act as yet.
+    monkeypatch.setattr(onedrive_module.requests, "get", lambda *a, **k: pytest.fail("no Graph call expected"))
+    OneDriveProvider()._validate_credentials(dict(PER_USER))
+    assert calls[0]["grant_type"] == "client_credentials"
+
+
+def test_per_user_validation_skips_the_secret_check_for_multi_tenant_apps(monkeypatch):
+    monkeypatch.setattr(graph_client.requests, "post", lambda *a, **k: pytest.fail("no token request expected"))
+    OneDriveProvider()._validate_credentials(dict(PER_USER, tenant_id="organizations"))
+
+
+@pytest.mark.parametrize(
+    "redirect_uri, message",
+    [
+        ("", "Callback URL"),
+        ("dify.example.com/onedrive/callback", "Callback URL"),
+        ("https://dify.example.com/e/hook/teams/callback", "/onedrive/callback"),
+        ("http://localhost/e/hook/onedrive/callback", "localhost"),
+    ],
+)
+def test_per_user_validation_checks_the_callback_url(redirect_uri, message):
+    with pytest.raises(ToolProviderCredentialValidationError, match=message):
+        OneDriveProvider()._validate_credentials(dict(PER_USER, redirect_uri=redirect_uri))
+
+
+def test_per_user_scope_covers_the_oauth_permissions():
+    from tools.user_auth import DELEGATED_SCOPE
+
+    assert set(OneDriveProvider._scope) <= set(DELEGATED_SCOPE.split())
+    manifest = yaml.safe_load((PLUGIN_ROOT / "manifest.yaml").read_text(encoding="utf-8"))
+    assert manifest["plugins"]["endpoints"] == ["group/onedrive_signin.yaml"]
+    endpoint = yaml.safe_load((PLUGIN_ROOT / "endpoints" / "signin_callback.yaml").read_text(encoding="utf-8"))
+    assert endpoint["path"] == "/onedrive/callback"

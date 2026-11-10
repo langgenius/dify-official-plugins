@@ -9,7 +9,9 @@ class CreateDocumentTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         title = tool_parameters.get("title")
         content = tool_parameters.get("content")
         folder_token = tool_parameters.get("folder_token")

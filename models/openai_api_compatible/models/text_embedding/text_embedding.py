@@ -48,6 +48,32 @@ def _get_encoding_format(credentials: Mapping[str, Any]) -> Literal["float"] | N
         return encoding_format
     return None
 
+# Internal marker tagging an input element as an image, set by _invoke_multimodal()
+# and stripped by the request builders.
+IMAGE_MARKER = "Image:"
+
+def _accumulate_usage(result: Mapping[str, Any], totals: dict) -> None:
+    """Fold the usage block of one embeddings response into the running totals."""
+    usage = result.get("usage") or {}
+    totals["used_tokens"] += usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+    totals["total_price"] += usage.get("total_price", 0.0)
+    for key in ("unit_price", "price_unit", "currency"):
+        if key in usage:
+            totals[key] = usage[key]
+
+def _get_multimodal_format(credentials: Mapping[str, Any]) -> Literal["chat_embeddings", "input_array"]:
+    """
+    Wire format used to send images.
+
+    "chat_embeddings": vLLM chat embeddings extension, i.e. {"messages": [...]}.
+    "input_array": standard OpenAI {"input": [...]} payload carrying the image as a
+    data URI element, which is what Gemini embedding endpoints and OpenAI-compatible
+    gateways such as LiteLLM accept.
+    """
+    if credentials.get("multimodal_embedding_format") == "input_array":
+        return "input_array"
+    return "chat_embeddings"
+
 def create_chat_embeddings(
     client: OpenAI,
     *,
@@ -156,11 +182,13 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
         max_chunks = self._get_max_chunks(model, credentials)
 
-        used_tokens = 0
-        total_price = 0.0
-        unit_price = 0.0
-        price_unit = 0.0
-        currency = "USD"
+        totals = {
+            "used_tokens": 0,
+            "total_price": 0.0,
+            "unit_price": 0.0,
+            "price_unit": 0.0,
+            "currency": "USD",
+        }
 
         try:
             # Split inputs into text-only and multimodal, keeping original indices
@@ -183,78 +211,48 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
             # Standard path for text-only inputs: batched {"input": [...]} format
             if text_inputs:
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}" if api_key else "",
-                }
                 text_embeddings = []
-
-                encoding_format = _get_encoding_format(credentials)
 
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
-
-                    payload: dict[str, Any] = {
-                        "model": endpoint_model_name,
-                        "input": batch,
-                    }
-
-                    if encoding_format:
-                        payload["encoding_format"] = encoding_format
 
                     logger.info(
                         f"Embedding API Request to {endpoint_url}/embeddings "
                         f"(batch {i // max_chunks + 1}/{(len(text_inputs) + max_chunks - 1) // max_chunks})"
                     )
 
-                    response = requests.post(
-                        f"{endpoint_url}/embeddings",
-                        headers=headers,
-                        json=payload,
-                        timeout=60,
+                    result = self._post_embeddings(
+                        credentials, batch, endpoint_url, api_key, endpoint_model_name
                     )
-
-                    if response.status_code != 200:
-                        logger.error(
-                            f"Embedding API Error {response.status_code}: {response.text[:1000]}"
-                        )
-
-                    response.raise_for_status()
-
-                    result = response.json()
 
                     for data in result["data"]:
                         text_embeddings.append(data["embedding"])
 
-                    usage = result.get("usage") or {}
-                    tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
-                    used_tokens += tokens
-                    total_price += usage.get("total_price", 0.0)
-                    if "unit_price" in usage:
-                        unit_price = usage.get("unit_price", 0.0)
-                    if "price_unit" in usage:
-                        price_unit = usage.get("price_unit", 0.0)
-                    if "currency" in usage:
-                        currency = usage.get("currency", "USD")
+                    _accumulate_usage(result, totals)
 
                 for i, idx in enumerate(text_indices):
                     all_embeddings[idx] = text_embeddings[i]
 
-            # Multimodal path: sequential vLLM chat embeddings API
+            # Multimodal path: sequential vLLM chat embeddings API, or the standard
+            # {"input": [...]} payload for providers that take image data URIs there
             if multimodal_inputs:
+                if _get_multimodal_format(credentials) == "input_array":
+                    embed_multimodal = self._embed_multimodal_via_input_array
+                else:
+                    embed_multimodal = self._embed_multimodal_via_chat
                 mm_embeddings, mm_tokens, mm_price, mm_unit_price, mm_price_unit, mm_currency = (
-                    self._embed_multimodal_via_chat(
+                    embed_multimodal(
                         model, credentials, multimodal_inputs, endpoint_url, api_key, max_chunks
                     )
                 )
-                used_tokens += mm_tokens
-                total_price += mm_price
+                totals["used_tokens"] += mm_tokens
+                totals["total_price"] += mm_price
                 if mm_unit_price:
-                    unit_price = mm_unit_price
+                    totals["unit_price"] = mm_unit_price
                 if mm_price_unit:
-                    price_unit = mm_price_unit
+                    totals["price_unit"] = mm_price_unit
                 if mm_currency != "USD":
-                    currency = mm_currency
+                    totals["currency"] = mm_currency
 
                 for i, idx in enumerate(multimodal_indices):
                     all_embeddings[idx] = mm_embeddings[i]
@@ -263,12 +261,12 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 embeddings=all_embeddings,
                 model=model,
                 usage=EmbeddingUsage(
-                    tokens=used_tokens,
-                    total_tokens=used_tokens,
-                    unit_price=unit_price,
-                    price_unit=price_unit,
-                    total_price=total_price,
-                    currency=currency,
+                    tokens=totals["used_tokens"],
+                    total_tokens=totals["used_tokens"],
+                    unit_price=totals["unit_price"],
+                    price_unit=totals["price_unit"],
+                    total_price=totals["total_price"],
+                    currency=totals["currency"],
                     latency=0.0,
                 ),
             )
@@ -277,6 +275,102 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             raise InvokeServerUnavailableError(str(ex))
         except Exception as ex:
             raise InvokeError(str(ex))
+
+    def _post_embeddings(
+        self,
+        credentials: dict,
+        batch: list[str],
+        endpoint_url: str,
+        api_key: str,
+        endpoint_model_name: str,
+    ) -> dict:
+        """Send one standard {"input": [...]} embeddings request and return its body."""
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}" if api_key else "",
+        }
+
+        payload: dict[str, Any] = {
+            "model": endpoint_model_name,
+            "input": batch,
+        }
+
+        encoding_format = _get_encoding_format(credentials)
+        if encoding_format:
+            payload["encoding_format"] = encoding_format
+
+        response = requests.post(
+            f"{endpoint_url}/embeddings",
+            headers=headers,
+            json=payload,
+            timeout=60,
+        )
+
+        if response.status_code != 200:
+            logger.error(
+                f"Embedding API Error {response.status_code}: {response.text[:1000]}"
+            )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    def _embed_multimodal_via_input_array(
+        self,
+        model: str,
+        credentials: dict,
+        inputs: list[str],
+        endpoint_url: str,
+        api_key: str,
+        max_chunks: int,
+    ) -> tuple:
+        """
+        Embed inputs containing multimodal content with the standard OpenAI
+        {"input": [...]} payload, passing the image as a data URI element.
+        Each input is sent on its own request: providers that accept images this way
+        may fuse several input elements into a single embedding, which would break the
+        1:1 mapping the caller relies on. max_chunks is accepted to keep the signature
+        interchangeable with _embed_multimodal_via_chat.
+        Returns (embeddings, used_tokens, total_price, unit_price, price_unit, currency).
+        """
+        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
+
+        batched_embeddings = []
+        totals = {
+            "used_tokens": 0,
+            "total_price": 0.0,
+            "unit_price": 0.0,
+            "price_unit": 0.0,
+            "currency": "USD",
+        }
+
+        for prompt in inputs:
+            result = self._post_embeddings(
+                credentials,
+                [prompt.removeprefix(IMAGE_MARKER)],
+                endpoint_url,
+                api_key,
+                endpoint_model_name,
+            )
+
+            data = result.get("data") or []
+            if len(data) != 1:
+                raise InvokeError(
+                    f"Expected 1 embedding for 1 input, got {len(data)} "
+                    f"(model={endpoint_model_name}). This provider may fuse or split inputs."
+                )
+            batched_embeddings.append(data[0]["embedding"])
+
+            _accumulate_usage(result, totals)
+
+        return (
+            batched_embeddings,
+            totals["used_tokens"],
+            totals["total_price"],
+            totals["unit_price"],
+            totals["price_unit"],
+            totals["currency"],
+        )
 
     def _embed_multimodal_via_chat(
         self,
@@ -735,8 +829,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 multimodal_flags.append(False)
             elif document.content_type == MultiModalContentType.IMAGE:
                 image_format = self._detect_image_format_from_base64(document.content)
-                mime_type = f"image/{image_format}" if image_format else "image"
-                inputs.append(f"Image:data:{mime_type};base64,{document.content}")
+                if not image_format:
+                    # Without a subtype the data URI is malformed ("data:image;base64,"),
+                    # which strict providers reject with an unrelated-looking error.
+                    raise InvokeError(
+                        "Could not detect the image format of a multimodal embedding input. "
+                        "Supported formats: jpeg, png, gif, webp, bmp."
+                    )
+                inputs.append(
+                    f"{IMAGE_MARKER}data:image/{image_format};base64,{document.content}"
+                )
                 multimodal_flags.append(True)
             else:
                 raise InvokeError(

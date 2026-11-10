@@ -18,7 +18,7 @@ description:
 parameters:
   - name: file
     type: file
-    required: true
+    required: false
     label:
       en_US: File to Upload
       zh_Hans: 要上传的文件
@@ -31,7 +31,7 @@ parameters:
       zh_CN: 要上传到 OneDrive 的文件
       ja_JP: OneDriveにアップロードするファイル
       pt_BR: O arquivo para carregar no OneDrive
-    llm_description: The file to upload to OneDrive. Accepts various file types including documents, images, videos, etc.
+    llm_description: The file to upload to OneDrive (documents, images, videos, etc.). Leave empty to save file_content as a text file instead.
     form: llm
   - name: file_name
     type: string
@@ -48,7 +48,37 @@ parameters:
       zh_CN: 上传文件的可选自定义名称。如果未提供，则使用原始文件名。
       ja_JP: アップロードされるファイルのオプションのカスタム名。提供されない場合は、元のファイル名が使用されます。
       pt_BR: Nome personalizado opcional para o arquivo carregado. Se não fornecido, usa o nome original do arquivo.
-    llm_description: Optional custom name for the uploaded file. If not provided, the original file name will be used.
+    llm_description: Name for the uploaded file, such as notes.txt; "Reports/q3.pdf" puts it in that folder. Required with file_content; with a file, empty keeps the original name.
+    form: llm
+  - name: file_content
+    type: string
+    required: false
+    label:
+      en_US: File Content (text)
+      zh_Hans: 文件内容（文本）
+      ja_JP: ファイルの内容（テキスト）
+      pt_BR: Conteúdo do Arquivo (texto)
+    human_description:
+      en_US: Text to save as a file when no file is given; needs a file name.
+      zh_Hans: 不传文件时，把这段文本保存为文件；需要同时填写文件名。
+      ja_JP: ファイルを渡さない場合に、このテキストをファイルとして保存します。ファイル名も必要です。
+      pt_BR: Texto a salvar como arquivo quando nenhum arquivo é informado; requer um nome de arquivo.
+    llm_description: Text to save as a file (UTF-8) when there is no file to upload, for example notes or a summary the user asked to save. Needs file_name.
+    form: llm
+  - name: parent_folder_id
+    type: string
+    required: false
+    label:
+      en_US: Parent Folder ID
+      zh_Hans: 父文件夹 ID
+      ja_JP: 親フォルダー ID
+      pt_BR: ID da Pasta Pai
+    human_description:
+      en_US: ID of the folder to upload into; empty for the root folder.
+      zh_Hans: 上传到哪个文件夹；留空表示根目录。
+      ja_JP: アップロード先のフォルダー ID。空欄でルート。
+      pt_BR: ID da pasta de destino; vazio para a raiz.
+    llm_description: ID of the folder to upload into (from a list or search result). Empty for the root folder.
     form: llm
   - name: drive_user
     type: string

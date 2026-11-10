@@ -1,0 +1,70 @@
+identity:
+  name: jira_search_users
+  author: langgenius
+  label:
+    en_US: Search Users
+    zh_Hans: 搜索用户
+    ja_JP: ユーザーを検索
+description:
+  human:
+    en_US: Find people by name or email
+    zh_Hans: 按姓名或邮箱查找用户
+    ja_JP: 名前またはメールでユーザーを検索します
+  llm: Find Jira users by name or email to get their account ID, which assignee and notifications need.
+parameters:
+- name: query
+  type: string
+  required: true
+  label:
+    en_US: Name or Email
+    zh_Hans: 姓名或邮箱
+    ja_JP: 名前またはメール
+  human_description:
+    en_US: Part of a name or email
+    zh_Hans: 姓名或邮箱的一部分
+    ja_JP: 名前またはメールの一部
+  llm_description: Name or email (or part of it) to search for.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 20, max 100)
+    zh_Hans: 最多返回条数（默认 20，最多 100）
+    ja_JP: 返す件数の上限（既定 20、最大 100）
+  llm_description: Maximum number of results to return (default 20, max 100).
+  form: llm
+  default: 20
+output_schema:
+  type: object
+  properties:
+    users:
+      type: array
+      description: Matching users
+      items:
+        type: object
+        properties:
+          account_id:
+            type: string
+          display_name:
+            type: string
+          email:
+            type: string
+          active:
+            type: boolean
+    count:
+      type: integer
+      description: Number of users
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_search_users.py

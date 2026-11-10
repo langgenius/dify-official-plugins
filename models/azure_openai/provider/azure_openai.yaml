@@ -592,12 +592,57 @@ model_credential_schema:
             - value: tts
               variable: __model_type
           value: gpt-4o-mini-tts
+        - label:
+            en_US: Custom
+            zh_Hans: 自定义
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: Custom
       placeholder:
         en_US: Enter your model version
         zh_Hans: 在此输入您的模型版本
       required: true
       type: select
       variable: base_model_name
+    - label:
+        en_US: Custom Base Model
+        zh_Hans: 自定义基础模型
+      placeholder:
+        en_US: Enter the underlying base model family (e.g. gpt-6, gpt-5.5)
+        zh_Hans: 输入底层基础模型系列（例如 gpt-6、gpt-5.5）
+      required: true
+      type: text-input
+      variable: custom_base_model_name
+      show_on:
+        - variable: base_model_name
+          value: Custom
+    - default: '128000'
+      label:
+        en_US: Model Context Size
+        zh_Hans: 模型上下文长度
+      placeholder:
+        en_US: Enter your Model Context Size
+        zh_Hans: 输入模型上下文长度
+      required: false
+      type: text-input
+      variable: context_size
+      show_on:
+        - variable: base_model_name
+          value: Custom
+    - default: '16384'
+      label:
+        en_US: Upper Bound for Max Tokens
+        zh_Hans: 最大 token 上限
+      placeholder:
+        en_US: Enter the max output token bound for this model
+        zh_Hans: 输入该模型的最大输出 token 上限
+      required: false
+      type: text-input
+      variable: max_tokens
+      show_on:
+        - variable: base_model_name
+          value: Custom
   model:
     label:
       en_US: Deployment Name

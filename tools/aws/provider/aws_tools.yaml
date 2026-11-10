@@ -13,6 +13,7 @@ identity:
   icon_dark: icon-dark.svg
   tags:
     - productivity
+    - image
 tools:
   - tools/bedrock_retrieve.yaml
   - tools/bedrock_retrieve_and_generate.yaml
@@ -24,6 +25,7 @@ tools:
   - tools/s3_files_download.yaml
   - tools/apply_guardrail.yaml
   - tools/nova_canvas.yaml
+  - tools/bedrock_image.yaml
   - tools/transcribe_asr.yaml
   - tools/lambda_translate_utils.yaml
   - tools/sagemaker_text_rerank.yaml

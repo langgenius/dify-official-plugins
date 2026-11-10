@@ -5,7 +5,7 @@ from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class RemovePageTool(Tool):
@@ -13,7 +13,9 @@ class RemovePageTool(Tool):
         """
         Remove a page in Confluence.
         """
-        confluence = auth(self.runtime.credentials)
+        confluence = yield from connect(self)
+        if confluence is None:
+            return
 
         page_id = tool_parameters.get("page_id")
 
