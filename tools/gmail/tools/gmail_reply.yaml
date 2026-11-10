@@ -1,0 +1,84 @@
+identity:
+  name: gmail_reply
+  author: langgenius
+  label:
+    en_US: Reply
+    zh_Hans: 回复
+    ja_JP: 返信
+description:
+  human:
+    en_US: Reply in the same conversation
+    zh_Hans: 在同一会话中回复
+    ja_JP: 同じスレッドで返信
+  llm: Reply to a Gmail message in its conversation (keeps the subject and threading headers). reply_all also copies the other
+    recipients.
+parameters:
+- name: message_id
+  type: string
+  required: true
+  label:
+    en_US: Message ID
+    zh_Hans: 邮件 ID
+    ja_JP: メッセージ ID
+  human_description:
+    en_US: From search_messages
+    zh_Hans: 可从搜索邮件获取
+    ja_JP: メール検索から
+  llm_description: The message ID, from search_messages.
+  form: llm
+- name: body
+  type: string
+  required: true
+  label:
+    en_US: Reply Text
+    zh_Hans: 回复内容
+    ja_JP: 返信本文
+  human_description:
+    en_US: Plain text
+    zh_Hans: 纯文本
+    ja_JP: プレーン テキスト
+  llm_description: The reply text.
+  form: llm
+- name: reply_all
+  type: boolean
+  required: false
+  label:
+    en_US: Reply All
+    zh_Hans: 全部回复
+    ja_JP: 全員に返信
+  human_description:
+    en_US: Also reply to the other recipients
+    zh_Hans: 同时回复其他收件人
+    ja_JP: 他の受信者にも返信
+  llm_description: true to reply to everyone.
+  form: llm
+  default: false
+- name: body_html
+  type: string
+  required: false
+  label:
+    en_US: HTML Body
+    zh_Hans: HTML 正文
+    ja_JP: HTML 本文
+  human_description:
+    en_US: Optional HTML version
+    zh_Hans: 可选的 HTML 版本
+    ja_JP: 任意の HTML 版
+  llm_description: Optional HTML version of the reply.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+    thread_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_reply.py

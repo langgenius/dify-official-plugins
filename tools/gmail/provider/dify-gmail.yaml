@@ -1,100 +1,181 @@
 identity:
-  author: "langgenius"
-  name: "dify-gmail"
+  author: langgenius
+  name: dify-gmail
   label:
-    en_US: "Gmail"
-    zh_Hans: "Gmail"
-    pt_BR: "Gmail"
-    ja_JP: "Gmail"
+    en_US: Gmail
+    zh_Hans: Gmail
+    pt_BR: Gmail
+    ja_JP: Gmail
   description:
-    en_US: "Connect Gmail inbox in Dify with OAuth2.0 authentication for comprehensive email management"
-    zh_Hans: "通过OAuth2.0认证连接Gmail收件箱到Dify，实现全面的邮件管理"
-    pt_BR: "Conecte a caixa de entrada do Gmail no Dify com autenticação OAuth2.0 para gerenciamento completo de emails"
-    ja_JP: "OAuth2.0認証を使用してGmailの受信トレイをDifyに接続し、包括的なメール管理を実現"
-  icon: "icon.svg"
+    en_US: Connect Gmail inbox in Dify with OAuth2.0 authentication for comprehensive email management
+    zh_Hans: 通过OAuth2.0认证连接Gmail收件箱到Dify，实现全面的邮件管理
+    pt_BR: Conecte a caixa de entrada do Gmail no Dify com autenticação OAuth2.0 para gerenciamento completo de emails
+    ja_JP: OAuth2.0認証を使用してGmailの受信トレイをDifyに接続し、包括的なメール管理を実現
+  icon: icon.svg
   tags:
-    - productivity
-    - utilities
+  - productivity
+  - utilities
 oauth_schema:
   scopes:
-    - "https://www.googleapis.com/auth/gmail.readonly"
-    - "https://www.googleapis.com/auth/gmail.send"
-    - "https://www.googleapis.com/auth/gmail.compose"
-    - "https://www.googleapis.com/auth/gmail.modify"
-    - "https://www.googleapis.com/auth/gmail.labels"
+  - https://www.googleapis.com/auth/gmail.readonly
+  - https://www.googleapis.com/auth/gmail.send
+  - https://www.googleapis.com/auth/gmail.compose
+  - https://www.googleapis.com/auth/gmail.modify
+  - https://www.googleapis.com/auth/gmail.labels
   client_schema:
-    - name: "client_id"
-      type: "secret-input"
-      required: true
-      url: "https://console.cloud.google.com/apis/credentials"
-      label:
-        zh_Hans: "Google客户端ID"
-        en_US: "Google Client ID"
-        pt_BR: "ID do Cliente Google"
-        ja_JP: "GoogleクライアントID"
-      placeholder:
-        zh_Hans: "请输入Google客户端ID"
-        en_US: "Please input your Google Client ID"
-        pt_BR: "Insira seu ID de cliente do Google"
-        ja_JP: "GoogleクライアントIDを入力してください"
-      help:
-        en_US: "Get your client ID from Google Cloud Console > APIs & Services > Credentials"
-        zh_Hans: "从Google Cloud Console > API和服务 > 凭据获取您的客户端ID"
-        pt_BR: "Obtenha seu ID de cliente no Google Cloud Console > APIs e Serviços > Credenciais"
-        ja_JP: "Google Cloud Console > APIとサービス > 認証情報からクライアントIDを取得してください"
-    - name: "client_secret"
-      type: "secret-input"
-      required: true
-      url: "https://console.cloud.google.com/apis/credentials"
-      label:
-        zh_Hans: "Google客户端密钥"
-        en_US: "Google Client Secret"
-        pt_BR: "Segredo do Cliente Google"
-        ja_JP: "Googleクライアントシークレット"
-      placeholder:
-        zh_Hans: "请输入Google客户端密钥"
-        en_US: "Please input your Google Client Secret"
-        pt_BR: "Insira seu segredo de cliente do Google"
-        ja_JP: "Googleクライアントシークレットを入力してください"
-      help:
-        en_US: "Get your client secret from Google Cloud Console > APIs & Services > Credentials"
-        zh_Hans: "从Google Cloud Console > API和服务 > 凭据获取您的客户端密钥"
-        pt_BR: "Obtenha seu segredo de cliente no Google Cloud Console > APIs e Serviços > Credenciais"
-        ja_JP: "Google Cloud Console > APIとサービス > 認証情報からクライアントシークレットを取得してください"
+  - name: client_id
+    type: secret-input
+    required: true
+    url: https://console.cloud.google.com/apis/credentials
+    label:
+      zh_Hans: Google客户端ID
+      en_US: Google Client ID
+      pt_BR: ID do Cliente Google
+      ja_JP: GoogleクライアントID
+    placeholder:
+      zh_Hans: 请输入Google客户端ID
+      en_US: Please input your Google Client ID
+      pt_BR: Insira seu ID de cliente do Google
+      ja_JP: GoogleクライアントIDを入力してください
+    help:
+      en_US: Get your client ID from Google Cloud Console > APIs & Services > Credentials
+      zh_Hans: 从Google Cloud Console > API和服务 > 凭据获取您的客户端ID
+      pt_BR: Obtenha seu ID de cliente no Google Cloud Console > APIs e Serviços > Credenciais
+      ja_JP: Google Cloud Console > APIとサービス > 認証情報からクライアントIDを取得してください
+  - name: client_secret
+    type: secret-input
+    required: true
+    url: https://console.cloud.google.com/apis/credentials
+    label:
+      zh_Hans: Google客户端密钥
+      en_US: Google Client Secret
+      pt_BR: Segredo do Cliente Google
+      ja_JP: Googleクライアントシークレット
+    placeholder:
+      zh_Hans: 请输入Google客户端密钥
+      en_US: Please input your Google Client Secret
+      pt_BR: Insira seu segredo de cliente do Google
+      ja_JP: Googleクライアントシークレットを入力してください
+    help:
+      en_US: Get your client secret from Google Cloud Console > APIs & Services > Credentials
+      zh_Hans: 从Google Cloud Console > API和服务 > 凭据获取您的客户端密钥
+      pt_BR: Obtenha seu segredo de cliente no Google Cloud Console > APIs e Serviços > Credenciais
+      ja_JP: Google Cloud Console > APIとサービス > 認証情報からクライアントシークレットを取得してください
   credentials_schema:
-    - name: "access_token"
-      type: "secret-input"
-      label:
-        zh_Hans: "访问令牌"
-        en_US: "Access Token"
-        pt_BR: "Token de Acesso"
-        ja_JP: "アクセストークン"
-      placeholder:
-        zh_Hans: "请输入访问令牌"
-        en_US: "Please input your access token"
-        pt_BR: "Insira seu token de acesso"
-        ja_JP: "アクセストークンを入力してください"
-    - name: "refresh_token"
-      type: "secret-input"
-      label:
-        zh_Hans: "刷新令牌"
-        en_US: "Refresh Token"
-        pt_BR: "Token de Atualização"
-        ja_JP: "リフレッシュトークン"
-      placeholder:
-        zh_Hans: "请输入刷新令牌"
-        en_US: "Please input your refresh token"
-        pt_BR: "Insira seu token de atualização"
-        ja_JP: "リフレッシュトークンを入力してください"
+  - name: access_token
+    type: secret-input
+    label:
+      zh_Hans: 访问令牌
+      en_US: Access Token
+      pt_BR: Token de Acesso
+      ja_JP: アクセストークン
+    placeholder:
+      zh_Hans: 请输入访问令牌
+      en_US: Please input your access token
+      pt_BR: Insira seu token de acesso
+      ja_JP: アクセストークンを入力してください
+  - name: refresh_token
+    type: secret-input
+    label:
+      zh_Hans: 刷新令牌
+      en_US: Refresh Token
+      pt_BR: Token de Atualização
+      ja_JP: リフレッシュトークン
+    placeholder:
+      zh_Hans: 请输入刷新令牌
+      en_US: Please input your refresh token
+      pt_BR: Insira seu token de atualização
+      ja_JP: リフレッシュトークンを入力してください
 tools:
-  - tools/get_message.yaml
-  - tools/send_message.yaml
-  - tools/draft_message.yaml
-  - tools/list_drafts.yaml
-  - tools/send_draft.yaml
-  - tools/add_attachment_to_draft.yaml
-  - tools/flag_message.yaml
-  - tools/search_messages.yaml
+- tools/get_message.yaml
+- tools/send_message.yaml
+- tools/draft_message.yaml
+- tools/list_drafts.yaml
+- tools/send_draft.yaml
+- tools/add_attachment_to_draft.yaml
+- tools/flag_message.yaml
+- tools/search_messages.yaml
+- tools/download_attachment.yaml
+- tools/gmail_reply.yaml
+- tools/gmail_trash_message.yaml
+- tools/gmail_mark_read.yaml
+- tools/gmail_modify_labels.yaml
+- tools/gmail_list_labels.yaml
+- tools/gmail_create_label.yaml
+- tools/gmail_delete_label.yaml
+- tools/gmail_get_thread.yaml
+- tools/gmail_trash_thread.yaml
+- tools/gmail_get_draft.yaml
+- tools/gmail_delete_draft.yaml
+- tools/gmail_sign_out.yaml
 extra:
   python:
-    source: provider/dify-gmail.py 
+    source: provider/dify-gmail.py
+credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: per_user
+    label:
+      en_US: Mode
+      zh_Hans: 模式
+      ja_JP: モード
+    options:
+    - value: per_user
+      label:
+        en_US: Each user signs in (own Google account, for chat agents)
+        zh_Hans: 每个用户自己登录（各自的 Google 账号，适用于对话 Agent）
+        ja_JP: ユーザーごとにサインイン（本人の Google アカウント、チャット エージェント向け）
+    help:
+      en_US: The first time a chat user needs Gmail, the tool returns a Google sign-in link; after they sign in, the tools
+        act as that user. (To use one shared account instead, use OAuth.) Needs a Google OAuth client (Web application) and
+        the Sign-in Callback URL below.
+      zh_Hans: 聊天用户第一次用到 Gmail 时，工具会返回 Google 登录链接；登录后，工具以该用户的身份操作。（要共用一个账号，请用 OAuth。）需要一个 Google OAuth 客户端（Web 应用）以及下方的登录回调
+        URL。
+      ja_JP: チャットのユーザーが初めて Gmail を使うとき、ツールが Google のサインイン リンクを返し、サインイン後はそのユーザー本人として操作します。（共有アカウントを使う場合は OAuth を使用）Google OAuth
+        クライアント（ウェブ アプリケーション）と下のサインイン コールバック URL が必要です。
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+    placeholder:
+      en_US: xxxx.apps.googleusercontent.com
+      zh_Hans: xxxx.apps.googleusercontent.com
+      ja_JP: xxxx.apps.googleusercontent.com
+    help:
+      en_US: Google Cloud Console > Google Auth Platform > Clients > your Web application client.
+      zh_Hans: Google Cloud 控制台 > Google Auth Platform > Clients > 你的 Web 应用客户端。
+      ja_JP: Google Cloud コンソール > Google Auth Platform > クライアント > ウェブ アプリケーションのクライアント。
+    url: https://console.cloud.google.com/auth/clients
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアント シークレット
+    help:
+      en_US: The client's secret. Rotating it signs every user out.
+      zh_Hans: 该客户端的密钥。更换后所有用户都需要重新登录。
+      ja_JP: クライアントのシークレット。変更すると全員がサインアウトされます。
+    url: https://console.cloud.google.com/auth/clients
+  redirect_uri:
+    type: text-input
+    required: true
+    label:
+      en_US: Sign-in Callback URL
+      zh_Hans: 登录回调 URL
+      ja_JP: サインイン コールバック URL
+    placeholder:
+      en_US: e.g. https://dify.example.com/e/xxxx/gmail/callback
+      zh_Hans: 例如 https://dify.example.com/e/xxxx/gmail/callback
+      ja_JP: '例: https://dify.example.com/e/xxxx/gmail/callback'
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints), paste its /gmail/callback URL here, and add the same
+        URL to the OAuth client's Authorized redirect URIs.
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /gmail/callback URL 粘贴到这里，并把同一个 URL 加到 OAuth 客户端的“已获授权的重定向 URI”中。
+      ja_JP: このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /gmail/callback の URL をここに貼り付け、同じ URL を OAuth クライアントの承認済みのリダイレクト URI
+        に追加してください。

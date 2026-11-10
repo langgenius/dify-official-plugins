@@ -89,3 +89,81 @@ parameters:
   name: idBoard
   required: false
   type: string
+- form: llm
+  human_description:
+    en_US: ISO date, e.g. 2026-12-31T17:00:00Z
+    ja_JP: 'ISO 日時（例: 2026-12-31T17:00:00Z）'
+    zh_Hans: ISO 时间，如 2026-12-31T17:00:00Z
+  label:
+    en_US: Due
+    ja_JP: 期限
+    zh_Hans: 截止时间
+  llm_description: Due date (ISO 8601).
+  name: due
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Mark the due date done
+    ja_JP: 期限を完了にする
+    zh_Hans: 将截止项标记为完成
+  label:
+    en_US: Due Complete
+    ja_JP: 期限完了
+    zh_Hans: 已完成
+  llm_description: Whether the due date is marked complete.
+  name: dueComplete
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: Archive (true) or restore (false)
+    ja_JP: アーカイブ（true）または復元（false）
+    zh_Hans: 归档（true）或恢复（false）
+  label:
+    en_US: Archived
+    ja_JP: アーカイブ
+    zh_Hans: 已归档
+  llm_description: true archives the card, false restores it.
+  name: closed
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: top, bottom or a number
+    ja_JP: top、bottom、または数値
+    zh_Hans: top、bottom 或数字
+  label:
+    en_US: Position
+    ja_JP: 位置
+    zh_Hans: 位置
+  llm_description: 'Position in its list: top, bottom or a number.'
+  name: pos
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Comma-separated member IDs (replaces)
+    ja_JP: カンマ区切りのメンバー ID（置き換え）
+    zh_Hans: 逗号分隔的成员 ID（会替换）
+  label:
+    en_US: Member IDs
+    ja_JP: メンバー ID
+    zh_Hans: 成员 ID
+  llm_description: Comma-separated member IDs to assign; replaces the current members.
+  name: idMembers
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Comma-separated label IDs (replaces)
+    ja_JP: カンマ区切りのラベル ID（置き換え）
+    zh_Hans: 逗号分隔的标签 ID（会替换）
+  label:
+    en_US: Label IDs
+    ja_JP: ラベル ID
+    zh_Hans: 标签 ID
+  llm_description: Comma-separated label IDs; replaces the current labels.
+  name: idLabels
+  required: false
+  type: string

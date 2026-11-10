@@ -1,0 +1,128 @@
+identity:
+  name: excel_lookup_table
+  author: langgenius
+  label:
+    en_US: Lookup Table Rows
+    zh_Hans: 在表格中查找行
+    ja_JP: テーブルの行を検索
+description:
+  human:
+    en_US: The rows of a table where a column equals a value
+    zh_Hans: 表格中某列等于指定值的行
+    ja_JP: テーブルで列が値と一致する行
+  llm: Find the rows of an Excel table where a column equals a value (compared as text). Returns all matching rows, or only
+    the first with return_all_matches=false.
+parameters:
+- name: site_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Site ID (only if editing SharePoint Site content)
+    zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+    ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+  human_description:
+    en_US: Optional SharePoint site ID. When provided, uses this site's drive instead of the personal OneDrive.
+    zh_Hans: 可选的 SharePoint 站点 ID。若提供，则使用该站点的驱动器而非个人 OneDrive。
+    ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブを使います。
+  llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
+- name: workbook_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Workbook ID
+    zh_Hans: 工作簿 ID
+    ja_JP: ブック ID
+  human_description:
+    en_US: The ID of the Excel workbook
+    zh_Hans: Excel 工作簿的 ID
+    ja_JP: Excel ブックの ID
+  llm_description: The ID of the Excel workbook (from the list workbooks tool).
+- name: table
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Table
+    zh_Hans: 表格
+    ja_JP: テーブル
+  human_description:
+    en_US: The table's name (e.g. Table1) or ID
+    zh_Hans: 表格名称（例如 Table1）或 ID
+    ja_JP: 'テーブル名（例: Table1）または ID'
+  llm_description: The table's name (e.g. Table1) or ID, from the list tables tool.
+- name: column
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Column
+    zh_Hans: 列
+    ja_JP: 列
+  human_description:
+    en_US: Column name to look in
+    zh_Hans: 要查找的列名
+    ja_JP: 検索する列名
+  llm_description: Name of the column to look in.
+- name: value
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Value
+    zh_Hans: 值
+    ja_JP: 値
+  human_description:
+    en_US: Value to find
+    zh_Hans: 要查找的值
+    ja_JP: 検索する値
+  llm_description: The value to find (exact match, compared as text).
+- name: return_all_matches
+  type: boolean
+  required: false
+  form: llm
+  label:
+    en_US: Return All Matches
+    zh_Hans: 返回所有匹配行
+    ja_JP: 一致するすべての行を返す
+  human_description:
+    en_US: Return every matching row (default) or only the first
+    zh_Hans: 返回所有匹配行（默认）或只返回第一行
+    ja_JP: 一致するすべての行（既定）か、最初の行だけを返します
+  llm_description: Return every matching row (default true) or only the first.
+  default: true
+- name: drive_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive holds the workbooks. Leave empty
+      for the credential''s default, or use a Site ID.'
+    zh_Hans: 仅限 Service Principal：工作簿所在 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值，或使用站点 ID。
+    ja_JP: 'サービス プリンシパルのみ: ブックがある OneDrive のユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値、またはサイト ID を使います。'
+output_schema:
+  type: object
+  properties:
+    rows:
+      type: array
+      description: Matching rows
+      items:
+        type: object
+        description: A row as an object keyed by column header
+    count:
+      type: integer
+      description: Matching rows
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/excel_lookup_table.py

@@ -1,550 +1,269 @@
-# Outlook Plugin for Dify
-
-**Author:** langgenius
-**Version:** 0.7.0
-**Type:** Plugin
-
----
-
-## English Version
-
-### Description
-This plugin uses OAuth 2.0 authorization code flow for secure authentication with Microsoft Outlook. Users authenticate directly with their Microsoft account, providing secure access to their Outlook emails without sharing application credentials.
-
-### Features
-- List messages from your Outlook inbox or other folders
-- Get detailed information about specific messages (including attachment ids)
-- Download email attachments as files
-- Send new email messages directly, with optional file attachments
-- Create draft emails
-- List draft emails
-- Add attachments to draft emails
-- Set the priority/importance of an email
-- Flag emails for follow-up
-- Search and filter messages
-
-### Available Tools
-| Tool Name                | Description |
-|------------------------- |-------------|
-| list_messages            | List messages from your Outlook inbox or other folders. Supports filtering, search, and pagination. |
-| get_message              | Get detailed information about a specific email message, including content, attachments, and metadata (including attachment ids). |
-| download_attachment      | Download an email attachment as a file using message_id and attachment_id. Dify serves it over a public HTTPS URL. |
-| draft_email              | Create a draft email in Outlook. Supports to/cc/bcc, subject, body (text or HTML), and importance. |
-| list_draft_emails        | List your draft emails. Supports filtering, search, and attachment info. |
-| send_message             | Send an email message directly through Outlook, with optional file attachments. Can also send existing drafts by providing a draft ID. |
-| add_attachment_to_draft  | Add a file attachment to an existing draft email. |
-| prioritize_email         | Set the priority level (low, normal, high) of an email message. |
-| flag_email               | Flag an email message for follow-up, with optional due date and message. |
-
-### Installation
-
-#### Step 1: Create an Azure AD Application
-1. Go to Azure Portal > App Registrations
-2. Create a new registration
-   ![](../_assets/readme1.png)
-3. Create a client secret
-   ![](../_assets/readme3.png)
-4. Note down the client ID, client secret, and tenant ID
-
-   > **Note**: If you're not an enterprise user, you can leave Tenant ID blank.
-   ![](../_assets/readme4.png)
-
-#### Step 2: Install the Plugin in Dify
-1. Go to your Dify workspace
-2. Navigate to Tools > Plugins
-3. Click "Add Plugin"
-4. Select this Outlook plugin
-5. **IMPORTANT: Click the config button besides "Use OAuth Authorization" config button first**
-   ![](../_assets/readme5.png)
-6. After OAuth setup, enter your Azure AD credentials:
-   - Client ID
-   - Client Secret
-   - Tenant ID (leave blank if not an enterprise user)
-
-7. Copy the redirect URI from the OAuth Client Settings dialog:
-   - Look for the redirect URI with a copy icon in the dialog
-   - Click the copy icon to copy the exact URL
-   - Use this URL when configuring your Azure AD app registration's redirect URI
-   ![](../_assets/readme6.png)
-
-#### Step 3: Configure OAuth Settings
-1. In your Azure AD app registration, go to "Authentication"
-2. Select "Web" as the platform type
-3. Add the redirect URI we just copied
-4. Enable "Access tokens" and "ID tokens" under "Implicit grant and hybrid flows"
-![](../_assets/readme7.png)
-
-### OAuth Authorization Flow
-
-#### Before Entering Credentials:
-1. **Click "Use OAuth Authorization"** - This sets up the OAuth flow
-2. **Complete the Microsoft login** - You'll be redirected to Microsoft to authenticate
-3. **Grant permissions** - Allow the app to access your Outlook emails
-4. **Return to Dify** - You'll be redirected back with an access token
-
-#### After OAuth Setup:
-1. Enter your Azure AD application credentials (Client ID, Client Secret, Tenant ID)
-2. The plugin will use the OAuth access token for all API calls
-3. No need to manage user credentials - authentication is handled securely through Microsoft
-
-### Usage Examples
-
-#### List Messages
-```
-List the last 10 messages from my inbox
-```
-
-#### Search Messages
-```
-Find emails from john@example.com in my inbox
-```
-
-#### Read Message
-```
-Get the details of message with ID abc123
-```
-
-#### Create Draft
-```
-Create a draft email to jane@example.com with subject "Hello" and body "Hi Jane!"
-```
-
-#### List Drafts
-```
-List my draft emails
-```
-
-#### Add Attachment to Draft
-```
-Add file report.pdf to draft with ID draft123
-```
-
-#### Send Message
-```
-Send the draft with ID draft123
-```
-
-#### Set Priority
-```
-Set the priority of message with ID abc123 to high
-```
-
-#### Flag Message
-```
-Flag message with ID abc123 for follow-up in 2 days with message "Review required"
-```
-
-### Configuration
-The plugin requires the following Microsoft Graph API permissions:
-- Mail.Read: For reading emails
-- Mail.Send: For sending emails
-- Mail.ReadWrite: For updating email properties (flags, priority)
-- Calendars.ReadWrite: For calendar events (list/create/get/update/delete) — added in 0.3.0
-- Calendars.Read.Shared: For calendars other people shared with you (calendar groups, Get Schedule) — added in 0.7.0
-
-> Calendar tools (0.3.0): `list_calendars`, `list_events`, `create_event`, `get_event`, `update_event`, `delete_event`. Existing installs will be asked to re-authorize once to grant the new `Calendars.ReadWrite` scope.
-
-> Calendar groups (0.7.0): `list_calendar_groups`, a `calendar_group_id` option on `list_calendars` / `list_events` / `search_events`, and `get_schedule` (free/busy). Re-authorize once to grant `Calendars.Read.Shared`.
-
-### Service Principal (app-only, new in 0.7.0)
-Use this when a workflow should run as the organisation rather than as a person: no user signs in, nothing breaks when someone leaves, and the audit log shows the app.
-
-1. In the app registration, add Microsoft Graph **Application** permissions (not Delegated): `Mail.ReadWrite`, `Mail.Send`, `Calendars.ReadWrite`, then click **Grant admin consent**.
-2. Recommended: limit the app to the mailboxes it needs with an Exchange Online [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) assignment; otherwise application permissions reach every mailbox in the tenant.
-3. In Dify, add an authorization of the **API Key** type and fill in **Tenant ID** (your directory ID, not `common`), **Client ID**, **Client Secret** and **Default Mailbox** (e.g. `support@contoso.com`). Dify signs in and reads that inbox to check the permissions.
-4. Each tool has an optional **Mailbox** setting (set in the node, never chosen by the LLM) to act on a different mailbox with the same credential.
-
-### National clouds (new in 0.7.0)
-Both OAuth and Service Principal have a **Microsoft Cloud** setting: Global, US Government, US Government DoD, or China (21Vianet). It switches the sign-in host and the Microsoft Graph host together. Existing authorizations keep using the global cloud.
-
-### Security Benefits
-- **No shared credentials**: Users authenticate directly with Microsoft
-- **Secure token management**: Access tokens are handled securely by Dify
-- **User-specific access**: Each user accesses only their own emails
-- **Automatic token refresh**: OAuth handles token expiration automatically
-
-### Troubleshooting
-
-#### OAuth Issues:
-1. **"Use OAuth Authorization" not working:**
-   - Ensure your Azure AD app has the correct redirect URI
-   - Check that OAuth is properly configured in Azure AD
-
-2. **Authentication fails:**
-   - Verify your Azure AD credentials are correct
-   - Check if your application has the required permissions
-   - Ensure your client secret hasn't expired
-
-3. **API Errors:**
-   - Check your internet connection
-   - Verify your Outlook account is accessible
-   - Ensure you have the necessary permissions
-
-#### Common Error Messages:
-- **"Id is malformed"**: The tool now handles URL encoding automatically
-- **"SearchWithOrderBy"**: Search and orderby parameters are now handled correctly
-- **"Access denied"**: Check that OAuth permissions are granted
-
----
-
-## 日本語版 (Japanese Version)
-
-### 説明
-このプラグインは、Microsoft Outlookとの安全な認証のためにOAuth 2.0認証コードフローを使用します。ユーザーはMicrosoftアカウントで直接認証し、アプリケーション認証情報を共有することなくOutlookメールに安全にアクセスできます。
-
-### 機能
-- Outlookの受信トレイやその他のフォルダーからメッセージを一覧表示
-- 特定のメッセージの詳細情報を取得（添付ファイルIDを含む）
-- メール添付ファイルをファイルとしてダウンロード
-- 新しいメールメッセージを直接送信、オプションのファイル添付をサポート
-- ドラフトメールを作成
-- ドラフトメールを一覧表示
-- ドラフトメールに添付ファイルを追加
-- メールの優先度/重要度を設定
-- フォローアップ用にメールにフラグを設定
-- メッセージの検索とフィルタリング
-
-### 利用可能なツール
-| ツール名                | 説明 |
-|------------------------- |-------------|
-| list_messages            | Outlookの受信トレイやその他のフォルダーからメッセージを一覧表示。フィルタリング、検索、ページネーションをサポート。 |
-| get_message              | 特定のメールメッセージの詳細情報を取得。コンテンツ、添付ファイル、メタデータ（添付ファイルIDを含む）を含む。 |
-| download_attachment      | message_idとattachment_idを使用してメール添付ファイルをファイルとしてダウンロード。DifyはパブリックHTTPS URLで提供。 |
-| draft_email              | Outlookでドラフトメールを作成。to/cc/bcc、件名、本文（テキストまたはHTML）、重要度をサポート。 |
-| list_draft_emails        | ドラフトメールを一覧表示。フィルタリング、検索、添付ファイル情報をサポート。 |
-| send_message             | Outlookを通じて直接メールメッセージを送信、オプションのファイル添付をサポート。ドラフトIDを提供することで既存のドラフトを送信することも可能。 |
-| add_attachment_to_draft  | 既存のドラフトメールにファイル添付を追加。 |
-| prioritize_email         | メールメッセージの優先度レベル（低、通常、高）を設定。 |
-| flag_email               | フォローアップ用にメールメッセージにフラグを設定。オプションで期限とメッセージを設定可能。 |
-
-### インストール
-
-#### ステップ1: Azure ADアプリケーションを作成
-1. Azure Portal > アプリの登録に移動
-2. 新しい登録を作成
-   ![](../_assets/readme1.png)
-3. クライアントシークレットを作成
-   ![](../_assets/readme3.png)
-4. クライアントID、クライアントシークレット、テナントIDを記録
-
-   > メモ: 企業ユーザーでない場合、テナントIDは空のままにできます。
-   ![](../_assets/readme4.png)
-
-#### ステップ2: Difyにプラグインをインストール
-1. Difyワークスペースに移動
-2. ツール > プラグインに移動
-3. 「プラグインを追加」をクリック
-4. このOutlookプラグインを選択
-5. **重要：「Use OAuth Authorization」設定ボタンの横の設定ボタンを最初にクリックしてください**
-   ![](../_assets/readme5.png)
-6. OAuth設定後、Azure AD認証情報を入力：
-   - クライアントID
-   - クライアントシークレット
-   - テナントID（企業ユーザーでない場合、空のままにできます）
-
-7. OAuthクライアント設定ダイアログからリダイレクトURIをコピー：
-   - ダイアログ内のコピーアイコンのあるリダイレクトURIを探す
-   - コピーアイコンをクリックして正確なURLをコピー
-   - このURLをAzure ADアプリ登録のリダイレクトURI設定で使用
-   ![](../_assets/readme6.png)
-
-#### ステップ3: OAuth設定を構成
-1. Azure ADアプリ登録で「認証」に移動
-2. プラットフォームタイプとして「Web」を選択
-3. コピーしたリダイレクトURIを追加
-4. 「暗黙的許可とハイブリッドフロー」で「アクセストークン」と「IDトークン」を有効化
-![](../_assets/readme7.png)
-
-### OAuth認証フロー
-
-#### 認証情報を入力する前：
-1. **「Use OAuth Authorization」をクリック** - OAuthフローを設定
-2. **Microsoftログインを完了** - Microsoftにリダイレクトされて認証
-3. **権限を許可** - アプリがOutlookメールにアクセスすることを許可
-4. **Difyに戻る** - アクセストークンと共にリダイレクトされる
-
-#### OAuth設定後：
-1. 输入您的Azure AD应用程序凭据（客户端ID、客户端密钥、租户ID）
-2. 插件将使用OAuth访问令牌进行所有API调用
-3. 无需管理用户凭据 - 认证通过Microsoft安全处理
-
-### 使用例
-
-#### メッセージを一覧表示
-```
-受信トレイから最新の10件のメッセージを一覧表示
-```
-
-#### メッセージを検索
-```
-受信トレイからjohn@example.comからのメールを検索
-```
-
-#### メッセージを読む
-```
-ID abc123のメッセージの詳細を取得
-```
-
-#### ドラフトを作成
-```
-jane@example.comに件名「Hello」、本文「Hi Jane!」でドラフトメールを作成
-```
-
-#### ドラフトを一覧表示
-```
-ドラフトメールを一覧表示
-```
-
-#### ドラフトに添付ファイルを追加
-```
-ID draft123のドラフトにファイルreport.pdfを添付
-```
-
-#### メッセージを送信
-```
-ID draft123のドラフトを送信
-```
-
-#### 優先度を設定
-```
-将ID为abc123的消息的优先级设置为高
-```
-
-#### 为消息设置标志
-```
-为ID为abc123的消息设置2天后跟进的标志，消息为"需要审查"
-```
-
-### 設定
-插件需要以下Microsoft Graph API权限：
-- Mail.Read：用于读取邮件
-- Mail.Send：用于发送邮件
-- Mail.ReadWrite：用于更新邮件属性（标志、优先级）
-- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
-- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
-
-> 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
-
-> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
-
-### サービス プリンシパル（アプリのみ、0.7.0 で追加）
-個人ではなく組織としてワークフローを実行したい場合に使います。ユーザーのサインインは不要で、担当者の退職などで止まることはなく、監査ログにはアプリとして記録されます。
-
-1. アプリ登録で Microsoft Graph の **アプリケーション** のアクセス許可（委任ではありません）`Mail.ReadWrite`、`Mail.Send`、`Calendars.ReadWrite` を追加し、**管理者の同意を与えます**。
-2. 推奨: Exchange Online の [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) で、アプリが操作できるメールボックスを必要なものに限定してください。限定しない場合、テナント内のすべてのメールボックスにアクセスできます。
-3. Dify で **API Key** タイプの認証を追加し、**テナント ID**（`common` ではなくディレクトリ ID）、**クライアント ID**、**クライアント シークレット**、**既定のメールボックス**（例: `support@contoso.com`）を入力します。Dify はサインインしてその受信トレイを読み取り、権限を確認します。
-4. 各ツールには任意の **メールボックス** 設定があり（ノードで設定し、LLM には選ばせません）、同じ資格情報で別のメールボックスを操作できます。
-
-### 各国のクラウド（0.7.0 で追加）
-OAuth とサービス プリンシパルの両方に **Microsoft クラウド** 設定があります（グローバル、米国政府、米国政府 DoD、中国 21Vianet）。サインインと Microsoft Graph のホストが一緒に切り替わります。既存の認証は引き続きグローバル クラウドを使います。
-
-### セキュリティの利点
-- **无共享凭据**：用户直接通过Microsoft认证
-- **安全令牌管理**：访问令牌由Dify安全处理
-- **用户特定访问**：每个用户只能访问自己的邮件
-- **自动令牌刷新**：OAuth自动处理令牌过期
-
-### トラブルシューティング
-
-#### OAuth问题：
-1. **"Use OAuth Authorization"不工作：**
-   - 确保Azure AD应用程序有正确的重定向URI
-   - 检查Azure AD中OAuth配置是否正确
-
-2. **认证失败：**
-   - 验证Azure AD凭据是否正确
-   - 检查应用程序是否有所需权限
-   - 确保客户端密钥未过期
-
-3. **API错误：**
-   - 检查互联网连接
-   - 验证Outlook账户是否可访问
-   - 确保有必要的权限
-
-#### 常见错误消息：
-- **"Id is malformed"**：工具现在自动处理URL编码
-- **"SearchWithOrderBy"**：搜索和orderby参数现在正确处理
-- **"Access denied"**：检查OAuth权限是否已授予
-
----
-
-## 中文版 (Chinese Version)
-
-### 描述
-此插件使用OAuth 2.0授权代码流程与Microsoft Outlook进行安全认证。用户直接通过Microsoft账户进行认证，无需共享应用程序凭据即可安全访问Outlook邮件。
-
-### 功能
-- 列出Outlook收件箱或其他文件夹中的消息
-- 获取特定消息的详细信息（包括附件ID）
-- 下载邮件附件文件
-- 直接发送新邮件消息，支持可选的文件附件
-- 创建草稿邮件
-- 列出草稿邮件
-- 向草稿邮件添加附件
-- 设置邮件的优先级/重要性
-- 为邮件设置跟进标志
-- 搜索和过滤消息
-
-### 可用工具
-| 工具名称                | 描述 |
-|------------------------- |-------------|
-| list_messages            | 列出Outlook收件箱或其他文件夹中的消息。支持过滤、搜索和分页。 |
-| get_message              | 获取特定邮件消息的详细信息，包括内容、附件和元数据（包括附件ID）。 |
-| download_attachment      | 使用message_id和attachment_id下载邮件附件文件。Dify通过公共HTTPS URL提供。 |
-| draft_email              | 在Outlook中创建草稿邮件。支持收件人/抄送/密送、主题、正文（文本或HTML）和重要性。 |
-| list_draft_emails        | 列出您的草稿邮件。支持过滤、搜索和附件信息。 |
-| send_message             | 直接通过Outlook发送邮件消息，支持可选的文件附件。也可以通过提供草稿ID来发送现有草稿。 |
-| add_attachment_to_draft  | 向现有草稿邮件添加文件附件。 |
-| prioritize_email         | 设置邮件消息的优先级级别（低、正常、高）。 |
-| flag_email               | 为邮件消息设置跟进标志，可选择到期日期和消息。 |
-
-### 安装
-
-#### 步骤1：创建Azure AD应用程序
-1. 转到Azure Portal > 应用程序注册
-2. 创建新注册
-   ![](../_assets/readme1.png)
-3. 创建客户端密钥
-   ![](../_assets/readme3.png)
-4. 记录客户端ID、客户端密钥和租户ID
-
-   > **备注**：如果不是企业用户，可留空租户ID。
-   ![](../_assets/readme4.png)
-
-#### 步骤2：在Dify中安装插件
-1. 转到您的Dify工作区
-2. 导航到工具 > 插件
-3. 点击"添加插件"
-4. 选择此Outlook插件
-5. **重要：首先点击"Use OAuth Authorization"配置按钮旁边的配置按钮**
-   ![](../_assets/readme5.png)
-6. OAuth设置后，输入您的Azure AD凭据：
-   - 客户端ID
-   - 客户端密钥
-   - 租户ID（如果不是企业用户，可留空）
-
-7. 从OAuth客户端设置对话框复制重定向URI：
-   - 在对话框中查找带有复制图标的重定向URI
-   - 点击复制图标复制确切的URL
-   - 在配置Azure AD应用程序注册的重定向URI时使用此URL
-   ![](../_assets/readme6.png)
-
-#### 步骤3：配置OAuth设置
-1. 在Azure AD应用程序注册中，转到"身份验证"
-2. 选择"Web"作为平台类型
-3. 添加我们刚才复制的重定向URI
-4. 在"隐式授权和混合流"下启用"访问令牌"和"ID令牌"
-![](../_assets/readme7.png)
-
-### OAuth授权流程
-
-#### 输入凭据之前：
-1. **点击"Use OAuth Authorization"** - 设置OAuth流程
-2. **完成Microsoft登录** - 您将被重定向到Microsoft进行认证
-3. **授予权限** - 允许应用程序访问您的Outlook邮件
-4. **返回Dify** - 您将带着访问令牌重定向回来
-
-#### OAuth设置后：
-1. 输入您的Azure AD应用程序凭据（客户端ID、客户端密钥、租户ID）
-2. 插件将使用OAuth访问令牌进行所有API调用
-3. 无需管理用户凭据 - 认证通过Microsoft安全处理
-
-### 使用示例
-
-#### 列出消息
-```
-列出收件箱中最近的10条消息
-```
-
-#### 搜索消息
-```
-在收件箱中查找来自john@example.com的邮件
-```
-
-#### 读取消息
-```
-获取ID为abc123的消息的详细信息
-```
-
-#### 创建草稿
-```
-向jane@example.com创建主题为"Hello"、正文为"Hi Jane!"的草稿邮件
-```
-
-#### 列出草稿
-```
-列出我的草稿邮件
-```
-
-#### 向草稿添加附件
-```
-向ID为draft123的草稿添加文件report.pdf
-```
-
-#### 发送消息
-```
-发送ID为draft123的草稿
-```
-
-#### 设置优先级
-```
-将ID为abc123的消息的优先级设置为高
-```
-
-#### 为消息设置标志
-```
-为ID为abc123的消息设置2天后跟进的标志，消息为"需要审查"
-```
-
-### 配置
-插件需要以下Microsoft Graph API权限：
-- Mail.Read：用于读取邮件
-- Mail.Send：用于发送邮件
-- Mail.ReadWrite：用于更新邮件属性（标志、优先级）
-- Calendars.ReadWrite：用于日历事件（列出/创建/获取/更新/删除）——0.3.0 新增
-- Calendars.Read.Shared：用于他人共享给您的日历（日历组、查询忙闲）——0.7.0 新增
-
-> 日历工具（0.3.0）：`list_calendars`、`list_events`、`create_event`、`get_event`、`update_event`、`delete_event`。已安装的用户需重新授权一次以授予新的 `Calendars.ReadWrite` 权限。
-
-> 日历组（0.7.0）：新增 `list_calendar_groups`，`list_calendars` / `list_events` / `search_events` 支持 `calendar_group_id`，新增 `get_schedule`（查询忙闲）。需重新授权一次以授予 `Calendars.Read.Shared`。
-
-### Service Principal（仅应用，0.7.0 新增）
-希望工作流以组织身份而不是某个人的身份运行时使用：无需用户登录，不会因人员离职而中断，审计日志中记录的是该应用。
-
-1. 在应用注册中添加 Microsoft Graph **应用程序**权限（不是委托权限）：`Mail.ReadWrite`、`Mail.Send`、`Calendars.ReadWrite`，然后点击 **授予管理员同意**。
-2. 建议：用 Exchange Online 的 [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) 把应用可访问的邮箱限定为所需的邮箱；否则应用程序权限可访问租户内的所有邮箱。
-3. 在 Dify 中添加 **API Key** 类型的授权，填写 **租户 ID**（目录 ID，不能是 `common`）、**客户端 ID**、**客户端密钥** 和 **默认邮箱**（例如 `support@contoso.com`）。Dify 会登录并读取该收件箱来检查权限。
-4. 每个工具都有一个可选的 **邮箱** 设置（在节点中配置，不由 LLM 选择），可用同一凭据操作其他邮箱。
-
-### 国家云（0.7.0 新增）
-OAuth 和 Service Principal 都有 **Microsoft 云** 设置：全球、美国政府、美国政府 DoD、中国（世纪互联）。登录地址和 Microsoft Graph 地址会一起切换。已有的授权继续使用全球云。
-
-### 安全优势
-- **无共享凭据**：用户直接通过Microsoft认证
-- **安全令牌管理**：访问令牌由Dify安全处理
-- **用户特定访问**：每个用户只能访问自己的邮件
-- **自动令牌刷新**：OAuth自动处理令牌过期
-
-### 故障排除
-
-#### OAuth问题：
-1. **"Use OAuth Authorization"不工作：**
-   - 确保Azure AD应用程序有正确的重定向URI
-   - 检查Azure AD中OAuth配置是否正确
-
-2. **认证失败：**
-   - 验证Azure AD凭据是否正确
-   - 检查应用程序是否有所需权限
-   - 确保客户端密钥未过期
-
-3. **API错误：**
-   - 检查互联网连接
-   - 验证Outlook账户是否可访问
-   - 确保有必要的权限
-
-#### 常见错误消息：
-- **"Id is malformed"**：工具现在自动处理URL编码
-- **"SearchWithOrderBy"**：搜索和orderby参数现在正确处理
-- **"Access denied"**：检查OAuth权限是否已授予
-
----
+# Outlook
+
+Dify 的 Microsoft Outlook 集成（通过 Microsoft Graph），支持**邮件和日历**：读取、发送和整理邮件，管理日历事件。
+
+**版本：** 1.0.1
+
+## 选择授权方式
+
+| 方式 | 工具使用谁的邮箱 | 适用场景 |
+|---|---|---|
+| **OAuth** | 在 Dify 控制台登录的那一个人；所有使用工具的人共用这个邮箱 | 只处理一个固定邮箱的工作流或应用 |
+| **Service Principal**（0.7.0） | 以应用身份访问指定的邮箱，没有用户登录 | 共享邮箱、服务邮箱的自动化 |
+| **每个用户自己登录**（1.0.0） | 正在和 Agent 对话的那个人的邮箱；每个用户用自己的 Microsoft 账号登录一次 | 很多人一起用的对话 Agent（"我今天有什么日程？"） |
+
+三种方式都使用同一个 Microsoft Entra 应用注册（见下面的第 1 步），可以同时存在：给插件添加多个授权，每个 Agent 或工作流节点各选一个。
+
+## 功能
+
+### 邮件
+- **List Messages**：列出收件箱中的邮件。
+- **Get Message**：按 ID 获取邮件详情，包括附件 ID。
+- **Download Attachment**：下载邮件附件（需要 `message_id` 和 `attachment_id`），Dify 通过公开的 HTTPS 链接提供文件。
+- **Send Message**：通过 Outlook 发送邮件，可带附件。
+- **Send Draft**：发送草稿（需要 Draft Email 返回的草稿 ID）。
+- **Draft Email**：创建草稿。
+- **List Draft Emails**：列出草稿。
+- **Add Attachment to Draft**：给草稿添加附件。
+- **Prioritize Email**：设置邮件的重要性。
+- **Flag Message**：给邮件加旗标或取消旗标。
+
+### 日历
+- **List Calendars**：列出日历。
+- **List Events**：列出即将到来的事件，可指定某个日历。
+- **Search Events**：按关键词和/或日期范围查找事件。
+- List Events 和 Search Events 会显示每个事件的地点和在线会议链接（Teams，或邀请正文里的 Zoom / Google Meet / Webex 链接），Agent 不用逐个打开事件就能知道哪些是在线会议（1.0.0）。
+- **List Calendar Groups**（0.7.0）：列出日历组，例如 *My Calendars* 和 *People's calendars*；别人共享给您的日历通常在后者。
+- **日历组和共享日历**（0.7.0）：List Calendars、List Events、Search Events 支持可选的 **Calendar Group ID**，会覆盖组内所有日历，并标出每个事件所属的日历和所有者。需要 `Calendars.Read.Shared`。
+- **Get Schedule**（0.7.0）：查询一段时间内一些人的忙闲，可按邮箱和/或日历组查询。组织内的任何人都能查，无需共享日历；只有您有权查看的事件才显示主题。
+- **Create Event**：创建会议或约会（参会人、地点、Teams 在线会议）。
+- **Get Event**、**Update Event**、**Delete Event**。
+
+### 账号
+- **Sign Out of Outlook**（`outlook_sign_out`，1.0.0）：仅限"每个用户自己登录"。清除当前用户的 Outlook 登录，用于切换账号。其他插件（例如 Teams）的登录不受影响。
+
+## 第 1 步：在 Microsoft Entra ID 中注册应用
+
+所有方式都需要一个应用注册。您需要一个能在租户中注册应用、并授予管理员同意的账号。
+
+1. 打开 [Microsoft Entra 管理中心](https://entra.microsoft.com) → **App registrations** → **New registration**。
+
+   ![New registration](../_assets/entra-new-registration.png)
+
+2. 填写名称（例如 `Dify Outlook`），保持 **Single tenant only**。**Redirect URI** 选 **Web**：如果要用 OAuth，填入 Dify 显示的回调地址（见 [OAuth](#oauth)）；否则先留空，之后再添加。点击 **Register**。
+
+   ![Register an application](../_assets/entra-register-form.png)
+
+3. 在应用的 **Overview** 页面，复制 **Application (client) ID** 和 **Directory (tenant) ID**。
+
+   ![Client ID 和 tenant ID](../_assets/entra-overview-ids.png)
+
+4. 在 **API permissions** → **Add a permission** → **Microsoft Graph** 中，添加所用方式需要的权限：
+
+   | 权限 | 类型 | 哪些方式需要 |
+   |---|---|---|
+   | `Mail.Read`、`Mail.ReadWrite`、`Mail.Send` | 委托（Delegated） | OAuth、每个用户自己登录 |
+   | `Calendars.ReadWrite` | 委托 | OAuth、每个用户自己登录 |
+   | `Calendars.Read.Shared` | 委托 | OAuth、每个用户自己登录（共享日历、Get Schedule） |
+   | `offline_access` | 委托 | OAuth、每个用户自己登录（保持登录状态） |
+   | `Mail.ReadWrite`、`Mail.Send`、`Calendars.ReadWrite` | 应用程序（Application） | Service Principal |
+
+   新应用默认带有的 `User.Read` 可以保留。
+
+5. 点击 **Grant admin consent for \<您的组织\>**，再点 **Yes** 确认。Service Principal 必须做这一步。"每个用户自己登录"也强烈建议做：这样用户不会看到授权同意页；如果浏览器里已经登录了 Microsoft，登录只需要点一下。
+
+   ![授予管理员同意](../_assets/entra-grant-consent.png)
+
+6. 在 **Certificates & secrets** → **Client secrets** 中点击 **New client secret**。立即复制 **Value**（它只显示一次）；**Secret ID** 不是密钥。
+
+   ![New client secret](../_assets/entra-client-secret.png)
+
+然后按您选择的方式继续配置。
+
+## OAuth
+
+1. 在 Dify 中打开 **插件** → **Outlook**，点击 **Add OAuth** 旁边的设置图标。
+
+   ![OAuth 客户端设置按钮](../_assets/dify-oauth-client-button.png)
+
+2. 对话框里会显示要使用的回调地址：把它添加到应用注册中（**Authentication** → **Add Redirect URI** → **Web**）。填写 **Client ID**、**Client Secret** 和 **Tenant ID**（个人账号或多租户可留空或填 `common`），选择 Microsoft Cloud，保存。
+
+   ![OAuth 客户端设置](../_assets/dify-oauth-client-settings.png)
+
+3. 点击 **Add OAuth**，用工具要使用其邮箱的那个 Microsoft 账号登录。
+
+> 从 0.7.0 之前的版本升级会新增 `Calendars.Read.Shared` 权限：请把它加到应用注册中，并重新授权一次。
+
+## Service Principal
+
+适合以组织身份而不是个人身份运行的工作流：没有人需要登录，员工离职也不受影响，审计日志里显示的是应用。
+
+1. 给应用添加第 1 步中的**应用程序**权限，并授予管理员同意。
+2. 建议用 Exchange Online 的 [RBAC for Applications](https://learn.microsoft.com/exchange/permissions-exo/application-rbac) 把应用限制在需要的邮箱上，否则应用程序权限能访问租户里的所有邮箱。
+3. 在 Dify 中点击 **Add API Key**，**Mode** 选 *Service Principal*，填写 **Tenant ID**（您的目录 ID，不能用 `common`）、**Client ID**、**Client Secret** 和 **Default Mailbox**（例如 `support@contoso.com`）。Dify 会登录并读取这个收件箱，以检查权限。
+4. 每个工具都有可选的 **Mailbox** 设置（在节点里设置，LLM 无法选择），用同一个授权访问其他邮箱。
+
+## 每个用户自己登录：个人 Outlook 助手
+
+搭建一个 Agent，回答正在对话的那个人的"我的邮件里有什么？""我今天有什么日程？"。用户第一次需要 Outlook 时，Agent 会给出一个 Microsoft 登录链接。登录后，工具访问的就是该用户自己的邮箱和日历，之后的对话中也保持登录。
+
+### 1. 创建登录回调 Endpoint
+
+浏览器从 Microsoft 登录页返回时，会回到插件自己的 Endpoint。
+
+1. 在 **插件** → **Outlook** 中滚动到 **ENDPOINTS**，点击 **+**。
+
+   ![添加 Endpoint](../_assets/dify-endpoint-add.png)
+
+2. 输入名称并保存，不需要填别的。
+
+   ![Endpoint 名称](../_assets/dify-endpoint-name.png)
+
+3. 用复制按钮复制 Endpoint 的 URL，格式是 `https://<您的 Dify 域名>/e/<id>/outlook/callback`。
+
+   ![Endpoint URL](../_assets/dify-endpoint-url.png)
+
+> **URL 以 `http://localhost` 开头？** 说明您自部署的 Dify 还在用默认的 `ENDPOINT_URL_TEMPLATE=http://localhost/e/{hook_id}`。Endpoint 实际在您的真实域名下可以访问，只是界面上显示的 URL 不对。可以在 `docker/.env` 中设置 `ENDPOINT_URL_TEMPLATE=https://<您的 Dify 域名>/e/{hook_id}` 并重启 API（`docker compose up -d api`），也可以手动把复制出来的 URL 里的 `http://localhost` 换成您的 Dify 地址。Microsoft 只允许 `localhost` 使用 `http`，所以 URL 必须是 `https`。
+>
+> ![显示为 localhost 的 Endpoint URL](../_assets/dify-endpoint-url-localhost.png)
+
+### 2. 在 Microsoft 中登记 Endpoint URL
+
+在应用注册中打开 **Authentication** → **Add Redirect URI** → **Web**，粘贴 Endpoint URL，点击 **Configure**。请确认填的是 `https` 地址而不是 `localhost`；如果对不上，Microsoft 登录页会报 `AADSTS50011` 错误。
+
+![添加 Redirect URI](../_assets/entra-redirect-uri.png)
+
+### 3. 在 Dify 中添加授权
+
+1. 在 **插件** → **Outlook** 中点击 **Add API Key**。
+
+   ![Add API Key](../_assets/dify-add-api-key.png)
+
+2. 填写表单：
+   - **Authorization Name**：任意名称，例如 `Dify Outlook Agent`。
+   - **Mode**：*Each user signs in (own mailbox, for chat agents)*。
+   - **Tenant ID**：您的目录（租户）ID。填写后只允许本组织的账号登录。
+   - **Client ID** 和 **Client Secret**：第 1 步中获取的值。
+
+   ![授权表单（上半部分）](../_assets/dify-per-user-form-top.png)
+
+   - **Default Mailbox**：留空，这个方式不使用它。
+   - **Sign-in Callback URL**：第 1 节中的 Endpoint URL。Dify 会拒绝 `localhost` 地址。
+   - **Microsoft Cloud**：除非您的租户在国家云中，否则选 *Global*。
+
+   ![授权表单（下半部分）](../_assets/dify-per-user-form-bottom.png)
+
+   保存时，Dify 会检查这些字段；填写了具体的租户 ID 时，还会确认 Microsoft 接受这个 client ID 和 secret。这一步不会访问任何用户的邮箱，授权里也不保存任何用户的 token。
+
+### 4. 配置 Agent
+
+1. 创建一个 Agent，在 **TOOLS** 下点击 **Add**，添加 **Outlook**。保留需要的邮件和日历工具，以及 **Sign Out of Outlook**。
+2. 在 Outlook 旁边的凭证菜单中，选择第 3 节添加的授权。如果选的是 OAuth 授权，工具访问的就是那一个共享邮箱，Sign Out of Outlook 也不会生效。
+
+   ![选择授权](../_assets/agent-credential.png)
+
+3. 提示词可以这样写：
+
+   ```
+   You can use the Outlook tools to access the current user's own mailbox and calendar.
+   - When the user asks about their schedule or meetings, call list_events or search_events.
+   - When the user asks about their email, call list_messages or get_message. Create a draft instead of sending unless the user clearly asks you to send.
+   - If a tool says the user needs to sign in and returns a link, give the link to the user exactly as returned. Ask them to open it, sign in with their own Microsoft account, and reply "done" when finished. After they reply, call the same tool again.
+   - Never make up emails or events. If a tool returns an error, tell the user what it says.
+   - If the user asks to sign out or switch accounts, call outlook_sign_out.
+   ```
+
+4. 发布 Agent。
+
+### 5. 用户看到的流程
+
+1. 第一次提问会得到一个指向插件 Endpoint 的短登录链接，15 分钟内有效。打开后，浏览器会跳转到 Microsoft 登录页。
+
+   ![登录链接](../_assets/chat-sign-in-link.png)
+
+2. 用户打开链接，用自己的 Microsoft 账号登录。
+
+   ![选择账号](../_assets/chat-choose-account.png)
+
+3. 页面显示 **Signed in**，提示用户回到对话里说一声已完成。页面上还会提醒：只有这次登录是自己发起的才继续；如果链接是别人发来的，可以在这里取消。
+4. 用户回复 "done"，Agent 就用该用户自己的邮箱回答。登录后的第一个回答会注明使用的是哪个账号，登错账号也容易发现。
+
+   ![用自己的邮箱回答](../_assets/chat-answer.png)
+
+5. 说 "sign out" 会清除该用户的登录，下次提问时会重新要求登录。
+
+   ![退出登录](../_assets/chat-sign-out.png)
+
+### 用户能保持登录多久
+
+access token 每小时在后台自动续期，Microsoft 的 refresh token 只要一直在用就保持有效（约 90 天不活动才过期），所以经常使用的用户通常只需要登录一次。升级插件不会让用户退出登录。以下情况会要求用户重新登录：
+
+- **Dify 认为是另一个用户。** 插件按 Dify 的用户 ID 区分用户：
+  - 在控制台中（调试和预览），是成员自己的账号，稳定不变。
+  - 在**不需要登录的公开 WebApp** 中，每个浏览器（包括无痕窗口、清除 Cookie 之后）都是一个新的匿名用户，需要分别登录。
+  - 通过 **Service API** 调用时，是调用方传入的 `user` 值，同一个人要一直传同一个值。调用方可以随意填写这个值，所以只能由已经验证过用户身份的可信后端调用 API。
+  - 在 WebApp 的 URL 中传 `sys.user_id` 可以让 ID 保持不变，但任何人都能改 URL 冒充别的用户，只适合演示。
+- 用户退出登录、修改密码，或者管理员撤销了该用户的会话或应用的授权。
+- 组织的条件访问（Conditional Access）要求在一段时间后重新登录。
+- **轮换了 client secret**：token 是用由它派生出的密钥加密的，所以所有人都要重新登录。
+
+### 安全说明
+
+- token 永远不会交给 Agent：工具结果里只有数据，没有 token，提示词注入也拿不到。每个用户的 token 都加密保存在插件存储中，不会写入日志。
+- 一个用户不可能用到另一个用户的登录：用户 ID 来自 Dify，而不是 LLM。
+- Endpoint 只会短暂保存一次性的授权码。把它换成 token 还需要 client secret 和 PKCE verifier，这两样 Endpoint 都没有。
+- 用户可能把自己的登录链接发给同事。同事如果用这个链接登录，同事的邮箱就会连接到发链接那个人的对话里。**Signed in** 页面会提醒这一点，并提供 **cancel this sign-in** 链接。请告诉用户只通过自己请求的链接登录。管理员可以在 Entra 中撤销用户的会话，断开任何连接。
+- 要一次断开所有人，可以轮换 client secret，或者在 Entra 中撤销应用的授权。
+
+## 国家云
+
+OAuth、Service Principal 和"每个用户自己登录"都有 **Microsoft Cloud** 设置：Global、US Government、US Government DoD 或 China（世纪互联）。它会同时切换登录地址和 Microsoft Graph 地址。已有的授权继续使用全球云。
+
+## 使用方法
+
+把 Outlook 工具添加到 Agent 或工作流中，填写输入并运行。日历的常见流程是 **List Calendars** → **Create Event** / **List Events**。
+
+查看别人共享给您的日历（例如助理查看高管的日历）：**List Calendar Groups** → 取 *People's calendars* 的 ID → 用这个 Calendar Group ID 和日期范围调用 **Search Events**，或者用它调用 **Get Schedule** 查询忙闲。
+
+## 输出变量
+
+除了 `text` 和 `json`（与之前相同），每个工具还会返回带类型的变量，后续工作流节点可以直接选用，不必解析 `json`。每个工具都有 `success`（布尔值）和 `error`（字符串，成功时为空），工作流可以用 IF 节点分支；列表类工具返回扁平化的数组和 `count`。
+
+| 工具 | 变量（`success`、`error` 之外） |
+|---|---|
+| List Messages | `messages`、`count` |
+| Get Message | `message_id`、`conversation_id`、`subject`、`from_name`、`from_address`、`to`、`cc`、`received_datetime`、`body`、`body_type`、`web_link`、`attachment_ids`、`attachment_names` |
+| Download Attachment | `file_name`、`content_type`、`size`、`downloaded` |
+| Send Message | `subject`、`to`、`attachment_count` |
+| Send Draft | `draft_id`、`subject` |
+| Draft Email | `draft_id`、`subject`、`conversation_id`、`web_link` |
+| List Draft Emails | `drafts`、`count` |
+| Add Attachment to Draft | `attachments`、`count` |
+| Prioritize Email | `message_id`、`importance` |
+| Flag Email | `message_id`、`flag_status` |
+| List Calendar Groups | `calendar_groups`、`count` |
+| List Calendars | `calendars`、`count` |
+| List Events | `events`、`count`、`errors` |
+| Search Events | `events`、`count`、`errors` |
+| Get Schedule (Free/Busy) | `schedules`、`busy_people`、`count` |
+| Create Event | `event_id`、`subject`、`start`、`end`、`time_zone`、`location`、`web_link`、`online_meeting_url` |
+| Get Event | `event_id`、`subject`、`start`、`end`、`time_zone`、`location`、`web_link`、`online_meeting_url` |
+| Update Event | `event_id`、`subject`、`start`、`end`、`time_zone`、`location`、`web_link`、`online_meeting_url` |
+| Delete Event | `event_id` |
+| Sign Out of Outlook | `signed_out` |
+
+## 常见问题
+
+| 现象 | 原因和解决方法 |
+|---|---|
+| Microsoft 页面显示 `AADSTS50011: The redirect URI ... does not match` | 请求里的地址没有在应用中登记。在 **Authentication** → **Web** 中添加完全相同的地址。"每个用户自己登录"必须登记 `https` 的 Endpoint 地址，不能是 `localhost`。 |
+| `AADSTS7000215` / client secret 无效 | 填写的应该是 secret 的 **Value**，不是 Secret ID；同时确认它没有过期。 |
+| `OAuth credential for tool provider ... could not be refreshed` | Agent 或节点使用的 OAuth 授权已过期或被撤销。重新授权，或者换一个授权。 |
+| Sign Out of Outlook 回复说这个凭证由整个工作区共享 | Agent 用的是 OAuth 或 Service Principal 授权。请改选"每个用户自己登录"的授权。 |
+| 换一个浏览器又要求登录 | WebApp 是公开的，每个浏览器都是不同的匿名 Dify 用户。见[用户能保持登录多久](#用户能保持登录多久)。 |
+| Endpoint URL 以 `http://localhost` 开头 | 设置 `ENDPOINT_URL_TEMPLATE`，见[第 1 节](#1-创建登录回调-endpoint)。 |
+| Service Principal 访问某个邮箱时返回 403 | 应用程序权限没有授予管理员同意，或者 Exchange 的 RBAC for Applications 范围不包括这个邮箱。 |
+
+## 隐私
+
+本插件把所选操作的输入发送给 Microsoft Graph。使用"每个用户自己登录"时，会把每个用户的 token 加密保存在插件存储中。详见 [PRIVACY.md](../PRIVACY.md)。
