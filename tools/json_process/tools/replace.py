@@ -56,7 +56,7 @@ class JSONReplaceTool(Tool):
                         new_value = json.loads(new_value)
                     except json.JSONDecodeError:
                         return "Cannot decode replace value to json object"
-                match.full_path.update(input_data, new_value)
+                input_data = match.full_path.update(input_data, new_value)
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             return str(e)
@@ -95,7 +95,7 @@ class JSONReplaceTool(Tool):
                     return "Cannot decode replace value to json object"
             matches = expr.find(input_data)
             for match in matches:
-                match.full_path.update(input_data, replace_value)
+                input_data = match.full_path.update(input_data, replace_value)
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             return str(e)

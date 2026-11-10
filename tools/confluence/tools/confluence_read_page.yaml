@@ -1,0 +1,60 @@
+identity:
+  name: confluence_read_page
+  author: langgenius
+  label:
+    en_US: Read Page
+    zh_Hans: 读取页面
+    ja_JP: ページを読む
+description:
+  human:
+    en_US: A page's text, version and link
+    zh_Hans: 获取页面正文、版本和链接
+    ja_JP: ページの本文、バージョン、リンク
+  llm: 'Read a Confluence page: title, readable text of the content, version number and link.'
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    page_id:
+      type: string
+      description: Page ID
+    title:
+      type: string
+      description: Title
+    body_text:
+      type: string
+      description: The content as plain text
+    body_storage:
+      type: string
+      description: The content in storage format (XHTML)
+    version:
+      type: integer
+      description: Version number
+    url:
+      type: string
+      description: Link to the page
+    space_id:
+      type: string
+      description: Space ID
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_read_page.py
