@@ -31,4 +31,4 @@ resource:
       enabled: true
       size: 1048576
 type: plugin
-version: 1.4.1
+version: 1.4.2

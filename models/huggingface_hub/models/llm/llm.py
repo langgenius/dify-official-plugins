@@ -53,7 +53,7 @@ class HuggingfaceHubLargeLanguageModel(_CommonHuggingfaceHub, LargeLanguageModel
             details=True,
             stream=stream,
             model=model,
-            stop_sequences=stop,
+            stop=stop,
             **model_parameters,
         )
         if stream:

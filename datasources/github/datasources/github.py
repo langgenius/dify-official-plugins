@@ -1,18 +1,69 @@
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
+import logging
 import requests
 import time
 import base64
 import markdown
 from typing import Dict, List, Optional, Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from dify_plugin.entities.datasource import (
     DatasourceGetPagesResponse,
     DatasourceMessage,
     GetOnlineDocumentPageContentRequest,
     OnlineDocumentInfo,
+    OnlineDocumentPage,
 )
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
+
+
+logger = logging.getLogger(__name__)
+
+# GitHub's directory endpoint does not identify a file's encoding. Only expose
+# known text files as selectable pages so a binary asset cannot fail an import.
+TEXT_FILE_EXTENSIONS = {
+    "adoc", "astro", "bash", "bat", "c", "cc", "cfg", "clj", "cljs", "cljc",
+    "cmd", "conf", "cpp", "cs", "css", "csv", "cts", "cxx", "dart", "edn",
+    "elm", "env", "erl", "ex", "exs", "fish", "fs", "fsx", "go", "gql",
+    "graphql", "h", "hcl", "hpp", "hrl", "htm", "html", "hxx", "ini",
+    "ipynb", "java", "jl", "js", "json", "jsonl", "jsx", "kt", "kts",
+    "less", "lock", "lua", "m", "markdown", "md", "mdx", "mjs", "mm", "mts",
+    "org", "php", "pl", "pm", "proto", "ps1", "py", "pyi", "r", "rb",
+    "rs", "rst", "sass", "scala", "scm", "scss", "sh", "sql", "svelte",
+    "svg", "swift", "tf", "tfvars", "toml", "ts", "tsv", "tsx", "txt",
+    "vue", "xml", "yaml", "yml", "zsh",
+}
+TEXT_FILE_NAMES = {
+    ".babelrc", ".coveragerc", ".dockerignore", ".editorconfig", ".eslintignore",
+    ".eslintrc", ".gitattributes", ".gitignore", ".gitmodules",
+    ".npmrc", ".nvmrc", ".prettierignore", ".prettierrc",
+    ".python-version", ".tool-versions", "dockerfile", "gemfile",
+    "justfile", "license", "makefile", "procfile", "rakefile", "readme",
+}
+
+
+def _is_supported_text_file(path: str) -> bool:
+    name = path.rsplit("/", 1)[-1].lower()
+    return name in TEXT_FILE_NAMES or name.startswith(".env.") or name.rsplit(".", 1)[-1] in TEXT_FILE_EXTENSIONS
+
+
+class GitHubRepositoryBlockedError(Exception):
+    """Keep blocked repositories separate from optional-resource ValueErrors."""
+
+
+class GitHubTreePage(OnlineDocumentPage):
+    has_children: bool = False
+
+
+class GitHubTreeInfo(OnlineDocumentInfo):
+    pages: list[GitHubTreePage]
+    next_cursor: str | None = None
+
+
+class GitHubTreePagesResponse(DatasourceGetPagesResponse):
+    result: list[GitHubTreeInfo]
+    next_cursor: str | None = None
 
 
 class GitHubDataSource(OnlineDocumentDatasource):
@@ -33,24 +84,38 @@ class GitHubDataSource(OnlineDocumentDatasource):
         }
     
     def _handle_rate_limit(self, response: requests.Response) -> None:
-        """Handle API rate limiting"""
+        """Handle GitHub API errors, including rate limits and blocked repositories."""
         if response.status_code == 403:
-            rate_limit_remaining = response.headers.get("X-RateLimit-Remaining", "0")
+            rate_limit_remaining = response.headers.get("X-RateLimit-Remaining")
             if rate_limit_remaining == "0":
                 reset_time = int(response.headers.get("X-RateLimit-Reset", "0"))
                 current_time = int(time.time())
                 sleep_time = max(reset_time - current_time + 1, 60)
                 raise ValueError(f"GitHub API rate limit exceeded. Please wait {sleep_time} seconds.")
+            try:
+                error = response.json()
+            except ValueError:
+                error = {}
+            if isinstance(error, dict) and error.get("message") == "Repository access blocked":
+                block = error.get("block")
+                reason = block.get("reason") if isinstance(block, dict) else None
+                detail = f" ({reason})" if reason else ""
+                raise GitHubRepositoryBlockedError(f"GitHub repository access blocked{detail}: {response.url}")
+            raise ValueError(f"GitHub API error: 403 - {response.text}")
         elif response.status_code == 401:
             raise ValueError("Invalid GitHub access token. Please check your credentials.")
         elif response.status_code >= 400:
             raise ValueError(f"GitHub API error: {response.status_code} - {response.text}")
     
-    def _make_request(self, url: str, params: Optional[Dict] = None) -> Dict:
-        """Make API request and handle errors"""
+    def _request_response(self, url: str, params: Optional[Dict] = None) -> requests.Response:
         headers = self._get_headers()
         response = requests.get(url, headers=headers, params=params, timeout=30)
         self._handle_rate_limit(response)
+        return response
+
+    def _make_request(self, url: str, params: Optional[Dict] = None) -> Dict:
+        """Make API request and handle errors"""
+        response = self._request_response(url, params)
         return response.json()
     
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
@@ -87,8 +152,208 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         # Get user repositories
         repos = self._get_repositories(visibility=visibility, affiliation=affiliation, _type=_type)
-        for repo in repos:
-            # Add repository as page
+        if datasource_parameters.get("view") == "tree":
+            return self._get_tree_pages(
+                datasource_parameters,
+                repos,
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                workspace_icon=workspace_icon,
+            )
+
+        # Bound the per-repository API fanout so page listing does not wait on 20 repositories serially.
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            for repository_pages in executor.map(self._get_repository_pages, repos):
+                pages.extend(repository_pages)
+
+        online_document_info = OnlineDocumentInfo(
+            workspace_name=workspace_name,
+            workspace_icon=workspace_icon,
+            workspace_id=workspace_id,
+            pages=pages,
+            total=len(pages),
+        )
+
+        return DatasourceGetPagesResponse(result=[online_document_info])
+
+    def _get_tree_pages(
+        self,
+        parameters: dict[str, Any],
+        repos: list[dict[str, Any]],
+        *,
+        workspace_id: str,
+        workspace_name: str,
+        workspace_icon: str,
+    ) -> GitHubTreePagesResponse:
+        """List only one preview level; the default full inventory remains unchanged."""
+        limit = self._preview_number(parameters.get("limit", 50), "limit", minimum=1, maximum=200)
+        parent_id = parameters.get("parent_id")
+        next_cursor: str | None
+
+        if parent_id is None:
+            # /user/repos can include repositories blocked from direct access. Preserve the
+            # default inventory's behavior of hiding those repositories before selection.
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                available = list(executor.map(self._repository_is_available, repos))
+            visible_repos = [repo for repo, is_available in zip(repos, available) if is_available]
+            all_pages = [
+                {
+                    "page_id": f"repo:{repo['full_name']}",
+                    "page_name": repo["name"],
+                    "last_edited_time": repo.get("updated_at", ""),
+                    "type": "repository",
+                    "has_children": True,
+                }
+                for repo in visible_repos
+            ]
+            pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+            total = len(all_pages)
+        else:
+            if not isinstance(parent_id, str) or ":" not in parent_id:
+                raise ValueError("Invalid GitHub preview parent_id")
+            kind, identifier = parent_id.split(":", 1)
+            repo_name = identifier.split(":", 1)[0] if kind == "dir" else identifier
+            repo = next((item for item in repos if item["full_name"] == repo_name), None)
+            if repo is None or not self._repository_is_available(repo):
+                raise ValueError("Repository is not available in this datasource")
+            if kind == "repo":
+                all_pages = self._repository_preview_folders(repo, parent_id)
+                pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+                total = len(all_pages)
+            elif kind in {"contents", "dir"}:
+                path = identifier.split(":", 1)[1] if kind == "dir" and ":" in identifier else ""
+                if kind == "dir" and (not path or any(part in {"", ".", ".."} for part in path.split("/"))):
+                    raise ValueError("Invalid GitHub directory path")
+                all_pages = self._directory_preview_pages(repo, parent_id, path)
+                pages, next_cursor = self._slice_preview_pages(all_pages, parameters, limit)
+                total = len(all_pages)
+            elif kind in {"issues", "prs"}:
+                pages, next_cursor = self._discussion_preview_pages(repo, parent_id, kind, parameters, limit)
+                total = len(pages)
+            else:
+                raise ValueError("Unsupported GitHub preview parent_id")
+
+        info = GitHubTreeInfo(
+            workspace_name=workspace_name,
+            workspace_icon=workspace_icon,
+            workspace_id=workspace_id,
+            pages=pages,
+            total=total,
+            next_cursor=next_cursor,
+        )
+        return GitHubTreePagesResponse(result=[info], next_cursor=next_cursor)
+
+    def _slice_preview_pages(
+        self, pages: list[dict[str, Any]], parameters: dict[str, Any], limit: int
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        offset = self._preview_number(parameters.get("cursor", "0"), "cursor", minimum=0)
+        next_cursor = str(offset + limit) if offset + limit < len(pages) else None
+        return pages[offset : offset + limit], next_cursor
+
+    def _repository_preview_folders(self, repo: dict[str, Any], parent_id: str) -> list[dict[str, Any]]:
+        name = repo["full_name"]
+        folders = [("contents", "Contents")]
+        if repo.get("has_issues") is not False:
+            folders.append(("issues", "Issues"))
+        folders.append(("prs", "Pull requests"))
+        return [
+            {
+                "page_id": f"{kind}:{name}",
+                "page_name": label,
+                "last_edited_time": repo.get("updated_at", ""),
+                "type": "github_collection",
+                "parent_id": parent_id,
+                "has_children": True,
+            }
+            for kind, label in folders
+        ]
+
+    def _directory_preview_pages(
+        self, repo: dict[str, Any], parent_id: str, path: str
+    ) -> list[dict[str, Any]]:
+        name = repo["full_name"]
+        suffix = f"/{quote(path, safe='/')}" if path else ""
+        entries = self._make_request(f"{self.base_url}/repos/{name}/contents{suffix}")
+        if not isinstance(entries, list):
+            raise ValueError("GitHub directory listing did not return a list")
+        pages = []
+        for entry in entries:
+            if not isinstance(entry, dict) or entry.get("type") not in {"dir", "file"}:
+                continue
+            entry_path = entry.get("path")
+            if not isinstance(entry_path, str) or not entry_path:
+                continue
+            is_dir = entry["type"] == "dir"
+            if not is_dir and not _is_supported_text_file(entry_path):
+                continue
+            pages.append({
+                "page_id": f"{'dir' if is_dir else 'file'}:{name}:{entry_path}",
+                "page_name": entry.get("name") or entry_path.rsplit("/", 1)[-1],
+                # A contents entry has no edit timestamp; SHA is a Git object ID.
+                "last_edited_time": repo.get("updated_at", ""),
+                "type": "github_directory" if is_dir else "file",
+                "parent_id": parent_id,
+                "has_children": is_dir,
+            })
+        return pages
+
+    def _discussion_preview_pages(
+        self,
+        repo: dict[str, Any],
+        parent_id: str,
+        kind: str,
+        parameters: dict[str, Any],
+        limit: int,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        page_number = self._preview_number(parameters.get("cursor", "1"), "cursor", minimum=1)
+        name = repo["full_name"]
+        endpoint = "issues" if kind == "issues" else "pulls"
+        response = self._request_response(
+            f"{self.base_url}/repos/{name}/{endpoint}",
+            params={"state": "all", "per_page": min(limit, 100), "sort": "updated", "page": page_number},
+        )
+        items = response.json()
+        if not isinstance(items, list):
+            raise ValueError("GitHub discussion listing did not return a list")
+        pages = []
+        for item in items:
+            if not isinstance(item, dict) or (kind == "issues" and "pull_request" in item):
+                continue
+            number = item.get("number")
+            if not isinstance(number, int):
+                continue
+            pages.append({
+                "page_id": f"{'issue' if kind == 'issues' else 'pr'}:{name}:{number}",
+                "page_name": f"{'Issue' if kind == 'issues' else 'PR'} #{number}: {item.get('title', '')}",
+                "last_edited_time": item.get("updated_at", ""),
+                "type": "issue" if kind == "issues" else "pull_request",
+                "parent_id": parent_id,
+                "has_children": False,
+            })
+        next_cursor = str(page_number + 1) if "next" in response.links else None
+        return pages, next_cursor
+
+    @staticmethod
+    def _preview_number(value: Any, name: str, *, minimum: int, maximum: int | None = None) -> int:
+        if isinstance(value, bool) or not str(value).isdecimal():
+            raise ValueError(f"'{name}' must be an integer")
+        parsed = int(value)
+        if parsed < minimum or (maximum is not None and parsed > maximum):
+            raise ValueError(f"'{name}' is outside the supported range")
+        return parsed
+
+    def _repository_is_available(self, repo: dict[str, Any]) -> bool:
+        try:
+            self._make_request(f"{self.base_url}/repos/{repo['full_name']}")
+        except GitHubRepositoryBlockedError as error:
+            logger.warning("Skipping GitHub repository %s: %s", repo["full_name"], error)
+            return False
+        return True
+
+    def _get_repository_pages(self, repo: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Load one repository's pages without letting a blocked repo fail the list."""
+        pages: List[Dict[str, Any]] = []
+        try:
             pages.append({
                 "page_id": f"repo:{repo['full_name']}",
                 "page_name": repo['name'],
@@ -172,16 +437,10 @@ class GitHubDataSource(OnlineDocumentDatasource):
                     })
             except ValueError:
                 pass  # PRs access failed
-        
-        online_document_info = OnlineDocumentInfo(
-            workspace_name=workspace_name,
-            workspace_icon=workspace_icon,
-            workspace_id=workspace_id,
-            pages=pages,
-            total=len(pages),
-        )
-        
-        return DatasourceGetPagesResponse(result=[online_document_info])
+        except GitHubRepositoryBlockedError as error:
+            logger.warning("Skipping GitHub repository %s: %s", repo["full_name"], error)
+            return []
+        return pages
     
     def _get_repositories(self,
                           max_repos: int = 20,
@@ -264,22 +523,27 @@ class GitHubDataSource(OnlineDocumentDatasource):
         repo_name = parts[1]
         file_path = parts[2]
         
-        file_info = self._make_request(f"{self.base_url}/repos/{repo_name}/contents/{file_path}")
+        file_info = self._make_request(f"{self.base_url}/repos/{repo_name}/contents/{quote(file_path, safe='/')}")
         
         if file_info.get("type") != "file":
             raise ValueError("Can only get content for files, not directories")
         
         # Get file content
         if file_info.get("encoding") == "base64":
-            content = base64.b64decode(file_info["content"]).decode("utf-8")
+            raw_content = base64.b64decode(file_info["content"])
         else:
             download_url = file_info.get("download_url")
             if download_url:
-                response = requests.get(download_url, timeout=30)
+                response = requests.get(download_url, headers=self._get_headers(), timeout=30)
                 response.raise_for_status()
-                content = response.text
+                raw_content = response.content
             else:
-                content = file_info.get("content", "")
+                raw_content = (file_info.get("content") or "").encode("utf-8")
+
+        try:
+            content = raw_content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"GitHub file is not UTF-8 text: {repo_name}/{file_path}") from error
         
         # If it's a Markdown file, add title
         file_name = file_info["name"]

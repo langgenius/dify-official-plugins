@@ -19,7 +19,20 @@ MODELS = ["tts-1", "tts-1-hd"]
 
 
 def tts_model():
-    return PluginRegistration(DifyPluginEnv()).get_model_instance("tokener", ModelType.TTS)
+    import yaml
+    from dify_plugin.entities.model import AIModelEntity
+    from test_tts_catalog import catalog
+
+    from scripts.sync_catalog import render_catalog
+
+    model = PluginRegistration(DifyPluginEnv()).get_model_instance("tokener", ModelType.TTS)
+    files = render_catalog(catalog(), model_type="tts")
+    model.model_schemas = [
+        AIModelEntity.model_validate(yaml.safe_load(content))
+        for name, content in files.items()
+        if name != "_position.yaml"
+    ]
+    return model
 
 
 def response(body=b"audio\x00\xff", status=200):
@@ -31,7 +44,7 @@ def response(body=b"audio\x00\xff", status=200):
 
 
 @pytest.mark.parametrize("model_id", MODELS)
-def test_tts_registry_public_invoke_keeps_selected_model_and_audio_bytes(model_id):
+def test_tts_fixture_public_invoke_keeps_selected_model_and_audio_bytes(model_id):
     model = tts_model()
     assert {schema.model for schema in model.model_schemas} == set(MODELS)
     credentials = {"api_key": "test", "endpoint_model_name": "wrong", "endpoint_url": "wrong"}
@@ -42,7 +55,7 @@ def test_tts_registry_public_invoke_keeps_selected_model_and_audio_bytes(model_i
     assert result == b"audio\x00\xff"
     request = send.call_args.args[0]
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.dev/v1/audio/speech"
+    assert request.url == "https://api.tokener.ai/v1/audio/speech"
     assert request.headers["Content-Type"] == "application/json"
     assert json.loads(request.body) == {
         "model": model_id,

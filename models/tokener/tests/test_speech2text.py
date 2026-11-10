@@ -27,7 +27,20 @@ MODELS = [
 
 
 def speech2text_model():
-    return PluginRegistration(DifyPluginEnv()).get_model_instance("tokener", ModelType.SPEECH2TEXT)
+    import yaml
+    from dify_plugin.entities.model import AIModelEntity
+    from test_speech2text_catalog import catalog
+
+    from scripts.sync_catalog import render_catalog
+
+    model = PluginRegistration(DifyPluginEnv()).get_model_instance("tokener", ModelType.SPEECH2TEXT)
+    files = render_catalog(catalog(), model_type="speech2text")
+    model.model_schemas = [
+        AIModelEntity.model_validate(yaml.safe_load(content))
+        for name, content in files.items()
+        if name != "_position.yaml"
+    ]
+    return model
 
 
 def response(body, status=200):
@@ -39,7 +52,7 @@ def response(body, status=200):
 
 
 @pytest.mark.parametrize("model_id", MODELS)
-def test_speech2text_registry_public_invoke_preserves_model_and_multipart(model_id):
+def test_speech2text_fixture_public_invoke_preserves_model_and_multipart(model_id):
     model = speech2text_model()
     assert {schema.model for schema in model.model_schemas} == set(MODELS)
     audio = io.BytesIO(b"audio bytes")
@@ -50,7 +63,7 @@ def test_speech2text_registry_public_invoke_preserves_model_and_multipart(model_
         expected |= {"chunking_strategy": "auto", "response_format": "diarized_json"}
     with patch("requests.post", return_value=response({"text": "transcribed"})) as post:
         assert model.invoke(model_id, credentials, audio, user="user") == "transcribed"
-    assert post.call_args.args == ("https://api.tokener.dev/v1/audio/transcriptions",)
+    assert post.call_args.args == ("https://api.tokener.ai/v1/audio/transcriptions",)
     assert post.call_args.kwargs["data"] == expected
     assert post.call_args.kwargs["files"] == [("file", audio)]
     assert post.call_args.kwargs["headers"] == {"Authorization": "Bearer test"}
@@ -166,5 +179,5 @@ def test_speech2text_multipart_wire_request():
     assert parts["chunking_strategy"].get_payload() == "auto"
     assert parts["response_format"].get_payload() == "diarized_json"
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.dev/v1/audio/transcriptions"
+    assert request.url == "https://api.tokener.ai/v1/audio/transcriptions"
     assert audio.closed

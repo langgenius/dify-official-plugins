@@ -1,0 +1,97 @@
+identity:
+  name: trello_update_list
+  author: langgenius
+  label:
+    en_US: Update List
+    zh_Hans: 更新列表
+    ja_JP: リストを更新
+description:
+  human:
+    en_US: Rename, archive, move or reorder a list
+    zh_Hans: 重命名、归档、移动或排序列表
+    ja_JP: リストの名前変更・アーカイブ・移動・並べ替え
+  llm: 'Update a Trello list: rename it, archive or unarchive it, change its position, or move it to another board.'
+parameters:
+- name: list_id
+  type: string
+  required: true
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: List ID (from the list or search tools)
+    zh_Hans: 列表 ID（可从列表或搜索工具获取）
+    ja_JP: リスト ID（一覧または検索ツールから）
+  llm_description: The list ID, from get_lists_from_board.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: New name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  llm_description: New list name.
+  form: llm
+- name: archived
+  type: boolean
+  required: false
+  label:
+    en_US: Archived
+    zh_Hans: 已归档
+    ja_JP: アーカイブ
+  human_description:
+    en_US: true archives, false unarchives
+    zh_Hans: true 归档，false 取消归档
+    ja_JP: true でアーカイブ、false で解除
+  llm_description: true archives the list, false restores it.
+  form: llm
+- name: position
+  type: string
+  required: false
+  label:
+    en_US: Position
+    zh_Hans: 位置
+    ja_JP: 位置
+  human_description:
+    en_US: top, bottom or a number
+    zh_Hans: top、bottom 或数字
+    ja_JP: top、bottom、または数値
+  llm_description: top, bottom or a number.
+  form: llm
+- name: board_id
+  type: string
+  required: false
+  label:
+    en_US: Move to Board
+    zh_Hans: 移到看板
+    ja_JP: 移動先ボード
+  human_description:
+    en_US: Board to move the list to
+    zh_Hans: 要移到的看板 ID
+    ja_JP: 移動先のボード ID
+  llm_description: Optional board ID to move the list to.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    list_id:
+      type: string
+    name:
+      type: string
+    archived:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_update_list.py

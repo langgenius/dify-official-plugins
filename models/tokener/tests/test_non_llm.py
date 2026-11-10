@@ -98,7 +98,7 @@ def test_public_rerank_preserves_documents_indices_and_threshold():
             top_n=2,
             user="user",
         )
-    assert post.call_args.args == ("https://api.tokener.dev/v1/rerank",)
+    assert post.call_args.args == ("https://api.tokener.ai/v1/rerank",)
     assert post.call_args.kwargs["json"] == {
         "model": "qwen3-rerank",
         "query": "same",
@@ -179,7 +179,7 @@ def test_public_embedding_preserves_model_texts_dimensions_and_order(input_type)
     assert result.model == "embedding-test"
     assert post.call_count == 2
     for index, call in enumerate(post.call_args_list):
-        assert call.args == ("https://api.tokener.dev/v1/embeddings",)
+        assert call.args == ("https://api.tokener.ai/v1/embeddings",)
         assert call.kwargs["json"] == {
             "model": "embedding-test",
             "input": texts[index * 2 : index * 2 + 2],
@@ -246,10 +246,9 @@ def test_public_non_llm_does_not_retry_network_failure():
     assert post.call_count == 1
 
 
-def test_dify_exposes_rerank_without_public_directory_membership():
+def test_rerank_validation_does_not_require_public_directory_membership():
     registration = PluginRegistration(DifyPluginEnv())
     model = registration.get_model_instance("tokener", ModelType.RERANK)
-    assert [schema.model for schema in model.model_schemas] == ["qwen3-rerank"]
     with (
         patch("requests.get", return_value=response({"data": []})) as get,
         patch("requests.post", return_value=response({"results": []})) as post,
@@ -275,3 +274,27 @@ def test_hidden_rerank_validation_rejects_denied_model_access():
         model.validate_credentials("qwen3-rerank", {"api_key": "test"})
     assert "private detail" not in str(caught.value)
     assert post.call_count == 1
+
+
+@pytest.mark.parametrize("model_id", ["text-embedding-v3", "text-embedding-v4"])
+def test_dashscope_embeddings_split_eleven_texts_at_provider_limit(model_id):
+    registration = PluginRegistration(DifyPluginEnv())
+    model = registration.get_model_instance("tokener", ModelType.TEXT_EMBEDDING)
+    texts = [f"document {index}" for index in range(11)]
+
+    def embed(endpoint, credentials, payload):
+        return {
+            "data": [
+                {"index": index, "embedding": [float(text.split()[-1])] * 1024}
+                for index, text in enumerate(payload["input"])
+            ],
+            "usage": {"total_tokens": len(payload["input"])},
+        }
+
+    with patch.object(model, "_post", side_effect=embed) as post:
+        result = model.invoke(model_id, {"api_key": "test"}, texts)
+    payloads = [call.args[2] for call in post.call_args_list]
+    assert [len(payload["input"]) for payload in payloads] == [10, 1]
+    assert all("dimensions" not in payload for payload in payloads)
+    assert [vector[0] for vector in result.embeddings] == list(range(11))
+    assert result.usage.tokens == 11

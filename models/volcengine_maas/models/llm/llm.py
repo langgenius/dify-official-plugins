@@ -109,11 +109,13 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _validate_credentials_v3(credentials: dict) -> None:
         client = ArkClientV3.from_credentials(credentials)
+        sampling = {} if credentials.get("base_model_name", "").lower() == "kimi-k3.1-pro" else {
+            "temperature": 0.7, "top_p": 0.9,
+        }
         try:
             client.chat(
                 max_tokens=16,
-                temperature=0.7,
-                top_p=0.9,
+                **sampling,
                 messages=[UserPromptMessage(content="ping\nAnswer: ")],
             )
         except Exception as e:
@@ -337,6 +339,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
 
         req_params = get_v3_req_params(credentials, model_parameters, stop)
+        cache_key = req_params.pop("prompt_cache_key", None)
         if tools:
             req_params["tools"] = tools
 
@@ -403,6 +406,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         def _handle_chat_response(resp: ChatCompletion) -> LLMResult:
             choice = resp.choices[0]
             message = choice.message
+            content = message.content or ""
+            if credentials.get("base_model_name", "").lower() == "kimi-k3.1-pro":
+                reasoning = getattr(message, "reasoning_content", None)
+                if isinstance(reasoning, str) and reasoning:
+                    content = f"<think>{reasoning}</think>{content}"
             # parse tool calls
             tool_calls = []
             if message.tool_calls:
@@ -421,7 +429,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 model=model,
                 prompt_messages=prompt_messages,
                 message=AssistantPromptMessage(
-                    content=message.content or "",
+                    content=content,
                     tool_calls=tool_calls,
                 ),
                 usage=self._calc_response_usage(
@@ -433,10 +441,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             )
 
         if not stream:
-            resp = client.chat(prompt_messages, **req_params)
+            resp = client.chat(prompt_messages, cache_key=cache_key, **req_params)
             return _handle_chat_response(resp)
 
-        chunks = client.stream_chat(prompt_messages, **req_params)
+        chunks = client.stream_chat(prompt_messages, cache_key=cache_key, **req_params)
         return _handle_stream_chat_response(chunks)
 
     def _create_final_llm_result_chunk(
@@ -608,6 +616,26 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                                     en_us="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
+        rules.append(
+            ParameterRule(
+                name="prompt_cache_key",
+                type=ParameterType.STRING,
+                label=I18nObject(zh_hans="上下文缓存路由键", en_us="Prompt Cache Key"),
+                help=I18nObject(
+                    zh_hans=(
+                        "上下文缓存路由亲和键：共享同一提示词前缀的请求配置相同取值可提升前缀缓存命中率，"
+                        "建议按角色/业务维度命名。未配置时将按系统提示词前500字符自动生成。"
+                        "注意同一取值的请求需控制在每分钟15次以内。"
+                    ),
+                    en_us=(
+                        "Routing affinity key for the implicit context cache: requests sharing a common "
+                        "prompt prefix should use the same value to improve the prefix-cache hit rate "
+                        "(e.g. per character/agent). Falls back to a key derived from the first 500 chars "
+                        "of the system prompt when unset. Keep each value under 15 requests per minute."
+                    ),
+                ),
+            )
+        )
         base_model = credentials.get("base_model_name", "")
         if base_model.lower() in ("doubao-1.5-thinking-pro", "doubao-seed-1.6"):
             rules.append(
@@ -696,7 +724,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
             )
 
-        if base_model.lower() == "glm-5.3-flash":
+        if base_model.lower() in ("glm-5.3-flash", "kimi-k3.1-pro"):
             rules.append(
                 ParameterRule(
                     name="reasoning_effort",
@@ -706,6 +734,12 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["low", "high", "max"],
                 )
             )
+
+        if base_model.lower() == "kimi-k3.1-pro":
+            # K3.1 Pro always thinks and uses fixed sampling settings.
+            rules = [rule for rule in rules if rule.name not in {
+                "temperature", "top_p", "top_k", "presence_penalty", "frequency_penalty",
+            }]
 
         # Add structured output parameters for supported models
         if ModelFeature.STRUCTURED_OUTPUT in model_config.features:

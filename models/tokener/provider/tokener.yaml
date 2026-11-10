@@ -15,7 +15,7 @@ help:
     en_US: Get your API key from Tokener.ai
     zh_Hans: 获取 Tokener.ai API Key
   url:
-    en_US: https://console.tokener.dev/keys
+    en_US: https://console.tokener.ai/keys
 supported_model_types:
   - llm
   - text-embedding

@@ -23,6 +23,13 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Kimi-K3.1-Pro": ModelConfig(
+        properties=ModelProperties(context_size=1048576, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL,
+                  ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
+        pricing=PriceConfig(input=Decimal("0.013"), output=Decimal("0.068"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "DeepSeek-V4.1-Flash": ModelConfig(
         properties=ModelProperties(context_size=1048576, max_tokens=393216, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
@@ -380,4 +387,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["response_format"] = model_parameters.get("response_format")
     if model_parameters.get("reasoning_effort"):
         req_params["reasoning_effort"] = model_parameters.get("reasoning_effort")
+    if model_parameters.get("prompt_cache_key"):
+        req_params["prompt_cache_key"] = model_parameters.get("prompt_cache_key")
     return req_params

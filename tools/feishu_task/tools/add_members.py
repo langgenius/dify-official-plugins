@@ -11,7 +11,9 @@ class AddMembersTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         task_guid = tool_parameters.get("task_guid")
         member_phone_or_email = tool_parameters.get("member_phone_or_email")
         member_role = tool_parameters.get("member_role", "follower")

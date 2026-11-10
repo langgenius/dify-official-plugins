@@ -3,7 +3,7 @@ from http import HTTPStatus
 import requests
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
-ENDPOINT_URL = "https://api.tokener.dev/v1"
+ENDPOINT_URL = "https://api.tokener.ai/v1"
 VALIDATION_TIMEOUT = (10, 30)
 
 

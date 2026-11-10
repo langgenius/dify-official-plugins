@@ -9,7 +9,7 @@
       "modelType": "speech2text",
       "deprecated": false,
       "audio": {
-        "maxUploadBytes": 26214400,
+        "maxUploadBytes": 25000000,
         "supportedExtensions": [
           "flac",
           "mp3",
@@ -59,7 +59,7 @@
       "modelType": "speech2text",
       "deprecated": false,
       "audio": {
-        "maxUploadBytes": 26214400,
+        "maxUploadBytes": 25000000,
         "supportedExtensions": [
           "flac",
           "mp3",
@@ -109,7 +109,7 @@
       "modelType": "speech2text",
       "deprecated": false,
       "audio": {
-        "maxUploadBytes": 26214400,
+        "maxUploadBytes": 25000000,
         "supportedExtensions": [
           "flac",
           "mp3",
@@ -159,7 +159,7 @@
       "modelType": "speech2text",
       "deprecated": false,
       "audio": {
-        "maxUploadBytes": 26214400,
+        "maxUploadBytes": 25000000,
         "supportedExtensions": [
           "flac",
           "mp3",
@@ -209,7 +209,7 @@
       "modelType": "speech2text",
       "deprecated": false,
       "audio": {
-        "maxUploadBytes": 26214400,
+        "maxUploadBytes": 25000000,
         "supportedExtensions": [
           "flac",
           "mp3",

@@ -88,6 +88,24 @@ def test_no_sampling_parameter_rules(name):
     assert not {"temperature", "top_p", "top_k"} & rules
 
 
+@pytest.mark.parametrize(
+    "path",
+    sorted((Path(__file__).parents[1] / "models/llm").glob("anthropic.*.yaml")),
+    ids=lambda p: p.name,
+)
+def test_document_feature_declared(path):
+    # Dify drops document attachments before calling the plugin unless the model declares `document`.
+    # Claude 3 models and the first Claude 3.5 Sonnet never supported PDF input.
+    no_pdf = {
+        "anthropic.claude-3-haiku.yaml",
+        "anthropic.claude-3-opus.yaml",
+        "anthropic.claude-3-sonnet.yaml",
+        "anthropic.claude-3.5-sonnet.yaml",
+    }
+    features = yaml.safe_load(path.read_text())["features"]
+    assert ("document" in features) == (path.name not in no_pdf)
+
+
 def test_missing_anthropic_location_falls_back(monkeypatch):
     vertex, _ = _mock_client(monkeypatch, final_message=_message([TextBlock(type="text", text="hi")]))
     model = llm.VertexAiLargeLanguageModel([])

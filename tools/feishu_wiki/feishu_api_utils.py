@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlsplit
 from typing import Any, Optional, cast
 
 import httpx
@@ -12,7 +13,7 @@ def auth(credentials):
     if not app_id or not app_secret:
         raise ToolProviderCredentialValidationError("app_id and app_secret is required")
     try:
-        assert FeishuRequest(app_id, app_secret).tenant_access_token is not None
+        assert FeishuRequest(app_id, app_secret, credentials.get("api_base_url")).tenant_access_token is not None
     except Exception as e:
         raise ToolProviderCredentialValidationError(str(e))
 
@@ -54,7 +55,19 @@ def convert_update_records(json_str):
 class FeishuRequest:
     API_BASE_URL = "https://lark-plugin-api.solutionsuite.cn/lark-plugin"
 
-    def __init__(self, app_id: str, app_secret: str):
+    def __init__(self, app_id: str, app_secret: str, api_base_url: Optional[str] = None):
+        base_url = (api_base_url or "").strip() or self.API_BASE_URL
+        parsed = urlsplit(base_url)
+        if (
+            parsed.scheme not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("api_base_url must be an HTTP(S) URL without credentials, query, or fragment")
+        self.API_BASE_URL = base_url.rstrip("/")
         self.app_id = app_id
         self.app_secret = app_secret
 

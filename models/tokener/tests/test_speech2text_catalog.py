@@ -17,7 +17,7 @@ def catalog():
 def test_speech2text_catalog_generates_registered_schemas_from_audio_metadata(tmp_path):
     payload = catalog()
     payload["models"][0]["audio"] = {
-        "maxUploadBytes": 1572864,
+        "maxUploadBytes": 1500000,
         "supportedExtensions": ["wav", "webm"],
     }
     files = render_catalog(payload, model_type="speech2text")
@@ -29,7 +29,7 @@ def test_speech2text_catalog_generates_registered_schemas_from_audio_metadata(tm
         assert schema.model == raw["id"]
         assert schema.model_type == ModelType.SPEECH2TEXT
         assert schema.model_properties[ModelPropertyKey.FILE_UPLOAD_LIMIT] == (
-            raw["audio"]["maxUploadBytes"] / 1048576
+            raw["audio"]["maxUploadBytes"] / 1000000
         )
         assert schema.model_properties[ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS] == ",".join(
             raw["audio"]["supportedExtensions"]
@@ -44,11 +44,11 @@ def test_speech2text_catalog_skips_unrequested_models_and_preserves_llm_output()
     llm = _catalog()
     expected = render_catalog(llm)
     llm["models"] += catalog()["models"] + [
-        {"id": "qwen3-asr-flash", "modelType": "speech2text"},
+        {**deepcopy(catalog()["models"][0]), "id": "qwen3-asr-flash"},
         {"id": "qwen3-tts-flash", "modelType": "tts"},
     ]
     assert render_catalog(llm) == expected
-    assert len(render_catalog(llm, model_type="speech2text")) == 6
+    assert len(render_catalog(llm, model_type="speech2text")) == 7
 
 
 @pytest.mark.parametrize(
@@ -137,8 +137,11 @@ def test_speech2text_catalog_cli_only_writes_selected_model_type(tmp_path):
     untouched.write_text("unrelated LLM definition\n")
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
-        patch("scripts.sync_catalog.fetch_catalog", return_value=deepcopy(payload)),
-        patch("sys.argv", ["sync_catalog.py", "--model-type", "speech2text"]),
+        patch("scripts.sync_catalog.load_catalog", return_value=deepcopy(payload)),
+        patch(
+            "sys.argv",
+            ["sync_catalog.py", "--input", "snapshot.json", "--model-type", "speech2text"],
+        ),
     ):
         assert main() == 0
     assert untouched.read_text() == "unrelated LLM definition\n"
@@ -147,7 +150,7 @@ def test_speech2text_catalog_cli_only_writes_selected_model_type(tmp_path):
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
         patch(
-            "scripts.sync_catalog.fetch_catalog",
+            "scripts.sync_catalog.load_catalog",
             return_value={
                 **payload,
                 "models": [
@@ -155,13 +158,17 @@ def test_speech2text_catalog_cli_only_writes_selected_model_type(tmp_path):
                 ],
             },
         ),
-        patch("sys.argv", ["sync_catalog.py", "--model-type", "speech2text"]),
+        patch(
+            "sys.argv",
+            ["sync_catalog.py", "--input", "snapshot.json", "--model-type", "speech2text"],
+        ),
     ):
-        assert main() == 1
-    assert len(list((tmp_path / "models" / "speech2text").glob("*.yaml"))) == 6
+        assert main() == 0
+    assert yaml.safe_load((tmp_path / "models/speech2text/_position.yaml").read_text()) == []
+    assert len(list((tmp_path / "models" / "speech2text").glob("*.yaml"))) == 1
 
 
-def test_speech2text_catalog_default_llm_sync_rejects_empty_selection_without_writes(tmp_path):
+def test_speech2text_catalog_empty_llm_selection_removes_old_definitions(tmp_path):
     llm_dir = tmp_path / "models" / "llm"
     llm_dir.mkdir(parents=True)
     for path in Path("models/llm").glob("*.yaml"):
@@ -169,13 +176,14 @@ def test_speech2text_catalog_default_llm_sync_rejects_empty_selection_without_wr
     before = {path.name: path.read_bytes() for path in llm_dir.glob("*.yaml")}
     payload = catalog()
 
-    with pytest.raises(CatalogError):
-        render_catalog(payload, model_type="llm")
+    assert render_catalog(payload, model_type="llm") == {"_position.yaml": "[]\n"}
 
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
-        patch("scripts.sync_catalog.fetch_catalog", return_value=payload),
-        patch("sys.argv", ["sync_catalog.py"]),
+        patch("scripts.sync_catalog.load_catalog", return_value=payload),
+        patch("sys.argv", ["sync_catalog.py", "--input", "snapshot.json", "--model-type", "llm"]),
     ):
-        assert main() == 1
-    assert {path.name: path.read_bytes() for path in llm_dir.glob("*.yaml")} == before
+        assert main() == 0
+    assert before
+    assert list(llm_dir.glob("*.yaml")) == [llm_dir / "_position.yaml"]
+    assert yaml.safe_load((llm_dir / "_position.yaml").read_text()) == []

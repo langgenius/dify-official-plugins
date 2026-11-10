@@ -42,6 +42,10 @@ from openai import OpenAI
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+    _PREFILLED_THINK_END = re.compile(r"(?:^|\n)[ \t]*</think>[ \t]*(?:\r?\n|$)")
+    # A Markdown fence opens a code block with three or more backticks or tildes on its own line.
+    _FENCE_PATTERN = re.compile(r"(?:^|\n)[ \t]*(`{3,}|~{3,})")
+    _THINK_END = re.compile(r"</think>")
     # Models that require max_completion_tokens (OpenAI Responses API family)
     # Dotted provider/geo prefixes are allowed because Amazon Bedrock's
     # OpenAI-compatible endpoints take IDs like openai.gpt-6-sol / us.openai.gpt-6-sol.
@@ -624,14 +628,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["reasoning_format"] = reasoning_format_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
-        if enable_thinking_value is True and reasoning_effort_value is not None:
-            # Propagate reasoning_effort to both:
-            # - top-level OpenAI Chat Completions param, and
-            # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
-            # Only apply when thinking mode is explicitly enabled.
+        if reasoning_effort_value is not None:
+            # reasoning_effort is a standard OpenAI Chat Completions parameter.
+            # Forward it whenever the user sets it, independently of the
+            # thinking-mode toggle: the toggle only governs the non-standard
+            # vLLM/SGLang-style thinking parameters, not this one.
             model_parameters["reasoning_effort"] = reasoning_effort_value
-            if strict_compatibility_value is False:
-                # Only apply when `strict_compatibility_value` is False since
+            if enable_thinking_value is True and strict_compatibility_value is False:
+                # Also propagate to chat_template_kwargs for runtimes that read
+                # template kwargs (e.g., llama.cpp). Only apply when
+                # `strict_compatibility_value` is False since
                 # `chat_template_kwargs` is a non-standard parameter.
                 chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
                 chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
@@ -706,6 +712,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
+        # Chat templates such as Qwen3.5's prefill `<think>\n` in the prompt, so the model
+        # output starts with reasoning and only contains the closing tag. This can happen
+        # even when thinking is disabled here, because strict mode does not send the switch.
+        is_chat = credentials.get("mode") == LLMMode.CHAT.value
+        if is_chat and not stream:
+            result = self._restore_prefilled_think_tag(result)
+
         # Filter thinking content from responses if thinking mode is disabled
         # This is necessary for models like Minimax M2.1 that don't support server-side thinking control
         if enable_thinking_value is False:
@@ -714,14 +727,140 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 return self._filter_thinking_result(result)
 
+        # A stream must decide before the closing tag arrives, so only trust an explicit
+        # switch: hybrid models may default to non-thinking when it is left unset.
+        if is_chat and stream and enable_thinking_value is True:
+            return self._restore_prefilled_think_stream(result)
+
         return result
+
+    @classmethod
+    def _fenced_regions(cls, content: str) -> list[tuple[int, int]]:
+        """Half-open [start, end) spans of Markdown fenced code blocks.
+
+        Both backtick and tilde fences count, and a closing fence must use the same
+        character and be at least as long as the opening one. An unterminated fence
+        runs to the end of the response.
+        """
+        regions: list[tuple[int, int]] = []
+        pos = 0
+        open_start = -1
+        open_marker = ""
+        while True:
+            match = cls._FENCE_PATTERN.search(content, pos)
+            if match is None:
+                break
+            marker = match.group(1)
+            if open_start < 0:
+                open_start, open_marker = match.start(), marker
+            elif marker[0] == open_marker[0] and len(marker) >= len(open_marker):
+                regions.append((open_start, match.end()))
+                open_start, open_marker = -1, ""
+            pos = match.end()
+        if open_start >= 0:
+            regions.append((open_start, len(content)))
+        return regions
+
+    @classmethod
+    def _find_think_end(cls, content: str, start: int) -> int | None:
+        """Index just past the first `</think>` outside a code fence, or None."""
+        regions = cls._fenced_regions(content)
+        for match in cls._THINK_END.finditer(content, start):
+            if not any(begin <= match.start() < end for begin, end in regions):
+                return match.end()
+        return None
+
+    @classmethod
+    def _find_prefilled_think_end(cls, content: str) -> re.Match | None:
+        """First standalone `</think>` that is not quoted inside a code fence.
+
+        The chat template ends reasoning with the closing tag on its own line, which keeps
+        a literal `</think>` inside prose or JSON strings from being read as reasoning.
+        Reasoning may also quote a fenced `</think>` before the real delimiter, so an
+        in-fence candidate is skipped instead of blocking restoration outright.
+        """
+        regions = cls._fenced_regions(content)
+        for match in cls._PREFILLED_THINK_END.finditer(content):
+            if not any(begin <= match.start() < end for begin, end in regions):
+                return match
+        return None
+
+    @classmethod
+    def _restore_prefilled_think_tag(cls, result: LLMResult) -> LLMResult:
+        """Restore the opening think tag when the chat template prefilled it."""
+        if not isinstance(result, LLMResult) or not result.message:
+            return result
+        content = result.message.content
+        if not isinstance(content, str):
+            return result
+        opening = content.find("<think>")
+        closing = cls._find_prefilled_think_end(content)
+        if closing and (opening < 0 or closing.start() < opening):
+            result.message.content = "<think>\n" + content
+        return result
+
+    @classmethod
+    def _strip_think_blocks(cls, content: str) -> str:
+        """Drop every `<think>...</think>` block, ending each at a real delimiter.
+
+        Restoration and filtering have to agree on where reasoning ends, otherwise a
+        closing tag quoted inside a fenced example truncates the block early and leaves
+        the rest of the reasoning in the answer.
+        """
+        parts: list[str] = []
+        pos = 0
+        while True:
+            opening = content.find("<think>", pos)
+            if opening < 0:
+                parts.append(content[pos:])
+                return "".join(parts)
+            end = cls._find_think_end(content, opening + len("<think>"))
+            if end is None:
+                # Unclosed block: keep it verbatim, as the non-greedy pattern did.
+                parts.append(content[pos:])
+                return "".join(parts)
+            parts.append(content[pos:opening])
+            # The previous pattern also swallowed the whitespace that followed the tag.
+            rest = content[end:]
+            pos = end + (len(rest) - len(rest.lstrip()))
+
+    @staticmethod
+    def _restore_prefilled_think_stream(stream: Generator) -> Generator:
+        """Prepend the opening think tag when a thinking stream starts without one."""
+        held: list | None = []
+        head = ""
+        for chunk in stream:
+            if held is None:
+                yield chunk
+                continue
+            held.append(chunk)
+            if isinstance(chunk.delta.message.content, str):
+                head += chunk.delta.message.content
+            # Hold the first few characters so a split `<think>` or `</think>` is recognized.
+            stripped = head.lstrip()
+            if not stripped or (
+                len(stripped) < len("</think>")
+                and ("<think>".startswith(stripped) or "</think>".startswith(stripped))
+            ):
+                continue
+            if not stripped.startswith("<think>"):
+                first = next(
+                    c.delta.message
+                    for c in held
+                    if isinstance(c.delta.message.content, str) and c.delta.message.content.strip()
+                )
+                first.content = "<think>\n" + first.content
+            yield from held
+            held = None
+        if held:
+            yield from held
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
             if isinstance(content, str) and "<think>" in content:
-                filtered_content = self._THINK_PATTERN.sub("", content)
+                filtered_content = self._strip_think_blocks(content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result
@@ -730,44 +869,60 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from streaming result"""
         buffer = ""
         in_thinking = False
-        thinking_started = False
+        strip_leading_whitespace = False
+        held_chunk = None
 
         for chunk in stream:
             if chunk.delta and chunk.delta.message and chunk.delta.message.content:
                 content = chunk.delta.message.content
                 buffer += content
 
-                # Detect start of thinking block
-                if not thinking_started and buffer.startswith("<think>"):
-                    in_thinking = True
-                    thinking_started = True
-                    # Don't continue here - check for end tag in same iteration
+                if not in_thinking:
+                    # Detect start of thinking block
+                    if buffer.startswith("<think>"):
+                        in_thinking = True
+                        held_chunk = None
+                    elif "<think>".startswith(buffer):
+                        # The opening tag may be split across chunks, e.g. "<" + "think>"
+                        held_chunk = chunk
+                        continue
 
-                # Detect end of thinking block
-                if in_thinking and "</think>" in buffer:
-                    # Find the end of thinking block
-                    end_idx = buffer.find("</think>") + len("</think>")
-                    # Skip whitespace after </think>
-                    while end_idx < len(buffer) and buffer[end_idx].isspace():
-                        end_idx += 1
+                if in_thinking:
+                    # Detect end of thinking block
+                    if "</think>" not in buffer:
+                        continue
                     # Remove thinking block and continue with remaining content
+                    end_idx = buffer.find("</think>") + len("</think>")
                     buffer = buffer[end_idx:]
                     in_thinking = False
-                    thinking_started = False
-                    # Yield remaining content if any
-                    if buffer:
-                        chunk.delta.message.content = buffer
-                        buffer = ""
-                        yield chunk
-                    continue
+                    strip_leading_whitespace = True
 
-                # If not in thinking block, yield content
-                if not in_thinking:
-                    yield chunk
-                    buffer = ""
+                # Skip whitespace after </think>, which may arrive in later chunks
+                if strip_leading_whitespace:
+                    buffer = buffer.lstrip()
+                    if not buffer:
+                        continue
+                    strip_leading_whitespace = False
+
+                held_chunk = None
+                chunk.delta.message.content = buffer
+                buffer = ""
+                yield chunk
             else:
+                # Flush content held as a possible opening tag before chunks without content,
+                # such as the final chunk with finish_reason and usage
+                if held_chunk is not None:
+                    held_chunk.delta.message.content = buffer
+                    yield held_chunk
+                    held_chunk = None
+                    buffer = ""
                 # Yield chunks without content as-is
                 yield chunk
+
+        # Flush content held as a possible opening tag when the stream ends
+        if held_chunk is not None:
+            held_chunk.delta.message.content = buffer
+            yield held_chunk
 
     def _handle_generate_response(
         self,
@@ -830,8 +985,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         usage = response_json.get("usage")
         if usage:
-            prompt_tokens = usage["prompt_tokens"]
-            completion_tokens = usage["completion_tokens"]
+            # Gateways differ here: most report prompt_tokens/completion_tokens,
+            # Anthropic-compatible proxies report input_tokens/output_tokens, and
+            # some report only total_tokens. Indexing the OpenAI names raised
+            # KeyError on a response whose content was perfectly usable.
+            prompt_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+            completion_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+            if prompt_tokens is None:
+                prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            if completion_tokens is None:
+                completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
         else:
             prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
@@ -1050,6 +1213,30 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if image_c.detail:
                     image_part["detail"] = image_c.detail.value
                 content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.VIDEO:
+                # The Responses API has no dedicated video part. OpenAI-compatible
+                # servers accept a video through an input_image part carrying a data
+                # URI (the model extracts frames), mirroring the image_url shape the
+                # Chat Completions path already produces for video.
+                video_c: VideoPromptMessageContent = content_item
+                video_part: dict[str, Any] = {"type": "input_image"}
+                if video_c.url:
+                    video_part["image_url"] = video_c.url
+                else:
+                    video_part["image_url"] = video_c.data
+                content_parts.append(video_part)
+            elif content_item.type == PromptMessageContentType.AUDIO:
+                # The Responses API has no dedicated audio part. Send it as a file so
+                # the attachment is not silently dropped; servers that support audio
+                # can transcribe the payload from the data URI.
+                audio_c: AudioPromptMessageContent = content_item
+                audio_part: dict[str, Any] = {"type": "input_file"}
+                if audio_c.url:
+                    audio_part["file_url"] = audio_c.url
+                else:
+                    audio_part["filename"] = audio_c.filename or "audio"
+                    audio_part["file_data"] = audio_c.data
+                content_parts.append(audio_part)
             elif content_item.type == PromptMessageContentType.DOCUMENT:
                 doc_c: DocumentPromptMessageContent = content_item
                 file_part: dict[str, Any] = {"type": "input_file"}

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.sync_catalog import GENERATED_MARKER, CatalogError, render_catalog, sync_files
+from scripts.sync_catalog import CatalogError, render_catalog, sync_files
 
 
 def _catalog() -> dict:
@@ -95,7 +95,7 @@ def test_render_and_check_catalog(tmp_path: Path) -> None:
     assert sync_files(files, check=False, output_dir=tmp_path)
     assert sync_files(files, check=True, output_dir=tmp_path)
 
-    (tmp_path / "stale.yaml").write_text(f"{GENERATED_MARKER}\n", encoding="utf-8")
+    (tmp_path / "stale.yaml").write_text("model: stale\n", encoding="utf-8")
     assert not sync_files(files, check=True, output_dir=tmp_path)
     assert sync_files(files, check=False, output_dir=tmp_path)
     assert not (tmp_path / "stale.yaml").exists()

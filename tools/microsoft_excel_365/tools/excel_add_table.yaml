@@ -1,0 +1,124 @@
+identity:
+  name: excel_add_table
+  author: langgenius
+  label:
+    en_US: Add Table
+    zh_Hans: 添加表格
+    ja_JP: テーブルを追加
+description:
+  human:
+    en_US: Turn a range of a worksheet into an Excel table
+    zh_Hans: 把工作表中的一个区域转换为 Excel 表格
+    ja_JP: ワークシートの範囲を Excel テーブルにします
+  llm: Turn a range of cells into an Excel table, optionally named.
+parameters:
+- name: site_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Site ID (only if editing SharePoint Site content)
+    zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+    ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+  human_description:
+    en_US: Optional SharePoint site ID. When provided, uses this site's drive instead of the personal OneDrive.
+    zh_Hans: 可选的 SharePoint 站点 ID。若提供，则使用该站点的驱动器而非个人 OneDrive。
+    ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブを使います。
+  llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
+- name: workbook_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Workbook ID
+    zh_Hans: 工作簿 ID
+    ja_JP: ブック ID
+  human_description:
+    en_US: The ID of the Excel workbook
+    zh_Hans: Excel 工作簿的 ID
+    ja_JP: Excel ブックの ID
+  llm_description: The ID of the Excel workbook (from the list workbooks tool).
+- name: worksheet_name
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Worksheet Name
+    zh_Hans: 工作表名称
+    ja_JP: ワークシート名
+  human_description:
+    en_US: The name of the worksheet
+    zh_Hans: 工作表名称
+    ja_JP: ワークシートの名前
+  llm_description: The name of the worksheet.
+- name: range
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Range
+    zh_Hans: 区域
+    ja_JP: 範囲
+  human_description:
+    en_US: Cells for the table, e.g. A1:D20
+    zh_Hans: 表格所占区域，例如 A1:D20
+    ja_JP: 'テーブルにするセル範囲（例: A1:D20）'
+  llm_description: Cells for the table in A1 notation, e.g. A1:D20.
+- name: has_headers
+  type: boolean
+  required: false
+  form: llm
+  label:
+    en_US: First Row Is Header
+    zh_Hans: 首行为标题
+    ja_JP: 先頭行は見出し
+  human_description:
+    en_US: Whether the first row holds the column names (default yes)
+    zh_Hans: 第一行是否为列名（默认是）
+    ja_JP: '先頭行が列名かどうか（既定: はい）'
+  llm_description: Whether the first row of the range holds column names. Default true.
+  default: true
+- name: table_name
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Table Name
+    zh_Hans: 表格名称
+    ja_JP: テーブル名
+  human_description:
+    en_US: Optional name, e.g. Sales
+    zh_Hans: 可选名称，例如 Sales
+    ja_JP: '任意の名前（例: Sales）'
+  llm_description: Optional name for the table, without spaces.
+- name: drive_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive holds the workbooks. Leave empty
+      for the credential''s default, or use a Site ID.'
+    zh_Hans: 仅限 Service Principal：工作簿所在 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值，或使用站点 ID。
+    ja_JP: 'サービス プリンシパルのみ: ブックがある OneDrive のユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値、またはサイト ID を使います。'
+output_schema:
+  type: object
+  properties:
+    table_id:
+      type: string
+      description: Table ID
+    name:
+      type: string
+      description: Table name
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/excel_add_table.py

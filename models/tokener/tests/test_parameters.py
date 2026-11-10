@@ -33,11 +33,19 @@ def response() -> requests.Response:
 @pytest.mark.parametrize("stream", [False, True])
 def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
     model = TokenerLargeLanguageModel(model_schemas=[schema])
-    parameters = {"seed": 42}
-    if not schema.model.startswith("gpt-"):
-        parameters.update(temperature=1.0, top_p=0.9, presence_penalty=0.1, frequency_penalty=-0.1)
-    if schema.model.startswith("gpt-"):
-        parameters["reasoning_effort"] = "low"
+    declared = {rule.name for rule in schema.parameter_rules}
+    parameters = {
+        key: value
+        for key, value in {
+            "seed": 42,
+            "temperature": 1.0,
+            "top_p": 0.9,
+            "presence_penalty": 0.1,
+            "frequency_penalty": -0.1,
+            "reasoning_effort": "low",
+        }.items()
+        if key in declared
+    }
     original = parameters.copy()
     result = response()
     with (
@@ -63,7 +71,8 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
                 stream=stream,
             )
         )
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert {key: body.get(key) for key in parameters} == parameters
     assert body["stream"] is stream
     assert chunks[0].delta.message.content == "ok"
@@ -106,7 +115,8 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
                 stream=False,
             )
         )
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert chunks[0].delta.message.content == "ok"
     assert body["max_tokens"] == 1500
     if model_id == "gpt-5.6-luna":
@@ -148,7 +158,8 @@ def test_public_invoke_string_option_toggle_default(schema, rule_name, toggle_on
             )
         )
     post.assert_called_once()
-    body = post.call_args.kwargs["json"]
+    kwargs = post.call_args.kwargs
+    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert chunks[0].delta.message.content == "ok"
     if toggle_on:
         if rule.name == "response_format":
