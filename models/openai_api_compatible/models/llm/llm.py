@@ -582,14 +582,20 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             return {str(key): str(value) for key, value in parsed.items()}
         raise InvokeError("extra_headers must be a JSON object or JSON string")
 
-    def _apply_extra_headers(self, credentials: dict, model_parameters: dict) -> None:
+    def _apply_extra_headers(self, credentials: dict, model_parameters: dict) -> dict:
+        """Return credentials with model-parameter headers merged in.
+
+        Works on a copy rather than writing into the caller's dict: a per-invocation
+        header must not outlive its invocation, or one conversation's session header
+        would leak into later requests that never set it.
+        """
         raw_extra_headers = model_parameters.pop("extra_headers", None)
         if raw_extra_headers is None:
-            return
+            return credentials
 
         parsed_headers = self._parse_extra_headers(raw_extra_headers)
         if not parsed_headers:
-            return
+            return credentials
 
         existing_headers = credentials.get("extra_headers")
         if existing_headers:
@@ -599,7 +605,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             }
         else:
             merged_headers = parsed_headers
-        credentials["extra_headers"] = merged_headers
+        return {**credentials, "extra_headers": merged_headers}
 
     def _invoke(
         self,
@@ -612,7 +618,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        self._apply_extra_headers(credentials, model_parameters)
+        credentials = self._apply_extra_headers(credentials, model_parameters)
 
         if credentials.get("api_type") == "responses":
             return self._chat_generate_with_responses(

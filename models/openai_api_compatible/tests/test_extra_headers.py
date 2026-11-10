@@ -132,6 +132,33 @@ def test_invoke_routes_extra_headers_to_responses_api_client():
     }
 
 
+def test_invoke_does_not_persist_extra_headers_on_caller_credentials():
+    """A per-invocation header must not outlive its invocation.
+
+    _apply_extra_headers used to write the merged headers into the caller's
+    credentials dict, so a conversation-scoped header (e.g. a session id) would
+    leak into every later request made with the same credentials object.
+    """
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    credentials = {"mode": "chat"}
+
+    with patch(
+        "dify_plugin.interfaces.model.openai_compatible.llm.OAICompatLargeLanguageModel._invoke",
+        new=lambda self, *a, **k: iter([]),
+    ):
+        model._invoke(
+            model="gpt-4o-mini",
+            credentials=credentials,
+            prompt_messages=_prompt_messages(),
+            model_parameters={
+                "extra_headers": '{"x-opencode-session": "conversation-abc"}',
+            },
+            stream=True,
+        )
+
+    assert "extra_headers" not in credentials
+
+
 def test_create_openai_client_forwards_extra_headers():
     model = OpenAILargeLanguageModel(model_schemas=[])
     with patch("models.llm.llm.OpenAI") as mock_openai:
