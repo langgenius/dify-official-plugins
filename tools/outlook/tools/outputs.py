@@ -42,6 +42,7 @@ def with_outputs(invoke: Callable) -> Callable:
         if declared is None:
             declared = declared_outputs(inspect.getfile(invoke))
         self._out = {}
+        self._signed_in_as = None
         texts: list[str] = []
         create_text = self.create_text_message
 
@@ -55,6 +56,11 @@ def with_outputs(invoke: Callable) -> Callable:
         finally:
             self.create_text_message = create_text
 
+        if self._signed_in_as:
+            yield create_text(
+                f"(Signed in to Microsoft as {self._signed_in_as}. If this is not the user's account, "
+                "they can ask to sign out and sign in again.)"
+            )
         success = bool(self._out.get("success"))
         values = copy.deepcopy(declared)
         values.update({k: v for k, v in self._out.items() if k in values})

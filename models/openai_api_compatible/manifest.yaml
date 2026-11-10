@@ -1,4 +1,8 @@
-version: 0.0.74
+<<<<<<< HEAD
+version: 0.0.76
+=======
+version: 0.0.76
+>>>>>>> origin/main
 type: plugin
 author: "langgenius"
 name: "openai_api_compatible"

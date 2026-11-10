@@ -2,9 +2,10 @@ annotated-types==0.8.0
 anyio==4.15.1
 blinker==1.9.0
 certifi==2026.10.23
-cffi==2.1.1 ; platform_python_implementation == 'CPython' and sys_platform == 'win32'
+cffi==2.1.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.5.2
 click==8.5.0
+cryptography==50.0.2
 dify-plugin==0.10.2
 flask==3.1.3
 gevent==26.9.0
@@ -19,7 +20,7 @@ markupsafe==3.0.4
 multidict==7.1.0
 packaging==26.3
 propcache==0.5.4
-pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation == 'CPython' and sys_platform == 'win32'
+pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
 pydantic==2.14.1
 pydantic-core==2.50.1
 pydantic-settings==2.16.1

@@ -1,5 +1,6 @@
 from typing import Generator, Union
-import requests
+from tools import trello_http as requests
+from tools.trello_client import TrelloAuthError, credentials_of
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
@@ -23,8 +24,17 @@ class GetBoardCardsTool(Tool):
         Returns:
             ToolInvokeMessage: The result of the tool invocation.
         """
-        api_key = self.runtime.credentials.get("trello_api_key")
-        token = self.runtime.credentials.get("trello_api_token")
+        try:
+            api_key, token = credentials_of(self)
+        except TrelloAuthError as e:
+            # For per-user sign-in this is the link the user has to open.
+            yield self.create_text_message(str(e))
+            return
+        if getattr(self, "_signed_in_as", None):
+            yield self.create_text_message(
+                f"(Signed in to Trello as {self._signed_in_as}. If this is not the user's account, "
+                "they can ask to sign out and sign in again.)"
+            )
         board_id = tool_parameters.get("boardId")
         if not (api_key and token and board_id):
             yield self.create_text_message(
@@ -36,8 +46,8 @@ class GetBoardCardsTool(Tool):
             response = requests.get(url)
             response.raise_for_status()
             cards = response.json()
-        except requests.exceptions.RequestException:
-            yield self.create_text_message("Failed to retrieve board cards")
+        except requests.exceptions.RequestException as e:
+            yield self.create_text_message(f"Failed to retrieve board cards: {requests.reason(e)}")
             return
         cards_summary = "\n".join(
             [f"{card['name']} (ID: {card['id']})" for card in cards]

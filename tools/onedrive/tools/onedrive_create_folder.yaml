@@ -1,0 +1,87 @@
+identity:
+  name: onedrive_create_folder
+  author: langgenius
+  label:
+    en_US: Create Folder
+    zh_Hans: 创建文件夹
+    ja_JP: フォルダーを作成
+    pt_BR: Criar Pasta
+description:
+  human:
+    en_US: Create a folder; a path such as Pictures/2021 creates the missing folders along it
+    zh_Hans: 创建文件夹；填 Pictures/2021 这样的路径会依次创建缺少的文件夹
+    ja_JP: フォルダーを作成します。Pictures/2021 のようなパスを指定すると、途中の足りないフォルダーも作成します
+    pt_BR: Cria uma pasta; um caminho como Pictures/2021 cria as pastas que faltam
+  llm: Create a folder in OneDrive. The name may be a path such as 'Reports/2026'; missing folders along it are created and
+    existing ones reused. Without parent_folder_id it is created under the root folder.
+parameters:
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+    pt_BR: Nome
+  human_description:
+    en_US: Folder name or path, e.g. Reports/2026
+    zh_Hans: 文件夹名称或路径，例如 Reports/2026
+    ja_JP: 'フォルダー名またはパス（例: Reports/2026）'
+    pt_BR: Nome ou caminho da pasta, ex. Reports/2026
+  llm_description: Folder name, or a path such as 'Reports/2026'.
+  form: llm
+- name: parent_folder_id
+  type: string
+  required: false
+  label:
+    en_US: Parent Folder ID
+    zh_Hans: 父文件夹 ID
+    ja_JP: 親フォルダー ID
+    pt_BR: ID da Pasta Pai
+  human_description:
+    en_US: ID of the folder to create it in; empty for the root folder
+    zh_Hans: 在哪个文件夹下创建；留空表示根目录
+    ja_JP: 作成先のフォルダー ID。空欄でルート
+    pt_BR: ID da pasta onde criar; vazio para a raiz
+  llm_description: ID of the folder to create it in. Empty for the root folder.
+  form: llm
+- name: drive_user
+  type: string
+  required: false
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+    pt_BR: Proprietário da Unidade
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+    pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão
+      da credencial.'
+  form: form
+output_schema:
+  type: object
+  properties:
+    folder_id:
+      type: string
+      description: Drive item ID of the folder (the last one in a path)
+    name:
+      type: string
+      description: Folder name
+    web_url:
+      type: string
+      description: Link to open the folder in OneDrive
+    created:
+      type: boolean
+      description: False when the folder already existed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/onedrive_create_folder.py

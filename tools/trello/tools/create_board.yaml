@@ -36,3 +36,21 @@ parameters:
   name: name
   required: true
   type: string
+- form: llm
+  human_description:
+    en_US: Optional. The Workspace (ID or name) to create the board in; by default
+      the first Workspace of the account.
+    ja_JP: 任意。ボードを作成するワークスペース（ID または名前）。既定はアカウントの最初のワークスペースです。
+    pt_BR: Opcional. O Workspace (ID ou nome) onde criar o quadro; por padrão, o primeiro
+      Workspace da conta.
+    zh_Hans: 可选。要在其中创建看板的 Workspace（ID 或名称）；默认使用账号的第一个 Workspace。
+  label:
+    en_US: Workspace
+    ja_JP: ワークスペース
+    pt_BR: Workspace
+    zh_Hans: Workspace
+  llm_description: Optional Workspace ID (from trello_list_workspaces). Leave empty
+    to use the first Workspace.
+  name: idOrganization
+  required: false
+  type: string

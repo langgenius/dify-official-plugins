@@ -8,6 +8,9 @@ The plugin accepts two kinds of credentials:
 - Service Principal (app-only): tenant ID + client ID + client secret, exchanged
   with the client-credentials grant. There is no signed-in user, so calls go to
   ``/users/{user}/drive`` and the drive owner must be named.
+- Each user signs in (delegated, per chat user): the same app fields plus
+  ``auth_mode: per_user``; every Dify user gets their own token (see ``user_auth``)
+  and calls go to that user's ``/me/drive``.
 
 Both kinds can target a national cloud; the login host and the Graph host are
 looked up together from ``CLOUDS`` so they never point at different clouds.
@@ -23,6 +26,8 @@ from typing import Any, Mapping
 from urllib.parse import quote
 
 import requests
+
+from tools.user_auth import SignInRequired, UserAuthError, UserSignIn
 
 # cloud -> (Entra login host, Microsoft Graph host)
 CLOUDS: dict[str, tuple[str, str]] = {
@@ -78,9 +83,14 @@ def cloud_hosts(cloud: str | None) -> tuple[str, str]:
     return CLOUDS[name]
 
 
+def is_per_user(credentials: Mapping[str, Any]) -> bool:
+    """An app credential set to "Each user signs in"; credentials saved before the mode existed have no auth_mode."""
+    return credentials.get("auth_mode") == "per_user" and not credentials.get("access_token")
+
+
 def is_service_principal(credentials: Mapping[str, Any]) -> bool:
     """Service Principal credentials carry a client secret; OAuth credentials carry an access token."""
-    return bool(credentials.get("client_secret")) and not credentials.get("access_token")
+    return bool(credentials.get("client_secret")) and not credentials.get("access_token") and not is_per_user(credentials)
 
 
 def acquire_app_token(tenant_id: str, client_id: str, client_secret: str, cloud: str | None = None) -> str:
@@ -155,12 +165,28 @@ class GraphContext:
     drive_base: str
 
 
-def resolve_graph_context(credentials: Mapping[str, Any], drive_user: Any = None) -> GraphContext:
+def resolve_graph_context(credentials: Mapping[str, Any], drive_user: Any = None, tool: Any = None) -> GraphContext:
     """
     Turn the runtime credentials (plus the optional per-tool Drive Owner parameter)
     into a token and the URL roots every tool builds its requests on.
+
+    ``tool`` is the calling Tool; per-user sign-in needs its user ID and plugin storage.
+    When that user has not signed in yet, the GraphAuthError message is the sign-in link.
     """
     drive_user = setting_value(drive_user)
+
+    if is_per_user(credentials):
+        if drive_user:
+            raise GraphAuthError(
+                "The Drive Owner parameter only works with a Service Principal credential. "
+                "With per-user sign-in the tools always act on the calling user's own OneDrive."
+            )
+        if tool is None:
+            raise GraphAuthError("Per-user sign-in is not available here.")
+        _, graph_host = cloud_hosts(credentials.get("cloud"))
+        token = user_access_token(credentials, tool)
+        api_base = f"{graph_host}/v1.0"
+        return GraphContext(token, api_base, f"{api_base}/me/drive")
 
     if is_service_principal(credentials):
         _, graph_host = cloud_hosts(credentials.get("cloud"))
@@ -196,6 +222,28 @@ def resolve_graph_context(credentials: Mapping[str, Any], drive_user: Any = None
     return GraphContext(token, api_base, f"{api_base}/me/drive")
 
 
+def user_sign_in(credentials: Mapping[str, Any], tool: Any) -> "UserSignIn":
+    login_host, graph_host = cloud_hosts(credentials.get("cloud"))
+    try:
+        return UserSignIn(
+            credentials, tool.runtime.user_id, tool.session.storage, login_host, graph_host, CLOUDS[DEFAULT_CLOUD][1]
+        )
+    except UserAuthError as e:
+        raise GraphAuthError(str(e)) from e
+
+
+def user_access_token(credentials: Mapping[str, Any], tool: Any) -> str:
+    sign_in = user_sign_in(credentials, tool)
+    try:
+        token = sign_in.access_token()
+    except (SignInRequired, UserAuthError) as e:
+        raise GraphAuthError(str(e)) from e
+    if sign_in.just_signed_in:
+        # @with_outputs tells the user which account they signed in with.
+        tool._signed_in_as = sign_in.just_signed_in
+    return token
+
+
 def segment(value: Any) -> str:
     """Quote a drive item ID for use as one URL path segment."""
     return quote(str(value).strip(), safe="")
@@ -208,19 +256,41 @@ def graph_request(
     *,
     params: Mapping[str, Any] | None = None,
     data: bytes | None = None,
+    json: Any = None,
     headers: Mapping[str, str] | None = None,
     timeout: int = 60,
 ) -> requests.Response:
     """Call a Graph URL with the context's token; network errors and non-2xx answers raise GraphAuthError."""
     all_headers = {"Authorization": f"Bearer {ctx.access_token}"}
     all_headers.update(headers or {})
+    extra = {"json": json} if json is not None else {}
     try:
-        response = requests.request(method, url, headers=all_headers, params=params, data=data, timeout=timeout)
+        response = requests.request(method, url, headers=all_headers, params=params, data=data, timeout=timeout, **extra)
     except requests.exceptions.RequestException as e:
         raise GraphAuthError(f"Network error: {e}") from e
     if response.status_code < 200 or response.status_code >= 300:
         raise GraphAuthError(describe_error(response))
     return response
+
+
+def item_url(ctx: GraphContext, item_id: Any) -> str:
+    """URL of a drive item by ID; empty or "root" means the drive's root folder."""
+    value = str(item_id or "").strip()
+    return f"{ctx.drive_base}/root" if value in ("", "root") else f"{ctx.drive_base}/items/{segment(value)}"
+
+
+def find_child(ctx: GraphContext, folder_id: Any, name: str) -> dict[str, Any] | None:
+    """The item called ``name`` directly inside a folder, or None when there is none."""
+    url = f"{item_url(ctx, folder_id)}:/{quote(name, safe='')}"
+    try:
+        response = requests.request("GET", url, headers={"Authorization": f"Bearer {ctx.access_token}"}, timeout=60)
+    except requests.exceptions.RequestException as e:
+        raise GraphAuthError(f"Network error: {e}") from e
+    if response.status_code == 404:
+        return None
+    if response.status_code < 200 or response.status_code >= 300:
+        raise GraphAuthError(describe_error(response))
+    return response.json()
 
 
 def describe_error(response: requests.Response) -> str:
