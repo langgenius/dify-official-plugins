@@ -1,0 +1,101 @@
+identity:
+  name: download_attachment
+  display_name: Download Attachment
+  author: Dify
+  label:
+    en_US: Download Attachment
+    ko_KR: 첨부 파일 다운로드
+    zh_Hans: 下载附件
+    pt_BR: Baixar Anexo
+    ja_JP: 添付ファイルをダウンロード
+    zh_Hant: 下載附件
+description:
+  human:
+    en_US: Download an email attachment as a file from your Outlook account
+    ko_KR: Outlook 계정의 이메일 첨부 파일을 파일로 다운로드합니다
+    zh_Hans: 从您的 Outlook 账户下载邮件附件文件
+    pt_BR: Baixar um anexo de e-mail como arquivo da sua conta do Outlook
+    ja_JP: Outlook アカウントのメール添付ファイルをファイルとしてダウンロードします
+    zh_Hant: 從您的 Outlook 帳戶下載郵件附件檔案
+  llm: Download a single email attachment as a downloadable file using the Microsoft Graph API. Provide the message_id and the attachment_id (both from Get Message). Returns the file (Dify serves it over a public HTTPS URL). Only file attachments such as PDF, Excel or TXT can be downloaded.
+parameters:
+  - name: message_id
+    type: string
+    required: true
+    label:
+      en_US: Message ID
+      ko_KR: 메시지 ID
+      zh_Hans: 邮件 ID
+      pt_BR: ID da Mensagem
+      ja_JP: メッセージ ID
+      zh_Hant: 郵件 ID
+    human_description:
+      en_US: The ID of the email that contains the attachment (from List Messages / Get Message)
+      ko_KR: 첨부 파일이 포함된 이메일의 ID(목록/가져오기에서 확인)
+      zh_Hans: 包含该附件的邮件 ID（来自列出消息 / 获取消息）
+      pt_BR: O ID do e-mail que contém o anexo (de Listar Mensagens / Obter Mensagem)
+      ja_JP: 添付ファイルを含むメールの ID（メッセージ一覧／取得から）
+      zh_Hant: 包含該附件的郵件 ID（來自列出訊息 / 取得訊息）
+    llm_description: The Outlook message ID that contains the attachment. Get it from List Messages or Get Message.
+    form: llm
+  - name: attachment_id
+    type: string
+    required: true
+    label:
+      en_US: Attachment ID
+      ko_KR: 첨부 파일 ID
+      zh_Hans: 附件 ID
+      pt_BR: ID do Anexo
+      ja_JP: 添付ファイル ID
+      zh_Hant: 附件 ID
+    human_description:
+      en_US: The ID of the attachment to download (from Get Message)
+      ko_KR: 다운로드할 첨부 파일의 ID(가져오기에서 확인)
+      zh_Hans: 要下载的附件 ID（来自获取消息）
+      pt_BR: O ID do anexo a baixar (de Obter Mensagem)
+      ja_JP: ダウンロードする添付ファイルの ID（メッセージ取得から）
+      zh_Hant: 要下載的附件 ID（來自取得訊息）
+    llm_description: The attachment ID to download. Get it from Get Message, which lists each attachment's id.
+    form: llm
+  - name: mailbox
+    type: string
+    required: false
+    label:
+      en_US: Mailbox
+      ko_KR: 사서함
+      zh_Hans: 邮箱
+      pt_BR: Caixa de Correio
+      ja_JP: メールボックス
+      zh_Hant: 信箱
+    human_description:
+      en_US: "Service Principal only: the mailbox to act on (user principal name or user ID). Leave empty to use the credential's default mailbox."
+      ko_KR: "서비스 주체 전용: 작업할 사서함(사용자 계정 이름 또는 사용자 ID). 비워 두면 자격 증명의 기본 사서함을 사용합니다."
+      zh_Hans: "仅限 Service Principal：要操作的邮箱（用户主体名称或用户 ID）。留空则使用凭据中的默认邮箱。"
+      pt_BR: "Somente Service Principal: a caixa de correio em que atuar (nome principal do usuário ou ID do usuário). Deixe vazio para usar a caixa padrão da credencial."
+      ja_JP: "サービス プリンシパルのみ: 操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定のメールボックスを使います。"
+      zh_Hant: "僅限 Service Principal：要操作的信箱（使用者主體名稱或使用者 ID）。留空則使用憑證中的預設信箱。"
+    form: form
+output_schema:
+  type: object
+  properties:
+    file_name:
+      type: string
+      description: Attachment name
+    content_type:
+      type: string
+      description: MIME type
+    size:
+      type: integer
+      description: Size in bytes
+    downloaded:
+      type: boolean
+      description: True when the file is in files (file attachments only)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/download_attachment.py

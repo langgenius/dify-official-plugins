@@ -2,6 +2,7 @@
 import base64
 import json
 import logging
+import re
 from collections.abc import Generator
 from typing import Optional, Union, cast
 
@@ -99,7 +100,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
         {"prefix": "qwen.qwen3", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "deepseek.v3-v1:0", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "deepseek.v3.2", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
@@ -129,7 +130,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
     # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
     # These do NOT go through the standard Converse API path.
+    # GPT-6 takes the same Responses API path, sent to bedrock-runtime with an
+    # inference profile instead (see _generate_with_responses_api).
     _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-6.1-sol",
+        "openai.gpt-6-sol",
+        "openai.gpt-6-luna",
+        "openai.gpt-6-astra",
         "openai.gpt-5.6-sol",
         "openai.gpt-5.6-terra",
         "openai.gpt-5.6-luna",
@@ -294,6 +301,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_parameters.get("json_schema"):
             model_parameters.pop("response_format", None)
             model_parameters["_structured_output_schema"] = model_parameters.pop("json_schema")
+        elif model_parameters.get("response_format") and credentials.get("inference_profile_id"):
+            # Resolve profile capabilities before consuming response_format.
+            return self._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         elif model_parameters.get("response_format"):
             stop = stop or []
             if "```\n" not in stop:
@@ -370,16 +380,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if "\n```" not in stop:
                                 stop.append("\n```")
                             response_format = model_parameters.pop("response_format")
+                            instructions = (
+                                prompt_messages[0].content
+                                if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage)
+                                else ""
+                            )
                             format_prompt = SystemPromptMessage(
-                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", instructions).replace(
                                     "{{block}}", response_format
                                 )
                             )
-                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                            if prompt_messages and isinstance(prompt_messages[0], SystemPromptMessage):
                                 prompt_messages[0] = format_prompt
                             else:
                                 prompt_messages.insert(0, format_prompt)
-                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                            # Claude 4.6+ rejects assistant prefill.
+                            version = re.search(r"claude-(?:(?:opus|sonnet|haiku|fable|mythos)-)?(\d+)(?:-(\d+))?", underlying_model_id)
+                            supports_prefill = True
+                            if version:
+                                major, minor = int(version[1]), int(version[2] or 0)
+                                supports_prefill = (major, minor) < (4, 6)
+                            if supports_prefill:
+                                prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
                         else:
                             # For non-Anthropic models, just remove response_format parameter
                             model_parameters.pop("response_format", None)
@@ -400,7 +422,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 _candidate_id = model_ids.get_model_id(model, _model_name)
                 if _candidate_id and self._is_bedrock_mantle_model(_candidate_id):
                     return self._generate_with_responses_api(
-                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user
+                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user, tools
                     )
 
             # Traditional model - try converse API first, then fall back if needed
@@ -581,6 +603,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             system_cache_checkpoint=system_cache_checkpoint,
             latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
+        # Haiku 5.5 uses adaptive thinking by default. Saved legacy
+        # sampling and token-budget controls must not reach Converse.
+        underlying_id = model_info.get("underlying_model_id", model_id)
+        if model_ids.strip_profile_prefix(underlying_id) == "anthropic.claude-haiku-5-5":
+            model_parameters = {
+                key: value for key, value in model_parameters.items()
+                if key not in {"temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"}
+            }
         inference_config, additional_model_fields = self._convert_converse_api_model_parameters(model_parameters, stop)
 
         parameters = {
@@ -1071,9 +1101,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Claude 5 generation models (Sonnet 5 / Fable 5): adaptive thinking is
         # always on; depth is controlled by `effort` (replaces budget_tokens).
         # Only the 'anthropic claude 5' family yaml exposes this parameter.
-        if "effort" in model_parameters:
+        # `thinking_display` ("omitted" by default on Claude 5): "summarized"
+        # streams reasoning summaries so long thinking does not leave the
+        # connection idle. It is only read here and never forwarded as-is.
+        thinking_display_summarized = model_parameters.get("thinking_display") == "summarized"
+        claude5_thinking = "effort" in model_parameters or thinking_display_summarized
+        if claude5_thinking:
             additional_model_fields["thinking"] = {"type": "adaptive"}
-            additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
+            if thinking_display_summarized:
+                additional_model_fields["thinking"]["display"] = "summarized"
+            if "effort" in model_parameters:
+                additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
             # Claude 5 rejects non-default sampling params. The family yaml does
             # not expose them, but drop any that reach here through callers that
             # bypass the SDK's parameter-rule filtering (e.g. direct _invoke).
@@ -1082,7 +1120,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             additional_model_fields.pop("top_k", None)
 
         # process reasoning related parameters, construct nested reasoning_config structure
-        if "reasoning_type" in model_parameters and "effort" not in model_parameters:
+        if "reasoning_type" in model_parameters and not claude5_thinking:
             reasoning_type = model_parameters["reasoning_type"]
             if reasoning_type:
                 reasoning_config = {
@@ -1128,6 +1166,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Add system messages
         for message in system_messages:
             message.content = message.content.strip()
+            # Bedrock Converse rejects system blocks whose text is shorter than
+            # one character, so skip system messages that are empty after
+            # stripping (e.g. an empty drive/skill prefix prompt).
+            if not message.content:
+                continue
             system.append({"text": message.content})
 
             # Add cache point to system if it's not empty and caching is supported for system field
@@ -1175,11 +1218,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         configs = []
         if tools:
             for tool in tools:
+                # Bedrock Converse rejects toolSpec.description shorter than
+                # one character, so fall back to the tool name when the
+                # description is missing or empty (e.g. Dify's shell_* tools).
+                description = (tool.description or "").strip() or tool.name
                 configs.append(
                     {
                         "toolSpec": {
                             "name": tool.name,
-                            "description": tool.description,
+                            "description": description,
                             "inputSchema": {"json": tool.parameters},
                         }
                     }
@@ -1828,6 +1875,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Always exclude model_name since it's determined by inference profile
         excluded_params = ['model_name']
+        if underlying_model_id and model_ids.strip_profile_prefix(underlying_model_id) == "anthropic.claude-haiku-5-5":
+            excluded_params.extend(["temperature", "top_p", "top_k", "reasoning_type", "reasoning_budget"])
 
         # Apply model-specific filtering if underlying_model_id is available
         allowed_parameter_rules = []
@@ -1916,7 +1965,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Create model name mapping for individual model files
         model_name_mapping = {
-            # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            # OpenAI GPT-6.1 / GPT-5.x models (Responses API)
+            'GPT-6.1 Sol': 'gpt-6-1-sol',
             'GPT-5.6 Sol': 'gpt-5-6-sol',
             'GPT-5.6 Terra': 'gpt-5-6-terra',
             'GPT-5.6 Luna': 'gpt-5-6-luna',
@@ -1924,6 +1974,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'GPT-5.4': 'gpt-5-4',
             # Claude models
             # Claude 5 generation models
+            'Opus 5.5': 'claude-5-5-opus',
+            'Sonnet 5.5': 'claude-5-5-sonnet',
+            'Haiku 5.5': 'claude-5-5-haiku',
+            'Fable 5.1': 'claude-5-1-fable',
             'Opus 5': 'claude-5-opus',
             'Sonnet 5': 'claude-5-sonnet',
             'Fable 5': 'claude-5-fable',
@@ -2155,7 +2209,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     content = self._convert_responses_api_user_content(message.content)
                 result.append({"role": "user", "content": content})
             elif isinstance(message, AssistantPromptMessage):
-                result.append({"role": "assistant", "content": message.content or ""})
+                if message.content or not message.tool_calls:
+                    result.append({"role": "assistant", "content": message.content or ""})
+                result.extend(
+                    {
+                        "type": "function_call",
+                        "call_id": call.id,
+                        "name": call.function.name,
+                        "arguments": call.function.arguments,
+                    }
+                    for call in message.tool_calls
+                )
+            elif isinstance(message, ToolPromptMessage):
+                result.append({
+                    "type": "function_call_output",
+                    "call_id": message.tool_call_id,
+                    "output": message.content or "",
+                })
         return result
 
     @staticmethod
@@ -2204,6 +2274,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke GPT-5.5 / GPT-5.4 via bedrock-mantle endpoint using the OpenAI Responses API.
@@ -2220,6 +2291,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         region = credentials.get("aws_region", "us-east-2")
         token = self._get_mantle_auth_token(credentials)
         base_url = f"https://bedrock-mantle.{region}.api.aws/openai/v1"
+        if model_id in model_ids.GPT6_MODEL_IDS:
+            # bedrock-mantle serves GPT-6 in few regions (see
+            # model_ids.GPT6_MODEL_IDS); bedrock-runtime's OpenAI-compatible
+            # endpoint takes their us./global. inference profiles instead.
+            try:
+                model_id = model_ids.resolve_gpt6_profile_id(
+                    model_id, model_parameters.get("cross-region", "disabled"), region
+                )
+            except ValueError as e:
+                raise InvokeBadRequestError(str(e))
+            base_url = f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
 
         client = OpenAI(api_key=token, base_url=base_url)
         input_messages = self._build_responses_api_input(prompt_messages)
@@ -2253,11 +2335,31 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         reasoning_effort = model_parameters.get("reasoning_effort")
         if reasoning_effort:
             params["reasoning"] = {"effort": reasoning_effort}
+        if tools:
+            # Same function-tool shape as models/openai (responses.py).
+            params["tools"] = [
+                {
+                    "type": "function",
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                    "strict": False,
+                }
+                for tool in tools
+            ]
 
         # Store model_name for pricing calculation, deriving it from model_id if not set.
         credentials_for_pricing = credentials.copy()
         if model_name:
             resolved_model_name = model_name
+        elif "gpt-6.1-sol" in model_id:
+            resolved_model_name = "GPT-6.1 Sol"
+        elif "gpt-6-sol" in model_id:
+            resolved_model_name = "GPT-6 Sol"
+        elif "gpt-6-luna" in model_id:
+            resolved_model_name = "GPT-6 Luna"
+        elif "gpt-6-astra" in model_id:
+            resolved_model_name = "GPT-6 Astra"
         elif "gpt-5.6-sol" in model_id:
             resolved_model_name = "GPT-5.6 Sol"
         elif "gpt-5.6-terra" in model_id:
@@ -2299,12 +2401,28 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         prompt_tokens = getattr(usage, "input_tokens", 0) if usage else 0
         completion_tokens = getattr(usage, "output_tokens", 0) if usage else 0
         dify_usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        tool_calls = [
+            self._responses_api_tool_call(item)
+            for item in (getattr(response, "output", None) or [])
+            if getattr(item, "type", None) == "function_call"
+        ]
 
         return LLMResult(
             model=model,
             prompt_messages=prompt_messages,
-            message=AssistantPromptMessage(content=text),
+            message=AssistantPromptMessage(content=text, tool_calls=tool_calls),
             usage=dify_usage,
+        )
+
+    @staticmethod
+    def _responses_api_tool_call(item) -> AssistantPromptMessage.ToolCall:
+        """Convert a Responses API ``function_call`` output item to a Dify tool call."""
+        return AssistantPromptMessage.ToolCall(
+            id=item.call_id,
+            type="function",
+            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                name=item.name, arguments=item.arguments
+            ),
         )
 
     def _handle_responses_api_stream(
@@ -2336,7 +2454,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         )
                         index += 1
 
-                elif event_type == "ResponseCompletedEvent":
+                elif event_type in ("ResponseCompletedEvent", "ResponseIncompleteEvent"):
+                    # A stream cut off by max_output_tokens ends with
+                    # response.incomplete instead of response.completed; it
+                    # still carries usage, so close the stream the same way.
                     resp = getattr(event, "response", None)
                     usage = getattr(resp, "usage", None) if resp else None
                     if usage:
@@ -2345,15 +2466,38 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     dify_usage = self._calc_response_usage(
                         model, credentials, input_tokens, output_tokens
                     )
+                    finish_reason = "stop"
+                    if event_type == "ResponseIncompleteEvent":
+                        # Same mapping as models/openai (stream.py).
+                        reason = getattr(getattr(resp, "incomplete_details", None), "reason", None)
+                        finish_reason = {
+                            "max_output_tokens": "length",
+                            "content_filter": "content_filter",
+                        }.get(reason, "incomplete")
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=AssistantPromptMessage(content=""),
-                            finish_reason="stop",
+                            finish_reason=finish_reason,
                             usage=dify_usage,
                         ),
                     )
+
+                elif event_type == "ResponseOutputItemDoneEvent":
+                    item = getattr(event, "item", None)
+                    if getattr(item, "type", None) == "function_call":
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(
+                                    content="", tool_calls=[self._responses_api_tool_call(item)]
+                                ),
+                            ),
+                        )
+                        index += 1
         except Exception as ex:
             self._map_openai_exception(ex)

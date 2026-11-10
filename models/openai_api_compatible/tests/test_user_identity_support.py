@@ -6,6 +6,7 @@ parameter, so the credential lets an operator suppress it. Default must keep
 today's behaviour: the parameter is still sent.
 """
 
+import json
 import unittest
 from unittest.mock import patch
 
@@ -74,11 +75,11 @@ class TestUserIdentitySupportPayload(unittest.TestCase):
         captured = {}
 
         def fake_post(url, **kwargs):
-            captured.update(kwargs.get("json") or {})
+            captured.update(json.loads(kwargs["data"]))
             raise RuntimeError("stop-after-body-built")
 
         with patch("requests.post", side_effect=fake_post):
-            with self.assertRaises(Exception):
+            with self.assertRaisesRegex(RuntimeError, "stop-after-body-built"):
                 self.model._invoke(
                     model="test-model",
                     credentials=credentials,

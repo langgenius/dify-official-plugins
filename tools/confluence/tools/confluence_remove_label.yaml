@@ -1,0 +1,55 @@
+identity:
+  name: confluence_remove_label
+  author: langgenius
+  label:
+    en_US: Remove Label
+    zh_Hans: 移除标签
+    ja_JP: ラベルを削除
+description:
+  human:
+    en_US: Remove a label from a page
+    zh_Hans: 移除页面的一个标签
+    ja_JP: ページからラベルを 1 つ削除します
+  llm: Remove one label from a Confluence page.
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+- name: label
+  type: string
+  required: true
+  label:
+    en_US: Label
+    zh_Hans: 标签
+    ja_JP: ラベル
+  human_description:
+    en_US: The label to remove
+    zh_Hans: 要移除的标签
+    ja_JP: 削除するラベル
+  llm_description: The label to remove.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    removed:
+      type: boolean
+      description: True when the label was removed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_remove_label.py

@@ -1,0 +1,130 @@
+identity:
+  name: update_planner_task
+  author: langgenius
+  label:
+    en_US: Update Planner Task
+    zh_Hans: 更新 Planner 任务
+    pt_BR: Atualizar Tarefa do Planner
+    ja_JP: Planner タスク更新
+    zh_Hant: 更新 Planner 任務
+description:
+  human:
+    en_US: Change a Planner task's title, bucket, progress or due date
+    zh_Hans: 修改 Planner 任务的标题、分组、进度或截止日期
+    pt_BR: Alterar título, bucket, progresso ou vencimento de uma tarefa do Planner
+    ja_JP: Planner タスクのタイトル、バケット、進捗、期限を変更
+    zh_Hant: 修改 Planner 任務的標題、分組、進度或截止日期
+  llm: Update a Microsoft Planner task; only the fields given are changed. percent_complete 100 marks it done.
+parameters:
+- name: task_id
+  type: string
+  required: true
+  label:
+    en_US: Task ID
+    zh_Hans: 任务 ID
+    pt_BR: ID da Tarefa
+    ja_JP: タスク ID
+    zh_Hant: 任務 ID
+  human_description:
+    en_US: The ID of the Planner task (from List Planner Tasks)
+    zh_Hans: Planner 任务 ID（来自“列出 Planner 任务”）
+    pt_BR: O ID da tarefa do Planner (de Listar Tarefas do Planner)
+    ja_JP: Planner タスクの ID（Planner タスク一覧から取得）
+    zh_Hant: Planner 任務 ID（來自「列出 Planner 任務」）
+  llm_description: The ID of the Planner task, as returned by List Planner Tasks or Create Planner Task
+  form: llm
+- name: title
+  type: string
+  required: false
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    pt_BR: Título
+    ja_JP: タイトル
+    zh_Hant: 標題
+  human_description:
+    en_US: New title
+    zh_Hans: 新标题
+    pt_BR: Novo título
+    ja_JP: 新しいタイトル
+    zh_Hant: 新標題
+  llm_description: The new title of the task
+  form: llm
+- name: bucket_id
+  type: string
+  required: false
+  label:
+    en_US: Bucket ID
+    zh_Hans: 分组 ID
+    pt_BR: ID do Bucket
+    ja_JP: バケット ID
+    zh_Hant: 分組 ID
+  human_description:
+    en_US: The ID of the bucket (from List Planner Buckets)
+    zh_Hans: 分组 ID（来自“列出 Planner 分组”）
+    pt_BR: O ID do bucket (de Listar Buckets do Planner)
+    ja_JP: バケットの ID（Planner バケット一覧から取得）
+    zh_Hant: 分組 ID（來自「列出 Planner 分組」）
+  llm_description: The ID of the Planner bucket, as returned by List Planner Buckets
+  form: llm
+- name: percent_complete
+  type: number
+  required: false
+  label:
+    en_US: Percent Complete
+    zh_Hans: 完成百分比
+    pt_BR: Percentual Concluído
+    ja_JP: 進捗率
+    zh_Hant: 完成百分比
+  human_description:
+    en_US: 0 = not started, 50 = in progress, 100 = completed
+    zh_Hans: 0 = 未开始，50 = 进行中，100 = 已完成
+    pt_BR: 0 = não iniciada, 50 = em andamento, 100 = concluída
+    ja_JP: 0 = 未開始、50 = 進行中、100 = 完了
+    zh_Hant: 0 = 未開始，50 = 進行中，100 = 已完成
+  llm_description: 'Progress from 0 to 100: 0 not started, 50 in progress, 100 completed'
+  form: llm
+- name: due_datetime
+  type: string
+  required: false
+  label:
+    en_US: Due Date
+    zh_Hans: 截止日期
+    pt_BR: Data de Vencimento
+    ja_JP: 期限
+    zh_Hant: 截止日期
+  human_description:
+    en_US: ISO 8601 date or date-time, e.g. 2026-12-01 or 2026-12-01T18:00:00+09:00 (no offset = UTC)
+    zh_Hans: ISO 8601 日期或日期时间，例如 2026-12-01 或 2026-12-01T18:00:00+09:00（不带时区偏移则视为 UTC）
+    pt_BR: Data ou data-hora ISO 8601, ex. 2026-12-01 ou 2026-12-01T18:00:00+09:00 (sem fuso = UTC)
+    ja_JP: 'ISO 8601 の日付または日時（例: 2026-12-01、2026-12-01T18:00:00+09:00。オフセットなしは UTC）'
+    zh_Hant: ISO 8601 日期或日期時間，例如 2026-12-01 或 2026-12-01T18:00:00+09:00（不含時區偏移則視為 UTC）
+  llm_description: Due date as ISO 8601, e.g. 2026-12-01T18:00:00+09:00; a value without a UTC offset is treated as UTC
+  form: llm
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: Planner task ID
+    title:
+      type: string
+      description: Task title
+    bucket_id:
+      type: string
+      description: Bucket ID
+    percent_complete:
+      type: integer
+      description: 0 not started, 50 in progress, 100 completed
+    due_datetime:
+      type: string
+      description: Due date (ISO 8601, UTC)
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/update_planner_task.py

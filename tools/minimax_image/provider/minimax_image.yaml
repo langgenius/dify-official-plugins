@@ -1,0 +1,52 @@
+identity:
+  author: langgenius
+  name: minimax_image
+  label:
+    en_US: MiniMax Image
+    zh_Hans: MiniMax Image
+  description:
+    en_US: MiniMax-H3-Image text-to-image generation and image editing
+    zh_Hans: MiniMax-H3-Image 文生图与图像编辑
+  icon: icon.svg
+  icon_dark: icon-dark.svg
+  tags:
+    - image
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Key
+      zh_Hans: API Key
+    placeholder:
+      en_US: Enter your MiniMax API key
+      zh_Hans: 请输入 MiniMax API Key
+    help:
+      en_US: Create a key on the same MiniMax site as the endpoint below.
+      zh_Hans: 请在下方所选站点对应的 MiniMax 平台创建密钥。
+    url: https://platform.minimax.io
+  api_endpoint:
+    type: select
+    required: true
+    default: international
+    label:
+      en_US: API Endpoint
+      zh_Hans: API 端点
+    help:
+      en_US: MiniMax China and International accounts are separate. Choose the site your key was created on.
+      zh_Hans: MiniMax 国内与国际平台账号体系相互独立，请选择创建密钥的站点。
+    options:
+      - value: international
+        label:
+          en_US: api.minimax.io (International)
+          zh_Hans: api.minimax.io（国际站）
+      - value: china
+        label:
+          en_US: api.minimaxi.com (China)
+          zh_Hans: api.minimaxi.com（中国大陆）
+tools:
+  - tools/image-generate.yaml
+  - tools/image-edit.yaml
+extra:
+  python:
+    source: provider/minimax_image.py

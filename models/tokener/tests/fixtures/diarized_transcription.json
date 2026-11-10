@@ -1,0 +1,9 @@
+{
+  "task": "transcribe",
+  "duration": 3,
+  "text": "Hello. Good morning.",
+  "segments": [
+    {"type": "transcript.text.segment", "id": "seg_0", "start": 0, "end": 1, "text": "Hello.", "speaker": "A"},
+    {"type": "transcript.text.segment", "id": "seg_1", "start": 1, "end": 3, "text": " Good morning.", "speaker": "B"}
+  ]
+}

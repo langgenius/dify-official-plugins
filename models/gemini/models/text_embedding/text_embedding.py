@@ -215,15 +215,8 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         :param text: text to embed
         :return: estimated token count
         """
-        # in case the model does not support count_token action
-        # we can use the flash-lite model to approximate the token count
-        count_model = (
-            model
-            if "countTokens" in (client.models.get(model=model).supported_actions or [])
-            else "gemini-2.0-flash-lite"
-        )
         try:
-            response = client.models.count_tokens(model=count_model, contents=[text])
+            response = client.models.count_tokens(model=model, contents=[text])
             if tokens := response.total_tokens:
                 return tokens
             return self._get_num_tokens_by_gpt2(text)

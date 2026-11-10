@@ -3,9 +3,22 @@ Notion API Client for Dify plugins
 This module provides a unified interface for interacting with the Notion API
 """
 
+import re
 import requests
 import time
 from typing import Any, Dict, List, Optional, Union
+
+NOTION_ID_PATTERN = re.compile(r"[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}")
+
+
+def extract_notion_id(value: str) -> str:
+    """Return the Notion ID in value, which may be a bare ID or a Notion URL.
+    For a URL the last ID in its path is used (a "?v=" view ID is ignored).
+    Values without an ID are returned stripped and unchanged."""
+    value = value.strip()
+    found = NOTION_ID_PATTERN.findall(value.split("?", 1)[0].split("#", 1)[0])
+    return found[-1] if found else value
+
 
 class NotionClient:
     """
@@ -31,7 +44,8 @@ class NotionClient:
         }
         
     def _make_request(self, method: str, endpoint: str, params: Optional[Dict[str, Any]] = None, 
-                     json_data: Optional[Dict[str, Any]] = None, max_retries: int = 3) -> Dict[str, Any]:
+                     json_data: Optional[Dict[str, Any]] = None, max_retries: int = 3,
+                     retry_network_errors: bool = True, timeout: Optional[float] = None) -> Dict[str, Any]:
         """
         Make an API request to Notion with retry logic for rate limits.
         
@@ -41,6 +55,10 @@ class NotionClient:
             params: URL parameters for GET requests
             json_data: JSON data for POST/PATCH requests
             max_retries: Maximum number of retries for rate limiting
+            retry_network_errors: Whether to retry network errors that may occur after the
+                request was sent. Disable for non-idempotent requests (e.g. creating a page)
+                so a retry cannot apply them twice; connect timeouts are still retried.
+            timeout: Optional request timeout in seconds
             
         Returns:
             Response data as dictionary
@@ -55,7 +73,8 @@ class NotionClient:
                     url=url,
                     headers=self.headers,
                     params=params,
-                    json=json_data
+                    json=json_data,
+                    timeout=timeout
                 )
                 
                 # Handle rate limiting
@@ -85,7 +104,9 @@ class NotionClient:
                 raise
                 
             except requests.exceptions.RequestException as e:
-                if retries >= max_retries:
+                if retries >= max_retries or (
+                    not retry_network_errors and not isinstance(e, requests.exceptions.ConnectTimeout)
+                ):
                     raise
                 retries += 1
                 time.sleep(1)
@@ -217,7 +238,7 @@ class NotionClient:
         )
     
     def create_page(self, parent: Dict[str, Any], properties: Dict[str, Any], 
-                   children: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+                   children: Optional[List[Dict[str, Any]]] = None, **request_options: Any) -> Dict[str, Any]:
         """
         Create a new page in Notion with the specified parent, properties, and content.
         For API version 2025-09-03, database_id parents are automatically converted to data_source_id.
@@ -226,6 +247,7 @@ class NotionClient:
             parent: Parent specification (page_id, database_id, data_source_id, or workspace)
             properties: Page properties (including title)
             children: Optional list of block contents
+            request_options: Extra options for _make_request (e.g. retry_network_errors, timeout)
             
         Returns:
             Dictionary containing the created page information
@@ -252,7 +274,7 @@ class NotionClient:
         if children:
             payload["children"] = children
         
-        return self._make_request("post", "/pages", json_data=payload)
+        return self._make_request("post", "/pages", json_data=payload, **request_options)
     
     def retrieve_block_children(self, block_id: str, page_size: int = 100, start_cursor: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -277,13 +299,14 @@ class NotionClient:
             
         return self._make_request("get", f"/blocks/{block_id}/children", params=params)
     
-    def append_block_children(self, block_id: str, children: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def append_block_children(self, block_id: str, children: List[Dict[str, Any]], **request_options: Any) -> Dict[str, Any]:
         """
         Append children blocks to a block.
         
         Args:
             block_id: The ID of the block to append children to
             children: List of block contents to append
+            request_options: Extra options for _make_request (e.g. retry_network_errors, timeout)
             
         Returns:
             Dictionary containing the updated block information
@@ -294,7 +317,7 @@ class NotionClient:
             "children": children
         }
             
-        return self._make_request("patch", f"/blocks/{block_id}/children", json_data=payload)
+        return self._make_request("patch", f"/blocks/{block_id}/children", json_data=payload, **request_options)
     
     def retrieve_page(self, page_id: str) -> Dict[str, Any]:
         """
@@ -337,6 +360,31 @@ class NotionClient:
         """
         data_source_id = data_source_id.replace("-", "")
         return self._make_request("get", f"/data_sources/{data_source_id}")
+
+    def resolve_data_source(self, database_or_data_source_id: str) -> Dict[str, Any]:
+        """
+        Retrieve the data source for a database ID (its first data source), a data source ID
+        (as returned by search in API version 2025-09-03), or a Notion URL of either.
+
+        Args:
+            database_or_data_source_id: A database ID, data source ID, or Notion URL
+
+        Returns:
+            Dictionary containing the data source information including id and properties
+        """
+        target_id = extract_notion_id(database_or_data_source_id)
+        try:
+            data_source_id = self.get_default_data_source_id(target_id)
+        except requests.exceptions.HTTPError as e:
+            if e.response is None or e.response.status_code not in (400, 404):
+                raise
+            # Not a database (or not shared); it may be a data source ID instead.
+            # If it is not one either, report the original database lookup error.
+            try:
+                return self.retrieve_data_source(target_id)
+            except requests.exceptions.HTTPError:
+                raise e
+        return self.retrieve_data_source(data_source_id)
     
     def update_page(self, page_id: str, properties: Dict[str, Any], archived: bool = False) -> Dict[str, Any]:
         """

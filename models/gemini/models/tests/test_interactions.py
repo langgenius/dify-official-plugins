@@ -3,7 +3,7 @@
 Added in conjunction with the ``_generate_via_interactions`` changes for
 https://github.com/langgenius/dify-official-plugins/issues/3426.
 
-Unit tests (no API key required) cover ``_is_gemini3_plus``, the validator
+Unit tests (no API key required) cover ``_is_gemini3``, the validator
 relaxation, the routing decision, and the Interactions response/stream
 handlers. Live tests (skip without ``GEMINI_API_KEY``) exercise the
 end-to-end path against the real Gemini API.
@@ -43,13 +43,16 @@ def _make_usage(prompt_tokens=10, completion_tokens=5):
 
 
 # =============================================================================
-#  _is_gemini3_plus
+#  _is_gemini3
 # =============================================================================
 
 
-class TestIsGemini3Plus:
+class TestIsGemini3:
     def _call(self, model):
-        return GoogleLargeLanguageModel._is_gemini3_plus(model)
+        return GoogleLargeLanguageModel._is_gemini3(model)
+
+    def test_gemini4_uses_generate_content(self):
+        assert self._call("gemini-4-argon") is False
 
     def test_gemini3_flash(self):
         assert self._call("gemini-3.5-flash") is True
@@ -337,7 +340,9 @@ class TestInteractionsResponseHandler:
             )
             usage = list(result)[-1].delta.usage if stream else result.usage
 
-        assert mock_client.interactions.create.call_args.kwargs["service_tier"] == "flex"
+        assert (
+            mock_client.interactions.create.call_args.kwargs["service_tier"] == "flex"
+        )
         assert usage is not None
         assert usage.prompt_price == expected_prompt_price
         assert usage.completion_price == expected_completion_price
@@ -400,9 +405,12 @@ class TestInteractionsResponseHandler:
             else:
                 output = "".join(part.data for part in result.message.content)
 
-        assert mock_client.interactions.create.call_args.kwargs["generation_config"][
-            "thinking_summaries"
-        ] == "auto"
+        assert (
+            mock_client.interactions.create.call_args.kwargs["generation_config"][
+                "thinking_summaries"
+            ]
+            == "auto"
+        )
         assert output == "<think>\n\nReasoning\n\n</think>Answer"
 
     def test_interactions_media_resolution_on_image_and_video(self):
@@ -443,9 +451,7 @@ class TestInteractionsResponseHandler:
                 stream=False,
             )
 
-        blocks = mock_client.interactions.create.call_args.kwargs["input"][0][
-            "content"
-        ]
+        blocks = mock_client.interactions.create.call_args.kwargs["input"][0]["content"]
         assert [block["type"] for block in blocks] == ["image", "video"]
         assert [block["resolution"] for block in blocks] == ["medium", "medium"]
 
@@ -453,9 +459,7 @@ class TestInteractionsResponseHandler:
         contents = [
             types.Content(
                 role="user",
-                parts=[
-                    types.Part.from_bytes(data=b"pdf", mime_type="application/pdf")
-                ],
+                parts=[types.Part.from_bytes(data=b"pdf", mime_type="application/pdf")],
             )
         ]
 

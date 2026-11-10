@@ -1,0 +1,36 @@
+name: Check Plugin Icons
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    branches:
+      - main
+    paths:
+      - "**/manifest.yaml"
+      - "**/_assets/**"
+      - ".github/workflows/check-plugin-icons.yaml"
+      - ".github/scripts/check-plugin-icons.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-plugin-icons-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-plugin-icons:
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: yq - portable yaml processor
+        uses: mikefarah/yq@v4.44.5
+
+      - name: Check All Plugin Icons
+        run: .github/scripts/check-plugin-icons.sh

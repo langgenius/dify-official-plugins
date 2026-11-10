@@ -71,7 +71,11 @@ class SageMakerRerankModel(RerankModel):
                 return RerankResult(model=model, docs=docs)
 
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
-            sagemaker_client = get_sagemaker_client("sagemaker-runtime", credentials)
+            sagemaker_client = get_sagemaker_client(
+                "sagemaker-runtime",
+                credentials,
+                role_session_prefix="dify-sagemaker-rerank",
+            )
             candidate_docs = []
 
             scores = self._sagemaker_rerank(

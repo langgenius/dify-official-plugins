@@ -1,0 +1,55 @@
+identity:
+  name: google_drive_list_permissions
+  author: langgenius
+  label:
+    en_US: List Sharing
+    zh_Hans: 查看共享
+    ja_JP: 共有の一覧
+description:
+  human:
+    en_US: Who has access to a file
+    zh_Hans: 谁可以访问文件
+    ja_JP: ファイルにアクセスできる人
+  llm: List who has access to a Google Drive file or folder and with which role.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    permissions:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          type:
+            type: string
+          role:
+            type: string
+          who:
+            type: string
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_list_permissions.py

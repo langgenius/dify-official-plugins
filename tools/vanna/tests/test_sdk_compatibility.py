@@ -7,9 +7,23 @@ from unittest.mock import Mock, patch
 
 from provider.vanna import VannaProvider
 from tools.vanna import VannaTool
+from vanna.legacy.remote import VannaDefault
 
 
 class VannaCompatibilityTest(unittest.TestCase):
+    def test_oracle_query_without_vector_store_dependencies(self):
+        client = VannaDefault(model="example", api_key="test-key")
+        with patch("oracledb.connect") as connect:
+            cursor = connect.return_value.cursor.return_value
+            cursor.description = [("NAME",)]
+            cursor.fetchall.return_value = [("Ada",)]
+            client.connect_to_oracle(user="user", password="password", dsn="host:1521/service")
+            result = client.run_sql("SELECT name FROM customers;")
+
+        connect.assert_called_once_with(user="user", password="password", dsn="host:1521/service")
+        cursor.execute.assert_called_once_with("SELECT name FROM customers")
+        self.assertEqual(result["NAME"].tolist(), ["Ada"])
+
     def test_remote_training_and_sqlite_query(self):
         calls = []
 

@@ -37,6 +37,21 @@ parameter_rules:
     use_template: max_tokens
     default: 4000
     max: 128000
+  - name: reasoningEffort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+      ja_JP: 推論の深さ
+    type: string
+    help:
+      zh_Hans: 限制推理模型的推理努力程度。留空则使用服务端默认值。
+      en_US: Constrains how much effort the model spends on reasoning. Leave unset to use the service default.
+      ja_JP: 推論に費やす労力を制限します。未設定の場合はサービスのデフォルト値が使われます。
+    required: false
+    options:
+      - LOW
+      - MEDIUM
+      - HIGH
 pricing:
   input: '0.07'
   output: '0.30'

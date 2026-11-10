@@ -57,7 +57,7 @@ Then, fill in the following configuration:
 - **Structured Output Support**: Select "Support" if your model can return JSON object / JSON schema responses.
 
 **Speech-to-Text options** (Whisper recipes):
-- **Language**: The primary language of the audio (e.g. `en`, `zh`).
+- **Language**: Optional ISO-639-1 language code (e.g. `en`, `zh`, `ru`). Leave empty to let Whisper automatically detect the audio language. Previously, this field defaulted to English and was limited to a select list; it now supports any language code.
 - **Initial Prompt**: Optional prompt to bias the transcription.
 
 **Text-to-Speech options** (Kokoro recipes):

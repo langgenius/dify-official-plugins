@@ -8,7 +8,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -24,7 +24,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 128000
+    max: 256000
   - name: safe_prompt
     default: false
     type: boolean
@@ -68,7 +68,7 @@ parameter_rules:
     min: -2
     max: 2
 pricing:
-  input: '0.1'
-  output: '0.3'
+  input: '0.15'
+  output: '0.6'
   unit: '0.000001'
   currency: USD
