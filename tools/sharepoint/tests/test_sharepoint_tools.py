@@ -1,4 +1,4 @@
-"""Site resolution, URL encoding, output variables, the n8n-parity tools and the provider."""
+"""Site resolution, URL encoding, output variables, the list and file tools and the provider."""
 import importlib
 import json
 from pathlib import Path
@@ -115,6 +115,7 @@ CASES = {
     "sharepoint_delete_item": ({"list": "Tasks", "item_id": "7"}, {("DELETE", f"{L}/items/7"): FakeResponse(None, 204)}),
     "sharepoint_list_files": ({}, {("GET", f"{SITE}/drive/root/children"): FakeResponse({"value": [FILE]})}),
     "sharepoint_download_file": ({"file_id": "f1"}, {("GET", f"{SITE}/drive/items/f1"): FakeResponse(FILE)}),
+    "sharepoint_read_file": ({"file_id": "f1"}, {("GET", f"{SITE}/drive/items/f1"): FakeResponse(FILE)}),
     "sharepoint_upload_file": ({"file_content": "hi", "file_name": "a.txt"}, {("PUT", f"{SITE}/drive/root:/a.txt:/content"): FakeResponse(FILE, 201)}),
     "sharepoint_update_file": ({"file_id": "f1", "new_name": "b.txt"}, {("PATCH", f"{SITE}/drive/items/f1"): FakeResponse(dict(FILE, name="b.txt"))}),
 }
@@ -132,8 +133,8 @@ def test_every_tool_listed_in_the_provider_is_covered():
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_success_emits_every_declared_variable_with_its_type(name, monkeypatch):
     params, routes = CASES[name]
-    if name == "sharepoint_download_file":
-        monkeypatch.setattr(importlib.import_module("tools.sharepoint_download_file").requests, "get", lambda url, timeout=None: FakeResponse(None, 200, b"abc"))
+    if name in ("sharepoint_download_file", "sharepoint_read_file"):
+        monkeypatch.setattr(importlib.import_module(f"tools.{name}").requests, "get", lambda url, timeout=None: FakeResponse(None, 200, b"abc"))
     _, out, _, _ = run(name, params, routes, monkeypatch)
     declared = schema(name)
     assert set(out) == set(declared)

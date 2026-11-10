@@ -26,18 +26,17 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
-from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
+
+from models.llm.transport import ConfigurableTimeoutLLM, request_timeout
 
 
-class GPUStackLanguageModel(OAICompatLargeLanguageModel):
+class GPUStackLanguageModel(ConfigurableTimeoutLLM):
     """GPUStack-specific OpenAI-compatible LLM implementation."""
 
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
-    # Timeout for validation requests: (connect_timeout, read_timeout) in seconds
-    _VALIDATE_TIMEOUT = (10, 300)
 
     class _MessageLike(Protocol):
         content: object
@@ -405,7 +404,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
                     endpoint_url,
                     headers=self._build_validation_headers(compatible_credentials),
                     json=data,
-                    timeout=self._VALIDATE_TIMEOUT,
+                    timeout=request_timeout(compatible_credentials),
                     stream=True,
                 ) as stream_response:
                     if stream_response.status_code != 200:
@@ -416,7 +415,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
                 endpoint_url,
                 headers=self._build_validation_headers(compatible_credentials),
                 json=data,
-                timeout=self._VALIDATE_TIMEOUT,
+                timeout=request_timeout(compatible_credentials),
             )
             self._validate_completion_response(response, completion_type)
         except CredentialsValidateFailedError:

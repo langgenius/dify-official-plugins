@@ -9,7 +9,7 @@ from tools.outputs import with_outputs
 
 
 class ListFilesTool(Tool):
-    """Files and folders in a folder of the site's document library (n8n's folder and file pickers)."""
+    """Files and folders in a folder of the site's document library."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -22,10 +22,10 @@ class ListFilesTool(Tool):
         except (GraphAuthError, ValueError) as e:
             yield self.create_text_message(f"Failed to list the files: {e}")
             return
-        self._out.update(files=files, count=len(files), success=True)
+        self._out.update(items=files, count=len(files), success=True)
         where = f"folder {folder_id}" if folder_id and folder_id != "root" else f"the '{site['name']}' document library"
         yield self.create_text_message(
             f"{len(files)} item(s) in {where}:\n"
             + "\n".join(f"- {f['name']} ({'folder' if f['is_folder'] else f'{f['size']} bytes'}, id: {f['id']})" for f in files)
         )
-        yield self.create_json_message({"files": files, "count": len(files)})
+        yield self.create_json_message({"items": files, "count": len(files)})

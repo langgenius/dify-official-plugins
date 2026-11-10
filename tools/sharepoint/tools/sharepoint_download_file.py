@@ -12,7 +12,7 @@ _MAX_DOWNLOAD = 15 * 1024 * 1024
 
 
 class DownloadFileTool(Tool):
-    """Download a file from the site's document library (n8n: File > Download)."""
+    """Download a file from the site's document library."""
 
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
