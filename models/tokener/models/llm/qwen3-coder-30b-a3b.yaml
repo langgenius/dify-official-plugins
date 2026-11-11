@@ -1,0 +1,29 @@
+model: "qwen3-coder-30b-a3b"
+label:
+  en_US: "qwen3-coder-30b-a3b"
+  zh_Hans: "qwen3-coder-30b-a3b"
+model_type: llm
+features: []
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 16000
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 1
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+pricing:
+  input: "0.150000"
+  output: "0.600000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false

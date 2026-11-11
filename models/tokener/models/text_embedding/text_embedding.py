@@ -37,6 +37,10 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                     else "title: none | text: "
                 )
                 payload["input"] = [prefix + text for text in batch]
+            elif model in {"embed-english-v3", "embed-multilingual-v3", "embed-v4"}:
+                payload["input_type"] = (
+                    "search_query" if input_type == EmbeddingInputType.QUERY else "search_document"
+                )
             if user:
                 payload["user"] = user
             response = self._post("embeddings", credentials, payload)

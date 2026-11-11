@@ -13,6 +13,11 @@
   {"pattern": "claude-.*", "sampling": ["temperature"]},
   {"pattern": "gemini-.*", "sampling": ["temperature", "top_p"]},
   {"pattern": "grok-.*", "sampling": ["temperature", "top_p"]},
+  {
+    "pattern": "(?:glm-4\\.7(?:-flash)?|qwen3-coder-(?:30b-a3b|next)|qwen3-vl-235b-a22b)",
+    "sampling": ["temperature", "top_p"],
+    "temperature_max": 1
+  },
   {"pattern": "qwen.*", "sampling": ["temperature", "top_p"]},
   {
     "pattern": "(?:deepseek-v4-(?:flash|pro)|glm-5\\.2|kimi-k3)",
