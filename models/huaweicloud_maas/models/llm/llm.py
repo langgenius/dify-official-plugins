@@ -17,15 +17,18 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     _THINKING_PATH_VLLM = "chat_template_kwargs.enable_thinking.true"
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
+    # Kept for customizable models that reuse a built-in model name.
     thinking_mapping = {
         "qwen3-32b": _THINKING_PATH_VLLM,
         "qwen3-30b-a3b": _THINKING_PATH_VLLM,
         "glm-5.1": _THINKING_PATH_XDS,
         "glm-5.2": _THINKING_PATH_XDS,
         "glm-5.2-arkts-spark": _THINKING_PATH_XDS,
+        "glm-5.3": _THINKING_PATH_XDS,
         "kimi-k2.6": _THINKING_PATH_XDS,
         "deepseek-v4-flash": _THINKING_PATH_XDS,
         "deepseek-v4.1-flash": _THINKING_PATH_XDS,
+        "deepseek-v4.1-flash-1017": _THINKING_PATH_XDS,
         "openpangu-2.0-flash": _THINKING_PATH_XDS,
         "openpangu-2.0-pro": _THINKING_PATH_XDS,
     }
