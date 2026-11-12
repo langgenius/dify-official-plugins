@@ -1,4 +1,12 @@
 credentials_for_provider:
+  base_url:
+    label:
+      en_US: Tavily server's Base URL
+      zh_Hans: Tavily服务器的API URL
+    placeholder:
+      en_US: https://api.tavily.com
+    required: false
+    type: text-input
   tavily_api_key:
     help:
       en_US: Get your Tavily API key from Tavily

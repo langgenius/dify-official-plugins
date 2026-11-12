@@ -2,7 +2,7 @@ from typing import Any, Generator
 from tavily import TavilyClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
-from .utils import process_images, process_favicons
+from .utils import process_images, process_favicons, TAVILY_API_BASE_URL
 
 
 class TavilyCrawl:
@@ -17,8 +17,15 @@ class TavilyCrawl:
         crawl: Crawls a website starting from the given URL.
     """
 
-    def __init__(self, api_key: str, project_id: str | None = None) -> None:
-        self.client = TavilyClient(api_key=api_key, project_id=project_id, client_name="dify")
+    def __init__(
+        self, api_key: str, project_id: str | None = None, base_url: str | None = None
+    ) -> None:
+        self.client = TavilyClient(
+            api_key=api_key,
+            project_id=project_id,
+            client_name="dify",
+            api_base_url=base_url or TAVILY_API_BASE_URL,
+        )
 
     def crawl(self, params: dict[str, Any]) -> dict:
         """
@@ -203,7 +210,11 @@ class TavilyCrawlTool(Tool):
             return
 
         project_id = tool_parameters.get("project_id")
-        tavily_crawl = TavilyCrawl(api_key, project_id=project_id)
+        tavily_crawl = TavilyCrawl(
+            api_key,
+            project_id=project_id,
+            base_url=self.runtime.credentials.get("base_url"),
+        )
 
         try:
             crawl_results = tavily_crawl.crawl(tool_parameters)
