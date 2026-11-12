@@ -30,6 +30,8 @@ Navigate to **Plugin Marketplace** in Dify and search for "Tavily". Click **Inst
 
 Go to **Tools → Tavily → Authentication** and paste your API key.
 
+Optionally, set **Tavily server's Base URL** (`base_url`) to use a custom API endpoint for all five actions. Leave it empty to use `https://api.tavily.com`.
+
 ![](./_assets/tavilytool.gif)
 
 Tavily requests from the Dify integration include `X-Client-Name: dify` for client attribution.
