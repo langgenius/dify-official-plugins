@@ -211,6 +211,58 @@ class TestReActStreamParsing(unittest.TestCase):
         actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
         self.assertEqual(len(actions), 1)
 
+    def test_json_quoted_in_thought_is_not_promoted_to_action(self):
+        # Issue #3861: a JSON snippet quoted inside a Thought: sentence used to
+        # be promoted to an Action, so the round ran the quoted tool (or lost
+        # the real Action that follows).
+        results = _parse(
+            'Thought: I should call {"action": "webSearch", "action_input": {"q": 1}} '
+            'first\nAction: {"action": "webSearch", "action_input": {"q": 2}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "webSearch")
+        self.assertEqual(actions[0].action_input, {"q": 2})
+
+    def test_json_quoted_in_thought_stays_thought_text(self):
+        results = _parse(
+            'Thought: the payload should be {"action": "deleteAll", "action_input": {}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(actions, [])
+        text = "".join(
+            r.content for r in results if isinstance(r, ReactChunk)
+        )
+        self.assertIn('"deleteAll"', text)
+
+    def test_json_quoted_in_thought_across_chunks_is_not_an_action(self):
+        results = _parse(
+            'Thought: payload {"action": "webSearch", ',
+            '"action_input": {"q": 1}}',
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(actions, [])
+
+    def test_json_on_its_own_line_after_thought_is_still_an_action(self):
+        # Models that skip the "Action:" marker but put the JSON on its own line
+        # keep working.
+        results = _parse(
+            'Thought: search\n  {"action": "webSearch", "action_input": {"q": 1}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "webSearch")
+
+    def test_action_input_line_is_still_an_action_position(self):
+        # "Action Input:" is a common ReAct spelling the prefix matcher does not
+        # recognise; the line still starts with an action marker.
+        results = _parse(
+            'Thought: search\nAction Input: {"action": "webSearch", "action_input": {"q": 1}}'
+        )
+        actions = [r for r in results if isinstance(r, AgentScratchpadUnit.Action)]
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].action_name, "webSearch")
+
     def test_action_input_free_text_flags_parse_failure(self):
         # Issue #3699 (2nd scenario): "Action_input: {...}" written as free
         # text inside the thought instead of a properly formatted action line.

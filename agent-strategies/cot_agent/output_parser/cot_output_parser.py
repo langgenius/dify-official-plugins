@@ -11,6 +11,22 @@ PREFIX_DELIMITERS = frozenset({"\n", "\t", "\r", " ", ""})
 THINK_START = "<think>"
 THINK_END = "</think>"
 
+# Longest prefix of the current line kept to decide whether a JSON root sits in
+# an action position. "Action Input:" is the longest marker that has to fit.
+_LINE_PREFIX_MAX = 16
+
+
+def _is_action_line(prefix: str) -> bool:
+    """True when a JSON root at this point sits in an action position.
+
+    A root is in an action position when it is the first non-whitespace content
+    of its line, or when the line starts with an "Action" marker such as
+    ``Action:`` / ``Action Input:``. A root that follows thought prose on the
+    same line is quoted reasoning, not a tool call (issue #3861).
+    """
+    stripped = prefix.strip()
+    return not stripped or stripped.lower().startswith("action")
+
 
 # Keys that may carry the tool name, checked in priority order.
 ACTION_NAME_KEYS = ("action", "tool", "tool_name", "name", "function")
@@ -209,14 +225,29 @@ class CotAgentOutputParser:
         json_escape = False
         pending_action_json = False
         json_stack: list[str] = []
+        # Text of the current line so far, used to place a JSON root.
+        line_prefix = ""
+        # Whether the JSON root being captured started in an action position.
+        json_action_position = False
 
         cur_state = ReactState.THINKING
         last_character = ""
 
-        def emit_json_blob(blob: str):
-            """Yield a completed JSON blob as an Action or as (flagged) text."""
+        def emit_json_blob(blob: str, action_position: bool):
+            """Yield a completed JSON blob as an Action or as (flagged) text.
+
+            Only a root in an action position may become an Action; JSON quoted
+            inside a Thought: sentence stays thought text, so it can no longer
+            overwrite the Action that follows it (issue #3861). The parse-failed
+            flag keeps its previous meaning: a JSON blob that looks like an
+            attempted tool call but could not be turned into one.
+            """
             action = parse_action(blob)
-            if action is not None and cur_state is ReactState.THINKING:
+            if (
+                action is not None
+                and cur_state is ReactState.THINKING
+                and action_position
+            ):
                 yield action
             elif (
                 action is None
@@ -353,12 +384,21 @@ class CotAgentOutputParser:
                 delta = response_content[index: index + steps]
                 yield_delta = False
 
+                # Track the current line so a JSON root can be placed: text
+                # consumed by a prefix matcher counts as content of the line,
+                # while a bracket that opens a capture is not part of it.
+                if not in_json and delta not in {"{", "["}:
+                    if delta in "\r\n":
+                        line_prefix = ""
+                    else:
+                        line_prefix = (line_prefix + delta)[-_LINE_PREFIX_MAX:]
+
                 # Flush a completed JSON blob before processing the next
                 # character, so that adjacent roots like {...}{...} cannot
                 # overwrite an unprocessed blob in json_cache.
                 if got_json:
                     got_json = False
-                    yield from emit_json_blob(json_cache)
+                    yield from emit_json_blob(json_cache, json_action_position)
                     json_cache = ""
                     in_json = False
                     json_in_string = False
@@ -369,6 +409,7 @@ class CotAgentOutputParser:
                     # ({...}Action: {...}); reset to a delimiter so the
                     # PrefixMatcher accepts the first char.
                     last_character = "\n"
+                    line_prefix = ""
                     pending_action_json = False
 
                 if not in_json:
@@ -417,6 +458,10 @@ class CotAgentOutputParser:
                     json_escape = False
                     json_stack = ["}" if delta == "{" else "]"]
                     last_character = delta
+                    # Decide the position before the bracket joins the line.
+                    json_action_position = pending_action_json or _is_action_line(
+                        line_prefix
+                    )
                     index += steps
                     continue
 
@@ -455,7 +500,7 @@ class CotAgentOutputParser:
                 index += steps
 
         if json_cache:
-            yield from emit_json_blob(json_cache)
+            yield from emit_json_blob(json_cache, json_action_position)
 
         # Flush any partial prefix held by the state matchers (e.g. a stream
         # cut mid-"FinalAnswer:") so those characters are not silently
