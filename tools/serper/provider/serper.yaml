@@ -1,4 +1,13 @@
 credentials_for_provider:
+  base_url:
+    label:
+      en_US: Serper server's Base URL
+      zh_Hans: Serper服务器的API URL
+    placeholder:
+      en_US: https://google.serper.dev/search
+    required: false
+    default: https://google.serper.dev/search
+    type: text-input
   serperapi_api_key:
     help:
       en_US: Get your Serper API key from Serper

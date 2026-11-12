@@ -3,6 +3,7 @@ from typing import Any, Generator
 from tavily import TavilyClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from .utils import TAVILY_API_BASE_URL
 
 
 class TavilyResearch:
@@ -18,8 +19,15 @@ class TavilyResearch:
         get_research: Gets research results by request_id.
     """
 
-    def __init__(self, api_key: str, project_id: str | None = None) -> None:
-        self.client = TavilyClient(api_key=api_key, project_id=project_id, client_name="dify")
+    def __init__(
+        self, api_key: str, project_id: str | None = None, base_url: str | None = None
+    ) -> None:
+        self.client = TavilyClient(
+            api_key=api_key,
+            project_id=project_id,
+            client_name="dify",
+            api_base_url=base_url or TAVILY_API_BASE_URL,
+        )
 
     def research(self, params: dict[str, Any]) -> dict:
         """
@@ -125,7 +133,11 @@ class TavilyResearchTool(Tool):
             return
 
         project_id = tool_parameters.get("project_id")
-        tavily_research = TavilyResearch(api_key, project_id=project_id)
+        tavily_research = TavilyResearch(
+            api_key,
+            project_id=project_id,
+            base_url=self.runtime.credentials.get("base_url"),
+        )
 
         try:
             # Step 1: Create research task
