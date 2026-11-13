@@ -801,8 +801,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 return self._filter_thinking_result(result)
 
-        # A stream must decide before the closing tag arrives, so only trust an explicit
-        # switch: hybrid models may default to non-thinking when it is left unset.
+        # A thinking-enabled model may still answer without reasoning on a given turn.
+        # Restore a prefilled tag only when the stream confirms a reasoning delimiter.
         if is_chat and stream and enable_thinking_value is True:
             return self._restore_prefilled_think_stream(result)
 
@@ -898,9 +898,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             rest = content[end:]
             pos = end + (len(rest) - len(rest.lstrip()))
 
-    @staticmethod
-    def _restore_prefilled_think_stream(stream: Generator) -> Generator:
-        """Prepend the opening think tag when a thinking stream starts without one."""
+    @classmethod
+    def _restore_prefilled_think_stream(cls, stream: Generator) -> Generator:
+        """Restore prefilled reasoning only after a real closing delimiter arrives.
+
+        Explicit think blocks stream immediately. An ambiguous prefix must be held until
+        a standalone closing tag or EOF, otherwise a plain answer becomes unclosed thinking.
+        """
         held: list | None = []
         head = ""
         for chunk in stream:
@@ -910,14 +914,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             held.append(chunk)
             if isinstance(chunk.delta.message.content, str):
                 head += chunk.delta.message.content
-            # Hold the first few characters so a split `<think>` or `</think>` is recognized.
-            stripped = head.lstrip()
-            if not stripped or (
-                len(stripped) < len("</think>")
-                and ("<think>".startswith(stripped) or "</think>".startswith(stripped))
+            opening = head.find("<think>")
+            closing = cls._find_prefilled_think_end(head)
+            if opening < 0 and (
+                closing is None
+                # A chunk boundary is not a line boundary: `</think>` could be followed
+                # by ordinary prose in the next chunk. Accept EOF only after exhaustion.
+                or (closing.end() == len(head) and not head.endswith("\n"))
             ):
                 continue
-            if not stripped.startswith("<think>"):
+            if closing and (opening < 0 or closing.start() < opening):
                 first = next(
                     c.delta.message
                     for c in held
@@ -927,6 +933,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             yield from held
             held = None
         if held:
+            if cls._find_prefilled_think_end(head):
+                first = next(
+                    c.delta.message
+                    for c in held
+                    if isinstance(c.delta.message.content, str) and c.delta.message.content.strip()
+                )
+                first.content = "<think>\n" + first.content
             yield from held
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
