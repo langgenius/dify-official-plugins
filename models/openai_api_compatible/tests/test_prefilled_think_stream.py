@@ -105,6 +105,8 @@ def test_unconfirmed_reasoning_is_preserved(text, character_chunks):
         "reasoning",
         "```\n</think>\n```\nreal reasoning",
         "~~~\n</think>\n~~~\nreal reasoning",
+        "```\n<think>\n```\nreal reasoning",
+        "~~~\n<think>\n~~~\nreal reasoning",
     ],
 )
 @pytest.mark.parametrize("suffix", ["\nanswer", ""])
@@ -297,3 +299,47 @@ def test_real_sdk_streaming_tool_round_trip_without_reasoning():
     assert answer[-1].delta.usage.total_tokens == 15
     request = json.loads(post.call_args.kwargs["data"])
     assert request["messages"][-1] == {"role": "tool", "content": "42", "tool_call_id": "call_test"}
+
+
+def test_long_ambiguous_stream_scans_each_line_once():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    text = "abcdefgh" * 16000
+    scanned = 0
+    fence_pattern = model._FENCE_PATTERN
+    closing_pattern = model._PREFILLED_THINK_END
+
+    class CountedPattern:
+        def __init__(self, pattern):
+            self.pattern = pattern
+
+        def match(self, content):
+            nonlocal scanned
+            scanned += len(content)
+            return self.pattern.match(content)
+
+        def fullmatch(self, content):
+            nonlocal scanned
+            scanned += len(content)
+            return self.pattern.fullmatch(content)
+
+        def search(self, content, pos=0):
+            nonlocal scanned
+            scanned += len(content)
+            return self.pattern.search(content, pos)
+
+        def finditer(self, content):
+            nonlocal scanned
+            scanned += len(content)
+            return self.pattern.finditer(content)
+
+    with (
+        patch.object(OpenAILargeLanguageModel, "_FENCE_PATTERN", CountedPattern(fence_pattern)),
+        patch.object(
+            OpenAILargeLanguageModel, "_PREFILLED_THINK_END", CountedPattern(closing_pattern)
+        ),
+    ):
+        chunks = (_chunk(text[i : i + 8]) for i in range(0, len(text), 8))
+        result = list(model._restore_prefilled_think_stream(chunks))
+
+    assert "".join(c.delta.message.content for c in result) == text
+    assert scanned <= 2 * len(text)

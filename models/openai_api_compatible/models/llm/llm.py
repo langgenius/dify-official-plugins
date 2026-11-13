@@ -906,24 +906,53 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         a standalone closing tag or EOF, otherwise a plain answer becomes unclosed thinking.
         """
         held: list | None = []
-        head = ""
+        line_parts: list[str] = []
+        tail = ""
+        fence = ""
+        fence_line = False
+        restore = False
         for chunk in stream:
             if held is None:
                 yield chunk
                 continue
             held.append(chunk)
-            if isinstance(chunk.delta.message.content, str):
-                head += chunk.delta.message.content
-            opening = head.find("<think>")
-            closing = cls._find_prefilled_think_end(head)
-            if opening < 0 and (
-                closing is None
-                # A chunk boundary is not a line boundary: `</think>` could be followed
-                # by ordinary prose in the next chunk. Accept EOF only after exhaustion.
-                or (closing.end() == len(head) and not head.endswith("\n"))
-            ):
+            content = chunk.delta.message.content
+            if not isinstance(content, str):
                 continue
-            if closing and (opening < 0 or closing.start() < opening):
+            confirmed = False
+            pieces = content.split("\n")
+            for index, piece in enumerate(pieces):
+                line_parts.append(piece)
+                candidate = tail + piece
+                if not fence and not fence_line and "<think>" in candidate:
+                    # Only join a partial line when a tag is found, not on every chunk.
+                    fence_line = cls._FENCE_PATTERN.match("".join(line_parts)) is not None
+                    if not fence_line:
+                        confirmed = True
+                        break
+                tail = candidate[-(len("<think>") - 1):]
+                if index == len(pieces) - 1:
+                    continue
+
+                line = "".join(line_parts)
+                marker = cls._FENCE_PATTERN.match(line)
+                if marker:
+                    marker_text = marker.group(1)
+                    if not fence:
+                        fence = marker_text
+                    elif marker_text[0] == fence[0] and len(marker_text) >= len(fence):
+                        fence = ""
+                elif not fence and cls._PREFILLED_THINK_END.fullmatch(line + "\n"):
+                    restore = True
+                    confirmed = True
+                    break
+                line_parts = []
+                tail = ""
+                fence_line = False
+
+            if not confirmed:
+                continue
+            if restore:
                 first = next(
                     c.delta.message
                     for c in held
@@ -933,7 +962,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             yield from held
             held = None
         if held:
-            if cls._find_prefilled_think_end(head):
+            # A chunk boundary is not a line boundary. An unterminated closing-tag
+            # line is confirmed only at EOF, not before a possible prose continuation.
+            if not fence and cls._PREFILLED_THINK_END.fullmatch("".join(line_parts)):
                 first = next(
                     c.delta.message
                     for c in held
