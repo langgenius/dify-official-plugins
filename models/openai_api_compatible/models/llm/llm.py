@@ -801,8 +801,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 return self._filter_thinking_result(result)
 
-        # A stream must decide before the closing tag arrives, so only trust an explicit
-        # switch: hybrid models may default to non-thinking when it is left unset.
+        # A thinking-enabled model may still answer without reasoning on a given turn.
+        # Restore a prefilled tag only when the stream confirms a reasoning delimiter.
         if is_chat and stream and enable_thinking_value is True:
             return self._restore_prefilled_think_stream(result)
 
@@ -898,26 +898,61 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             rest = content[end:]
             pos = end + (len(rest) - len(rest.lstrip()))
 
-    @staticmethod
-    def _restore_prefilled_think_stream(stream: Generator) -> Generator:
-        """Prepend the opening think tag when a thinking stream starts without one."""
+    @classmethod
+    def _restore_prefilled_think_stream(cls, stream: Generator) -> Generator:
+        """Restore prefilled reasoning only after a real closing delimiter arrives.
+
+        Explicit think blocks stream immediately. An ambiguous prefix must be held until
+        a standalone closing tag or EOF, otherwise a plain answer becomes unclosed thinking.
+        """
         held: list | None = []
-        head = ""
+        line_parts: list[str] = []
+        tail = ""
+        fence = ""
+        fence_line = False
+        restore = False
         for chunk in stream:
             if held is None:
                 yield chunk
                 continue
             held.append(chunk)
-            if isinstance(chunk.delta.message.content, str):
-                head += chunk.delta.message.content
-            # Hold the first few characters so a split `<think>` or `</think>` is recognized.
-            stripped = head.lstrip()
-            if not stripped or (
-                len(stripped) < len("</think>")
-                and ("<think>".startswith(stripped) or "</think>".startswith(stripped))
-            ):
+            content = chunk.delta.message.content
+            if not isinstance(content, str):
                 continue
-            if not stripped.startswith("<think>"):
+            confirmed = False
+            pieces = content.split("\n")
+            for index, piece in enumerate(pieces):
+                line_parts.append(piece)
+                candidate = tail + piece
+                if not fence and not fence_line and "<think>" in candidate:
+                    # Only join a partial line when a tag is found, not on every chunk.
+                    fence_line = cls._FENCE_PATTERN.match("".join(line_parts)) is not None
+                    if not fence_line:
+                        confirmed = True
+                        break
+                tail = candidate[-(len("<think>") - 1):]
+                if index == len(pieces) - 1:
+                    continue
+
+                line = "".join(line_parts)
+                marker = cls._FENCE_PATTERN.match(line)
+                if marker:
+                    marker_text = marker.group(1)
+                    if not fence:
+                        fence = marker_text
+                    elif marker_text[0] == fence[0] and len(marker_text) >= len(fence):
+                        fence = ""
+                elif not fence and cls._PREFILLED_THINK_END.fullmatch(line + "\n"):
+                    restore = True
+                    confirmed = True
+                    break
+                line_parts = []
+                tail = ""
+                fence_line = False
+
+            if not confirmed:
+                continue
+            if restore:
                 first = next(
                     c.delta.message
                     for c in held
@@ -927,6 +962,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             yield from held
             held = None
         if held:
+            # A chunk boundary is not a line boundary. An unterminated closing-tag
+            # line is confirmed only at EOF, not before a possible prose continuation.
+            if not fence and cls._PREFILLED_THINK_END.fullmatch("".join(line_parts)):
+                first = next(
+                    c.delta.message
+                    for c in held
+                    if isinstance(c.delta.message.content, str) and c.delta.message.content.strip()
+                )
+                first.content = "<think>\n" + first.content
             yield from held
 
     def _filter_thinking_result(self, result: LLMResult) -> LLMResult:

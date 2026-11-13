@@ -372,7 +372,8 @@ def _invoke_stream(credentials: dict, model_parameters: dict, pieces: list[str])
 @pytest.mark.parametrize(
     ("pieces", "expected"),
     [
-        (["", "reason", "ing</th", "ink>\n{\"class\":\"x\"}"], "<think>\nreasoning</think>\n{\"class\":\"x\"}"),
+        # Qwen's prefilled reasoning ends with a standalone closing delimiter.
+        (["", "reason", "ing\n</th", "ink>\n{\"class\":\"x\"}"], "<think>\nreasoning\n</think>\n{\"class\":\"x\"}"),
         # Empty reasoning starts with the closing tag, possibly split across chunks.
         (["\n", "</th", "ink>\n{\"class\":\"x\"}"], "\n<think>\n</think>\n{\"class\":\"x\"}"),
     ],
