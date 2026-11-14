@@ -32,6 +32,68 @@ Local token estimates exclude images; the API's returned usage includes them.
 Pricing varies by cache status and time window; refer to the
 [official pricing page](https://api-docs.deepseek.com/quick_start/pricing/).
 
+# Built-in web tools
+
+For `deepseek-flash` (including the two legacy Flash IDs), enable **Web Search**
+(`deepseek_web_search`) and/or **Read URLs** (`deepseek_read_url`) in the model
+parameters. Both are off by default. DeepSeek executes these tools on the server;
+they can coexist with Dify function tools and work with streaming and non-streaming
+responses. These options are not exposed for `deepseek-v4-pro`.
+
+**Client function tools combined with either web tool, high safety checking,
+or enabled title generation require thinking mode.** The plugin automatically
+enables thinking for these combinations, even if the Thinking Mode switch is
+off, and applies thinking-mode sampling rules. This can increase latency and
+reasoning token usage. Without client function tools, the selected Thinking Mode
+setting is retained. Disabled title generation and `low` safety checking are
+omitted from the request (the API defaults are equivalent), so ordinary function
+tools can still run in non-thinking mode when no Chatbot extensions are enabled.
+
+Web Search uses deep search when Thinking Mode is enabled. Read URLs considers
+links in the last user message; when thinking and web search are both enabled,
+deep search takes precedence over separate link reading. The model decides when
+to use the tools. `tool_choice: none` disables all tools. Web tools require the
+`text` response format; JSON output is incompatible with them. Search, image
+search, and page fetches incur separate API charges in addition to token usage.
+See the [web tools guide](https://api-docs.deepseek.com/zh-cn/guides/web_tools/).
+
+The plugin preserves `server_tool_calls`, including encrypted page signatures,
+in the assistant message's `opaque_body` and sends them back in subsequent
+requests. Dify or a gateway must retain this opaque metadata in stored history
+to retain previously read webpages. Streaming history replays only the final
+step's reasoning as `reasoning_content`; earlier reasoning stays in its server
+tool steps. Server calls are not returned as client function calls.
+
+`annotations` (URL citations), `title`, `refusal`, and `usage.server_tool_use`
+(tool invocation counts) are also preserved in `opaque_body`, with invocation
+counts under `server_tool_use`. Streaming metadata is carried by the final
+chunk. This plugin does not render citation markers or tool progress in the
+Dify UI, automatically rename Dify conversations, or include tool charges in
+Dify's token-based cost estimate. Citation offsets refer to the API's answer
+text, excluding the plugin's displayed `<think>` block.
+
+# Other API updates checked (2026-11-14)
+
+- Flash now exposes **Content Safety Check** (`safety_check`, `low` or `high`)
+  and **Generate Conversation Title** (`title`, off by default). The plugin
+  converts these parameters to the API's object format. See the
+  [safety](https://api-docs.deepseek.com/zh-cn/guides/safety/) and
+  [conversation title](https://api-docs.deepseek.com/zh-cn/guides/conversation_title/)
+  guides.
+- The API accepts `reasoning_effort: none` to disable thinking when `thinking`
+  is omitted or null; an explicit `thinking` setting takes precedence. Dify's
+  model parameters continue to expose a separate Thinking Mode switch and
+  `low` / `high` / `max` effort choices.
+- The current model IDs, 1M context, 384K output limit, Flash vision support,
+  and sampling rules were already covered by this plugin. Pro's and the legacy
+  Flash entries' existing 4,096-token output defaults are retained for compatibility.
+- [Files API and document parsing](https://api-docs.deepseek.com/zh-cn/guides/document_parsing/),
+  [user metadata (`latest_reminder`)](https://api-docs.deepseek.com/zh-cn/guides/latest_reminder/),
+  standalone Search/Fetch/OCR/TTS/ASR APIs, and Responses/Messages protocol support
+  are additional API capabilities, not implemented by this Chat Completions
+  model plugin. Document parsing needs a separate upload/parse lifecycle; images
+  supplied directly in user and tool messages remain supported.
+
 # Configure
 
 Get an API key from [DeepSeek](https://platform.deepseek.com/api_keys), then
