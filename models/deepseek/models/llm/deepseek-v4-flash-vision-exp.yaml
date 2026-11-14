@@ -49,8 +49,8 @@ parameter_rules:
     default: true
     required: false
     help:
-      zh_Hans: 控制是否启用 DeepSeek 的思考模式，默认启用。
-      en_US: Controls whether DeepSeek thinking mode is enabled. Enabled by default.
+      zh_Hans: 控制是否启用 DeepSeek 的思考模式，默认启用。普通函数工具与联网搜索、阅读链接、安全检查或标题混用时自动启用。
+      en_US: Controls thinking mode, enabled by default. Automatically enabled when client function tools are combined with web tools, safety checks, or titles.
   - name: reasoning_effort
     label:
       zh_Hans: 思考强度
@@ -77,3 +77,45 @@ parameter_rules:
     options:
       - text
       - json_object
+  - name: deepseek_web_search
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 由 DeepSeek 服务端自动搜索。开启思考模式时使用深度思考搜索，搜索和网页抓取按次计费。与普通函数工具混用时自动开启思考。
+      en_US: Enables server-side web search, with deep search in thinking mode. Searches and page fetches are billed separately. Mixing with client function tools automatically enables thinking.
+  - name: deepseek_read_url
+    label:
+      zh_Hans: 阅读链接
+      en_US: Read URLs
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 自动阅读最后一条用户消息中的链接。思考模式下同时启用联网搜索时使用深度思考搜索。网页抓取按次计费。与普通函数工具混用时自动开启思考。
+      en_US: Reads links in the last user message. Mixing with client function tools automatically enables thinking. With thinking and web search enabled, deep search takes precedence. Page fetches are billed separately.
+  - name: safety_check
+    label:
+      zh_Hans: 内容安全检查
+      en_US: Content Safety Check
+    type: string
+    required: false
+    options:
+      - low
+      - high
+    help:
+      zh_Hans: high 开启基础输入输出风控；low 使用 API 默认检查。high 与普通函数工具混用时自动开启思考。
+      en_US: high enables basic input and output safety checks; low uses the API default checks. high with client function tools automatically enables thinking.
+  - name: title
+    label:
+      zh_Hans: 生成会话标题
+      en_US: Generate Conversation Title
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 请求生成简短标题，保存在响应元数据中，不会自动修改 Dify 会话标题。与普通函数工具混用时自动开启思考。
+      en_US: Requests a short title in response metadata. Does not automatically rename the Dify conversation. Mixing with client function tools automatically enables thinking.
