@@ -18,9 +18,10 @@ class JSONReplaceTool(Tool):
         query = tool_parameters.get("query", "")
         if not query:
             yield self.create_text_message("Invalid parameter query")
-        replace_value = tool_parameters.get("replace_value", "")
-        if not replace_value:
+        replace_value = tool_parameters.get("replace_value")
+        if replace_value is None:
             yield self.create_text_message("Invalid parameter replace_value")
+            return
         replace_model = tool_parameters.get("replace_model", "")
         if not replace_model:
             yield self.create_text_message("Invalid parameter replace_model")

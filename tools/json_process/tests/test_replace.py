@@ -127,3 +127,50 @@ def test_replace_with_no_matches(tool: Tool) -> None:
         replace_value="new",
     )
     assert json.loads(result) == {"keep": 1}
+
+
+@pytest.mark.parametrize(
+    "mode,content,query,expected",
+    [
+        ("value", '{"value": "old", "keep": 1}', "$.value", {"value": "", "keep": 1}),
+        ("value", '"old"', "$", ""),
+        ("pattern", '{"value": "old text"}', "$.value", {"value": " text"}),
+        ("pattern", '"old"', "$", ""),
+        ("key", '{"old": 1, "keep": 2}', "$.old", {"": 1, "keep": 2}),
+    ],
+)
+def test_empty_replacement(tool: Tool, mode: str, content: str, query: str, expected: Any) -> None:
+    result = invoke(
+        tool,
+        content=content,
+        query=query,
+        replace_model=mode,
+        replace_pattern="old",
+        replace_value="",
+        value_decode=False,
+    )
+    assert json.loads(result) == expected
+
+
+@pytest.mark.parametrize("parameters", [{}, {"replace_value": None}])
+def test_missing_replacement_stops_invocation(tool: Tool, parameters: dict[str, Any]) -> None:
+    result = invoke(
+        tool,
+        content='{"value": "old"}',
+        query="$.value",
+        replace_model="value",
+        **parameters,
+    )
+    assert result == "Invalid parameter replace_value"
+
+
+def test_empty_replacement_with_decode_is_not_json(tool: Tool) -> None:
+    result = invoke(
+        tool,
+        content='"old"',
+        query="$",
+        replace_model="value",
+        replace_value="",
+        value_decode=True,
+    )
+    assert result == "Cannot decode replace value to json object"
