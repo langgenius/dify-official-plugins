@@ -174,15 +174,57 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            self._generate(
+            result = self._generate(
                 model=model,
                 credentials=credentials,
                 prompt_messages=[UserPromptMessage(content="ping")],
                 model_parameters={"temperature": 0.5},
                 stream=False,
             )
+            # Thinking models can force streaming even for this non-streaming
+            # probe. Consume it so deferred API errors are not reported as success.
+            if isinstance(result, Generator):
+                for _ in result:
+                    pass
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+
+    def _validate_and_filter_model_parameters(
+        self, model: str, model_parameters: dict, credentials: dict
+    ) -> dict:
+        parameters = dict(model_parameters)
+        # Normalize before the SDK's schema validation too: a workflow may
+        # still contain an old numeric effort while thinking is disabled.
+        self._normalize_deepseek_parameters(model, parameters)
+        return super()._validate_and_filter_model_parameters(model, parameters, credentials)
+
+    @staticmethod
+    def _normalize_deepseek_parameters(model: str, parameters: dict) -> None:
+        # Bailian's API takes named effort levels, not the open-weight model's
+        # numeric budget. Keep this scoped to the registered DeepSeek models.
+        effort_options = {
+            "deepseek-v4.1-flash": ("low", "high", "max"),
+            "deepseek-v4.1-flash-1017": ("low", "high", "max"),
+            "deepseek-v4-pro": ("high", "max"),
+            "deepseek-v4-flash-0731": ("low", "high", "max"),
+        }
+        if model not in effort_options:
+            return
+        parameters.setdefault("enable_thinking", True)
+        if parameters["enable_thinking"] is False:
+            parameters.pop("reasoning_effort", None)
+            return
+        effort = parameters.get("reasoning_effort")
+        if effort is None or effort == "":
+            parameters.pop("reasoning_effort", None)
+            return
+        if effort not in effort_options[model]:
+            choices = ", ".join(effort_options[model])
+            raise InvokeBadRequestError(
+                f"{model}: reasoning_effort must be one of {choices}. "
+                "Numeric reasoning budgets are not supported; reselect the "
+                "reasoning effort in the model settings."
+            )
 
     def _generate(
         self,
@@ -208,6 +250,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        # Do not mutate the caller's saved workflow parameters.
+        model_parameters = dict(model_parameters)
+        self._normalize_deepseek_parameters(model, model_parameters)
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -343,6 +388,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         thinking_deepseek_v4 = (
             model in (
                 "deepseek-v4.1-flash",
+                "deepseek-v4.1-flash-1017",
                 "deepseek-v4-pro",
                 "deepseek-v4-flash",
                 "deepseek-v4-flash-0731",
