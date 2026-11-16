@@ -1,0 +1,26 @@
+identity:
+  name: restart_trackings
+  author: electroluxcode
+  label:
+    en_US: Restart Trackings
+    zh_Hans: 重启跟踪
+description:
+  human:
+    en_US: Restart automatic tracking for up to 40 stopped tracking numbers; each number can only be restarted once
+    zh_Hans: 重启最多 40 个已停止单号的自动跟踪,每个单号仅可重启一次
+  llm: Restart automatic tracking for up to 40 stopped tracking numbers (comma, semicolon or newline separated). Each number can only be restarted once. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Stopped tracking numbers, comma or newline separated (max 40)
+      zh_Hans: 已停止的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Stopped tracking numbers to restart tracking, comma, semicolon or newline separated, maximum 40
+    form: llm
+extra:
+  python:
+    source: tools/restart_trackings.py

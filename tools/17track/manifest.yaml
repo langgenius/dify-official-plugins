@@ -1,0 +1,32 @@
+version: 0.0.1
+type: plugin
+tags:
+- ecommerce
+- logistics
+author: electroluxcode
+name: "17track"
+label:
+  en_US: "17TRACK"
+  zh_Hans: "17TRACK"
+created_at: "2026-11-16T00:00:00Z"
+description:
+  en_US: "Cross-border e-commerce order tracking for 2900+ carriers with automatic status updates, https://www.17track.net."
+  zh_Hans: "支持超过 2900 家承运商的跨境电商订单跟踪,自动获取物流状态,https://www.17track.net。"
+icon: icon.png
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - "provider/17track.yaml"
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1

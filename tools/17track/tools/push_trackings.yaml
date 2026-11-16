@@ -1,0 +1,26 @@
+identity:
+  name: push_trackings
+  author: electroluxcode
+  label:
+    en_US: Push Trackings
+    zh_Hans: 推送跟踪结果
+description:
+  human:
+    en_US: Queue a webhook push of the latest tracking results for up to 40 registered tracking numbers
+    zh_Hans: 请求 17TRACK 通过 webhook 推送最多 40 个单号的最新跟踪结果
+  llm: Queues a webhook push of the latest tracking results for up to 40 registered tracking numbers (comma, semicolon or newline separated). Requires a configured 17TRACK webhook. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Registered tracking numbers, comma or newline separated (max 40)
+      zh_Hans: 已注册的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Registered tracking numbers to push via webhook, comma, semicolon or newline separated, maximum 40
+    form: llm
+extra:
+  python:
+    source: tools/push_trackings.py

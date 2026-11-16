@@ -1,0 +1,38 @@
+identity:
+  name: get_realtime_tracking_details
+  author: electroluxcode
+  label:
+    en_US: Get Realtime Tracking Details
+    zh_Hans: 实时查询跟踪详情
+description:
+  human:
+    en_US: Query a single tracking number against carriers in real time; Standard mode (cacheLevel 0) costs 1 quota, Instant mode (cacheLevel 1) costs 10 quota
+    zh_Hans: 向承运商实时查询单个单号;Standard 模式(cacheLevel 0)扣 1 额度,Instant 模式(cacheLevel 1)扣 10 额度
+  llm: Queries a single tracking number against carriers in real time. cacheLevel 0 (Standard) returns carrier data from the last 3 hours and costs 1 quota; cacheLevel 1 (Instant) triggers an immediate carrier fetch and costs 10 quota. Read-only operation.
+parameters:
+  - name: number
+    type: string
+    required: true
+    label:
+      en_US: Tracking Number
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: The single tracking number to query in real time
+      zh_Hans: 要实时查询的单个跟踪单号
+    llm_description: The single tracking number to query against carriers in real time
+    form: llm
+  - name: cache_level
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: Cache Level
+      zh_Hans: 缓存级别
+    human_description:
+      en_US: 0 = Standard (data from the last 3 hours, 1 quota); 1 = Instant (immediate fetch, 10 quota)
+      zh_Hans: 0 = Standard(3 小时内缓存,扣 1 额度);1 = Instant(立即抓取,扣 10 额度)
+    llm_description: 0 for Standard mode (cached data, 1 quota) or 1 for Instant mode (immediate carrier fetch, 10 quota)
+    form: llm
+extra:
+  python:
+    source: tools/get_realtime_tracking_details.py

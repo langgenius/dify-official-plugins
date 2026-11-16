@@ -1,0 +1,29 @@
+identity:
+  author: electroluxcode
+  name: 17track
+  label:
+    en_US: 17TRACK
+    zh_Hans: 17TRACK
+  description:
+    en_US: Cross-border e-commerce order tracking for 2900+ carriers with automatic status updates
+    zh_Hans: 支持超过 2900 家承运商的跨境电商订单跟踪,自动获取物流状态
+  icon: icon.png
+  tags:
+    - ecommerce
+credentials_for_provider:
+  seventeen_track_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: 17TRACK API Key
+      zh_Hans: 17TRACK API Key
+    placeholder:
+      en_US: Your 17TRACK API key
+      zh_Hans: 你的 17TRACK API Key
+    help:
+      en_US: Get or change the key in 17TRACK API Settings (https://api.17track.net/admin/settings)
+      zh_Hans: 在 17TRACK API 设置页获取或更换 Key(https://api.17track.net/admin/settings)
+    url: https://api.17track.net/admin/settings
+extra:
+  python:
+    source: provider/17track.py

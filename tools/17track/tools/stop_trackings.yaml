@@ -1,0 +1,26 @@
+identity:
+  name: stop_trackings
+  author: electroluxcode
+  label:
+    en_US: Stop Trackings
+    zh_Hans: 停止跟踪
+description:
+  human:
+    en_US: Stop automatic tracking for up to 40 registered tracking numbers
+    zh_Hans: 停止最多 40 个已注册单号的自动跟踪
+  llm: Stop automatic tracking for up to 40 registered tracking numbers (comma, semicolon or newline separated). Mutually exclusive with restart tracking. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Registered tracking numbers, comma or newline separated (max 40)
+      zh_Hans: 已注册的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Registered tracking numbers to stop tracking, comma, semicolon or newline separated, maximum 40
+    form: llm
+extra:
+  python:
+    source: tools/stop_trackings.py

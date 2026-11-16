@@ -1,0 +1,75 @@
+identity:
+  name: list_trackings
+  author: electroluxcode
+  label:
+    en_US: List Trackings
+    zh_Hans: 列出跟踪单号
+description:
+  human:
+    en_US: List registered shipments with status and pagination filters
+    zh_Hans: 按状态与分页筛选已注册的运单
+  llm: List registered 17TRACK shipments with pagination and optional package status filter. Read-only and idempotent.
+parameters:
+  - name: page_no
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: Page Number
+      zh_Hans: 页码
+    human_description:
+      en_US: The result page number, starting from 0
+      zh_Hans: 结果页码,从 0 开始
+    llm_description: The result page number, starting from 0
+    form: llm
+  - name: package_status
+    type: select
+    required: false
+    options:
+      - value: NotFound
+        label:
+          en_US: Not Found
+          zh_Hans: 无轨迹
+      - value: InfoReceived
+        label:
+          en_US: Info Received
+          zh_Hans: 已收到信息
+      - value: InTransit
+        label:
+          en_US: In Transit
+          zh_Hans: 运输中
+      - value: Expired
+        label:
+          en_US: Expired
+          zh_Hans: 超期
+      - value: AvailableForPickup
+        label:
+          en_US: Available For Pickup
+          zh_Hans: 待取件
+      - value: OutForDelivery
+        label:
+          en_US: Out For Delivery
+          zh_Hans: 派送中
+      - value: DeliveryFailure
+        label:
+          en_US: Delivery Failure
+          zh_Hans: 投递失败
+      - value: Delivered
+        label:
+          en_US: Delivered
+          zh_Hans: 已妥投
+      - value: Exception
+        label:
+          en_US: Exception
+          zh_Hans: 异常
+    label:
+      en_US: Package Status
+      zh_Hans: 包裹状态
+    human_description:
+      en_US: Filter by current main package status
+      zh_Hans: 按当前主状态筛选
+    llm_description: Optional filter by current main package status
+    form: llm
+extra:
+  python:
+    source: tools/list_trackings.py

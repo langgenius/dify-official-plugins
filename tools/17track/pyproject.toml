@@ -1,0 +1,15 @@
+[project]
+name = "dify-17track"
+version = "0.1.0"
+description = "Cross-border e-commerce order tracking for 2900+ carriers with automatic status updates"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.10.2",
+    "requests>=2.31.0",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []

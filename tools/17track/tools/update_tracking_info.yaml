@@ -1,0 +1,59 @@
+identity:
+  name: update_tracking_info
+  author: electroluxcode
+  label:
+    en_US: Update Tracking Info
+    zh_Hans: 更新跟踪信息
+description:
+  human:
+    en_US: Update the metadata (tag, language, remark) of registered tracking numbers; stopped numbers cannot be modified
+    zh_Hans: 更新已注册单号的元数据(标签/语言/备注),已停止单号不可修改
+  llm: Updates metadata fields (tag, lang, remark) of up to 40 registered tracking numbers (comma, semicolon or newline separated). Stopped numbers cannot be modified. Provide at least one field. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Registered tracking numbers, comma or newline separated (max 40)
+      zh_Hans: 已注册的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Registered tracking numbers to update, comma, semicolon or newline separated, maximum 40
+    form: llm
+  - name: tag
+    type: string
+    required: false
+    label:
+      en_US: Tag
+      zh_Hans: 标签
+    human_description:
+      en_US: A custom tag attached to the tracking numbers
+      zh_Hans: 附加到单号的自定义标签
+    llm_description: A custom tag attached to the tracking numbers
+    form: llm
+  - name: lang
+    type: string
+    required: false
+    label:
+      en_US: Language
+      zh_Hans: 语言
+    human_description:
+      en_US: Language code used to translate tracking events
+      zh_Hans: 翻译轨迹事件的语言代码
+    llm_description: Language code used to translate tracking events
+    form: llm
+  - name: remark
+    type: string
+    required: false
+    label:
+      en_US: Remark
+      zh_Hans: 备注
+    human_description:
+      en_US: A note describing the packages (max 1000 chars)
+      zh_Hans: 描述包裹的备注(最多 1000 字符)
+    llm_description: A note describing the packages, maximum 1000 characters
+    form: llm
+extra:
+  python:
+    source: tools/update_tracking_info.py

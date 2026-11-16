@@ -1,0 +1,26 @@
+identity:
+  name: register_trackings
+  author: electroluxcode
+  label:
+    en_US: Register Trackings
+    zh_Hans: 注册跟踪单号
+description:
+  human:
+    en_US: Register up to 40 tracking numbers for automatic tracking by 17TRACK
+    zh_Hans: 注册最多 40 个单号,由 17TRACK 自动跟踪
+  llm: Register up to 40 tracking numbers (comma, semicolon or newline separated) for automatic tracking by 17TRACK with carrier auto-detection. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Tracking numbers to register, comma or newline separated (max 40)
+      zh_Hans: 要注册的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Tracking numbers to register for automatic tracking, comma, semicolon or newline separated, maximum 40, each 5 to 50 alphanumeric characters
+    form: llm
+extra:
+  python:
+    source: tools/register_trackings.py

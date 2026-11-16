@@ -1,0 +1,15 @@
+identity:
+  name: get_quota
+  author: electroluxcode
+  label:
+    en_US: Get Quota
+    zh_Hans: 查询配额
+description:
+  human:
+    en_US: Get the current tracking and email quota counters for the 17TRACK account
+    zh_Hans: 获取 17TRACK 账户当前的跟踪与邮件配额计数
+  llm: Get the current tracking and email quota counters for the 17TRACK account. Returns total, used, remaining, today used and daily limit. Read-only and idempotent.
+parameters: []
+extra:
+  python:
+    source: tools/get_quota.py

@@ -1,0 +1,37 @@
+identity:
+  name: change_carrier
+  author: electroluxcode
+  label:
+    en_US: Change Carrier
+    zh_Hans: 更换承运商
+description:
+  human:
+    en_US: Change the carrier of registered tracking numbers; each number can be changed up to 5 times
+    zh_Hans: 更换已注册单号的承运商,每个单号最多更换 5 次
+  llm: Changes the carrier of registered tracking numbers (comma, semicolon or newline separated, max 40). Requires the new numeric 17TRACK carrier code. Each number can be changed up to 5 times. Read-write operation.
+parameters:
+  - name: numbers
+    type: string
+    required: true
+    label:
+      en_US: Tracking Numbers
+      zh_Hans: 跟踪单号
+    human_description:
+      en_US: Registered tracking numbers, comma or newline separated (max 40)
+      zh_Hans: 已注册的跟踪单号,逗号或换行分隔(最多 40 个)
+    llm_description: Registered tracking numbers whose carrier should change, comma, semicolon or newline separated, maximum 40
+    form: llm
+  - name: carrier_new
+    type: number
+    required: true
+    label:
+      en_US: New Carrier Code
+      zh_Hans: 新承运商代码
+    human_description:
+      en_US: New numeric 17TRACK carrier code (see https://www.17track.net/en/carriers)
+      zh_Hans: 新的 17TRACK 数字承运商代码(见 https://www.17track.net/zh-cn/carriers)
+    llm_description: The new numeric 17TRACK carrier code to assign
+    form: llm
+extra:
+  python:
+    source: tools/change_carrier.py
