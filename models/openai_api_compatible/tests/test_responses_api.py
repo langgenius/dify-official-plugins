@@ -1,10 +1,17 @@
-import pytest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     UserPromptMessage,
 )
+from dify_plugin.errors.model import (
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeServerUnavailableError,
+)
+
 from models.llm.llm import OpenAILargeLanguageModel
 
 
@@ -96,7 +103,7 @@ def test_invoke_routes_to_responses_api():
     }
 
     mock_client = MagicMock()
-    mock_response = MagicMock()
+    mock_response = MagicMock(status="completed")
     mock_response.output = [MagicMock(type="message", content="Hello! How can I help you today?")]
     mock_response.usage = MagicMock(input_tokens=10, output_tokens=12)
     mock_client.responses.create.return_value = mock_response
@@ -161,7 +168,7 @@ def test_invoke_responses_api_with_json_schema():
     }
 
     mock_client = MagicMock()
-    mock_response = MagicMock()
+    mock_response = MagicMock(status="completed")
     mock_response.output = [MagicMock(type="message", content='{"summary": "test"}')]
     mock_response.usage = MagicMock(input_tokens=10, output_tokens=12)
     mock_client.responses.create.return_value = mock_response
@@ -183,6 +190,76 @@ def test_invoke_responses_api_with_json_schema():
     assert text_format["name"] == "llm_response"
     assert text_format["schema"]["additionalProperties"] is False
     assert text_format["schema"]["required"] == ["summary"]
+
+
+def test_responses_stream_completes_with_upstream_usage():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    response = SimpleNamespace(
+        status="completed", usage=SimpleNamespace(input_tokens=81, output_tokens=42)
+    )
+    events = [
+        SimpleNamespace(type="response.output_text.delta", delta="Done."),
+        SimpleNamespace(
+            type="response.output_item.done",
+            item=SimpleNamespace(
+                type="function_call", call_id="call_1", name="probe", arguments="{}"
+            ),
+        ),
+        SimpleNamespace(type="response.completed", response=response),
+    ]
+    chunks = list(model._handle_responses_stream_response("test-model", {}, events, []))
+    assert chunks[0].delta.message.content == "Done."
+    assert chunks[1].delta.message.tool_calls[0].function.name == "probe"
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage.prompt_tokens == 81
+    assert chunks[-1].delta.usage.completion_tokens == 42
+
+
+@pytest.mark.parametrize(
+    ("event_type", "status", "exception", "message"),
+    [
+        ("response.incomplete", "incomplete", InvokeBadRequestError, "max_output_tokens"),
+        ("response.completed", "incomplete", InvokeBadRequestError, "max_output_tokens"),
+        ("response.failed", "failed", InvokeServerUnavailableError, "failed"),
+        ("error", None, InvokeServerUnavailableError, "failed"),
+        (None, None, InvokeConnectionError, "without a terminal event"),
+    ],
+)
+def test_responses_stream_does_not_finish_or_release_tools_on_failure(
+    event_type,
+    status,
+    exception,
+    message,
+):
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    events = [
+        SimpleNamespace(type="response.output_text.delta", delta='{"value":"partial"}'),
+        SimpleNamespace(
+            type="response.output_item.done",
+            item=SimpleNamespace(
+                type="function_call", call_id="call_1", name="probe", arguments="{}"
+            ),
+        ),
+    ]
+    if event_type is not None:
+        response = SimpleNamespace(
+            status=status, incomplete_details=SimpleNamespace(reason="max_output_tokens")
+        )
+        events.append(SimpleNamespace(type=event_type, response=response))
+    chunks = model._handle_responses_stream_response("test-model", {}, events, [])
+    assert next(chunks).delta.message.content == '{"value":"partial"}'
+    with pytest.raises(exception, match=message):
+        next(chunks)
+
+
+def test_responses_non_stream_does_not_accept_incomplete_output():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    response = SimpleNamespace(
+        status="incomplete",
+        incomplete_details=SimpleNamespace(reason="max_output_tokens"),
+    )
+    with pytest.raises(InvokeBadRequestError, match="max_output_tokens"):
+        model._handle_responses_response("test-model", {}, response, [])
 
 
 @pytest.mark.parametrize(

@@ -18,6 +18,7 @@ from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
+    LLMUsage,
 )
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
@@ -33,7 +34,13 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeError,
+    InvokeServerUnavailableError,
+)
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 
 from openai import OpenAI
@@ -1433,6 +1440,39 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 model, credentials, response, prompt_messages, tools
             )
 
+    @staticmethod
+    def _require_completed_response(response: Any, event_type: str | None = None) -> None:
+        status = getattr(response, "status", None)
+        if event_type in ("response.failed", "response.cancelled", "error") or status in (
+            "failed",
+            "cancelled",
+        ):
+            raise InvokeServerUnavailableError("Responses API request failed or was cancelled")
+        if event_type == "response.incomplete" or status == "incomplete":
+            reason = getattr(getattr(response, "incomplete_details", None), "reason", None)
+            if reason not in ("max_output_tokens", "content_filter"):
+                reason = "unknown"
+            raise InvokeBadRequestError(f"Responses API output incomplete: {reason}")
+        if status != "completed":
+            raise InvokeConnectionError("Responses API did not return a completed response")
+
+    def _responses_usage(
+        self,
+        model: str,
+        credentials: dict,
+        response: Any,
+        prompt_messages: list[PromptMessage],
+        content: str,
+    ) -> LLMUsage:
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            prompt_tokens = getattr(usage, "input_tokens", getattr(usage, "prompt_tokens", 0)) or 0
+            completion_tokens = getattr(usage, "output_tokens", getattr(usage, "completion_tokens", 0)) or 0
+        else:
+            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            completion_tokens = self._num_tokens_from_string(content)
+        return self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
     def _handle_responses_response(
         self,
         model: str,
@@ -1441,6 +1481,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> LLMResult:
+        self._require_completed_response(response)
         content = ""
         if hasattr(response, "output") and response.output:
             for item in response.output:
@@ -1500,26 +1541,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         assistant_prompt_message = AssistantPromptMessage(content=content, tool_calls=tool_calls)
 
-        prompt_tokens = 0
-        completion_tokens = 0
-        if hasattr(response, "usage") and response.usage:
-            usage_obj = response.usage
-            prompt_tokens = getattr(usage_obj, "input_tokens", None) or getattr(
-                usage_obj, "prompt_tokens", 0
-            )
-            completion_tokens = getattr(usage_obj, "output_tokens", None) or getattr(
-                usage_obj, "completion_tokens", 0
-            )
-        else:
-            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
-            completion_tokens = self._num_tokens_from_string(assistant_prompt_message.content or "")
-
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-
         return LLMResult(
             model=model,
             message=assistant_prompt_message,
-            usage=usage,
+            usage=self._responses_usage(model, credentials, response, prompt_messages, content),
         )
 
     def _handle_responses_stream_response(
@@ -1532,17 +1557,28 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Generator:
         full_text = ""
         index = 0
-        is_first = True
         is_reasoning = False
+        terminal = None
 
         pending_tool_calls = {}
         current_tool_call = None
+        tool_calls = []
 
         for chunk in response:
-            if is_first:
-                is_first = False
-
             chunk_type = getattr(chunk, "type", "")
+
+            if chunk_type in (
+                "response.completed",
+                "response.incomplete",
+                "response.failed",
+                "response.cancelled",
+                "error",
+            ):
+                terminal = getattr(chunk, "response", None)
+                if close := getattr(response, "close", None):
+                    close()
+                self._require_completed_response(terminal, chunk_type)
+                break
 
             if chunk_type == "response.reasoning_summary_text.delta":
                 delta_text = getattr(chunk, "delta", "")
@@ -1633,17 +1669,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                                 ),
                             )
 
-                            assistant_prompt_message = AssistantPromptMessage(
-                                content="", tool_calls=[tool_call]
-                            )
-
-                            yield LLMResultChunk(
-                                model=model,
-                                delta=LLMResultChunkDelta(
-                                    index=index, message=assistant_prompt_message
-                                ),
-                            )
-                            index += 1
+                            tool_calls.append(tool_call)
 
                             if call_id in pending_tool_calls:
                                 del pending_tool_calls[call_id]
@@ -1663,12 +1689,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     )
                     index += 1
 
-        prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
-        full_assistant_prompt_message = AssistantPromptMessage(content=full_text)
-        completion_tokens = self._num_tokens_from_string(
-            full_assistant_prompt_message.content or ""
-        )
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        if terminal is None:
+            raise InvokeConnectionError("Responses API stream ended without a terminal event")
+
+        # A tool proposal from an incomplete response is not safe to execute.
+        for tool_call in tool_calls:
+            yield LLMResultChunk(
+                model=model,
+                delta=LLMResultChunkDelta(
+                    index=index,
+                    message=AssistantPromptMessage(content="", tool_calls=[tool_call]),
+                ),
+            )
+            index += 1
 
         yield LLMResultChunk(
             model=model,
@@ -1676,6 +1709,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 index=index,
                 message=AssistantPromptMessage(content=""),
                 finish_reason="stop",
-                usage=usage,
+                usage=self._responses_usage(model, credentials, terminal, prompt_messages, full_text),
             ),
         )
