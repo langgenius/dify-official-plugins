@@ -267,21 +267,47 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         json_schema = model_parameters.pop("json_schema", None)
         if response_format == "json_schema":
             if not json_schema:
-                raise ValueError(
+                raise InvokeBadRequestError(
                     "json_schema is required when response_format is json_schema"
                 )
             if isinstance(json_schema, str):
                 try:
                     json_schema = json.loads(json_schema)
                 except json.JSONDecodeError as exc:
-                    raise ValueError(f"Invalid json_schema: {exc}") from exc
+                    raise InvokeBadRequestError(f"Invalid json_schema: {exc}") from exc
+            if not isinstance(json_schema, dict) or not isinstance(json_schema.get("schema"), dict):
+                raise InvokeBadRequestError("json_schema must be an object containing a schema object")
             json_schema = dict(json_schema)
-            strict = json_schema.pop("strict", True)
+            json_schema.setdefault("strict", True)
             model_parameters["response_format"] = {
                 "type": "json_schema",
                 "json_schema": json_schema,
-                "strict": strict,
             }
+            if any(
+                isinstance(
+                    content,
+                    (ImagePromptMessageContent, VideoPromptMessageContent, AudioPromptMessageContent),
+                )
+                for message in prompt_messages
+                if isinstance(message.content, list)
+                for content in message.content
+            ):
+                # shortcut: media needs schema prompting until DashScope supports strict schemas for media.
+                model_parameters["response_format"] = {"type": "json_object"}
+                schema_prompt = "Return a JSON object matching this JSON Schema:\n" + json.dumps(
+                    json_schema["schema"], ensure_ascii=False
+                )
+                prompt_messages = list(prompt_messages)
+                if (
+                    prompt_messages
+                    and isinstance(prompt_messages[0], SystemPromptMessage)
+                    and isinstance(prompt_messages[0].content, str)
+                ):
+                    prompt_messages[0] = prompt_messages[0].model_copy(
+                        update={"content": prompt_messages[0].content + "\n\n" + schema_prompt}
+                    )
+                else:
+                    prompt_messages.insert(0, SystemPromptMessage(content=schema_prompt))
         elif response_format and not isinstance(response_format, dict):
             model_parameters["response_format"] = {"type": response_format}
 
@@ -478,6 +504,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     session=session,
                 )
         except BaseException:
+            self._cleanup_temp_files()
             if qwen_long_files:
                 qwen_long_files.cleanup()
             session.close()
@@ -980,8 +1007,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{mime_type.split('/')[1]}")
-        Path(file_path).write_bytes(base64.b64decode(encoded_string))
         self._temp_files.append(file_path)
+        Path(file_path).write_bytes(base64.b64decode(encoded_string))
         return f"file://{file_path}"
 
     def _cleanup_temp_files(self):

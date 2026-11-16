@@ -62,12 +62,16 @@ def test_qwen37_flash_schema(model_name: str) -> None:
 
     assert data["model"] == model_name
     assert data["model_properties"]["context_size"] == 1_000_000
-    assert {ModelFeature.VISION, ModelFeature.VIDEO}.issubset(schema.features or [])
+    assert {
+        ModelFeature.VISION,
+        ModelFeature.VIDEO,
+        ModelFeature.STRUCTURED_OUTPUT,
+    }.issubset(schema.features or [])
     assert rules["max_completion_tokens"].default == 8192
     assert rules["max_completion_tokens"].max == 131072
     assert rules["thinking_budget"].max == 262144
     assert rules["enable_thinking"].default is False
-    assert rules["response_format"].options == ["text", "json_object"]
+    assert rules["response_format"].options == ["text", "json_object", "json_schema"]
     assert data["pricing"] == {
         "input": "0.0002",
         "output": "0.0008",

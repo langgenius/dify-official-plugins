@@ -56,9 +56,15 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
     help:
       zh_Hans: 指定模型必须输出的格式。
       en_US: Specifies the format that the model must output.
+  - name: json_schema
+    use_template: json_schema
+    help:
+      zh_Hans: 纯文本输入使用 JSON Schema；对于模型支持的媒体输入，使用 JSON Object 和 schema 提示，不保证严格遵循字段约束。
+      en_US: Text input uses JSON Schema. Media inputs supported by the model use JSON Object with schema instructions; field constraints are not guaranteed.
   - name: enable_search
     type: boolean
     default: false

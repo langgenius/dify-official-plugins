@@ -4,6 +4,7 @@ label:
   en_US: DeepSeek-V4-Pro
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call
@@ -49,6 +50,10 @@ parameter_rules:
     required: false
     options:
       - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
   - name: enable_search
     type: boolean
     default: false

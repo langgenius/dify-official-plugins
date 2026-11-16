@@ -51,6 +51,7 @@ parameter_rules:
     required: false
     options:
       - text
+      - json_object
   - name: enable_search
     type: boolean
     default: false

@@ -6,6 +6,7 @@ label:
   en_US: qwen3.7-flash-2026-07-15(Qwen3.7)
 model_type: llm
 features:
+  - structured-output
   - vision
   - video
   - multi-tool-call
@@ -115,6 +116,12 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+    help:
+      zh_Hans: 纯文本输入使用 JSON Schema；对于模型支持的媒体输入，使用 JSON Object 和 schema 提示，不保证严格遵循字段约束。
+      en_US: Text input uses JSON Schema. Media inputs supported by the model use JSON Object with schema instructions; field constraints are not guaranteed.
   - name: extra_headers
     required: false
     type: string
