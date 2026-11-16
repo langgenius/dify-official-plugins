@@ -2,7 +2,7 @@
 
 ## Overview
 
-[Spider](https://spider.cloud/?utm_source=dify&utm_medium=directory&utm_campaign=dify-plugin) is a web crawling and scraping API. This plugin adds one tool, **Web Scraper & Crawler**, that takes a URL and returns the page content as markdown, ready to pass to an LLM node or a knowledge base.
+[Spider](https://spider.cloud/?utm_source=dify&utm_medium=directory&utm_campaign=dify-plugin) is a web crawling and scraping API. This plugin adds one tool, **Web Scraper & Crawler**, that takes a URL and returns the page content as markdown, ready to pass to an LLM node or a knowledge base. You can preview that output for a URL on [Spider's scraper page](https://spider.cloud/web-scraper/?utm_source=dify&utm_medium=directory&utm_campaign=dify-plugin) without a key.
 
 The tool has two modes:
 
