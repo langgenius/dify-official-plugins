@@ -39,3 +39,19 @@ TokenLab also provides native endpoint families such as Responses, Anthropic Mes
 | Completion mode | `Chat` |
 
 Other Hubris models can be added the same way — see the full catalog at [hubris.pw/models](https://hubris.pw/models).
+
+### TokenSail example
+
+[TokenSail](https://tokensail.ai) provides an OpenAI-compatible gateway for DeepSeek, Qwen, GLM and Kimi model families, with USD billing. Model IDs and their capabilities are listed at [tokensail.ai/models](https://tokensail.ai/models); the table below uses `deepseek-v4-pro` as one example.
+
+| Field | Value |
+| --- | --- |
+| Type | `LLM` |
+| Model Name | `deepseek-v4-pro` |
+| API Key | Your TokenSail API key |
+| API Base URL | `https://api.tokensail.ai/v1` |
+| Completion mode | `Chat` |
+
+Keep `/v1` in the base URL for chat and embedding models — the version-less base returns HTTP 503. Rerank is the exception: set **Rerank Endpoint URL** (`rerank_endpoint_url`) to the full `https://api.tokensail.ai/v1/reranks`, because the default `/v1/rerank` (singular) returns HTTP 404.
+
+`glm-5.3` requires thinking to remain on: requests that disable thinking are rejected with HTTP 400, so do not apply a "disable thinking" setting across every TokenSail model.
