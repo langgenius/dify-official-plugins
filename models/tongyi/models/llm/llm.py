@@ -563,8 +563,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         is_reasoning = False
-        # This is used to handle unincremental output correctly
-        full_text = ""
+        last_content = ""
+        last_reasoning_content = ""
         tool_calls = []
         try:
             for index, response in enumerate(responses):
@@ -575,28 +575,46 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         response.status_code, response.message, model, request_id
                     )
 
-                resp_finish_reason = response.output.choices[0].finish_reason
-                if resp_finish_reason is not None and resp_finish_reason != "null":
-                    resp_content = response.output.choices[0].message.content
-                    assistant_prompt_message = AssistantPromptMessage(content="")
-                    if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(
-                            response, tool_calls, incremental_output
-                        )
-                    elif resp_content:
-                        if isinstance(resp_content, list):
-                            resp_content = resp_content[0]["text"]
-                        if incremental_output:
-                            assistant_prompt_message.content = resp_content
-                            full_text += resp_content
-                        else:
-                            assistant_prompt_message.content = resp_content.replace(
-                                full_text, "", 1
-                            )
-                            full_text = resp_content
-                    elif is_reasoning:
-                        assistant_prompt_message.content = "\n</think>"
-                        full_text += "\n</think>"
+                choice = response.output.choices[0]
+                message = choice.message
+                finished = choice.finish_reason not in (None, "null")
+                content = message.get("content") or ""
+                if isinstance(content, list):
+                    content = content[0].get("text") if isinstance(content[0], dict) else ""
+                content = str(content or "")
+                reasoning_content = message.get("reasoning_content") or ""
+                if isinstance(reasoning_content, list):
+                    reasoning_content = "\n".join(map(str, reasoning_content))
+                else:
+                    reasoning_content = str(reasoning_content)
+
+                if not incremental_output:
+                    # Diff raw fields before adding local think tags.
+                    content, last_content = content.removeprefix(last_content), content
+                    reasoning_content, last_reasoning_content = (
+                        reasoning_content.removeprefix(last_reasoning_content),
+                        reasoning_content,
+                    )
+
+                text = ""
+                if reasoning_content:
+                    if not is_reasoning:
+                        text = "<think>\n"
+                        is_reasoning = True
+                    text += reasoning_content
+                if is_reasoning and (content or message.get("tool_calls") or finished):
+                    text += "\n</think>"
+                    is_reasoning = False
+                text += content
+
+                if message.get("tool_calls"):
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                if not text and not finished:
+                    continue
+
+                assistant_prompt_message = AssistantPromptMessage(content=text)
+                delta = LLMResultChunkDelta(index=index, message=assistant_prompt_message)
+                if finished:
                     if tool_calls:
                         message_tool_calls = []
                         for tool_call_obj in tool_calls:
@@ -610,62 +628,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             message_tool_calls.append(message_tool_call)
                         assistant_prompt_message.tool_calls = message_tool_calls
-                    usage = response.usage
-                    usage = self._calc_response_usage(
-                        model, credentials, usage.input_tokens, usage.output_tokens
+                    delta.finish_reason = choice.finish_reason
+                    delta.usage = self._calc_response_usage(
+                        model,
+                        credentials,
+                        response.usage.input_tokens,
+                        response.usage.output_tokens,
                     )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message,
-                            finish_reason=resp_finish_reason,
-                            usage=usage,
-                        ),
-                    )
-                else:
-                    message = response.output.choices[0].message
-
-                    resp_content, is_reasoning = (
-                        self._wrap_thinking_by_reasoning_content(message, is_reasoning)
-                    )
-
-                    content_to_yield = []
-                    if resp_content:
-                        if incremental_output:
-                            delta = resp_content
-                            full_text += delta
-                        else:
-                            delta = resp_content.replace(full_text, "", 1)
-                            full_text = resp_content
-                        content_to_yield.append(delta)
-
-                    if "tool_calls" in message:
-                        if is_reasoning:
-                            content_to_yield.append("\n</think>")
-                            # In incremental mode (stream=True), full_text accumulates the generated content.
-                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
-                            # Since "\n</think>" is synthesized locally and not part of the API response,
-                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
-                            if incremental_output:
-                                full_text += "\n</think>"
-                            is_reasoning = False
-                        self._handle_tool_call_stream(
-                            response, tool_calls, incremental_output
-                        )
-
-                    if content_to_yield:
-                        assistant_prompt_message = AssistantPromptMessage(
-                            content="".join(content_to_yield)
-                        )
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index, message=assistant_prompt_message
-                            ),
-                        )
+                yield LLMResultChunk(
+                    model=model, prompt_messages=prompt_messages, delta=delta
+                )
         finally:
             self._cleanup_temp_files()
 
@@ -992,57 +964,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             }
             tool_definitions.append(tool_definition)
         return tool_definitions
-
-    def _wrap_thinking_by_reasoning_content(
-        self, delta: dict, is_reasoning: bool
-    ) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
-        :param delta: delta dictionary from LLM streaming response
-        :param is_reasoning: is reasoning
-        :return: tuple of (processed_content, is_reasoning)
-        """
-
-        content = delta.get("content") or ""
-        if isinstance(content, list) and content:
-            content = content[0].get("text") if isinstance(content[0], dict) else ""
-        else:
-            content = str(content)
-        reasoning_content = delta.get("reasoning_content") or ""
-        try:
-            if isinstance(reasoning_content, list):
-                reasoning_content = "\n".join(map(str, reasoning_content))
-            elif not isinstance(reasoning_content, str):
-                reasoning_content = str(reasoning_content)
-
-            output = ""
-            if reasoning_content:
-                if not is_reasoning:
-                    # Open a think block on first reasoning token
-                    output += f"<think>\n{reasoning_content}"
-                    is_reasoning = True
-                else:
-                    # Continue streaming inside the think block
-                    output += reasoning_content
-
-            if is_reasoning:
-                if not reasoning_content and not content:
-                    # No reasoning or content token, close the think block
-                    is_reasoning = False
-                    output += "\n</think>"
-                # Handle edge case: both reasoning_content and content are non-empty
-                # in the same chunk (DashScope/Bailian API occasionally does this at
-                # the transition boundary between reasoning and content phases)
-                if content:
-                    is_reasoning = False
-                    output += f"\n</think>{content}"
-            elif content:
-                # No reasoning token and not in a reasoning block
-                output += content
-        except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
-        return output, is_reasoning
 
     def _handle_error_response(
         self, status_code: int, message: str, model: str = None, request_id: str = None
