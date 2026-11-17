@@ -11,7 +11,9 @@ class GetWikiNodesTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         space_id = tool_parameters.get("space_id")
         parent_node_token = tool_parameters.get("parent_node_token")
         page_token = tool_parameters.get("page_token")

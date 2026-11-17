@@ -1,0 +1,67 @@
+identity:
+  name: google_sheets_rename_sheet
+  author: langgenius
+  label:
+    en_US: Rename Sheet
+    zh_Hans: 重命名工作表
+    ja_JP: シート名を変更
+description:
+  human:
+    en_US: Rename a sheet (tab)
+    zh_Hans: 重命名工作表
+    ja_JP: シート（タブ）の名前を変更
+  llm: Rename a sheet (tab).
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: true
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Current name
+    zh_Hans: 当前名称
+    ja_JP: 現在の名前
+  llm_description: The sheet's current name.
+  form: llm
+- name: new_title
+  type: string
+  required: true
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  human_description:
+    en_US: New name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  llm_description: The new name.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    title:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_rename_sheet.py

@@ -1,0 +1,41 @@
+identity:
+  name: gmail_delete_draft
+  author: langgenius
+  label:
+    en_US: Delete Draft
+    zh_Hans: 删除草稿
+    ja_JP: 下書きを削除
+description:
+  human:
+    en_US: Delete a draft
+    zh_Hans: 删除草稿
+    ja_JP: 下書きを削除
+  llm: Delete a Gmail draft permanently. Only when the user clearly asks for it.
+parameters:
+- name: draft_id
+  type: string
+  required: true
+  label:
+    en_US: Draft ID
+    zh_Hans: 草稿 ID
+    ja_JP: 下書き ID
+  human_description:
+    en_US: From list_drafts
+    zh_Hans: 可从列出草稿获取
+    ja_JP: 下書き一覧から
+  llm_description: The draft ID, from list_drafts.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_delete_draft.py

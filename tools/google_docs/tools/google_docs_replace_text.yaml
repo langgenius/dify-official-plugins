@@ -1,0 +1,95 @@
+identity:
+  name: google_docs_replace_text
+  author: langgenius
+  label:
+    en_US: Replace Text
+    zh_Hans: 替换文本
+    ja_JP: テキストを置換
+description:
+  human:
+    en_US: Find and replace, e.g. template placeholders
+    zh_Hans: 查找并替换，如模板占位符
+    ja_JP: 検索と置換（テンプレートの差し込み等）
+  llm: 'Replace every occurrence of text in a Google Doc: one find/replace pair, or a JSON object of several, e.g. to fill
+    {{placeholders}} in a template (work on a copy of the template). Replacing with an empty string deletes the text.'
+parameters:
+- name: document_id
+  type: string
+  required: true
+  label:
+    en_US: Document
+    zh_Hans: 文档
+    ja_JP: ドキュメント
+  human_description:
+    en_US: ID or URL of the document
+    zh_Hans: 文档的 ID 或 URL
+    ja_JP: ドキュメントの ID または URL
+  llm_description: The document ID or its URL (…/document/d/<id>/edit), e.g. from google_docs_find_documents.
+  form: llm
+- name: find
+  type: string
+  required: false
+  label:
+    en_US: Find
+    zh_Hans: 查找
+    ja_JP: 検索
+  human_description:
+    en_US: Text to find
+    zh_Hans: 要查找的文本
+    ja_JP: 検索するテキスト
+  llm_description: The text to find.
+  form: llm
+- name: replace
+  type: string
+  required: false
+  label:
+    en_US: Replace With
+    zh_Hans: 替换为
+    ja_JP: 置換後
+  human_description:
+    en_US: New text (empty deletes)
+    zh_Hans: 新文本（留空则删除）
+    ja_JP: 新しいテキスト（空なら削除）
+  llm_description: The replacement text; empty deletes the found text.
+  form: llm
+- name: replacements
+  type: string
+  required: false
+  label:
+    en_US: Replacements (JSON)
+    zh_Hans: 批量替换（JSON）
+    ja_JP: 一括置換（JSON）
+  human_description:
+    en_US: 'e.g. {"{{name}}": "Kim", "{{date}}": "May 1"}'
+    zh_Hans: '例如 {"{{name}}": "Kim"}'
+    ja_JP: '例: {"{{name}}": "Kim"}'
+  llm_description: 'Several replacements at once as a JSON object, e.g. {"{{name}}": "Kim", "{{date}}": "May 1"}.'
+  form: llm
+- name: match_case
+  type: boolean
+  required: false
+  label:
+    en_US: Match Case
+    zh_Hans: 区分大小写
+    ja_JP: 大文字小文字を区別
+  human_description:
+    en_US: Case-sensitive (default true)
+    zh_Hans: 区分大小写（默认是）
+    ja_JP: 区別する（既定 true）
+  llm_description: Whether matching is case-sensitive (default true).
+  form: llm
+  default: true
+output_schema:
+  type: object
+  properties:
+    replaced:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_docs_replace_text.py

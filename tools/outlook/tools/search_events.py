@@ -5,10 +5,10 @@ import requests
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.graph_client import calendar_tag, calendars_in_group, describe_error, event_vars, GraphAuthError, resolve_graph_context, segment
+from tools.graph_client import calendar_tag, calendars_in_group, describe_error, event_extras, event_vars, GraphAuthError, resolve_graph_context, segment
 from tools.outputs import with_outputs
 
-SELECT = "id,subject,start,end,organizer,location,webLink,bodyPreview"
+SELECT = "id,subject,start,end,organizer,location,webLink,bodyPreview,isOnlineMeeting,onlineMeeting"
 _MAX_PAGES = 25  # safety cap when following @odata.nextLink
 
 
@@ -44,7 +44,7 @@ class SearchEventsTool(Tool):
                 return
 
             try:
-                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"), tool=self)
             except GraphAuthError as e:
                 yield self.create_text_message(str(e))
                 return
@@ -131,7 +131,7 @@ class SearchEventsTool(Tool):
                 end = (e.get("end") or {}).get("dateTime")
                 cal = e.get("calendar")
                 where = f" — {cal.get('owner_name') or cal.get('name')}" if cal else ""
-                lines.append(f"- {e.get('subject')} [{start} - {end}]{where} (id: {e.get('id')})")
+                lines.append(f"- {e.get('subject')} [{start} - {end}]{where}{event_extras(e)} (id: {e.get('id')})")
             yield self.create_text_message(f"Found {len(events)} event(s):\n" + "\n".join(lines) + failed)
             result: dict[str, Any] = {"total_count": len(events), "events": events}
             if errors:

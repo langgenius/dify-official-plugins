@@ -1,0 +1,44 @@
+identity:
+  name: confluence_get_labels
+  author: langgenius
+  label:
+    en_US: Get Labels
+    zh_Hans: 获取标签
+    ja_JP: ラベルを取得
+description:
+  human:
+    en_US: A page's labels
+    zh_Hans: 页面的标签
+    ja_JP: ページのラベル
+  llm: Get the labels of a Confluence page.
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    labels:
+      type: array
+      description: Label names
+      items:
+        type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_get_labels.py

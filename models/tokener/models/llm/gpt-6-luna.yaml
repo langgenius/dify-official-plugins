@@ -35,8 +35,8 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "0.200000"
-  output: "0.750000"
+  input: "0.100000"
+  output: "0.500000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false

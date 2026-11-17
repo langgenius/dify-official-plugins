@@ -4,6 +4,7 @@ label:
   en_US: deepseek-v4-flash-0731
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call

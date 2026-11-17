@@ -1,0 +1,249 @@
+identity:
+  name: google_calendar_update_event
+  author: langgenius
+  label:
+    en_US: Update Event
+    zh_Hans: 更新事件
+    ja_JP: イベントを更新
+description:
+  human:
+    en_US: Change an event's time, title, place or guests
+    zh_Hans: 修改事件的时间、标题、地点或参与者
+    ja_JP: イベントの時間・タイトル・場所・ゲストを変更
+  llm: Update a Google Calendar event; only the given fields change. Times are ISO 8601 with an offset (or give time_zone).
+    Guests are added unless attendees_mode is replace.
+parameters:
+- name: event_id
+  type: string
+  required: true
+  label:
+    en_US: Event ID
+    zh_Hans: 事件 ID
+    ja_JP: イベント ID
+  human_description:
+    en_US: From list or search events
+    zh_Hans: 可从列出或搜索事件获取
+    ja_JP: イベント一覧・検索から
+  llm_description: The event ID, from list_events or search_events.
+  form: llm
+- name: calendar_id
+  type: string
+  required: false
+  label:
+    en_US: Calendar ID
+    zh_Hans: 日历 ID
+    ja_JP: カレンダー ID
+  human_description:
+    en_US: 'Default: primary'
+    zh_Hans: 默认：primary（主日历）
+    ja_JP: '既定: primary'
+  llm_description: Calendar ID from list_calendars; default primary.
+  form: llm
+- name: title
+  type: string
+  required: false
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: New title
+    zh_Hans: 新标题
+    ja_JP: 新しいタイトル
+  llm_description: New title.
+  form: llm
+- name: start_time
+  type: string
+  required: false
+  label:
+    en_US: Start
+    zh_Hans: 开始时间
+    ja_JP: 開始
+  human_description:
+    en_US: ISO 8601, e.g. 2026-11-03T10:00:00+09:00
+    zh_Hans: ISO 8601，如 2026-11-03T10:00:00+08:00
+    ja_JP: 'ISO 8601（例: 2026-11-03T10:00:00+09:00）'
+  llm_description: New start (ISO 8601; a date for all-day events).
+  form: llm
+- name: end_time
+  type: string
+  required: false
+  label:
+    en_US: End
+    zh_Hans: 结束时间
+    ja_JP: 終了
+  human_description:
+    en_US: ISO 8601
+    zh_Hans: ISO 8601
+    ja_JP: ISO 8601
+  llm_description: New end (ISO 8601). For all-day events the end date is exclusive.
+  form: llm
+- name: all_day
+  type: boolean
+  required: false
+  label:
+    en_US: All Day
+    zh_Hans: 全天
+    ja_JP: 終日
+  human_description:
+    en_US: Make it an all-day event (or not)
+    zh_Hans: 设为全天事件（或取消）
+    ja_JP: 終日イベントにする（しない）
+  llm_description: true for an all-day event, false for a timed one.
+  form: llm
+- name: time_zone
+  type: string
+  required: false
+  label:
+    en_US: Time Zone
+    zh_Hans: 时区
+    ja_JP: タイムゾーン
+  human_description:
+    en_US: IANA name, e.g. Asia/Tokyo
+    zh_Hans: IANA 名称，如 Asia/Shanghai
+    ja_JP: 'IANA 名（例: Asia/Tokyo）'
+  llm_description: IANA time zone for times without a UTC offset, e.g. Asia/Tokyo.
+  form: llm
+- name: location
+  type: string
+  required: false
+  label:
+    en_US: Location
+    zh_Hans: 地点
+    ja_JP: 場所
+  human_description:
+    en_US: New location
+    zh_Hans: 新地点
+    ja_JP: 新しい場所
+  llm_description: New location.
+  form: llm
+- name: description
+  type: string
+  required: false
+  label:
+    en_US: Description
+    zh_Hans: 描述
+    ja_JP: 説明
+  human_description:
+    en_US: New description
+    zh_Hans: 新描述
+    ja_JP: 新しい説明
+  llm_description: New description.
+  form: llm
+- name: attendees
+  type: string
+  required: false
+  label:
+    en_US: Guests
+    zh_Hans: 参与者
+    ja_JP: ゲスト
+  human_description:
+    en_US: Comma-separated emails
+    zh_Hans: 逗号分隔的邮箱
+    ja_JP: カンマ区切りのメール
+  llm_description: Comma-separated guest emails.
+  form: llm
+- name: attendees_mode
+  type: select
+  required: false
+  label:
+    en_US: Guests Mode
+    zh_Hans: 参与者方式
+    ja_JP: ゲストの扱い
+  human_description:
+    en_US: Add to or replace the guest list
+    zh_Hans: 添加到或替换参与者列表
+    ja_JP: ゲストに追加 / 置き換え
+  llm_description: add (default) or replace.
+  form: llm
+  default: add
+  options:
+  - value: add
+    label:
+      en_US: Add
+      zh_Hans: 添加
+      ja_JP: 追加
+  - value: replace
+    label:
+      en_US: Replace
+      zh_Hans: 替换
+      ja_JP: 置き換え
+- name: visibility
+  type: select
+  required: false
+  label:
+    en_US: Visibility
+    zh_Hans: 可见性
+    ja_JP: 公開設定
+  human_description:
+    en_US: default, public, private
+    zh_Hans: default、public、private
+    ja_JP: default、public、private
+  llm_description: default, public or private.
+  form: llm
+  options:
+  - value: default
+    label:
+      en_US: default
+      zh_Hans: default
+      ja_JP: default
+  - value: public
+    label:
+      en_US: public
+      zh_Hans: public
+      ja_JP: public
+  - value: private
+    label:
+      en_US: private
+      zh_Hans: private
+      ja_JP: private
+- name: send_updates
+  type: select
+  required: false
+  label:
+    en_US: Notify Guests
+    zh_Hans: 通知参与者
+    ja_JP: ゲストに通知
+  human_description:
+    en_US: Who gets an update email
+    zh_Hans: 向谁发送更新邮件
+    ja_JP: 更新メールの送信先
+  llm_description: all (default), externalOnly or none.
+  form: llm
+  default: all
+  options:
+  - value: all
+    label:
+      en_US: All guests
+      zh_Hans: 所有参与者
+      ja_JP: 全員
+  - value: externalOnly
+    label:
+      en_US: External guests only
+      zh_Hans: 仅外部参与者
+      ja_JP: 外部のみ
+  - value: none
+    label:
+      en_US: Nobody
+      zh_Hans: 不通知
+      ja_JP: 通知しない
+output_schema:
+  type: object
+  properties:
+    event_id:
+      type: string
+    updated_fields:
+      type: array
+      items:
+        type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_calendar_update_event.py

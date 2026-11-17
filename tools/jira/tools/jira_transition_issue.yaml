@@ -1,0 +1,75 @@
+identity:
+  name: jira_transition_issue
+  author: langgenius
+  label:
+    en_US: Change Issue Status
+    zh_Hans: 变更问题状态
+    ja_JP: 課題のステータスを変更
+description:
+  human:
+    en_US: Move an issue to another status through its workflow
+    zh_Hans: 按工作流把问题移到另一个状态
+    ja_JP: ワークフローに沿って課題を別のステータスに移動します
+  llm: Change a Jira issue's status (e.g. to In Progress or Done) by running a workflow transition. Give the target status,
+    the transition name or its ID; optionally add a comment.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: transition
+  type: string
+  required: true
+  label:
+    en_US: Transition or Status
+    zh_Hans: 流转或目标状态
+    ja_JP: トランジションまたはステータス
+  human_description:
+    en_US: Target status (e.g. Done), transition name or ID
+    zh_Hans: 目标状态（如 Done）、流转名称或 ID
+    ja_JP: '移動先のステータス（例: Done）、トランジション名または ID'
+  llm_description: The target status name (e.g. 'In Progress', 'Done'), the transition name, or the transition ID.
+  form: llm
+- name: comment
+  type: string
+  required: false
+  label:
+    en_US: Comment
+    zh_Hans: 评论
+    ja_JP: コメント
+  human_description:
+    en_US: Optional comment to add
+    zh_Hans: 可选的评论
+    ja_JP: 任意のコメント
+  llm_description: Optional comment added with the transition.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    issue_key:
+      type: string
+      description: The issue
+    status:
+      type: string
+      description: The status it moved to
+    transition_id:
+      type: string
+      description: The transition that was run
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_transition_issue.py

@@ -1,0 +1,137 @@
+identity:
+  author: langgenius
+  name: google_sheets
+  label:
+    en_US: Google Sheets
+    zh_Hans: Google Sheets
+    ja_JP: Google Sheets
+  description:
+    en_US: Read and write Google Sheets rows and ranges, and manage spreadsheets and sheets
+    zh_Hans: 读写 Google 表格的行和区域，管理电子表格和工作表
+    ja_JP: Google スプレッドシートの行や範囲を読み書きし、スプレッドシートとシートを管理します
+  icon: icon.svg
+  tags:
+  - productivity
+credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: per_user
+    label:
+      en_US: Mode
+      zh_Hans: 模式
+      ja_JP: モード
+    options:
+    - value: per_user
+      label:
+        en_US: Each user signs in (own Google account, for chat agents)
+        zh_Hans: 每个用户自己登录（各自的 Google 账号，适用于对话 Agent）
+        ja_JP: ユーザーごとにサインイン（本人の Google アカウント、チャット エージェント向け）
+    help:
+      en_US: The first time a chat user needs Google Sheets, the tool returns a Google sign-in link; after they sign in, the
+        tools act as that user. (To use one shared account instead, use OAuth.) Needs a Google OAuth client (Web application)
+        and the Sign-in Callback URL below.
+      zh_Hans: 聊天用户第一次用到 Google Sheets 时，工具会返回 Google 登录链接；登录后，工具以该用户的身份操作。（要共用一个账号，请用 OAuth。）需要一个 Google OAuth 客户端（Web 应用）以及下方的登录回调
+        URL。
+      ja_JP: チャットのユーザーが初めて Google Sheets を使うとき、ツールが Google のサインイン リンクを返し、サインイン後はそのユーザー本人として操作します。（共有アカウントを使う場合は OAuth を使用）Google
+        OAuth クライアント（ウェブ アプリケーション）と下のサインイン コールバック URL が必要です。
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+    placeholder:
+      en_US: xxxx.apps.googleusercontent.com
+      zh_Hans: xxxx.apps.googleusercontent.com
+      ja_JP: xxxx.apps.googleusercontent.com
+    help:
+      en_US: Google Cloud Console > Google Auth Platform > Clients > your Web application client.
+      zh_Hans: Google Cloud 控制台 > Google Auth Platform > Clients > 你的 Web 应用客户端。
+      ja_JP: Google Cloud コンソール > Google Auth Platform > クライアント > ウェブ アプリケーションのクライアント。
+    url: https://console.cloud.google.com/auth/clients
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアント シークレット
+    help:
+      en_US: The client's secret. Rotating it signs every user out.
+      zh_Hans: 该客户端的密钥。更换后所有用户都需要重新登录。
+      ja_JP: クライアントのシークレット。変更すると全員がサインアウトされます。
+    url: https://console.cloud.google.com/auth/clients
+  redirect_uri:
+    type: text-input
+    required: true
+    label:
+      en_US: Sign-in Callback URL
+      zh_Hans: 登录回调 URL
+      ja_JP: サインイン コールバック URL
+    placeholder:
+      en_US: e.g. https://dify.example.com/e/xxxx/google_sheets/callback
+      zh_Hans: 例如 https://dify.example.com/e/xxxx/google_sheets/callback
+      ja_JP: '例: https://dify.example.com/e/xxxx/google_sheets/callback'
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints), paste its /google_sheets/callback URL here, and add
+        the same URL to the OAuth client's Authorized redirect URIs.
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /google_sheets/callback URL 粘贴到这里，并把同一个 URL 加到 OAuth 客户端的“已获授权的重定向 URI”中。
+      ja_JP: このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /google_sheets/callback の URL をここに貼り付け、同じ URL を OAuth クライアントの承認済みのリダイレクト
+        URI に追加してください。
+oauth_schema:
+  client_schema:
+  - name: client_id
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+    help:
+      en_US: Google Cloud Console > Google Auth Platform > Clients (Web application), with the Google Sheets API and Google
+        Drive API enabled.
+      zh_Hans: Google Cloud 控制台 > Google Auth Platform > Clients（Web 应用），并启用 Google Sheets API 和 Google Drive API。
+      ja_JP: Google Cloud コンソール > Google Auth Platform > クライアント（ウェブ アプリケーション）。Google Sheets API と Google Drive API を有効にしてください。
+    url: https://console.cloud.google.com/auth/clients
+  - name: client_secret
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアント シークレット
+    url: https://console.cloud.google.com/auth/clients
+  credentials_schema:
+  - name: access_token
+    type: secret-input
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+      ja_JP: アクセス トークン
+  - name: refresh_token
+    type: secret-input
+    label:
+      en_US: Refresh Token
+      zh_Hans: 刷新令牌
+      ja_JP: リフレッシュ トークン
+tools:
+- tools/google_sheets_find_spreadsheets.yaml
+- tools/google_sheets_get_spreadsheet.yaml
+- tools/google_sheets_create_spreadsheet.yaml
+- tools/google_sheets_read_rows.yaml
+- tools/google_sheets_append_rows.yaml
+- tools/google_sheets_update_rows.yaml
+- tools/google_sheets_upsert_rows.yaml
+- tools/google_sheets_delete_rows.yaml
+- tools/google_sheets_read_range.yaml
+- tools/google_sheets_write_range.yaml
+- tools/google_sheets_clear_range.yaml
+- tools/google_sheets_add_sheet.yaml
+- tools/google_sheets_rename_sheet.yaml
+- tools/google_sheets_delete_sheet.yaml
+- tools/google_sheets_sign_out.yaml
+extra:
+  python:
+    source: provider/google_sheets.py

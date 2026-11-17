@@ -1,0 +1,70 @@
+identity:
+  name: google_drive_rename_file
+  author: langgenius
+  label:
+    en_US: Rename File
+    zh_Hans: 重命名文件
+    ja_JP: 名前を変更
+description:
+  human:
+    en_US: Rename a file or folder
+    zh_Hans: 重命名文件或文件夹
+    ja_JP: ファイルやフォルダーの名前を変更
+  llm: Rename a Google Drive file or folder (optionally set its description).
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  human_description:
+    en_US: The new name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  llm_description: The new name.
+  form: llm
+- name: description
+  type: string
+  required: false
+  label:
+    en_US: Description
+    zh_Hans: 描述
+    ja_JP: 説明
+  human_description:
+    en_US: Optional description
+    zh_Hans: 可选描述
+    ja_JP: 任意の説明
+  llm_description: Optional new description.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+    name:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_rename_file.py

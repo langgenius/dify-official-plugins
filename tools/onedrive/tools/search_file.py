@@ -25,7 +25,7 @@ class SearchFileTool(Tool):
             limit = 10
 
         try:
-            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"))
+            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"), tool=self)
             # The search text is an OData string literal inside the path: double single quotes, then URL-quote.
             q = quote(str(query).replace("'", "''"), safe="")
             response = graph_request(graph, "GET", f"{graph.drive_base}/root/search(q='{q}')", params={"$top": limit})

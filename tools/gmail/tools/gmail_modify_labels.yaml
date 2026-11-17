@@ -1,0 +1,97 @@
+identity:
+  name: gmail_modify_labels
+  author: langgenius
+  label:
+    en_US: Add / Remove Labels
+    zh_Hans: 添加/移除标签
+    ja_JP: ラベルの追加・削除
+description:
+  human:
+    en_US: Label a message or a whole conversation
+    zh_Hans: 给邮件或整个会话加减标签
+    ja_JP: メールやスレッドにラベルを付け外し
+  llm: 'Add or remove labels on a Gmail message, or on a whole conversation when thread_id is given. Labels by name or ID;
+    system labels: INBOX (remove to archive), STARRED, IMPORTANT, UNREAD, SPAM.'
+parameters:
+- name: message_id
+  type: string
+  required: false
+  label:
+    en_US: Message ID
+    zh_Hans: 邮件 ID
+    ja_JP: メッセージ ID
+  human_description:
+    en_US: The message (or give thread_id)
+    zh_Hans: 邮件（或填会话 ID）
+    ja_JP: メール（またはスレッド ID）
+  llm_description: The message ID; or give thread_id.
+  form: llm
+- name: thread_id
+  type: string
+  required: false
+  label:
+    en_US: Thread ID
+    zh_Hans: 会话 ID
+    ja_JP: スレッド ID
+  human_description:
+    en_US: A whole conversation instead
+    zh_Hans: 改为整个会话
+    ja_JP: スレッド全体
+  llm_description: A thread ID to label the whole conversation.
+  form: llm
+- name: add_labels
+  type: string
+  required: false
+  label:
+    en_US: Add Labels
+    zh_Hans: 添加标签
+    ja_JP: 追加するラベル
+  human_description:
+    en_US: Comma-separated names or IDs
+    zh_Hans: 逗号分隔的名称或 ID
+    ja_JP: カンマ区切りの名前または ID
+  llm_description: Comma-separated labels to add.
+  form: llm
+- name: remove_labels
+  type: string
+  required: false
+  label:
+    en_US: Remove Labels
+    zh_Hans: 移除标签
+    ja_JP: 外すラベル
+  human_description:
+    en_US: Comma-separated names or IDs
+    zh_Hans: 逗号分隔的名称或 ID
+    ja_JP: カンマ区切りの名前または ID
+  llm_description: Comma-separated labels to remove (remove INBOX to archive).
+  form: llm
+- name: create_missing
+  type: boolean
+  required: false
+  label:
+    en_US: Create Missing
+    zh_Hans: 自动创建
+    ja_JP: なければ作成
+  human_description:
+    en_US: Create labels that don't exist
+    zh_Hans: 标签不存在时自动创建
+    ja_JP: 存在しないラベルを作成
+  llm_description: Create add_labels that don't exist yet.
+  form: llm
+  default: false
+output_schema:
+  type: object
+  properties:
+    labels:
+      type: array
+      items:
+        type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_modify_labels.py

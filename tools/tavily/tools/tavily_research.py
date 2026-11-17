@@ -95,6 +95,7 @@ class TavilyResearchTool(Tool):
     # Polling configuration
     DEFAULT_POLL_INTERVAL_SECONDS = 3
     MAX_POLL_INTERVAL_SECONDS = 10
+    MAX_POLL_DURATION_SECONDS = 600
 
     def _invoke(
         self, tool_parameters: dict[str, Any]
@@ -144,12 +145,18 @@ class TavilyResearchTool(Tool):
             )
 
             # Step 2: Poll for results
-            start_time = time.time()
+            start_time = time.monotonic()
             poll_interval = self.DEFAULT_POLL_INTERVAL_SECONDS
             last_status = None
 
             while True:
-                elapsed = time.time() - start_time
+                elapsed = time.monotonic() - start_time
+                if elapsed >= self.MAX_POLL_DURATION_SECONDS:
+                    yield self.create_text_message(
+                        f"Research task timed out after {self.MAX_POLL_DURATION_SECONDS}s "
+                        f"(ID: {request_id}). The remote task may still be running."
+                    )
+                    return
 
                 # Poll for status
                 try:
@@ -177,12 +184,14 @@ class TavilyResearchTool(Tool):
                     return
                 elif status in ["pending", "in_progress"]:
                     # Continue polling with exponential backoff (capped)
-                    time.sleep(poll_interval)
+                    remaining = self.MAX_POLL_DURATION_SECONDS - (time.monotonic() - start_time)
+                    time.sleep(min(poll_interval, max(0, remaining)))
                     poll_interval = min(poll_interval * 1.2, self.MAX_POLL_INTERVAL_SECONDS)
                 else:
                     # Unknown status, keep polling but warn
                     yield self.create_text_message(f"Unknown status: {status}, continuing...")
-                    time.sleep(poll_interval)
+                    remaining = self.MAX_POLL_DURATION_SECONDS - (time.monotonic() - start_time)
+                    time.sleep(min(poll_interval, max(0, remaining)))
 
             # Step 3: Process completed results
             yield self.create_json_message(result)

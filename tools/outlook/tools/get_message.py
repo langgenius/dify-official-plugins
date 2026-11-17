@@ -19,7 +19,7 @@ class GetMessageTool(Tool):
             message_id = tool_parameters.get("message_id")                
             # Resolve the Graph token and target mailbox (OAuth or Service Principal)
             try:
-                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"))
+                graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("mailbox"), tool=self)
             except GraphAuthError as e:
                 yield self.create_text_message(str(e))
                 return

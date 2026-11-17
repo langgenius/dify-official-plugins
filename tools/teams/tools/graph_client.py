@@ -1,8 +1,10 @@
 """
 Shared Microsoft Graph plumbing for the Teams tools.
 
-Teams uses delegated OAuth only: posting messages, chats and group calendars are
-not available to app-only tokens, so every call acts as the signed-in user.
+Teams uses delegated tokens only: posting messages, chats and group calendars are
+not available to app-only tokens, so every call acts as a signed-in user. That user is
+either the one who authorized the workspace's OAuth credential, or, with the
+"Each user signs in" credential, whoever is chatting with the agent (see ``user_auth``).
 
 The OAuth credential remembers which Microsoft cloud it was authorized against
 (``graph_base_url``); credentials authorized before national-cloud support have
@@ -17,6 +19,8 @@ from typing import Any, Mapping
 from urllib.parse import quote, unquote, urlparse
 
 import requests
+
+from tools.user_auth import SignInRequired, UserAuthError, UserSignIn
 
 # cloud -> (Entra login host, Microsoft Graph host)
 CLOUDS: dict[str, tuple[str, str]] = {
@@ -141,8 +145,47 @@ def describe_error(response: requests.Response) -> str:
     return f"API error {response.status_code}: {detail}" + (f" {hint}" if hint else "")
 
 
-def resolve_graph_context(credentials: Mapping[str, Any]) -> GraphContext:
-    """Turn the runtime OAuth credentials into a token and the Graph v1.0 root."""
+def is_per_user(credentials: Mapping[str, Any]) -> bool:
+    """The "Each user signs in" credential: an app registration and a callback URL, no token."""
+    per_user = credentials.get("auth_mode") == "per_user" or bool(credentials.get("redirect_uri"))
+    return per_user and not credentials.get("access_token")
+
+
+def user_sign_in(credentials: Mapping[str, Any], tool: Any) -> UserSignIn:
+    login_host, graph_host = cloud_hosts(credentials.get("cloud"))
+    try:
+        return UserSignIn(
+            credentials, tool.runtime.user_id, tool.session.storage, login_host, graph_host, CLOUDS[DEFAULT_CLOUD][1]
+        )
+    except UserAuthError as e:
+        raise GraphError(str(e)) from e
+
+
+def user_access_token(credentials: Mapping[str, Any], tool: Any) -> str:
+    sign_in = user_sign_in(credentials, tool)
+    try:
+        token = sign_in.access_token()
+    except (SignInRequired, UserAuthError) as e:
+        raise GraphError(str(e)) from e
+    if sign_in.just_signed_in:
+        # @with_outputs tells the user which account they signed in with.
+        tool._signed_in_as = sign_in.just_signed_in
+    return token
+
+
+def resolve_graph_context(credentials: Mapping[str, Any], tool: Any = None) -> GraphContext:
+    """
+    Turn the runtime credentials into a token and the Graph v1.0 root.
+
+    ``tool`` is the calling Tool; per-user sign-in needs its user ID and plugin storage.
+    When that user has not signed in yet, the GraphError message is the sign-in link.
+    """
+    if is_per_user(credentials):
+        if tool is None:
+            raise GraphError("Per-user sign-in is not available here.")
+        _, graph_host = cloud_hosts(credentials.get("cloud"))
+        return GraphContext(user_access_token(credentials, tool), f"{graph_host}/v1.0")
+
     token = credentials.get("access_token")
     if not token:
         raise GraphError("Access token is required in credentials.")

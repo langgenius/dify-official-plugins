@@ -1,0 +1,155 @@
+identity:
+  name: excel_get_rows
+  author: langgenius
+  label:
+    en_US: Get Rows
+    zh_Hans: 获取行
+    ja_JP: 行を取得
+description:
+  human:
+    en_US: Rows of a worksheet as objects keyed by its header row
+    zh_Hans: 以标题行为键返回工作表中的行
+    ja_JP: 見出し行をキーにしたオブジェクトとしてワークシートの行を返します
+  llm: 'Read the rows of a worksheet as objects keyed by its header row, e.g. {"Name": "Kim", "Score": 90}. Without a range
+    the sheet''s used range is read. Use read_worksheet_data instead for a raw grid of cells.'
+parameters:
+- name: site_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Site ID (only if editing SharePoint Site content)
+    zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+    ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+  human_description:
+    en_US: Optional SharePoint site ID. When provided, uses this site's drive instead of the personal OneDrive.
+    zh_Hans: 可选的 SharePoint 站点 ID。若提供，则使用该站点的驱动器而非个人 OneDrive。
+    ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブを使います。
+  llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
+- name: workbook_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Workbook ID
+    zh_Hans: 工作簿 ID
+    ja_JP: ブック ID
+  human_description:
+    en_US: The ID of the Excel workbook
+    zh_Hans: Excel 工作簿的 ID
+    ja_JP: Excel ブックの ID
+  llm_description: The ID of the Excel workbook (from the list workbooks tool).
+- name: worksheet_name
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Worksheet Name
+    zh_Hans: 工作表名称
+    ja_JP: ワークシート名
+  human_description:
+    en_US: The name of the worksheet
+    zh_Hans: 工作表名称
+    ja_JP: ワークシートの名前
+  llm_description: The name of the worksheet.
+- name: range
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Range
+    zh_Hans: 区域
+    ja_JP: 範囲
+  human_description:
+    en_US: Optional cells to read, e.g. A1:D50; empty reads all the data on the sheet
+    zh_Hans: 可选，要读取的区域，例如 A1:D50；留空读取工作表中的全部数据
+    ja_JP: '読み取るセル範囲（任意、例: A1:D50）。空欄でシートのデータ全体'
+  llm_description: Optional range in A1 notation, e.g. A1:D50. Leave empty to read all the data on the sheet.
+- name: header_row
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Header Row
+    zh_Hans: 标题行
+    ja_JP: 見出し行
+  human_description:
+    en_US: Index of the header row within the range, from 0 (default 0)
+    zh_Hans: 标题行在区域中的序号，从 0 开始（默认 0）
+    ja_JP: 範囲内の見出し行の番号（0 から、既定 0）
+  llm_description: Index of the row holding the column names, counted from 0 within the range. Default 0.
+  default: 0
+  min: 0
+- name: first_data_row
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: First Data Row
+    zh_Hans: 首个数据行
+    ja_JP: 最初のデータ行
+  human_description:
+    en_US: 'Index of the first data row within the range (default: the row after the header)'
+    zh_Hans: 第一个数据行在区域中的序号（默认：标题行的下一行）
+    ja_JP: '範囲内の最初のデータ行の番号（既定: 見出しの次の行）'
+  llm_description: 'Index of the first data row, counted from 0 within the range. Default: the row after the header row.'
+  min: 1
+- name: limit
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum rows (default 500, up to 5000)
+    zh_Hans: 最多返回行数（默认 500，最多 5000）
+    ja_JP: 最大行数（既定 500、最大 5000）
+  llm_description: Maximum number of rows to return, default 500, up to 5000.
+  default: 500
+  min: 1
+  max: 5000
+- name: drive_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive holds the workbooks. Leave empty
+      for the credential''s default, or use a Site ID.'
+    zh_Hans: 仅限 Service Principal：工作簿所在 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值，或使用站点 ID。
+    ja_JP: 'サービス プリンシパルのみ: ブックがある OneDrive のユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値、またはサイト ID を使います。'
+output_schema:
+  type: object
+  properties:
+    rows:
+      type: array
+      description: Rows
+      items:
+        type: object
+        description: A row as an object keyed by column header
+    columns:
+      type: array
+      description: Column headers in order
+    count:
+      type: integer
+      description: Rows returned
+    has_more:
+      type: boolean
+      description: True when there are more rows than the limit
+    address:
+      type: string
+      description: Address of the range read
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/excel_get_rows.py

@@ -1,0 +1,45 @@
+identity:
+  name: trello_list_checklists
+  author: langgenius
+  label:
+    en_US: List Checklists
+    zh_Hans: 列出清单
+    ja_JP: チェックリスト一覧
+description:
+  human:
+    en_US: A card's checklists and items
+    zh_Hans: 卡片的清单及其条目
+    ja_JP: カードのチェックリストと項目
+  llm: List the checklists of a Trello card with their items, item IDs and completion.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    checklists:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_list_checklists.py

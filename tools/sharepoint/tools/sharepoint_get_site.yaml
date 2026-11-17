@@ -1,0 +1,52 @@
+identity:
+  name: sharepoint_get_site
+  author: langgenius
+  label:
+    en_US: Get Site
+    zh_Hans: 获取站点
+    ja_JP: サイトを取得
+description:
+  human:
+    en_US: A site from its URL, ID or root
+    zh_Hans: 通过 URL、ID 或 root 获取站点
+    ja_JP: URL、ID、root からサイトを取得します
+  llm: Get a SharePoint site from its URL, ID or 'root', and its ID for the other tools.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+output_schema:
+  type: object
+  properties:
+    site_id:
+      type: string
+      description: Site ID
+    name:
+      type: string
+      description: Site name
+    web_url:
+      type: string
+      description: Site URL
+    description:
+      type: string
+      description: Description
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_get_site.py

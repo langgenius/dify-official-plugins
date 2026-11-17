@@ -1,0 +1,98 @@
+identity:
+  name: google_docs_append_content
+  author: langgenius
+  label:
+    en_US: Add Content
+    zh_Hans: 添加内容
+    ja_JP: 内容を追加
+description:
+  human:
+    en_US: Add Markdown content at the end or start
+    zh_Hans: 在末尾或开头添加 Markdown 内容
+    ja_JP: 末尾または先頭に Markdown の内容を追加
+  llm: Add Markdown content to a Google Doc, at the end (default) or the start, optionally after a page break.
+parameters:
+- name: document_id
+  type: string
+  required: true
+  label:
+    en_US: Document
+    zh_Hans: 文档
+    ja_JP: ドキュメント
+  human_description:
+    en_US: ID or URL of the document
+    zh_Hans: 文档的 ID 或 URL
+    ja_JP: ドキュメントの ID または URL
+  llm_description: The document ID or its URL (…/document/d/<id>/edit), e.g. from google_docs_find_documents.
+  form: llm
+- name: content
+  type: string
+  required: true
+  label:
+    en_US: Content
+    zh_Hans: 内容
+    ja_JP: 内容
+  human_description:
+    en_US: 'Markdown: # headings, - or 1. lists, **bold**, *italic*, [links](url)'
+    zh_Hans: Markdown：# 标题、- 或 1. 列表、**粗体**、*斜体*、[链接](url)
+    ja_JP: 'Markdown: # 見出し、- や 1. のリスト、**太字**、*斜体*、[リンク](url)'
+  llm_description: 'Content in Markdown: # / ## / ### headings, - or * bullet lists, 1. numbered lists, **bold**, *italic*,
+    [text](https://link). Other text becomes normal paragraphs.'
+  form: llm
+- name: position
+  type: select
+  required: false
+  label:
+    en_US: Position
+    zh_Hans: 位置
+    ja_JP: 位置
+  human_description:
+    en_US: End or start of the document
+    zh_Hans: 文档末尾或开头
+    ja_JP: 末尾または先頭
+  llm_description: end (default) or start.
+  form: llm
+  options:
+  - value: end
+    label:
+      en_US: End
+      zh_Hans: 末尾
+      ja_JP: 末尾
+  - value: start
+    label:
+      en_US: Start
+      zh_Hans: 开头
+      ja_JP: 先頭
+  default: end
+- name: page_break_before
+  type: boolean
+  required: false
+  label:
+    en_US: Page Break Before
+    zh_Hans: 前面加分页
+    ja_JP: 前に改ページ
+  human_description:
+    en_US: Start on a new page (end only)
+    zh_Hans: 另起一页（仅末尾）
+    ja_JP: 新しいページから（末尾のみ）
+  llm_description: true starts the added content on a new page (only when adding at the end).
+  form: llm
+  default: false
+output_schema:
+  type: object
+  properties:
+    document_id:
+      type: string
+    paragraphs:
+      type: integer
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_docs_append_content.py

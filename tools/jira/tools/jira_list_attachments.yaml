@@ -1,0 +1,60 @@
+identity:
+  name: jira_list_attachments
+  author: langgenius
+  label:
+    en_US: List Attachments
+    zh_Hans: 列出附件
+    ja_JP: 添付ファイル一覧
+description:
+  human:
+    en_US: Files attached to an issue
+    zh_Hans: 问题的附件
+    ja_JP: 課題の添付ファイル
+  llm: List the files attached to a Jira issue.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    attachments:
+      type: array
+      description: Attachments
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          filename:
+            type: string
+          mime_type:
+            type: string
+          size:
+            type: integer
+          author:
+            type: string
+          created:
+            type: string
+    count:
+      type: integer
+      description: Number of attachments
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_list_attachments.py

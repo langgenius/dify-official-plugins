@@ -62,14 +62,15 @@ class ConfluenceSdkTest(unittest.TestCase):
                 self.assertEqual(found_space[0], space)
                 self.assertEqual(pages[0]["pages"], [page])
                 self.assertEqual(found_page[0], page)
-                self.assertEqual(created, ["Page created successfully"])
+                self.assertEqual(created[0], "Page created successfully")
                 self.assertEqual(removed, ["Page removed successfully"])
                 post = next(request for request in sent if request.method == "POST")
                 payload = json.loads(post.body)
                 if cloud:
                     self.assertTrue(all("/wiki/api/v2/" in request.url for request in sent))
                     self.assertEqual(payload["spaceId"], "1")
-                    self.assertEqual(payload["body"], {"storage": {"value": "<p>Text</p>"}})
+                    # The v2 shape; {"storage": {"value": ...}} makes Confluence Cloud answer 500.
+                    self.assertEqual(payload["body"], {"representation": "storage", "value": "<p>Text</p>"})
                     self.assertTrue(any(parse_qs(urlparse(request.url).query).get("body-format") == ["storage"] for request in sent))
                     self.assertTrue(any(parse_qs(urlparse(request.url).query).get("space-id") == ["1"] for request in sent))
                     listing = next(request for request in sent if request.method == "GET" and urlparse(request.url).path.endswith("/pages"))

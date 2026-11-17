@@ -11,7 +11,9 @@ class GetSpreadsheetTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         spreadsheet_token = tool_parameters.get("spreadsheet_token")
         user_id_type = tool_parameters.get("user_id_type", "open_id")
         res = client.get_spreadsheet(spreadsheet_token, user_id_type)

@@ -15,6 +15,157 @@ identity:
     zh_Hant: 向 Teams 頻道和聊天發送訊息，並列出團隊和頻道
   icon: icon.svg
   icon_dark: icon-dark.svg
+credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: per_user
+    label:
+      en_US: Mode
+      zh_Hans: 模式
+      pt_BR: Modo
+      ja_JP: モード
+      zh_Hant: 模式
+    options:
+      - value: per_user
+        label:
+          en_US: Each user signs in (own Teams account, for chat agents)
+          zh_Hans: 每个用户自己登录（各自的 Teams 账号，适用于对话 Agent）
+          pt_BR: Cada usuário faz login (própria conta do Teams, para agentes de chat)
+          ja_JP: ユーザーごとにサインイン（本人の Teams アカウント、チャット エージェント向け）
+          zh_Hant: 每個使用者自行登入（各自的 Teams 帳號，適用於對話 Agent）
+    help:
+      en_US: "The first time a chat user needs Teams, the tool returns a Microsoft sign-in link for them; after signing in, the tools act as that user. For one shared account, use OAuth instead."
+      zh_Hans: "聊天用户第一次用到 Teams 时，工具会返回 Microsoft 登录链接；登录后，工具以该用户的身份操作。如果要所有人共用一个账号，请改用 OAuth。"
+      pt_BR: "Na primeira vez que um usuário do chat precisar do Teams, a ferramenta retorna um link de login da Microsoft; depois disso, as ferramentas atuam como esse usuário. Para uma conta compartilhada, use OAuth."
+      ja_JP: "チャットのユーザーが初めて Teams を使うとき、ツールが Microsoft のサインイン リンクを返します。サインイン後は、そのユーザー本人として操作します。全員で 1 つのアカウントを使う場合は OAuth を使ってください。"
+      zh_Hant: "聊天使用者第一次用到 Teams 時，工具會回傳 Microsoft 登入連結；登入後，工具以該使用者的身分操作。如果要所有人共用一個帳號，請改用 OAuth。"
+  tenant_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Tenant ID
+      zh_Hans: 租户 ID
+      pt_BR: ID do Locatário
+      ja_JP: テナント ID
+      zh_Hant: 租戶 ID
+    placeholder:
+      en_US: Directory (tenant) ID, e.g. 00000000-0000-0000-0000-000000000000
+      zh_Hans: 目录（租户）ID，例如 00000000-0000-0000-0000-000000000000
+      pt_BR: ID do diretório (locatário), ex. 00000000-0000-0000-0000-000000000000
+      ja_JP: "ディレクトリ（テナント）ID、例: 00000000-0000-0000-0000-000000000000"
+      zh_Hant: 目錄（租用戶）ID，例如 00000000-0000-0000-0000-000000000000
+    help:
+      en_US: "Your directory (tenant) ID, from Microsoft Entra ID > Overview or the app registration's Overview. It limits sign-in to your organization."
+      zh_Hans: "目录（租户）ID，可在 Microsoft Entra ID > 概述或应用注册的概述页找到。填写后只允许本组织的账号登录。"
+      pt_BR: "O ID do diretório (locatário), em Microsoft Entra ID > Visão geral ou na Visão geral do registro do aplicativo. Restringe o login à sua organização."
+      ja_JP: "ディレクトリ（テナント）ID です。Microsoft Entra ID > 概要、またはアプリ登録の概要で確認できます。自組織のアカウントだけがサインインできるようにします。"
+      zh_Hant: "目錄（租用戶）ID，可在 Microsoft Entra ID > 概觀或應用程式註冊的概觀頁找到。填寫後只允許本組織的帳號登入。"
+    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
+  client_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      pt_BR: ID do Cliente
+      ja_JP: クライアント ID
+      zh_Hant: 客戶端 ID
+    placeholder:
+      en_US: Application (client) ID of the app registration
+      zh_Hans: 应用注册的应用程序（客户端）ID
+      pt_BR: ID do aplicativo (cliente) do registro de aplicativo
+      ja_JP: アプリ登録のアプリケーション（クライアント）ID
+      zh_Hant: 應用程式註冊的應用程式（用戶端）ID
+    help:
+      en_US: "The Application (client) ID on the app registration's Overview page."
+      zh_Hans: "应用注册“概述”页上的“应用程序(客户端) ID”。"
+      pt_BR: "O ID do aplicativo (cliente) na página Visão geral do registro do aplicativo."
+      ja_JP: "アプリ登録の「概要」ページにある「アプリケーション (クライアント) ID」です。"
+      zh_Hant: "應用程式註冊「概觀」頁上的「應用程式 (用戶端) 識別碼」。"
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  client_secret:
+    type: secret-input
+    required: true
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      pt_BR: Segredo do Cliente
+      ja_JP: クライアントシークレット
+      zh_Hant: 客戶端密鑰
+    placeholder:
+      en_US: Client secret value of the app registration
+      zh_Hans: 应用注册的客户端密钥值
+      pt_BR: Valor do segredo do cliente do registro de aplicativo
+      ja_JP: アプリ登録のクライアントシークレットの値
+      zh_Hant: 應用程式註冊的客戶端密鑰值
+    help:
+      en_US: "Copy the secret's Value (not its Secret ID). The app needs the delegated Microsoft Graph permissions listed in the README, with admin consent."
+      zh_Hans: "复制密钥的“值”（不是“机密 ID”）。应用需要 README 中列出的 Microsoft Graph 委托权限，并授予管理员同意。"
+      pt_BR: "Copie o Valor do segredo (não o ID do segredo). O aplicativo precisa das permissões delegadas do Microsoft Graph listadas no README, com consentimento do administrador."
+      ja_JP: "シークレットの「値」をコピーしてください（シークレット ID ではありません）。アプリには README に記載の Microsoft Graph の委任されたアクセス許可と、管理者の同意が必要です。"
+      zh_Hant: "複製密碼的「值」（不是「祕密識別碼」）。應用程式需要 README 中列出的 Microsoft Graph 委派權限，並授予管理員同意。"
+    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  redirect_uri:
+    type: text-input
+    required: true
+    label:
+      en_US: Sign-in Callback URL
+      zh_Hans: 登录回调 URL
+      pt_BR: URL de Retorno do Login
+      ja_JP: サインイン コールバック URL
+      zh_Hant: 登入回呼 URL
+    placeholder:
+      en_US: e.g. https://dify.example.com/e/xxxx/teams/callback
+      zh_Hans: 例如 https://dify.example.com/e/xxxx/teams/callback
+      pt_BR: ex. https://dify.example.com/e/xxxx/teams/callback
+      ja_JP: "例: https://dify.example.com/e/xxxx/teams/callback"
+      zh_Hant: 例如 https://dify.example.com/e/xxxx/teams/callback
+    help:
+      en_US: "Create this plugin's endpoint (plugin details > Endpoints), paste its /teams/callback URL here, and add the same URL to the app registration's Web redirect URIs."
+      zh_Hans: "先创建本插件的端点（插件详情 > 端点），把它的 /teams/callback URL 粘贴到这里，并把同一个 URL 加到应用注册的 Web 重定向 URI 中。"
+      pt_BR: "Crie o endpoint deste plugin (detalhes do plugin > Endpoints), cole aqui a URL /teams/callback e adicione a mesma URL aos URIs de redirecionamento Web do registro de aplicativo."
+      ja_JP: "このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /teams/callback の URL をここに貼り付け、同じ URL をアプリ登録の Web リダイレクト URI に追加してください。"
+      zh_Hant: "先建立本外掛的端點（外掛詳情 > 端點），把它的 /teams/callback URL 貼到這裡，並把同一個 URL 加到應用程式註冊的 Web 重新導向 URI 中。"
+  cloud:
+    type: select
+    required: false
+    default: global
+    label:
+      en_US: Microsoft Cloud
+      zh_Hans: Microsoft 云
+      pt_BR: Nuvem da Microsoft
+      ja_JP: Microsoft クラウド
+      zh_Hant: Microsoft 雲端
+    options:
+      - value: global
+        label:
+          en_US: Global (graph.microsoft.com)
+          zh_Hans: 全球 (graph.microsoft.com)
+          pt_BR: Global (graph.microsoft.com)
+          ja_JP: グローバル (graph.microsoft.com)
+          zh_Hant: 全球 (graph.microsoft.com)
+      - value: usgov
+        label:
+          en_US: US Government (graph.microsoft.us)
+          zh_Hans: 美国政府 (graph.microsoft.us)
+          pt_BR: Governo dos EUA (graph.microsoft.us)
+          ja_JP: 米国政府 (graph.microsoft.us)
+          zh_Hant: 美國政府 (graph.microsoft.us)
+      - value: dod
+        label:
+          en_US: US Government DoD (dod-graph.microsoft.us)
+          zh_Hans: 美国政府 DoD (dod-graph.microsoft.us)
+          pt_BR: Governo dos EUA DoD (dod-graph.microsoft.us)
+          ja_JP: 米国政府 DoD (dod-graph.microsoft.us)
+          zh_Hant: 美國政府 DoD (dod-graph.microsoft.us)
+      - value: china
+        label:
+          en_US: China, operated by 21Vianet (microsoftgraph.chinacloudapi.cn)
+          zh_Hans: 中国，世纪互联运营 (microsoftgraph.chinacloudapi.cn)
+          pt_BR: China, operado pela 21Vianet (microsoftgraph.chinacloudapi.cn)
+          ja_JP: 中国、21Vianet 運営 (microsoftgraph.chinacloudapi.cn)
+          zh_Hant: 中國，世紀互聯營運 (microsoftgraph.chinacloudapi.cn)
 oauth_schema:
   client_schema:
     - name: "client_id"
@@ -172,6 +323,7 @@ tools:
   - tools/create_planner_task.yaml
   - tools/update_planner_task.yaml
   - tools/delete_planner_task.yaml
+  - tools/teams_sign_out.yaml
 extra:
   python:
     source: provider/teams.py

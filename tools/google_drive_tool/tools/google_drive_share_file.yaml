@@ -1,0 +1,156 @@
+identity:
+  name: google_drive_share_file
+  author: langgenius
+  label:
+    en_US: Share File
+    zh_Hans: 共享文件
+    ja_JP: ファイルを共有
+description:
+  human:
+    en_US: Share with a person, group, domain or anyone with the link
+    zh_Hans: 共享给某人、群组、域或任何知道链接的人
+    ja_JP: ユーザー・グループ・ドメイン・リンクを知る全員と共有
+  llm: 'Share a Google Drive file or folder: with an email (person or group), a whole domain, or anyone with the link. Role
+    reader, commenter or writer.'
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: email
+  type: string
+  required: false
+  label:
+    en_US: Email
+    zh_Hans: 邮箱
+    ja_JP: メール
+  human_description:
+    en_US: Person or group to share with
+    zh_Hans: 要共享给的人或群组
+    ja_JP: 共有する相手
+  llm_description: Email of the person (or group) to share with.
+  form: llm
+- name: is_group
+  type: boolean
+  required: false
+  label:
+    en_US: Is a Group
+    zh_Hans: 是群组
+    ja_JP: グループ
+  human_description:
+    en_US: The email is a Google Group
+    zh_Hans: 邮箱是 Google 群组
+    ja_JP: メールは Google グループ
+  llm_description: true if the email is a Google Group.
+  form: llm
+  default: false
+- name: domain
+  type: string
+  required: false
+  label:
+    en_US: Domain
+    zh_Hans: 域
+    ja_JP: ドメイン
+  human_description:
+    en_US: Everyone in this domain, e.g. example.com
+    zh_Hans: 该域中的所有人，如 example.com
+    ja_JP: 'このドメインの全員（例: example.com）'
+  llm_description: Share with everyone in this domain.
+  form: llm
+- name: anyone_with_link
+  type: boolean
+  required: false
+  label:
+    en_US: Anyone with the Link
+    zh_Hans: 任何知道链接的人
+    ja_JP: リンクを知っている全員
+  human_description:
+    en_US: Public link sharing
+    zh_Hans: 公开链接共享
+    ja_JP: リンク共有
+  llm_description: true to let anyone with the link open it.
+  form: llm
+  default: false
+- name: role
+  type: select
+  required: false
+  label:
+    en_US: Role
+    zh_Hans: 权限
+    ja_JP: 権限
+  human_description:
+    en_US: What they may do
+    zh_Hans: 可以做什么
+    ja_JP: できること
+  llm_description: reader (default), commenter or writer.
+  form: llm
+  options:
+  - value: reader
+    label:
+      en_US: Viewer
+      zh_Hans: 查看者
+      ja_JP: 閲覧者
+  - value: commenter
+    label:
+      en_US: Commenter
+      zh_Hans: 评论者
+      ja_JP: コメント可
+  - value: writer
+    label:
+      en_US: Editor
+      zh_Hans: 编辑者
+      ja_JP: 編集者
+  default: reader
+- name: notify
+  type: boolean
+  required: false
+  label:
+    en_US: Notify
+    zh_Hans: 发送通知
+    ja_JP: 通知
+  human_description:
+    en_US: Email the person about it
+    zh_Hans: 给对方发邮件通知
+    ja_JP: 相手にメールで通知
+  llm_description: Whether to email the person (default true).
+  form: llm
+  default: true
+- name: message
+  type: string
+  required: false
+  label:
+    en_US: Message
+    zh_Hans: 留言
+    ja_JP: メッセージ
+  human_description:
+    en_US: Included in the notification
+    zh_Hans: 包含在通知邮件中
+    ja_JP: 通知メールに含める
+  llm_description: Optional message for the notification email.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    permission_id:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_share_file.py

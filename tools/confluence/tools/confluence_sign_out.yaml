@@ -1,0 +1,33 @@
+identity:
+  name: confluence_sign_out
+  display_name: Sign Out of Confluence
+  author: langgenius
+  label:
+    en_US: Sign Out of Confluence
+    zh_Hans: 退出 Confluence 登录
+    ja_JP: Confluence からサインアウト
+    pt_BR: Sair do Confluence
+description:
+  human:
+    en_US: 'Each user signs in mode only: forget the current user''s Atlassian sign-in'
+    zh_Hans: 仅限“每个用户自己登录”模式：清除当前用户的 Atlassian 登录
+    ja_JP: 'ユーザーごとのサインイン モードのみ: 現在のユーザーの Atlassian サインインを削除します'
+    pt_BR: 'Somente no modo cada usuário entra: esquece o login Atlassian do usuário atual'
+  llm: Sign the current user out of the Confluence tools (forget their stored Atlassian sign-in for Confluence). Use only when the user
+    asks to sign out of Confluence, or to sign out or switch accounts in general.
+parameters: []
+output_schema:
+  type: object
+  properties:
+    signed_out:
+      type: boolean
+      description: True when a stored sign-in was removed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_sign_out.py

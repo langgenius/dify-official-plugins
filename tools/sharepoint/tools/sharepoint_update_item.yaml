@@ -1,0 +1,86 @@
+identity:
+  name: sharepoint_update_item
+  author: langgenius
+  label:
+    en_US: Update Item
+    zh_Hans: 更新条目
+    ja_JP: アイテムを更新
+description:
+  human:
+    en_US: Change fields of an item
+    zh_Hans: 修改条目的字段
+    ja_JP: アイテムのフィールドを変更します
+  llm: Change fields of a list item; columns left out keep their value.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: list
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: List
+    zh_Hans: 列表
+    ja_JP: リスト
+  human_description:
+    en_US: List name or ID
+    zh_Hans: 列表名称或 ID
+    ja_JP: リスト名または ID
+  llm_description: The list's ID or name (from the list lists tool), e.g. Tasks or a GUID.
+- name: item_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Item ID
+    zh_Hans: 条目 ID
+    ja_JP: アイテム ID
+  human_description:
+    en_US: The list item's ID
+    zh_Hans: 列表条目的 ID
+    ja_JP: リスト アイテムの ID
+  llm_description: The item's ID (from the list items tool).
+- name: fields
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Fields
+    zh_Hans: 字段
+    ja_JP: フィールド
+  human_description:
+    en_US: 'JSON object keyed by column name, e.g. {"Title": "Q3 report", "Status": "Draft"}'
+    zh_Hans: '以列名为键的 JSON 对象，例如 {"Title": "Q3 report", "Status": "Draft"}'
+    ja_JP: '列名をキーにした JSON オブジェクト（例: {"Title": "Q3 report", "Status": "Draft"}）'
+  llm_description: 'JSON object of column internal names to values, e.g. {"Title": "Q3 report", "Status": "Draft"}. Get the
+    column names with the get list tool.'
+output_schema:
+  type: object
+  properties:
+    item_id:
+      type: string
+      description: Item ID
+    updated_fields:
+      type: array
+      description: Columns changed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_update_item.py

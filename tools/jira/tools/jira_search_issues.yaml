@@ -1,0 +1,91 @@
+identity:
+  name: jira_search_issues
+  author: langgenius
+  label:
+    en_US: Search Issues (JQL)
+    zh_Hans: 搜索问题（JQL）
+    ja_JP: 課題を検索（JQL）
+description:
+  human:
+    en_US: Find issues with a JQL query
+    zh_Hans: 用 JQL 查询问题
+    ja_JP: JQL で課題を検索します
+  llm: Search Jira issues with JQL, e.g. 'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC' or 'project
+    = PROJ AND text ~ "login"'. Returns key, summary, status, assignee, priority, dates, description and a link.
+parameters:
+- name: jql
+  type: string
+  required: false
+  label:
+    en_US: JQL
+    zh_Hans: JQL
+    ja_JP: JQL
+  human_description:
+    en_US: Jira Query Language; empty = issues updated in the last 30 days
+    zh_Hans: Jira 查询语言；留空则返回最近 30 天更新的问题
+    ja_JP: Jira クエリ言語。空の場合は過去 30 日に更新された課題
+  llm_description: The JQL query. currentUser() means the signed-in user. Empty returns issues updated in the last 30 days.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 50, max 500)
+    zh_Hans: 最多返回条数（默认 50，最多 500）
+    ja_JP: 返す件数の上限（既定 50、最大 500）
+  llm_description: Maximum number of results to return (default 50, max 500).
+  form: llm
+  default: 50
+output_schema:
+  type: object
+  properties:
+    issues:
+      type: array
+      description: Matching issues
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          key:
+            type: string
+          summary:
+            type: string
+          status:
+            type: string
+          issue_type:
+            type: string
+          priority:
+            type: string
+          assignee:
+            type: string
+          reporter:
+            type: string
+          project:
+            type: string
+          created:
+            type: string
+          updated:
+            type: string
+          due_date:
+            type: string
+          description:
+            type: string
+          url:
+            type: string
+    count:
+      type: integer
+      description: Number of issues returned
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_search_issues.py

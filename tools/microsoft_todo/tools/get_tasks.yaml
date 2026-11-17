@@ -3,15 +3,62 @@ identity:
   author: langgenius
   label:
     en_US: Get Tasks
-    zh_CN: 获取任务
+    zh_Hans: 获取任务
     ja_JP: タスクを取得
 description:
   human:
     en_US: Get all tasks from the Microsoft To Do list
-    zh_CN: 获取 Microsoft To Do 列表中的所有任务
+    zh_Hans: 获取 Microsoft To Do 列表中的所有任务
     ja_JP: Microsoft To Do リストのすべてのタスクを取得
-  llm: Get all tasks from the Microsoft To Do list
-parameters: []
+  llm: Get the user's Microsoft To Do task lists (despite the name, it returns lists; use get_tasks_by_list_id or get_all_tasks
+    for tasks).
+parameters:
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    lists:
+      type: array
+      description: Task lists
+      items:
+        type: object
+        properties:
+          list_id:
+            type: string
+            description: List ID
+          display_name:
+            type: string
+            description: List name
+          is_owner:
+            type: boolean
+            description: True when the user owns the list
+          is_shared:
+            type: boolean
+            description: True when the list is shared
+          link:
+            type: string
+            description: Link to the list
+    count:
+      type: integer
+      description: Number of lists
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/get_tasks.py

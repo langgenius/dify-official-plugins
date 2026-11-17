@@ -1,0 +1,57 @@
+identity:
+  name: google_docs_create_document
+  author: langgenius
+  label:
+    en_US: Create Document
+    zh_Hans: 创建文档
+    ja_JP: ドキュメントを作成
+description:
+  human:
+    en_US: A new document, optionally with content
+    zh_Hans: 新建文档（可带内容）
+    ja_JP: 新しいドキュメント（内容付き可）
+  llm: Create a Google Doc, optionally with Markdown content.
+parameters:
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: Document title
+    zh_Hans: 文档标题
+    ja_JP: ドキュメントのタイトル
+  llm_description: The document title.
+  form: llm
+- name: content
+  type: string
+  required: false
+  label:
+    en_US: Content
+    zh_Hans: 内容
+    ja_JP: 内容
+  human_description:
+    en_US: 'Markdown: # headings, - or 1. lists, **bold**, *italic*, [links](url)'
+    zh_Hans: Markdown：# 标题、- 或 1. 列表、**粗体**、*斜体*、[链接](url)
+    ja_JP: 'Markdown: # 見出し、- や 1. のリスト、**太字**、*斜体*、[リンク](url)'
+  llm_description: 'Content in Markdown: # / ## / ### headings, - or * bullet lists, 1. numbered lists, **bold**, *italic*,
+    [text](https://link). Other text becomes normal paragraphs.'
+  form: llm
+output_schema:
+  type: object
+  properties:
+    document_id:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_docs_create_document.py

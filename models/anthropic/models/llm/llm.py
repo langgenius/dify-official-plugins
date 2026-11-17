@@ -64,6 +64,13 @@ from PIL import Image
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
 
 
+def _debug_logging_enabled() -> bool:
+    """Whether DEBUG-level logging is active, guarding expensive payload
+    serialization (request/response/tool payloads are large and contain user
+    content that should not be serialized at INFO)."""
+    return logging.getLogger().isEnabledFor(logging.DEBUG)
+
+
 class PromptCachingHandler:
     CACHE_CONTROL_TYPE = "ephemeral"
 
@@ -595,6 +602,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "schema": json_schema,
             }
 
+        # API version 2026-10-21 (the Anthropic SDK 2.x default) rejects
+        # temperature/top_p/top_k with a 400 even at their default values,
+        # while older models still honor them under 2023-06-01. The migration
+        # guide's own remedy is to keep such requests on 2023-06-01. When
+        # sampling parameters are forwarded for a model that accepts them,
+        # pin the request to 2023-06-01 so explicitly configured sampling
+        # keeps working after the SDK 2.x upgrade. output_config (structured
+        # output / effort / task budget) requires the newer API version, so
+        # when both apply the sampling parameters are dropped with a warning
+        # instead of breaking the whole request.
+        if sampling_parameters:
+            if "output_config" not in extra_model_kwargs:
+                extra_headers["anthropic-version"] = "2023-06-01"
+            else:
+                logging.warning(
+                    "Model %s: dropping sampling parameters %s; the request "
+                    "carries output_config, which requires API version "
+                    "2026-10-21 (rejecting temperature/top_p/top_k).",
+                    model,
+                    sorted(sampling_parameters),
+                )
+                extra_body = model_parameters.pop("extra_body", {})
+                for key in sampling_parameters:
+                    extra_body.pop(key, None)
+                if extra_body:
+                    model_parameters["extra_body"] = extra_body
+
         # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
         if context_1m and not uses_adaptive_thinking:
@@ -682,7 +716,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Sort by priority (lower number = higher priority), then by length descending
             blocks.sort(key=lambda x: (x[0], x[1]))
 
-            logging.info(f"Blocks: {blocks}")
+            if _debug_logging_enabled():
+                logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
             for idx, (_, _, block_dict) in enumerate(blocks):
@@ -719,18 +754,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if model == "claude-3-5-sonnet-20240620":
             if model_parameters.get("max_tokens", 0) > 4096:
                 extra_headers["anthropic-beta"] = "max-tokens-3-5-sonnet-2024-07-15"
-        if any(
-            (
-                isinstance(content, DocumentPromptMessageContent)
-                for prompt_message in prompt_messages
-                if isinstance(prompt_message.content, list)
-                for content in prompt_message.content
-            )
-        ):
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
-            else:
-                extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+        # Note: PDF (document) support is GA and no longer requires the
+        # `pdfs-2024-09-25` beta header
+        # (https://platform.claude.com/docs/en/build-with-claude/pdf-support).
 
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -742,15 +768,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             ]
             
             # Log the transformed tools to verify cache_control is added
-            logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+            if _debug_logging_enabled():
+                logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
             
             request_payload["tools"] = extra_model_kwargs["tools"]
 
             # Now prune cache blocks to respect Anthropic limit
             _prune_cache_blocks(request_payload)
 
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if _debug_logging_enabled():
+                loggable_request = _sanitize_for_logging(request_payload)
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -763,8 +791,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         else:
             _prune_cache_blocks(request_payload)
 
-            loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            if _debug_logging_enabled():
+                loggable_request = _sanitize_for_logging(request_payload)
+                logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -779,7 +808,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        logging.info(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+        if _debug_logging_enabled():
+            logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -1195,7 +1225,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_creation_1h_input_tokens = 0
         
         for chunk in response:
-            logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+            if _debug_logging_enabled():
+                logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
@@ -1411,12 +1442,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
+        default_headers: dict[str, str] = {}
         api_url = credentials.get("anthropic_api_url")
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
             # Spoof the User-Agent if using a third-party proxy (non-official API)
             if "api.anthropic.com" not in api_url:
-                credentials_kwargs["default_headers"] = {"User-Agent": "python-httpx"}
+                default_headers["User-Agent"] = "python-httpx"
+        # Identity-linked and service-account API keys are bound to a workspace
+        # and are rejected with a 400 unless the request names that workspace.
+        workspace_id = str(credentials.get("anthropic_workspace_id") or "").strip()
+        if workspace_id:
+            default_headers["anthropic-workspace-id"] = workspace_id
+        if default_headers:
+            credentials_kwargs["default_headers"] = default_headers
 
         return credentials_kwargs
 

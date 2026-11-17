@@ -10,7 +10,9 @@ from dify_plugin.entities.oauth import ToolOAuthCredentials
 
 from tools.graph_client import (
     GraphAuthError,
+    acquire_app_token,
     cloud_hosts,
+    is_per_user,
     is_service_principal,
     resolve_graph_context,
 )
@@ -22,6 +24,9 @@ class OutlookProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate credentials by calling Microsoft Graph API."""
+        if is_per_user(credentials):
+            self._validate_per_user(credentials)
+            return
         if is_service_principal(credentials):
             self._validate_service_principal(credentials)
             return
@@ -38,6 +43,43 @@ class OutlookProvider(ToolProvider):
 
         if response.status_code != 200:
             raise ToolProviderCredentialValidationError("Invalid or expired access token.")
+
+    def _validate_per_user(self, credentials: Mapping[str, Any]) -> None:
+        """
+        There is no user to sign in as yet, so check what can be checked: the fields, and
+        (for a single-tenant app) that the client ID and secret are accepted by Entra ID.
+        """
+        if not (credentials.get("client_id") or "").strip() or not (credentials.get("client_secret") or "").strip():
+            raise ToolProviderCredentialValidationError("Client ID and Client Secret are required.")
+        redirect_uri = (credentials.get("redirect_uri") or "").strip()
+        parsed = urllib.parse.urlparse(redirect_uri)
+        if parsed.scheme not in ("https", "http") or not parsed.netloc:
+            raise ToolProviderCredentialValidationError(
+                "Each user signs in needs the Sign-in Callback URL: create the plugin's 'Outlook sign-in' "
+                "endpoint and paste its /outlook/callback URL."
+            )
+        if (parsed.hostname or "").lower() in ("localhost", "127.0.0.1", "::1"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL points to localhost, so users' browsers cannot reach it. Replace "
+                "'localhost' with your Dify domain (or set ENDPOINT_URL_TEMPLATE so Dify shows the right URL)."
+            )
+        if not parsed.path.endswith("/outlook/callback"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL should be the 'Outlook sign-in' endpoint URL ending in /outlook/callback."
+            )
+        try:
+            cloud_hosts(credentials.get("cloud"))
+        except GraphAuthError as e:
+            raise ToolProviderCredentialValidationError(str(e)) from e
+
+        tenant_id = (credentials.get("tenant_id") or "").strip()
+        if tenant_id.lower() in ("", "common", "organizations", "consumers"):
+            return
+        try:
+            # Proves the client ID and secret; Entra issues the token even without application permissions.
+            acquire_app_token(tenant_id, credentials["client_id"], credentials["client_secret"], credentials.get("cloud"))
+        except GraphAuthError as e:
+            raise ToolProviderCredentialValidationError(str(e).replace("Service Principal sign-in", "App sign-in")) from e
 
     def _validate_service_principal(self, credentials: Mapping[str, Any]) -> None:
         """

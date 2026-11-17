@@ -1,0 +1,62 @@
+identity:
+  name: gmail_get_thread
+  author: langgenius
+  label:
+    en_US: Get Conversation
+    zh_Hans: 获取会话
+    ja_JP: スレッドを取得
+description:
+  human:
+    en_US: Every message of a conversation
+    zh_Hans: 会话中的所有邮件
+    ja_JP: スレッド内のすべてのメール
+  llm: 'Get a whole Gmail conversation: every message with sender, date and text.'
+parameters:
+- name: thread_id
+  type: string
+  required: true
+  label:
+    en_US: Thread ID
+    zh_Hans: 会话 ID
+    ja_JP: スレッド ID
+  human_description:
+    en_US: From search_messages or get_message
+    zh_Hans: 可从搜索或获取邮件得到
+    ja_JP: メール検索・取得から
+  llm_description: The thread (conversation) ID, from search_messages or get_message.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    messages:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          thread_id:
+            type: string
+          from:
+            type: string
+          to:
+            type: string
+          subject:
+            type: string
+          date:
+            type: string
+          body:
+            type: string
+    count:
+      type: integer
+    subject:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_get_thread.py

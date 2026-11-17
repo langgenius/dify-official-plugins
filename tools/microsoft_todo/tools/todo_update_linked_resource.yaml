@@ -1,0 +1,145 @@
+identity:
+  name: todo_update_linked_resource
+  author: langgenius
+  label:
+    en_US: Update Linked Resource
+    zh_Hans: 更新关联资源
+    ja_JP: リンク リソースを更新
+description:
+  human:
+    en_US: Change a linked resource
+    zh_Hans: 修改关联资源
+    ja_JP: リンク リソースを変更します
+  llm: Change fields of a linked resource; only the fields given change.
+parameters:
+- name: list_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: The ID of the task list
+    zh_Hans: 任务列表的 ID
+    ja_JP: タスク リストの ID
+  llm_description: The ID of the task list (from the get lists tool).
+- name: task_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Task ID
+    zh_Hans: 任务 ID
+    ja_JP: タスク ID
+  human_description:
+    en_US: The ID of the task
+    zh_Hans: 任务的 ID
+    ja_JP: タスクの ID
+  llm_description: The ID of the task (from a get tasks tool).
+- name: linked_resource_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Linked Resource ID
+    zh_Hans: 关联资源 ID
+    ja_JP: リンク リソース ID
+  human_description:
+    en_US: The ID of the linked resource
+    zh_Hans: 关联资源的 ID
+    ja_JP: リンク リソースの ID
+  llm_description: The ID of the linked resource (from the list linked resources tool).
+- name: application_name
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Application Name
+    zh_Hans: 应用名称
+    ja_JP: アプリ名
+  human_description:
+    en_US: The app the item is in, e.g. Outlook or Jira
+    zh_Hans: 条目所在的应用，例如 Outlook 或 Jira
+    ja_JP: '項目があるアプリ（例: Outlook、Jira）'
+  llm_description: Name of the app the item is in, e.g. Outlook or Jira.
+- name: display_name
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: Title of the linked item
+    zh_Hans: 关联条目的标题
+    ja_JP: リンク先項目のタイトル
+  llm_description: Title of the linked item.
+- name: external_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: External ID
+    zh_Hans: 外部 ID
+    ja_JP: 外部 ID
+  human_description:
+    en_US: The item's ID in that app
+    zh_Hans: 该条目在那个应用中的 ID
+    ja_JP: そのアプリでの項目の ID
+  llm_description: The item's ID in that app.
+- name: web_url
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Web URL
+    zh_Hans: 链接
+    ja_JP: URL
+  human_description:
+    en_US: Link to the item
+    zh_Hans: 条目的链接
+    ja_JP: 項目へのリンク
+  llm_description: Link to the item (https://...).
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    linked_resource_id:
+      type: string
+      description: Linked resource ID
+    display_name:
+      type: string
+      description: Title
+    application_name:
+      type: string
+      description: App the item is in
+    external_id:
+      type: string
+      description: The item's ID in that app
+    web_url:
+      type: string
+      description: Link to the item
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/todo_update_linked_resource.py

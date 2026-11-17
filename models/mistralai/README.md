@@ -1,77 +1,73 @@
-# Overview
-Mistral AI provides a cutting-edge platform for developing and deploying state-of-the-art generative AI models. It supports developers and businesses by offering customizable AI solutions that can be fine-tuned to meet specific needs.
+# MistralAI
 
-## Available Models
+Configure your [Mistral API key](https://console.mistral.ai/api-keys/) in
+Settings → Model Provider after installing the plugin.
 
-### Premier Models
-- **Magistral Medium** - Advanced model with 40k context
-- **Mistral Medium** - Frontier-class multimodal model with 128k context
-- **Mistral Large** - Top-tier model for high-complexity tasks
-- **Pixtral Large** - Vision-capable large model with frontier capabilities
-- **Codestral** - Cutting-edge language model for coding (256k context)
-- **Mistral Saba** - Specialized model for Middle East and South Asia languages
-- **Ministral 8B/3B** - Powerful edge models for on-device use cases
+## Current chat models
 
-### Free/Open Source Models
-- **Magistral Small** - Small model with transparent multilingual capabilities
-- **Mistral Small** - SOTA multimodal multilingual model with vision capabilities (Apache 2.0)
-- **Devstral Small** - Best open-source model for coding agents
-- **Pixtral 12B** - Vision-capable small model
-- **Mistral Nemo** - Best multilingual open source model
-- **Codestral Mamba** - First mamba 2 open source model
+Catalog reviewed on 2026-10-30 against the [official model cards](https://docs.mistral.ai/models).
+Prices below are USD per million input/output tokens.
 
-### Research Models
-- **Mathstral** - First math open source model (Apache 2.0)
+| Model | Explicit API ID | Context | Vision | Input / output |
+| --- | --- | --- | --- | --- |
+| Medium 3.5 | `mistral-medium-3-5` | 256k | Yes | 1.5 / 7.5 |
+| Large 3 | `mistral-large-2512` | 256k | Yes | 0.5 / 1.5 |
+| Large 4 (Public Preview) | `mistral-large-4-0` | 1M | Yes | 0.7 / 2.1 |
+| Small 4 | `mistral-small-2603` | 256k | Yes | 0.15 / 0.6 |
+| Ministral 3 3B | `ministral-3b-2512` | 256k | Yes | 0.1 / 0.1 |
+| Ministral 3 8B | `ministral-8b-2512` | 256k | Yes | 0.15 / 0.15 |
+| Ministral 3 14B | `ministral-14b-2512` | 256k | Yes | 0.2 / 0.2 |
+| Codestral | `codestral-2508` | 128k | No | 0.3 / 0.9 |
 
-### Embedding Models
-- **Mistral Embed** - State-of-the-art semantic embeddings for text
-- **Codestral Embed** - Specialized embeddings for code representation
+The corresponding `-latest` aliases are also available. The
+[official alias table](https://docs.mistral.ai/vibe/code/cli/configuration)
+currently maps `mistral-large-latest` to **Large 3**, not the Large 4 preview.
+Large 4 is also available through its `mistral-large-4` major-version alias.
+Aliases can change behavior and pricing upstream; the plugin's capability,
+context and pricing metadata only change with plugin updates. Explicit versions
+remain subject to Mistral's [model lifecycle](https://docs.mistral.ai/inference/model-lifecycle).
 
-### Moderation Models
-- **Mistral Moderation** - Content moderation service for detecting harmful text across multiple policy dimensions
+Mistral Embed, Codestral Embed and the existing moderation integration remain
+available. OCR and audio endpoints are outside this chat catalog update.
 
-### Services Not Supported in Dify
-- **Mistral OCR** - OCR service for extracting text and images from documents (uses `/v1/ocr` endpoint, not compatible with Dify's model framework)
+## Upgrade to 0.0.16
 
-## Model Versions
+Medium/Large and Ministral latest definitions now expose image input. The current
+models above have updated context windows and pricing. The request endpoint and
+API-key configuration are unchanged.
 
-For maximum flexibility, we provide both **Latest** and **Dated** versions of each model:
+The following retired definitions have been removed from both the YAML catalog
+and model ordering. **Before upgrading, migrate applications and workflow nodes
+that reference these IDs.** Saved workflows are not automatically rewritten, and
+old IDs are not silently redirected to a different model.
 
-### 🔄 **Latest Versions** (Recommended)
-- **Format**: `model-name-latest` (e.g., `mistral-large-latest`)
-- **Behavior**: Automatically points to the most recent version
-- **Use Case**: Development, testing, and applications that benefit from automatic updates
-- **Advantage**: Always get the latest improvements and features
+| Removed IDs | Suggested replacement | Official retirement evidence |
+| --- | --- | --- |
+| `mistral-small-2503` | `mistral-small-2603` | [Small 3.1](https://docs.mistral.ai/models/mistral-small-3-1-25-03) |
+| `magistral-medium-2506` | `mistral-medium-3-5` | [Magistral Medium 1.0](https://docs.mistral.ai/models/magistral-medium-1-0-25-06) |
+| `magistral-small-2506` | `mistral-small-2603` | [Magistral Small 1.0](https://docs.mistral.ai/models/magistral-small-1-0-25-06) |
+| `devstral-small-2505` | `mistral-medium-3-5` | [Devstral Small 1.0](https://docs.mistral.ai/models/devstral-small-1-0-25-05) |
+| `mistral-saba-2502`, `mistral-saba-latest` | `mistral-small-2603` | [Saba](https://docs.mistral.ai/models/mistral-saba-25-02) |
+| `codestral-2501` | `codestral-2508` | [Codestral 2501](https://docs.mistral.ai/models/codestral-25-01) |
+| `open-codestral-mamba` | `codestral-2508` | [Codestral Mamba](https://docs.mistral.ai/models/codestral-mamba-7b-0-1) |
+| `mathstral` | `mistral-small-2603` | [Mathstral](https://docs.mistral.ai/models/mathstral-7b-0-1) |
 
-### 📅 **Dated Versions** (Stable)
-- **Format**: `model-name-YYMM` (e.g., `mistral-large-2411`)
-- **Behavior**: Fixed to a specific model version
-- **Use Case**: Production environments requiring reproducible results
-- **Advantage**: Guaranteed consistency and predictable behavior
+Replacement models can differ in pricing, output and reasoning parameters;
+review node settings and test your workflows after migration.
 
-### 💡 **Which Version to Choose?**
-- **Use Latest** for: Development, experimentation, staying current with improvements
-- **Use Dated** for: Production deployments, research requiring reproducibility, compliance requirements
+### Deprecated definitions retained for compatibility
 
-## Magistral Models
+The current official cards label `mistral-medium-2505`, `mistral-large-2411`,
+`pixtral-large-2411`, the old Ministral 2410 models, Pixtral 12B and Nemo as
+**Deprecated**, rather than **Retired**. They remain in this release, after the
+current models in the picker. This is not a guarantee of API availability for
+an individual account. Prefer current versions for new workflows; remove these
+entries when retirement is confirmed by Mistral.
 
-**Magistral** models (Magistral Medium and Magistral Small) are designed for complex problem-solving and feature seamless integration with Dify.
+Existing Magistral latest and Devstral latest definitions also remain for
+compatibility. No new deprecated model versions are introduced. The legacy
+Magistral `reasoning_mode` option continues to map to `prompt_mode`; this option
+is not copied to the new Medium/Small models.
 
-### 🎯 **Model Configuration**
-
-Magistral models are designed for step-by-step problem solving and analytical tasks.
-
-### 🔧 **Reasoning Mode Parameter**
-
-Magistral models support a **`reasoning_mode`** boolean parameter that controls how the model processes requests:
-
-- **`reasoning_mode: true`** (Default): Enables reasoning mode with system prompt for step-by-step problem solving
-- **`reasoning_mode: false`**: Disables reasoning mode for standard chat behavior without system prompt
-
-This parameter is automatically transformed to the Mistral AI API `prompt_mode` parameter (`"reasoning"` or `null`) based on your selection.
-
-
-# Configure
-After installation, you need to get API keys from [MistralAI](https://console.mistral.ai/api-keys/) and setup in Settings -> Model Provider.
-
-![](_assets/mistralai.PNG)
+This plugin currently supports predefined models only. This release does not
+add custom model configuration or change the inference implementation.

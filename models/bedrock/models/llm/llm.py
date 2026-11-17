@@ -1166,6 +1166,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Add system messages
         for message in system_messages:
             message.content = message.content.strip()
+            # Bedrock Converse rejects system blocks whose text is shorter than
+            # one character, so skip system messages that are empty after
+            # stripping (e.g. an empty drive/skill prefix prompt).
+            if not message.content:
+                continue
             system.append({"text": message.content})
 
             # Add cache point to system if it's not empty and caching is supported for system field
@@ -1213,11 +1218,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         configs = []
         if tools:
             for tool in tools:
+                # Bedrock Converse rejects toolSpec.description shorter than
+                # one character, so fall back to the tool name when the
+                # description is missing or empty (e.g. Dify's shell_* tools).
+                description = (tool.description or "").strip() or tool.name
                 configs.append(
                     {
                         "toolSpec": {
                             "name": tool.name,
-                            "description": tool.description,
+                            "description": description,
                             "inputSchema": {"json": tool.parameters},
                         }
                     }

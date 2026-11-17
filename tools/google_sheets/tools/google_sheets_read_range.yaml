@@ -1,0 +1,101 @@
+identity:
+  name: google_sheets_read_range
+  author: langgenius
+  label:
+    en_US: Read Range
+    zh_Hans: 读取区域
+    ja_JP: 範囲を読む
+description:
+  human:
+    en_US: Raw cell values of a range
+    zh_Hans: 区域的原始单元格值
+    ja_JP: 範囲のセルの値
+  llm: Read the raw cell values of an A1 range (rows of values), e.g. for sheets without a header row.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: range
+  type: string
+  required: false
+  label:
+    en_US: Range
+    zh_Hans: 区域
+    ja_JP: 範囲
+  human_description:
+    en_US: A1 range, e.g. A1:C10 or Sheet1!A:B
+    zh_Hans: A1 区域，如 A1:C10 或 Sheet1!A:B
+    ja_JP: 'A1 範囲（例: A1:C10、Sheet1!A:B）'
+  llm_description: 'A1 range such as A1:C10, or with a sheet: ''Sheet 1''!A:B. Empty means the whole sheet.'
+  form: llm
+- name: value_render
+  type: select
+  required: false
+  label:
+    en_US: Values As
+    zh_Hans: 值格式
+    ja_JP: 値の形式
+  human_description:
+    en_US: Formatted text, raw values or formulas
+    zh_Hans: 格式化文本、原始值或公式
+    ja_JP: 表示形式・生の値・数式
+  llm_description: FORMATTED_VALUE (default, as displayed), UNFORMATTED_VALUE (raw numbers) or FORMULA.
+  form: form
+  options:
+  - value: FORMATTED_VALUE
+    label:
+      en_US: As displayed
+      zh_Hans: 按显示
+      ja_JP: 表示どおり
+  - value: UNFORMATTED_VALUE
+    label:
+      en_US: Raw values
+      zh_Hans: 原始值
+      ja_JP: 生の値
+  - value: FORMULA
+    label:
+      en_US: Formulas
+      zh_Hans: 公式
+      ja_JP: 数式
+  default: FORMATTED_VALUE
+output_schema:
+  type: object
+  properties:
+    values:
+      type: array
+      items:
+        type: array
+    rows:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_read_range.py

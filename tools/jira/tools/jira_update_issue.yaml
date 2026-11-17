@@ -1,0 +1,170 @@
+identity:
+  name: jira_update_issue
+  author: langgenius
+  label:
+    en_US: Update Issue
+    zh_Hans: 更新问题
+    ja_JP: 課題を更新
+description:
+  human:
+    en_US: Change an issue's fields
+    zh_Hans: 修改问题的字段
+    ja_JP: 課題のフィールドを変更します
+  llm: 'Update fields of an existing Jira issue: summary, description, assignee, priority, labels, due date, parent or custom
+    fields. Only the given fields change. To change the status use the transition tool instead.'
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: summary
+  type: string
+  required: false
+  label:
+    en_US: Summary
+    zh_Hans: 摘要
+    ja_JP: 要約
+  human_description:
+    en_US: New summary
+    zh_Hans: 新的摘要
+    ja_JP: 新しい要約
+  llm_description: New summary (title).
+  form: llm
+- name: description
+  type: string
+  required: false
+  label:
+    en_US: Description
+    zh_Hans: 描述
+    ja_JP: 説明
+  human_description:
+    en_US: New description (Markdown)
+    zh_Hans: 新的描述（Markdown）
+    ja_JP: 新しい説明（Markdown）
+  llm_description: New description; Markdown is supported.
+  form: llm
+- name: assignee
+  type: string
+  required: false
+  label:
+    en_US: Assignee
+    zh_Hans: 经办人
+    ja_JP: 担当者
+  human_description:
+    en_US: Account ID (Cloud) or username (Server); 'none' unassigns
+    zh_Hans: 账号 ID（Cloud）或用户名（Server）；填 none 取消分配
+    ja_JP: アカウント ID（Cloud）またはユーザー名（Server）。none で割り当て解除
+  llm_description: Assignee's account ID on Jira Cloud (find it with the search users tool) or username on Jira Server; 'none'
+    unassigns.
+  form: llm
+- name: priority
+  type: string
+  required: false
+  label:
+    en_US: Priority
+    zh_Hans: 优先级
+    ja_JP: 優先度
+  human_description:
+    en_US: Priority name, e.g. High
+    zh_Hans: 优先级名称，如 High
+    ja_JP: '優先度の名前（例: High）'
+  llm_description: Priority name such as Highest, High, Medium, Low.
+  form: llm
+- name: labels
+  type: string
+  required: false
+  label:
+    en_US: Labels
+    zh_Hans: 标签
+    ja_JP: ラベル
+  human_description:
+    en_US: Comma-separated labels (replaces the existing ones); 'none' clears them
+    zh_Hans: 逗号分隔的标签（替换现有标签）；填 none 清空
+    ja_JP: カンマ区切りのラベル（既存のラベルを置き換え）。none で全削除
+  llm_description: Comma-separated labels; they replace the issue's labels. 'none' removes all labels.
+  form: llm
+- name: due_date
+  type: string
+  required: false
+  label:
+    en_US: Due Date
+    zh_Hans: 截止日期
+    ja_JP: 期限
+  human_description:
+    en_US: YYYY-MM-DD; 'none' clears it
+    zh_Hans: YYYY-MM-DD；填 none 清空
+    ja_JP: YYYY-MM-DD。none で削除
+  llm_description: Due date as YYYY-MM-DD, or 'none' to clear it.
+  form: llm
+- name: parent_key
+  type: string
+  required: false
+  label:
+    en_US: Parent Issue Key
+    zh_Hans: 父问题 Key
+    ja_JP: 親課題キー
+  human_description:
+    en_US: Parent issue (for a sub-task, or an epic in team-managed projects)
+    zh_Hans: 父问题（子任务的父问题，或团队管理项目中的史诗）
+    ja_JP: 親課題（サブタスクの親、またはチーム管理対象プロジェクトのエピック）
+  llm_description: Key of the parent issue, for a sub-task or to put the issue under an epic.
+  form: llm
+- name: custom_fields
+  type: string
+  required: false
+  label:
+    en_US: Custom Fields (JSON)
+    zh_Hans: 自定义字段（JSON）
+    ja_JP: カスタム フィールド（JSON）
+  human_description:
+    en_US: 'JSON object of other fields, e.g. {"customfield_10016": 3}'
+    zh_Hans: '其他字段的 JSON 对象，如 {"customfield_10016": 3}'
+    ja_JP: 'その他のフィールドの JSON オブジェクト（例: {"customfield_10016": 3}）'
+  llm_description: 'Any other fields as a JSON object of field ID to value, e.g. {"customfield_10016": 3}.'
+  form: llm
+- name: notify_users
+  type: boolean
+  required: false
+  label:
+    en_US: Notify Watchers
+    zh_Hans: 通知关注者
+    ja_JP: ウォッチャーに通知
+  human_description:
+    en_US: Send Jira's update email (turning it off needs admin rights)
+    zh_Hans: 发送 Jira 更新邮件（关闭需要管理员权限）
+    ja_JP: Jira の更新メールを送信（オフにするには管理者権限が必要）
+  llm_description: Whether Jira emails watchers about the change.
+  form: form
+  default: true
+output_schema:
+  type: object
+  properties:
+    issue_key:
+      type: string
+      description: The updated issue
+    updated_fields:
+      type: array
+      description: Fields that were changed
+      items:
+        type: string
+    url:
+      type: string
+      description: Link to the issue
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_update_issue.py

@@ -3,6 +3,7 @@ label:
   en_US: qwen3.6-flash
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call

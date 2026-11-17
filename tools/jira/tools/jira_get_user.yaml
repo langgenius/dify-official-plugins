@@ -1,0 +1,48 @@
+identity:
+  name: jira_get_user
+  author: langgenius
+  label:
+    en_US: Get User
+    zh_Hans: 获取用户
+    ja_JP: ユーザーを取得
+description:
+  human:
+    en_US: A user's details; empty = the signed-in account
+    zh_Hans: 获取用户详情；留空则为当前登录账号
+    ja_JP: ユーザーの詳細。空の場合はサインイン中のアカウント
+  llm: Get a Jira user's details by account ID. Leave account_id empty to get the signed-in user (e.g. to assign to 'me').
+parameters:
+- name: account_id
+  type: string
+  required: false
+  label:
+    en_US: Account ID
+    zh_Hans: 账号 ID
+    ja_JP: アカウント ID
+  human_description:
+    en_US: Account ID (Cloud) or username (Server); empty = me
+    zh_Hans: 账号 ID（Cloud）或用户名（Server）；留空则为自己
+    ja_JP: アカウント ID（Cloud）またはユーザー名（Server）。空の場合は自分
+  llm_description: The user's account ID; leave empty for the signed-in user.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    account_id:
+      type: string
+      description: Account ID
+    display_name:
+      type: string
+      description: Display name
+    email:
+      type: string
+      description: Email, when the user's privacy settings show it
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_get_user.py

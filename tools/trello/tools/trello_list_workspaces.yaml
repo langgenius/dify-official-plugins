@@ -1,0 +1,32 @@
+identity:
+  name: trello_list_workspaces
+  author: langgenius
+  label:
+    en_US: List Workspaces
+    zh_Hans: 列出 Workspace
+    ja_JP: ワークスペース一覧
+description:
+  human:
+    en_US: The Workspaces the account belongs to
+    zh_Hans: 账号所属的 Workspace
+    ja_JP: アカウントが所属するワークスペース
+  llm: List the Trello Workspaces of the signed-in account (their IDs are where new boards go).
+parameters: []
+output_schema:
+  type: object
+  properties:
+    workspaces:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_list_workspaces.py

@@ -4,6 +4,7 @@ label:
   en_US: Claude Sonnet 5
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call

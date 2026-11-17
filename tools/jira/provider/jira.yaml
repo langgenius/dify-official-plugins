@@ -4,57 +4,259 @@ identity:
   label:
     en_US: Jira
     zh_Hans: Jira
+    ja_JP: Jira
     pt_BR: Jira
   description:
     en_US: Connect to Jira to manage issues and projects.
     zh_Hans: 连接到 Jira 以管理问题和项目。
+    ja_JP: Jira に接続して課題とプロジェクトを管理します。
     pt_BR: Conecte-se ao Jira para gerenciar problemas e projetos.
   icon: icon.svg
 credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: token
+    label:
+      en_US: Mode
+      zh_Hans: 模式
+      ja_JP: モード
+    options:
+      - value: token
+        label:
+          en_US: API token / personal access token
+          zh_Hans: API 令牌 / 个人访问令牌
+          ja_JP: API トークン / 個人用アクセス トークン
+      - value: per_user
+        label:
+          en_US: Each user signs in (own Atlassian account, for chat agents)
+          zh_Hans: 每个用户自己登录（各自的 Atlassian 账号，适用于对话 Agent）
+          ja_JP: ユーザーごとにサインイン（本人の Atlassian アカウント、チャット エージェント向け）
+    help:
+      en_US: 'API token: everybody uses the account of the token below (Jira URL, Token Type, Access Token). Each user signs
+        in (Jira Cloud): the first time a chat user needs Jira, the tool returns an Atlassian sign-in link; after signing in,
+        the tools act as that user. Needs an Atlassian OAuth 2.0 (3LO) app (Client ID, Client Secret) and the Sign-in Callback
+        URL below.'
+      zh_Hans: API 令牌：所有人都使用下方令牌对应的账号（Jira URL、令牌类型、访问令牌）。每个用户自己登录（Jira Cloud）：聊天用户第一次用到 Jira 时，工具会返回 Atlassian 登录链接；登录后，工具以该用户的身份操作。需要一个
+        Atlassian OAuth 2.0 (3LO) 应用（客户端 ID、客户端密钥）以及下方的登录回调 URL。
+      ja_JP: 'API トークン: 全員が下のトークンのアカウントを使います（Jira URL、トークンの種類、アクセス トークン）。ユーザーごとにサインイン（Jira Cloud）: チャットのユーザーが初めて Jira
+        を使うとき、ツールが Atlassian のサインイン リンクを返し、サインイン後はそのユーザー本人として操作します。Atlassian OAuth 2.0 (3LO) アプリ（クライアント ID、クライアント シークレット）と下のサインイン
+        コールバック URL が必要です。'
   url:
     type: text-input
-    required: true
+    required: false
     label:
       en_US: Jira URL
       zh_Hans: Jira URL
+      ja_JP: Jira URL
     placeholder:
       en_US: "https://your-domain.atlassian.net"
       zh_Hans: "https://your-domain.atlassian.net"
+      ja_JP: "https://your-domain.atlassian.net"
     help:
-      en_US: The base URL of your Jira Cloud or Server instance.
-      zh_Hans: 您的 Jira Cloud 或 Server 实例的基础 URL。
+      en_US: 'API token mode: the base URL of your Jira Cloud or Server instance. Each user signs in: optional; when people
+        can reach several Atlassian sites, the site to use (otherwise the first Jira site they grant).'
+      zh_Hans: API 令牌模式：您的 Jira Cloud 或 Server 实例的基础 URL。每个用户自己登录：可选；当用户能访问多个 Atlassian 站点时，用它指定使用哪个站点（否则使用其授权的第一个 Jira 站点）。
+      ja_JP: 'API トークン モード: Jira Cloud または Server のベース URL。ユーザーごとのサインイン: 任意。複数の Atlassian サイトにアクセスできる場合に使うサイトを指定します（省略時は許可された最初の Jira
+        サイト）。'
   token_type:
     type: select
-    required: true
+    required: false
     default: Bearer
     label:
       en_US: Token Type
       zh_Hans: 令牌类型
+      ja_JP: トークンの種類
     options:
       - value: Basic
         label:
           en_US: Basic (Jira Cloud)
           zh_Hans: Basic (Jira Cloud)
+          ja_JP: Basic (Jira Cloud)
       - value: Bearer
         label:
           en_US: Bearer (Jira Server / Data Center)
           zh_Hans: Bearer (Jira Server / Data Center)
+          ja_JP: Bearer (Jira Server / Data Center)
     help:
-      en_US: Select the authentication type. Use Basic for Jira Cloud, Bearer for on-premise installations.
-      zh_Hans: 选择认证类型。Jira Cloud 使用 Basic，本地部署使用 Bearer。
+      en_US: API token mode only. Use Basic for Jira Cloud, Bearer for on-premise installations.
+      zh_Hans: 仅 API 令牌模式。Jira Cloud 使用 Basic，本地部署使用 Bearer。
+      ja_JP: API トークン モードのみ。Jira Cloud は Basic、オンプレミスは Bearer を使います。
   token:
     type: secret-input
-    required: true
+    required: false
     label:
       en_US: Access Token
       zh_Hans: 访问令牌
+      ja_JP: アクセス トークン
     placeholder:
       en_US: "e.g., base64(email:token) for Basic, or PAT for Bearer"
       zh_Hans: "例：Basic 使用 base64(email:token)，Bearer 使用 PAT"
+      ja_JP: "例: Basic は base64(email:token)、Bearer は PAT"
     help:
-      en_US: Create an API token from your Atlassian account settings.
-      zh_Hans: 从您的 Atlassian 帐户设置创建 API 令牌。
+      en_US: API token mode only. Create an API token from your Atlassian account settings.
+      zh_Hans: 仅 API 令牌模式。从您的 Atlassian 帐户设置创建 API 令牌。
+      ja_JP: API トークン モードのみ。Atlassian アカウントの設定で API トークンを作成します。
     url: https://id.atlassian.com/manage-profile/security/api-tokens
+  client_id:
+    type: text-input
+    required: false
+    label:
+      en_US: Client ID
+      zh_Hans: 客户端 ID
+      ja_JP: クライアント ID
+    placeholder:
+      en_US: Only for "Each user signs in"
+      zh_Hans: 仅用于“每个用户自己登录”
+      ja_JP: ユーザーごとのサインインのみ
+    help:
+      en_US: The Client ID of your OAuth 2.0 (3LO) app (Atlassian developer console > your app > Settings).
+      zh_Hans: OAuth 2.0 (3LO) 应用的客户端 ID（Atlassian 开发者控制台 > 应用 > Settings）。
+      ja_JP: OAuth 2.0 (3LO) アプリのクライアント ID（Atlassian developer console > アプリ > Settings）。
+    url: https://developer.atlassian.com/console/myapps/
+  client_secret:
+    type: secret-input
+    required: false
+    label:
+      en_US: Client Secret
+      zh_Hans: 客户端密钥
+      ja_JP: クライアント シークレット
+    placeholder:
+      en_US: Only for "Each user signs in"
+      zh_Hans: 仅用于“每个用户自己登录”
+      ja_JP: ユーザーごとのサインインのみ
+    help:
+      en_US: The app's Secret (developer console > your app > Settings). Rotating it signs every user out.
+      zh_Hans: 应用的 Secret（开发者控制台 > 应用 > Settings）。更换后所有用户都需要重新登录。
+      ja_JP: アプリの Secret（developer console > アプリ > Settings）。変更すると全員がサインアウトされます。
+    url: https://developer.atlassian.com/console/myapps/
+  redirect_uri:
+    type: text-input
+    required: false
+    label:
+      en_US: Sign-in Callback URL
+      zh_Hans: 登录回调 URL
+      ja_JP: サインイン コールバック URL
+    placeholder:
+      en_US: Only for "Each user signs in", e.g. https://dify.example.com/e/xxxx/jira/callback
+      zh_Hans: 仅用于“每个用户自己登录”，例如 https://dify.example.com/e/xxxx/jira/callback
+      ja_JP: 'ユーザーごとのサインインのみ。例: https://dify.example.com/e/xxxx/jira/callback'
+    help:
+      en_US: Create this plugin's endpoint (plugin details > Endpoints), paste its /jira/callback URL here, and set the same
+        URL as the app's Callback URL (developer console > your app > Authorization > OAuth 2.0 (3LO)).
+      zh_Hans: 先创建本插件的端点（插件详情 > 端点），把它的 /jira/callback URL 粘贴到这里，并在开发者控制台 > 应用 > Authorization > OAuth 2.0 (3LO) 中把同一个 URL 设为 Callback
+        URL。
+      ja_JP: このプラグインのエンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /jira/callback の URL をここに貼り付け、同じ URL を developer console > アプリ > Authorization
+        > OAuth 2.0 (3LO) の Callback URL に設定してください。
+  scopes:
+    type: text-input
+    required: false
+    label:
+      en_US: Scopes
+      zh_Hans: 权限范围
+      ja_JP: スコープ
+    placeholder:
+      en_US: Leave empty for the default
+      zh_Hans: 留空使用默认值
+      ja_JP: 空欄で既定値
+    help:
+      en_US: 'Only for "Each user signs in". Default: read:jira-work write:jira-work read:jira-user offline_access
+        read:board-scope:jira-software read:project:jira read:issue-details:jira. Every scope requested must be added to
+        the app (developer console > Permissions).'
+      zh_Hans: 仅用于“每个用户自己登录”。默认：read:jira-work write:jira-work read:jira-user offline_access read:board-scope:jira-software
+        read:project:jira read:issue-details:jira。请求的每个权限都必须先添加到应用中（开发者控制台 > Permissions）。
+      ja_JP: 'ユーザーごとのサインインのみ。既定: read:jira-work write:jira-work read:jira-user offline_access read:board-scope:jira-software
+        read:project:jira read:issue-details:jira。要求するスコープはすべてアプリに追加しておく必要があります（developer console > Permissions）。'
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: text-input
+      required: true
+      label:
+        en_US: Client ID
+        zh_Hans: 客户端 ID
+        ja_JP: クライアント ID
+      help:
+        en_US: The Client ID of your OAuth 2.0 (3LO) app (Atlassian developer console > your app > Settings).
+        zh_Hans: OAuth 2.0 (3LO) 应用的客户端 ID（Atlassian 开发者控制台 > 应用 > Settings）。
+        ja_JP: OAuth 2.0 (3LO) アプリのクライアント ID（Atlassian developer console > アプリ > Settings）。
+      url: https://developer.atlassian.com/console/myapps/
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        en_US: Client Secret
+        zh_Hans: 客户端密钥
+        ja_JP: クライアント シークレット
+      help:
+        en_US: The app's Secret (developer console > your app > Settings).
+        zh_Hans: 应用的 Secret（开发者控制台 > 应用 > Settings）。
+        ja_JP: アプリの Secret（developer console > アプリ > Settings）。
+      url: https://developer.atlassian.com/console/myapps/
+    - name: site_url
+      type: text-input
+      required: false
+      label:
+        en_US: Jira Site URL
+        zh_Hans: Jira 站点 URL
+        ja_JP: Jira サイト URL
+      placeholder:
+        en_US: "https://your-domain.atlassian.net (optional)"
+        zh_Hans: "https://your-domain.atlassian.net（可选）"
+        ja_JP: "https://your-domain.atlassian.net（任意）"
+      help:
+        en_US: Only needed when the account can reach several Atlassian sites; otherwise the first Jira site granted is used.
+        zh_Hans: 仅当账号能访问多个 Atlassian 站点时需要；否则使用授权的第一个 Jira 站点。
+        ja_JP: アカウントが複数の Atlassian サイトにアクセスできる場合のみ必要です。省略時は許可された最初の Jira サイトを使います。
+    - name: scopes
+      type: text-input
+      required: false
+      label:
+        en_US: Scopes
+        zh_Hans: 权限范围
+        ja_JP: スコープ
+      placeholder:
+        en_US: Leave empty for the default
+        zh_Hans: 留空使用默认值
+        ja_JP: 空欄で既定値
+      help:
+        en_US: 'Default: read:jira-work write:jira-work read:jira-user offline_access read:board-scope:jira-software
+          read:project:jira read:issue-details:jira. Every scope requested must be added to the app.'
+        zh_Hans: 默认：read:jira-work write:jira-work read:jira-user offline_access read:board-scope:jira-software read:project:jira
+          read:issue-details:jira。请求的每个权限都必须先添加到应用中。
+        ja_JP: '既定: read:jira-work write:jira-work read:jira-user offline_access read:board-scope:jira-software read:project:jira
+          read:issue-details:jira。要求するスコープはすべてアプリに追加しておく必要があります。'
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: Access Token
+        zh_Hans: 访问令牌
+        ja_JP: アクセス トークン
+    - name: refresh_token
+      type: secret-input
+      label:
+        en_US: Refresh Token
+        zh_Hans: 刷新令牌
+        ja_JP: リフレッシュ トークン
+    - name: cloud_id
+      type: text-input
+      label:
+        en_US: Cloud ID
+        zh_Hans: Cloud ID
+        ja_JP: Cloud ID
+    - name: site_url
+      type: text-input
+      label:
+        en_US: Site URL
+        zh_Hans: 站点 URL
+        ja_JP: サイト URL
+    - name: account
+      type: text-input
+      label:
+        en_US: Account
+        zh_Hans: 账号
+        ja_JP: アカウント
 tools:
   - tools/list_project.yaml
   - tools/get_project.yaml
@@ -66,6 +268,24 @@ tools:
   - tools/create_issue.yaml
   - tools/del_issue.yaml
   - tools/list_issue_type.yaml
+  - tools/jira_search_issues.yaml
+  - tools/jira_update_issue.yaml
+  - tools/jira_get_changelog.yaml
+  - tools/jira_list_transitions.yaml
+  - tools/jira_transition_issue.yaml
+  - tools/jira_notify_issue.yaml
+  - tools/jira_add_comment.yaml
+  - tools/jira_list_comments.yaml
+  - tools/jira_get_comment.yaml
+  - tools/jira_update_comment.yaml
+  - tools/jira_delete_comment.yaml
+  - tools/jira_add_attachment.yaml
+  - tools/jira_list_attachments.yaml
+  - tools/jira_get_attachment.yaml
+  - tools/jira_delete_attachment.yaml
+  - tools/jira_search_users.yaml
+  - tools/jira_get_user.yaml
+  - tools/jira_sign_out.yaml
 extra:
   python:
     source: provider/jira.py

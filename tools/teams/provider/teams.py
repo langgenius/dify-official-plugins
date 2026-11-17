@@ -8,7 +8,7 @@ from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.entities.oauth import ToolOAuthCredentials
 
-from tools.graph_client import GraphError, cloud_hosts, resolve_graph_context
+from tools.graph_client import GraphError, cloud_hosts, is_per_user, resolve_graph_context
 
 
 class TeamsProvider(ToolProvider):
@@ -19,6 +19,9 @@ class TeamsProvider(ToolProvider):
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate access token by calling Microsoft Graph API."""
+        if is_per_user(credentials):
+            self._validate_per_user(credentials)
+            return
         if not credentials.get("access_token"):
             raise ToolProviderCredentialValidationError("Microsoft Graph access token is required.")
 
@@ -31,6 +34,60 @@ class TeamsProvider(ToolProvider):
 
         if response.status_code != 200:
             raise ToolProviderCredentialValidationError("Invalid or expired access token.")
+
+    def _validate_per_user(self, credentials: Mapping[str, Any]) -> None:
+        """
+        There is no user to sign in as yet, so check what can be checked: the fields, and
+        (for a single-tenant app) that the client ID and secret are accepted by Entra ID.
+        """
+        client_id = (credentials.get("client_id") or "").strip()
+        client_secret = (credentials.get("client_secret") or "").strip()
+        if not client_id or not client_secret:
+            raise ToolProviderCredentialValidationError("Client ID and Client Secret are required.")
+        parsed = urllib.parse.urlparse((credentials.get("redirect_uri") or "").strip())
+        if parsed.scheme not in ("https", "http") or not parsed.netloc:
+            raise ToolProviderCredentialValidationError(
+                "Each user signs in needs the Sign-in Callback URL: create the plugin's endpoint "
+                "and paste its /teams/callback URL."
+            )
+        if (parsed.hostname or "").lower() in ("localhost", "127.0.0.1", "::1"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL points to localhost, so users' browsers cannot reach it. Replace "
+                "'localhost' with your Dify domain (or set ENDPOINT_URL_TEMPLATE so Dify shows the right URL)."
+            )
+        if not parsed.path.endswith("/teams/callback"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL should be this plugin's endpoint URL ending in /teams/callback."
+            )
+        try:
+            login_host, graph_host = cloud_hosts(credentials.get("cloud"))
+        except GraphError as e:
+            raise ToolProviderCredentialValidationError(str(e)) from e
+
+        tenant_id = (credentials.get("tenant_id") or "").strip()
+        if tenant_id.lower() in ("", "common", "organizations", "consumers"):
+            return
+        # Proves the client ID and secret; Entra issues an app token even without application permissions.
+        # The token is thrown away: Teams only ever acts with users' delegated tokens.
+        try:
+            response = requests.post(
+                f"{login_host}/{tenant_id}/oauth2/v2.0/token",
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "scope": f"{graph_host}/.default",
+                },
+                timeout=30,
+            )
+        except requests.exceptions.RequestException as e:
+            raise ToolProviderCredentialValidationError(f"Could not reach Microsoft Entra ID: {e}") from e
+        if response.status_code != 200:
+            try:
+                detail = response.json().get("error_description") or response.text[:300]
+            except ValueError:
+                detail = response.text[:300]
+            raise ToolProviderCredentialValidationError(f"App sign-in failed: {detail}")
 
     def _oauth_endpoints(self, system_credentials: Mapping[str, Any]) -> tuple[str, str, str]:
         """Return (authorize URL, token URL, Graph host) for the configured tenant and cloud."""

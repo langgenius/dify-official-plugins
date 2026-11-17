@@ -263,7 +263,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "pypng", specifier = ">=0.20220715.0" },
     { name = "qrcode", specifier = ">=8.2" },

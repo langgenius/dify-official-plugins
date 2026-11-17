@@ -255,6 +255,85 @@ parameters:
     llm_description: When set to true, includes API usage information such as token counts and credits used in the response.
     required: false
     type: boolean
+  - name: include_domains_mode
+    form: form
+    type: select
+    default: not_specified
+    required: false
+    label:
+      en_US: Included Domains Mode
+    human_description:
+      en_US: Restrict results to included domains or prefer them while also searching the web. Requires include_domains.
+    llm_description: Use restrict or prefer only with include_domains. Not specified preserves the API default.
+    options:
+      - value: not_specified
+        label:
+          en_US: Not Specified
+      - value: restrict
+        label:
+          en_US: Restrict
+      - value: prefer
+        label:
+          en_US: Prefer
+  - name: language
+    form: llm
+    type: string
+    required: false
+    label:
+      en_US: Language
+    human_description:
+      en_US: Boost results in a language using its code or English name, such as en or english.
+    llm_description: Language code or English name for ranking preference. Pair with filter_by_language for strict filtering.
+  - name: filter_by_language
+    form: form
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: Filter by Language
+    human_description:
+      en_US: Only return results in the chosen language. Requires language.
+    llm_description: Only return results in the chosen language. Requires language.
+  - name: include_published_date
+    form: form
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: Include Published Date
+    human_description:
+      en_US: Include estimated publication dates (beta). Missing dates may be null; news enables this automatically.
+    llm_description: Include estimated publication dates (beta). Missing dates may be null; news enables this automatically.
+  - name: filter_by_published_date
+    form: form
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: Filter by Published Date
+    human_description:
+      en_US: Filter by the selected date window and remove undated results. Also enables publication dates (beta).
+    llm_description: Filter by the selected date window and remove undated results. Also enables publication dates (beta).
+  - name: safe_search
+    form: form
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: Safe Search
+    human_description:
+      en_US: Filter adult or unsafe content. Supported for basic and advanced search only.
+    llm_description: Filter adult or unsafe content. Supported for basic and advanced search only.
+  - name: exact_match
+    form: form
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: Exact Match
+    human_description:
+      en_US: Require exact phrases enclosed in quotation marks in the query.
+    llm_description: Require exact phrases enclosed in quotation marks in the query.
   - name: max_results
     default: 5
     form: form
@@ -273,12 +352,12 @@ parameters:
     default: 3
     form: form
     human_description:
-      en_US: Maximum number of content chunks returned per source (advanced and fast search only).
-      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级和快速搜索）。
+      en_US: Maximum number of content chunks returned per source (basic, advanced and fast search only).
+      zh_Hans: 每个来源返回的内容片段的最大数量（仅限基本、高级和快速搜索）。
     label:
       en_US: Chunks Per Source
       zh_Hans: 每来源片段数
-    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid when search_depth is 'advanced' or 'fast'.
+    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid when search_depth is 'basic', 'advanced' or 'fast'; ignored for 'ultra-fast'.
     max: 3
     min: 1
     required: false

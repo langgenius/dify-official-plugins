@@ -1,0 +1,67 @@
+identity:
+  name: google_sheets_clear_range
+  author: langgenius
+  label:
+    en_US: Clear Range
+    zh_Hans: 清除区域
+    ja_JP: 範囲をクリア
+description:
+  human:
+    en_US: Clear values (keeps formatting)
+    zh_Hans: 清除值（保留格式）
+    ja_JP: 値を消去（書式は保持）
+  llm: Clear the values of an A1 range or a whole sheet (formatting is kept). Only when the user clearly asks for it.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: range
+  type: string
+  required: false
+  label:
+    en_US: Range
+    zh_Hans: 区域
+    ja_JP: 範囲
+  human_description:
+    en_US: A1 range, e.g. A1:C10 or Sheet1!A:B
+    zh_Hans: A1 区域，如 A1:C10 或 Sheet1!A:B
+    ja_JP: 'A1 範囲（例: A1:C10、Sheet1!A:B）'
+  llm_description: 'A1 range such as A1:C10, or with a sheet: ''Sheet 1''!A:B. Empty means the whole sheet.'
+  form: llm
+output_schema:
+  type: object
+  properties:
+    range:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_clear_range.py

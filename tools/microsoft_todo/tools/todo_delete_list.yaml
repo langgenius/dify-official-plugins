@@ -1,0 +1,55 @@
+identity:
+  name: todo_delete_list
+  author: langgenius
+  label:
+    en_US: Delete List
+    zh_Hans: 删除列表
+    ja_JP: リストを削除
+description:
+  human:
+    en_US: Delete a task list and its tasks
+    zh_Hans: 删除任务列表及其中的任务
+    ja_JP: タスク リストとそのタスクを削除します
+  llm: Delete a Microsoft To Do task list and all its tasks. Confirm with the user first.
+parameters:
+- name: list_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: The ID of the task list
+    zh_Hans: 任务列表的 ID
+    ja_JP: タスク リストの ID
+  llm_description: The ID of the task list (from the get lists tool).
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    list_id:
+      type: string
+      description: List ID
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/todo_delete_list.py

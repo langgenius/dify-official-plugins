@@ -12,6 +12,8 @@ from email.message import EmailMessage
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from tools.google_client import connect
+
 
 class AddAttachmentToDraftTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
@@ -37,9 +39,9 @@ class AddAttachmentToDraftTool(Tool):
                 return
 
             # --- Auth ---
-            access_token = self.runtime.credentials.get("access_token")
+            # The OAuth token, or each user's own (for per-user sign-in, the sign-in link is returned instead).
+            access_token = yield from connect(self)
             if not access_token:
-                yield self.create_text_message("Error: No access token available. Please authorize the Gmail integration.")
                 return
 
             headers = {

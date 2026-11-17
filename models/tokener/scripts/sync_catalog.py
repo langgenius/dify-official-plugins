@@ -267,7 +267,7 @@ def _render_model(model: dict[str, Any]) -> str:
         sampling = []
     for name in sampling:
         minimum, maximum = {
-            "temperature": (0, 2),
+            "temperature": (0, profile.get("temperature_max", 2)),
             "top_p": (profile.get("top_p_min", 0.01), 1),
             "presence_penalty": (-2, 2),
             "frequency_penalty": (-2, 2),

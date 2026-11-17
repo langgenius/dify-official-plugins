@@ -22,7 +22,8 @@ class JSONParseTool(Tool):
         if not new_value:
             yield self.create_text_message("Invalid parameter new_value")
         index = tool_parameters.get("index")
-        create_path = tool_parameters.get("create_path", False)
+        create_path_value = tool_parameters.get("create_path", False)
+        create_path = create_path_value is True or create_path_value == "True"
         value_decode = tool_parameters.get("value_decode", False)
         ensure_ascii = tool_parameters.get("ensure_ascii", True)
         try:
@@ -54,6 +55,8 @@ class JSONParseTool(Tool):
                             current[array_name] = []
                         while len(current[array_name]) <= index:
                             current[array_name].append({})
+                        if i == len(path_parts) - 1:
+                            current[array_name][index] = new_value
                         current = current[array_name][index]
                     else:
                         if i == len(path_parts) - 1:
@@ -74,7 +77,7 @@ class JSONParseTool(Tool):
                         else:
                             match.value.insert(int(index), new_value)
                     else:
-                        match.full_path.update(input_data, new_value)
+                        input_data = match.full_path.update(input_data, new_value)
             return json.dumps(input_data, ensure_ascii=ensure_ascii)
         except Exception as e:
             return str(e)

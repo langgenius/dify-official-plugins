@@ -1,0 +1,5 @@
+# Only needed for the "Each user signs in" credential mode: Microsoft redirects users here after they sign in.
+# Its URL (…/outlook/callback) goes into the credential's Sign-in Callback URL and the app registration's redirect URIs.
+settings: []
+endpoints:
+  - endpoints/signin_callback.yaml

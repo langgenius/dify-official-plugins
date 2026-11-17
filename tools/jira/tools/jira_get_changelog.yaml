@@ -1,0 +1,61 @@
+identity:
+  name: jira_get_changelog
+  author: langgenius
+  label:
+    en_US: Get Issue Changelog
+    zh_Hans: 获取问题变更记录
+    ja_JP: 課題の変更履歴を取得
+description:
+  human:
+    en_US: Who changed what on an issue, and when
+    zh_Hans: 查看问题的字段变更历史
+    ja_JP: 課題で誰がいつ何を変更したか
+  llm: 'Get the change history of a Jira issue: each entry has the author, the time and the fields changed (from -> to).'
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 100, max 1000)
+    zh_Hans: 最多返回条数（默认 100，最多 1000）
+    ja_JP: 返す件数の上限（既定 100、最大 1000）
+  llm_description: Maximum number of results to return (default 100, max 1000).
+  form: llm
+  default: 100
+output_schema:
+  type: object
+  properties:
+    histories:
+      type: array
+      description: Change history entries
+      items:
+        type: object
+    count:
+      type: integer
+      description: Number of entries
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_get_changelog.py

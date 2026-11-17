@@ -1,0 +1,54 @@
+identity:
+  name: trello_add_comment
+  author: langgenius
+  label:
+    en_US: Add Comment
+    zh_Hans: 添加评论
+    ja_JP: コメントを追加
+description:
+  human:
+    en_US: Comment on a card
+    zh_Hans: 给卡片添加评论
+    ja_JP: カードにコメントします
+  llm: Add a comment to a Trello card.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: text
+  type: string
+  required: true
+  label:
+    en_US: Text
+    zh_Hans: 内容
+    ja_JP: 本文
+  human_description:
+    en_US: Comment text
+    zh_Hans: 评论内容
+    ja_JP: コメント本文
+  llm_description: The comment text.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    comment_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_add_comment.py

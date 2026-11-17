@@ -1,0 +1,209 @@
+identity:
+  name: todo_update_task
+  author: langgenius
+  label:
+    en_US: Update Task
+    zh_Hans: 更新任务
+    ja_JP: タスクを更新
+description:
+  human:
+    en_US: Change a task's title, notes, due date, reminder, importance or status
+    zh_Hans: 修改任务的标题、备注、截止日期、提醒、重要性或状态
+    ja_JP: タスクのタイトル、メモ、期限、リマインダー、重要度、状態を変更します
+  llm: Change fields of a task; only the fields given change.
+parameters:
+- name: list_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: The ID of the task list
+    zh_Hans: 任务列表的 ID
+    ja_JP: タスク リストの ID
+  llm_description: The ID of the task list (from the get lists tool).
+- name: task_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Task ID
+    zh_Hans: 任务 ID
+    ja_JP: タスク ID
+  human_description:
+    en_US: The ID of the task
+    zh_Hans: 任务的 ID
+    ja_JP: タスクの ID
+  llm_description: The ID of the task (from a get tasks tool).
+- name: title
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Title
+    zh_Hans: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: New title
+    zh_Hans: 新标题
+    ja_JP: 新しいタイトル
+  llm_description: New title.
+- name: body_text
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Notes
+    zh_Hans: 备注
+    ja_JP: メモ
+  human_description:
+    en_US: The task's notes
+    zh_Hans: 任务的备注内容
+    ja_JP: タスクのメモ
+  llm_description: Notes for the task (plain text).
+- name: due_date
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Due Date
+    zh_Hans: 截止日期
+    ja_JP: 期限
+  human_description:
+    en_US: YYYY-MM-DD, or an ISO 8601 date-time
+    zh_Hans: YYYY-MM-DD，或 ISO 8601 日期时间
+    ja_JP: YYYY-MM-DD、または ISO 8601 の日時
+  llm_description: Due date as YYYY-MM-DD, or an ISO 8601 date-time (with an offset, or taken as UTC).
+- name: reminder_datetime
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Reminder
+    zh_Hans: 提醒时间
+    ja_JP: リマインダー
+  human_description:
+    en_US: ISO 8601 date-time for a reminder
+    zh_Hans: 提醒的 ISO 8601 日期时间
+    ja_JP: リマインダーの ISO 8601 日時
+  llm_description: When to remind the user, as an ISO 8601 date-time (with an offset, or taken as UTC).
+- name: importance
+  type: select
+  required: false
+  form: llm
+  label:
+    en_US: Importance
+    zh_Hans: 重要性
+    ja_JP: 重要度
+  human_description:
+    en_US: low, normal or high
+    zh_Hans: 低、普通或高
+    ja_JP: 低・標準・高
+  llm_description: low, normal or high.
+  options:
+  - value: low
+    label:
+      en_US: Low
+      zh_Hans: 低
+      ja_JP: 低
+  - value: normal
+    label:
+      en_US: Normal
+      zh_Hans: 普通
+      ja_JP: 標準
+  - value: high
+    label:
+      en_US: High
+      zh_Hans: 高
+      ja_JP: 高
+- name: status
+  type: select
+  required: false
+  form: llm
+  label:
+    en_US: Status
+    zh_Hans: 状态
+    ja_JP: 状態
+  human_description:
+    en_US: The task's status
+    zh_Hans: 任务状态
+    ja_JP: タスクの状態
+  llm_description: notStarted, inProgress, completed, waitingOnOthers or deferred.
+  options:
+  - value: notStarted
+    label:
+      en_US: Not started
+      zh_Hans: 未开始
+      ja_JP: 未着手
+  - value: inProgress
+    label:
+      en_US: In progress
+      zh_Hans: 进行中
+      ja_JP: 進行中
+  - value: completed
+    label:
+      en_US: Completed
+      zh_Hans: 已完成
+      ja_JP: 完了
+  - value: waitingOnOthers
+    label:
+      en_US: Waiting on others
+      zh_Hans: 等待他人
+      ja_JP: 他の人を待機中
+  - value: deferred
+    label:
+      en_US: Deferred
+      zh_Hans: 已推迟
+      ja_JP: 延期
+- name: task_user
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Task Owner
+    zh_Hans: 任务所有者
+    ja_JP: タスクの所有者
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose tasks to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要操作其任务的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: タスクを操作するユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: Task ID
+    title:
+      type: string
+      description: Title
+    status:
+      type: string
+      description: notStarted, inProgress, completed, waitingOnOthers or deferred
+    body_text:
+      type: string
+      description: Notes
+    due_date:
+      type: string
+      description: Due date and time
+    created_date:
+      type: string
+      description: Created (UTC)
+    importance:
+      type: string
+      description: low, normal or high
+    reminder:
+      type: string
+      description: Reminder date and time, empty if none
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/todo_update_task.py

@@ -117,7 +117,10 @@ def test_service_principal_bad_tenant_is_a_validation_error():
 
 def test_provider_yaml_offers_both_credential_types():
     data = yaml.safe_load((PLUGIN_ROOT / "provider" / "outlook.yaml").read_text(encoding="utf-8"))
-    assert set(data["credentials_for_provider"]) == {"tenant_id", "client_id", "client_secret", "mailbox", "cloud"}
+    assert set(data["credentials_for_provider"]) == {
+        "auth_mode", "tenant_id", "client_id", "client_secret", "mailbox", "redirect_uri", "cloud"
+    }
+    assert data["credentials_for_provider"]["auth_mode"]["default"] == "service_principal"
     client_fields = {f["name"] for f in data["oauth_schema"]["client_schema"]}
     assert {"client_id", "client_secret", "tenant_id", "cloud"} <= client_fields
 
@@ -129,6 +132,8 @@ def test_provider_yaml_offers_both_credential_types():
 
 def test_every_tool_has_a_form_only_mailbox_parameter():
     for path in sorted((PLUGIN_ROOT / "tools").glob("*.yaml")):
+        if path.stem == "outlook_sign_out":
+            continue
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         mailbox = [p for p in data["parameters"] if p["name"] == "mailbox"]
         assert len(mailbox) == 1, path.name
@@ -142,3 +147,37 @@ def test_no_tool_hardcodes_the_global_graph_host():
         if path.name == "graph_client.py":
             continue
         assert "graph.microsoft.com" not in path.read_text(encoding="utf-8"), path.name
+
+
+PER_USER = dict(
+    SP, auth_mode="per_user", mailbox="", redirect_uri="https://dify.example.com/e/hook/outlook/callback"
+)
+
+
+def test_per_user_validation_checks_the_app_secret(monkeypatch):
+    calls = []
+
+    def fake_post(url, data=None, timeout=None):
+        calls.append(data)
+        return FakeResponse({"access_token": "app", "expires_in": 3599})
+
+    monkeypatch.setattr(graph_client.requests, "post", fake_post)
+    OutlookProvider()._validate_credentials(dict(PER_USER))
+    assert calls[0]["grant_type"] == "client_credentials"
+
+
+def test_per_user_validation_skips_the_secret_check_for_multi_tenant_apps(monkeypatch):
+    monkeypatch.setattr(graph_client.requests, "post", lambda *a, **k: pytest.fail("no token request expected"))
+    OutlookProvider()._validate_credentials(dict(PER_USER, tenant_id="organizations"))
+
+
+@pytest.mark.parametrize("redirect_uri", ["", "dify.example.com/outlook/callback", "https://dify.example.com/e/hook/other"])
+def test_per_user_validation_needs_the_callback_url(redirect_uri):
+    with pytest.raises(ToolProviderCredentialValidationError, match="callback"):
+        OutlookProvider()._validate_credentials(dict(PER_USER, redirect_uri=redirect_uri))
+
+
+@pytest.mark.parametrize("host", ["localhost", "127.0.0.1"])
+def test_per_user_validation_rejects_a_localhost_callback(host):
+    with pytest.raises(ToolProviderCredentialValidationError, match="localhost"):
+        OutlookProvider()._validate_credentials(dict(PER_USER, redirect_uri=f"http://{host}/e/hook/outlook/callback"))

@@ -1,0 +1,18 @@
+{
+  "model": "embed-v4",
+  "label": {
+    "en_US": "embed-v4",
+    "zh_Hans": "embed-v4"
+  },
+  "model_type": "text-embedding",
+  "model_properties": {
+    "context_size": 128000,
+    "max_chunks": 32
+  },
+  "pricing": {
+    "input": "0.120000",
+    "unit": "0.000001",
+    "currency": "USD"
+  },
+  "deprecated": false
+}

@@ -31,14 +31,18 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
+    InvokeAuthorizationError,
     InvokeBadRequestError,
-    InvokeConnectionError,
     InvokeError,
+    InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
+from google.genai._gaos.lib.compat_errors import (
+    APIStatusError as InteractionsAPIStatusError,
+)
 
 from .file_parts import GeminiFileMode, GeminiFilePartFactory
 from .model_schema import with_inline_file_parameter
@@ -178,15 +182,30 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         Map model invoke error to unified error
         """
         return {
-            InvokeConnectionError: [errors.APIError, errors.ClientError],
-            InvokeServerUnavailableError: [errors.ServerError],
             InvokeBadRequestError: [
-                errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
                 errors.UnsupportedFunctionError,
                 errors.FunctionInvocationError,
             ],
         }
+
+    def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InteractionsAPIStatusError):
+            error = errors.APIError(error.status_code, error.body)
+        if not isinstance(error, errors.APIError):
+            return super()._transform_invoke_error(error)
+
+        # APIError.__str__ includes the entire response JSON, including details.
+        message = (
+            f"[gemini] {error.message or error.status or 'Gemini API request failed.'}"
+        )
+        if error.code == 429:
+            return InvokeRateLimitError(message)
+        if error.code in (401, 403):
+            return InvokeAuthorizationError(message)
+        if error.code >= 500:
+            return InvokeServerUnavailableError(message)
+        return InvokeBadRequestError(message)
 
     @staticmethod
     def _calculate_tokens_from_usage_metadata(
@@ -1792,7 +1811,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         else "Unknown Interactions API error"
                     )
                     raise InvokeError(f"Interactions API error: {_err_msg}")
-        except InvokeError:
+        except (InvokeError, errors.APIError, InteractionsAPIStatusError):
             raise
         except Exception as exc:
             raise InvokeError(f"Interactions API stream error: {exc}") from exc

@@ -11,7 +11,9 @@ class UpdateTaskTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         app_id = self.runtime.credentials.get("app_id")
         app_secret = self.runtime.credentials.get("app_secret")
-        client = FeishuRequest(app_id, app_secret)
+        client = FeishuRequest(
+            app_id, app_secret, self.runtime.credentials.get("api_base_url")
+        )
         task_guid = tool_parameters.get("task_guid")
         res = client.delete_task(task_guid)
         yield self.create_json_message(res)

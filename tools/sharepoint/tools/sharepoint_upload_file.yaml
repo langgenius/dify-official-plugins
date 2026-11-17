@@ -1,0 +1,105 @@
+identity:
+  name: sharepoint_upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    ja_JP: ファイルをアップロード
+description:
+  human:
+    en_US: Upload a file, or save text as a file
+    zh_Hans: 上传文件，或把文本保存为文件
+    ja_JP: ファイルをアップロード、またはテキストをファイルとして保存します
+  llm: Upload a file, or save text as a file, into a folder of the site's document library. A file with the same name is replaced.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: file
+  type: file
+  required: false
+  form: llm
+  label:
+    en_US: File
+    zh_Hans: 文件
+    ja_JP: ファイル
+  human_description:
+    en_US: The file to upload
+    zh_Hans: 要上传的文件
+    ja_JP: アップロードするファイル
+  llm_description: The file to upload. Leave empty to save file_content as a text file.
+- name: file_content
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: File Content (text)
+    zh_Hans: 文件内容（文本）
+    ja_JP: ファイルの内容（テキスト）
+  human_description:
+    en_US: Text to save when no file is given
+    zh_Hans: 不传文件时保存的文本
+    ja_JP: ファイルがない場合に保存するテキスト
+  llm_description: Text to save as a UTF-8 file when there is no file. Needs file_name.
+- name: file_name
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: File Name
+    zh_Hans: 文件名
+    ja_JP: ファイル名
+  human_description:
+    en_US: Name; a path such as Reports/q3.txt puts it in that folder
+    zh_Hans: 文件名；Reports/q3.txt 这样的路径会放进该文件夹
+    ja_JP: ファイル名。Reports/q3.txt のようなパスでそのフォルダーに保存
+  llm_description: File name, e.g. notes.txt; 'Reports/q3.txt' puts it in that folder. Required with file_content; with a
+    file, empty keeps its name.
+- name: folder_id
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Folder ID
+    zh_Hans: 文件夹 ID
+    ja_JP: フォルダー ID
+  human_description:
+    en_US: Folder ID; empty or root for the library's top folder
+    zh_Hans: 文件夹 ID；留空或 root 表示文档库顶层
+    ja_JP: フォルダー ID。空欄または root でライブラリの最上位
+  llm_description: The folder's ID (from the list files tool). Empty or root for the top folder of the site's document library.
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: File or folder ID
+    name:
+      type: string
+      description: Name
+    size:
+      type: integer
+      description: Size in bytes
+    web_url:
+      type: string
+      description: Link
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_upload_file.py

@@ -43,6 +43,44 @@ parameters:
       zh_Hans: Confluence 存储格式的页面内容。
     llm_description: The main content for the page, written in Confluence Storage Format.
     form: llm
+  - name: parent_id
+    type: string
+    required: false
+    label:
+      en_US: Parent Page ID
+      zh_Hans: 父页面 ID
+      ja_JP: 親ページ ID
+    human_description:
+      en_US: Create the page under this page
+      zh_Hans: 在此页面下创建
+      ja_JP: このページの下に作成します
+    llm_description: Optional ID of the page to create this page under.
+    form: llm
+  - name: body_format
+    type: select
+    required: false
+    label:
+      en_US: Body Format
+      zh_Hans: 内容格式
+      ja_JP: 本文の形式
+    human_description:
+      en_US: Storage format (XHTML, as before) or Markdown
+      zh_Hans: 存储格式（XHTML，默认）或 Markdown
+      ja_JP: ストレージ形式（XHTML、既定）または Markdown
+    llm_description: storage (default, Confluence XHTML) or markdown.
+    form: form
+    default: storage
+    options:
+    - value: markdown
+      label:
+        en_US: Markdown
+        zh_Hans: Markdown
+        ja_JP: Markdown
+    - value: storage
+      label:
+        en_US: Storage format (XHTML)
+        zh_Hans: 存储格式（XHTML）
+        ja_JP: ストレージ形式（XHTML）
 extra:
   python:
     source: tools/create_page.py

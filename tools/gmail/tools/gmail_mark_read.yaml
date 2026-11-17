@@ -1,0 +1,57 @@
+identity:
+  name: gmail_mark_read
+  author: langgenius
+  label:
+    en_US: Mark Read / Unread
+    zh_Hans: 标为已读/未读
+    ja_JP: 既読・未読にする
+description:
+  human:
+    en_US: Mark a message as read or unread
+    zh_Hans: 将邮件标为已读或未读
+    ja_JP: メールを既読・未読にする
+  llm: Mark a Gmail message as read (default) or unread.
+parameters:
+- name: message_id
+  type: string
+  required: true
+  label:
+    en_US: Message ID
+    zh_Hans: 邮件 ID
+    ja_JP: メッセージ ID
+  human_description:
+    en_US: From search_messages
+    zh_Hans: 可从搜索邮件获取
+    ja_JP: メール検索から
+  llm_description: The message ID, from search_messages.
+  form: llm
+- name: read
+  type: boolean
+  required: false
+  label:
+    en_US: Read
+    zh_Hans: 已读
+    ja_JP: 既読
+  human_description:
+    en_US: true = read, false = unread
+    zh_Hans: true 已读，false 未读
+    ja_JP: true 既読、false 未読
+  llm_description: true marks it read, false unread.
+  form: llm
+  default: true
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+    unread:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_mark_read.py

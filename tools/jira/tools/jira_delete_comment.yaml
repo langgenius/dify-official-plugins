@@ -1,0 +1,55 @@
+identity:
+  name: jira_delete_comment
+  author: langgenius
+  label:
+    en_US: Delete Comment
+    zh_Hans: 删除评论
+    ja_JP: コメントを削除
+description:
+  human:
+    en_US: Delete a comment from an issue
+    zh_Hans: 删除问题的评论
+    ja_JP: 課題のコメントを削除します
+  llm: Delete a comment from a Jira issue. Only when the user clearly asks for it.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: comment_id
+  type: string
+  required: true
+  label:
+    en_US: Comment ID
+    zh_Hans: 评论 ID
+    ja_JP: コメント ID
+  human_description:
+    en_US: The comment's ID (from List Comments)
+    zh_Hans: 评论 ID（可从“列出评论”获取）
+    ja_JP: コメント ID（コメント一覧から取得）
+  llm_description: The comment ID, from the list comments tool.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+      description: True when the comment was deleted
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_delete_comment.py

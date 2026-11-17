@@ -1,0 +1,120 @@
+identity:
+  name: google_drive_upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    ja_JP: ファイルをアップロード
+description:
+  human:
+    en_US: Upload a file or text, optionally as a Google Doc/Sheet
+    zh_Hans: 上传文件或文本，可转换为 Google 文档/表格
+    ja_JP: ファイルやテキストをアップロード（Google 形式に変換可）
+  llm: Upload a file, or text written by the agent, into a Google Drive folder. convert_to turns it into a Google Doc, Sheet
+    or Slides deck (e.g. upload CSV text with convert_to=spreadsheet).
+parameters:
+- name: file
+  type: file
+  required: false
+  label:
+    en_US: File
+    zh_Hans: 文件
+    ja_JP: ファイル
+  human_description:
+    en_US: The file to upload
+    zh_Hans: 要上传的文件
+    ja_JP: アップロードするファイル
+  llm_description: The file to upload.
+  form: llm
+- name: text_content
+  type: string
+  required: false
+  label:
+    en_US: Text Content
+    zh_Hans: 文本内容
+    ja_JP: テキスト内容
+  human_description:
+    en_US: Text to save as a file
+    zh_Hans: 保存为文件的文本
+    ja_JP: ファイルとして保存するテキスト
+  llm_description: Text to save as a file when no file is given; needs name.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: File Name
+    zh_Hans: 文件名
+    ja_JP: ファイル名
+  human_description:
+    en_US: e.g. notes.txt
+    zh_Hans: 如 notes.txt
+    ja_JP: '例: notes.txt'
+  llm_description: File name; required with text_content.
+  form: llm
+- name: folder_id
+  type: string
+  required: false
+  label:
+    en_US: Folder ID
+    zh_Hans: 文件夹 ID
+    ja_JP: フォルダー ID
+  human_description:
+    en_US: Empty = My Drive root
+    zh_Hans: 留空为“我的云端硬盘”根目录
+    ja_JP: 空なら マイドライブ のルート
+  llm_description: Folder ID; empty means the root of My Drive. A shared drive's ID is the root of that shared drive.
+  form: llm
+- name: convert_to
+  type: select
+  required: false
+  label:
+    en_US: Convert To
+    zh_Hans: 转换为
+    ja_JP: 変換先
+  human_description:
+    en_US: Store as a Google Doc, Sheet or Slides
+    zh_Hans: 保存为 Google 文档、表格或幻灯片
+    ja_JP: Google 形式で保存
+  llm_description: none (default), document, spreadsheet or presentation.
+  form: llm
+  options:
+  - value: none
+    label:
+      en_US: Keep as is
+      zh_Hans: 保持原样
+      ja_JP: そのまま
+  - value: document
+    label:
+      en_US: Google Doc
+      zh_Hans: Google 文档
+      ja_JP: Google ドキュメント
+  - value: spreadsheet
+    label:
+      en_US: Google Sheet
+      zh_Hans: Google 表格
+      ja_JP: Google スプレッドシート
+  - value: presentation
+    label:
+      en_US: Google Slides
+      zh_Hans: Google 幻灯片
+      ja_JP: Google スライド
+  default: none
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+    name:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_upload_file.py

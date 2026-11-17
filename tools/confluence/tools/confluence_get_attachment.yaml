@@ -1,0 +1,70 @@
+identity:
+  name: confluence_get_attachment
+  author: langgenius
+  label:
+    en_US: Get Attachment
+    zh_Hans: 获取附件
+    ja_JP: 添付ファイルを取得
+description:
+  human:
+    en_US: Download an attachment
+    zh_Hans: 下载附件
+    ja_JP: 添付ファイルをダウンロードします
+  llm: 'Get a Confluence attachment: its details and the file itself (up to 50 MB).'
+parameters:
+- name: attachment_id
+  type: string
+  required: true
+  label:
+    en_US: Attachment ID
+    zh_Hans: 附件 ID
+    ja_JP: 添付ファイル ID
+  human_description:
+    en_US: The attachment's ID, e.g. att65900 (from List Attachments)
+    zh_Hans: 附件 ID，如 att65900（可从“列出附件”获取）
+    ja_JP: '添付ファイル ID（例: att65900、添付ファイル一覧から）'
+  llm_description: The attachment ID, e.g. att65900, from the list attachments tool.
+  form: llm
+- name: download
+  type: boolean
+  required: false
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    ja_JP: ファイルをダウンロード
+  human_description:
+    en_US: Return the file too, not only its details
+    zh_Hans: 同时返回文件本身
+    ja_JP: 詳細だけでなくファイルも返す
+  llm_description: Whether to return the file content too.
+  form: llm
+  default: true
+output_schema:
+  type: object
+  properties:
+    attachment:
+      type: object
+      description: Attachment details
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        media_type:
+          type: string
+        size:
+          type: integer
+        page_id:
+          type: string
+    title:
+      type: string
+      description: File name
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_get_attachment.py

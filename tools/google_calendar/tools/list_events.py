@@ -8,6 +8,8 @@ from dify_plugin import Tool
 from dify_plugin.entities.invoke_message import InvokeMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from tools.google_client import connect, segment
+
 
 class ListEventsTool(Tool):
     """
@@ -20,11 +22,9 @@ class ListEventsTool(Tool):
         """
         List events from a calendar with optional date filtering.
         """
-        # Check if credentials are available
-        if "access_token" not in self.runtime.credentials:
-            yield self.create_text_message(
-                "Google Calendar access token is required. Please configure OAuth authentication."
-            )
+        # The OAuth token, or each user's own (for per-user sign-in, the sign-in link is returned instead).
+        access_token = yield from connect(self)
+        if access_token is None:
             return
 
         # Extract parameters
@@ -36,11 +36,11 @@ class ListEventsTool(Tool):
         single_events = tool_parameters.get("single_events", True)
         order_by = tool_parameters.get("order_by", "startTime")
 
-        access_token = self.runtime.credentials.get("access_token")
 
         # Start operation log
         operation_log = self.create_log_message(
             label="List Events Operation",
+            metadata={},
             data={
                 "calendar_id": calendar_id,
                 "time_min": time_min,
@@ -76,11 +76,12 @@ class ListEventsTool(Tool):
 
             # Make API call
             api_url = (
-                f"https://www.googleapis.com/calendar/v3/calendars/{calendar_id}/events"
+                f"https://www.googleapis.com/calendar/v3/calendars/{segment(calendar_id)}/events"
             )
 
             api_log = self.create_log_message(
                 label="API Call",
+                metadata={},
                 data={"endpoint": api_url, "params": params},
                 status=InvokeMessage.LogMessage.LogStatus.SUCCESS,
                 parent=operation_log,
@@ -162,6 +163,7 @@ class ListEventsTool(Tool):
             elif response.status_code == 401:
                 yield self.create_log_message(
                     label="Authentication Error",
+                    metadata={},
                     data={"status_code": response.status_code},
                     status=InvokeMessage.LogMessage.LogStatus.ERROR,
                 )
@@ -172,6 +174,7 @@ class ListEventsTool(Tool):
             elif response.status_code == 403:
                 yield self.create_log_message(
                     label="Permission Error",
+                    metadata={},
                     data={"status_code": response.status_code},
                     status=InvokeMessage.LogMessage.LogStatus.ERROR,
                 )
@@ -182,6 +185,7 @@ class ListEventsTool(Tool):
             elif response.status_code == 404:
                 yield self.create_log_message(
                     label="Calendar Not Found",
+                    metadata={},
                     data={
                         "status_code": response.status_code,
                         "calendar_id": calendar_id,
@@ -196,6 +200,7 @@ class ListEventsTool(Tool):
                 error_msg = f"API request failed with status {response.status_code}"
                 yield self.create_log_message(
                     label="API Error",
+                    metadata={},
                     data={
                         "status_code": response.status_code,
                         "error": response.text[:200],
@@ -209,6 +214,7 @@ class ListEventsTool(Tool):
         except requests.RequestException as e:
             yield self.create_log_message(
                 label="Network Error",
+                metadata={},
                 data={"error": str(e)},
                 status=InvokeMessage.LogMessage.LogStatus.ERROR,
             )
@@ -216,6 +222,7 @@ class ListEventsTool(Tool):
         except Exception as e:
             yield self.create_log_message(
                 label="Unexpected Error",
+                metadata={},
                 data={"error": str(e), "type": type(e).__name__},
                 status=InvokeMessage.LogMessage.LogStatus.ERROR,
             )

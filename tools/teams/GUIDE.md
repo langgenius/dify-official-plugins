@@ -24,6 +24,10 @@ This plugin posts messages into Microsoft Teams **channels** and **chats** and l
 3. Copy the **redirect URI** shown by Dify and add it to your Azure app under **Authentication → Web → Redirect URIs**.
 4. Complete the **OAuth sign-in** with your Microsoft account.
 
+### For a chat agent: Each user signs in
+
+To let every person chatting with an agent act as themselves instead of one shared account, use the **Each user signs in** authorization (new in 1.0.0): create the plugin's endpoint, register its `/teams/callback` URL as a Web redirect URI, and add an **API Key** authorization with that URL. See the README for the steps.
+
 ## 3. Post to a channel
 
 Typical flow:
@@ -60,4 +64,6 @@ For 1:1 or group chats, use **List Chats** to get a `chat_id`, then **Send Chat 
 
 - **403 / Authorization_RequestDenied** — a required delegated permission is missing or not consented. Re-check the scopes above and grant admin consent.
 - **401** — token expired; re-authorize. Tokens refresh automatically via `offline_access`.
+- **AADSTS50011 (redirect URI mismatch)** on the Microsoft page — register exactly the URL in the request under **Authentication → Web**; for *Each user signs in* it is the endpoint's `https://…/teams/callback` URL, not `localhost`.
+- **Sign Out says the credential is shared** — the agent uses an OAuth authorization; choose the *Each user signs in* one.
 - **Channel/chat not found** — verify the `team_id` / `channel_id` / `chat_id` from the List tools.

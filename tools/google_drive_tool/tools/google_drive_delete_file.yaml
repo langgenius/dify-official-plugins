@@ -1,0 +1,75 @@
+identity:
+  name: google_drive_delete_file
+  author: langgenius
+  label:
+    en_US: Delete File
+    zh_Hans: 删除文件
+    ja_JP: ファイルを削除
+description:
+  human:
+    en_US: Trash, restore or permanently delete
+    zh_Hans: 移到回收站、恢复或永久删除
+    ja_JP: ゴミ箱へ・復元・完全削除
+  llm: Move a Google Drive file or folder to the trash (default), restore it, or delete it permanently. Only when the user
+    clearly asks for it.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: mode
+  type: select
+  required: false
+  label:
+    en_US: Mode
+    zh_Hans: 方式
+    ja_JP: モード
+  human_description:
+    en_US: trash, restore or permanent
+    zh_Hans: trash、restore 或 permanent
+    ja_JP: trash、restore、permanent
+  llm_description: trash (default), restore or permanent.
+  form: llm
+  options:
+  - value: trash
+    label:
+      en_US: Move to trash
+      zh_Hans: 移到回收站
+      ja_JP: ゴミ箱へ
+  - value: restore
+    label:
+      en_US: Restore
+      zh_Hans: 恢复
+      ja_JP: 復元
+  - value: permanent
+    label:
+      en_US: Delete permanently
+      zh_Hans: 永久删除
+      ja_JP: 完全に削除
+  default: trash
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+    mode:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_delete_file.py

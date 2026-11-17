@@ -11,7 +11,7 @@ class ListPlannerPlansTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             (team_id,) = require(tool_parameters, "team_id")
             data = graph.request("GET", f"/groups/{segment(team_id)}/planner/plans").json()
         except GraphError as e:

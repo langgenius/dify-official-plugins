@@ -1,0 +1,102 @@
+identity:
+  name: onedrive_copy
+  author: langgenius
+  label:
+    en_US: Copy File
+    zh_Hans: 复制文件
+    ja_JP: ファイルをコピー
+    pt_BR: Copiar Arquivo
+description:
+  human:
+    en_US: Copy a file or folder, optionally to another folder or under a new name
+    zh_Hans: 复制文件或文件夹，可指定目标文件夹或新名称
+    ja_JP: ファイルまたはフォルダーをコピーします。コピー先のフォルダーや新しい名前も指定できます
+    pt_BR: Copia um arquivo ou pasta, opcionalmente para outra pasta ou com outro nome
+  llm: Copy a OneDrive file or folder. Without parent_folder_id the copy goes into the same folder; if the name is taken a
+    number is appended. Large copies continue in the background.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+    pt_BR: ID do Arquivo
+  human_description:
+    en_US: ID of the file or folder to copy
+    zh_Hans: 要复制的文件或文件夹 ID
+    ja_JP: コピーするファイルまたはフォルダーの ID
+    pt_BR: ID do arquivo ou pasta a copiar
+  llm_description: ID of the file or folder to copy.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+    pt_BR: Novo Nome
+  human_description:
+    en_US: Name of the copy; empty keeps the original name
+    zh_Hans: 副本的名称；留空则沿用原名
+    ja_JP: コピーの名前。空欄で元の名前
+    pt_BR: Nome da cópia; vazio mantém o nome original
+  llm_description: Name for the copy. Empty keeps the original name.
+  form: llm
+- name: parent_folder_id
+  type: string
+  required: false
+  label:
+    en_US: Target Folder ID
+    zh_Hans: 目标文件夹 ID
+    ja_JP: コピー先フォルダー ID
+    pt_BR: ID da Pasta de Destino
+  human_description:
+    en_US: ID of the folder to copy into; empty for the same folder, 'root' for the root
+    zh_Hans: 复制到哪个文件夹；留空为同一文件夹，root 为根目录
+    ja_JP: コピー先のフォルダー ID。空欄で同じフォルダー、root でルート
+    pt_BR: ID da pasta de destino; vazio para a mesma pasta, 'root' para a raiz
+  llm_description: ID of the folder to copy into. Empty for the same folder, 'root' for the root folder.
+  form: llm
+- name: drive_user
+  type: string
+  required: false
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+    pt_BR: Proprietário da Unidade
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+    pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão
+      da credencial.'
+  form: form
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: Drive item ID of the copy, empty while the copy is still running
+    name:
+      type: string
+      description: Name of the copy
+    web_url:
+      type: string
+      description: Link to open the copy in OneDrive
+    status:
+      type: string
+      description: completed, or in_progress for a copy that continues in the background
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/onedrive_copy.py

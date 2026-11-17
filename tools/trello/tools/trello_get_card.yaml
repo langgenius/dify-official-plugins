@@ -1,0 +1,49 @@
+identity:
+  name: trello_get_card
+  author: langgenius
+  label:
+    en_US: Get Card
+    zh_Hans: 获取卡片
+    ja_JP: カードを取得
+description:
+  human:
+    en_US: A card with its list, checklists and attachments
+    zh_Hans: 获取卡片及其列表、清单和附件
+    ja_JP: カードとそのリスト、チェックリスト、添付ファイル
+  llm: 'Get a Trello card: name, description, list, due date, labels, members, checklists (with progress) and attachments.'
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    card:
+      type: object
+    name:
+      type: string
+    desc:
+      type: string
+    list_name:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_get_card.py

@@ -1,0 +1,58 @@
+identity:
+  name: confluence_list_attachments
+  author: langgenius
+  label:
+    en_US: List Attachments
+    zh_Hans: 列出附件
+    ja_JP: 添付ファイル一覧
+description:
+  human:
+    en_US: Files attached to a page
+    zh_Hans: 页面的附件
+    ja_JP: ページの添付ファイル
+  llm: List the files attached to a Confluence page.
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+output_schema:
+  type: object
+  properties:
+    attachments:
+      type: array
+      description: Attachments
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          title:
+            type: string
+          media_type:
+            type: string
+          size:
+            type: integer
+          page_id:
+            type: string
+    count:
+      type: integer
+      description: Number of attachments
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_list_attachments.py

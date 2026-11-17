@@ -1,0 +1,147 @@
+identity:
+  name: google_sheets_read_rows
+  author: langgenius
+  label:
+    en_US: Read Rows
+    zh_Hans: 读取行
+    ja_JP: 行を読む
+description:
+  human:
+    en_US: Rows as objects keyed by the header row
+    zh_Hans: 以表头为键的行对象
+    ja_JP: 見出しをキーにした行
+  llm: Read the rows of a sheet as objects keyed by the header row (each with its row_number), optionally only rows where
+    a column equals a value.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+- name: sheet
+  type: string
+  required: false
+  label:
+    en_US: Sheet
+    zh_Hans: 工作表
+    ja_JP: シート
+  human_description:
+    en_US: Sheet name; empty = the first sheet
+    zh_Hans: 工作表名称；留空为第一个工作表
+    ja_JP: シート名。空なら最初のシート
+  llm_description: The sheet (tab) name; empty means the first sheet.
+  form: llm
+- name: filter_column
+  type: string
+  required: false
+  label:
+    en_US: Filter Column
+    zh_Hans: 筛选列
+    ja_JP: 絞り込み列
+  human_description:
+    en_US: Only rows where this column…
+    zh_Hans: 仅保留此列…
+    ja_JP: この列が…の行のみ
+  llm_description: Only rows whose filter_column equals filter_value.
+  form: llm
+- name: filter_value
+  type: string
+  required: false
+  label:
+    en_US: Filter Value
+    zh_Hans: 筛选值
+    ja_JP: 絞り込み値
+  human_description:
+    en_US: …equals this value (case-insensitive)
+    zh_Hans: …等于此值（不区分大小写）
+    ja_JP: …この値に等しい（大文字小文字を区別しない）
+  llm_description: The value filter_column must equal.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 500, max 5000
+    zh_Hans: 默认 500，最多 5000
+    ja_JP: 既定 500、最大 5000
+  llm_description: Maximum rows returned (default 500).
+  form: llm
+  default: 500
+- name: header_row
+  type: number
+  required: false
+  label:
+    en_US: Header Row
+    zh_Hans: 表头行
+    ja_JP: 見出し行
+  human_description:
+    en_US: Row with the column names (default 1)
+    zh_Hans: 列名所在的行（默认 1）
+    ja_JP: 列名の行（既定 1）
+  llm_description: The row number holding the column names (default 1).
+  form: form
+  default: 1
+- name: value_render
+  type: select
+  required: false
+  label:
+    en_US: Values As
+    zh_Hans: 值格式
+    ja_JP: 値の形式
+  human_description:
+    en_US: Formatted text, raw values or formulas
+    zh_Hans: 格式化文本、原始值或公式
+    ja_JP: 表示形式・生の値・数式
+  llm_description: FORMATTED_VALUE (default, as displayed), UNFORMATTED_VALUE (raw numbers) or FORMULA.
+  form: form
+  options:
+  - value: FORMATTED_VALUE
+    label:
+      en_US: As displayed
+      zh_Hans: 按显示
+      ja_JP: 表示どおり
+  - value: UNFORMATTED_VALUE
+    label:
+      en_US: Raw values
+      zh_Hans: 原始值
+      ja_JP: 生の値
+  - value: FORMULA
+    label:
+      en_US: Formulas
+      zh_Hans: 公式
+      ja_JP: 数式
+  default: FORMATTED_VALUE
+output_schema:
+  type: object
+  properties:
+    rows:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    headers:
+      type: array
+      items:
+        type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_read_rows.py

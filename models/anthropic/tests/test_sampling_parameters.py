@@ -139,3 +139,73 @@ def test_thinking_removes_sampling_parameters(monkeypatch) -> None:
 
     assert payload["thinking"] == {"type": "enabled", "budget_tokens": 1024}
     assert "extra_body" not in payload
+
+
+def test_sampling_parameters_pin_legacy_api_version(monkeypatch) -> None:
+    """SDK 2.x defaults to API version 2026-10-21, which rejects
+    temperature/top_p/top_k with a 400 even at default values. Older models
+    still honor them under 2023-06-01 (the migration guide's remedy), so the
+    request must be pinned when sampling parameters are forwarded."""
+    payload = _capture_payload(
+        monkeypatch,
+        {
+            "max_tokens": 1024,
+            "temperature": 0.7,
+            "top_p": 0.9,
+        },
+    )
+
+    assert payload["extra_body"] == {"temperature": 0.7, "top_p": 0.9}
+    assert payload["extra_headers"]["anthropic-version"] == "2023-06-01"
+
+
+def test_no_version_pin_without_sampling_parameters(monkeypatch) -> None:
+    payload = _capture_payload(monkeypatch, {"max_tokens": 1024})
+
+    assert "extra_body" not in payload
+    assert "anthropic-version" not in payload["extra_headers"]
+
+
+def test_no_version_pin_for_adaptive_thinking_models(monkeypatch) -> None:
+    _Anthropic.instances = []
+    monkeypatch.setattr(llm_module, "Anthropic", _Anthropic)
+
+    llm = AnthropicLargeLanguageModel()
+    monkeypatch.setattr(llm, "_handle_chat_generate_response", lambda *args: object())
+    llm._chat_generate(
+        model="claude-sonnet-5-5",
+        credentials={"anthropic_api_key": "test-key"},
+        prompt_messages=[UserPromptMessage(content="Hello")],
+        model_parameters={"max_tokens": 1024, "temperature": 0.7},
+        stream=False,
+    )
+    payload = _Anthropic.instances[0].messages.calls[0]
+
+    # Adaptive models reject sampling params outright; they are dropped, and
+    # the request stays on the SDK's default API version.
+    assert "extra_body" not in payload
+    assert "anthropic-version" not in payload["extra_headers"]
+
+
+def test_sampling_parameters_dropped_when_output_config_present(monkeypatch) -> None:
+    """output_config (structured output) requires 2026-10-21, which rejects
+    sampling parameters; the two cannot be pinned to different versions. Keep
+    the newer version and drop the sampling parameters with a warning rather
+    than break the structured-output request."""
+    payload = _capture_payload(
+        monkeypatch,
+        {
+            "max_tokens": 1024,
+            "temperature": 0.7,
+            "json_schema": {
+                "type": "object",
+                "properties": {"answer": {"type": "string"}},
+            },
+        },
+    )
+
+    assert payload["output_config"]["format"]["type"] == "json_schema"
+    assert "anthropic-version" not in payload["extra_headers"]
+    assert "extra_body" not in payload or "temperature" not in payload.get(
+        "extra_body", {}
+    )

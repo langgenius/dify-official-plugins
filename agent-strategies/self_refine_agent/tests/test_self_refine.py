@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -190,7 +191,7 @@ class TestSelfRefineListContent(unittest.TestCase):
     def test_invoke_end_to_end_satisfactory_on_first_attempt(self):
         model = AgentModelConfig(provider="google", model="gemini-1.5-pro", mode="chat")
 
-        eval_json = '{"is_satisfactory": true, "issues": "", "score": 10}'
+        eval_json = '{"is_satisfactory": true, "issues": "", "score": 90}'
         responses = [
             LLMResult(
                 model="gemini-1.5-pro",
@@ -364,3 +365,81 @@ class TestSelfRefineTools(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSelfRefineQualityContract(unittest.TestCase):
+    """The loop follows the documented score threshold and returns the best output (#3874)."""
+
+    def setUp(self):
+        self.strategy = SelfRefineStrategy(runtime=Mock(), session=Mock())
+        self.model = AgentModelConfig(provider="google", model="gemini-1.5-pro", mode="chat")
+
+    def _result(self, text: str) -> LLMResult:
+        return LLMResult(
+            model="gemini-1.5-pro",
+            message=_list_content_message(text),
+            usage=LLMUsage.empty_usage(),
+        )
+
+    def _eval(self, score: int, satisfactory: bool = False) -> LLMResult:
+        return self._result(
+            json.dumps({"is_satisfactory": satisfactory, "issues": "improve it", "score": score})
+        )
+
+    def _run(self, responses, max_refinements: int = 2):
+        invoke = Mock(side_effect=responses)
+        self.strategy.session.model.llm.invoke = invoke
+        messages = list(
+            self.strategy._invoke(
+                {
+                    "query": "hello",
+                    "instruction": "answer briefly",
+                    "model": self.model.model_dump(mode="json"),
+                    "max_refinements": max_refinements,
+                }
+            )
+        )
+        texts = [
+            m.message.text
+            for m in messages
+            if m.type == ToolInvokeMessage.MessageType.TEXT
+        ]
+        return texts[-1], invoke.call_count
+
+    def test_satisfactory_flag_below_threshold_keeps_refining(self):
+        output, calls = self._run(
+            [
+                self._result("draft"),
+                self._eval(60, satisfactory=True),
+                self._result("better"),
+                self._eval(85),
+            ],
+            max_refinements=1,
+        )
+        self.assertEqual(output, "better")
+        self.assertEqual(calls, 4)
+
+    def test_stops_as_soon_as_score_reaches_threshold(self):
+        output, calls = self._run(
+            [self._result("good"), self._eval(80)],
+            max_refinements=2,
+        )
+        self.assertEqual(output, "good")
+        self.assertEqual(calls, 2)
+
+    def test_returns_best_output_when_budget_is_exhausted(self):
+        output, calls = self._run(
+            [
+                self._result("first"),
+                self._eval(40),
+                self._result("second"),
+                self._eval(70),
+                self._result("third"),
+                self._eval(55),
+            ],
+            max_refinements=2,
+        )
+        # The final attempt is evaluated too, and the higher-scoring second
+        # output wins over the latest one.
+        self.assertEqual(calls, 6)
+        self.assertEqual(output, "second")

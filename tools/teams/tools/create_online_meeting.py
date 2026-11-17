@@ -11,7 +11,7 @@ class CreateOnlineMeetingTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             subject, start, end = require(tool_parameters, "subject", "start_datetime", "end_datetime")
             start_utc, start_assumed = to_graph_datetime(start, "start_datetime")
             end_utc, end_assumed = to_graph_datetime(end, "end_datetime")

@@ -8,6 +8,9 @@ The plugin accepts two kinds of credentials:
 - Service Principal (app-only): tenant ID + client ID + client secret, exchanged
   with the client-credentials grant. There is no signed-in user, so calls go to
   ``/users/{mailbox}`` and the target mailbox must be named.
+- Each user signs in (delegated, per chat user): the same app fields with
+  ``auth_mode: per_user``; every Dify user gets their own token (see ``user_auth``)
+  and calls go to ``/me``.
 
 Both kinds can target a national cloud; the login host and the Graph host are
 looked up together from ``CLOUDS`` so they never point at different clouds.
@@ -23,6 +26,8 @@ from typing import Any, Mapping
 from urllib.parse import quote
 
 import requests
+
+from tools.user_auth import SignInRequired, UserAuthError, UserSignIn
 
 # cloud -> (Entra login host, Microsoft Graph host)
 CLOUDS: dict[str, tuple[str, str]] = {
@@ -78,9 +83,14 @@ def cloud_hosts(cloud: str | None) -> tuple[str, str]:
     return CLOUDS[name]
 
 
+def is_per_user(credentials: Mapping[str, Any]) -> bool:
+    """An app credential set to "Each user signs in"; credentials saved before the mode existed have no auth_mode."""
+    return credentials.get("auth_mode") == "per_user" and not credentials.get("access_token")
+
+
 def is_service_principal(credentials: Mapping[str, Any]) -> bool:
     """Service Principal credentials carry a client secret; OAuth credentials carry an access token."""
-    return bool(credentials.get("client_secret")) and not credentials.get("access_token")
+    return bool(credentials.get("client_secret")) and not credentials.get("access_token") and not is_per_user(credentials)
 
 
 def acquire_app_token(tenant_id: str, client_id: str, client_secret: str, cloud: str | None = None) -> str:
@@ -155,12 +165,28 @@ class GraphContext:
     mailbox_base: str
 
 
-def resolve_graph_context(credentials: Mapping[str, Any], mailbox: Any = None) -> GraphContext:
+def resolve_graph_context(credentials: Mapping[str, Any], mailbox: Any = None, tool: Any = None) -> GraphContext:
     """
     Turn the runtime credentials (plus the optional per-tool Mailbox parameter)
     into a token and the URL roots every tool builds its requests on.
+
+    ``tool`` is the calling Tool; per-user sign-in needs its user ID and plugin storage.
+    When that user has not signed in yet, the GraphAuthError message is the sign-in link.
     """
     mailbox = setting_value(mailbox)
+
+    if is_per_user(credentials):
+        if mailbox:
+            raise GraphAuthError(
+                "The Mailbox parameter only works with a Service Principal credential. "
+                "With per-user sign-in the tools always act on the calling user's own mailbox."
+            )
+        if tool is None:
+            raise GraphAuthError("Per-user sign-in is not available here.")
+        _, graph_host = cloud_hosts(credentials.get("cloud"))
+        token = user_access_token(credentials, tool)
+        api_base = f"{graph_host}/v1.0"
+        return GraphContext(token, api_base, f"{api_base}/me")
 
     if is_service_principal(credentials):
         _, graph_host = cloud_hosts(credentials.get("cloud"))
@@ -194,6 +220,28 @@ def resolve_graph_context(credentials: Mapping[str, Any], mailbox: Any = None) -
         raise GraphAuthError(f"Unsupported Microsoft Graph endpoint '{graph_host}'.")
     api_base = f"{graph_host}/v1.0"
     return GraphContext(token, api_base, f"{api_base}/me")
+
+
+def user_sign_in(credentials: Mapping[str, Any], tool: Any) -> "UserSignIn":
+    login_host, graph_host = cloud_hosts(credentials.get("cloud"))
+    try:
+        return UserSignIn(
+            credentials, tool.runtime.user_id, tool.session.storage, login_host, graph_host, CLOUDS[DEFAULT_CLOUD][1]
+        )
+    except UserAuthError as e:
+        raise GraphAuthError(str(e)) from e
+
+
+def user_access_token(credentials: Mapping[str, Any], tool: Any) -> str:
+    sign_in = user_sign_in(credentials, tool)
+    try:
+        token = sign_in.access_token()
+    except (SignInRequired, UserAuthError) as e:
+        raise GraphAuthError(str(e)) from e
+    if sign_in.just_signed_in:
+        # @with_outputs tells the user which account they signed in with.
+        tool._signed_in_as = sign_in.just_signed_in
+    return token
 
 
 def segment(value: Any) -> str:
@@ -262,6 +310,40 @@ def address_of(recipient: Mapping[str, Any] | None) -> tuple[str, str]:
     return _s(email.get("name")), _s(email.get("address") or email.get("email"))
 
 
+# Join links of the common meeting services, as pasted into invitations.
+_MEETING_LINK = re.compile(
+    r"https://(?:teams\.microsoft\.com/l/meetup-join/|teams\.live\.com/meet/|[\w.-]*zoom\.us/[jw]/"
+    r"|meet\.google\.com/|[\w.-]*webex\.com/(?:meet|join)/)[^\s<>\"')]+"
+)
+
+
+def meeting_link(event: Mapping[str, Any]) -> str:
+    """
+    The event's online-meeting join link: the one Microsoft Graph knows (Teams meetings created
+    as such), else one pasted into the invitation text (other organizations' invites, Zoom...).
+    """
+    join_url = (event.get("onlineMeeting") or {}).get("joinUrl")
+    if join_url:
+        return join_url
+    found = _MEETING_LINK.search(event.get("bodyPreview") or "")
+    # A link at the end of a sentence would otherwise keep the full stop.
+    return found.group(0).rstrip(".,;:!?") if found else ""
+
+
+def event_extras(event: Mapping[str, Any]) -> str:
+    """Location and online-meeting link for a one-line event summary, so "which are Teams meetings?" needs no Get Event."""
+    parts = []
+    location = (event.get("location") or {}).get("displayName")
+    if location:
+        parts.append(f"at {location}")
+    link = meeting_link(event)
+    if link:
+        parts.append(f"online meeting: {link}")
+    elif event.get("isOnlineMeeting"):
+        parts.append("online meeting")
+    return f" ({'; '.join(parts)})" if parts else ""
+
+
 def event_vars(event: Mapping[str, Any]) -> dict[str, Any]:
     """A calendar event as flat fields; calendar_name/owner_address come from a calendar-group search."""
     start, end = event.get("start") or {}, event.get("end") or {}
@@ -279,6 +361,8 @@ def event_vars(event: Mapping[str, Any]) -> dict[str, Any]:
         "web_link": _s(event.get("webLink")),
         "calendar_name": _s(calendar.get("name")),
         "owner_address": _s(calendar.get("owner_address")),
+        "is_online_meeting": bool(event.get("isOnlineMeeting") or meeting_link(event)),
+        "online_meeting_url": meeting_link(event),
     }
 
 
@@ -293,5 +377,5 @@ def event_detail_vars(event: Mapping[str, Any]) -> dict[str, Any]:
         "time_zone": v["time_zone"],
         "location": v["location"],
         "web_link": v["web_link"],
-        "online_meeting_url": _s((event.get("onlineMeeting") or {}).get("joinUrl")),
+        "online_meeting_url": v["online_meeting_url"],
     }

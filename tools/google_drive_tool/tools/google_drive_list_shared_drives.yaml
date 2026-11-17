@@ -1,0 +1,32 @@
+identity:
+  name: google_drive_list_shared_drives
+  author: langgenius
+  label:
+    en_US: List Shared Drives
+    zh_Hans: 列出共享云端硬盘
+    ja_JP: 共有ドライブ一覧
+description:
+  human:
+    en_US: The shared drives you can open
+    zh_Hans: 你能访问的共享云端硬盘
+    ja_JP: アクセスできる共有ドライブ
+  llm: List the shared drives the account can open (their IDs work as folder IDs).
+parameters: []
+output_schema:
+  type: object
+  properties:
+    drives:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_list_shared_drives.py

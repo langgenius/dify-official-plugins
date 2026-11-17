@@ -1,0 +1,76 @@
+identity:
+  name: sharepoint_search_sites
+  author: langgenius
+  label:
+    en_US: Search Sites
+    zh_Hans: 搜索站点
+    ja_JP: サイトを検索
+description:
+  human:
+    en_US: Find SharePoint sites by name
+    zh_Hans: 按名称查找 SharePoint 站点
+    ja_JP: 名前で SharePoint サイトを検索します
+  llm: Find SharePoint sites by name. Returns each site's ID and URL for the other tools.
+parameters:
+- name: query
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Query
+    zh_Hans: 关键词
+    ja_JP: キーワード
+  human_description:
+    en_US: Words in the site name; empty lists all sites you can see
+    zh_Hans: 站点名称中的关键词；留空列出所有可见站点
+    ja_JP: サイト名に含まれる語。空欄で表示可能なすべてのサイト
+  llm_description: Words to look for in site names. Empty lists every site the account can see.
+- name: limit
+  type: number
+  required: false
+  form: llm
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum items (default 20)
+    zh_Hans: 最多返回条数（默认 20）
+    ja_JP: 最大件数（既定 20）
+  llm_description: Maximum number of items to return, default 20, up to 200.
+  default: 20
+  min: 1
+  max: 200
+output_schema:
+  type: object
+  properties:
+    sites:
+      type: array
+      description: Sites
+      items:
+        type: object
+        properties:
+          site_id:
+            type: string
+            description: Site ID
+          name:
+            type: string
+            description: Site name
+          web_url:
+            type: string
+            description: Site URL
+          description:
+            type: string
+            description: Description
+    count:
+      type: integer
+      description: Number of sites
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_search_sites.py

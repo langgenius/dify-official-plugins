@@ -1,0 +1,18 @@
+{
+  "model": "text-embedding-v3",
+  "label": {
+    "en_US": "text-embedding-v3",
+    "zh_Hans": "text-embedding-v3"
+  },
+  "model_type": "text-embedding",
+  "model_properties": {
+    "context_size": 8192,
+    "max_chunks": 10
+  },
+  "pricing": {
+    "input": "0.070000",
+    "unit": "0.000001",
+    "currency": "USD"
+  },
+  "deprecated": false
+}

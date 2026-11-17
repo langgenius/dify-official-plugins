@@ -17,7 +17,7 @@ class DeleteFileByIdTool(Tool):
             yield self.create_json_message({"error": "File ID is required."})
             return
         try:
-            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"))
+            graph = resolve_graph_context(self.runtime.credentials, tool_parameters.get("drive_user"), tool=self)
             graph_request(graph, "DELETE", f"{graph.drive_base}/items/{segment(file_id)}")
             self._out.update(file_id=str(file_id), success=True)
             yield self.create_json_message({"success": True, "file_id": file_id})

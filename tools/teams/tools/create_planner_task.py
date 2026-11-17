@@ -11,7 +11,7 @@ class CreatePlannerTaskTool(Tool):
     @with_outputs
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            graph = resolve_graph_context(self.runtime.credentials)
+            graph = resolve_graph_context(self.runtime.credentials, tool=self)
             plan_id, title = require(tool_parameters, "plan_id", "title")
             body: dict[str, Any] = {"planId": plan_id, "title": title}
 

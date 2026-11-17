@@ -5,7 +5,7 @@ from atlassian import ConfluenceV2
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.auth import auth
+from tools.auth import connect
 
 
 class GetSpaceTool(Tool):
@@ -13,7 +13,9 @@ class GetSpaceTool(Tool):
         """
         Get info of a space in Confluence.
         """
-        confluence = auth(self.runtime.credentials)
+        confluence = yield from connect(self)
+        if confluence is None:
+            return
 
         space_key = tool_parameters.get("space_key")
 

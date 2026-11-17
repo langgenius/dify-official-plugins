@@ -1,0 +1,41 @@
+identity:
+  name: gmail_delete_label
+  author: langgenius
+  label:
+    en_US: Delete Label
+    zh_Hans: 删除标签
+    ja_JP: ラベルを削除
+description:
+  human:
+    en_US: Delete one of your labels
+    zh_Hans: 删除自己的标签
+    ja_JP: 自分のラベルを削除
+  llm: Delete a user label (messages are kept). Only when the user clearly asks for it.
+parameters:
+- name: label
+  type: string
+  required: true
+  label:
+    en_US: Label
+    zh_Hans: 标签
+    ja_JP: ラベル
+  human_description:
+    en_US: Name or ID
+    zh_Hans: 名称或 ID
+    ja_JP: 名前または ID
+  llm_description: The label name or ID.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/gmail_delete_label.py

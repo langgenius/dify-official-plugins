@@ -1,0 +1,45 @@
+identity:
+  name: trello_get_list_cards
+  author: langgenius
+  label:
+    en_US: Get List Cards
+    zh_Hans: 获取列表中的卡片
+    ja_JP: リストのカードを取得
+description:
+  human:
+    en_US: The cards in a list
+    zh_Hans: 列表中的卡片
+    ja_JP: リスト内のカード
+  llm: Get the open cards in a Trello list.
+parameters:
+- name: list_id
+  type: string
+  required: true
+  label:
+    en_US: List ID
+    zh_Hans: 列表 ID
+    ja_JP: リスト ID
+  human_description:
+    en_US: List ID (from the list or search tools)
+    zh_Hans: 列表 ID（可从列表或搜索工具获取）
+    ja_JP: リスト ID（一覧または検索ツールから）
+  llm_description: The list ID, from get_lists_from_board.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    cards:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_get_list_cards.py

@@ -1,0 +1,86 @@
+identity:
+  name: onedrive_rename
+  author: langgenius
+  label:
+    en_US: Rename File or Folder
+    zh_Hans: 重命名文件或文件夹
+    ja_JP: ファイルまたはフォルダーの名前を変更
+    pt_BR: Renomear Arquivo ou Pasta
+description:
+  human:
+    en_US: Rename a file or folder
+    zh_Hans: 重命名文件或文件夹
+    ja_JP: ファイルまたはフォルダーの名前を変更します
+    pt_BR: Renomeia um arquivo ou pasta
+  llm: Rename a OneDrive file or folder by its ID. Keep the file extension unless the user asks to change it.
+parameters:
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Item ID
+    zh_Hans: 条目 ID
+    ja_JP: アイテム ID
+    pt_BR: ID do Item
+  human_description:
+    en_US: ID of the file or folder
+    zh_Hans: 文件或文件夹的 ID
+    ja_JP: ファイルまたはフォルダーの ID
+    pt_BR: ID do arquivo ou pasta
+  llm_description: ID of the file or folder to rename.
+  form: llm
+- name: new_name
+  type: string
+  required: true
+  label:
+    en_US: New Name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+    pt_BR: Novo Nome
+  human_description:
+    en_US: The new name, including the file extension
+    zh_Hans: 新名称（包含扩展名）
+    ja_JP: 新しい名前（拡張子を含む）
+    pt_BR: O novo nome, incluindo a extensão
+  llm_description: The new name, including the file extension for a file.
+  form: llm
+- name: drive_user
+  type: string
+  required: false
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+    pt_BR: Proprietário da Unidade
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+    pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão
+      da credencial.'
+  form: form
+output_schema:
+  type: object
+  properties:
+    file_id:
+      type: string
+      description: Drive item ID
+    name:
+      type: string
+      description: The new name
+    is_folder:
+      type: boolean
+      description: True for a folder
+    web_url:
+      type: string
+      description: Link to open the item in OneDrive
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/onedrive_rename.py

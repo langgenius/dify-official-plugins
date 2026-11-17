@@ -19,6 +19,7 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 from .call_api import patched_call_api
+from utils.oci_private_key import normalize_private_key
 from oci.base_client import BaseClient
 
 BaseClient.call_api = patched_call_api
@@ -59,21 +60,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
                 if k not in credentials:
                     raise CredentialsValidateFailedError(f"need to set {k} in credentials")
 
-            pem_prefix = "-----BEGIN RSA PRIVATE KEY-----\n"
-            pem_suffix = "\n-----END RSA PRIVATE KEY-----"
-            key_string = credentials.get("key_content")
-
-            key_b64: Optional[str] = None
-            for part in key_string.split("-"):
-                if len(part.strip()) > 64:
-                    key_b64 = part.strip()
-
-            if not key_b64:
-                raise CredentialsValidateFailedError(
-                    "failed to parse API key_content. Please provide valid PEM key content."
-                )
-
-            key_content = pem_prefix + "\n".join(key_b64.split(" ")) + pem_suffix
+            key_content = normalize_private_key(credentials.get("key_content"))
 
             config = {
                 "tenancy": credentials.get("tenancy_ocid"),

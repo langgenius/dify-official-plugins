@@ -1,0 +1,84 @@
+identity:
+  name: google_calendar_check_availability
+  author: langgenius
+  label:
+    en_US: Check Availability
+    zh_Hans: 查询空闲
+    ja_JP: 空き時間を確認
+description:
+  human:
+    en_US: Busy times between two moments
+    zh_Hans: 查询某段时间内的忙碌时段
+    ja_JP: 期間内の予定のある時間
+  llm: Check whether one or more calendars are free between two times (free/busy). Times are ISO 8601 with an offset.
+parameters:
+- name: time_min
+  type: string
+  required: true
+  label:
+    en_US: From
+    zh_Hans: 开始
+    ja_JP: 開始
+  human_description:
+    en_US: ISO 8601 with offset
+    zh_Hans: 带时区偏移的 ISO 8601
+    ja_JP: オフセット付き ISO 8601
+  llm_description: Start of the period, ISO 8601 with offset, e.g. 2026-11-03T09:00:00+09:00.
+  form: llm
+- name: time_max
+  type: string
+  required: true
+  label:
+    en_US: To
+    zh_Hans: 结束
+    ja_JP: 終了
+  human_description:
+    en_US: ISO 8601 with offset
+    zh_Hans: 带时区偏移的 ISO 8601
+    ja_JP: オフセット付き ISO 8601
+  llm_description: End of the period, ISO 8601 with offset.
+  form: llm
+- name: calendar_ids
+  type: string
+  required: false
+  label:
+    en_US: Calendars
+    zh_Hans: 日历
+    ja_JP: カレンダー
+  human_description:
+    en_US: Comma-separated IDs or emails; default primary
+    zh_Hans: 逗号分隔的 ID 或邮箱；默认 primary
+    ja_JP: カンマ区切りの ID またはメール。既定 primary
+  llm_description: Comma-separated calendar IDs or people's emails (when their free/busy is shared); default primary.
+  form: llm
+- name: time_zone
+  type: string
+  required: false
+  label:
+    en_US: Time Zone
+    zh_Hans: 时区
+    ja_JP: タイムゾーン
+  human_description:
+    en_US: IANA name, e.g. Asia/Tokyo
+    zh_Hans: IANA 名称，如 Asia/Shanghai
+    ja_JP: 'IANA 名（例: Asia/Tokyo）'
+  llm_description: IANA time zone for times without a UTC offset, e.g. Asia/Tokyo.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    free:
+      type: boolean
+    busy:
+      type: array
+      items:
+        type: object
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_calendar_check_availability.py

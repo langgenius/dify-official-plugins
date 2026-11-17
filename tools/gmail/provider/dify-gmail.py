@@ -8,6 +8,8 @@ from dify_plugin import ToolProvider
 from dify_plugin.entities.oauth import ToolOAuthCredentials
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
 
+from tools.google_client import is_per_user
+
 
 class DifyGmailProvider(ToolProvider):
     _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
@@ -18,6 +20,9 @@ class DifyGmailProvider(ToolProvider):
         """
         Validate Gmail OAuth credentials by making a test API call
         """
+        if is_per_user(credentials):
+            self._validate_per_user(credentials)
+            return
         try:
             access_token = credentials.get("access_token")
             if not access_token:
@@ -200,3 +205,26 @@ class DifyGmailProvider(ToolProvider):
             raise ToolProviderOAuthError(f"Network error during token refresh: {str(e)}")
         except Exception as e:
             raise ToolProviderOAuthError(f"Failed to refresh credentials: {str(e)}") 
+
+    @staticmethod
+    def _validate_per_user(credentials: Mapping[str, Any]) -> None:
+        """No user to sign in as yet: check the fields users' sign-ins will depend on."""
+        if not (credentials.get("client_id") or "").strip() or not (credentials.get("client_secret") or "").strip():
+            raise ToolProviderCredentialValidationError("Each user signs in needs the OAuth client's Client ID and Client Secret.")
+        parsed = urllib.parse.urlparse((credentials.get("redirect_uri") or "").strip())
+        if parsed.scheme not in ("https", "http") or not parsed.netloc:
+            raise ToolProviderCredentialValidationError(
+                "Each user signs in needs the Sign-in Callback URL: create the plugin's 'Gmail sign-in' "
+                "endpoint and paste its /gmail/callback URL."
+            )
+        if parsed.scheme != "https" and (parsed.hostname or "").lower() not in ("localhost", "127.0.0.1"):
+            raise ToolProviderCredentialValidationError("Google only accepts https redirect URIs (or http://localhost).")
+        if (parsed.hostname or "").lower() in ("localhost", "127.0.0.1", "::1"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL points to localhost, so users' browsers cannot reach it. Replace "
+                "'localhost' with your Dify domain (or set ENDPOINT_URL_TEMPLATE so Dify shows the right URL)."
+            )
+        if not parsed.path.endswith("/gmail/callback"):
+            raise ToolProviderCredentialValidationError(
+                "The Sign-in Callback URL should be the 'Gmail sign-in' endpoint URL ending in /gmail/callback."
+            )

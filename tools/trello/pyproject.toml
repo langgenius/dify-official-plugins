@@ -1,6 +1,6 @@
 [project]
 name = "trello"
-version = "0.1.0"
+version = "1.0.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,6 +9,8 @@ requires-python = ">=3.12"
 dependencies = [
     "dify-plugin>=0.10.2",
     "requests>=2.34.2",
+    "cryptography>=42.0.0",
+    "pyyaml>=6.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

@@ -1,0 +1,5 @@
+# Only needed for the "Each user signs in" credential mode: Google redirects users here after they sign in.
+# Its URL (…/google_calendar/callback) goes into the credential's Sign-in Callback URL and the OAuth client's Authorized redirect URIs.
+settings: []
+endpoints:
+  - endpoints/signin_callback.yaml

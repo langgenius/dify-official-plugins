@@ -1,0 +1,121 @@
+identity:
+  name: google_drive_download_file
+  author: langgenius
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    ja_JP: ファイルをダウンロード
+description:
+  human:
+    en_US: Get the file itself
+    zh_Hans: 获取文件本身
+    ja_JP: ファイル本体を取得
+  llm: 'Download a Google Drive file (up to 50 MB). Google Docs/Sheets/Slides are exported: export_format pdf, docx, xlsx,
+    pptx, csv, md, txt, html or png (default Office format).'
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: export_format
+  type: select
+  required: false
+  label:
+    en_US: Export Format
+    zh_Hans: 导出格式
+    ja_JP: エクスポート形式
+  human_description:
+    en_US: For Google Docs, Sheets and Slides
+    zh_Hans: 用于 Google 文档、表格、幻灯片
+    ja_JP: Google ドキュメント等用
+  llm_description: Export format for Google-native files.
+  form: llm
+  options:
+  - value: pdf
+    label:
+      en_US: PDF
+      zh_Hans: PDF
+      ja_JP: PDF
+  - value: docx
+    label:
+      en_US: DOCX
+      zh_Hans: DOCX
+      ja_JP: DOCX
+  - value: xlsx
+    label:
+      en_US: XLSX
+      zh_Hans: XLSX
+      ja_JP: XLSX
+  - value: pptx
+    label:
+      en_US: PPTX
+      zh_Hans: PPTX
+      ja_JP: PPTX
+  - value: csv
+    label:
+      en_US: CSV
+      zh_Hans: CSV
+      ja_JP: CSV
+  - value: md
+    label:
+      en_US: MD
+      zh_Hans: MD
+      ja_JP: MD
+  - value: txt
+    label:
+      en_US: TXT
+      zh_Hans: TXT
+      ja_JP: TXT
+  - value: html
+    label:
+      en_US: HTML
+      zh_Hans: HTML
+      ja_JP: HTML
+  - value: png
+    label:
+      en_US: PNG
+      zh_Hans: PNG
+      ja_JP: PNG
+output_schema:
+  type: object
+  properties:
+    file:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mime_type:
+          type: string
+        is_folder:
+          type: boolean
+        size:
+          type: integer
+        modified:
+          type: string
+        url:
+          type: string
+    name:
+      type: string
+    size:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_download_file.py

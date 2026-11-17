@@ -105,6 +105,25 @@ model_credential_schema:
     variable: vision_support
   - default: no_support
     label:
+      en_US: Video Support
+      zh_Hans: 是否支持视频输入
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: support
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: video_support
+  - default: no_support
+    label:
       en_US: Reasoning Support
       zh_Hans: 是否支持推理
     options:

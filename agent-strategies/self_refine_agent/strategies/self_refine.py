@@ -79,6 +79,11 @@ class SelfRefineParams(BaseModel):
     context: list[ContextItem] | None = None
 
 
+# Documented quality contract: stop refining once the evaluator's 0-100 score
+# reaches this value.
+SCORE_THRESHOLD = 80
+
+
 class EvaluationResult(BaseModel):
     """Result of output evaluation"""
     is_satisfactory: bool = False
@@ -114,6 +119,8 @@ class SelfRefineStrategy(AgentStrategy):
         refinement_count = 0
         previous_critique: Optional[str] = None
         final_output = ""
+        best_output: Optional[str] = None
+        best_score: Optional[int] = None
         total_metadata = ExecutionMetadata()
 
         while refinement_count <= params.max_refinements:
@@ -165,10 +172,8 @@ class SelfRefineStrategy(AgentStrategy):
                 continue
 
             # === EVALUATION PHASE ===
-            if refinement_count >= params.max_refinements:
-                logger.info("Max refinements reached, skipping evaluation")
-                break
-
+            # Every successful attempt is evaluated, including the last one, so
+            # the best-scoring output can be returned when the budget runs out.
             yield self.create_log_message(
                 label="Evaluating Output Quality",
                 data={},
@@ -181,7 +186,11 @@ class SelfRefineStrategy(AgentStrategy):
                     output=final_output
                 )
 
-                if evaluation.is_satisfactory:
+                if best_score is None or evaluation.score > best_score:
+                    best_score = evaluation.score
+                    best_output = final_output
+
+                if evaluation.score >= SCORE_THRESHOLD:
                     yield self.create_log_message(
                         label="Quality Check: PASS",
                         data={"score": evaluation.score},
@@ -199,6 +208,10 @@ class SelfRefineStrategy(AgentStrategy):
                         status=ToolInvokeMessage.LogMessage.LogStatus.SUCCESS
                     )
                     logger.info(f"Output needs improvement: {evaluation.issues}")
+                    if refinement_count >= params.max_refinements:
+                        logger.info("Max refinements reached, returning the best-scoring output")
+                        final_output = best_output if best_output is not None else final_output
+                        break
                     previous_critique = evaluation.issues
                     refinement_count += 1
 

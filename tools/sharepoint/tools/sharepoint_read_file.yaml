@@ -1,0 +1,86 @@
+identity:
+  name: sharepoint_read_file
+  author: langgenius
+  label:
+    en_US: Read File
+    zh_Hans: 读取文件内容
+    ja_JP: ファイルの内容を読む
+description:
+  human:
+    en_US: The text of a text, Word, Excel, PowerPoint or PDF file (up to 15 MB), for agents
+    zh_Hans: 读取文本、Word、Excel、PowerPoint 或 PDF 文件的文字内容（最大 15 MB），供 Agent 使用
+    ja_JP: テキスト、Word、Excel、PowerPoint、PDF ファイルの文字を読み取ります（最大 15 MB、エージェント向け）
+  llm: Read the text of a file in the site's document library (text, Word, Excel, PowerPoint or PDF). Use this to read
+    or summarize a document; it returns the text itself, not a file.
+parameters:
+- name: site
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Site
+    zh_Hans: 站点
+    ja_JP: サイト
+  human_description:
+    en_US: Site URL (https://contoso.sharepoint.com/sites/Team), site ID, or root
+    zh_Hans: 站点 URL（https://contoso.sharepoint.com/sites/Team）、站点 ID 或 root
+    ja_JP: サイトの URL（https://contoso.sharepoint.com/sites/Team）、サイト ID、または root
+  llm_description: 'The SharePoint site: its URL (https://contoso.sharepoint.com/sites/Team), its ID from the search sites
+    tool, or root.'
+- name: file_id
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: The file's ID
+    zh_Hans: 文件的 ID
+    ja_JP: ファイルの ID
+  llm_description: The file's ID (from the list files tool).
+- name: max_chars
+  type: number
+  required: false
+  default: 20000
+  form: llm
+  label:
+    en_US: Max characters
+    zh_Hans: 最大字符数
+    ja_JP: 最大文字数
+  human_description:
+    en_US: Return at most this many characters (default 20000, up to 200000)
+    zh_Hans: 最多返回的字符数（默认 20000，最大 200000）
+    ja_JP: 返す最大文字数（既定 20000、最大 200000）
+  llm_description: Return at most this many characters of the text (default 20000, up to 200000).
+output_schema:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Name
+    mime_type:
+      type: string
+      description: MIME type of the file
+    web_url:
+      type: string
+      description: Link
+    content:
+      type: string
+      description: The file's text (Excel sheets as tab-separated rows, slides and PDF pages under headings)
+    length:
+      type: integer
+      description: Length of the whole text in characters
+    truncated:
+      type: boolean
+      description: True when content was cut at max_chars
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/sharepoint_read_file.py

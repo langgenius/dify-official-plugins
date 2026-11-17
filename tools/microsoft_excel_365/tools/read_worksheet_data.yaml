@@ -71,6 +71,40 @@ parameters:
       ja_JP: 読み取るセル範囲（例：A1:D10）
     llm_description: The range of cells to read in A1 notation (e.g., A1:D10). Default is A1:Z100.
 
+  - name: drive_user
+    type: string
+    required: false
+    form: form
+    label:
+      en_US: Drive Owner
+      zh_Hans: 网盘所有者
+      ja_JP: ドライブ所有者
+    human_description:
+      en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive holds the workbooks. Leave empty
+        for the credential''s default, or use a Site ID.'
+      zh_Hans: 仅限 Service Principal：工作簿所在 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值，或使用站点 ID。
+      ja_JP: 'サービス プリンシパルのみ: ブックがある OneDrive のユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値、またはサイト ID を使います。'
+output_schema:
+  type: object
+  properties:
+    values:
+      type: array
+      description: Cell values, one list per row
+    address:
+      type: string
+      description: Address of the range read
+    row_count:
+      type: integer
+      description: Rows
+    column_count:
+      type: integer
+      description: Columns
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
 extra:
   python:
     source: tools/read_worksheet_data.py

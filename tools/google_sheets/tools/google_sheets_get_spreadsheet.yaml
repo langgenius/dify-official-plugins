@@ -1,0 +1,47 @@
+identity:
+  name: google_sheets_get_spreadsheet
+  author: langgenius
+  label:
+    en_US: Get Spreadsheet
+    zh_Hans: 获取电子表格
+    ja_JP: スプレッドシートの情報
+description:
+  human:
+    en_US: Title, link and sheets
+    zh_Hans: 标题、链接和工作表列表
+    ja_JP: タイトル・リンク・シート一覧
+  llm: Get a spreadsheet's title, link and sheets (tabs) with their sizes.
+parameters:
+- name: spreadsheet_id
+  type: string
+  required: true
+  label:
+    en_US: Spreadsheet
+    zh_Hans: 电子表格
+    ja_JP: スプレッドシート
+  human_description:
+    en_US: ID or URL of the spreadsheet
+    zh_Hans: 电子表格的 ID 或 URL
+    ja_JP: スプレッドシートの ID または URL
+  llm_description: The spreadsheet ID or its URL (…/spreadsheets/d/<id>/edit), e.g. from google_sheets_find_spreadsheets.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    title:
+      type: string
+    url:
+      type: string
+    sheets:
+      type: array
+      items:
+        type: object
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_sheets_get_spreadsheet.py

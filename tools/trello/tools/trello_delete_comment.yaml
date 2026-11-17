@@ -1,0 +1,54 @@
+identity:
+  name: trello_delete_comment
+  author: langgenius
+  label:
+    en_US: Delete Comment
+    zh_Hans: 删除评论
+    ja_JP: コメントを削除
+description:
+  human:
+    en_US: Delete a comment
+    zh_Hans: 删除评论
+    ja_JP: コメントを削除
+  llm: Delete a comment from a Trello card. Only when the user clearly asks for it.
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: comment_id
+  type: string
+  required: true
+  label:
+    en_US: Comment ID
+    zh_Hans: 评论 ID
+    ja_JP: コメント ID
+  human_description:
+    en_US: Comment ID (from the list or search tools)
+    zh_Hans: 评论 ID（可从列表或搜索工具获取）
+    ja_JP: コメント ID（一覧または検索ツールから）
+  llm_description: The comment ID, from trello_list_comments.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    deleted:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_delete_comment.py

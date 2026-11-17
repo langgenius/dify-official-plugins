@@ -1,0 +1,33 @@
+identity:
+  name: trello_sign_out
+  display_name: Sign Out of Trello
+  author: langgenius
+  label:
+    en_US: Sign Out of Trello
+    zh_Hans: 退出 Trello 登录
+    ja_JP: Trello からサインアウト
+    pt_BR: Sair do Trello
+description:
+  human:
+    en_US: 'Each user signs in mode only: forget the current user''s Trello sign-in'
+    zh_Hans: 仅限“每个用户自己登录”模式：清除当前用户的 Trello 登录
+    ja_JP: 'ユーザーごとのサインイン モードのみ: 現在のユーザーの Trello サインインを削除します'
+    pt_BR: 'Somente no modo cada usuário entra: esquece o login Trello do usuário atual'
+  llm: Sign the current user out of the Trello tools (forget their stored Trello sign-in). Use only when the user
+    asks to sign out of Trello, or to sign out or switch accounts in general.
+parameters: []
+output_schema:
+  type: object
+  properties:
+    signed_out:
+      type: boolean
+      description: True when a stored sign-in was removed
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_sign_out.py

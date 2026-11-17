@@ -1,0 +1,68 @@
+identity:
+  name: google_drive_remove_permission
+  author: langgenius
+  label:
+    en_US: Stop Sharing
+    zh_Hans: 取消共享
+    ja_JP: 共有を解除
+description:
+  human:
+    en_US: Remove someone's access
+    zh_Hans: 移除某人的访问权限
+    ja_JP: アクセス権を削除
+  llm: Stop sharing a Google Drive file with a person (by email), end link sharing ('anyone'), or remove a permission by ID.
+parameters:
+- name: file_id
+  type: string
+  required: true
+  label:
+    en_US: File ID
+    zh_Hans: 文件 ID
+    ja_JP: ファイル ID
+  human_description:
+    en_US: From search or list folder
+    zh_Hans: 可从搜索或列出文件夹获取
+    ja_JP: 検索・フォルダー一覧から
+  llm_description: The file or folder ID, from google_drive_search or google_drive_list_folder (or the /d/<id>/ part of its
+    link).
+  form: llm
+- name: email
+  type: string
+  required: false
+  label:
+    en_US: Email or 'anyone'
+    zh_Hans: 邮箱或 anyone
+    ja_JP: メールまたは anyone
+  human_description:
+    en_US: Who to remove
+    zh_Hans: 要移除的人
+    ja_JP: 削除する相手
+  llm_description: Email to stop sharing with, or 'anyone' to end link sharing.
+  form: llm
+- name: permission_id
+  type: string
+  required: false
+  label:
+    en_US: Permission ID
+    zh_Hans: 权限 ID
+    ja_JP: 権限 ID
+  human_description:
+    en_US: From List Sharing
+    zh_Hans: 可从查看共享获取
+    ja_JP: 共有の一覧から
+  llm_description: A permission ID from google_drive_list_permissions.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    removed:
+      type: boolean
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_remove_permission.py

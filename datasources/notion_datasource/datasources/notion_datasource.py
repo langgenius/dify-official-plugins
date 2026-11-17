@@ -14,6 +14,10 @@ from dify_plugin.entities.datasource import (
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
 
 
+class PaginatedDatasourceGetPagesResponse(DatasourceGetPagesResponse):
+    next_cursor: str | None = None
+
+
 class NotionDataSource(OnlineDocumentDatasource):
     _API_VERSION = "2022-06-28"
     _AUTH_URL = "https://api.notion.com/v1/oauth/authorize"
@@ -30,8 +34,17 @@ class NotionDataSource(OnlineDocumentDatasource):
         workspace_name = self.notion_workspace_info(access_token).get("workspace_name", "")
         workspace_icon = self.runtime.credentials.get("workspace_icon") or ""
         notion_client = NotionClient(access_token)
-        pages = notion_client.get_authorized_pages()
         workspace_id = self.runtime.credentials.get("workspace_id") or ""
+        page_size = datasource_parameters.get("page_size")
+        start_cursor = datasource_parameters.get("start_cursor")
+        next_cursor: str | None = None
+        if page_size is not None:
+            pages, next_cursor = notion_client.get_authorized_pages_batch(
+                page_size=int(page_size),
+                start_cursor=start_cursor if isinstance(start_cursor, str) else None,
+            )
+        else:
+            pages = notion_client.get_authorized_pages()
         online_document_info = OnlineDocumentInfo(
             workspace_name=workspace_name,
             workspace_icon=workspace_icon,
@@ -39,8 +52,9 @@ class NotionDataSource(OnlineDocumentDatasource):
             pages=pages,
             total=len(pages),
         )
-        return DatasourceGetPagesResponse(
+        return PaginatedDatasourceGetPagesResponse(
             result=[online_document_info],
+            next_cursor=next_cursor,
         )
 
     def _get_content(self, page: GetOnlineDocumentPageContentRequest) -> Generator[DatasourceMessage, None, None]:

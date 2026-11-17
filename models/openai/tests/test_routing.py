@@ -189,6 +189,8 @@ def test_tool_shape_and_named_choice_match_responses() -> None:
     [
         ("gpt-5.6", True),
         ("gpt-6-astra", True),
+        ("gpt-6.1-sol", True),
+        ("gpt-6.1-terra", True),
         ("gpt-6-sol", True),
         ("gpt-6-luna", True),
         ("o3", True),
@@ -214,6 +216,10 @@ def test_only_reasoning_models_request_encrypted_reasoning(model, expected) -> N
         ("gpt-5.6", {"api_protocol": "responses"}, True),
         ("gpt-5.6", {"api_protocol": "chat"}, False),
         ("gpt-6-astra", {}, True),
+        ("gpt-6.1-sol", {}, True),
+        ("gpt-6.1-terra", {}, True),
+        ("gpt-6.1-sol", {"api_protocol": "chat"}, False),
+        ("gpt-6.1-terra", {"api_protocol": "chat"}, False),
         ("gpt-6-sol", {}, True),
         ("gpt-6-luna", {}, True),
         ("gpt-6-astra", {"api_protocol": "chat"}, False),
@@ -386,7 +392,10 @@ def test_unrelated_bad_request_keeps_standard_error_mapping(llm) -> None:
     assert "API Key Authorization Configuration" not in str(transformed)
 
 
-@pytest.mark.parametrize("model", ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])
+@pytest.mark.parametrize(
+    "model",
+    ["gpt-6-astra", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-sol", "gpt-6-luna"],
+)
 @pytest.mark.parametrize("effort", [None, "none", "medium", "max"])
 @pytest.mark.parametrize("protocol", ["chat", "responses"])
 @pytest.mark.parametrize("tool_source", [None, "argument", "parameters"])
@@ -437,7 +446,7 @@ def test_gpt6_requests_follow_reasoning_and_tool_constraints(
         )
         return client.chat.completions.create.call_args.kwargs
 
-    if model == "gpt-6-astra" and effort == "none":
+    if model in {"gpt-6-astra", "gpt-6.1-sol"} and effort == "none":
         with pytest.raises(
             InvokeBadRequestError, match="does not support reasoning effort none"
         ):
@@ -445,7 +454,9 @@ def test_gpt6_requests_follow_reasoning_and_tool_constraints(
     elif (
         protocol == "chat"
         and tool_source
-        and (model == "gpt-6-astra" or effort != "none")
+        and (
+            model in {"gpt-6-astra", "gpt-6.1-sol", "gpt-6.1-terra"} or effort != "none"
+        )
     ):
         with pytest.raises(InvokeBadRequestError, match="require the Responses API"):
             invoke()

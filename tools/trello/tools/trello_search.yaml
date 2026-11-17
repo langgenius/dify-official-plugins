@@ -1,0 +1,76 @@
+identity:
+  name: trello_search
+  author: langgenius
+  label:
+    en_US: Search
+    zh_Hans: 搜索
+    ja_JP: 検索
+description:
+  human:
+    en_US: Find cards and boards by text
+    zh_Hans: 按文字查找卡片和看板
+    ja_JP: テキストでカードとボードを検索
+  llm: Search Trello cards and boards by text (Trello search syntax works, e.g. 'is:open due:week @me label:bug').
+parameters:
+- name: query
+  type: string
+  required: true
+  label:
+    en_US: Query
+    zh_Hans: 搜索词
+    ja_JP: 検索語
+  human_description:
+    en_US: Words or Trello search operators
+    zh_Hans: 关键词或 Trello 搜索语法
+    ja_JP: 語句または Trello の検索演算子
+  llm_description: What to search for; Trello operators like @me, due:week, is:open, label:x work.
+  form: llm
+- name: board_id
+  type: string
+  required: false
+  label:
+    en_US: Board ID
+    zh_Hans: 看板 ID
+    ja_JP: ボード ID
+  human_description:
+    en_US: Only on this board
+    zh_Hans: 仅在此看板中
+    ja_JP: このボードのみ
+  llm_description: Optional board ID to search in.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Default 20, max 100
+    zh_Hans: 默认 20，最多 100
+    ja_JP: 既定 20、最大 100
+  llm_description: Maximum number of results (default 20, max 100).
+  form: llm
+  default: 20
+output_schema:
+  type: object
+  properties:
+    cards:
+      type: array
+      items:
+        type: object
+    boards:
+      type: array
+      items:
+        type: object
+    count:
+      type: integer
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_search.py

@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock, patch
 
 from dify_plugin.entities.model.message import (
@@ -182,3 +183,22 @@ def test_invoke_responses_api_with_json_schema():
     assert text_format["name"] == "llm_response"
     assert text_format["schema"]["additionalProperties"] is False
     assert text_format["schema"]["required"] == ["summary"]
+
+
+@pytest.mark.parametrize(
+    ("endpoint_url", "expected"),
+    [
+        ("https://api.openai.com/v1", "https://api.openai.com/v1"),
+        ("https://api.openai.com/v1/", "https://api.openai.com/v1"),
+        ("https://gateway.example.com", "https://gateway.example.com/v1"),
+        ("https://gateway.example.com/openai", "https://gateway.example.com/openai/v1"),
+        # Versioned bases other than /v1 must be kept as given (e.g. Volcengine Ark).
+        ("https://ark.cn-beijing.volces.com/api/v3", "https://ark.cn-beijing.volces.com/api/v3"),
+        ("https://ark.cn-beijing.volces.com/api/v3/", "https://ark.cn-beijing.volces.com/api/v3"),
+        ("https://gateway.example.com/v2", "https://gateway.example.com/v2"),
+    ],
+)
+def test_create_openai_client_base_url(endpoint_url, expected):
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    client = model._create_openai_client({"api_key": "k", "endpoint_url": endpoint_url})
+    assert str(client.base_url).rstrip("/") == expected

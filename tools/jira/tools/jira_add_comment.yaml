@@ -1,0 +1,58 @@
+identity:
+  name: jira_add_comment
+  author: langgenius
+  label:
+    en_US: Add Comment
+    zh_Hans: 添加评论
+    ja_JP: コメントを追加
+description:
+  human:
+    en_US: Comment on an issue
+    zh_Hans: 给问题添加评论
+    ja_JP: 課題にコメントします
+  llm: Add a comment to a Jira issue.
+parameters:
+- name: issue_key
+  type: string
+  required: true
+  label:
+    en_US: Issue Key
+    zh_Hans: 问题 Key
+    ja_JP: 課題キー
+  human_description:
+    en_US: The issue key (e.g. PROJ-123) or ID
+    zh_Hans: 问题 Key（如 PROJ-123）或 ID
+    ja_JP: '課題キー（例: PROJ-123）または ID'
+  llm_description: The Jira issue key such as PROJ-123 (or its numeric ID).
+  form: llm
+- name: comment
+  type: string
+  required: true
+  label:
+    en_US: Comment
+    zh_Hans: 评论
+    ja_JP: コメント
+  human_description:
+    en_US: Comment text; Markdown is converted for Jira Cloud
+    zh_Hans: 评论内容；在 Jira Cloud 上会转换 Markdown
+    ja_JP: コメント本文。Jira Cloud では Markdown を変換します
+  llm_description: The comment text. Markdown (bold, lists, links, code) is supported.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    comment_id:
+      type: string
+      description: ID of the new comment
+    issue_key:
+      type: string
+      description: The issue
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/jira_add_comment.py

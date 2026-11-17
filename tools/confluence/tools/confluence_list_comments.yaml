@@ -1,0 +1,70 @@
+identity:
+  name: confluence_list_comments
+  author: langgenius
+  label:
+    en_US: List Comments
+    zh_Hans: 列出评论
+    ja_JP: コメント一覧
+description:
+  human:
+    en_US: A page's comments
+    zh_Hans: 页面的评论
+    ja_JP: ページのコメント
+  llm: List the footer comments of a Confluence page.
+parameters:
+- name: page_id
+  type: string
+  required: true
+  label:
+    en_US: Page ID
+    zh_Hans: 页面 ID
+    ja_JP: ページ ID
+  human_description:
+    en_US: The page's numeric ID (from search or the page URL)
+    zh_Hans: 页面的数字 ID（来自搜索或页面 URL）
+    ja_JP: ページの数値 ID（検索結果またはページ URL から）
+  llm_description: The numeric page ID, e.g. 65812 (from the search tool or the page URL .../pages/65812/...).
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_Hans: 数量上限
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of results (default 50, max 250)
+    zh_Hans: 最多返回条数（默认 50，最多 250）
+    ja_JP: 返す件数の上限（既定 50、最大 250）
+  llm_description: Maximum number of results (default 50, max 250).
+  form: llm
+  default: 50
+output_schema:
+  type: object
+  properties:
+    comments:
+      type: array
+      description: Comments
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          body:
+            type: string
+          author_id:
+            type: string
+          created:
+            type: string
+    count:
+      type: integer
+      description: Number of comments
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/confluence_list_comments.py

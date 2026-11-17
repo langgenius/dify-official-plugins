@@ -1,0 +1,70 @@
+identity:
+  name: trello_get_attachment
+  author: langgenius
+  label:
+    en_US: Get Attachment
+    zh_Hans: 获取附件
+    ja_JP: 添付ファイルを取得
+description:
+  human:
+    en_US: Download an attachment
+    zh_Hans: 下载附件
+    ja_JP: 添付ファイルをダウンロード
+  llm: 'Get an attachment of a Trello card: its details and, for uploaded files, the file itself (up to 50 MB).'
+parameters:
+- name: card_id
+  type: string
+  required: true
+  label:
+    en_US: Card ID
+    zh_Hans: 卡片 ID
+    ja_JP: カード ID
+  human_description:
+    en_US: Card ID (from the list or search tools)
+    zh_Hans: 卡片 ID（可从列表或搜索工具获取）
+    ja_JP: カード ID（一覧または検索ツールから）
+  llm_description: The card ID (or its short link), from the search or list tools.
+  form: llm
+- name: attachment_id
+  type: string
+  required: true
+  label:
+    en_US: Attachment ID
+    zh_Hans: 附件 ID
+    ja_JP: 添付ファイル ID
+  human_description:
+    en_US: Attachment ID (from the list or search tools)
+    zh_Hans: 附件 ID（可从列表或搜索工具获取）
+    ja_JP: 添付ファイル ID（一覧または検索ツールから）
+  llm_description: The attachment ID, from trello_list_attachments.
+  form: llm
+- name: download
+  type: boolean
+  required: false
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    ja_JP: ファイルをダウンロード
+  human_description:
+    en_US: Return the file too
+    zh_Hans: 同时返回文件
+    ja_JP: ファイルも返す
+  llm_description: Whether to return the file content.
+  form: llm
+  default: true
+output_schema:
+  type: object
+  properties:
+    attachment:
+      type: object
+    name:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_get_attachment.py

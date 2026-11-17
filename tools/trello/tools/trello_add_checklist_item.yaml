@@ -1,0 +1,81 @@
+identity:
+  name: trello_add_checklist_item
+  author: langgenius
+  label:
+    en_US: Add Checklist Item
+    zh_Hans: 添加清单项
+    ja_JP: チェック項目を追加
+description:
+  human:
+    en_US: Add an item to a checklist
+    zh_Hans: 给清单添加条目
+    ja_JP: チェックリストに項目を追加
+  llm: Add an item to a checklist.
+parameters:
+- name: checklist_id
+  type: string
+  required: true
+  label:
+    en_US: Checklist ID
+    zh_Hans: 清单 ID
+    ja_JP: チェックリスト ID
+  human_description:
+    en_US: Checklist ID (from the list or search tools)
+    zh_Hans: 清单 ID（可从列表或搜索工具获取）
+    ja_JP: チェックリスト ID（一覧または検索ツールから）
+  llm_description: The checklist ID, from trello_list_checklists.
+  form: llm
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Item
+    zh_Hans: 条目
+    ja_JP: 項目
+  human_description:
+    en_US: Item text
+    zh_Hans: 条目内容
+    ja_JP: 項目の内容
+  llm_description: The item text.
+  form: llm
+- name: checked
+  type: boolean
+  required: false
+  label:
+    en_US: Done
+    zh_Hans: 已完成
+    ja_JP: 完了
+  human_description:
+    en_US: Add it as done
+    zh_Hans: 添加为已完成
+    ja_JP: 完了として追加
+  llm_description: Whether the item starts as done.
+  form: llm
+  default: false
+- name: position
+  type: string
+  required: false
+  label:
+    en_US: Position
+    zh_Hans: 位置
+    ja_JP: 位置
+  human_description:
+    en_US: top, bottom or a number
+    zh_Hans: top、bottom 或数字
+    ja_JP: top、bottom、または数値
+  llm_description: top, bottom (default) or a number.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    item_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_add_checklist_item.py

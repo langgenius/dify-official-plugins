@@ -59,15 +59,24 @@ parameters:
     type: string
     required: false
     placeholder:
-      en_US: "duckduckgo,brave,yahoo"
-      zh_Hans: "duckduckgo,brave,yahoo"
+      en_US: "google,yahoo,brave"
+      zh_Hans: "google,yahoo,brave"
     label:
       en_US: Search engines
       zh_Hans: 搜索引擎
     human_description:
-      en_US: "Comma-separated engines to query, in order. Leave empty to rotate through all of them. Available: duckduckgo, brave, yahoo, google, startpage, mojeek, wikipedia, grokipedia. Pin this to the engines that still answer if this server gets rate-limited."
-      zh_Hans: "逗号分隔的搜索引擎列表，按顺序查询。留空则轮询全部引擎。可选：duckduckgo, brave, yahoo, google, startpage, mojeek, wikipedia, grokipedia。当服务器被限流时可固定为仍能返回结果的引擎。"
+      en_US: "Comma-separated engines to query. Available: google, yahoo, brave. Leave empty to ask all of them. The last JSON row and the search_status / engine_status outputs report what each engine did."
+      zh_Hans: "逗号分隔的搜索引擎列表。可选：google, yahoo, brave。留空则全部查询。最后一行 JSON 以及 search_status / engine_status 输出会说明每个引擎的结果。"
     form: form
+output_schema:
+  type: object
+  properties:
+    search_status:
+      type: string
+      description: "Outcome of the search: successful, no_result or blocked (every primary engine refused or timed out)."
+    engine_status:
+      type: object
+      description: "Per engine: successful, no_result, blocked or not_applied."
 extra:
   python:
     source: tools/ddgo_search.py

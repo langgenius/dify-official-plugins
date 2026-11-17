@@ -1,0 +1,53 @@
+model: kimi-k3-1-pro-261024
+label:
+  en_US: kimi-k3-1-pro-261024
+  zh_Hans: kimi-k3-1-pro-261024
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - video
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: max
+    options:
+      - low
+      - high
+      - max
+    help:
+      zh_Hans: 控制思维链长度。low 轻量思考侧重快速响应；high 深度分析处理复杂问题；max 最高程度思考适配高难度推理任务。K3.1 Pro 始终开启思考。
+      en_US: Controls chain-of-thought length. low favors fast response; high enables deep analysis for complex problems; max maximizes reasoning for hardest tasks. K3.1 Pro always thinks.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: max_tokens
+    use_template: max_tokens
+    max: 131072
+pricing:
+  input: "13"
+  output: "68"
+  unit: "0.000001"
+  currency: RMB

@@ -4,6 +4,7 @@ label:
   en_US: qwen3.8-2.4t-a95b
 model_type: llm
 features:
+  - structured-output
   - agent-thought
   - tool-call
   - multi-tool-call

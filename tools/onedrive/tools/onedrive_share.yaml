@@ -1,0 +1,137 @@
+identity:
+  name: onedrive_share
+  author: langgenius
+  label:
+    en_US: Create Sharing Link
+    zh_Hans: 创建共享链接
+    ja_JP: 共有リンクを作成
+    pt_BR: Criar Link de Compartilhamento
+description:
+  human:
+    en_US: Create a view, edit or embed link for a file or folder
+    zh_Hans: 为文件或文件夹创建查看、编辑或嵌入链接
+    ja_JP: ファイルまたはフォルダーの表示・編集・埋め込み用リンクを作成します
+    pt_BR: Cria um link de visualização, edição ou incorporação para um arquivo ou pasta
+  llm: 'Create a sharing link for a OneDrive file or folder. type: view (read-only), edit, or embed (personal OneDrive only).
+    scope: organization (people in the user''s organization) or anonymous (anyone with the link; often disabled by administrators).
+    Prefer view and organization unless the user asks otherwise.'
+parameters:
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Item ID
+    zh_Hans: 条目 ID
+    ja_JP: アイテム ID
+    pt_BR: ID do Item
+  human_description:
+    en_US: ID of the file or folder
+    zh_Hans: 文件或文件夹的 ID
+    ja_JP: ファイルまたはフォルダーの ID
+    pt_BR: ID do arquivo ou pasta
+  llm_description: ID of the file or folder to share.
+  form: llm
+- name: type
+  type: select
+  required: false
+  label:
+    en_US: Type
+    zh_Hans: 类型
+    ja_JP: 種類
+    pt_BR: Tipo
+  human_description:
+    en_US: 'view: read-only; edit: can change it; embed: for web pages (personal OneDrive only)'
+    zh_Hans: view：只读；edit：可编辑；embed：嵌入网页（仅个人 OneDrive）
+    ja_JP: 'view: 閲覧のみ、edit: 編集可、embed: Web ページへの埋め込み（個人用 OneDrive のみ）'
+    pt_BR: 'view: somente leitura; edit: pode alterar; embed: para páginas web (somente OneDrive pessoal)'
+  llm_description: view, edit or embed.
+  form: llm
+  default: view
+  options:
+  - value: view
+    label:
+      en_US: View
+      zh_Hans: 查看
+      ja_JP: 表示
+      pt_BR: Visualizar
+  - value: edit
+    label:
+      en_US: Edit
+      zh_Hans: 编辑
+      ja_JP: 編集
+      pt_BR: Editar
+  - value: embed
+    label:
+      en_US: Embed
+      zh_Hans: 嵌入
+      ja_JP: 埋め込み
+      pt_BR: Incorporar
+- name: scope
+  type: select
+  required: false
+  label:
+    en_US: Scope
+    zh_Hans: 范围
+    ja_JP: 範囲
+    pt_BR: Escopo
+  human_description:
+    en_US: 'organization: people in your organization; anonymous: anyone with the link'
+    zh_Hans: organization：本组织的人；anonymous：任何拿到链接的人
+    ja_JP: 'organization: 組織内のユーザー、anonymous: リンクを知っている全員'
+    pt_BR: 'organization: pessoas da sua organização; anonymous: qualquer pessoa com o link'
+  llm_description: organization or anonymous.
+  form: llm
+  default: organization
+  options:
+  - value: organization
+    label:
+      en_US: Organization
+      zh_Hans: 组织内
+      ja_JP: 組織
+      pt_BR: Organização
+  - value: anonymous
+    label:
+      en_US: Anyone with the link
+      zh_Hans: 任何人
+      ja_JP: リンクを知っている全員
+      pt_BR: Qualquer pessoa com o link
+- name: drive_user
+  type: string
+  required: false
+  label:
+    en_US: Drive Owner
+    zh_Hans: 网盘所有者
+    ja_JP: ドライブ所有者
+    pt_BR: Proprietário da Unidade
+  human_description:
+    en_US: 'Service Principal only: the user (user principal name or user ID) whose OneDrive to use. Leave empty for the credential''s
+      default.'
+    zh_Hans: 仅限 Service Principal：要使用其 OneDrive 的用户（用户主体名称或用户 ID）。留空则使用凭据中的默认值。
+    ja_JP: 'サービス プリンシパルのみ: OneDrive を使うユーザー（ユーザー プリンシパル名またはユーザー ID）。空欄の場合は資格情報の既定値を使います。'
+    pt_BR: 'Somente Service Principal: o usuário (nome principal ou ID) cujo OneDrive usar. Deixe vazio para usar o padrão
+      da credencial.'
+  form: form
+output_schema:
+  type: object
+  properties:
+    link_url:
+      type: string
+      description: The sharing link
+    type:
+      type: string
+      description: 'Link type: view, edit or embed'
+    scope:
+      type: string
+      description: 'Link scope: organization or anonymous'
+    permission_id:
+      type: string
+      description: ID of the permission the link is, to remove it later
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/onedrive_share.py

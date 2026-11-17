@@ -1,0 +1,88 @@
+description:
+  human:
+    en_US: Generate images with MiniMax-H3-Image.
+    zh_Hans: 使用 MiniMax-H3-Image 生成图片。
+  llm: Generate images from a text prompt with MiniMax-H3-Image.
+extra:
+  python:
+    source: tools/image-generate.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Image Generate
+    zh_Hans: 图片生成
+  name: image_generate
+parameters:
+  - form: llm
+    human_description:
+      en_US: The text prompt used to generate the image.
+      zh_Hans: 用于生成图片的文本提示词。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Text prompt describing the image to generate.
+    name: prompt
+    required: true
+    type: string
+  - default: "1:1"
+    form: form
+    human_description:
+      en_US: Image aspect ratio. Combined with Area; do not also set a custom pixel size.
+      zh_Hans: 图片宽高比，与分辨率档位一起使用。
+    label:
+      en_US: Aspect Ratio
+      zh_Hans: 宽高比
+    name: aspect_ratio
+    options:
+      - label:
+          en_US: "1:1"
+        value: "1:1"
+      - label:
+          en_US: "16:9"
+        value: "16:9"
+      - label:
+          en_US: "9:16"
+        value: "9:16"
+      - label:
+          en_US: "4:3"
+        value: "4:3"
+      - label:
+          en_US: "3:4"
+        value: "3:4"
+    required: false
+    type: select
+  - default: "1K"
+    form: form
+    human_description:
+      en_US: Output resolution. 1K, 2K, or 4K.
+      zh_Hans: 输出分辨率，可选 1K、2K 或 4K。
+    label:
+      en_US: Area
+      zh_Hans: 分辨率
+    name: area
+    options:
+      - label:
+          en_US: 1K
+        value: "1K"
+      - label:
+          en_US: 2K
+        value: "2K"
+      - label:
+          en_US: 4K
+        value: "4K"
+    required: false
+    type: select
+  - default: 1
+    form: form
+    human_description:
+      en_US: Number of images to generate (1-10).
+      zh_Hans: 单次生成的图片数量（1-10）。
+    label:
+      en_US: Number of Images
+      zh_Hans: 生成数量
+    max: 10
+    min: 1
+    name: n
+    required: false
+    type: number

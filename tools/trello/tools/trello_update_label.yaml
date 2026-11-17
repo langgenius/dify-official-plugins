@@ -1,0 +1,123 @@
+identity:
+  name: trello_update_label
+  author: langgenius
+  label:
+    en_US: Update Label
+    zh_Hans: 更新标签
+    ja_JP: ラベルを更新
+description:
+  human:
+    en_US: Rename or recolor a label
+    zh_Hans: 重命名或修改标签颜色
+    ja_JP: ラベルの名前や色を変更
+  llm: Rename a label or change its color.
+parameters:
+- name: label_id
+  type: string
+  required: true
+  label:
+    en_US: Label ID
+    zh_Hans: 标签 ID
+    ja_JP: ラベル ID
+  human_description:
+    en_US: Label ID (from the list or search tools)
+    zh_Hans: 标签 ID（可从列表或搜索工具获取）
+    ja_JP: ラベル ID（一覧または検索ツールから）
+  llm_description: The label ID, from trello_list_labels.
+  form: llm
+- name: name
+  type: string
+  required: false
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: New name
+    zh_Hans: 新名称
+    ja_JP: 新しい名前
+  llm_description: New label name.
+  form: llm
+- name: color
+  type: select
+  required: false
+  label:
+    en_US: Color
+    zh_Hans: 颜色
+    ja_JP: 色
+  human_description:
+    en_US: Label color
+    zh_Hans: 标签颜色
+    ja_JP: ラベルの色
+  llm_description: green, yellow, orange, red, purple, blue, sky, lime, pink, black, or none.
+  form: llm
+  options:
+  - value: green
+    label:
+      en_US: green
+      zh_Hans: green
+      ja_JP: green
+  - value: yellow
+    label:
+      en_US: yellow
+      zh_Hans: yellow
+      ja_JP: yellow
+  - value: orange
+    label:
+      en_US: orange
+      zh_Hans: orange
+      ja_JP: orange
+  - value: red
+    label:
+      en_US: red
+      zh_Hans: red
+      ja_JP: red
+  - value: purple
+    label:
+      en_US: purple
+      zh_Hans: purple
+      ja_JP: purple
+  - value: blue
+    label:
+      en_US: blue
+      zh_Hans: blue
+      ja_JP: blue
+  - value: sky
+    label:
+      en_US: sky
+      zh_Hans: sky
+      ja_JP: sky
+  - value: lime
+    label:
+      en_US: lime
+      zh_Hans: lime
+      ja_JP: lime
+  - value: pink
+    label:
+      en_US: pink
+      zh_Hans: pink
+      ja_JP: pink
+  - value: black
+    label:
+      en_US: black
+      zh_Hans: black
+      ja_JP: black
+  - value: none
+    label:
+      en_US: none
+      zh_Hans: none
+      ja_JP: none
+output_schema:
+  type: object
+  properties:
+    label_id:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/trello_update_label.py

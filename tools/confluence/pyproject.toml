@@ -1,6 +1,6 @@
 [project]
 name = "confluence"
-version = "0.1.1"
+version = "1.0.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,6 +9,10 @@ requires-python = ">=3.12"
 dependencies = [
     "atlassian-python-api>=5.0.4",
     "dify_plugin>=0.10.2",
+    "cryptography>=42.0.0",
+    "markdown>=3.5",
+    "pyyaml>=6.0",
+    "requests>=2.31.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

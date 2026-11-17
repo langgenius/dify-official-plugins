@@ -16,8 +16,46 @@ identity:
     zh_Hant: 與 Outlook 郵件互動
   icon: icon.svg
   icon_dark: icon-dark.svg
-# Service Principal (app-only): no user sign-in, the app acts with application permissions.
+# App credential, two modes:
+# - Service Principal (app-only): no user sign-in, the app acts with application permissions.
+# - Each user signs in: every Dify user signs in with their own Microsoft account the first time a tool
+#   needs it (through the "Outlook sign-in" endpoint), and the tools act on that user's own mailbox.
 credentials_for_provider:
+  auth_mode:
+    type: select
+    required: false
+    default: service_principal
+    label:
+      en_US: Mode
+      ko_KR: 모드
+      zh_Hans: 模式
+      pt_BR: Modo
+      ja_JP: モード
+      zh_Hant: 模式
+    options:
+      - value: service_principal
+        label:
+          en_US: Service Principal (one app identity for everyone)
+          ko_KR: 서비스 주체 (모두에게 하나의 앱 ID)
+          zh_Hans: Service Principal（所有人共用一个应用身份）
+          pt_BR: Service Principal (uma identidade de aplicativo para todos)
+          ja_JP: サービス プリンシパル（全員で 1 つのアプリ ID）
+          zh_Hant: Service Principal（所有人共用一個應用程式身分）
+      - value: per_user
+        label:
+          en_US: Each user signs in (own mailbox, for chat agents)
+          ko_KR: 사용자별 로그인 (본인 사서함, 채팅 에이전트용)
+          zh_Hans: 每个用户自己登录（各自的邮箱，适用于对话 Agent）
+          pt_BR: Cada usuário faz login (própria caixa, para agentes de chat)
+          ja_JP: ユーザーごとにサインイン（本人のメールボックス、チャット エージェント向け）
+          zh_Hant: 每個使用者自行登入（各自的信箱，適用於對話 Agent）
+    help:
+      en_US: "Each user signs in: the first time a chat user needs Outlook, the tool returns a Microsoft sign-in link for them; after signing in, the tools act on that user's own mailbox. Needs the Sign-in Callback URL below and delegated Graph permissions on the app."
+      ko_KR: "사용자별 로그인: 채팅 사용자가 처음 Outlook을 사용할 때 도구가 Microsoft 로그인 링크를 반환하며, 로그인 후에는 해당 사용자의 사서함에서 작업합니다. 아래 로그인 콜백 URL과 앱의 위임된 Graph 권한이 필요합니다."
+      zh_Hans: "每个用户自己登录：聊天用户第一次用到 Outlook 时，工具会返回 Microsoft 登录链接；登录后，工具操作的是该用户自己的邮箱。需要填写下方的登录回调 URL，并为应用配置委托的 Graph 权限。"
+      pt_BR: "Cada usuário faz login: na primeira vez que um usuário do chat precisar do Outlook, a ferramenta retorna um link de login da Microsoft; depois disso, as ferramentas atuam na caixa de correio desse usuário. Requer a URL de retorno de login abaixo e permissões delegadas do Graph no aplicativo."
+      ja_JP: "ユーザーごとにサインイン: チャットのユーザーが初めて Outlook を使うとき、ツールが Microsoft のサインイン リンクを返します。サインイン後は、そのユーザー本人のメールボックスを操作します。下のサインイン コールバック URL と、アプリへの委任された Graph のアクセス許可が必要です。"
+      zh_Hant: "每個使用者自行登入：聊天使用者第一次用到 Outlook 時，工具會回傳 Microsoft 登入連結；登入後，工具操作的是該使用者自己的信箱。需要填寫下方的登入回呼 URL，並為應用程式設定委派的 Graph 權限。"
   tenant_id:
     type: text-input
     required: true
@@ -36,12 +74,12 @@ credentials_for_provider:
       ja_JP: "ディレクトリ（テナント）ID、例: 00000000-0000-0000-0000-000000000000"
       zh_Hant: 目錄（租用戶）ID，例如 00000000-0000-0000-0000-000000000000
     help:
-      en_US: "Service Principal sign-in needs your directory's own tenant ID; 'common' does not work. Find it under Microsoft Entra ID > Overview."
-      ko_KR: "서비스 주체 로그인에는 디렉터리의 테넌트 ID가 필요하며 'common'은 사용할 수 없습니다. Microsoft Entra ID > 개요에서 확인하세요."
-      zh_Hans: "Service Principal 登录必须使用您目录自己的租户 ID，不能用 'common'。可在 Microsoft Entra ID > 概述中找到。"
-      pt_BR: "O login com Service Principal precisa do ID do locatário do seu diretório; 'common' não funciona. Encontre-o em Microsoft Entra ID > Visão geral."
-      ja_JP: "サービス プリンシパルでのサインインには、ディレクトリ固有のテナント ID が必要です（'common' は使えません）。Microsoft Entra ID > 概要 で確認できます。"
-      zh_Hant: "Service Principal 登入必須使用您目錄自己的租用戶 ID，不能用 'common'。可在 Microsoft Entra ID > 概觀中找到。"
+      en_US: "Your directory (tenant) ID, from Microsoft Entra ID > Overview or the app registration's Overview. Service Principal must use it ('common' does not work); with Each user signs in it limits sign-in to your organization."
+      ko_KR: "디렉터리(테넌트) ID입니다. Microsoft Entra ID > 개요 또는 앱 등록의 개요에서 확인하세요. 서비스 주체는 반드시 이 값을 사용해야 하며('common' 불가), 사용자별 로그인에서는 조직 계정만 로그인하도록 제한합니다."
+      zh_Hans: "目录（租户）ID，可在 Microsoft Entra ID > 概述或应用注册的概述页找到。Service Principal 必须填它（不能用 'common'）；“每个用户自己登录”模式下，填它可以只允许本组织的账号登录。"
+      pt_BR: "O ID do diretório (locatário), em Microsoft Entra ID > Visão geral ou na Visão geral do registro do aplicativo. O Service Principal precisa dele ('common' não funciona); no modo em que cada usuário faz login, ele restringe o login à sua organização."
+      ja_JP: "ディレクトリ（テナント）ID です。Microsoft Entra ID > 概要、またはアプリ登録の概要で確認できます。サービス プリンシパルでは必須です（'common' は使えません）。ユーザーごとのサインインでは、自組織のアカウントだけがサインインできるようにします。"
+      zh_Hant: "目錄（租用戶）ID，可在 Microsoft Entra ID > 概觀或應用程式註冊的概觀頁找到。Service Principal 必須填它（不能用 'common'）；「每個使用者自行登入」模式下，填它可以只允許本組織的帳號登入。"
     url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Overview
   client_id:
     type: text-input
@@ -79,16 +117,16 @@ credentials_for_provider:
       ja_JP: アプリ登録のクライアントシークレットの値
       zh_Hant: 應用程式註冊的客戶端密鑰值
     help:
-      en_US: "The app needs Microsoft Graph application permissions (Mail.ReadWrite, Mail.Send, Calendars.ReadWrite) with admin consent."
-      ko_KR: "앱에 관리자 동의가 부여된 Microsoft Graph 애플리케이션 권한(Mail.ReadWrite, Mail.Send, Calendars.ReadWrite)이 필요합니다."
-      zh_Hans: "应用需要已获管理员同意的 Microsoft Graph 应用程序权限（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）。"
-      pt_BR: "O aplicativo precisa das permissões de aplicativo do Microsoft Graph (Mail.ReadWrite, Mail.Send, Calendars.ReadWrite) com consentimento do administrador."
-      ja_JP: "アプリには、管理者の同意を付与した Microsoft Graph のアプリケーションのアクセス許可（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）が必要です。"
-      zh_Hant: "應用程式需要已獲管理員同意的 Microsoft Graph 應用程式權限（Mail.ReadWrite、Mail.Send、Calendars.ReadWrite）。"
+      en_US: "Copy the secret's Value (not its Secret ID). Service Principal needs Graph application permissions Mail.ReadWrite, Mail.Send, Calendars.ReadWrite with admin consent. Each user signs in needs delegated permissions Mail.Read, Mail.ReadWrite, Mail.Send, Calendars.ReadWrite, Calendars.Read.Shared, offline_access."
+      ko_KR: "비밀의 값(Value)을 복사하세요(비밀 ID 아님). 서비스 주체에는 관리자 동의가 부여된 Graph 애플리케이션 권한 Mail.ReadWrite, Mail.Send, Calendars.ReadWrite가, 사용자별 로그인에는 위임된 권한 Mail.Read, Mail.ReadWrite, Mail.Send, Calendars.ReadWrite, Calendars.Read.Shared, offline_access가 필요합니다."
+      zh_Hans: "复制密钥的“值”（不是“机密 ID”）。Service Principal 需要已获管理员同意的 Graph 应用程序权限 Mail.ReadWrite、Mail.Send、Calendars.ReadWrite；“每个用户自己登录”需要委托权限 Mail.Read、Mail.ReadWrite、Mail.Send、Calendars.ReadWrite、Calendars.Read.Shared、offline_access。"
+      pt_BR: "Copie o Valor do segredo (não o ID do segredo). O Service Principal precisa das permissões de aplicativo do Graph Mail.ReadWrite, Mail.Send, Calendars.ReadWrite com consentimento do administrador; o modo em que cada usuário faz login precisa das permissões delegadas Mail.Read, Mail.ReadWrite, Mail.Send, Calendars.ReadWrite, Calendars.Read.Shared, offline_access."
+      ja_JP: "シークレットの「値」をコピーしてください（シークレット ID ではありません）。サービス プリンシパルには管理者の同意を付与した Graph のアプリケーションのアクセス許可 Mail.ReadWrite、Mail.Send、Calendars.ReadWrite、ユーザーごとのサインインには委任されたアクセス許可 Mail.Read、Mail.ReadWrite、Mail.Send、Calendars.ReadWrite、Calendars.Read.Shared、offline_access が必要です。"
+      zh_Hant: "複製密碼的「值」（不是「祕密識別碼」）。Service Principal 需要已獲管理員同意的 Graph 應用程式權限 Mail.ReadWrite、Mail.Send、Calendars.ReadWrite；「每個使用者自行登入」需要委派權限 Mail.Read、Mail.ReadWrite、Mail.Send、Calendars.ReadWrite、Calendars.Read.Shared、offline_access。"
     url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
   mailbox:
     type: text-input
-    required: true
+    required: false
     label:
       en_US: Default Mailbox
       ko_KR: 기본 사서함
@@ -104,12 +142,36 @@ credentials_for_provider:
       ja_JP: "例: support@contoso.com"
       zh_Hant: 例如 support@contoso.com
     help:
-      en_US: "The mailbox (user principal name or user ID) the tools act on. A tool's Mailbox parameter overrides it."
-      ko_KR: "도구가 작업할 사서함(사용자 계정 이름 또는 사용자 ID)입니다. 도구의 사서함 매개변수가 우선합니다."
-      zh_Hans: "工具要操作的邮箱（用户主体名称或用户 ID）。工具的“邮箱”参数会覆盖此值。"
-      pt_BR: "A caixa de correio (nome principal do usuário ou ID do usuário) em que as ferramentas atuam. O parâmetro Caixa de Correio da ferramenta tem prioridade."
-      ja_JP: "ツールが操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。ツールの「メールボックス」パラメーターが優先されます。"
-      zh_Hant: "工具要操作的信箱（使用者主體名稱或使用者 ID）。工具的「信箱」參數會覆蓋此值。"
+      en_US: "Service Principal: the mailbox (user principal name or user ID) the tools act on; a tool's Mailbox parameter overrides it. Not used when each user signs in."
+      ko_KR: "서비스 주체: 도구가 작업할 사서함(사용자 계정 이름 또는 사용자 ID)이며, 도구의 사서함 매개변수가 우선합니다. 사용자별 로그인에서는 사용하지 않습니다."
+      zh_Hans: "Service Principal：工具要操作的邮箱（用户主体名称或用户 ID），工具的“邮箱”参数会覆盖此值。每个用户自己登录时不使用。"
+      pt_BR: "Service Principal: a caixa de correio (nome principal do usuário ou ID do usuário) em que as ferramentas atuam; o parâmetro Caixa de Correio da ferramenta tem prioridade. Não é usada quando cada usuário faz login."
+      ja_JP: "サービス プリンシパル: ツールが操作するメールボックス（ユーザー プリンシパル名またはユーザー ID）。ツールの「メールボックス」パラメーターが優先されます。ユーザーごとのサインインでは使いません。"
+      zh_Hant: "Service Principal：工具要操作的信箱（使用者主體名稱或使用者 ID），工具的「信箱」參數會覆蓋此值。每個使用者自行登入時不使用。"
+  redirect_uri:
+    type: text-input
+    required: false
+    label:
+      en_US: Sign-in Callback URL
+      ko_KR: 로그인 콜백 URL
+      zh_Hans: 登录回调 URL
+      pt_BR: URL de Retorno do Login
+      ja_JP: サインイン コールバック URL
+      zh_Hant: 登入回呼 URL
+    placeholder:
+      en_US: Only for "Each user signs in", e.g. https://dify.example.com/e/xxxx/outlook/callback
+      ko_KR: "사용자별 로그인 전용, 예: https://dify.example.com/e/xxxx/outlook/callback"
+      zh_Hans: 仅用于“每个用户自己登录”，例如 https://dify.example.com/e/xxxx/outlook/callback
+      pt_BR: Somente para "Cada usuário faz login", ex. https://dify.example.com/e/xxxx/outlook/callback
+      ja_JP: "ユーザーごとのサインインのみ。例: https://dify.example.com/e/xxxx/outlook/callback"
+      zh_Hant: 僅用於「每個使用者自行登入」，例如 https://dify.example.com/e/xxxx/outlook/callback
+    help:
+      en_US: "Create this plugin's 'Outlook sign-in' endpoint (plugin details > Endpoints), paste its /outlook/callback URL here, and add the same URL to the app registration's Web redirect URIs."
+      ko_KR: "이 플러그인의 'Outlook sign-in' 엔드포인트를 만들고(플러그인 세부 정보 > 엔드포인트) /outlook/callback URL을 여기에 붙여 넣은 뒤, 같은 URL을 앱 등록의 웹 리디렉션 URI에 추가하세요."
+      zh_Hans: "先创建本插件的 “Outlook sign-in” 端点（插件详情 > 端点），把它的 /outlook/callback URL 粘贴到这里，并把同一个 URL 加到应用注册的 Web 重定向 URI 中。"
+      pt_BR: "Crie o endpoint 'Outlook sign-in' deste plugin (detalhes do plugin > Endpoints), cole aqui a URL /outlook/callback e adicione a mesma URL aos URIs de redirecionamento Web do registro de aplicativo."
+      ja_JP: "このプラグインの「Outlook sign-in」エンドポイントを作成し（プラグインの詳細 > エンドポイント）、その /outlook/callback の URL をここに貼り付け、同じ URL をアプリ登録の Web リダイレクト URI に追加してください。"
+      zh_Hant: "先建立本外掛的「Outlook sign-in」端點（外掛詳情 > 端點），把它的 /outlook/callback URL 貼到這裡，並把同一個 URL 加到應用程式註冊的 Web 重新導向 URI 中。"
   cloud:
     type: select
     required: false
@@ -327,6 +389,7 @@ tools:
   - tools/get_event.yaml
   - tools/update_event.yaml
   - tools/delete_event.yaml
+  - tools/outlook_sign_out.yaml
 extra:
   python:
     source: provider/outlook.py

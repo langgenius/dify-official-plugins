@@ -8,6 +8,7 @@ import requests
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import (
     AIModelEntity,
+    FetchFrom,
     I18nObject,
     ModelFeature,
     ParameterRule,
@@ -25,6 +26,8 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     TextPromptMessageContent,
     ImagePromptMessageContent,
+    DocumentPromptMessageContent,
+    MultiModalPromptMessageContent,
     PromptMessageContentType,
     AssistantPromptMessage,
     PromptMessageContent,
@@ -58,55 +61,47 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             "X-Title": "Dify",
         }
 
-    def _convert_files_to_text(
-        self, messages: list[PromptMessage]
+    @staticmethod
+    def _file_description(content: MultiModalPromptMessageContent) -> str:
+        if isinstance(content, ImagePromptMessageContent):
+            label = "Image file"
+        elif isinstance(content, DocumentPromptMessageContent):
+            label = "Document file"
+        else:
+            return f"[File uploaded]: {content.url}"
+        return f"[{label} uploaded]: {content.url}" if content.url else f"[{label} uploaded]"
+
+    def _prepare_media(
+        self, messages: list[PromptMessage], *, vision: bool, video: bool
     ) -> list[PromptMessage]:
-        """
-        Convert any file content in messages to text descriptions to avoid validation issues
-        """
-        converted_messages = []
+        """Keep supported media structured and describe other files as text."""
+        if vision and video:
+            return messages
+        prepared = messages
+        for index, message in enumerate(messages):
+            if not isinstance(message, UserPromptMessage) or not isinstance(message.content, list):
+                continue
 
-        for message in messages:
-            if isinstance(message, UserPromptMessage) and isinstance(
-                message.content, list
-            ):
-                # Process multimodal content
-                text_parts = []
-                for content in message.content:
-                    if isinstance(content, TextPromptMessageContent):
-                        text_parts.append(content.data)
-                    elif isinstance(content, ImagePromptMessageContent):
-                        # Convert image to text description
-                        if hasattr(content, "url") and content.url:
-                            text_parts.append(f"[Image file uploaded]: {content.url}")
-                        else:
-                            text_parts.append("[Image file uploaded]")
-                    elif (
-                        hasattr(content, "type")
-                        and content.type == PromptMessageContentType.DOCUMENT
-                    ):
-                        # Handle document files like PDF
-                        if hasattr(content, "url") and content.url:
-                            text_parts.append(
-                                f"[Document file uploaded]: {content.url}"
-                            )
-                        else:
-                            text_parts.append("[Document file uploaded]")
-                    else:
-                        # Handle any other content types
-                        if hasattr(content, "url"):
-                            text_parts.append(f"[File uploaded]: {content.url}")
-                        else:
-                            text_parts.append(str(content))
+            parts = []
+            for part in message.content:
+                supported = video if part.type == PromptMessageContentType.VIDEO else vision
+                if isinstance(part, TextPromptMessageContent) or supported:
+                    parts.append(part)
+                else:
+                    parts.append(TextPromptMessageContent(data=self._file_description(part)))
 
-                # Create new text-only message
-                converted_message = UserPromptMessage(content=" ".join(text_parts))
-                converted_messages.append(converted_message)
+            if not vision and all(isinstance(part, TextPromptMessageContent) for part in parts):
+                # Keep the plain string expected by text-only endpoints.
+                content = " ".join(part.data for part in parts)
+            elif parts != message.content:
+                content = parts
             else:
-                # Keep non-multimodal messages as is
-                converted_messages.append(message)
+                continue
 
-        return converted_messages
+            if prepared is messages:
+                prepared = messages.copy()
+            prepared[index] = message.model_copy(update={"content": content})
+        return prepared
 
     @staticmethod
     def _set_reasoning_params(model_parameters: dict):
@@ -176,6 +171,21 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["verbosity"] = verbosity
 
     @staticmethod
+    def _set_service_tier_params(model_parameters: dict):
+        """Sets the service_tier parameter for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place. 'flex' asks OpenRouter
+        to try the model's flex endpoints first; 'auto' (the default) and any other value
+        leave the parameter out so routing stays unchanged.
+        See: https://openrouter.ai/docs/guides/features/service-tiers
+
+        :param model_parameters: The dictionary of model parameters.
+        """
+        service_tier = model_parameters.pop("service_tier", None)
+        if service_tier == "flex":
+            model_parameters["service_tier"] = service_tier
+
+    @staticmethod
     def _set_json_schema_params(model_parameters: dict):
         response_format = model_parameters.get("response_format")
         if response_format and response_format == "json_schema":
@@ -204,11 +214,18 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
 
-        # Only convert file content to text descriptions for models that don't support vision
         model_schema = self.get_model_schema(model, credentials)
-        model_features = getattr(model_schema, "features", None) or []
-        if ModelFeature.VISION not in model_features:
-            prompt_messages = self._convert_files_to_text(prompt_messages)
+        features = getattr(model_schema, "features", None) or []
+        vision = ModelFeature.VISION in features
+        # Catalog models and older custom configurations used the vision switch for all media.
+        video = vision
+        if (
+            model_schema
+            and model_schema.fetch_from == FetchFrom.CUSTOMIZABLE_MODEL
+            and "video_support" in credentials
+        ):
+            video = ModelFeature.VIDEO in features
+        prompt_messages = self._prepare_media(prompt_messages, vision=vision, video=video)
 
         if model in IMAGE_GENERATION_MODELS:
             model_parameters["modalities"] = ["image", "text"]
@@ -216,6 +233,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             self._set_reasoning_params(model_parameters)
             self._set_verbosity_params(model_parameters)
             self._set_json_schema_params(model_parameters)
+            self._set_service_tier_params(model_parameters)
 
         # Allow data collection by default so that all available providers can serve requests.
         # Without this, models whose only providers require data collection would return a 404
@@ -329,6 +347,30 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         self, model: str, credentials: dict
     ) -> AIModelEntity:
         entity = super().get_customizable_model_schema(model, credentials)
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="service_tier",
+                label=I18nObject(en_us="Service Tier", zh_hans="服务层级"),
+                help=I18nObject(
+                    en_us=(
+                        "auto uses default routing. flex tries flex endpoints first "
+                        "(lower price, can be slower) and only falls back to endpoints "
+                        "priced at or below them, otherwise it returns a capacity error. "
+                        "Without a flex endpoint the request routes normally. "
+                        "Costs shown in Dify use standard prices."
+                    ),
+                    zh_hans=(
+                        "auto 使用默认路由。flex 优先使用 flex 端点（价格更低，可能更慢），"
+                        "只会回退到价格不高于 flex 的端点，否则返回容量错误。"
+                        "没有 flex 端点时按默认方式路由。Dify 中显示的费用按标准价格计算。"
+                    ),
+                ),
+                type=ParameterType.STRING,
+                options=["auto", "flex"],
+                default="auto",
+                required=False,
+            )
+        )
 
         if credentials.get("reasoning_support") != "support":
             return entity

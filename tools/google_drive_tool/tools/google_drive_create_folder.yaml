@@ -1,0 +1,56 @@
+identity:
+  name: google_drive_create_folder
+  author: langgenius
+  label:
+    en_US: Create Folder
+    zh_Hans: 创建文件夹
+    ja_JP: フォルダーを作成
+description:
+  human:
+    en_US: Create a folder
+    zh_Hans: 创建文件夹
+    ja_JP: フォルダーを作成
+  llm: Create a folder in Google Drive.
+parameters:
+- name: name
+  type: string
+  required: true
+  label:
+    en_US: Name
+    zh_Hans: 名称
+    ja_JP: 名前
+  human_description:
+    en_US: Folder name
+    zh_Hans: 文件夹名称
+    ja_JP: フォルダー名
+  llm_description: The folder name.
+  form: llm
+- name: parent_id
+  type: string
+  required: false
+  label:
+    en_US: Parent Folder ID
+    zh_Hans: 父文件夹 ID
+    ja_JP: 親フォルダー ID
+  human_description:
+    en_US: Empty = My Drive root
+    zh_Hans: 留空为根目录
+    ja_JP: 空ならルート
+  llm_description: Parent folder ID; empty means the root of My Drive.
+  form: llm
+output_schema:
+  type: object
+  properties:
+    folder_id:
+      type: string
+    url:
+      type: string
+    success:
+      type: boolean
+      description: True when the tool finished; false when it stopped with an error
+    error:
+      type: string
+      description: Why the tool stopped, empty on success
+extra:
+  python:
+    source: tools/google_drive_create_folder.py
