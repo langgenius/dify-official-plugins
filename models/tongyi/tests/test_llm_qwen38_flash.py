@@ -142,10 +142,6 @@ def test_qwen38_flash_accepts_json_schema_output(model_name: str) -> None:
 
     assert kwargs["response_format"] == {
         "type": "json_schema",
-        "json_schema": {
-            "name": "answer",
-            "schema": output_schema["schema"],
-        },
-        "strict": True,
+        "json_schema": output_schema,
     }
     assert result == "non-stream-result"

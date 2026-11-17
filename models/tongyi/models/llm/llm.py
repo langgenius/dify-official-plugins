@@ -174,15 +174,57 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            self._generate(
+            result = self._generate(
                 model=model,
                 credentials=credentials,
                 prompt_messages=[UserPromptMessage(content="ping")],
                 model_parameters={"temperature": 0.5},
                 stream=False,
             )
+            # Thinking models can force streaming even for this non-streaming
+            # probe. Consume it so deferred API errors are not reported as success.
+            if isinstance(result, Generator):
+                for _ in result:
+                    pass
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+
+    def _validate_and_filter_model_parameters(
+        self, model: str, model_parameters: dict, credentials: dict
+    ) -> dict:
+        parameters = dict(model_parameters)
+        # Normalize before the SDK's schema validation too: a workflow may
+        # still contain an old numeric effort while thinking is disabled.
+        self._normalize_deepseek_parameters(model, parameters)
+        return super()._validate_and_filter_model_parameters(model, parameters, credentials)
+
+    @staticmethod
+    def _normalize_deepseek_parameters(model: str, parameters: dict) -> None:
+        # Bailian's API takes named effort levels, not the open-weight model's
+        # numeric budget. Keep this scoped to the registered DeepSeek models.
+        effort_options = {
+            "deepseek-v4.1-flash": ("low", "high", "max"),
+            "deepseek-v4.1-flash-1017": ("low", "high", "max"),
+            "deepseek-v4-pro": ("high", "max"),
+            "deepseek-v4-flash-0731": ("low", "high", "max"),
+        }
+        if model not in effort_options:
+            return
+        parameters.setdefault("enable_thinking", True)
+        if parameters["enable_thinking"] is False:
+            parameters.pop("reasoning_effort", None)
+            return
+        effort = parameters.get("reasoning_effort")
+        if effort is None or effort == "":
+            parameters.pop("reasoning_effort", None)
+            return
+        if effort not in effort_options[model]:
+            choices = ", ".join(effort_options[model])
+            raise InvokeBadRequestError(
+                f"{model}: reasoning_effort must be one of {choices}. "
+                "Numeric reasoning budgets are not supported; reselect the "
+                "reasoning effort in the model settings."
+            )
 
     def _generate(
         self,
@@ -208,6 +250,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        # Do not mutate the caller's saved workflow parameters.
+        model_parameters = dict(model_parameters)
+        self._normalize_deepseek_parameters(model, model_parameters)
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -222,21 +267,47 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         json_schema = model_parameters.pop("json_schema", None)
         if response_format == "json_schema":
             if not json_schema:
-                raise ValueError(
+                raise InvokeBadRequestError(
                     "json_schema is required when response_format is json_schema"
                 )
             if isinstance(json_schema, str):
                 try:
                     json_schema = json.loads(json_schema)
                 except json.JSONDecodeError as exc:
-                    raise ValueError(f"Invalid json_schema: {exc}") from exc
+                    raise InvokeBadRequestError(f"Invalid json_schema: {exc}") from exc
+            if not isinstance(json_schema, dict) or not isinstance(json_schema.get("schema"), dict):
+                raise InvokeBadRequestError("json_schema must be an object containing a schema object")
             json_schema = dict(json_schema)
-            strict = json_schema.pop("strict", True)
+            json_schema.setdefault("strict", True)
             model_parameters["response_format"] = {
                 "type": "json_schema",
                 "json_schema": json_schema,
-                "strict": strict,
             }
+            if any(
+                isinstance(
+                    content,
+                    (ImagePromptMessageContent, VideoPromptMessageContent, AudioPromptMessageContent),
+                )
+                for message in prompt_messages
+                if isinstance(message.content, list)
+                for content in message.content
+            ):
+                # shortcut: media needs schema prompting until DashScope supports strict schemas for media.
+                model_parameters["response_format"] = {"type": "json_object"}
+                schema_prompt = "Return a JSON object matching this JSON Schema:\n" + json.dumps(
+                    json_schema["schema"], ensure_ascii=False
+                )
+                prompt_messages = list(prompt_messages)
+                if (
+                    prompt_messages
+                    and isinstance(prompt_messages[0], SystemPromptMessage)
+                    and isinstance(prompt_messages[0].content, str)
+                ):
+                    prompt_messages[0] = prompt_messages[0].model_copy(
+                        update={"content": prompt_messages[0].content + "\n\n" + schema_prompt}
+                    )
+                else:
+                    prompt_messages.insert(0, SystemPromptMessage(content=schema_prompt))
         elif response_format and not isinstance(response_format, dict):
             model_parameters["response_format"] = {"type": response_format}
 
@@ -343,6 +414,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         thinking_deepseek_v4 = (
             model in (
                 "deepseek-v4.1-flash",
+                "deepseek-v4.1-flash-1017",
                 "deepseek-v4-pro",
                 "deepseek-v4-flash",
                 "deepseek-v4-flash-0731",
@@ -432,6 +504,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     session=session,
                 )
         except BaseException:
+            self._cleanup_temp_files()
             if qwen_long_files:
                 qwen_long_files.cleanup()
             session.close()
@@ -563,8 +636,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         is_reasoning = False
-        # This is used to handle unincremental output correctly
-        full_text = ""
+        last_content = ""
+        last_reasoning_content = ""
         tool_calls = []
         try:
             for index, response in enumerate(responses):
@@ -575,28 +648,46 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         response.status_code, response.message, model, request_id
                     )
 
-                resp_finish_reason = response.output.choices[0].finish_reason
-                if resp_finish_reason is not None and resp_finish_reason != "null":
-                    resp_content = response.output.choices[0].message.content
-                    assistant_prompt_message = AssistantPromptMessage(content="")
-                    if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(
-                            response, tool_calls, incremental_output
-                        )
-                    elif resp_content:
-                        if isinstance(resp_content, list):
-                            resp_content = resp_content[0]["text"]
-                        if incremental_output:
-                            assistant_prompt_message.content = resp_content
-                            full_text += resp_content
-                        else:
-                            assistant_prompt_message.content = resp_content.replace(
-                                full_text, "", 1
-                            )
-                            full_text = resp_content
-                    elif is_reasoning:
-                        assistant_prompt_message.content = "\n</think>"
-                        full_text += "\n</think>"
+                choice = response.output.choices[0]
+                message = choice.message
+                finished = choice.finish_reason not in (None, "null")
+                content = message.get("content") or ""
+                if isinstance(content, list):
+                    content = content[0].get("text") if isinstance(content[0], dict) else ""
+                content = str(content or "")
+                reasoning_content = message.get("reasoning_content") or ""
+                if isinstance(reasoning_content, list):
+                    reasoning_content = "\n".join(map(str, reasoning_content))
+                else:
+                    reasoning_content = str(reasoning_content)
+
+                if not incremental_output:
+                    # Diff raw fields before adding local think tags.
+                    content, last_content = content.removeprefix(last_content), content
+                    reasoning_content, last_reasoning_content = (
+                        reasoning_content.removeprefix(last_reasoning_content),
+                        reasoning_content,
+                    )
+
+                text = ""
+                if reasoning_content:
+                    if not is_reasoning:
+                        text = "<think>\n"
+                        is_reasoning = True
+                    text += reasoning_content
+                if is_reasoning and (content or message.get("tool_calls") or finished):
+                    text += "\n</think>"
+                    is_reasoning = False
+                text += content
+
+                if message.get("tool_calls"):
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                if not text and not finished:
+                    continue
+
+                assistant_prompt_message = AssistantPromptMessage(content=text)
+                delta = LLMResultChunkDelta(index=index, message=assistant_prompt_message)
+                if finished:
                     if tool_calls:
                         message_tool_calls = []
                         for tool_call_obj in tool_calls:
@@ -610,62 +701,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             message_tool_calls.append(message_tool_call)
                         assistant_prompt_message.tool_calls = message_tool_calls
-                    usage = response.usage
-                    usage = self._calc_response_usage(
-                        model, credentials, usage.input_tokens, usage.output_tokens
+                    delta.finish_reason = choice.finish_reason
+                    delta.usage = self._calc_response_usage(
+                        model,
+                        credentials,
+                        response.usage.input_tokens,
+                        response.usage.output_tokens,
                     )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message,
-                            finish_reason=resp_finish_reason,
-                            usage=usage,
-                        ),
-                    )
-                else:
-                    message = response.output.choices[0].message
-
-                    resp_content, is_reasoning = (
-                        self._wrap_thinking_by_reasoning_content(message, is_reasoning)
-                    )
-
-                    content_to_yield = []
-                    if resp_content:
-                        if incremental_output:
-                            delta = resp_content
-                            full_text += delta
-                        else:
-                            delta = resp_content.replace(full_text, "", 1)
-                            full_text = resp_content
-                        content_to_yield.append(delta)
-
-                    if "tool_calls" in message:
-                        if is_reasoning:
-                            content_to_yield.append("\n</think>")
-                            # In incremental mode (stream=True), full_text accumulates the generated content.
-                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
-                            # Since "\n</think>" is synthesized locally and not part of the API response,
-                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
-                            if incremental_output:
-                                full_text += "\n</think>"
-                            is_reasoning = False
-                        self._handle_tool_call_stream(
-                            response, tool_calls, incremental_output
-                        )
-
-                    if content_to_yield:
-                        assistant_prompt_message = AssistantPromptMessage(
-                            content="".join(content_to_yield)
-                        )
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index, message=assistant_prompt_message
-                            ),
-                        )
+                yield LLMResultChunk(
+                    model=model, prompt_messages=prompt_messages, delta=delta
+                )
         finally:
             self._cleanup_temp_files()
 
@@ -962,8 +1007,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{mime_type.split('/')[1]}")
-        Path(file_path).write_bytes(base64.b64decode(encoded_string))
         self._temp_files.append(file_path)
+        Path(file_path).write_bytes(base64.b64decode(encoded_string))
         return f"file://{file_path}"
 
     def _cleanup_temp_files(self):
@@ -982,81 +1027,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         tool_definitions = []
         for tool in tools:
-            properties = tool.parameters.get("properties", {})
-            required_properties = tool.parameters.get("required", [])
-            properties_definitions = {}
-            for p_key, p_val in properties.items():
-                desc = p_val.get("description") or ""
-                if "enum" in p_val:
-                    desc += f"; Only accepts one of the following predefined options: [{', '.join(p_val['enum'])}]"
-                properties_definitions[p_key] = {
-                    "description": desc,
-                    # A property may legally declare no type (anyOf/oneOf/$ref/const);
-                    # omit the key rather than inventing one.
-                    **({"type": p_val["type"]} if "type" in p_val else {}),
-                }
             tool_definition = {
                 "type": "function",
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": properties_definitions,
-                    "required": required_properties,
+                    "parameters": tool.parameters,
                 },
             }
             tool_definitions.append(tool_definition)
         return tool_definitions
-
-    def _wrap_thinking_by_reasoning_content(
-        self, delta: dict, is_reasoning: bool
-    ) -> tuple[str, bool]:
-        """
-        If the reasoning response is from delta.get("reasoning_content"), we wrap
-        it with HTML think tag.
-        :param delta: delta dictionary from LLM streaming response
-        :param is_reasoning: is reasoning
-        :return: tuple of (processed_content, is_reasoning)
-        """
-
-        content = delta.get("content") or ""
-        if isinstance(content, list) and content:
-            content = content[0].get("text") if isinstance(content[0], dict) else ""
-        else:
-            content = str(content)
-        reasoning_content = delta.get("reasoning_content") or ""
-        try:
-            if isinstance(reasoning_content, list):
-                reasoning_content = "\n".join(map(str, reasoning_content))
-            elif not isinstance(reasoning_content, str):
-                reasoning_content = str(reasoning_content)
-
-            output = ""
-            if reasoning_content:
-                if not is_reasoning:
-                    # Open a think block on first reasoning token
-                    output += f"<think>\n{reasoning_content}"
-                    is_reasoning = True
-                else:
-                    # Continue streaming inside the think block
-                    output += reasoning_content
-
-            if is_reasoning:
-                if not reasoning_content and not content:
-                    # No reasoning or content token, close the think block
-                    is_reasoning = False
-                    output += "\n</think>"
-                # Handle edge case: both reasoning_content and content are non-empty
-                # in the same chunk (DashScope/Bailian API occasionally does this at
-                # the transition boundary between reasoning and content phases)
-                if content:
-                    is_reasoning = False
-                    output += f"\n</think>{content}"
-            elif content:
-                # No reasoning token and not in a reasoning block
-                output += content
-        except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
-        return output, is_reasoning
 
     def _handle_error_response(
         self, status_code: int, message: str, model: str = None, request_id: str = None

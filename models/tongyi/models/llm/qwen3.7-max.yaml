@@ -5,6 +5,7 @@ label:
   en_US: qwen3.7-max
 model_type: llm
 features:
+  - structured-output
   - multi-tool-call
   - agent-thought
   - stream-tool-call
@@ -112,6 +113,9 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
   - name: extra_headers
     required: false
     type: string

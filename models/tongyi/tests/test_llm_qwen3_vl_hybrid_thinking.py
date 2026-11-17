@@ -128,11 +128,7 @@ def test_qwen38_schema_and_dashscope_parameters() -> None:
     assert kwargs["preserve_thinking"] is False
     assert kwargs["response_format"] == {
         "type": "json_schema",
-        "json_schema": {
-            "name": "answer",
-            "schema": output_schema["schema"],
-        },
-        "strict": True,
+        "json_schema": output_schema,
     }
     assert kwargs["stream"] is True
     assert kwargs["incremental_output"] is True

@@ -6,6 +6,31 @@ After installation, you need to get API keys from [Alibaba Cloud](https://bailia
 
 ![](_assets/tongyi_latest.png)
 
+## Structured output
+
+JSON Schema is available in the model settings for Qwen3.7 Max/Plus/Flash (including the registered snapshots), Qwen3.8 Max/Flash, DeepSeek V4.1 Flash/1017, and DeepSeek V4 Pro.
+DeepSeek V4 Flash 0731 supports JSON Object only.
+The supported formats follow Alibaba Cloud's [structured output guide](https://help.aliyun.com/zh/model-studio/qwen-structured-output) and [DeepSeek feature table](https://help.aliyun.com/zh/model-studio/deepseek-api).
+
+For text input, the plugin sends the schema through the existing DashScope endpoint with `strict` inside `response_format.json_schema`.
+Omitting `strict` defaults to `true`; an explicit `false` is preserved.
+The schema received by the plugin, including nested objects, arrays, optional fields and enums, is passed through unchanged.
+
+For media inputs supported by the selected model, Alibaba Cloud only guarantees JSON syntax.
+The plugin uses JSON Object and adds the complete schema as an instruction, preserving the original messages.
+Field names, types and other schema constraints are not guaranteed for these inputs.
+Plain text sent through the multimodal endpoint still uses JSON Schema.
+
+Before deploying workflows that require strict constraints, verify the target model and region against the real service:
+
+- Exercise the configured DashScope endpoint with thinking enabled and disabled, and with streaming enabled and disabled.
+- Check required fields, enums, nested objects, arrays, optional fields, boolean values and `additionalProperties: false`, including prompts requesting a conflicting result.
+- Check saved Dify workflows, image extraction, tool calls, usage reporting and API errors.
+
+The official guide explicitly documents Beijing OpenAI-compatible Chat Completions support for DeepSeek V4.1 Flash/1017.
+Offline tests verify registration, HTTP serialization and response handling; they do not establish server enforcement on the native DashScope endpoint or in other regions.
+[Dify 1.13.3 rewrites boolean schema fields](https://github.com/langgenius/dify/blob/59639ca9b2ba2ba4b32b5feff5149cfc1ad0ba74/api/core/llm_generator/output_parser/structured_output.py#L318-L332) before invoking plugins, so verify the schema sent by the Dify version used in production.
+
 ## Model catalog update (0.2.23)
 
 Provider credential validation now uses `qwen3.8-flash`, which is available in
