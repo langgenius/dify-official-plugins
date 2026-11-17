@@ -52,6 +52,6 @@ Other Hubris models can be added the same way — see the full catalog at [hubri
 | API Base URL | `https://api.tokensail.ai/v1` |
 | Completion mode | `Chat` |
 
-Keep `/v1` in the base URL for chat and embedding models — the version-less base returns HTTP 503. Rerank is the exception: set **Rerank Endpoint URL** (`rerank_endpoint_url`) to the full `https://api.tokensail.ai/v1/reranks`, because the default `/v1/rerank` (singular) returns HTTP 404.
+Keep `/v1` in the base URL for every model type — the version-less base returns HTTP 503. Chat, embedding and rerank all resolve under `https://api.tokensail.ai/v1`, and rerank answers on its default endpoint path, so no endpoint override is needed.
 
 `glm-5.3` requires thinking to remain on: requests that disable thinking are rejected with HTTP 400, so do not apply a "disable thinking" setting across every TokenSail model.
