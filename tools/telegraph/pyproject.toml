@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "dify_plugin>=0.10.2",
+    "dify_plugin==0.10.2",
     "your-telegraph>=0.2.2",
 ]
 

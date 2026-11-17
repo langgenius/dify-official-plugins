@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "atlassian-python-api>=5.0.4",
-    "dify_plugin>=0.10.2",
+    "dify_plugin==0.10.2",
     "cryptography>=42.0.0",
     "markdown>=3.5",
     "pyyaml>=6.0",

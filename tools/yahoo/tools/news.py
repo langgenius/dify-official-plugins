@@ -1,9 +1,11 @@
 from collections.abc import Generator
 from typing import Any
+
 import yfinance
-from requests.exceptions import HTTPError, ReadTimeout
-from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
+from requests.exceptions import HTTPError, ReadTimeout
+
 
 class YahooFinanceNewsTool(Tool):
     def _invoke(
@@ -44,8 +46,8 @@ class YahooFinanceNewsTool(Tool):
                     news_items.append({
                         'title': content.get('title', ''),
                         'content': article_content,
-                        'url': content.get('canonicalUrl', {}).get('url', ''),
-                        'provider': content.get('provider', {}).get('displayName', ''),
+                        'url': (content.get('canonicalUrl') or {}).get('url', ''),
+                        'provider': (content.get('provider') or {}).get('displayName', ''),
                         'publishDate': content.get('pubDate', '')
                     })
             
