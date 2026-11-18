@@ -4,10 +4,12 @@
 
 Tokener.ai provides language, text embedding, rerank, speech recognition, and text-to-speech models for Dify.
 
-This staging-only package is for new-account onboarding tests in Dify staging. Do not publish it to Marketplace or install it in production.
-Dify staging installs the signed package for the new account's first workspace and provisions its managed Tokener staging key.
-The package uses the fixed staging API base URL `https://api-staging.tokener.dev/v1`.
-Use the [Tokener staging Console](https://console-staging.tokener.dev/keys) for staging keys; do not use production keys.
+1. Install **Tokener.ai** from the Dify Marketplace.
+2. Create an API key in the [Tokener.ai Console](https://console.tokener.ai/keys).
+3. Open **Settings → Model Provider → Tokener.ai** and enter the key.
+
+The API endpoint changes from `https://api.tokener.dev/v1` to `https://api.tokener.ai/v1`.
+Existing keys from the same Tokener.ai Console remain valid. The API key must have access to the selected model.
 
 In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
 Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.

@@ -1,0 +1,160 @@
+diff --git a/models/tokener/PRIVACY.md b/models/tokener/PRIVACY.md
+--- a/models/tokener/PRIVACY.md
++++ b/models/tokener/PRIVACY.md
+@@ -1,7 +1,7 @@
+ # Privacy
+
+ This plugin sends the configured Tokener.ai API key and language-model requests
+-directly to `https://api.tokener.ai`.
++directly to `https://api-staging.tokener.dev`.
+ Requests may include model IDs, prompts, conversation messages, tool
+ definitions, and request metadata. Generated content, usage data, request IDs,
+ and errors are returned to Dify.
+diff --git a/models/tokener/README.md b/models/tokener/README.md
+--- a/models/tokener/README.md
++++ b/models/tokener/README.md
+@@ -4,12 +4,10 @@
+
+ Tokener.ai provides language, text embedding, rerank, speech recognition, and text-to-speech models for Dify.
+
+-1. Install **Tokener.ai** from the Dify Marketplace.
+-2. Create an API key in the [Tokener.ai Console](https://console.tokener.ai/keys).
+-3. Open **Settings → Model Provider → Tokener.ai** and enter the key.
+-
+-The API endpoint changes from `https://api.tokener.dev/v1` to `https://api.tokener.ai/v1`.
+-Existing keys from the same Tokener.ai Console remain valid. The API key must have access to the selected model.
++This staging-only package is for new-account onboarding tests in Dify staging. Do not publish it to Marketplace or install it in production.
++Dify staging installs the signed package for the new account's first workspace and provisions its managed Tokener staging key.
++The package uses the fixed staging API base URL `https://api-staging.tokener.dev/v1`.
++Use the [Tokener staging Console](https://console-staging.tokener.dev/keys) for staging keys; do not use production keys.
+
+ In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
+ Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
+diff --git a/models/tokener/manifest.yaml b/models/tokener/manifest.yaml
+--- a/models/tokener/manifest.yaml
++++ b/models/tokener/manifest.yaml
+@@ -1,4 +1,4 @@
+-version: 0.4.4
++version: 0.4.4-dev2026111801
+ type: plugin
+ author: langgenius
+ name: tokener
+diff --git a/models/tokener/models/_credentials.py b/models/tokener/models/_credentials.py
+--- a/models/tokener/models/_credentials.py
++++ b/models/tokener/models/_credentials.py
+@@ -3,7 +3,7 @@ from http import HTTPStatus
+ import requests
+ from dify_plugin.errors.model import CredentialsValidateFailedError
+
+-ENDPOINT_URL = "https://api.tokener.ai/v1"
++ENDPOINT_URL = "https://api-staging.tokener.dev/v1"
+ VALIDATION_TIMEOUT = (10, 30)
+
+
+diff --git a/models/tokener/provider/tokener.yaml b/models/tokener/provider/tokener.yaml
+--- a/models/tokener/provider/tokener.yaml
++++ b/models/tokener/provider/tokener.yaml
+@@ -15,7 +15,7 @@ help:
+     en_US: Get your API key from Tokener.ai
+     zh_Hans: 获取 Tokener.ai API Key
+   url:
+-    en_US: https://console.tokener.ai/keys
++    en_US: https://console-staging.tokener.dev/keys
+ supported_model_types:
+   - llm
+   - text-embedding
+diff --git a/models/tokener/tests/test_catalog_export.py b/models/tokener/tests/test_catalog_export.py
+--- a/models/tokener/tests/test_catalog_export.py
++++ b/models/tokener/tests/test_catalog_export.py
+@@ -151,7 +151,8 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
+         texts[32:],
+     ]
+     assert all(
+-        call.args == ("https://api.tokener.ai/v1/embeddings",) for call in post.call_args_list
++        call.args == ("https://api-staging.tokener.dev/v1/embeddings",)
++        for call in post.call_args_list
+     )
+     assert all(call.kwargs["json"]["model"] == selected for call in post.call_args_list)
+
+diff --git a/models/tokener/tests/test_credentials.py b/models/tokener/tests/test_credentials.py
+--- a/models/tokener/tests/test_credentials.py
++++ b/models/tokener/tests/test_credentials.py
+@@ -25,7 +25,7 @@ def test_provider_validation_uses_models_endpoint(get) -> None:
+     provider.validate_provider_credentials({"api_key": "test-key"})
+
+     get.assert_called_once_with(
+-        "https://api.tokener.ai/v1/models",
++        "https://api-staging.tokener.dev/v1/models",
+         headers={
+             "Accept": "application/json",
+             "Authorization": "Bearer test-key",
+diff --git a/models/tokener/tests/test_non_llm.py b/models/tokener/tests/test_non_llm.py
+--- a/models/tokener/tests/test_non_llm.py
++++ b/models/tokener/tests/test_non_llm.py
+@@ -98,7 +98,7 @@ def test_public_rerank_preserves_documents_indices_and_threshold():
+             top_n=2,
+             user="user",
+         )
+-    assert post.call_args.args == ("https://api.tokener.ai/v1/rerank",)
++    assert post.call_args.args == ("https://api-staging.tokener.dev/v1/rerank",)
+     assert post.call_args.kwargs["json"] == {
+         "model": "qwen3-rerank",
+         "query": "same",
+@@ -179,7 +179,7 @@ def test_public_embedding_preserves_model_texts_dimensions_and_order(input_type)
+     assert result.model == "embedding-test"
+     assert post.call_count == 2
+     for index, call in enumerate(post.call_args_list):
+-        assert call.args == ("https://api.tokener.ai/v1/embeddings",)
++        assert call.args == ("https://api-staging.tokener.dev/v1/embeddings",)
+         assert call.kwargs["json"] == {
+             "model": "embedding-test",
+             "input": texts[index * 2 : index * 2 + 2],
+diff --git a/models/tokener/tests/test_semantic_inputs.py b/models/tokener/tests/test_semantic_inputs.py
+--- a/models/tokener/tests/test_semantic_inputs.py
++++ b/models/tokener/tests/test_semantic_inputs.py
+@@ -86,12 +86,13 @@ def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, para
+     list(
+         model.invoke(
+             model_id,
+-            {"api_key": "test"},
++            {"api_key": "test", "endpoint_url": "https://example.invalid/v1"},
+             [UserPromptMessage(content="Hi")],
+             parameters,
+             stream=False,
+         )
+     )
++    assert upstream.call_args.args == ("https://api-staging.tokener.dev/v1/chat/completions",)
+     kwargs = upstream.call_args.kwargs
+     body = kwargs.get("json") or json.loads(kwargs["data"])
+     assert {key: body.get(key) for key in parameters} == parameters
+diff --git a/models/tokener/tests/test_speech2text.py b/models/tokener/tests/test_speech2text.py
+--- a/models/tokener/tests/test_speech2text.py
++++ b/models/tokener/tests/test_speech2text.py
+@@ -63,7 +63,7 @@ def test_speech2text_fixture_public_invoke_preserves_model_and_multipart(model_i
+         expected |= {"chunking_strategy": "auto", "response_format": "diarized_json"}
+     with patch("requests.post", return_value=response({"text": "transcribed"})) as post:
+         assert model.invoke(model_id, credentials, audio, user="user") == "transcribed"
+-    assert post.call_args.args == ("https://api.tokener.ai/v1/audio/transcriptions",)
++    assert post.call_args.args == ("https://api-staging.tokener.dev/v1/audio/transcriptions",)
+     assert post.call_args.kwargs["data"] == expected
+     assert post.call_args.kwargs["files"] == [("file", audio)]
+     assert post.call_args.kwargs["headers"] == {"Authorization": "Bearer test"}
+@@ -179,5 +179,5 @@ def test_speech2text_multipart_wire_request():
+     assert parts["chunking_strategy"].get_payload() == "auto"
+     assert parts["response_format"].get_payload() == "diarized_json"
+     assert request.method == "POST"
+-    assert request.url == "https://api.tokener.ai/v1/audio/transcriptions"
++    assert request.url == "https://api-staging.tokener.dev/v1/audio/transcriptions"
+     assert audio.closed
+diff --git a/models/tokener/tests/test_tts.py b/models/tokener/tests/test_tts.py
+--- a/models/tokener/tests/test_tts.py
++++ b/models/tokener/tests/test_tts.py
+@@ -55,7 +55,7 @@ def test_tts_fixture_public_invoke_keeps_selected_model_and_audio_bytes(model_id
+     assert result == b"audio\x00\xff"
+     request = send.call_args.args[0]
+     assert request.method == "POST"
+-    assert request.url == "https://api.tokener.ai/v1/audio/speech"
++    assert request.url == "https://api-staging.tokener.dev/v1/audio/speech"
+     assert request.headers["Content-Type"] == "application/json"
+     assert json.loads(request.body) == {
+         "model": model_id,

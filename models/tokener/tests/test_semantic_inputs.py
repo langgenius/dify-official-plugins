@@ -86,13 +86,12 @@ def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, para
     list(
         model.invoke(
             model_id,
-            {"api_key": "test", "endpoint_url": "https://example.invalid/v1"},
+            {"api_key": "test"},
             [UserPromptMessage(content="Hi")],
             parameters,
             stream=False,
         )
     )
-    assert upstream.call_args.args == ("https://api-staging.tokener.dev/v1/chat/completions",)
     kwargs = upstream.call_args.kwargs
     body = kwargs.get("json") or json.loads(kwargs["data"])
     assert {key: body.get(key) for key in parameters} == parameters

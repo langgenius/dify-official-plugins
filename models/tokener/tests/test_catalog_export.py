@@ -151,8 +151,7 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
         texts[32:],
     ]
     assert all(
-        call.args == ("https://api-staging.tokener.dev/v1/embeddings",)
-        for call in post.call_args_list
+        call.args == ("https://api.tokener.ai/v1/embeddings",) for call in post.call_args_list
     )
     assert all(call.kwargs["json"]["model"] == selected for call in post.call_args_list)
 
