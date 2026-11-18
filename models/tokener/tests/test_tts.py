@@ -55,7 +55,7 @@ def test_tts_fixture_public_invoke_keeps_selected_model_and_audio_bytes(model_id
     assert result == b"audio\x00\xff"
     request = send.call_args.args[0]
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.ai/v1/audio/speech"
+    assert request.url == "https://api-staging.tokener.dev/v1/audio/speech"
     assert request.headers["Content-Type"] == "application/json"
     assert json.loads(request.body) == {
         "model": model_id,

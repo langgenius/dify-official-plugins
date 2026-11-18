@@ -1,7 +1,7 @@
 # Privacy
 
 This plugin sends the configured Tokener.ai API key and language-model requests
-directly to `https://api.tokener.ai`.
+directly to `https://api-staging.tokener.dev`.
 Requests may include model IDs, prompts, conversation messages, tool
 definitions, and request metadata. Generated content, usage data, request IDs,
 and errors are returned to Dify.
