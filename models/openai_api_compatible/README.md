@@ -52,6 +52,6 @@ Other Hubris models can be added the same way — see the full catalog at [hubri
 | API Base URL | `https://api.tokensail.ai/v1` |
 | Completion mode | `Chat` |
 
-Keep `/v1` in the base URL for every model type — the version-less base returns HTTP 503. Chat, embedding and rerank all resolve under `https://api.tokensail.ai/v1`, and rerank answers on its default endpoint path, so no endpoint override is needed.
+Keep `/v1` in the base URL for every model type — the version-less base is not routed and answers HTTP 404. Chat, embedding and rerank all resolve under `https://api.tokensail.ai/v1`, and rerank answers on its default endpoint path, so no endpoint override is needed. All three were exercised end to end from Dify 1.19.0 with this plugin: a chat app answered, a knowledge base ingested with `text-embedding-v4` indexed to completion, and enabling `qwen3-rerank` moved the retrieval scores.
 
 `glm-5.3` requires thinking to remain on: requests that disable thinking are rejected with HTTP 400, so do not apply a "disable thinking" setting across every TokenSail model.
