@@ -137,3 +137,68 @@ def test_openai_rejects_a_stream_without_terminal_event(llm, wire):
     replies.append((200, {}, sse("response.output_text.delta", delta="partial")))
     with pytest.raises(InvokeConnectionError, match="terminal event"):
         invoke(llm, "gpt-4o-mini", stream=True)
+
+
+@pytest.mark.parametrize("stream", [True, False])
+def test_responses_stop_during_thinking_closes_the_display_tag(llm, wire, stream):
+    _, _, replies = wire
+    reason = {
+        "type": "reasoning",
+        "encrypted_content": "opaque",
+        "summary": [{"type": "summary_text", "text": "thinking END hidden"}],
+    }
+    terminal = openai_result([reason, *responses_output()])
+    frames = (
+        sse("response.reasoning_summary_text.delta", delta="thinking E")
+        + sse("response.reasoning_summary_text.delta", delta="ND hidden")
+        + sse("response.completed", response=terminal)
+    )
+    replies.append((200, {}, frames if stream else terminal))
+    chunks = invoke(llm, "gpt-6-luna", stream=stream, stop=["END"])
+    assert contents(chunks) == "<think>\nthinking \n</think>\n"
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert not chunks[-1].delta.message.opaque_body
+
+
+@pytest.mark.parametrize("stream", [True, False])
+def test_responses_stop_preserves_literal_thinking_markup(llm, wire, stream):
+    _, _, replies = wire
+    text = "The literal `<think>` is markup. END hidden"
+    terminal = openai_result(responses_output(text))
+    frames = sse("response.output_text.delta", delta=text) + sse(
+        "response.completed", response=terminal
+    )
+    replies.append((200, {}, frames if stream else terminal))
+    chunks = invoke(llm, "gpt-6-luna", stream=stream, stop=["END"])
+    assert contents(chunks) == "The literal `<think>` is markup. "
+    assert chunks[-1].delta.finish_reason == "stop"
+
+
+@pytest.mark.parametrize("stream", [True, False])
+def test_responses_stop_does_not_reinsert_requested_delimiter(llm, wire, stream):
+    _, _, replies = wire
+    reason = {"type": "reasoning", "summary": [{"type": "summary_text", "text": "thinking"}]}
+    terminal = openai_result([reason, *responses_output()])
+    frames = sse("response.reasoning_summary_text.delta", delta="thinking") + sse(
+        "response.completed", response=terminal
+    )
+    replies.append((200, {}, frames if stream else terminal))
+    chunks = invoke(llm, "gpt-6-luna", stream=stream, stop=["</think>"])
+    assert contents(chunks) == "<think>\nthinking\n"
+    assert chunks[-1].delta.finish_reason == "stop"
+
+
+def test_responses_stop_closes_reasoning_completed_by_terminal_event(llm, wire):
+    _, _, replies = wire
+    reason = {
+        "type": "reasoning",
+        "summary": [{"type": "summary_text", "text": "prefix then more reasoning END hidden"}],
+    }
+    terminal = openai_result([reason, *responses_output()])
+    frames = sse("response.reasoning_summary_text.delta", delta="prefix") + sse(
+        "response.completed", response=terminal
+    )
+    replies.append((200, {}, frames))
+    chunks = invoke(llm, "gpt-6-luna", stream=True, stop=["END"])
+    assert contents(chunks) == "<think>\nprefix then more reasoning \n</think>\n"
+    assert chunks[-1].delta.finish_reason == "stop"

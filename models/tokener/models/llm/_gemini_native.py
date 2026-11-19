@@ -4,17 +4,13 @@ from collections.abc import Generator
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
-    ImagePromptMessageContent,
     TextPromptMessageContent,
     ToolPromptMessage,
 )
-from dify_plugin.errors.model import (
-    InvokeBadRequestError,
-    InvokeConnectionError,
-    InvokeServerUnavailableError,
-)
+from dify_plugin.errors.model import InvokeBadRequestError
 
-from models.llm import _gemini_files, _sse, _wire
+from models.llm import _gemini_files, _gemini_output, _wire
+from models.llm._gemini_output import OPAQUE_KEY
 
 FIELDS = {
     "max_tokens",
@@ -45,7 +41,6 @@ NATIVE_TOOLS = {
     "url_context": ("urlContext", "url_context"),
     "code_execution": ("codeExecution", "code_execution"),
 }
-OPAQUE_KEY = "gemini_parts"
 
 
 def model_path(model: str, operation: str) -> str:
@@ -81,7 +76,7 @@ def _parts(llm, credentials, value, *, inline: bool) -> list[dict]:
 
 def _history(llm, credentials, messages, *, inline) -> tuple[str, list]:
     system, contents = [], []
-    names = {}
+    tool_calls = {}
     for message in messages:
         if message.role.value in {"system", "developer"}:
             system.append(message.get_text_content())
@@ -93,24 +88,42 @@ def _history(llm, credentials, messages, *, inline) -> tuple[str, list]:
                 result = _wire.json_object(output, "Tool result")
             except InvokeBadRequestError:
                 result = {"result": output}
-            name = names.get(message.tool_call_id) or message.name or message.tool_call_id
-            parts = [{"functionResponse": {"name": name, "response": result}}]
+            call_id = message.tool_call_id
+            name, native_id = tool_calls.get(call_id, (message.name or call_id, call_id))
+            response = {"name": name, "response": result}
+            if native_id:
+                response["id"] = native_id
+            parts = [{"functionResponse": response}]
         elif isinstance(message, AssistantPromptMessage):
             stored = (
                 message.opaque_body.get(OPAQUE_KEY, [])
                 if isinstance(message.opaque_body, dict)
                 else []
             )
-            for call in message.tool_calls:
-                names[call.id] = call.function.name
             if stored:
                 if not isinstance(stored, list) or not all(
                     isinstance(part, dict) for part in stored
                 ):
                     raise InvokeBadRequestError("Invalid Gemini assistant history")
+                native_ids = set()
                 for part in stored:
                     _wire.reject_controls(part, nested=False)
+                    if "functionCall" not in part:
+                        continue
+                    function = part["functionCall"]
+                    if not isinstance(function, dict):
+                        raise InvokeBadRequestError("Invalid Gemini assistant history")
+                    native_id = function.get("id")
+                    if native_id is not None and not isinstance(native_id, str):
+                        raise InvokeBadRequestError("Invalid Gemini assistant history")
+                    if native_id:
+                        native_ids.add(native_id)
                 parts = stored
+                for call in message.tool_calls:
+                    tool_calls[call.id] = (
+                        call.function.name,
+                        call.id if call.id in native_ids else None,
+                    )
             else:
                 text = (
                     _wire.without_thinking(message.content)
@@ -118,15 +131,19 @@ def _history(llm, credentials, messages, *, inline) -> tuple[str, list]:
                     else message.content
                 )
                 parts = _parts(llm, credentials, text, inline=inline)
-                parts.extend(
-                    {
-                        "functionCall": {
-                            "name": call.function.name,
-                            "args": _wire.json_object(call.function.arguments, "Tool arguments"),
-                        },
-                    }
-                    for call in message.tool_calls
-                )
+                for call in message.tool_calls:
+                    tool_calls[call.id] = (call.function.name, call.id)
+                    parts.append(
+                        {
+                            "functionCall": {
+                                "id": call.id,
+                                "name": call.function.name,
+                                "args": _wire.json_object(
+                                    call.function.arguments, "Tool arguments"
+                                ),
+                            },
+                        }
+                    )
         else:
             parts = _parts(llm, credentials, message.content, inline=inline)
         if not parts:
@@ -305,208 +322,9 @@ def _request(llm, model, credentials, messages, params, tools, stop, stream):
     return path + ("?alt=sse" if stream else ""), payload, False
 
 
-class Output:
-    def __init__(self) -> None:
-        self.parts: list[dict] = []
-        self.calls: list = []
-        self.thinking = False
-
-    def read(self, parts: list) -> list:
-        visible = []
-        for part in parts:
-            self.parts.append(part)
-            if "text" in part:
-                text = part["text"]
-                thought = bool(part.get("thought"))
-                if thought != self.thinking:
-                    text = ("<think>\n" if thought else "\n</think>\n") + text
-                    self.thinking = thought
-                if text:
-                    visible.append(TextPromptMessageContent(data=text))
-            if "inlineData" in part:
-                if self.thinking:
-                    visible.append(TextPromptMessageContent(data="\n</think>\n"))
-                    self.thinking = False
-                data = part["inlineData"]
-                if data["mimeType"].startswith("image/"):
-                    visible.append(
-                        ImagePromptMessageContent(
-                            format="." + data["mimeType"].split("/", 1)[1],
-                            mime_type=data["mimeType"],
-                            base64_data=data["data"],
-                        )
-                    )
-            if call := part.get("functionCall"):
-                name = call["name"]
-                self.calls.append(
-                    _wire.tool_call(
-                        call.get("id") or f"gemini-{len(self.calls)}-{name}",
-                        name,
-                        call.get("args") or {},
-                    )
-                )
-        return visible
-
-    def close_thinking(self) -> list:
-        return [TextPromptMessageContent(data="\n</think>\n")] if self.thinking else []
-
-
-def _generate(llm, model, credentials, path, payload, stream) -> Generator:
-    output = Output()
-    visible = []
-    tokens = [0, 0]
-    seen = set()
-    finish = None
-    for _ in range(8):
-        continuation = None
-        usage = {}
-        timeout = (10, 900 if model == "gemini-4-argon" else 120)
-        with llm._request_at(
-            path, credentials, json=payload, stream=stream, timeout=timeout
-        ) as response:
-            replies = (event for _, event in _sse.events(response)) if stream else [response.json()]
-            for result in replies:
-                if not isinstance(result, dict):
-                    raise InvokeServerUnavailableError(
-                        "Tokener.ai returned an invalid Gemini response"
-                    )
-                if result.get("error"):
-                    _wire.response_error(result["error"])
-                if result.get("usageMetadata"):
-                    usage.update(result["usageMetadata"])
-                if (
-                    block := result.get("promptFeedback", {}).get("blockReason")
-                ) and block != "BLOCK_REASON_UNSPECIFIED":
-                    finish = "content_filter"
-                candidates = result.get("candidates") or []
-                if not candidates:
-                    continue
-                candidate = candidates[0]
-                if parts := output.read((candidate.get("content") or {}).get("parts") or []):
-                    if stream:
-                        yield _wire.chunk(model, parts)
-                    else:
-                        visible.extend(parts)
-                finish = candidate.get("finishReason") or finish
-                continuation = candidate.get("continuationToken") or continuation
-        tokens[0] += usage.get("promptTokenCount") or 0
-        tokens[1] += (usage.get("candidatesTokenCount") or 0) + (
-            usage.get("thoughtsTokenCount") or 0
-        )
-        if not continuation:
-            if finish is None:
-                raise InvokeConnectionError(
-                    "Tokener.ai Gemini response ended without a finish reason"
-                )
-            break
-        if continuation in seen:
-            raise InvokeServerUnavailableError("Tokener.ai repeated a Gemini continuation token")
-        seen.add(continuation)
-        payload = {**payload, "continuationToken": continuation}
-        finish = None
-    else:
-        raise InvokeServerUnavailableError("Tokener.ai exceeded the Gemini continuation limit")
-    finish = {
-        "MAX_TOKENS": "length",
-        "STOP": "stop",
-        "SAFETY": "content_filter",
-        "RECITATION": "content_filter",
-    }.get(finish, finish)
-    calls = output.calls if finish == "stop" else []
-    opaque = (
-        {OPAQUE_KEY: output.parts}
-        if any("thoughtSignature" in part for part in output.parts)
-        else None
-    )
-    yield _wire.chunk(
-        model,
-        visible + output.close_thinking(),
-        calls=calls,
-        opaque=opaque,
-        finish="tool_calls" if calls else finish,
-        usage=llm._calc_response_usage(model, credentials, *tokens),
-    )
-
-
-def _interaction_content(result) -> list[dict]:
-    parts = result.get("outputs") or [
-        part
-        for step in result.get("steps") or []
-        if step.get("type") in {"model_output", "thought"}
-        for part in step.get("content") or step.get("summary") or []
-    ]
-    if not parts and result.get("output_text"):
-        parts = [{"type": "text", "text": result["output_text"]}]
-    return parts
-
-
-def _interactions(llm, model, credentials, path, payload, stream) -> Generator:
-    with llm._request_at(path, credentials, json=payload, stream=stream) as response:
-        output = Output()
-        result = None
-        emitted_types = set()
-        if stream:
-            for event_name, event in _sse.events(response):
-                event_type = event.get("event_type") or event_name
-                if event_type == "error" or event.get("error"):
-                    _wire.response_error(event.get("error"))
-                if event_type in {"interaction.complete", "interaction.completed"}:
-                    result = event.get("interaction", event)
-                    break
-                if event_type not in {"content.delta", "step.delta"}:
-                    continue
-                delta = event.get("delta") or {}
-                if parts := output.read(_interaction_parts([delta])):
-                    emitted_types.add(delta.get("type"))
-                    yield _wire.chunk(model, parts)
-        else:
-            result = response.json()
-        if not isinstance(result, dict):
-            raise InvokeConnectionError("Missing Gemini Interactions terminal event")
-        if result.get("error") or result.get("status") in {"failed", "cancelled"}:
-            _wire.response_error(result.get("error"))
-        visible = output.read(
-            _interaction_parts(
-                [
-                    part
-                    for part in _interaction_content(result)
-                    if part.get("type") not in emitted_types
-                ]
-            )
-        )
-        usage = result.get("usage") or {}
-        yield _wire.chunk(
-            model,
-            visible + output.close_thinking(),
-            finish="stop",
-            usage=llm._calc_response_usage(
-                model,
-                credentials,
-                usage.get("total_input_tokens") or 0,
-                (usage.get("total_output_tokens") or 0) + (usage.get("total_thought_tokens") or 0),
-            ),
-        )
-
-
-def _interaction_parts(parts) -> list[dict]:
-    wire = []
-    for part in parts:
-        match part.get("type"):
-            case "text":
-                wire.append({"text": part.get("text", "")})
-            case "thought_summary":
-                wire.append({"text": (part.get("content") or {}).get("text", ""), "thought": True})
-            case "image":
-                if part.get("data"):
-                    wire.append(
-                        {"inlineData": {"data": part["data"], "mimeType": part["mime_type"]}}
-                    )
-    return wire
-
-
 def invoke(llm, model, credentials, messages, params, tools, stop, stream) -> Generator:
     path, payload, interactions = _request(
         llm, model, credentials, messages, params, tools, stop, stream
     )
-    generate = _interactions if interactions else _generate
+    generate = _gemini_output.interactions if interactions else _gemini_output.generate
     yield from generate(llm, model, credentials, path, payload, stream)

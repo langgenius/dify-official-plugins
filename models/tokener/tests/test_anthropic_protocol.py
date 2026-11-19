@@ -134,3 +134,24 @@ def test_claude_stream_replays_signed_and_redacted_thinking_with_tool_results(ll
     assert assistant["content"][:2] == [signed, redacted]
     assert results["role"] == "user"
     assert [block["tool_use_id"] for block in results["content"]] == ["one", "two"]
+
+
+def test_claude_json_object_mode_adds_a_format_instruction(llm, wire):
+    _, requests, replies = wire
+    expected = '{"answer":42,"extra":"allowed"}'
+    replies.append((200, {}, claude_result([{"type": "text", "text": expected}])))
+    chunks = invoke(
+        llm,
+        "claude-opus-4-6",
+        {"response_format": "json_object"},
+        messages=[SystemPromptMessage(content="Use concise values."), USER],
+    )
+    assert contents(chunks) == expected
+    assert requests[0][0] == "/v1/messages"
+    assert requests[0][2]["system"] == [
+        {"type": "text", "text": "Use concise values."},
+        {
+            "type": "text",
+            "text": "Return only a valid JSON object without Markdown or code fences.",
+        },
+    ]

@@ -245,3 +245,14 @@ def test_dashscope_embedding_sync_preserves_provider_batch_limit(model_id):
     from pathlib import Path
 
     assert files[f"{model_id}.yaml"] == Path(f"models/text_embedding/{model_id}.yaml").read_text()
+
+
+@pytest.mark.parametrize("model_id", ["gpt-4o-mini", "gpt-4o-mini-2024-07-18", "gpt-4.1"])
+def test_known_openai_sampling_controls_survive_catalog_reasoning_flag(model_id):
+    row = export_row(model_id, "reasoning")
+    row.update(capabilities=["streaming", "reasoning"], outputPricePer1m="0.04")
+    files = render_catalog(normalize_catalog({"items": [row]}))
+    model = yaml.safe_load(files[f"{model_id}.yaml"])
+    assert {"temperature", "top_p", "presence_penalty", "frequency_penalty"} <= {
+        rule["name"] for rule in model["parameter_rules"]
+    }

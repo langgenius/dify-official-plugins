@@ -17,6 +17,8 @@ from dify_plugin.errors.model import (
 from models.llm import _sse, _wire
 
 OUTPUT_KEY = "responses_output"
+THINK_START = "<think>\n"
+THINK_END = "\n</think>\n"
 NON_STREAMING = {"gpt-5.5-pro", "gpt-5.5-pro-2026-04-23", "o3-pro"}
 FIELDS = {
     "max_tokens",
@@ -221,30 +223,36 @@ def _terminal(payload, fallbacks: dict[int, dict] | None = None):
         output = [item for _, item in sorted(fallbacks.items())]
     committed = []
     visible = []
+    size = 0
+    thinking_spans = []
     calls = []
     for item in output:
+        part = ""
         match item.get("type"):
             case "reasoning":
-                visible.append(
-                    _wire.thinking_text(
-                        "".join(part.get("text", "") for part in item.get("summary") or [])
-                    )
-                )
+                part = "".join(block.get("text", "") for block in item.get("summary") or [])
+                if part:
+                    part = THINK_START + part + THINK_END
+                    thinking_spans.append((size + len(THINK_START), size + len(part)))
             case "message":
-                visible.extend(
-                    part.get("text") or part.get("refusal") or ""
-                    for part in item.get("content") or []
+                part = "".join(
+                    block.get("text") or block.get("refusal") or ""
+                    for block in item.get("content") or []
                 )
             case "function_call":
                 if status != "completed" or not _valid_call(item):
                     continue
                 calls.append(_wire.tool_call(item["call_id"], item["name"], item["arguments"]))
+        if part:
+            visible.append(part)
+            size += len(part)
         committed.append(item)
     return (
         "".join(visible) or payload.get("output_text", ""),
         calls,
         committed,
         "tool_calls" if calls else reason,
+        thinking_spans,
     )
 
 
@@ -288,7 +296,8 @@ def _stream(response, model, buffer: "StopBuffer") -> Generator:
     terminal = None
     completed_items = {}
     formatted = ""
-    thinking = False
+    thinking_start = None
+    thinking_spans = []
     for event_type, event in _sse.events(response):
         if event_type in {"error", "response.failed", "response.cancelled"}:
             _wire.response_error(event.get("response", {}).get("error") or event)
@@ -307,23 +316,37 @@ def _stream(response, model, buffer: "StopBuffer") -> Generator:
         if not part:
             continue
         is_thinking = event_type == "response.reasoning_summary_text.delta"
-        if is_thinking and not thinking:
-            part = "<think>\n" + part
-        elif thinking and not is_thinking:
-            part = "\n</think>\n" + part
-        thinking = is_thinking
+        if is_thinking and thinking_start is None:
+            thinking_start = len(formatted) + len(THINK_START)
+            part = THINK_START + part
+        elif not is_thinking and thinking_start is not None:
+            thinking_spans.append((thinking_start, len(formatted) + len(THINK_END)))
+            thinking_start = None
+            part = THINK_END + part
         formatted += part
         if visible := buffer.push(part):
             yield _wire.chunk(model, visible)
     if not isinstance(terminal, dict):
         raise InvokeConnectionError("Tokener.ai Responses stream ended without a terminal event")
-    canonical, calls, output, finish = _terminal(terminal, completed_items)
+    canonical, calls, output, finish, canonical_spans = _terminal(terminal, completed_items)
     if canonical.startswith(formatted):
+        if thinking_start is not None:
+            active_span = next(
+                (span for span in canonical_spans if span[0] == thinking_start),
+                (thinking_start, len(formatted) + len(THINK_END)),
+            )
+            thinking_spans.append(active_span)
+        thinking_spans.extend(span for span in canonical_spans if span[0] >= len(formatted))
         if visible := buffer.push(canonical[len(formatted) :]):
             yield _wire.chunk(model, visible)
-    elif thinking:
-        if visible := buffer.push("\n</think>\n"):
+        formatted = canonical
+    elif thinking_start is not None:
+        formatted += THINK_END
+        thinking_spans.append((thinking_start, len(formatted)))
+        if visible := buffer.push(THINK_END):
             yield _wire.chunk(model, visible)
+    if closing := buffer.close_thinking(thinking_spans):
+        yield _wire.chunk(model, closing)
     if visible := buffer.finish():
         yield _wire.chunk(model, visible)
     return terminal, canonical or formatted, calls, output, finish
@@ -347,8 +370,8 @@ def invoke(llm, model, credentials, messages, parameters, tools, stop, stream, u
                 raise InvokeServerUnavailableError(
                     "Tokener.ai returned an invalid Responses object"
                 )
-            raw, calls, output, finish = _terminal(result)
-            content = buffer.push(raw) + buffer.finish()
+            raw, calls, output, finish, thinking_spans = _terminal(result)
+            content = buffer.push(raw) + buffer.finish() + buffer.close_thinking(thinking_spans)
         if buffer.stopped:
             calls, output, finish = [], [], "stop"
         yield _wire.chunk(
@@ -366,7 +389,12 @@ class StopBuffer:
         self.tokens = [token for token in stop or [] if token]
         self.keep = max((len(token) for token in self.tokens), default=1) - 1
         self.pending = ""
-        self.stopped = False
+        self.emitted = 0
+        self.cut_at: int | None = None
+
+    @property
+    def stopped(self) -> bool:
+        return self.cut_at is not None
 
     def push(self, value: str) -> str:
         if self.stopped or not value:
@@ -379,13 +407,19 @@ class StopBuffer:
         if positions:
             result = self.pending[: min(positions)]
             self.pending = ""
-            self.stopped = True
+            self.cut_at = self.emitted + len(result)
             return result
         emit = len(self.pending) - self.keep
         if emit <= 0:
             return ""
         result, self.pending = self.pending[:emit], self.pending[emit:]
+        self.emitted += len(result)
         return result
+
+    def close_thinking(self, spans: list[tuple[int, int]]) -> str:
+        if self.cut_at is None or any(token in THINK_END for token in self.tokens):
+            return ""
+        return THINK_END if any(start <= self.cut_at < end for start, end in spans) else ""
 
     def finish(self) -> str:
         if self.stopped:

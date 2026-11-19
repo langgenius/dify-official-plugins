@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from dify_plugin.entities.model.message import (
+    AssistantPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -121,6 +122,43 @@ def test_gemini_generate_uses_inline_pdf_and_replays_thought_signature(llm, wire
     assert requests[1][2]["contents"][-1]["parts"] == [
         {"functionResponse": {"name": "lookup", "response": {"found": True}}}
     ]
+
+
+@pytest.mark.parametrize("keep_opaque", [True, False])
+def test_gemini_replays_parallel_same_name_tools_with_ids(llm, wire, keep_opaque):
+    _, requests, replies = wire
+    parts = [
+        {"functionCall": {"id": "first", "name": "lookup", "args": {"id": 1}}},
+        {"functionCall": {"id": "second", "name": "lookup", "args": {"id": 2}}},
+    ]
+    replies.extend([(200, {}, gemini_result(parts)), (200, {}, gemini_result([{"text": "ok"}]))])
+    model = "gemini-3-flash-preview"
+    message = invoke(llm, model, tools=[TOOL])[-1].delta.message
+    assert [call.id for call in message.tool_calls] == ["first", "second"]
+    if not keep_opaque:
+        message = message.model_copy(update={"opaque_body": None})
+    results = [
+        ToolPromptMessage(tool_call_id=call.id, content='{"found":true}')
+        for call in reversed(message.tool_calls)
+    ]
+    invoke(llm, model, tools=[TOOL], messages=[USER, message, *results])
+    turns = requests[1][2]["contents"]
+    assert turns[-2]["parts"] == parts
+    assert turns[-1]["parts"] == [
+        {"functionResponse": {"id": call_id, "name": "lookup", "response": {"found": True}}}
+        for call_id in ("second", "first")
+    ]
+
+
+@pytest.mark.parametrize("function_call", ["unexpected shape", {"id": []}])
+def test_gemini_rejects_invalid_function_history_before_sending(llm, wire, function_call):
+    _, requests, _ = wire
+    history = AssistantPromptMessage(
+        opaque_body={"gemini_parts": [{"functionCall": function_call}]},
+    )
+    with pytest.raises(InvokeBadRequestError, match="Invalid Gemini assistant history"):
+        invoke(llm, "gemini-3-flash-preview", messages=[USER, history, USER])
+    assert not requests
 
 
 def test_gemini_resume_upload_cache_is_key_scoped(llm, wire):

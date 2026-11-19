@@ -268,6 +268,13 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         betas.append("task-budgets-2026-03-13")
     if output_format and output_format["type"] == "json_schema":
         output["format"] = {"type": "json_schema", "schema": output_format["json_schema"]["schema"]}
+    elif output_format and output_format["type"] == "json_object":
+        payload.setdefault("system", []).append(
+            {
+                "type": "text",
+                "text": "Return only a valid JSON object without Markdown or code fences.",
+            }
+        )
     if output:
         payload["output_config"] = output
     if params.get("context_1m") and not adaptive:
