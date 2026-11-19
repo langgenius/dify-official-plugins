@@ -1,0 +1,41 @@
+model: "qwen-plus-latest"
+label:
+  en_US: "qwen-plus-latest"
+  zh_Hans: "qwen-plus-latest"
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 995904
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 32768
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    help:
+      en_US: Specify the format that the model must output.
+      zh_Hans: 指定模型必须输出的格式。
+    required: false
+    default: text
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: "1.200000"
+  output: "12.000000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false

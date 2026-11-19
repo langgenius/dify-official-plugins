@@ -1,0 +1,42 @@
+model: "gpt-5.2-2025-12-11"
+label:
+  en_US: "gpt-5.2-2025-12-11"
+  zh_Hans: "gpt-5.2-2025-12-11"
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 400000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    help:
+      en_US: Specify the format that the model must output.
+      zh_Hans: 指定模型必须输出的格式。
+    required: false
+    default: text
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: "1.750000"
+  output: "14.000000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false
