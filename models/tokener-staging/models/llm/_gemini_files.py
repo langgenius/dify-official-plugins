@@ -7,8 +7,7 @@ import ssl
 import time
 from collections import OrderedDict
 from datetime import datetime
-from hashlib import sha256
-from hmac import digest
+from hashlib import scrypt, sha256
 from http.client import HTTPException, HTTPSConnection
 from secrets import token_bytes
 from threading import Lock
@@ -32,7 +31,7 @@ MAX_BYTES = 50 * 1024 * 1024
 DOWNLOAD_SECONDS = 15
 CACHE_TTL = 3600
 CACHE_SIZE = 128
-_CACHE_SECRET = token_bytes(32)
+_CACHE_SALT = token_bytes(32)
 _CACHE: OrderedDict[tuple[str, bytes, str, bytes], tuple[float, str]] = OrderedDict()
 _CACHE_LOCK = Lock()
 
@@ -166,7 +165,7 @@ def _active_file(llm, credentials, file: dict) -> tuple[float, str]:
 def upload(llm, credentials: dict, mime: str, data: bytes) -> str:
     cache_key = (
         API_ORIGIN,
-        digest(_CACHE_SECRET, credentials["api_key"].encode(), "sha256"),
+        scrypt(credentials["api_key"].encode(), salt=_CACHE_SALT, n=2**14, r=8, p=1, dklen=32),
         mime,
         sha256(data).digest(),
     )
