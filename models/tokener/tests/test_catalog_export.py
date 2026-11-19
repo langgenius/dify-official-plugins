@@ -6,6 +6,7 @@ import pytest
 import yaml
 from dify_plugin.entities.model import AIModelEntity, ModelType
 
+from models._credentials import ENDPOINT_URL
 from scripts.sync_catalog import CatalogError, main, normalize_catalog, render_catalog
 
 
@@ -86,7 +87,7 @@ def test_all_types_validate_before_writing_and_check_detects_drift(tmp_path):
         "claude-opus-5-5",
         "gemini-3.5-pro",
         "grok-4.7",
-        "qwen3.5-plus",
+        "qwen-reasoning-future",
         "deepseek-v5",
         "glm-6",
         "kimi-k4",
@@ -150,9 +151,7 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
         texts[:32],
         texts[32:],
     ]
-    assert all(
-        call.args == ("https://api.tokener.ai/v1/embeddings",) for call in post.call_args_list
-    )
+    assert all(call.args == (f"{ENDPOINT_URL}/embeddings",) for call in post.call_args_list)
     assert all(call.kwargs["json"]["model"] == selected for call in post.call_args_list)
 
 

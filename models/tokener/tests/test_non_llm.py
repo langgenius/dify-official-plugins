@@ -15,6 +15,7 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 
+from models._credentials import ENDPOINT_URL
 from models.rerank.rerank import TokenerRerankModel
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
 
@@ -98,7 +99,7 @@ def test_public_rerank_preserves_documents_indices_and_threshold():
             top_n=2,
             user="user",
         )
-    assert post.call_args.args == ("https://api.tokener.ai/v1/rerank",)
+    assert post.call_args.args == (f"{ENDPOINT_URL}/rerank",)
     assert post.call_args.kwargs["json"] == {
         "model": "qwen3-rerank",
         "query": "same",
@@ -179,7 +180,7 @@ def test_public_embedding_preserves_model_texts_dimensions_and_order(input_type)
     assert result.model == "embedding-test"
     assert post.call_count == 2
     for index, call in enumerate(post.call_args_list):
-        assert call.args == ("https://api.tokener.ai/v1/embeddings",)
+        assert call.args == (f"{ENDPOINT_URL}/embeddings",)
         assert call.kwargs["json"] == {
             "model": "embedding-test",
             "input": texts[index * 2 : index * 2 + 2],

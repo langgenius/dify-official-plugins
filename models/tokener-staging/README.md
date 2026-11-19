@@ -1,8 +1,8 @@
 # Tokener.ai (Staging)
 
 This sibling package is only for a Dify dev test of Tokener staging. Do not
-merge or publish it. Its runtime and model catalog are based on the official
-Tokener 0.4.4 release. The original `models/tokener` remains unchanged.
+merge or publish it. This package uses the same runtime and model catalog as
+`models/tokener` and connects to the staging API.
 
 ## Configure
 
@@ -36,22 +36,20 @@ These validation requests can incur charges.
 ## Model parameters
 
 The generator reads family rules from `scripts/parameter_profiles.json` and capabilities from the catalog.
-The SDK filters parameters that the selected model does not declare.
-New reasoning models expose no sampling controls unless a profile explicitly permits them.
+Model settings expose controls for the selected model family.
 Unknown families expose the output limit and catalog-declared structured output controls.
 
 GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
 For `glm-4.7`, `glm-4.7-flash`, `qwen3-coder-30b-a3b`, `qwen3-coder-next`, and `qwen3-vl-235b-a22b`, temperature ranges from 0 to 1.
 
-The existing GPT-5.6 profile retains seed and reasoning effort controls.
-The existing DeepSeek V4, GLM-5.2, and Kimi K3 profiles retain their verified sampling controls and seed.
-Other GPT-5, GPT-6, and o-series models expose no unverified sampling or reasoning controls.
-Claude, Gemini, Grok, Qwen, DeepSeek, GLM, Kimi, and MiniMax family rules expose sampling only for models without reasoning capability.
+OpenAI language models use the Responses API. The `gpt-audio-*` models use Chat Completions.
+Claude uses the Messages API. Gemini uses GenerateContent, or Interactions when a supported model combines built-in tools with structured output.
+Tongyi and xAI use Chat Completions with provider-specific options.
 Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
 
 ## Sync models
 
-Run the generator from this plugin directory with a complete Tokener catalog snapshot JSON file.
+Run the generator from `models/tokener` with a complete Tokener catalog snapshot JSON file.
 The snapshot must include restricted models available to your users. The public catalog hides restricted models.
 An OpenAI `/v1/models` response lacks the context, capability, and price metadata needed for generation.
 
@@ -76,6 +74,8 @@ Select `--model-type llm`, `text_embedding`, `rerank`, `tts`, or `speech2text` t
 Synchronization validates all selected types before writing. It deletes model YAMLs that lack a matching snapshot entry in each selected type.
 An empty type produces an empty position list and removes its model definitions. `--check` reports drift without writing.
 
+From the repository root, run `python3.12 models/tokener/scripts/sync_staging.py` after modifying the source plugin. Use `--check` to detect differences.
+
 Embedding prices use the catalog input price. Rerank and audio definitions omit optional Dify prices because their billing units differ.
 LLM prices show the catalog base input and output rates. Dify's model definitions cannot represent cache read, cache write, or context-tier prices.
 Tokener.ai determines charges. Audio models require complete voice or upload metadata and prices.
@@ -89,9 +89,9 @@ Text-to-speech sends requests to `/v1/audio/speech`. Voices, languages, the defa
 Voice languages must use Dify UI locale codes. An unsupported code stops generation and identifies the model, voice, and code.
 
 Long speech text is split into sequential requests. The text limit counts characters, as in the OpenAI plugin.
-The plugin streams audio bytes in order. A later failure raises an error after any audio already sent.
-An empty stream raises an error. Supported formats are `mp3`, `aac`, `opus`, and `pcm`.
-`wav` and `flac` are rejected because concatenated files can truncate playback.
+The plugin streams MP3, AAC, Opus, and PCM audio in order. A later failure raises an error after any audio already sent.
+For WAV, the plugin combines PCM samples into one WAV file before sending audio. Qwen TTS uses WAV with a limit of 512 characters per request.
+An empty stream raises an error.
 
 Audio definitions appear only when the snapshot contains matching available models.
 Live audio generation, Dify playback, and production latency remain unverified.

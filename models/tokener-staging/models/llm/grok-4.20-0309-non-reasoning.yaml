@@ -26,6 +26,9 @@ parameter_rules:
     use_template: top_p
     min: 0.01
     max: 1
+  - name: search_parameters
+    type: text
+    required: false
   - name: response_format
     label:
       en_US: Response Format

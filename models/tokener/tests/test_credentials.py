@@ -5,7 +5,7 @@ import pytest
 import requests
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
-from models._credentials import validate_model_access
+from models._credentials import ENDPOINT_URL, validate_model_access
 from provider.tokener import TokenerModelProvider
 
 
@@ -25,7 +25,7 @@ def test_provider_validation_uses_models_endpoint(get) -> None:
     provider.validate_provider_credentials({"api_key": "test-key"})
 
     get.assert_called_once_with(
-        "https://api.tokener.ai/v1/models",
+        f"{ENDPOINT_URL}/models",
         headers={
             "Accept": "application/json",
             "Authorization": "Bearer test-key",

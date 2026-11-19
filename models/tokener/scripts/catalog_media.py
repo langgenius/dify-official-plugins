@@ -66,6 +66,7 @@ def _render_embedding(model: dict[str, Any]) -> str:
                     if model["id"] in {"text-embedding-v3", "text-embedding-v4"}
                     else 32,
                 },
+                **({"features": ["vision"]} if model["id"] == "gemini-embedding-2-preview" else {}),
                 "pricing": {
                     "input": model["pricing"]["inputPerMillion"],
                     "unit": "0.000001",
@@ -170,13 +171,16 @@ def _validate_tts(model: dict[str, Any]) -> None:
     if default_voice not in voice_ids:
         raise CatalogError(f"{model_id}.audio.defaultVoice must be one of the voices")
     _positive_int(audio.get("wordLimit"), f"{model_id}.audio.wordLimit")
-    if audio.get("audioFormat") not in ("mp3", "aac", "opus", "pcm"):
+    if audio.get("audioFormat") not in ("mp3", "aac", "opus", "pcm", "wav"):
         raise CatalogError(f"{model_id}.audio.audioFormat is unsupported")
     _validate_audio_pricing(model, {"second", "character", "million_tokens"})
 
 
 def _render_tts(model: dict[str, Any]) -> str:
     audio = model["audio"]
+    default_voice = audio["defaultVoice"]
+    if model["provider"] == "openai" and any(voice["id"] == "alloy" for voice in audio["voices"]):
+        default_voice = "alloy"
     lines = [
         f"model: {json.dumps(model['id'])}",
         "label:",
@@ -184,7 +188,7 @@ def _render_tts(model: dict[str, Any]) -> str:
         f"  zh_Hans: {json.dumps(model['id'], ensure_ascii=False)}",
         "model_type: tts",
         "model_properties:",
-        f"  default_voice: {json.dumps(audio['defaultVoice'])}",
+        f"  default_voice: {json.dumps(default_voice)}",
         f"  word_limit: {audio['wordLimit']}",
         f"  audio_type: {json.dumps(audio['audioFormat'])}",
         "  voices:",

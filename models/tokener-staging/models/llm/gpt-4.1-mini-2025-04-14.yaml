@@ -8,6 +8,8 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
+  - document
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -18,6 +20,9 @@ parameter_rules:
     default: 8192
     min: 1
     max: 32768
+  - name: enable_stream
+    type: boolean
+    required: false
   - name: response_format
     label:
       en_US: Response Format

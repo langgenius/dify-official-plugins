@@ -27,7 +27,7 @@ _OMITTED = object()
 )
 def test_public_invoke_preserves_tool_choice(stream, tool_choice) -> None:
     schema = AIModelEntity.model_validate(
-        yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text())
+        yaml.safe_load(Path("models/llm/deepseek-v4-pro.yaml").read_text())
     )
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     response = requests.Response()
@@ -98,7 +98,7 @@ def test_public_invoke_preserves_tool_choice(stream, tool_choice) -> None:
 @pytest.mark.parametrize("tool_choice", ["none", "required"])
 def test_public_invoke_without_tools_omits_tool_choice(tool_choice) -> None:
     schema = AIModelEntity.model_validate(
-        yaml.safe_load(Path("models/llm/gpt-5.6-sol.yaml").read_text())
+        yaml.safe_load(Path("models/llm/deepseek-v4-pro.yaml").read_text())
     )
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     response = requests.Response()

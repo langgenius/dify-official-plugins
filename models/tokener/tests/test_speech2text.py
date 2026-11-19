@@ -17,6 +17,8 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 
+from models._credentials import ENDPOINT_URL
+
 MODELS = [
     "whisper-1",
     "gpt-4o-mini-transcribe",
@@ -63,7 +65,7 @@ def test_speech2text_fixture_public_invoke_preserves_model_and_multipart(model_i
         expected |= {"chunking_strategy": "auto", "response_format": "diarized_json"}
     with patch("requests.post", return_value=response({"text": "transcribed"})) as post:
         assert model.invoke(model_id, credentials, audio, user="user") == "transcribed"
-    assert post.call_args.args == ("https://api.tokener.ai/v1/audio/transcriptions",)
+    assert post.call_args.args == (f"{ENDPOINT_URL}/audio/transcriptions",)
     assert post.call_args.kwargs["data"] == expected
     assert post.call_args.kwargs["files"] == [("file", audio)]
     assert post.call_args.kwargs["headers"] == {"Authorization": "Bearer test"}
@@ -179,5 +181,5 @@ def test_speech2text_multipart_wire_request():
     assert parts["chunking_strategy"].get_payload() == "auto"
     assert parts["response_format"].get_payload() == "diarized_json"
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.ai/v1/audio/transcriptions"
+    assert request.url == f"{ENDPOINT_URL}/audio/transcriptions"
     assert audio.closed

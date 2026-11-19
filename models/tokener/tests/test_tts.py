@@ -15,6 +15,8 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 
+from models._credentials import ENDPOINT_URL
+
 MODELS = ["tts-1", "tts-1-hd"]
 
 
@@ -55,7 +57,7 @@ def test_tts_fixture_public_invoke_keeps_selected_model_and_audio_bytes(model_id
     assert result == b"audio\x00\xff"
     request = send.call_args.args[0]
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.ai/v1/audio/speech"
+    assert request.url == f"{ENDPOINT_URL}/audio/speech"
     assert request.headers["Content-Type"] == "application/json"
     assert json.loads(request.body) == {
         "model": model_id,
@@ -282,7 +284,7 @@ def test_tts_stream_close_releases_in_flight_response():
     close.assert_called_once()
 
 
-@pytest.mark.parametrize("audio_format", ["wav", "flac"])
+@pytest.mark.parametrize("audio_format", ["ogg", "flac"])
 def test_tts_runtime_rejects_unsafe_audio_format_before_request(audio_format):
     model = tts_model()
     model.model_schemas[0].model_properties[ModelPropertyKey.AUDIO_TYPE] = audio_format

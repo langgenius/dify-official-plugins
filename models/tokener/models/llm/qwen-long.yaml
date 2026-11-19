@@ -4,8 +4,8 @@ label:
   zh_Hans: "qwen-long"
 model_type: llm
 features:
-  - structured-output
   - document
+  - structured-output
 model_properties:
   mode: chat
   context_size: 10000000

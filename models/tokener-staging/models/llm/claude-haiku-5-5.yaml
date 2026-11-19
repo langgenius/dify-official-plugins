@@ -8,6 +8,8 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
+  - document
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -18,6 +20,48 @@ parameter_rules:
     default: 8192
     min: 1
     max: 128000
+  - name: prompt_caching_tool_definitions
+    type: boolean
+    required: false
+  - name: prompt_caching_system_message
+    type: boolean
+    required: false
+  - name: prompt_caching_images
+    type: boolean
+    required: false
+  - name: prompt_caching_documents
+    type: boolean
+    required: false
+  - name: prompt_caching_tool_results
+    type: boolean
+    required: false
+  - name: prompt_caching_ttl
+    type: string
+    required: false
+    options:
+      - 5m
+      - 1h
+  - name: prompt_caching_message_flow
+    type: int
+    required: false
+  - name: thinking
+    type: boolean
+    required: false
+  - name: thinking_display
+    type: string
+    required: false
+    options:
+      - summarized
+      - omitted
+  - name: effort
+    type: string
+    required: false
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
   - name: response_format
     label:
       en_US: Response Format
