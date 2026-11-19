@@ -1,0 +1,105 @@
+# Tokener.ai (Staging)
+
+This sibling package is only for a Dify dev test of Tokener staging. Do not
+merge or publish it. Its runtime and model catalog are based on the official
+Tokener 0.4.4 release. The original `models/tokener` remains unchanged.
+
+## Configure
+
+Tokener.ai provides language, text embedding, rerank, speech recognition, and text-to-speech models for Dify.
+
+1. Download the PR's **Tokener staging package** workflow artifact and have a
+   trusted signing-key holder sign it. Install the signed package only into an
+   isolated Dify dev workspace.
+2. Use an API key from the [Tokener staging console](https://console-staging.tokener.dev/keys),
+   not a production key.
+
+The workspace Provider ID is `langgenius/tokener-staging/tokener`; the API
+endpoint is `https://api-staging.tokener.dev/v1`. Access depends on the staging
+org and selected model. The package is unsigned until the trusted signer
+returns the signed artifact; do not disable signature enforcement.
+
+In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
+Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
+For `text-embedding-v3` and `text-embedding-v4`, the plugin sends up to 10 texts per request.
+Both models accept up to 8192 tokens per text and retain the default 1024 vector dimensions.
+Other embedding models use up to 32 texts per request. The plugin does not truncate texts.
+For `embed-english-v3`, `embed-multilingual-v3`, and `embed-v4`, the plugin sends `input_type=search_query` for queries and `input_type=search_document` for documents.
+These models retain their default vector dimensions: 1024 for both v3 models and 1536 for v4.
+For `gemini-embedding-2-preview`, the plugin adds Google's retrieval prefixes to distinguish queries from documents. Use an isolated test knowledge base; leave caches and knowledge bases belonging to the official provider untouched.
+For `gemini-embedding-001`, the plugin sends `task_type=RETRIEVAL_QUERY` for queries and `task_type=RETRIEVAL_DOCUMENT` for documents. The input text stays unchanged.
+
+Provider, LLM, and embedding validation use authenticated `GET /v1/models`.
+Rerank validation sends a small rerank request. Speech validation sends demo audio or a short speech request.
+These validation requests can incur charges.
+
+## Model parameters
+
+The generator reads family rules from `scripts/parameter_profiles.json` and capabilities from the catalog.
+The SDK filters parameters that the selected model does not declare.
+New reasoning models expose no sampling controls unless a profile explicitly permits them.
+Unknown families expose the output limit and catalog-declared structured output controls.
+
+GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
+For `glm-4.7`, `glm-4.7-flash`, `qwen3-coder-30b-a3b`, `qwen3-coder-next`, and `qwen3-vl-235b-a22b`, temperature ranges from 0 to 1.
+
+The existing GPT-5.6 profile retains seed and reasoning effort controls.
+The existing DeepSeek V4, GLM-5.2, and Kimi K3 profiles retain their verified sampling controls and seed.
+Other GPT-5, GPT-6, and o-series models expose no unverified sampling or reasoning controls.
+Claude, Gemini, Grok, Qwen, DeepSeek, GLM, Kimi, and MiniMax family rules expose sampling only for models without reasoning capability.
+Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
+
+## Sync models
+
+Run the generator from this plugin directory with a complete Tokener catalog snapshot JSON file.
+The snapshot must include restricted models available to your users. The public catalog hides restricted models.
+An OpenAI `/v1/models` response lacks the context, capability, and price metadata needed for generation.
+
+```bash
+export UV_PROJECT_ENVIRONMENT=/tmp/tokener-plugin-venv
+uv run --frozen python scripts/sync_catalog.py --input /tmp/tokener-models.json
+uv run --frozen python scripts/sync_catalog.py --input /tmp/tokener-models.json --check
+```
+
+The snapshot must contain the complete `items` array. Each item supplies `publicModelId`, `category`, `enabled`, `managedAvailable`, and model metadata.
+The generator includes models with both `enabled: true` and `managedAvailable: true`, regardless of access scope.
+Both display labels use the public model ID. Internal identifiers and display names are excluded.
+Decision routes are outside the supported Dify model types. Unknown categories stop generation and identify the affected public model IDs.
+Keep the source snapshot outside Git. The snapshot does not prove that a particular API key has model access.
+
+The generator also accepts a complete machine catalog snapshot with `schemaVersion: 1`, `catalogRevision`, and `models`.
+The input path is required. If the file contains an HTML login page, re-authenticate and obtain a new JSON snapshot.
+Never put keys in snapshots or commits.
+
+The default selection is all five supported types.
+Select `--model-type llm`, `text_embedding`, `rerank`, `tts`, or `speech2text` to update one type.
+Synchronization validates all selected types before writing. It deletes model YAMLs that lack a matching snapshot entry in each selected type.
+An empty type produces an empty position list and removes its model definitions. `--check` reports drift without writing.
+
+Embedding prices use the catalog input price. Rerank and audio definitions omit optional Dify prices because their billing units differ.
+LLM prices show the catalog base input and output rates. Dify's model definitions cannot represent cache read, cache write, or context-tier prices.
+Tokener.ai determines charges. Audio models require complete voice or upload metadata and prices.
+New audio models use their catalog type and metadata, without an ID allowlist.
+
+## Audio behavior
+
+Speech recognition uploads files to `/v1/audio/transcriptions`. Upload limits and extensions come from catalog metadata. Upload limits use decimal megabytes.
+The diarization model uses automatic chunking and returns text without speaker labels.
+Text-to-speech sends requests to `/v1/audio/speech`. Voices, languages, the default voice, text limits, and format come from catalog metadata.
+Voice languages must use Dify UI locale codes. An unsupported code stops generation and identifies the model, voice, and code.
+
+Long speech text is split into sequential requests. The text limit counts characters, as in the OpenAI plugin.
+The plugin streams audio bytes in order. A later failure raises an error after any audio already sent.
+An empty stream raises an error. Supported formats are `mp3`, `aac`, `opus`, and `pcm`.
+`wav` and `flac` are rejected because concatenated files can truncate playback.
+
+Audio definitions appear only when the snapshot contains matching available models.
+Live audio generation, Dify playback, and production latency remain unverified.
+A segment without output for more than 120 seconds can exceed the serverless idle limit.
+
+## Support
+
+Open an issue in [dify-official-plugins](https://github.com/langgenius/dify-official-plugins/issues).
+Include the Dify version, plugin version, model ID, and request ID. Never include API keys or prompt content.
+
+Apache License 2.0. See [LICENSE](https://github.com/langgenius/dify-official-plugins/blob/main/LICENSE).
