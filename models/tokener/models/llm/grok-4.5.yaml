@@ -21,34 +21,27 @@ parameter_rules:
     max: 500000
   - name: temperature
     use_template: temperature
-    min: 0
-    max: 2
+    default: 1.0
+    min: 0.0
+    max: 2.0
   - name: top_p
     use_template: top_p
-    min: 0.01
-    max: 1
   - name: search_parameters
     type: text
+    default: "{\n  \"mode\": \"on\"\n}"
     required: false
   - name: reasoning_effort
     type: string
     required: false
+    default: high
     options:
       - low
       - medium
       - high
   - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
     type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
     required: false
-    default: text
     options:
-      - text
       - json_object
       - json_schema
   - name: json_schema

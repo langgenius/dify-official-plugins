@@ -57,6 +57,13 @@ def provider_rules(model_id: str, features: list[str]) -> dict[str, str | tuple[
         rules = {"use_inline_file": "boolean"} if "document" in features else {}
         if model_id.startswith(("gemini-3", "gemini-4")):
             rules["media_resolution"] = ("Default", "Low", "Medium", "High")
+        if (
+            model_id.startswith(
+                ("gemini-3.1", "gemini-3.5", "gemini-3.6", "gemini-3.7", "gemini-3.8")
+            )
+            or model_id == "gemini-4-argon"
+        ):
+            rules["service_tier"] = ("flex", "standard", "priority")
         if "-image" in model_id:
             rules["aspect_ratio"] = "string"
             if model_id.startswith("gemini-3"):

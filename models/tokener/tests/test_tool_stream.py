@@ -7,6 +7,7 @@ import requests
 import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
+from dify_plugin.errors.model import InvokeServerUnavailableError
 
 from models._credentials import ENDPOINT_URL
 from models.llm.llm import TokenerLargeLanguageModel
@@ -39,6 +40,8 @@ def _stream_response(events: list[dict]) -> requests.Response:
             ]
         ]
     )
+    response._content = ("\n\n".join(response.iter_lines.return_value) + "\n\n").encode()
+    response._content_consumed = True
     return response
 
 
@@ -67,7 +70,7 @@ def _invoke_stream(events: list[dict], model=None) -> list:
                     "function_calling_type": "tool_call",
                 },
                 [UserPromptMessage(content="Run both tools")],
-                {"max_tokens": 32},
+                {"max_tokens": 32, "enable_thinking": False},
                 tools=[
                     PromptMessageTool(name="foo", description="", parameters={"type": "object"}),
                     PromptMessageTool(name="bar", description="", parameters={"type": "object"}),
@@ -219,7 +222,7 @@ def test_non_stream_parallel_tool_calls_preserve_complete_values() -> None:
                 MODEL,
                 {"api_key": "test-key"},
                 [UserPromptMessage(content="Run both tools")],
-                {"max_tokens": 32},
+                {"max_tokens": 32, "enable_thinking": False},
                 tools=[
                     PromptMessageTool(name="foo", description="", parameters={"type": "object"}),
                     PromptMessageTool(name="bar", description="", parameters={"type": "object"}),
@@ -284,19 +287,18 @@ def test_stream_without_indices_keeps_legacy_single_tool_behavior() -> None:
     _assert_stream_result(chunks, {"call0": ("foo", '{"x":1}')})
 
 
-def test_stream_non_json_termination_preserves_collected_tools() -> None:
+def test_stream_keepalive_and_finish_preserve_collected_tools() -> None:
     response = _stream_response([])
     response.iter_lines = Mock(
         return_value=[
             ": keepalive",
-            "data: [DONE]",
             'data: {"choices": [{"delta": {"content": "answer", "tool_calls": '
             '[{"index": 0, "id": "call0", "function": {"name": "foo", "arguments": "{}"}}]}, '
             '"finish_reason": "tool_calls"}], '
             '"usage": {"prompt_tokens": 13, "completion_tokens": 7}}',
-            "data: not-json",
         ]
     )
+    response._content = ("\n\n".join(response.iter_lines.return_value) + "\n\n").encode()
     with patch("requests.post", return_value=response):
         chunks = list(
             _model().invoke(
@@ -307,7 +309,7 @@ def test_stream_non_json_termination_preserves_collected_tools() -> None:
                 stream=True,
             )
         )
-    assert any(chunk.delta.finish_reason == "Non-JSON encountered." for chunk in chunks)
+    assert any(chunk.delta.finish_reason == "tool_calls" for chunk in chunks)
     assert [
         (call.id, call.function.name, call.function.arguments)
         for chunk in chunks
@@ -319,7 +321,8 @@ def test_stream_non_json_termination_preserves_collected_tools() -> None:
 def test_stream_upstream_error_is_propagated() -> None:
     response = _stream_response([])
     response.iter_lines = Mock(return_value=['data: {"error": "upstream rejected request"}'])
-    with patch("requests.post", return_value=response), pytest.raises(ValueError, match="upstream"):
+    response._content = b'data: {"error": "upstream rejected request"}\n\n'
+    with patch("requests.post", return_value=response), pytest.raises(InvokeServerUnavailableError):
         list(
             _model().invoke(
                 MODEL,

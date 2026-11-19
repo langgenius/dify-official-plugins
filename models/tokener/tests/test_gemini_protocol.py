@@ -1,3 +1,4 @@
+import base64
 import socket
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock
@@ -20,6 +21,7 @@ from protocol_http import registry as registry
 from protocol_http import wire as wire
 
 from models.llm import _gemini_files
+from models.llm._gemini_native import DEFAULT_THOUGHT_SIGNATURE
 
 
 def gemini_result(parts, finish="STOP", **extra):
@@ -72,7 +74,7 @@ def test_gemini_interactions_keeps_native_tools_schema_and_stream_output(llm, wi
         "thinking_level": "low",
         "thinking_summaries": "auto",
     }
-    assert contents(chunks) == '<think>\nthinking\n</think>\n{"answer":4}'
+    assert contents(chunks) == '<think>\n\nthinking\n\n</think>{"answer":4}'
     assert chunks[-1].delta.usage.total_tokens == 9
 
 
@@ -120,7 +122,7 @@ def test_gemini_generate_uses_inline_pdf_and_replays_thought_signature(llm, wire
     }
     assert requests[1][2]["contents"][-2]["parts"] == parts
     assert requests[1][2]["contents"][-1]["parts"] == [
-        {"functionResponse": {"name": "lookup", "response": {"found": True}}}
+        {"functionResponse": {"name": "lookup", "response": {"response": '{"found":true}'}}}
     ]
 
 
@@ -143,9 +145,18 @@ def test_gemini_replays_parallel_same_name_tools_with_ids(llm, wire, keep_opaque
     ]
     invoke(llm, model, tools=[TOOL], messages=[USER, message, *results])
     turns = requests[1][2]["contents"]
-    assert turns[-2]["parts"] == parts
+    assert turns[-2]["parts"] == [
+        {**part, "thoughtSignature": DEFAULT_THOUGHT_SIGNATURE} for part in parts
+    ]
+    assert all("thoughtSignature" not in part for part in parts)
     assert turns[-1]["parts"] == [
-        {"functionResponse": {"id": call_id, "name": "lookup", "response": {"found": True}}}
+        {
+            "functionResponse": {
+                "id": call_id,
+                "name": "lookup",
+                "response": {"response": '{"found":true}'},
+            }
+        }
         for call_id in ("second", "first")
     ]
 
@@ -267,6 +278,46 @@ def test_attachment_download_rejects_truncated_response_and_times_out(monkeypatc
         _gemini_files._download("https://example.invalid/file.pdf")
     transport.close.assert_called_once()
     response.__exit__.assert_called_once()
+
+
+@pytest.mark.parametrize("kind", ["url", "base64", "history", "history-snake", "inline-pdf"])
+def test_gemini_limits_inline_media_across_the_invocation(llm, wire, monkeypatch, kind):
+    _, requests, replies = wire
+    monkeypatch.setattr(_gemini_files, "MAX_BYTES", 8)
+    data = base64.b64encode(b"12345").decode()
+    image = IMAGE.model_copy(update={"base64_data": data})
+    parameters = {}
+    if kind == "url":
+        image = IMAGE.model_copy(update={"base64_data": "", "url": "https://example.invalid/a"})
+        response = MagicMock(status=200, length=5)
+        response.__enter__.return_value = response
+        response.read.return_value = b"12345"
+        transport = SimpleNamespace(request=Mock(), getresponse=lambda: response, close=Mock())
+        monkeypatch.setattr(_gemini_files, "PublicHTTPSConnection", lambda *args, **kw: transport)
+    if kind == "inline-pdf":
+        image = PDF.model_copy(update={"base64_data": data})
+        parameters = {"use_inline_file": True}
+    messages = [UserPromptMessage(content=[image]), UserPromptMessage(content=[image])]
+    if kind in {"history", "history-snake"}:
+        field = "inlineData" if kind == "history" else "inline_data"
+        messages[0] = AssistantPromptMessage(
+            opaque_body={"gemini_parts": [{field: {"mimeType": "image/png", "data": data}}]}
+        )
+    with pytest.raises(InvokeBadRequestError):
+        invoke(llm, "gemini-3-flash-preview", parameters, messages=messages)
+    assert not requests
+    if kind == "url":
+        assert response.read.call_count == 1
+        assert transport.close.call_count == 2
+    image = IMAGE.model_copy(update={"base64_data": base64.b64encode(b"1234").decode()})
+    replies.append((200, {}, gemini_result([{"text": "ok"}])))
+    invoke(
+        llm,
+        "gemini-3-flash-preview",
+        messages=[UserPromptMessage(content=[image]), UserPromptMessage(content=[image])],
+    )
+    parts = requests[0][2]["contents"][0]["parts"]
+    assert sum(len(base64.b64decode(part["inlineData"]["data"])) for part in parts) == 8
 
 
 def test_attachment_connection_rejects_nonpublic_dns_before_opening_socket(monkeypatch):

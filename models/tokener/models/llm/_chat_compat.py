@@ -1,4 +1,5 @@
 import json
+import re
 from collections.abc import Generator
 
 from dify_plugin.entities.model.message import (
@@ -10,7 +11,7 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import InvokeBadRequestError, InvokeServerUnavailableError
 
-from models.llm import _sse, _wire
+from models.llm import _qwen_long, _sse, _wire
 
 COMMON_FIELDS = {
     "max_tokens",
@@ -41,6 +42,7 @@ TONGYI_FIELDS = COMMON_FIELDS | {
     "parallel_tool_calls",
 }
 XAI_FIELDS = COMMON_FIELDS | {
+    "service_tier",
     "search_parameters",
     "max_completion_tokens",
     "parallel_tool_calls",
@@ -71,6 +73,22 @@ THINKING_DEFAULTS = (
     "qwen3.7-",
     "qwen3.8-",
 )
+DEEPSEEK_EFFORTS = {
+    "deepseek-v4.1-flash": ("low", "high", "max"),
+    "deepseek-v4.1-flash-1017": ("low", "high", "max"),
+    "deepseek-v4-pro": ("high", "max"),
+    "deepseek-v4-flash-0731": ("low", "high", "max"),
+}
+
+
+def normalize_deepseek_parameters(model, parameters):
+    if model not in DEEPSEEK_EFFORTS:
+        return
+    parameters.setdefault("enable_thinking", True)
+    if parameters["enable_thinking"] is False or parameters.get("reasoning_effort") in (None, ""):
+        parameters.pop("reasoning_effort", None)
+    elif parameters["reasoning_effort"] not in DEEPSEEK_EFFORTS[model]:
+        raise InvokeBadRequestError(f"Invalid reasoning_effort for {model}")
 
 
 def _tongyi(model, messages, params, output_format, tools, stream):
@@ -81,6 +99,7 @@ def _tongyi(model, messages, params, output_format, tools, stream):
         for name in ("source_lang", "target_lang", "domains"):
             if (value := params.pop(name, None)) is not None:
                 translation[name] = value
+        translation.setdefault("domains", None)
         params["translation_options"] = {
             key: translation[key]
             for key in ("source_lang", "target_lang", "domains")
@@ -91,8 +110,19 @@ def _tongyi(model, messages, params, output_format, tools, stream):
         return messages[-1:], output_format, False
     if model.startswith(THINKING_DEFAULTS):
         params.setdefault("enable_thinking", model == "qwen3.8-max")
-    if not params.get("enable_thinking"):
-        params.pop("thinking_budget", None)
+    if model in {
+        "glm-5.1",
+        "glm-5",
+        "glm-4.7",
+        "glm-4.6",
+        "glm-4.5",
+        "glm-4.5-air",
+        "deepseek-v3.2",
+        "deepseek-v3.2-exp",
+        "deepseek-v3.1",
+    }:
+        params.setdefault("enable_thinking", False)
+    normalize_deepseek_parameters(model, params)
     if model == "qwen3.8-max":
         params["preserve_thinking"] = False
         if not params["enable_thinking"]:
@@ -100,7 +130,16 @@ def _tongyi(model, messages, params, output_format, tools, stream):
         elif (temp := params.get("temperature")) is not None and temp < 0.6:
             params["temperature"] = 0.6
         messages = [
-            message.model_copy(update={"content": _wire.without_thinking(message.content)})
+            message.model_copy(
+                update={
+                    "content": re.sub(
+                        r"<think>\n(?:(?!</?think>).)*\n</think>",
+                        "",
+                        message.content,
+                        flags=re.DOTALL,
+                    )
+                }
+            )
             if isinstance(message, AssistantPromptMessage) and isinstance(message.content, str)
             else message
             for message in messages
@@ -134,7 +173,25 @@ def _tongyi(model, messages, params, output_format, tools, stream):
             else:
                 messages = [SystemPromptMessage(content=directive), *messages]
     requires_stream = (
-        (model.startswith(THINKING_DEFAULTS) and params.get("enable_thinking"))
+        (
+            model.startswith(THINKING_DEFAULTS)
+            and model not in {"qwen3.6-flash", "qwen3.6-flash-2026-04-16"}
+            and params.get("enable_thinking")
+        )
+        or (
+            model
+            in {
+                "glm-5",
+                "glm-4.7",
+                "glm-4.6",
+                "glm-4.5",
+                "glm-4.5-air",
+                "kimi-k2.5",
+                "kimi-k2-thinking",
+                *DEEPSEEK_EFFORTS,
+            }
+            and params.get("enable_thinking")
+        )
         or model.startswith(("qwq-", "qvq-"))
         or model.startswith("qwen3-")
         and not model.startswith(("qwen3-coder", "qwen3-max", "qwen3-vl-plus", "qwen3-vl-flash"))
@@ -222,7 +279,9 @@ def invoke(
         **params,
         "model": model,
         "stream": stream,
-        "messages": [_chat_message(llm, model, message) for message in messages],
+        "messages": _qwen_long.convert(messages, tools)
+        if model == "qwen-long"
+        else [_chat_message(llm, model, message) for message in messages],
     }
     if output_format and output_format["type"] != "text":
         payload["response_format"] = output_format
@@ -237,7 +296,14 @@ def invoke(
         payload["user"] = user
     if stream:
         payload["stream_options"] = {"include_usage": True}
-    with llm._request("chat/completions", credentials, json=payload, stream=stream) as response:
+    request_options = {}
+    if model == "qwen-long" and any(
+        isinstance(message["content"], list) for message in payload["messages"]
+    ):
+        request_options["timeout"] = (10, _qwen_long.REQUEST_TIMEOUT_SECONDS)
+    with llm._request(
+        "chat/completions", credentials, json=payload, stream=stream, **request_options
+    ) as response:
         if stream:
             resolved = {**credentials, "mode": "chat", "function_calling_type": "tool_call"}
             yield from llm._handle_generate_stream_response(

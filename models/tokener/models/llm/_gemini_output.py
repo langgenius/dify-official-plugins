@@ -1,11 +1,31 @@
 from collections.abc import Generator
+from decimal import Decimal
 
 from dify_plugin.entities.model.message import ImagePromptMessageContent, TextPromptMessageContent
-from dify_plugin.errors.model import InvokeConnectionError, InvokeServerUnavailableError
+from dify_plugin.errors.model import (
+    InvokeConnectionError,
+    InvokeError,
+    InvokeServerUnavailableError,
+)
 
 from models.llm import _sse, _wire
 
 OPAQUE_KEY = "gemini_parts"
+
+
+def _priced_usage(llm, model, credentials, prompt, completion, tier):
+    usage = llm._calc_response_usage(model, credentials, prompt, completion)
+    multiplier = {"flex": Decimal("0.5"), "priority": Decimal("1.8")}.get(str(tier).lower())
+    if multiplier is not None:
+        for name in (
+            "prompt_unit_price",
+            "prompt_price",
+            "completion_unit_price",
+            "completion_price",
+        ):
+            setattr(usage, name, getattr(usage, name) * multiplier)
+        usage.total_price = usage.prompt_price + usage.completion_price
+    return usage
 
 
 class Output:
@@ -18,26 +38,47 @@ class Output:
         visible = []
         for part in parts:
             self.parts.append(part)
-            if "text" in part:
-                text = part["text"]
+            if text := part.get("text"):
                 thought = bool(part.get("thought"))
                 if thought != self.thinking:
-                    text = ("<think>\n" if thought else "\n</think>\n") + text
+                    text = ("<think>\n\n" if thought else "\n\n</think>") + text
                     self.thinking = thought
                 if text:
                     visible.append(TextPromptMessageContent(data=text))
             if "inlineData" in part:
                 if self.thinking:
-                    visible.append(TextPromptMessageContent(data="\n</think>\n"))
+                    visible.append(TextPromptMessageContent(data="\n\n</think>"))
                     self.thinking = False
                 data = part["inlineData"]
-                if data["mimeType"].startswith("image/"):
+                mime_type = data.get("mimeType")
+                if mime_type is None:
+                    raise InvokeError("receive inline_data with no mime_type")
+                if data.get("data") is None:
+                    raise InvokeError("receive inline_data with no data")
+                if not mime_type.startswith("image/"):
+                    raise InvokeError(f"unsupported mime_type {mime_type}")
+                visible.append(
+                    ImagePromptMessageContent(
+                        format=mime_type.split("/", 1)[1],
+                        mime_type=mime_type,
+                        base64_data=data["data"],
+                        detail=ImagePromptMessageContent.DETAIL.HIGH,
+                    )
+                )
+            if "executableCode" in part or "codeExecutionResult" in part:
+                if self.thinking:
+                    visible.append(TextPromptMessageContent(data="\n\n</think>"))
+                    self.thinking = False
+                if code := part.get("executableCode"):
+                    language = code.get("language", "").lower()
                     visible.append(
-                        ImagePromptMessageContent(
-                            format="." + data["mimeType"].split("/", 1)[1],
-                            mime_type=data["mimeType"],
-                            base64_data=data["data"],
+                        TextPromptMessageContent(
+                            data=f"\n```{language}\n{code.get('code', '')}\n```\n"
                         )
+                    )
+                if result := part.get("codeExecutionResult"):
+                    visible.append(
+                        TextPromptMessageContent(data=f"\n```\n{result.get('output', '')}\n```\n")
                     )
             if call := part.get("functionCall"):
                 name = call["name"]
@@ -51,23 +92,25 @@ class Output:
         return visible
 
     def close_thinking(self) -> list:
-        return [TextPromptMessageContent(data="\n</think>\n")] if self.thinking else []
+        return [TextPromptMessageContent(data="\n\n</think>")] if self.thinking else []
 
 
 def generate(llm, model, credentials, path, payload, stream) -> Generator:
     output = Output()
     visible = []
-    tokens = [0, 0]
+    total_usage = None
     seen = set()
     finish = None
     for _ in range(8):
         continuation = None
         usage = {}
+        actual_tier = None
         timeout = (10, 900 if model == "gemini-4-argon" else 120)
         with llm._request_at(
             path, credentials, json=payload, stream=stream, timeout=timeout
         ) as response:
             replies = (event for _, event in _sse.events(response)) if stream else [response.json()]
+            actual_tier = response.headers.get("x-gemini-service-tier")
             for result in replies:
                 if not isinstance(result, dict):
                     raise InvokeServerUnavailableError(
@@ -77,6 +120,7 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
                     _wire.response_error(result["error"])
                 if result.get("usageMetadata"):
                     usage.update(result["usageMetadata"])
+                actual_tier = result.get("serviceTier") or actual_tier
                 if (
                     block := result.get("promptFeedback", {}).get("blockReason")
                 ) and block != "BLOCK_REASON_UNSPECIFIED":
@@ -92,10 +136,36 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
                         visible.extend(parts)
                 finish = candidate.get("finishReason") or finish
                 continuation = candidate.get("continuationToken") or continuation
-        tokens[0] += usage.get("promptTokenCount") or 0
-        tokens[1] += (usage.get("candidatesTokenCount") or 0) + (
-            usage.get("thoughtsTokenCount") or 0
+        current = _priced_usage(
+            llm,
+            model,
+            credentials,
+            usage.get("promptTokenCount") or 0,
+            (usage.get("candidatesTokenCount") or 0) + (usage.get("thoughtsTokenCount") or 0),
+            actual_tier or payload.get("serviceTier", "standard"),
         )
+        if total_usage is None:
+            total_usage = current
+        else:
+            for name in (
+                "prompt_tokens",
+                "completion_tokens",
+                "total_tokens",
+                "prompt_price",
+                "completion_price",
+                "total_price",
+            ):
+                setattr(total_usage, name, getattr(total_usage, name) + getattr(current, name))
+            for prefix in ("prompt", "completion"):
+                count = getattr(total_usage, prefix + "_tokens")
+                if count:
+                    setattr(
+                        total_usage,
+                        prefix + "_unit_price",
+                        getattr(total_usage, prefix + "_price")
+                        / count
+                        / getattr(total_usage, prefix + "_price_unit"),
+                    )
         if not continuation:
             if finish is None:
                 raise InvokeConnectionError(
@@ -127,7 +197,7 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
         calls=calls,
         opaque=opaque,
         finish="tool_calls" if calls else finish,
-        usage=llm._calc_response_usage(model, credentials, *tokens),
+        usage=total_usage,
     )
 
 
@@ -182,11 +252,15 @@ def interactions(llm, model, credentials, path, payload, stream) -> Generator:
             model,
             visible + output.close_thinking(),
             finish="stop",
-            usage=llm._calc_response_usage(
+            usage=_priced_usage(
+                llm,
                 model,
                 credentials,
                 usage.get("total_input_tokens") or 0,
                 (usage.get("total_output_tokens") or 0) + (usage.get("total_thought_tokens") or 0),
+                result.get("service_tier")
+                or response.headers.get("x-gemini-service-tier")
+                or payload.get("service_tier", "standard"),
             ),
         )
 

@@ -99,7 +99,8 @@ def structured_format(parameters: dict) -> dict | None:
             return None
         value = "json_schema"
     if isinstance(value, str):
-        value = {"type": value.lower()}
+        kind = value.lower()
+        value = {"type": ("json_schema" if schema else "json_object") if kind == "json" else kind}
     if not isinstance(value, dict) or value.get("type") not in {
         "text",
         "json_object",

@@ -61,7 +61,7 @@ def test_tongyi_chat_sse_strips_history_and_preserves_search_reasoning_and_media
             "json_schema": SCHEMA,
         },
         messages=[
-            AssistantPromptMessage(content="<think>private reasoning</think>old"),
+            AssistantPromptMessage(content="<think>\nprivate reasoning\n</think>old"),
             UserPromptMessage(content=[IMAGE]),
         ],
     )
@@ -97,7 +97,7 @@ def test_tongyi_translation_and_nonstream_thinking(llm, wire):
     assert requests[0][2]["messages"] == [{"role": "user", "content": "hello"}]
     assert requests[0][2]["stream"] is False
     chunks = invoke(llm, "qwen3-vl-plus", {"enable_thinking": False, "thinking_budget": 16})
-    assert "thinking_budget" not in requests[1][2]
+    assert requests[1][2]["thinking_budget"] == 16
     assert contents(chunks) == "<think>\nreason\n</think>\nok"
 
 

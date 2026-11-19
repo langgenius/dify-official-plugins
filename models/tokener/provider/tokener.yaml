@@ -22,6 +22,7 @@ supported_model_types:
   - rerank
   - speech2text
   - tts
+  - moderation
 configurate_methods:
   - predefined-model
 provider_credential_schema:
@@ -36,6 +37,10 @@ provider_credential_schema:
         en_US: Enter your Tokener.ai API key
         zh_Hans: 输入 Tokener.ai API Key
 models:
+  moderation:
+    position: models/moderation/_position.yaml
+    predefined:
+      - models/moderation/*.yaml
   tts:
     position: models/tts/_position.yaml
     predefined:
@@ -63,3 +68,4 @@ extra:
       - models/rerank/rerank.py
       - models/speech2text/speech2text.py
       - models/tts/tts.py
+      - models/moderation/moderation.py

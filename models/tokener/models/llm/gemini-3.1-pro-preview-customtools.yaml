@@ -11,6 +11,8 @@ features:
   - audio
   - agent-thought
   - structured-output
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 1048576
@@ -22,12 +24,14 @@ parameter_rules:
     max: 65536
   - name: temperature
     use_template: temperature
+    type: float
+    required: true
+    default: 1
     min: 0
     max: 2
   - name: top_p
     use_template: top_p
-    min: 0.01
-    max: 1
+    default: 0.95
   - name: top_k
     type: int
     min: 0
@@ -37,7 +41,8 @@ parameter_rules:
     required: false
   - name: media_resolution
     type: string
-    required: false
+    required: true
+    default: Default
     options:
       - Default
       - Low
@@ -45,23 +50,26 @@ parameter_rules:
       - High
   - name: grounding
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: url_context
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: code_execution
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: include_thoughts
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: thinking_level
     type: string
-    required: false
+    required: true
+    default: High
     options:
-      - Minimal
       - Low
-      - Medium
       - High
   - name: response_format
     label:
@@ -79,6 +87,17 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+  - name: flex_inference
+    type: boolean
+    required: true
+    default: false
 pricing:
   input: "4.000000"
   output: "18.000000"

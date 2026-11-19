@@ -16,9 +16,11 @@ parameter_rules:
     min: 1
     max: 32768
   - name: temperature
-    use_template: temperature
+    type: float
+    required: true
+    default: 1
     min: 0
-    max: 2
+    max: 1
   - name: top_p
     use_template: top_p
     min: 0.01
@@ -32,7 +34,30 @@ parameter_rules:
     required: false
   - name: aspect_ratio
     type: string
-    required: false
+    required: true
+    default: Auto
+    options:
+      - Auto
+      - '1:1'
+      - '9:16'
+      - '16:9'
+      - '3:4'
+      - '4:3'
+      - '3:2'
+      - '2:3'
+      - '5:4'
+      - '4:5'
+      - '21:9'
+  - name: flex_inference
+    type: boolean
+    required: true
+    default: false
+  - name: max_output_tokens
+    type: float
+    required: true
+    default: 32768
+    min: 1
+    max: 32768
 pricing:
   input: "0.300000"
   output: "30.000000"

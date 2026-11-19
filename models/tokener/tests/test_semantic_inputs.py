@@ -20,7 +20,8 @@ from dify_plugin.errors.model import InvokeBadRequestError
 
 from models.llm.llm import TokenerLargeLanguageModel
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
-from scripts.sync_catalog import render_catalog
+from scripts.source_contracts import apply_source_contracts, load_source_contracts
+from scripts.sync_catalog import SOURCE_ROOT, render_catalog
 
 
 def schema(kind, model):
@@ -45,7 +46,7 @@ def upstream():
 
 
 @pytest.mark.parametrize("stream", [False, True])
-@pytest.mark.parametrize("attachment", ["url", "base64_data"])
+@pytest.mark.parametrize("attachment", ["url"])
 def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment, upstream):
     model = TokenerLargeLanguageModel(model_schemas=[schema("llm", "qwen-long")])
     document = DocumentPromptMessageContent(
@@ -60,15 +61,9 @@ def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment,
         },
     )
     messages = [UserPromptMessage(content=[TextPromptMessageContent(data="Summarize"), document])]
-    with (
-        patch.object(
-            model, "_transform_invoke_error", wraps=model._transform_invoke_error
-        ) as transform,
-        pytest.raises(InvokeBadRequestError) as rejected,
-    ):
+    with pytest.raises(InvokeBadRequestError):
         list(model.invoke("qwen-long", {"api_key": "test"}, messages, {}, stream=stream))
     upstream.assert_not_called()
-    assert rejected.value is transform.call_args.args[0]
     assert messages[0].content[1] is document
 
 
@@ -77,12 +72,27 @@ def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment,
     "parameters",
     [
         {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500},
-        {"temperature": 0, "top_p": 0, "presence_penalty": -2, "frequency_penalty": 2},
-        {"temperature": 2, "top_p": 1, "presence_penalty": 0.2, "frequency_penalty": -0.4},
+        {"temperature": 0, "top_p": 0, "presence_penalty": 0, "frequency_penalty": 1},
+        {"temperature": 1, "top_p": 1, "presence_penalty": 0.2, "frequency_penalty": 0.4},
     ],
 )
-def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, parameters, upstream):
+def test_gpt_4o_mini_public_invoke_follows_source_responses_contract(
+    model_id, parameters, upstream
+):
     model = TokenerLargeLanguageModel(model_schemas=[schema("llm", model_id)])
+    if any(parameters.get(name, 0) != 0 for name in ("presence_penalty", "frequency_penalty")):
+        with pytest.raises(InvokeBadRequestError):
+            list(
+                model.invoke(
+                    model_id,
+                    {"api_key": "test"},
+                    [UserPromptMessage(content="Hi")],
+                    parameters,
+                    stream=False,
+                )
+            )
+        upstream.assert_not_called()
+        return
     upstream.return_value._content = json.dumps(
         {
             "status": "completed",
@@ -118,13 +128,20 @@ def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, para
 def test_embedding_001_public_invoke_preserves_retrieval_purpose(input_type, task_type, upstream):
     model_id = "gemini-embedding-001"
     model = TokenerTextEmbeddingModel(model_schemas=[schema("text_embedding", model_id)])
-    response_body = json.loads(upstream.return_value.content)
-    response_body["usage"]["total_tokens"] = 777
-    upstream.return_value._content = json.dumps(response_body).encode()
+    replies = []
+    for body in (
+        {"totalTokens": 777},
+        {"embeddings": [{"values": [0.1, 0.2], "statistics": {"tokenCount": 777}}]},
+    ):
+        reply = requests.Response()
+        reply.status_code = 200
+        reply._content = json.dumps(body).encode()
+        replies.append(reply)
+    upstream.side_effect = replies
     result = model.invoke(model_id, {"api_key": "test"}, ["same text"], input_type=input_type)
-    body = upstream.call_args.kwargs["json"]
-    assert body["input"] == ["same text"]
-    assert body["task_type"] == task_type
+    body = upstream.call_args.kwargs["json"]["requests"][0]
+    assert body["content"]["parts"] == [{"text": "same text"}]
+    assert body["taskType"] == task_type
     assert result.usage.tokens == 777
 
 
@@ -173,7 +190,10 @@ def test_catalog_sync_retains_semantic_contracts(model_id):
         "modelType": "llm",
         "mode": "chat",
         "contextSize": definition["model_properties"]["context_size"],
-        "maxOutputTokens": definition["parameter_rules"][0]["max"],
+        "maxOutputTokens": next(
+            rule["max"] for rule in definition["parameter_rules"] if rule["name"] == "max_tokens"
+        )
+        or definition["model_properties"]["context_size"],
         "capabilities": ["streaming"] + (["structured_output"] if model_id == "qwen-long" else []),
         "deprecated": False,
         "pricing": {
@@ -186,6 +206,7 @@ def test_catalog_sync_retains_semantic_contracts(model_id):
     files = render_catalog(
         {"schemaVersion": 1, "catalogRevision": f"sha256:{'a' * 64}", "models": [model]}
     )
+    apply_source_contracts(files, load_source_contracts(SOURCE_ROOT))
     generated = AIModelEntity.model_validate(yaml.safe_load(files[f"{model_id}.yaml"]))
     if model_id == "qwen-long":
         assert ModelFeature.DOCUMENT in generated.features

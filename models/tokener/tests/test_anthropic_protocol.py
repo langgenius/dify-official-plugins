@@ -49,7 +49,7 @@ def test_claude_strips_tags_caps_cache_breakpoints_and_counts_tokens(llm, wire):
     assert [r[0] for r in requests] == ["/v1/messages", "/v1/messages", "/v1/messages/count_tokens"]
     sent = requests[0][2]
     points = [part["cache_control"] for part in sent["system"] if "cache_control" in part]
-    assert points == [{"type": "ephemeral", "ttl": "1h"}] * 4
+    assert points == [{"type": "ephemeral"}] * 4
     assert sent["temperature"] == 0.5 and sent["top_k"] == 4
     assert sent["messages"][0]["content"] == [
         {
@@ -111,10 +111,10 @@ def test_claude_stream_replays_signed_and_redacted_thinking_with_tool_results(ll
     params = {"thinking": True, "thinking_display": "summarized", "effort": "high"}
     chunks = invoke(llm, model, params, stream=True, tools=[TOOL])
     final = chunks[-1].delta
-    assert contents(chunks) == "<think>\nreason\n</think>\n"
+    assert contents(chunks) == "<think>\nreason\n</think>\n\n"
     assert final.message.opaque_body == {"anthropic_thinking": [signed, redacted]}
     assert final.finish_reason == "tool_calls"
-    assert final.usage.total_tokens == 21
+    assert final.usage.total_tokens == 14
     final.message.tool_calls.append(tool_call("two", "lookup", {"limit": 2}))
     invoke(
         llm,

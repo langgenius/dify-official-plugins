@@ -30,9 +30,11 @@ parameter_rules:
       - medium
       - high
       - xhigh
+      - max
   - name: enable_stream
     type: boolean
-    required: false
+    required: true
+    default: true
   - name: reasoning_summary
     type: string
     required: false
@@ -41,6 +43,7 @@ parameter_rules:
   - name: service_tier
     type: string
     required: false
+    default: auto
     options:
       - auto
       - default
@@ -49,26 +52,34 @@ parameter_rules:
   - name: verbosity
     type: string
     required: false
+    default: medium
     options:
       - low
       - medium
       - high
   - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
     type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
     required: false
-    default: text
     options:
       - text
-      - json_object
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: reasoning_mode
+    type: string
+    required: false
+    default: standard
+    options:
+      - standard
+      - pro
+  - name: reasoning_context
+    type: string
+    required: false
+    default: auto
+    options:
+      - auto
+      - current_turn
+      - all_turns
 pricing:
   input: "2.000000"
   output: "12.000000"

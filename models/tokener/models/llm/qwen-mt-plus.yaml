@@ -16,12 +16,201 @@ parameter_rules:
     max: 2048
   - name: source_lang
     type: string
-    required: false
+    required: true
+    default: auto
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
+      - auto
   - name: target_lang
     type: string
-    required: false
+    required: true
+    default: Chinese
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
   - name: domains
-    type: string
+    type: text
     required: false
 pricing:
   input: "2.460000"

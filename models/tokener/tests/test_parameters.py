@@ -118,6 +118,9 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
     schema = next(s for s in SCHEMAS if s.model == model_id)
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     parameters = {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
+    if model_family(model_id) == "tongyi":
+        parameters["enable_thinking"] = False
+    original = parameters.copy()
     with patch(
         "requests.post", return_value=response(responses=model_family(model_id) == "openai")
     ) as post:
@@ -141,7 +144,7 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
         assert body["max_tokens"] == 1500
         assert body["temperature"] == 0.2
         assert body["top_p"] == 0.3
-    assert parameters == {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
+    assert parameters == original
 
 
 @pytest.mark.parametrize(

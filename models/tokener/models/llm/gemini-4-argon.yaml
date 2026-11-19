@@ -11,6 +11,8 @@ features:
   - audio
   - agent-thought
   - structured-output
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 1048576
@@ -25,7 +27,8 @@ parameter_rules:
     required: false
   - name: media_resolution
     type: string
-    required: false
+    required: true
+    default: Default
     options:
       - Default
       - Low
@@ -33,21 +36,25 @@ parameter_rules:
       - High
   - name: grounding
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: url_context
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: code_execution
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: include_thoughts
     type: boolean
-    required: false
+    required: true
+    default: false
   - name: thinking_level
     type: string
-    required: false
+    required: true
+    default: Medium
     options:
-      - Minimal
       - Low
       - Medium
       - High
@@ -67,6 +74,21 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 1048576
+  - name: service_tier
+    type: string
+    required: true
+    default: standard
+    options:
+      - flex
+      - standard
+      - priority
 pricing:
   input: "2.000000"
   output: "10.000000"

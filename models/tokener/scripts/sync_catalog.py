@@ -15,13 +15,15 @@ if not __package__:
 from scripts import catalog_media
 from scripts.catalog_provider import provider_features, provider_rules
 from scripts.catalog_schema import CatalogError, _decimal, _positive_int, _string
+from scripts.source_contracts import apply_source_contracts, load_source_contracts
 
 MAX_INPUT_BYTES = 5 * 1024 * 1024
 FALLBACK_MAX_OUTPUT_TOKENS = 65536
 DEFAULT_MAX_TOKENS = 8192
 ROOT = Path(__file__).resolve().parents[1]
 LLM_DIR = ROOT / "models" / "llm"
-MODEL_TYPES = ("llm", "text_embedding", "rerank", "tts", "speech2text")
+SOURCE_ROOT = ROOT.parent if ROOT.parent.name == "models" else ROOT.parent / "models"
+MODEL_TYPES = ("llm", "text_embedding", "rerank", "tts", "speech2text", "moderation")
 CATEGORY_TYPES = {
     "chat": "llm",
     "reasoning": "llm",
@@ -29,6 +31,7 @@ CATEGORY_TYPES = {
     "rerank": "rerank",
     "tts": "tts",
     "speech2text": "speech2text",
+    "moderation": "moderation",
 }
 PARAMETER_PROFILES = json.loads((ROOT / "scripts" / "parameter_profiles.json").read_text())
 
@@ -162,12 +165,13 @@ def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
             raise CatalogError(f"unsupported model type for {model_id}: {entry_type}")
         if entry_type != model_type:
             continue
-        if model_type in {"tts", "speech2text", "text_embedding", "rerank"}:
+        if model_type in {"tts", "speech2text", "text_embedding", "rerank", "moderation"}:
             validator = {
                 "tts": catalog_media._validate_tts,
                 "speech2text": catalog_media._validate_speech2text,
                 "text_embedding": catalog_media._validate_embedding,
                 "rerank": catalog_media._validate_rerank,
+                "moderation": catalog_media._validate_identity,
             }[model_type]
             validator(raw_model)
             models.append(raw_model)
@@ -220,6 +224,7 @@ def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
         "tts": catalog_media._render_tts,
         "text_embedding": catalog_media._render_embedding,
         "rerank": catalog_media._render_rerank,
+        "moderation": catalog_media._render_moderation,
     }[model_type]
     for model in ordered_models:
         filename = f"{quote(model['id'], safe='._-')}.yaml"
@@ -235,6 +240,8 @@ def _render_rules(rules: dict[str, str | tuple[str, ...]]) -> list[str]:
         lines += [f"  - name: {name}", f"    type: {kind}", "    required: false"]
         if isinstance(spec, tuple):
             lines += ["    options:", *(f"      - {option}" for option in spec)]
+        if name == "service_tier" and spec == ("flex", "standard", "priority"):
+            lines.append("    default: standard")
     return lines
 
 
@@ -363,8 +370,8 @@ def _render_position(models: list[dict[str, Any]]) -> str:
 def sync_files(files: dict[str, str], *, check: bool, output_dir: Path = LLM_DIR) -> bool:
     current = {
         path.name: path.read_text(encoding="utf-8")
-        for path in output_dir.glob("*.yaml")
-        if path.is_file()
+        for path in output_dir.glob("*")
+        if path.is_file() and (path.suffix == ".yaml" or path.name == "_provider_models.json")
     }
     stale = set(current) - files.keys()
     changed = {name for name, content in files.items() if current.get(name) != content}
@@ -392,6 +399,7 @@ def main() -> int:
     )
     parser.add_argument("--check", action="store_true", help="fail if generated files differ")
     parser.add_argument("--model-type", choices=(*MODEL_TYPES, "all"), default="all")
+    parser.add_argument("--source-root", type=Path, default=SOURCE_ROOT)
     args = parser.parse_args()
 
     try:
@@ -403,6 +411,8 @@ def main() -> int:
             raise CatalogError("models entries must be objects")
         kinds = MODEL_TYPES if args.model_type == "all" else (args.model_type,)
         outputs = {kind: render_catalog(payload, model_type=kind) for kind in kinds}
+        if "llm" in outputs:
+            apply_source_contracts(outputs["llm"], load_source_contracts(args.source_root))
         results = [
             sync_files(files, check=args.check, output_dir=ROOT / "models" / kind)
             for kind, files in outputs.items()

@@ -2,6 +2,7 @@ import json
 import math
 import uuid
 from collections.abc import Generator
+from pathlib import Path
 
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
@@ -10,7 +11,6 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultC
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
-    PromptMessageContentType,
     PromptMessageFunction,
     PromptMessageTool,
 )
@@ -30,9 +30,12 @@ NATIVE_FIELDS = {
     "anthropic": _anthropic_messages.FIELDS,
     "gemini": _gemini_native.FIELDS,
 }
+SOURCE_MODEL_PROVIDERS = json.loads(Path(__file__).with_name("_provider_models.json").read_text())
 
 
 def model_family(model: str) -> str:
+    if model in SOURCE_MODEL_PROVIDERS:
+        return SOURCE_MODEL_PROVIDERS[model]
     base = _openai_responses.base_model(model)
     if base.startswith("gpt-audio"):
         return "audio"
@@ -165,19 +168,6 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        if model == "qwen-long" and any(
-            content.type == PromptMessageContentType.DOCUMENT
-            for message in prompt_messages
-            if isinstance(message.content, list)
-            for content in message.content
-        ):
-            raise InvokeBadRequestError(
-                "Tokener.ai cannot process document attachments with qwen-long. "
-                "Extract the document text and paste it into the message "
-                "instead of attaching the document. "
-                "In Workflow or Chatflow, connect a Doc Extractor node's text output "
-                "to the LLM node."
-            )
         _wire.reject_controls(model_parameters, nested=False)
         family = model_family(model)
         if family:
@@ -289,6 +279,48 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
         _wire.reject_controls(model_parameters, nested=False)
         family = model_family(model)
         if family:
+            model_parameters = model_parameters.copy()
+            for name, value in model_parameters.items():
+                if name not in {"response_format", "json_schema"}:
+                    _wire.reject_controls(value)
+            if family == "tongyi":
+                _chat_compat.normalize_deepseek_parameters(model, model_parameters)
+            aliases = {
+                "openai": ("max_output_tokens", "max_tokens", "max_completion_tokens"),
+                "anthropic": ("max_tokens_to_sample", "max_tokens"),
+                "gemini": ("max_output_tokens", "max_tokens"),
+                "tongyi": ("max_completion_tokens", "max_tokens"),
+            }.get(family, ())
+            rules = self.get_parameter_rules(model, credentials)
+            if family == "anthropic":
+                rule_names = {rule.name for rule in rules}
+                for name in ("prompt_caching_ttl", "task_budget"):
+                    if name not in rule_names:
+                        model_parameters.pop(name, None)
+            target = next((rule.name for rule in rules if rule.name in aliases), None)
+            if target:
+                supplied = next(
+                    (
+                        model_parameters[name]
+                        for name in aliases
+                        if model_parameters.get(name) is not None
+                    ),
+                    None,
+                )
+                if supplied is not None:
+                    for name in aliases:
+                        model_parameters.pop(name, None)
+                    model_parameters[target] = supplied
+            validated = super()._validate_and_filter_model_parameters(
+                model,
+                {
+                    name: value
+                    for name, value in model_parameters.items()
+                    if name not in {"response_format", "json_schema"}
+                },
+                credentials,
+            )
+            model_parameters = {**model_parameters, **validated}
             allowed = NATIVE_FIELDS.get(family) or CHAT_FIELDS[family]
             parameters = {
                 name: value
@@ -346,7 +378,13 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
                 if name in parameters and type(parameters[name]) is not bool:
                     raise InvokeBadRequestError(f"{name} must be a boolean")
             if "response_format" in parameters:
-                parameters["_native_response_format"] = parameters.pop("response_format")
+                value = parameters["response_format"]
+                if isinstance(value, str) and value.lower() == "xml":
+                    parameters["response_format"] = "XML"
+                    if family == "gemini":
+                        parameters["_disable_system_promotion"] = True
+                else:
+                    parameters["_native_response_format"] = parameters.pop("response_format")
             return parameters
         rules = self.get_parameter_rules(model, credentials)
         declared = {rule.name for rule in rules} | {

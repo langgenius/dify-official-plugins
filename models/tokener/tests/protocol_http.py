@@ -95,7 +95,15 @@ def invoke(
     credentials=CREDENTIALS,
 ):
     return list(
-        llm.invoke(model, credentials, messages or [USER], parameters or {}, tools, stop, stream)
+        llm.invoke(
+            model,
+            credentials,
+            [message.model_copy(deep=True) for message in (messages or [USER])],
+            parameters or {},
+            tools,
+            stop,
+            stream,
+        )
     )
 
 

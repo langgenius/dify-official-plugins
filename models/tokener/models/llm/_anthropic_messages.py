@@ -1,5 +1,6 @@
 import re
 from collections.abc import Generator
+from copy import deepcopy
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -90,7 +91,7 @@ class CacheBlocks:
             elif text:
                 block = {"type": "text", "text": text}
                 blocks.append(block)
-                if marked or len(parts) == 1:
+                if marked:
                     self.mark(block, 2, len(text))
         return blocks
 
@@ -104,7 +105,7 @@ class CacheBlocks:
                     continue
                 block = {"type": "text", "text": item.data}
                 if (threshold := self.settings.get("prompt_caching_message_flow", 0)) and (
-                    len(item.data) >= threshold
+                    len(item.data.split()) >= threshold
                 ):
                     self.mark(block, 3, len(item.data))
             elif isinstance(item, ImagePromptMessageContent | DocumentPromptMessageContent):
@@ -131,10 +132,22 @@ class CacheBlocks:
 
 
 def _history(messages, cache: CacheBlocks) -> tuple[list, list]:
-    system, turns = [], []
+    system_parts, turns = [], []
     for message in messages:
         if message.role.value in {"system", "developer"}:
-            system.extend(cache.system(message.get_text_content()))
+            values = (
+                [message.content]
+                if isinstance(message.content, str)
+                else [
+                    item.data
+                    for item in message.content or []
+                    if isinstance(item, TextPromptMessageContent)
+                ]
+            )
+            system_parts.extend(value.strip() for value in values)
+    system = cache.system("\n".join(system_parts))
+    for message in messages:
+        if message.role.value in {"system", "developer"}:
             continue
         role = "user"
         if isinstance(message, AssistantPromptMessage):
@@ -162,15 +175,16 @@ def _history(messages, cache: CacheBlocks) -> tuple[list, list]:
                 else message.content
             )
             blocks.extend(cache.content(text))
-            blocks.extend(
-                {
+            for call in message.tool_calls:
+                block = {
                     "type": "tool_use",
                     "id": call.id,
                     "name": call.function.name,
                     "input": _wire.json_object(call.function.arguments, "Tool arguments"),
                 }
-                for call in message.tool_calls
-            )
+                if cache.settings.get("prompt_caching_tool_results"):
+                    cache.mark(block, 4)
+                blocks.append(block)
         elif isinstance(message, ToolPromptMessage):
             block = {
                 "type": "tool_result",
@@ -210,14 +224,25 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
     if system:
         payload["system"] = system
     if tools:
-        definitions = [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.parameters,
-            }
-            for tool in tools
-        ]
+        definitions = []
+        for tool in tools:
+            schema = deepcopy(tool.parameters)
+            for prop in schema.get("properties", {}).values():
+                if prop.get("type") == "select":
+                    prop["type"] = "string"
+                    if "enum" not in prop:
+                        prop["enum"] = (
+                            [item["value"] for item in prop["options"] if "value" in item]
+                            if "options" in prop
+                            else [prop.get("default", "")]
+                        )
+            definitions.append(
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": schema,
+                }
+            )
         if settings.get("prompt_caching_tool_definitions"):
             for definition in definitions:
                 cache.mark(definition, 4)
@@ -234,7 +259,7 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
             payload["thinking"] = (
                 {"type": "adaptive"} if adaptive else {"type": "enabled", "budget_tokens": 4096}
             )
-        return payload, {"anthropic-version": "2023-06-01"}
+        return payload, {"anthropic-version": "2026-10-21"}
 
     params = {key: value for key, value in parameters.items() if key in FIELDS - CACHE_FLAGS}
     output_format = _wire.structured_format(params)
@@ -286,7 +311,7 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         if not (adaptive or thinking or output)
         else {}
     )
-    headers = {"anthropic-version": "2026-10-21" if output else "2023-06-01"}
+    headers = {"anthropic-version": "2023-06-01" if sampling else "2026-10-21"}
     if betas:
         headers["anthropic-beta"] = ",".join(betas)
     payload.update(
@@ -314,7 +339,7 @@ def _stream(response, model):
                 usage.update(event["message"].get("usage") or {})
             case "content_block_start":
                 block = blocks[event["index"]] = event["content_block"].copy()
-                if block["type"] == "thinking":
+                if block["type"] == "thinking" and block.get("thinking"):
                     thinking = True
                     yield _wire.chunk(model, "<think>\n" + block.get("thinking", ""))
                 elif block["type"] == "text" and block.get("text"):
@@ -334,12 +359,15 @@ def _stream(response, model):
                     if field:
                         block[field] = block.get(field, "") + delta[field]
                         if field != "signature" and delta[field]:
+                            if field == "thinking" and not thinking:
+                                thinking = True
+                                yield _wire.chunk(model, "<think>\n")
                             yield _wire.chunk(model, delta[field])
             case "content_block_stop":
                 index = event["index"]
                 if thinking and blocks[index]["type"] == "thinking":
                     thinking = False
-                    yield _wire.chunk(model, "\n</think>\n")
+                    yield _wire.chunk(model, "\n</think>\n\n")
                 if index in arguments:
                     raw = arguments.pop(index)
                     blocks[index]["input"] = (
@@ -361,7 +389,6 @@ def _result(blocks, *, discard_calls: bool = False):
     for block in blocks:
         match block.get("type"):
             case "thinking":
-                content.append(_wire.thinking_text(block.get("thinking", "")))
                 if block.get("signature"):
                     thinking.append({key: block[key] for key in ("type", "thinking", "signature")})
             case "redacted_thinking":
@@ -373,6 +400,29 @@ def _result(blocks, *, discard_calls: bool = False):
                 if not discard_calls and isinstance(block.get("input"), dict):
                     calls.append(_wire.tool_call(block["id"], block["name"], block["input"]))
     return "".join(content), calls, {OPAQUE_KEY: thinking} if thinking else None
+
+
+def _prompt_tokens(model, usage, parameters):
+    creation = usage.get("cache_creation") or {}
+    short = creation.get("ephemeral_5m_input_tokens") or 0
+    long = creation.get("ephemeral_1h_input_tokens") or 0
+    writes = (
+        short * 5 // 4 + long * 2
+        if short or long
+        else (usage.get("cache_creation_input_tokens") or 0)
+        * (8 if parameters.get("prompt_caching_ttl") == "1h" else 5)
+        // 4
+    )
+    divisor = (
+        40
+        if model == "claude-fable-5-1"
+        else (20 if model in {"claude-opus-5-5", "claude-sonnet-5-5"} else 10)
+    )
+    return (
+        (usage.get("input_tokens") or 0)
+        + writes
+        + (usage.get("cache_read_input_tokens") or 0) // divisor
+    )
 
 
 def invoke(llm, model, credentials, messages, parameters, tools, stop, stream) -> Generator:
@@ -409,14 +459,7 @@ def invoke(llm, model, credentials, messages, parameters, tools, stop, stream) -
             usage=llm._calc_response_usage(
                 model,
                 credentials,
-                sum(
-                    usage.get(key) or 0
-                    for key in (
-                        "input_tokens",
-                        "cache_creation_input_tokens",
-                        "cache_read_input_tokens",
-                    )
-                ),
+                _prompt_tokens(model, usage, parameters),
                 usage.get("output_tokens") or 0,
             ),
         )

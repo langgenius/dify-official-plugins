@@ -40,7 +40,7 @@ class TokenerAPIModel:
         path: str,
         credentials: dict,
         *,
-        timeout: tuple[int, int] = (10, 120),
+        timeout: tuple[int, int | None] = (10, 120),
         headers: dict | None = None,
         method: str = "POST",
         **kwargs,

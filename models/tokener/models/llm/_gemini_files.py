@@ -65,7 +65,7 @@ class PublicHTTPSConnection(HTTPSConnection):
         raise OSError("Unable to connect to the attachment host") from last_error
 
 
-def _download(url: str) -> bytes:
+def _download(url: str, max_bytes: int = MAX_BYTES) -> bytes:
     try:
         source = urlsplit(url)
         valid = (
@@ -93,9 +93,11 @@ def _download(url: str) -> bytes:
                 if response.status != 200:
                     raise InvokeBadRequestError("Unable to read Gemini attachment")
                 size = response.length
-                if size is not None and size > MAX_BYTES:
-                    raise InvokeBadRequestError("Gemini attachment exceeds 50 MiB")
-                data = response.read(MAX_BYTES + 1)
+                if size is not None and size > max_bytes:
+                    raise InvokeBadRequestError(
+                        "Gemini attachment exceeds the remaining size limit"
+                    )
+                data = response.read(max_bytes + 1)
                 if size is not None and len(data) != size:
                     raise InvokeConnectionError("Gemini attachment download ended early")
     except (OSError, HTTPException) as error:
@@ -105,20 +107,30 @@ def _download(url: str) -> bytes:
     return data
 
 
-def media_bytes(item) -> bytes:
+def decode_media(data: str, max_bytes: int) -> bytes:
+    if len(data) > ((max_bytes + 2) // 3) * 4:
+        raise InvokeBadRequestError("Gemini inline media exceeds the request size limit")
+    try:
+        decoded = base64.b64decode(data, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise InvokeBadRequestError("Gemini attachment must contain valid base64") from error
+    if not decoded or len(decoded) > max_bytes:
+        raise InvokeBadRequestError("Gemini inline media exceeds the request size limit")
+    return decoded
+
+
+def media_bytes(item, *, max_bytes: int = MAX_BYTES) -> bytes:
+    max_bytes = min(max_bytes, MAX_BYTES)
+    if max_bytes < 1:
+        raise InvokeBadRequestError("Gemini inline media exceeds the request size limit")
     if item.base64_data:
-        if len(item.base64_data) > ((MAX_BYTES + 2) // 3) * 4:
-            raise InvokeBadRequestError("Gemini attachment exceeds 50 MiB")
-        try:
-            data = base64.b64decode(item.base64_data, validate=True)
-        except binascii.Error as error:
-            raise InvokeBadRequestError("Gemini attachment must contain valid base64") from error
+        data = decode_media(item.base64_data, max_bytes)
     elif item.url:
-        data = _download(item.url)
+        data = _download(item.url, max_bytes)
     else:
         raise InvokeBadRequestError("Gemini attachment has no data")
-    if not data or len(data) > MAX_BYTES:
-        raise InvokeBadRequestError("Gemini attachment must contain between 1 byte and 50 MiB")
+    if not data or len(data) > max_bytes:
+        raise InvokeBadRequestError("Gemini inline media exceeds the request size limit")
     return data
 
 

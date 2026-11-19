@@ -1,3 +1,4 @@
+import json
 from collections.abc import Generator
 from hashlib import sha256
 
@@ -56,13 +57,13 @@ def base_model(model: str) -> str:
     return model.removeprefix("ft:").split(":", 1)[0] if model.startswith("ft:") else model
 
 
-def _content(content, *, assistant: bool = False):
+def _content(content):
     if isinstance(content, str) or content is None:
         return content
     parts = []
     for item in content:
         if isinstance(item, TextPromptMessageContent):
-            parts.append({"type": "output_text" if assistant else "input_text", "text": item.data})
+            parts.append({"type": "input_text", "text": item.data})
         elif isinstance(item, ImagePromptMessageContent) and (item.url or item.base64_data):
             parts.append(
                 {"type": "input_image", "image_url": item.data, "detail": item.detail.value}
@@ -105,9 +106,7 @@ def _input(messages) -> list[dict]:
                     _wire.reject_controls(item, nested=False)
                 result.extend(stored)
                 continue
-        if content := _content(
-            message.content, assistant=isinstance(message, AssistantPromptMessage)
-        ):
+        if content := _content(message.content):
             result.append({"type": "message", "role": message.role.value, "content": content})
         if isinstance(message, AssistantPromptMessage):
             result.extend(
@@ -141,10 +140,9 @@ def _payload(model, messages, parameters, tools, user, stream) -> dict:
     if base.startswith(("gpt-6-", "gpt-6.1-")) and reasoning.get("effort") != "none":
         for name in SAMPLING:
             parameters.pop(name, None)
-    if not base.startswith(("gpt-4o", "gpt-4.1")):
-        for name in ("frequency_penalty", "presence_penalty"):
-            if parameters.pop(name, None) not in (None, 0):
-                raise InvokeBadRequestError(f"{name} is unavailable on this OpenAI model")
+    for name in ("frequency_penalty", "presence_penalty"):
+        if parameters.pop(name, None) not in (None, 0):
+            raise InvokeBadRequestError(f"{name} requires Chat Completions")
     text = {}
     if (output_format := _wire.structured_format(parameters)) and output_format["type"] != "text":
         text["format"] = (
@@ -285,11 +283,31 @@ def count_text(model: str, value: str) -> int:
 
 
 def count_messages(model, messages, tools) -> int:
-    return (
-        3
-        + sum(3 + count_text(model, message.get_text_content()) for message in messages)
-        + sum(count_text(model, tool.model_dump_json()) for tool in tools or [])
-    )
+    parts = []
+    for message in messages:
+        text = (
+            message.content
+            if isinstance(message.content, str)
+            else "".join(
+                item.data
+                for item in message.content or []
+                if isinstance(item, TextPromptMessageContent)
+            )
+        )
+        parts.extend((message.role.value, message.name or "", text))
+        if isinstance(message, AssistantPromptMessage):
+            for call in message.tool_calls:
+                parts.extend((call.id, call.function.name, call.function.arguments))
+    if tools:
+        parts.append(
+            json.dumps(
+                [tool.model_dump(mode="json") for tool in tools],
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        )
+    return count_text(model, "\n".join(parts)) + 3 * len(messages) + 3
 
 
 def _stream(response, model, buffer: "StopBuffer") -> Generator:

@@ -61,12 +61,31 @@ def _render_embedding(model: dict[str, Any]) -> str:
                 "label": {"en_US": model["id"], "zh_Hans": model["id"]},
                 "model_type": "text-embedding",
                 "model_properties": {
-                    "context_size": model["contextSize"],
+                    "context_size": {
+                        "text-embedding-ada-002": 8097,
+                        "qwen3-vl-embedding": 32000,
+                        "multimodal-embedding-v1": 8192,
+                    }.get(model["id"], model["contextSize"]),
                     "max_chunks": 10
-                    if model["id"] in {"text-embedding-v3", "text-embedding-v4"}
+                    if model["id"]
+                    in {
+                        "text-embedding-v3",
+                        "text-embedding-v4",
+                        "qwen3-vl-embedding",
+                        "multimodal-embedding-v1",
+                    }
                     else 32,
                 },
-                **({"features": ["vision"]} if model["id"] == "gemini-embedding-2-preview" else {}),
+                **(
+                    {"features": ["vision"]}
+                    if model["id"]
+                    in {
+                        "gemini-embedding-2-preview",
+                        "qwen3-vl-embedding",
+                        "multimodal-embedding-v1",
+                    }
+                    else {}
+                ),
                 "pricing": {
                     "input": model["pricing"]["inputPerMillion"],
                     "unit": "0.000001",
@@ -88,6 +107,25 @@ def _render_rerank(model: dict[str, Any]) -> str:
                 "label": {"en_US": model["id"], "zh_Hans": model["id"]},
                 "model_type": "rerank",
                 "model_properties": {},
+                "deprecated": model["deprecated"],
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+
+def _render_moderation(model: dict[str, Any]) -> str:
+    return (
+        json.dumps(
+            {
+                "model": model["id"],
+                "label": {"en_US": model["id"], "zh_Hans": model["id"]},
+                "model_type": "moderation",
+                "model_properties": {
+                    "max_chunks": 32 if model["id"] == "omni-moderation-latest" else 1,
+                    "max_characters_per_chunk": 2000,
+                },
                 "deprecated": model["deprecated"],
             },
             indent=2,
