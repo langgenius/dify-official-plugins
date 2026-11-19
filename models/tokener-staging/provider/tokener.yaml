@@ -6,10 +6,10 @@ description:
   en_US: Language, embedding, rerank, speech recognition, and text-to-speech models from Tokener.ai.
   zh_Hans: 使用 Tokener.ai 调用语言、文本嵌入、重排序、语音识别和语音合成模型。
 icon_small:
-  en_US: tokener.svg
+  en_US: tokener-small.svg
 icon_large:
   en_US: tokener.svg
-background: "#F7F5EE"
+background: "#FEF3C7"
 help:
   title:
     en_US: Get a Tokener staging API key
