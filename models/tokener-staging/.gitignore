@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.local/
+.pytest_cache/
+.ruff_cache/
+.serena/
+.venv/
+__pycache__/
+*.py[cod]
+*.difypkg
