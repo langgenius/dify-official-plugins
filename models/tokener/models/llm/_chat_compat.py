@@ -1,6 +1,7 @@
 import json
 import re
 from collections.abc import Generator
+from hashlib import sha256
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -292,8 +293,9 @@ def invoke(
         payload.setdefault("tool_choice", "auto")
     else:
         payload.pop("tool_choice", None)
-    if user:
-        payload["user"] = user
+    if user and family == "audio":
+        digest = sha256(user.encode()).hexdigest()
+        payload.update(safety_identifier=digest, prompt_cache_key=digest)
     if stream:
         payload["stream_options"] = {"include_usage": True}
     request_options = {}

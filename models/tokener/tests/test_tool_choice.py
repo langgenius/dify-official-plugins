@@ -95,7 +95,7 @@ def test_public_invoke_preserves_tool_choice(stream, tool_choice) -> None:
     assert body["stream"] is stream
     assert body["max_tokens"] == 10
     assert body["stop"] == ["END"]
-    assert body["user"] == "user-1"
+    assert "user" not in body
     assert chunks[0].delta.message.content == "ok"
     assert parameters == original_parameters
     assert credentials == {"api_key": "test-key"}

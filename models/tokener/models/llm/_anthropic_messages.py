@@ -262,6 +262,16 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         return payload, {"anthropic-version": "2026-10-21"}
 
     params = {key: value for key, value in parameters.items() if key in FIELDS - CACHE_FLAGS}
+    raw_schema = params.get("json_schema")
+    if isinstance(raw_schema, str) and not raw_schema.strip():
+        params.pop("json_schema")
+    elif raw_schema is not None:
+        schema = _wire.json_object(raw_schema, "json_schema")
+        if set(schema) == {"schema", "name"} and schema["name"] == "llm_response":
+            schema = schema["schema"]
+        if not isinstance(schema, dict) or not schema:
+            raise InvokeBadRequestError("json_schema must be a non-empty object")
+        params["json_schema"] = {"schema": schema}
     output_format = _wire.structured_format(params)
     thinking = params.pop("thinking", None)
     display = params.pop("thinking_display", "omitted" if adaptive else "summarized")

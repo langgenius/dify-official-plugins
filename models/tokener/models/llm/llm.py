@@ -18,7 +18,14 @@ from dify_plugin.errors.model import InvokeBadRequestError, InvokeError
 
 from models._api import TokenerAPIModel
 from models._credentials import ENDPOINT_URL, validate_model_access
-from models.llm import _anthropic_messages, _chat_compat, _gemini_native, _openai_responses, _wire
+from models.llm import (
+    _anthropic_format,
+    _anthropic_messages,
+    _chat_compat,
+    _gemini_native,
+    _openai_responses,
+    _wire,
+)
 
 CHAT_FIELDS = {
     "audio": _chat_compat.AUDIO_FIELDS,
@@ -156,6 +163,34 @@ class _ToolCallStreamResponse(requests.Response):
 class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
     def get_customizable_model_schema(self, model, credentials) -> None:
         return None
+
+    def _code_block_mode_wrapper(
+        self,
+        model,
+        credentials,
+        prompt_messages,
+        model_parameters,
+        tools=None,
+        stop=None,
+        stream=True,
+        user=None,
+    ):
+        if model_family(model) != "anthropic":
+            return super()._code_block_mode_wrapper(
+                model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+            )
+        return _anthropic_format.code_block_mode(
+            self,
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
+            model.startswith(_anthropic_messages.ADAPTIVE),
+        )
 
     def _invoke(
         self,
@@ -379,10 +414,12 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
                     raise InvokeBadRequestError(f"{name} must be a boolean")
             if "response_format" in parameters:
                 value = parameters["response_format"]
-                if isinstance(value, str) and value.lower() == "xml":
-                    parameters["response_format"] = "XML"
-                    if family == "gemini":
-                        parameters["_disable_system_promotion"] = True
+                if family == "gemini" and isinstance(value, str) and value.lower() == "xml":
+                    parameters.pop("response_format")
+                elif isinstance(value, str) and (
+                    value.lower() == "xml" or (family == "anthropic" and value == "JSON")
+                ):
+                    parameters["response_format"] = value.upper()
                 else:
                     parameters["_native_response_format"] = parameters.pop("response_format")
             return parameters

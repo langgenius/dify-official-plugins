@@ -18,6 +18,59 @@ from test_anthropic_protocol import claude_result
 from test_gemini_protocol import gemini_result
 
 
+@pytest.mark.parametrize("model", ["qwen-plus", "deepseek-v4-pro", "grok-4.5"])
+def test_chat_identity_matches_source_provider(llm, wire, model):
+    _, requests, replies = wire
+    replies.append((200, {}, chat_result()))
+    chunks = list(
+        llm.invoke(
+            model,
+            CREDENTIALS,
+            [UserPromptMessage(content="hello")],
+            {"enable_thinking": False},
+            stream=False,
+            user="end-user-uuid-123",
+        )
+    )
+    assert contents(chunks) == "ok"
+    assert "user" not in requests[0][2]
+    assert "end-user-uuid-123" not in json.dumps(requests[0][2])
+
+
+@pytest.mark.parametrize(
+    "mode,schema", [("JSON", None), ("JSON", "  "), ("XML", json.dumps(SCHEMA))]
+)
+def test_anthropic_template_preserves_source_request_and_output(llm, wire, mode, schema):
+    _, requests, replies = wire
+    fenced = f"```{mode}\nanswer\n```"
+    replies.append((200, {}, claude_result(content=[{"type": "text", "text": fenced}])))
+    parameters = {"response_format": mode}
+    if schema is not None:
+        parameters["json_schema"] = schema
+    chunks = invoke(llm, "claude-sonnet-5", parameters)
+    body = requests[0][2]
+    assert "<instructions>" in str(body["system"])
+    assert "format" not in body.get("output_config", {})
+    assert body["messages"][-1] == {"role": "user", "content": [{"type": "text", "text": "hello"}]}
+    assert contents(chunks) == fenced
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        SCHEMA,
+        {"schema": SCHEMA, "name": "llm_response"},
+        {"schema": {"type": "string"}, "name": "custom"},
+    ],
+)
+def test_anthropic_schema_preserves_source_envelope_contract(llm, wire, schema):
+    _, requests, replies = wire
+    replies.append((200, {}, claude_result()))
+    invoke(llm, "claude-sonnet-5", {"response_format": "JSON", "json_schema": json.dumps(schema)})
+    expected = schema["schema"] if schema.get("name") == "llm_response" else schema
+    assert requests[0][2]["output_config"]["format"]["schema"] == expected
+
+
 @pytest.mark.parametrize("mode", ["JSON", "json", "XML"])
 @pytest.mark.parametrize("model", ["claude-sonnet-4-6", "gemini-3.1-flash-lite"])
 def test_sdk_response_format_reaches_native_protocol(llm, wire, model, mode):
@@ -27,11 +80,24 @@ def test_sdk_response_format_reaches_native_protocol(llm, wire, model, mode):
     invoke(llm, model, {"response_format": mode})
     body = requests[0][2]
     if mode == "XML":
-        assert "xml" in str(body).lower()
+        assert ("<instructions>" in str(body)) == model.startswith("claude")
     elif model.startswith("gemini"):
         assert body["generationConfig"]["responseMimeType"] == "application/json"
     else:
         assert any("JSON object" in part["text"] for part in body["system"])
+
+
+def test_gemini_xml_does_not_override_source_native_schema(llm, wire):
+    _, requests, replies = wire
+    fenced = "```JSON\n{}\n```"
+    replies.append((200, {}, gemini_result([{"text": fenced}])))
+    chunks = invoke(
+        llm, "gemini-2.5-pro", {"response_format": "XML", "json_schema": json.dumps(SCHEMA)}
+    )
+    body = requests[0][2]
+    assert body["generationConfig"]["responseJsonSchema"] == SCHEMA
+    assert "<instructions>" not in str(body)
+    assert contents(chunks) == fenced
 
 
 def test_gemini_native_constraints_and_code_blocks(llm, wire):
