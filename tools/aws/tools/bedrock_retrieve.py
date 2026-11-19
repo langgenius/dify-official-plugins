@@ -78,7 +78,7 @@ class BedrockRetrieveTool(Tool):
             retrieval_query = {"text": query_input}
 
             if search_type not in ["HYBRID", "SEMANTIC"]:
-                raise RuntimeException("search_type should be HYBRID or SEMANTIC")
+                raise ValueError("search_type should be HYBRID or SEMANTIC")
 
             retrieval_configuration = {
                 "vectorSearchConfiguration": {
