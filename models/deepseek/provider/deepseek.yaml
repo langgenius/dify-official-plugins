@@ -85,5 +85,55 @@ provider_credential_schema:
     show_on: []
     type: select
     variable: enable_request_metadata
+  - default: disabled
+    label:
+      en_US: Send end-user id as user_id (isolates the prompt cache)
+      zh_Hans: 发送终端用户 ID 作为 user_id（隔离提示词缓存）
+    help:
+      title:
+        en_US: Why is this opt-in?
+        zh_Hans: 为什么默认关闭？
+      text:
+        en_US: |-
+          DeepSeek documents `user_id` as a KVCache isolation key: requests that
+          carry different `user_id` values do not share cached prompt prefixes.
+          When enabled, the plugin sends the current Dify end-user id as
+          `user_id`, so every end user gets a private prompt cache. That is
+          useful when end users must not share cache, but it also means the
+          first request of every new end user re-processes the whole prompt:
+          a long system instruction that used to be cached once for all users
+          is re-ingested per user, so the cache hit rate drops and cost/latency
+          rise for multi-tenant apps. Default is `disabled`, so the request
+          body is unchanged unless you opt in. This switch partitions the prompt
+          cache; it is not an access-control or privacy boundary. DeepSeek also
+          uses `user_id` for content-safety review and scheduling isolation. If
+          you enable it, send an opaque id with no personal data, using only
+          ASCII letters, digits, underscores and hyphens, and keep it within 512
+          UTF-8 bytes. For tenant-level isolation use separate provider
+          credentials.
+        zh_Hans: |-
+          DeepSeek 文档将 `user_id` 定义为 KVCache 隔离键：携带不同 `user_id` 的
+          请求不会共享已缓存的前缀。启用后，插件会把当前 Dify 终端用户 ID 作为
+          `user_id` 发送，于是每个终端用户各自拥有独立的提示词缓存。这在「终端用户
+          之间不允许共享缓存」时有用，但也意味着每个新用户的首次请求都要重新处理整段
+          提示词：原本所有用户共享一次的长系统指令会按用户重复写入，缓存命中率下降，
+          多租户场景下的成本与延迟上升。默认值为 `disabled`，即未开启时请求体保持不变。
+          该开关会影响提示词缓存的分区，但不构成访问控制或隐私边界；DeepSeek 还会将该
+          字段用于内容安全审查和调度隔离。若启用，请使用不含个人信息的不透明 ID，仅用
+          ASCII 字母、数字、下划线和连字符，并控制在 512 字节以内。需要租户级隔离时，
+          请为不同租户使用独立的 Provider 凭据。
+    options:
+    - label:
+        en_US: Enabled
+        zh_Hans: 启用
+      value: enabled
+    - label:
+        en_US: Disabled
+        zh_Hans: 禁用
+      value: disabled
+    required: false
+    show_on: []
+    type: select
+    variable: enable_user_id
 supported_model_types:
 - llm

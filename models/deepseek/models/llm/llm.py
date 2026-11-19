@@ -15,7 +15,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from models.llm._metadata import apply_dify_headers_if_enabled
+from models.llm._metadata import apply_dify_headers_if_enabled, apply_user_id_if_enabled
 from requests import Response
 
 
@@ -88,9 +88,8 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> LLMResult | Generator:
         self._add_custom_parameters(credentials)
         apply_dify_headers_if_enabled(credentials)
+        apply_user_id_if_enabled(model_parameters, credentials, user)
         credentials["_current_model"] = model
-        if user:
-            model_parameters["user_id"] = user
         formatted_tools = list(model_parameters.pop("tools", None) or [])
         for name in ("deepseek_web_search", "deepseek_read_url"):
             if model_parameters.pop(name, False):

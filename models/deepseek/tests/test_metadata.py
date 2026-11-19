@@ -10,6 +10,10 @@ that credential is the carrier for observability metadata.
 When the credential is disabled, or `app_id` is missing / empty, the helper
 does nothing and the request shape is unchanged.
 
+The same module also owns the opt-in `user_id` forwarding covered by the
+`apply_user_id_if_enabled` tests below; DeepSeek scopes its prompt cache by
+`user_id`, so that field must never be sent unless the credential opts in.
+
 These tests do not need a network or the DeepSeek SDK: the helper is pure
 and runs entirely in memory. The integration with `_invoke` and
 `validate_credentials` is verified by the source-level guard tests at the
@@ -30,6 +34,7 @@ if str(ROOT_DIR) not in sys.path:
 from models.llm._metadata import (
     _normalize_header_value,
     apply_dify_headers_if_enabled,
+    apply_user_id_if_enabled,
     build_dify_headers,
 )
 
@@ -287,6 +292,61 @@ def test_helper_handles_extra_headers_as_non_dict() -> None:
 
 
 # ---------------------------------------------------------------------------
+# apply_user_id_if_enabled — opt-in DeepSeek `user_id` forwarding
+# ---------------------------------------------------------------------------
+
+
+def test_user_id_is_omitted_when_credential_is_unset() -> None:
+    """Default: no `user_id` in the request body, so the prompt cache stays shared."""
+    parameters = {"temperature": 0.7}
+    apply_user_id_if_enabled(parameters, {}, "user-1")
+    assert parameters == {"temperature": 0.7}
+
+
+def test_user_id_is_omitted_when_credential_is_disabled() -> None:
+    """Explicit `disabled` behaves like the unset default."""
+    parameters = {}
+    apply_user_id_if_enabled(parameters, {"enable_user_id": "disabled"}, "user-1")
+    assert parameters == {}
+
+
+def test_user_id_is_omitted_for_unexpected_credential_value() -> None:
+    """Only the literal `enabled` opts in; typos keep the 0.0.19 request shape."""
+    parameters = {}
+    apply_user_id_if_enabled(parameters, {"enable_user_id": "Enabled"}, "user-1")
+    assert parameters == {}
+
+
+def test_user_id_is_forwarded_when_enabled() -> None:
+    """Opted in: Dify's end-user id reaches DeepSeek as the documented `user_id`."""
+    parameters = {"temperature": 0.7}
+    apply_user_id_if_enabled(parameters, {"enable_user_id": "enabled"}, "user-1")
+    assert parameters == {"temperature": 0.7, "user_id": "user-1"}
+
+
+def test_user_id_is_omitted_for_empty_user_when_enabled() -> None:
+    """An empty user id must not produce an empty `user_id` field."""
+    for user in (None, ""):
+        parameters = {}
+        apply_user_id_if_enabled(parameters, {"enable_user_id": "enabled"}, user)
+        assert parameters == {}
+
+
+def test_user_id_is_not_sent_as_the_standard_user_field() -> None:
+    """DeepSeek documents `user_id`, not the OpenAI `user` field."""
+    parameters = {}
+    apply_user_id_if_enabled(parameters, {"enable_user_id": "enabled"}, "user-1")
+    assert "user" not in parameters
+
+
+def test_user_id_helper_never_raises_on_garbage_credentials() -> None:
+    """Metadata wiring must never break the user request."""
+    parameters = {}
+    apply_user_id_if_enabled(parameters, None, "user-1")  # type: ignore[arg-type]
+    assert parameters == {}
+
+
+# ---------------------------------------------------------------------------
 # Source-level guard: the helper is wired into llm.py at the documented sites
 # ---------------------------------------------------------------------------
 
@@ -295,7 +355,13 @@ def test_helper_is_imported_in_llm_py() -> None:
     """Source-level guard: the helper is wired into DeepseekLargeLanguageModel."""
     llm_path = ROOT_DIR / "models" / "llm" / "llm.py"
     source = llm_path.read_text(encoding="utf-8")
-    assert "from models.llm._metadata import apply_dify_headers_if_enabled" in source
+    assert (
+        "from models.llm._metadata import"
+        " apply_dify_headers_if_enabled, apply_user_id_if_enabled"
+    ) in source
+    # The opt-in gate lives in the helper; llm.py must not assign `user_id` itself.
+    assert "apply_user_id_if_enabled(model_parameters, credentials, user)" in source
+    assert 'model_parameters["user_id"] = user' not in source
     # Used at both call sites: in `_invoke` (after `_add_custom_parameters`) and
     # in `validate_credentials` (after `_add_custom_parameters`).
     assert source.count("apply_dify_headers_if_enabled(credentials)") == 2
@@ -318,6 +384,8 @@ def test_helper_module_is_reachable_from_llm() -> None:
 
     assert hasattr(helper_module, "apply_dify_headers_if_enabled")
     assert callable(helper_module.apply_dify_headers_if_enabled)
+    assert hasattr(helper_module, "apply_user_id_if_enabled")
+    assert callable(helper_module.apply_user_id_if_enabled)
     assert hasattr(helper_module, "build_dify_headers")
     assert callable(helper_module.build_dify_headers)
 
