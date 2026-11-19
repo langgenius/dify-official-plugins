@@ -13,7 +13,6 @@ if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts import catalog_media
-from scripts.catalog_provider import provider_features, provider_rules
 from scripts.catalog_schema import CatalogError, _decimal, _positive_int, _string
 
 MAX_INPUT_BYTES = 5 * 1024 * 1024
@@ -38,9 +37,6 @@ CAPABILITIES = {
     "parallel_tool_calling",
     "streaming_tool_calls",
     "vision",
-    "document",
-    "video",
-    "audio",
     "structured_output",
     "reasoning",
 }
@@ -49,10 +45,6 @@ FEATURES = (
     ("parallel_tool_calling", "multi-tool-call"),
     ("streaming_tool_calls", "stream-tool-call"),
     ("vision", "vision"),
-    ("document", "document"),
-    ("video", "video"),
-    ("audio", "audio"),
-    ("reasoning", "agent-thought"),
     ("structured_output", "structured-output"),
 )
 REVISION_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
@@ -228,24 +220,11 @@ def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
     return files
 
 
-def _render_rules(rules: dict[str, str | tuple[str, ...]]) -> list[str]:
-    lines = []
-    for name, spec in rules.items():
-        kind = "string" if isinstance(spec, tuple) else spec
-        lines += [f"  - name: {name}", f"    type: {kind}", "    required: false"]
-        if isinstance(spec, tuple):
-            lines += ["    options:", *(f"      - {option}" for option in spec)]
-    return lines
-
-
 def _render_model(model: dict[str, Any]) -> str:
     capabilities = set(model["capabilities"])
-    extra_features = provider_features(model["id"], capabilities)
-    features = [
-        feature
-        for capability, feature in FEATURES
-        if capability in capabilities or feature in extra_features
-    ]
+    features = [feature for capability, feature in FEATURES if capability in capabilities]
+    if model["id"] == "qwen-long":
+        features.append("document")
     pricing = model["pricing"]
 
     lines = [
@@ -292,15 +271,11 @@ def _render_model(model: dict[str, Any]) -> str:
             "top_p": (profile.get("top_p_min", 0.01), 1),
             "presence_penalty": (-2, 2),
             "frequency_penalty": (-2, 2),
-            "top_k": (0, 100),
-            "repetition_penalty": (0, 2),
         }[name]
         lines.extend(
             [
                 f"  - name: {name}",
-                f"    use_template: {name}"
-                if name not in {"top_k", "repetition_penalty"}
-                else (f"    type: {'int' if name == 'top_k' else 'float'}"),
+                f"    use_template: {name}",
                 f"    min: {minimum}",
                 f"    max: {maximum}",
             ]
@@ -319,7 +294,6 @@ def _render_model(model: dict[str, Any]) -> str:
                 *(f"      - {effort}" for effort in efforts),
             ]
         )
-    lines.extend(_render_rules(provider_rules(model["id"], features)))
     if "structured_output" in capabilities:
         lines.extend(
             [

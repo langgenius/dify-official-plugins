@@ -8,7 +8,6 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
-  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -19,30 +18,6 @@ parameter_rules:
     default: 8192
     min: 1
     max: 100000
-  - name: reasoning_effort
-    type: string
-    required: false
-    default: medium
-    options:
-      - low
-      - medium
-      - high
-  - name: enable_stream
-    type: boolean
-    required: false
-  - name: reasoning_summary
-    type: string
-    required: false
-    options:
-      - auto
-  - name: service_tier
-    type: string
-    required: false
-    options:
-      - auto
-      - default
-      - flex
-      - priority
   - name: response_format
     label:
       en_US: Response Format

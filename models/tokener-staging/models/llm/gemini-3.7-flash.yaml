@@ -6,10 +6,6 @@ model_type: llm
 features:
   - tool-call
   - vision
-  - document
-  - video
-  - audio
-  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -20,37 +16,6 @@ parameter_rules:
     default: 8192
     min: 1
     max: 65536
-  - name: use_inline_file
-    type: boolean
-    required: false
-  - name: media_resolution
-    type: string
-    required: false
-    options:
-      - Default
-      - Low
-      - Medium
-      - High
-  - name: grounding
-    type: boolean
-    required: false
-  - name: url_context
-    type: boolean
-    required: false
-  - name: code_execution
-    type: boolean
-    required: false
-  - name: include_thoughts
-    type: boolean
-    required: false
-  - name: thinking_level
-    type: string
-    required: false
-    options:
-      - Minimal
-      - Low
-      - Medium
-      - High
   - name: response_format
     label:
       en_US: Response Format

@@ -11,7 +11,7 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 
-from models._credentials import API_ORIGIN, validate_model_access
+from models._credentials import ENDPOINT_URL, validate_model_access
 
 
 class TokenerAPIModel:
@@ -29,28 +29,12 @@ class TokenerAPIModel:
 
     @contextmanager
     def _request(
-        self, path: str, credentials: dict, **kwargs
-    ) -> Generator[requests.Response, None, None]:
-        with self._request_at(f"/v1/{path}", credentials, **kwargs) as response:
-            yield response
-
-    @contextmanager
-    def _request_at(
-        self,
-        path: str,
-        credentials: dict,
-        *,
-        timeout: tuple[int, int] = (10, 120),
-        headers: dict | None = None,
-        method: str = "POST",
-        **kwargs,
+        self, path: str, credentials: dict, *, timeout: tuple[int, int] = (10, 120), **kwargs
     ) -> Generator[requests.Response, None, None]:
         try:
-            request = requests.get if method == "GET" else requests.post
-            with request(
-                f"{API_ORIGIN}{path}",
-                headers={**(headers or {}), "Authorization": f"Bearer {credentials['api_key']}"},
-                allow_redirects=False,
+            with requests.post(
+                f"{ENDPOINT_URL}/{path}",
+                headers={"Authorization": f"Bearer {credentials['api_key']}"},
                 timeout=timeout,
                 **kwargs,
             ) as response:
@@ -61,7 +45,7 @@ class TokenerAPIModel:
                     raise InvokeRateLimitError("Tokener.ai rate limit exceeded")
                 if 400 <= status < 500:
                     raise InvokeBadRequestError(f"Tokener.ai rejected the request (HTTP {status})")
-                if not 200 <= status < 300:
+                if status != 200:
                     raise InvokeServerUnavailableError(f"Tokener.ai request failed (HTTP {status})")
                 yield response
         except requests.exceptions.JSONDecodeError as ex:

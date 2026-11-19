@@ -5,7 +5,6 @@ label:
 model_type: llm
 features:
   - vision
-  - document
 model_properties:
   mode: chat
   context_size: 32768
@@ -23,16 +22,6 @@ parameter_rules:
     use_template: top_p
     min: 0.01
     max: 1
-  - name: top_k
-    type: int
-    min: 0
-    max: 100
-  - name: use_inline_file
-    type: boolean
-    required: false
-  - name: aspect_ratio
-    type: string
-    required: false
 pricing:
   input: "0.300000"
   output: "30.000000"

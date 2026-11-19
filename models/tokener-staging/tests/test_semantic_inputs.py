@@ -83,13 +83,6 @@ def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment,
 )
 def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, parameters, upstream):
     model = TokenerLargeLanguageModel(model_schemas=[schema("llm", model_id)])
-    upstream.return_value._content = json.dumps(
-        {
-            "status": "completed",
-            "output_text": "ok",
-            "usage": {"input_tokens": 1, "output_tokens": 1},
-        }
-    ).encode()
     list(
         model.invoke(
             model_id,
@@ -101,11 +94,7 @@ def test_gpt_4o_mini_public_invoke_preserves_supported_parameters(model_id, para
     )
     kwargs = upstream.call_args.kwargs
     body = kwargs.get("json") or json.loads(kwargs["data"])
-    expected = {
-        ("max_output_tokens" if key == "max_tokens" else key): value
-        for key, value in parameters.items()
-    }
-    assert {key: body.get(key) for key in expected} == expected
+    assert {key: body.get(key) for key in parameters} == parameters
 
 
 @pytest.mark.parametrize(

@@ -70,8 +70,6 @@ Select `--model-type llm`, `text_embedding`, `rerank`, `tts`, or `speech2text` t
 Synchronization validates all selected types before writing. It deletes model YAMLs that lack a matching snapshot entry in each selected type.
 An empty type produces an empty position list and removes its model definitions. `--check` reports drift without writing.
 
-From the repository root, run `python3.12 models/tokener/scripts/sync_staging.py` after modifying the source plugin. Use `--check` to detect differences.
-
 Embedding prices use the catalog input price. Rerank and audio definitions omit optional Dify prices because their billing units differ.
 LLM prices show the catalog base input and output rates. Dify's model definitions cannot represent cache read, cache write, or context-tier prices.
 Tokener.ai determines charges. Audio models require complete voice or upload metadata and prices.

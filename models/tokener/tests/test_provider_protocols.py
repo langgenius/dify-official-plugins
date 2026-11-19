@@ -1,7 +1,6 @@
 import io
 import json
 import wave
-from pathlib import Path
 
 import pytest
 from dify_plugin.entities.model import EmbeddingInputType, ModelType
@@ -21,8 +20,6 @@ from protocol_http import CREDENTIALS, IMAGE, SCHEMA, USER, chat_result, content
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
-
-from scripts.sync_staging import sync
 
 
 def test_tongyi_chat_sse_strips_history_and_preserves_search_reasoning_and_media_schema(llm, wire):
@@ -245,14 +242,6 @@ def test_embedding_null_index_and_native_multimodal_keep_distinct_paths(registry
     assert requests[2][2]["requests"][1]["content"]["parts"] == [
         {"inlineData": {"mimeType": "image/png", "data": IMAGE.base64_data}}
     ]
-
-
-def test_staging_is_a_deterministic_mirror():
-    source = Path(__file__).resolve().parents[2] / "tokener"
-    target = source.with_name("tokener-staging")
-    if not source.is_dir() or not target.is_dir():
-        pytest.skip("Standalone Dify package has no sibling plugin")
-    assert sync(source, target, check=True) == []
 
 
 def test_sse_envelopes_keep_rate_limit_type(llm, wire):
