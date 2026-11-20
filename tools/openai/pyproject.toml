@@ -1,14 +1,14 @@
 [project]
 name = "dify-openai"
-version = "0.2.1"
+version = "0.3.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.10.2",
-    "openai>=3.9.0",
+    "dify_plugin>=0.10.2,<0.11.0",
+    "openai>=3.57.0,<4",
     "yarl>=1.24.5",
 ]
 

@@ -26,7 +26,12 @@ from dify_plugin.errors.model import (
 )
 from openai import OpenAI
 
-from ..common_openai import _normalize_gpt6_parameters, _user_digest
+from ..common_openai import (
+    _normalize_gpt6_parameters,
+    _user_digest,
+    apply_gpt62_pricing,
+    field,
+)
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
 
@@ -77,6 +82,7 @@ def generate(
             response,
             raw_content,
             calls,
+            model_parameters.get("service_tier"),
         ),
     )
 
@@ -325,6 +331,7 @@ def usage(
     response: Any,
     output: str,
     calls: list[AssistantPromptMessage.ToolCall],
+    requested_tier: str | None = None,
 ) -> Any:
     response_usage = field(response, "usage")
     if response_usage is not None:
@@ -336,11 +343,15 @@ def usage(
             model,
             output + "".join(call.function.arguments for call in calls),
         )
-    return llm._calc_response_usage(
+    usage = llm._calc_response_usage(
+        model, credentials, prompt_tokens, completion_tokens
+    )
+    return apply_gpt62_pricing(
+        usage,
         model,
-        credentials,
-        prompt_tokens,
-        completion_tokens,
+        field(response_usage, "input_tokens_details"),
+        field(response, "service_tier") or requested_tier,
+        field(response, "created_at"),
     )
 
 
@@ -385,12 +396,6 @@ def make_call(
             arguments=arguments,
         ),
     )
-
-
-def field(value: Any, name: str, default: Any = None) -> Any:
-    if isinstance(value, dict):
-        return value.get(name, default)
-    return getattr(value, name, default)
 
 
 def dump(value: Any) -> Any:

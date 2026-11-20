@@ -49,6 +49,10 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 ## GPT-6 models
 
+GPT-6.2 Astra and Sol support text and image inputs, a 1,050,000-token context, and up to 128,000 output tokens.
+Use the Responses protocol for tools and Ultrafast processing.
+The reasoning effort defaults to `medium`. [GPT-6.2 API guide](https://developers.openai.com/api/docs/guides/latest-model)
+
 GPT-6.1 Sol and Terra require Responses for function calling. Sol supports reasoning effort `low` through `max`, while Terra also supports `none`.
 
 GPT-6 Astra, Sol, and Luna support text, vision, structured outputs, and streaming, with reasoning effort set to `medium` by default.

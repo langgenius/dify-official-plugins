@@ -275,6 +275,9 @@ def test_gpt_image_requests_and_outputs(operation, model, quality, output_format
         {"quality": "invalid"},
         {"quality": []},
         {"output_format": "gif"},
+        {"model": "gpt-image-2.6-flare", "output_format": "svg", "n": 2},
+        {"complexity": "high"},
+        {"model": "gpt-image-2.6-flare", "output_format": "gif", "frame_count": 17},
         {"output_compression": 101},
         {"output_compression": True},
         {"output_compression": 1.5},
@@ -347,3 +350,49 @@ def test_gpt_image_edit_closes_opened_files_on_failure(failure):
         client.images.edit.assert_called_once()
     else:
         client.images.edit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("operation", "model", "fmt", "mime"),
+    [
+        ("generate", "gpt-image-2.6-sunburst", "svg", "image/svg+xml"),
+        ("edit", "gpt-image-2.6-flare", "gif", "image/gif"),
+    ],
+)
+def test_gpt_image_26_files(operation, model, fmt, mime):
+    module = import_plugin_module(
+        f"image_{operation}", f"tools/gpt_image_2_{operation}.py"
+    )
+    tool = create_tool_instance(getattr(module, f"GPTImage2{operation.title()}Tool"))
+    tool.runtime.credentials = {"openai_api_key": "test"}
+    parameters = {
+        "model": model,
+        "prompt": "An icon",
+        "complexity": "low",
+        "output_format": fmt,
+    }
+    if operation == "edit":
+        markup = FakeFile(b"guide", "overlay.png")
+        markup.mime_type = "image/png"
+        parameters.update(
+            image=FakeFile(), markup=markup, frame_count=4, frame_duration_ms=200
+        )
+    client = MagicMock()
+    endpoint = getattr(client.images, operation)
+    endpoint.return_value = types.SimpleNamespace(
+        data=[types.SimpleNamespace(b64_json="aWNvbg==")]
+    )
+    with patch.object(module, "OpenAI", return_value=client):
+        messages = list(tool._invoke(parameters))
+    assert messages[0]["blob"] == b"icon"
+    assert messages[0]["meta"]["mime_type"] == mime
+    assert endpoint.call_args.kwargs["model"] == model
+    assert endpoint.call_args.kwargs["complexity"] == "low"
+    if operation == "edit":
+        assert endpoint.call_args.kwargs["markup"] == (
+            "overlay.png",
+            b"guide",
+            "image/png",
+        )
+        assert endpoint.call_args.kwargs["frame_count"] == 4
+        assert endpoint.call_args.kwargs["frame_duration_ms"] == 200

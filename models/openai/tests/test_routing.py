@@ -394,7 +394,15 @@ def test_unrelated_bad_request_keeps_standard_error_mapping(llm) -> None:
 
 @pytest.mark.parametrize(
     "model",
-    ["gpt-6-astra", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-sol", "gpt-6-luna"],
+    [
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
+        "gpt-6-astra",
+        "gpt-6.1-sol",
+        "gpt-6.1-terra",
+        "gpt-6-sol",
+        "gpt-6-luna",
+    ],
 )
 @pytest.mark.parametrize("effort", [None, "none", "medium", "max"])
 @pytest.mark.parametrize("protocol", ["chat", "responses"])
@@ -446,7 +454,10 @@ def test_gpt6_requests_follow_reasoning_and_tool_constraints(
         )
         return client.chat.completions.create.call_args.kwargs
 
-    if model in {"gpt-6-astra", "gpt-6.1-sol"} and effort == "none":
+    if (
+        model in {"gpt-6.2-astra", "gpt-6.2-sol", "gpt-6-astra", "gpt-6.1-sol"}
+        and effort == "none"
+    ):
         with pytest.raises(
             InvokeBadRequestError, match="does not support reasoning effort none"
         ):

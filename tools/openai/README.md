@@ -25,8 +25,8 @@ GPT Image access may require [OpenAI organization verification](https://develope
 
 | Tool | Model selection | Operation |
 | --- | --- | --- |
-| GPT Image 2 / 2.5 Generate | GPT Image 2, GPT Image 2.5 Flare, GPT Image 2.5 Sunburst | Generate images from a prompt. |
-| GPT Image 2 / 2.5 Edit | GPT Image 2, GPT Image 2.5 Flare, GPT Image 2.5 Sunburst | Edit or combine reference images, optionally using a mask. |
+| GPT Image 2 / 2.5 / 2.6 Generate | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Generate images from a prompt. |
+| GPT Image 2 / 2.5 / 2.6 Edit | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Edit or combine reference images, optionally using a mask. |
 | GPT Image Generate | `gpt-image-1`, `gpt-image-1-mini` | Generate images with the GPT Image 1 family. |
 | GPT Image Edit | `gpt-image-1`, `gpt-image-1-mini` | Edit reference images with the GPT Image 1 family. |
 | Deep Research | `o3-deep-research`, `o4-mini-deep-research` | Start, retrieve, or cancel a research task. |
@@ -37,7 +37,7 @@ DALL-E 2 and DALL-E 3 remain registered in the plugin, but OpenAI removed both m
 Use the GPT Image tools for OpenAI image requests.
 See the [official deprecation notice](https://developers.openai.com/api/docs/deprecations#2025-11-14-dalle-model-snapshots).
 
-## GPT Image 2 and 2.5
+## GPT Image 2, 2.5 and 2.6
 
 ### Model selection
 
@@ -49,6 +49,8 @@ Choose a GPT Image 2.5 model explicitly in the **Model** field to use the new mo
 | `gpt-image-2` | Existing GPT Image 2 generation and editing. | `gpt-image-2-2026-04-21` |
 | [`gpt-image-2.5-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) | Fast, high-quality generation and editing. | `gpt-image-2.5-flare-2026-09-08` |
 | [`gpt-image-2.5-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) | Detailed creative work and precise editing. | `gpt-image-2.5-sunburst-2026-09-08` |
+| [`gpt-image-2.6-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.6-flare) | Fast iteration. | `gpt-image-2.6-flare` |
+| [`gpt-image-2.6-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst) | Detailed images and precise edits. | `gpt-image-2.6-sunburst` |
 
 The model selector uses the API model IDs; the snapshot IDs are reference metadata.
 The Generate tool sends a text prompt to the Images API, while Edit sends a prompt and image files.
@@ -61,7 +63,7 @@ For another editing pass, feed a previous image output into the next Edit call.
 | `prompt` | Required | Describe the image to create or the changes to make. |
 | `model` | `gpt-image-2` | One of the API model IDs listed above. |
 | `size` | `auto` | Automatic dimensions or a `WIDTHxHEIGHT` string meeting the limits below. |
-| `quality` | `auto` | `auto`, `low`, `medium`, `high`; GPT Image 2.5 also accepts `xhigh` and `max`. |
+| `quality` | `auto` | `auto`, `low`, `medium`, `high`; 2.5 and 2.6 also accept `xhigh` and `max`. |
 | `n` | `1` | Integer from 1 to 10. |
 | `background` | `auto` | `auto`, `opaque`, or `transparent`. |
 | `output_format` | `auto` | `auto`, `png`, `jpeg`, or `webp`; `auto` uses the API's default PNG output. |
@@ -77,9 +79,13 @@ Custom dimensions must satisfy all of these conditions:
 - The total pixel count is between 655,360 and 8,294,400.
 
 Common sizes include `1024x1024`, `1536x1024`, and `1024x1536`.
-Sizes above `2560x1440` are experimental.
+GPT Image 2.5 treats sizes above `2560x1440` as experimental.
 Transparent backgrounds require PNG or WebP; selecting JPEG with `transparent` returns a validation error.
 Transparent output is supported by both GPT Image 2.5 models and is in preview for GPT Image 2.
+GPT Image 2.6 adds planning complexity (`low`, `medium`, `high`), GIF generation and editing, and single-image SVG generation.
+For GIFs, the tool accepts 2–16 frames at 20–2,000 ms per frame.
+A transparent PNG markup layer can guide edits on 2.5 and 2.6. [Image API guide](https://developers.openai.com/api/docs/guides/image-generation)
+
 For masked edits, use a mask matching the first input image's dimensions, with transparent areas indicating where to edit.
 See the [image generation guide](https://developers.openai.com/api/docs/guides/image-generation) for input-file requirements and mask behavior.
 
@@ -140,7 +146,7 @@ Check [OpenAI pricing](https://developers.openai.com/api/docs/pricing) for curre
 Both accept `auto`, `1024x1024`, `1536x1024`, or `1024x1536` sizes; `auto`, `low`, `medium`, or `high` quality; and 1–10 output images.
 Generate additionally exposes background, output format, JPEG/WebP compression, and moderation controls.
 Edit accepts reference image files and an optional mask, with output settings determined by the API beyond size and quality.
-Both return image files; the separate usage JSON described above is specific to the GPT Image 2 / 2.5 tools.
+Both return image files; the separate usage JSON described above is specific to the GPT Image 2 / 2.5 / 2.6 tools.
 
 ## Deep Research
 

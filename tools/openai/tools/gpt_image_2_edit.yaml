@@ -1,26 +1,26 @@
 description:
   human:
-    en_US: GPT Image 2 / 2.5 Edit is a tool to modify one or more images based on a prompt.
-    zh_Hans: GPT Image 2 / 2.5 Edit 是一个可根据提示词修改一张或多张图像的工具。
-  llm: A tool to edit one or more images using OpenAI's GPT Image 2 and GPT Image 2.5 models.
+    en_US: GPT Image 2 / 2.5 / 2.6 Edit is a tool to modify one or more images based on a prompt.
+    zh_Hans: GPT Image 2 / 2.5 / 2.6 Edit 是一个可根据提示词修改一张或多张图像的工具。
+  llm: A tool to edit one or more images using OpenAI's GPT Image 2, 2.5, and 2.6 models.
 extra:
   python:
     source: tools/gpt_image_2_edit.py
 identity:
   author: OpenAI
   description:
-    en_US: Edit one or more images with OpenAI's GPT Image 2 and GPT Image 2.5 models as a standalone tool.
-    zh_Hans: 使用 OpenAI 的 GPT Image 2 和 GPT Image 2.5 模型独立编辑一张或多张图像。
+    en_US: Edit one or more images with OpenAI's GPT Image 2, 2.5, and 2.6 models as a standalone tool.
+    zh_Hans: 使用 OpenAI 的 GPT Image 2、2.5 和 2.6 模型独立编辑一张或多张图像。
   label:
-    en_US: GPT Image 2 / 2.5 Edit
-    zh_Hans: GPT 图像 2 / 2.5 编辑
+    en_US: GPT Image 2 / 2.5 / 2.6 Edit
+    zh_Hans: GPT 图像 2 / 2.5 / 2.6 编辑
   name: gpt_image_2_edit
 parameters:
 - default: gpt-image-2
   form: form
   human_description:
-    en_US: Select GPT Image 2 or GPT Image 2.5. Flare prioritizes speed; Sunburst prioritizes image quality.
-    zh_Hans: 选择 GPT Image 2 或 GPT Image 2.5。Flare 优先速度，Sunburst 优先图像质量。
+    en_US: Select GPT Image 2, 2.5, or 2.6. Flare prioritizes speed; Sunburst prioritizes image quality.
+    zh_Hans: 选择 GPT Image 2、2.5 或 2.6。Flare 优先速度，Sunburst 优先图像质量。
   label:
     en_US: Model
     zh_Hans: 模型
@@ -38,6 +38,14 @@ parameters:
       en_US: GPT Image 2.5 Sunburst
       zh_Hans: GPT Image 2.5 Sunburst
     value: gpt-image-2.5-sunburst
+  - label:
+      en_US: GPT Image 2.6 Flare
+      zh_Hans: GPT Image 2.6 Flare
+    value: gpt-image-2.6-flare
+  - label:
+      en_US: GPT Image 2.6 Sunburst
+      zh_Hans: GPT Image 2.6 Sunburst
+    value: gpt-image-2.6-sunburst
   required: false
   type: select
 - form: llm
@@ -75,8 +83,8 @@ parameters:
   form: form
   human_description:
     en_US: >-
-      Image size: auto or WIDTHxHEIGHT. Dimensions must be multiples of 16, at most 3840 per edge, with a 1:3 to 3:1 aspect ratio and 655360 to 8294400 pixels. Sizes above 2560x1440 are experimental.
-    zh_Hans: 图像尺寸：auto 或 宽x高。宽高须为 16 的倍数、单边不超过 3840，宽高比为 1:3 到 3:1，总像素为 655360 到 8294400。超过 2560x1440 的尺寸为实验性支持。
+      Image size: auto or WIDTHxHEIGHT. Dimensions must be multiples of 16, at most 3840 per edge, with a 1:3 to 3:1 aspect ratio and 655360 to 8294400 pixels. On GPT Image 2.5, sizes above 2560x1440 are experimental.
+    zh_Hans: 图像尺寸：auto 或 宽x高。宽高须为 16 的倍数、单边不超过 3840，宽高比为 1:3 到 3:1，总像素为 655360 到 8294400。GPT Image 2.5 对超过 2560x1440 的尺寸提供实验性支持。
   label:
     en_US: Image Size
     zh_Hans: 图像大小
@@ -86,8 +94,8 @@ parameters:
 - default: auto
   form: form
   human_description:
-    en_US: Image quality. Extra High and Maximum are available only with GPT Image 2.5.
-    zh_Hans: 图像质量。超高和最高质量仅适用于 GPT Image 2.5。
+    en_US: Image quality. Extra High and Maximum are available with GPT Image 2.5 and 2.6.
+    zh_Hans: 图像质量。超高和最高质量适用于 GPT Image 2.5 和 2.6。
   label:
     en_US: Image Quality
     zh_Hans: 图像质量
@@ -110,12 +118,12 @@ parameters:
       zh_Hans: 高
     value: high
   - label:
-      en_US: Extra High (GPT Image 2.5 only)
-      zh_Hans: 超高（仅 GPT Image 2.5）
+      en_US: Extra High (2.5 / 2.6)
+      zh_Hans: 超高（2.5 / 2.6）
     value: xhigh
   - label:
-      en_US: Maximum (GPT Image 2.5 only)
-      zh_Hans: 最高（仅 GPT Image 2.5）
+      en_US: Maximum (2.5 / 2.6)
+      zh_Hans: 最高（2.5 / 2.6）
     value: max
   required: false
   type: select
@@ -182,6 +190,10 @@ parameters:
       en_US: WebP
       zh_Hans: WebP
     value: webp
+  - label:
+      en_US: GIF (2.6)
+      zh_Hans: GIF（2.6）
+    value: gif
   required: false
   type: select
 - default: 100
@@ -197,3 +209,65 @@ parameters:
   min: 0
   required: false
   type: number
+- name: complexity
+  form: form
+  type: select
+  required: false
+  default: auto
+  label:
+    en_US: Complexity
+    zh_Hans: 规划复杂度
+  human_description:
+    en_US: Controls planning before rendering in GPT Image 2.6. The model defaults to high.
+    zh_Hans: 控制 GPT Image 2.6 在渲染前的规划程度，模型默认为高。
+  options:
+  - value: auto
+    label:
+      en_US: Auto
+      zh_Hans: 自动
+  - value: low
+    label:
+      en_US: Low
+      zh_Hans: 低
+  - value: medium
+    label:
+      en_US: Medium
+      zh_Hans: 中
+  - value: high
+    label:
+      en_US: High
+      zh_Hans: 高
+- name: frame_count
+  form: form
+  type: number
+  required: false
+  min: 2
+  max: 16
+  label:
+    en_US: GIF frames
+    zh_Hans: GIF 帧数
+  human_description:
+    en_US: Optional for GIF output. The model defaults to 9.
+    zh_Hans: 生成 GIF 时可选，模型默认为 9。
+- name: frame_duration_ms
+  form: form
+  type: number
+  required: false
+  min: 20
+  max: 2000
+  label:
+    en_US: GIF frame duration (ms)
+    zh_Hans: GIF 每帧时长（毫秒）
+  human_description:
+    en_US: Optional for GIF output. The model defaults to 200.
+    zh_Hans: 生成 GIF 时可选，模型默认为 200。
+- name: markup
+  form: llm
+  type: file
+  required: false
+  label:
+    en_US: Markup
+    zh_Hans: 标注图层
+  human_description:
+    en_US: Transparent PNG matching the first image. Use with GPT Image 2.5 or 2.6, without a mask.
+    zh_Hans: 与第一张图像尺寸相同的透明 PNG。适用于 GPT Image 2.5 或 2.6，与蒙版二选一。

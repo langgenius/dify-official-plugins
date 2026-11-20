@@ -57,11 +57,14 @@ class GPTImage2GenerateTool(Tool):
             if not image.b64_json:
                 continue
             mime_type, blob_image = decode_image(image.b64_json)
-            final_mime_type = mime_type
-            if output_format in {"png", "jpeg", "webp"}:
-                final_mime_type = f"image/{output_format}"
+            if output_format != "auto":
+                mime_type = (
+                    "image/svg+xml"
+                    if output_format == "svg"
+                    else f"image/{output_format}"
+                )
 
-            metadata = {"mime_type": final_mime_type, **usage_metadata}
+            metadata = {"mime_type": mime_type, **usage_metadata}
             yield self.create_blob_message(blob=blob_image, meta=metadata)
 
         usage_output = build_usage_output(

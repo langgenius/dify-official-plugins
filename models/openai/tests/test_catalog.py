@@ -125,6 +125,8 @@ def test_llm_parameters_and_prices_are_well_formed() -> None:
 @pytest.mark.parametrize(
     ("model", "supports_none", "input_price", "output_price"),
     [
+        ("gpt-6.2-astra", False, "8.00", "40.00"),
+        ("gpt-6.2-sol", False, "2.00", "10.00"),
         ("gpt-6-astra", False, "10.00", "50.00"),
         ("gpt-6.1-sol", False, "2.00", "10.00"),
         ("gpt-6.1-terra", True, "1.00", "5.00"),
@@ -146,6 +148,13 @@ def test_gpt_6_catalog_matches_the_api_contract(
     )
     assert effort["default"] == "medium"
     assert rules["enable_stream"]["default"] is True
+    if model.startswith("gpt-6.2-"):
+        assert rules["service_tier"]["options"] == [
+            "auto",
+            "default",
+            "priority",
+            "ultrafast",
+        ]
     if model == "gpt-6.1-terra":
         assert rules["reasoning_context"]["options"] == ["auto", "current_turn"]
     elif model == "gpt-6.1-sol":

@@ -1,9 +1,13 @@
 import hashlib
 import re
+import time
 from collections.abc import Generator, Iterable, Mapping
-from typing import TypeVar
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any, TypeVar
 
 import openai
+from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
     InvokeBadRequestError,
@@ -21,13 +25,22 @@ def _user_digest(user: str) -> str:
 
 
 def _is_gpt6_model(model: str) -> bool:
-    return model.startswith(("gpt-6-", "gpt-6.1-"))
+    return model.startswith(("gpt-6-", "gpt-6.1-", "gpt-6.2-"))
 
 
 def _normalize_gpt6_parameters(model: str, params: dict, effort: str | None) -> None:
     if not _is_gpt6_model(model):
         return
-    if model in ("gpt-6-astra", "gpt-6.1-sol") and effort == "none":
+    if model.startswith("gpt-6.2-"):
+        if params.get("service_tier") == "flex":
+            raise InvokeBadRequestError(
+                f"{model} does not support the Flex service tier"
+            )
+        if effort in ("none", "minimal"):
+            raise InvokeBadRequestError(
+                f"{model} does not support reasoning effort {effort}"
+            )
+    elif model in ("gpt-6-astra", "gpt-6.1-sol") and effort == "none":
         name = "GPT-6 Astra" if model == "gpt-6-astra" else "GPT-6.1 Sol"
         raise InvokeBadRequestError(f"{name} does not support reasoning effort none")
     if effort != "none":
@@ -39,6 +52,54 @@ def _normalize_gpt6_parameters(model: str, params: dict, effort: str | None) -> 
                 for item in params["include"] or []
                 if item != "message.output_text.logprobs"
             ]
+
+
+def field(value: Any, name: str, default: Any = None) -> Any:
+    if isinstance(value, dict):
+        return value.get(name, default)
+    return getattr(value, name, default)
+
+
+def apply_gpt62_pricing(
+    usage: LLMUsage,
+    model: str,
+    details: Any,
+    service_tier: str | None,
+    created: float | None,
+) -> LLMUsage:
+    if model not in {"gpt-6.2-astra", "gpt-6.2-sol"}:
+        return usage
+
+    tier_rate = 2 if service_tier in {"fast", "priority"} else 1
+    if service_tier == "ultrafast":
+        # The published rate changes at midnight Pacific on March 1, 2027.
+        cutoff = datetime(2027, 3, 1, 8, tzinfo=UTC).timestamp()
+        tier_rate = 3 if (created or time.time()) < cutoff else 6
+    long_context = usage.prompt_tokens > 272_000
+    usage.prompt_unit_price *= tier_rate * (2 if long_context else 1)
+    usage.completion_unit_price *= tier_rate * (Decimal("1.5") if long_context else 1)
+
+    reads = field(details, "cached_tokens") or 0
+    writes = field(details, "cache_write_tokens") or 0
+    writes_12h = (
+        field(field(details, "cache_write_tokens_details"), "ttl_12h_tokens") or 0
+    )
+    ordinary = usage.prompt_tokens - reads - writes
+    # Each input token belongs to exactly one of these four price classes.
+    billable = (
+        ordinary
+        + reads * Decimal("0.05")
+        + (writes - writes_12h) * Decimal("1.25")
+        + writes_12h * Decimal("2.5")
+    )
+    usage.prompt_price = billable * usage.prompt_unit_price * usage.prompt_price_unit
+    usage.completion_price = (
+        usage.completion_tokens
+        * usage.completion_unit_price
+        * usage.completion_price_unit
+    )
+    usage.total_price = usage.prompt_price + usage.completion_price
+    return usage
 
 
 def _chat_completions_tools_reasoning_guidance(error: Exception) -> str | None:
