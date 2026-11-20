@@ -27,7 +27,13 @@ from dify_plugin.errors.model import InvokeBadRequestError, InvokeConnectionErro
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
-from ..common_openai import _is_gpt6_model, _normalize_gpt6_parameters, _user_digest
+from ..common_openai import (
+    _is_gpt6_model,
+    _normalize_gpt6_parameters,
+    _user_digest,
+    apply_gpt62_pricing,
+    inline_document,
+)
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
 
@@ -89,6 +95,7 @@ def generate_chat(
             credentials,
             prompt_messages,
             tools,
+            params.get("service_tier"),
         )
     return _chat_result(
         llm,
@@ -97,6 +104,7 @@ def generate_chat(
         credentials,
         prompt_messages,
         tools,
+        params.get("service_tier"),
     )
 
 
@@ -142,6 +150,8 @@ def message(prompt: PromptMessage) -> dict[str, Any]:
 
 def _chat_params(model: str, model_parameters: dict) -> dict:
     params = model_parameters.copy()
+    if model.startswith("gpt-6.2-") and params.get("service_tier") == "ultrafast":
+        raise InvokeBadRequestError("Ultrafast requires the Responses API")
     unsupported = [
         name
         for name, default in (
@@ -231,7 +241,17 @@ def _user_content(content: Any) -> dict:
             },
         }
     if isinstance(content, DocumentPromptMessageContent):
-        raise InvokeBadRequestError("Document input requires the Responses API")
+        if content.mime_type.lower() != "application/pdf":
+            raise InvokeBadRequestError("Use the Responses API for non-PDF documents")
+        if (
+            content.url
+            and not content.base64_data
+            and not content.url.startswith("data:")
+        ):
+            raise InvokeBadRequestError(
+                "Document URLs require the Responses API. Send an inline PDF for Chat Completions."
+            )
+        return {"type": "file", "file": inline_document(content)}
     raise InvokeBadRequestError(
         f"Unsupported Chat Completions content type: {content.type.value}"
     )
@@ -272,6 +292,7 @@ def _chat_result(
     credentials: dict,
     prompt_messages: list[PromptMessage],
     tools: list[PromptMessageTool] | None,
+    requested_tier: str | None = None,
 ) -> LLMResult:
     choice = response.choices[0]
     reply = choice.message
@@ -296,8 +317,14 @@ def _chat_result(
     return LLMResult(
         model=response.model,
         message=message,
-        usage=llm._calc_response_usage(
-            model, credentials, prompt_tokens, completion_tokens
+        usage=apply_gpt62_pricing(
+            llm._calc_response_usage(
+                model, credentials, prompt_tokens, completion_tokens
+            ),
+            model,
+            getattr(response.usage, "prompt_tokens_details", None),
+            getattr(response, "service_tier", None) or requested_tier,
+            getattr(response, "created", None),
         ),
         system_fingerprint=response.system_fingerprint,
     )
@@ -310,15 +337,20 @@ def _chat_stream(
     credentials: dict,
     prompt_messages: list[PromptMessage],
     tools: list[PromptMessageTool] | None,
+    requested_tier: str | None = None,
 ) -> Generator[LLMResultChunk, None, None]:
     text = ""
     usage = None
     finish_reason = None
     response_model = model
+    service_tier = requested_tier
+    created = None
     fingerprint = None
     fragments: dict[int, dict[str, str]] = {}
     try:
         for chunk in response:
+            service_tier = getattr(chunk, "service_tier", None) or service_tier
+            created = getattr(chunk, "created", None) or created
             response_model = chunk.model or response_model
             fingerprint = chunk.system_fingerprint or fingerprint
             if chunk.usage:
@@ -387,7 +419,13 @@ def _chat_stream(
             index=0,
             message=AssistantPromptMessage(content="", tool_calls=calls),
             finish_reason="tool_calls" if calls else finish_reason,
-            usage=result_usage,
+            usage=apply_gpt62_pricing(
+                result_usage,
+                model,
+                getattr(usage, "prompt_tokens_details", None),
+                service_tier,
+                created,
+            ),
         ),
     )
 

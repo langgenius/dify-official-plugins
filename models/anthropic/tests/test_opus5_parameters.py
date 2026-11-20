@@ -244,8 +244,19 @@ def test_opus5_task_budget_below_minimum_silently_ignored(monkeypatch) -> None:
     assert payload["extra_headers"] == {}
 
 
-def test_fable_5_1_schema_and_request_contract(monkeypatch) -> None:
-    schema_path = Path(__file__).parents[1] / "models" / "llm" / "claude-fable-5-1.yaml"
+@pytest.mark.parametrize(
+    ("model", "input_price", "output_price"),
+    [
+        ("claude-fable-5-1", "10.00", "50.00"),
+        ("claude-mythos-5-1", "10.00", "50.00"),
+        ("claude-fable-5-2", "8.00", "40.00"),
+        ("claude-mythos-5-2", "8.00", "40.00"),
+    ],
+)
+def test_fable_and_mythos_request_contract(
+    monkeypatch, model, input_price, output_price
+) -> None:
+    schema_path = Path(__file__).parents[1] / "models" / "llm" / f"{model}.yaml"
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
     rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
 
@@ -258,8 +269,8 @@ def test_fable_5_1_schema_and_request_contract(monkeypatch) -> None:
     assert rules["task_budget"]["max"] == 1_000_000
     assert not {"temperature", "top_p", "top_k", "thinking_budget"} & rules.keys()
     assert schema["pricing"] == {
-        "input": "10.00",
-        "output": "50.00",
+        "input": input_price,
+        "output": output_price,
         "unit": "0.000001",
         "currency": "USD",
     }
@@ -274,10 +285,13 @@ def test_fable_5_1_schema_and_request_contract(monkeypatch) -> None:
             "thinking_display": "summarized",
             "effort": "xhigh",
             "task_budget": 64_000,
+            **({"speed": "fast"} if model.endswith("5-2") else {}),
         },
-        model="claude-fable-5-1",
+        model=model,
     )
 
+    assert payload.get("speed") == ("fast" if model.endswith("5-2") else None)
+    assert AnthropicLargeLanguageModel._cache_read_multiplier(model) == 0.025
     assert payload["thinking"] == {"type": "adaptive", "display": "summarized"}
     assert payload["output_config"] == {
         "effort": "xhigh",

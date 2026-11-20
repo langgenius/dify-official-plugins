@@ -7,8 +7,7 @@ from openai import OpenAI
 from openai_client import normalize_openai_base_url
 from tools._image_utils import (
     build_image_args,
-    build_usage_metadata,
-    build_usage_output,
+    build_usage_outputs,
     decode_image,
 )
 
@@ -49,26 +48,23 @@ class GPTImage2GenerateTool(Tool):
             yield self.create_text_message(f"Failed to generate image: {e!s}")
             return
 
-        usage_metadata = build_usage_metadata(response)
         image_count = len(getattr(response, "data", []))
+        usage_metadata, usage_output = build_usage_outputs(response, model, "generate", image_count)
         logger.info("%s generate success: images=%s", model, image_count)
 
         for image in response.data:
             if not image.b64_json:
                 continue
             mime_type, blob_image = decode_image(image.b64_json)
-            final_mime_type = mime_type
-            if output_format in {"png", "jpeg", "webp"}:
-                final_mime_type = f"image/{output_format}"
+            if output_format != "auto":
+                mime_type = (
+                    "image/svg+xml"
+                    if output_format == "svg"
+                    else f"image/{output_format}"
+                )
 
-            metadata = {"mime_type": final_mime_type, **usage_metadata}
+            metadata = {"mime_type": mime_type, **usage_metadata}
             yield self.create_blob_message(blob=blob_image, meta=metadata)
 
-        usage_output = build_usage_output(
-            response=response,
-            model=model,
-            operation="generate",
-            image_count=image_count,
-        )
         if usage_output:
             yield self.create_json_message(usage_output)

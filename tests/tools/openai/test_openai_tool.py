@@ -1,11 +1,14 @@
 import importlib.util
 import io
+import json
 import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
+from openai.types import ImagesResponse
 
 PLUGIN_DIR = Path("tools") / "openai"
 
@@ -208,9 +211,12 @@ def test_gpt_image_requests_and_outputs(operation, model, quality, output_format
         parameters["image"] = [FakeFile(), FakeFile()] if model else FakeFile()
         parameters["mask"] = FakeFile(b"mask", "mask.png")
 
-    usage = {"total_tokens": 15, "input_tokens": 10, "output_tokens": 5}
-    response = types.SimpleNamespace(
-        data=[types.SimpleNamespace(b64_json="aW1hZ2U=")] * 2, usage=types.SimpleNamespace(**usage)
+    usage = {
+        "total_tokens": 15, "input_tokens": 10, "output_tokens": 5,
+        "input_tokens_details": {"text_tokens": 6, "image_tokens": 4},
+    }
+    response = ImagesResponse.model_validate(
+        {"created": 1, "data": [{"b64_json": "aW1hZ2U="}] * 2, "usage": usage}
     )
     client = MagicMock()
     endpoint = getattr(client.images, operation)
@@ -275,6 +281,10 @@ def test_gpt_image_requests_and_outputs(operation, model, quality, output_format
         {"quality": "invalid"},
         {"quality": []},
         {"output_format": "gif"},
+        {"model": "gpt-image-2.6-flare", "output_format": "svg", "n": 2},
+        {"svg_author_model": "gpt-6.2-sol"},
+        {"complexity": "high"},
+        {"model": "gpt-image-2.6-flare", "output_format": "gif", "frame_count": 17},
         {"output_compression": 101},
         {"output_compression": True},
         {"output_compression": 1.5},
@@ -347,3 +357,91 @@ def test_gpt_image_edit_closes_opened_files_on_failure(failure):
         client.images.edit.assert_called_once()
     else:
         client.images.edit.assert_not_called()
+
+
+@pytest.mark.parametrize("filename", ["overlay.png", None])
+def test_gpt_image_26_gif_edit(filename):
+    module = import_plugin_module("image_edit", "tools/gpt_image_2_edit.py")
+    tool = create_tool_instance(module.GPTImage2EditTool)
+    tool.runtime.credentials = {"openai_api_key": "test"}
+    markup = FakeFile(b"guide", filename)
+    markup.mime_type = "image/png"
+    parameters = {
+        "model": "gpt-image-2.6-flare",
+        "prompt": "Animate this",
+        "output_format": "gif",
+        "image": FakeFile(),
+        "markup": markup,
+        "complexity": "low",
+        "frame_count": 4,
+        "frame_duration_ms": 200,
+    }
+    with patch.object(module.io, "BytesIO") as open_file, patch.object(module, "OpenAI") as client:
+        [error] = tool._invoke({**parameters, "mask": FakeFile()})
+        assert "GIF edits do not support a mask" in error
+        open_file.assert_not_called()
+        client.assert_not_called()
+
+    def reply(request):
+        assert request.url.path == "/v1/images/edits"
+        for key in ("model", "complexity", "frame_count", "frame_duration_ms", "output_format"):
+            assert f'name="{key}"\r\n\r\n{parameters[key]}\r\n'.encode() in request.content
+        assert f'name="markup"; filename="{filename or "markup.png"}"'.encode() in request.content
+        assert b"image/png\r\n\r\nguide" in request.content
+        return httpx.Response(200, json={"created": 1, "data": [{"b64_json": "aWNvbg=="}]})
+
+    with module.OpenAI(
+        api_key="test", http_client=httpx.Client(transport=httpx.MockTransport(reply))
+    ) as sdk, patch.object(module, "OpenAI", return_value=sdk):
+        [file] = tool._invoke(parameters)
+    assert file["blob"] == b"icon"
+    assert file["meta"] == {"mime_type": "image/gif"}
+
+
+@pytest.mark.parametrize("author_model", [None, "gpt-6.2-sol"])
+def test_gpt_image_26_svg_usage_and_author_model(author_model):
+    module = import_plugin_module("image_generate", "tools/gpt_image_2_generate.py")
+    tool = create_tool_instance(module.GPTImage2GenerateTool)
+    tool.runtime.credentials = {"openai_api_key": "test"}
+    model = "gpt-image-2.6-sunburst"
+    parameters = {"model": model, "prompt": "An icon", "output_format": "svg", "complexity": "low"}
+    svg_usage = {
+        "model": "gpt-6.2-sol",
+        "input_tokens": 1200,
+        "output_tokens": 800,
+        "reasoning_tokens": 200,
+        "total_tokens": 2000,
+    }
+    usage = {
+        "input_tokens": 50,
+        "output_tokens": 100,
+        "total_tokens": 150,
+        "input_tokens_details": {"text_tokens": 50, "image_tokens": 0},
+        "output_tokens_details": {"text_tokens": 0, "image_tokens": 100},
+    }
+    response = {"created": 1, "data": [{"b64_json": "aWNvbg=="}], "svg_usage": svg_usage}
+    if author_model:
+        parameters["svg_author_model"] = author_model
+        response["usage"] = usage
+
+    def reply(request):
+        assert request.url.path == "/v1/images/generations"
+        body = json.loads(request.content)
+        assert body["model"] == model and body["complexity"] == "low"
+        if author_model:
+            assert body["svg"] == {"model": author_model}
+        else:
+            assert "svg" not in body
+        return httpx.Response(200, json=response)
+
+    with module.OpenAI(
+        api_key="test", http_client=httpx.Client(transport=httpx.MockTransport(reply))
+    ) as sdk, patch.object(module, "OpenAI", return_value=sdk):
+        file, payload = tool._invoke(parameters)
+    file_metadata = {"mime_type": "image/svg+xml", "svg_usage": svg_usage}
+    result = {"model": model, "operation": "generate", "image_count": 1, "svg_usage": svg_usage}
+    if "usage" in response:
+        file_metadata["token_usage"] = usage
+        result["usage"] = usage
+    assert file["blob"] == b"icon" and file["meta"] == file_metadata
+    assert payload == {"data": [result]}

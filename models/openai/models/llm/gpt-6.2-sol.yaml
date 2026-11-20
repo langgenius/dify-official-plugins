@@ -1,0 +1,122 @@
+# https://developers.openai.com/api/docs/models/gpt-6.2-sol
+model: gpt-6.2-sol
+label:
+  zh_Hans: gpt-6.2-sol
+  en_US: gpt-6.2-sol
+model_type: llm
+features:
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+  - vision
+  - document
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1050000  # Maximum input: 922,000 tokens.
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 16  # Responses minimum. Chat Completions accepts 1.
+    max: 128000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: GPT-6.2 Sol 支持 low、medium、high、xhigh 和 max，此插件默认值为 medium。工具调用需要 Responses API。
+      en_US: GPT-6.2 Sol supports low, medium, high, xhigh, and max. This plugin defaults to medium. Tool calling requires the Responses API.
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+  - name: reasoning_mode
+    label:
+      zh_Hans: 推理模式
+      en_US: Reasoning Mode
+    type: string
+    help:
+      zh_Hans: 标准模式平衡质量与延迟；Pro 模式会投入更多模型计算，仅适用于 Responses API。
+      en_US: Standard mode balances quality and latency; Pro mode applies more model work and is available only with the Responses API.
+    required: false
+    default: standard
+    options:
+      - standard
+      - pro
+  - name: reasoning_summary
+    label:
+      zh_Hans: 推理摘要
+      en_US: Reasoning Summary
+    type: string
+    help:
+      zh_Hans: 显式请求模型返回最详细的可用推理摘要；仅适用于 Responses API。
+      en_US: Explicitly requests the most detailed available reasoning summary; available only with the Responses API.
+    required: false
+    options:
+      - auto
+  - name: verbosity
+    label:
+      zh_Hans: 详细程度
+      en_US: Verbosity
+    type: string
+    help:
+      zh_Hans: 约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。支持的值包括 low、medium 和 high
+      en_US: Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: 是否启用流式响应。GPT-6.2 Sol 支持流式输出。
+      en_US: Whether to enable streaming responses. GPT-6.2 Sol supports streaming.
+    required: true
+    default: true
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: Auto 跟随项目设置。Fast（priority）和 Ultrafast 会按更高费率计费。Ultrafast 需要 Responses API。
+      en_US: Auto uses your project setting. Fast (priority) and Ultrafast cost more. Ultrafast requires the Responses API.
+    required: false
+    default: auto
+    options:
+      - auto
+      - default
+      - priority
+      - ultrafast
+# Base Standard pricing for direct API requests with up to 272K input tokens.
+# Usage accounts for cached tokens, cache writes, long context, and the service tier.
+pricing:
+  input: '2.00'
+  output: '10.00'
+  unit: '0.000001'
+  currency: USD
