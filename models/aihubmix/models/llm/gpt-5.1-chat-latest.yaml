@@ -35,7 +35,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '1.25'
-  output: '10'
+  input: '5'
+  output: '30'
   unit: '0.000001'
   currency: USD
