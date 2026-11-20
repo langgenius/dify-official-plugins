@@ -59,6 +59,7 @@ def test_tongyi_chat_sse_strips_history_and_preserves_search_reasoning_and_media
             "seed": 42,
             "response_format": "json_schema",
             "json_schema": SCHEMA,
+            "extra_headers": '{"x-dashscope-euid":"1"}',
         },
         messages=[
             AssistantPromptMessage(content="<think>\nprivate reasoning\n</think>old"),
@@ -68,6 +69,7 @@ def test_tongyi_chat_sse_strips_history_and_preserves_search_reasoning_and_media
     assert "analysis" in contents(chunks) and '{"answer":4}' in contents(chunks)
     path, _, body = requests[0]
     assert path == "/v1/chat/completions"
+    assert "extra_headers" not in body
     assert body["messages"][1]["content"] == "old"
     assert json.dumps(SCHEMA) in body["messages"][0]["content"]
     assert body["response_format"] == {"type": "json_object"}
@@ -103,9 +105,12 @@ def test_tongyi_translation_and_nonstream_thinking(llm, wire):
 
 def test_xai_only_strips_penalties_and_stop_from_reasoning_models(llm, wire):
     _, requests, replies = wire
-    replies.extend([(200, {}, chat_result("ok", "reason")), (200, {}, chat_result())])
+    replies.extend(
+        [(200, {}, chat_result("ok", "reason")), (200, {}, chat_result()), (200, {}, chat_result())]
+    )
     params = {
         "search_parameters": '{"mode":"auto"}',
+        "service_tier": "priority",
         "reasoning_effort": "low",
         "temperature": 0.7,
         "top_p": 0.6,
@@ -114,12 +119,26 @@ def test_xai_only_strips_penalties_and_stop_from_reasoning_models(llm, wire):
     }
     chunks = invoke(llm, "grok-4.20-0309-reasoning", params, stop=["end"])
     invoke(llm, "grok-4.20-0309-non-reasoning", params, stop=["end"])
+    invoke(
+        llm,
+        "grok-4.6",
+        {
+            "search_parameters": "",
+            "service_tier": "priority",
+            "reasoning_effort": "low",
+            "temperature": 1.0,
+            "top_p": 1.0,
+        },
+    )
     assert contents(chunks) == "<think>\nreason\n</think>\nok"
     for request in requests:
         assert request[0] == "/v1/chat/completions"
-        assert request[2]["search_parameters"] == {"mode": "auto"}
+        assert "search_parameters" not in request[2]
+        assert request[2]["service_tier"] == "default"
         assert request[2]["reasoning_effort"] == "low"
+    for request in requests[:2]:
         assert request[2]["temperature"] == 0.7 and request[2]["top_p"] == 0.6
+    assert not ({"temperature", "top_p"} & requests[2][2].keys())
     removed = {"stop", "presence_penalty", "frequency_penalty"}
     assert not (removed & requests[0][2].keys())
     assert removed <= requests[1][2].keys()
@@ -136,12 +155,21 @@ def test_xai_invalid_or_transport_search_parameters_never_send(llm, wire, value)
 
 
 @pytest.mark.parametrize(
-    "field", ["openai_api_base", "ANTHROPIC_API_KEY", "baseURL", "route", "x-Goog-API-Key"]
+    "model,field,value",
+    [
+        ("gpt-6-luna", "openai_api_base", "ignored"),
+        ("gpt-6-luna", "ANTHROPIC_API_KEY", "ignored"),
+        ("gpt-6-luna", "baseURL", "ignored"),
+        ("gpt-6-luna", "route", "ignored"),
+        ("gpt-6-luna", "x-Goog-API-Key", "ignored"),
+        ("gpt-6-luna", "extra_headers", '{"x":"1"}'),
+        ("qwen3.5-plus", "extra_headers", {"x": "1"}),
+    ],
 )
-def test_native_adapters_reject_transport_parameters_before_send(llm, wire, field):
+def test_native_adapters_reject_transport_parameters_before_send(llm, wire, model, field, value):
     _, requests, _ = wire
     with pytest.raises(InvokeBadRequestError):
-        invoke(llm, "gpt-6-luna", {field: "ignored"})
+        invoke(llm, model, {field: value})
     assert requests == []
 
 

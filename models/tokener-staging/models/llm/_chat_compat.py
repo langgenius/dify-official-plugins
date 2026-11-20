@@ -95,17 +95,22 @@ def normalize_deepseek_parameters(model, parameters):
 def _tongyi(model, messages, params, output_format, tools, stream):
     if model.startswith("qwen-mt"):
         translation = {}
-        if (provided := params.pop("translation_options", None)) is not None:
+        if (provided := params.pop("translation_options", None)) is not None and (
+            not isinstance(provided, str) or provided.strip()
+        ):
             translation = _wire.json_object(provided, "translation_options")
+            _wire.reject_controls(translation)
         for name in ("source_lang", "target_lang", "domains"):
             if (value := params.pop(name, None)) is not None:
                 translation[name] = value
-        translation.setdefault("domains", None)
-        params["translation_options"] = {
+        cleaned = {
             key: translation[key]
             for key in ("source_lang", "target_lang", "domains")
-            if key in translation
+            if translation.get(key) not in (None, "")
+            and not (isinstance(translation[key], str) and not translation[key].strip())
         }
+        if cleaned:
+            params["translation_options"] = cleaned
         if not messages or messages[-1].role.value != "user":
             raise InvokeBadRequestError("Qwen translation requires a final user message")
         return messages[-1:], output_format, False
@@ -254,9 +259,15 @@ def invoke(
             _wire.reject_controls(params[name])
     output_format = _wire.structured_format(params)
     if family == "xai":
-        if (search := params.get("search_parameters")) is not None:
-            params["search_parameters"] = _wire.json_object(search, "search_parameters")
-            _wire.reject_controls(params["search_parameters"])
+        if (search := params.pop("search_parameters", None)) is not None and (
+            not isinstance(search, str) or search.strip()
+        ):
+            _wire.reject_controls(_wire.json_object(search, "search_parameters"))
+        if params.get("service_tier") == "priority":
+            params["service_tier"] = "default"
+        if model == "grok-4.6":
+            params.pop("temperature", None)
+            params.pop("top_p", None)
         if "-non-reasoning" not in model and (
             model.startswith(("grok-3-mini", "grok-4", "grok-code", "grok-build"))
             or model.endswith("-reasoning")

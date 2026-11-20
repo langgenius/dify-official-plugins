@@ -203,8 +203,8 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        _wire.reject_controls(model_parameters, nested=False)
         family = model_family(model)
+        model_parameters = _wire.reject_top_parameters(family, model_parameters)
         if family:
             parameters = model_parameters.copy()
             if "_native_response_format" in parameters:
@@ -311,8 +311,8 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
     def _validate_and_filter_model_parameters(
         self, model: str, model_parameters: dict, credentials: dict
     ) -> dict:
-        _wire.reject_controls(model_parameters, nested=False)
         family = model_family(model)
+        model_parameters = _wire.reject_top_parameters(family, model_parameters)
         if family:
             model_parameters = model_parameters.copy()
             for name, value in model_parameters.items():
@@ -373,6 +373,7 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
                 "frequency_penalty",
                 "seed",
                 "thinking_budget",
+                "task_budget",
                 "max_tokens",
                 "max_output_tokens",
                 "max_completion_tokens",

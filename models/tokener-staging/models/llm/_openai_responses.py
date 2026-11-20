@@ -128,6 +128,8 @@ def _payload(model, messages, parameters, tools, user, stream) -> dict:
         if (value := parameters.pop(alias, None)) is not None:
             parameters.setdefault("max_output_tokens", value)
     parameters.pop("enable_stream", None)
+    if parameters.get("service_tier") == "priority":
+        parameters["service_tier"] = "auto"
     reasoning = {
         name: value
         for name in ("effort", "summary", "mode", "context")

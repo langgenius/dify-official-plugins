@@ -58,6 +58,17 @@ TRANSPORT_FIELDS = frozenset(
 _CONTROL_FIELDS = {name.lower() for name in TRANSPORT_FIELDS}
 
 
+def reject_top_parameters(family: str, parameters: dict) -> dict:
+    if (
+        family == "tongyi"
+        and "extra_headers" in parameters
+        and isinstance(parameters["extra_headers"], str | None)
+    ):
+        parameters = {key: value for key, value in parameters.items() if key != "extra_headers"}
+    reject_controls(parameters, nested=False)
+    return parameters
+
+
 def reject_controls(value, *, nested: bool = True) -> None:
     if isinstance(value, dict):
         for key, item in value.items():

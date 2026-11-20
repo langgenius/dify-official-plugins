@@ -84,7 +84,8 @@ def test_responses_replays_encrypted_output_and_forces_single_chunk(llm, wire):
     ]
     assert sent["tools"][0]["parameters"] == TOOL.parameters
     assert sent["max_output_tokens"] == 99
-    invoke(llm, "gpt-6-luna", messages=[USER, delta.message, USER])
+    invoke(llm, "gpt-6-luna", {"service_tier": "priority"}, messages=[USER, delta.message, USER])
+    assert requests[1][2]["service_tier"] == "auto"
     assert requests[1][2]["input"][1:-1] == output
 
 

@@ -211,7 +211,6 @@ def test_source_required_defaults_reach_each_protocol(llm, wire):
     assert tongyi["translation_options"] == {
         "source_lang": "auto",
         "target_lang": "Chinese",
-        "domains": None,
     }
 
 
