@@ -38,6 +38,22 @@ from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLan
 
 from openai import OpenAI
 
+DIFY_APP_ID_HEADER = "x-dify-app-id"
+DIFY_USER_ID_HEADER = "x-dify-user-id"
+
+
+def _current_app_id() -> Optional[str]:
+    """Return the Dify app ID for the running invocation, if the SDK exposes it."""
+    try:
+        from dify_plugin import get_current_session
+
+        session = get_current_session()
+    except Exception:
+        # Telemetry must never break generation.
+        return None
+    app_id = getattr(session, "app_id", None) if session is not None else None
+    return app_id if isinstance(app_id, str) and app_id else None
+
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
@@ -618,6 +634,33 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             merged_headers = parsed_headers
         return {**credentials, "extra_headers": merged_headers}
 
+    def _apply_dify_metadata_headers(self, credentials: dict, user: Optional[str]) -> dict:
+        """Attach Dify's app and end-user IDs as request headers when opted in.
+
+        Gateways and self-hosted proxies use these headers to attribute traffic and
+        spend to a Dify app without parsing the prompt. The feature is opt-in, so
+        existing configurations send exactly the same requests as before.
+        """
+        if credentials.get("enable_request_metadata") != "enabled":
+            return credentials
+
+        metadata_headers: dict[str, str] = {}
+        app_id = _current_app_id()
+        if app_id:
+            metadata_headers[DIFY_APP_ID_HEADER] = app_id
+        if user:
+            metadata_headers[DIFY_USER_ID_HEADER] = user
+        if not metadata_headers:
+            return credentials
+
+        return {
+            **credentials,
+            "extra_headers": {
+                **self._parse_extra_headers(credentials.get("extra_headers")),
+                **metadata_headers,
+            },
+        }
+
     def _invoke(
         self,
         model: str,
@@ -629,6 +672,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        credentials = self._apply_dify_metadata_headers(credentials, user)
         credentials = self._apply_extra_headers(credentials, model_parameters)
 
         if credentials.get("api_type") == "responses":
