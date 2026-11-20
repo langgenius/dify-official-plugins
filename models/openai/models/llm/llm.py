@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Generator
+import os
+from collections.abc import Generator, Mapping
+from decimal import Decimal
 from typing import Any
+from urllib.parse import urlsplit
 
 from openai import OpenAI
 
@@ -12,7 +15,7 @@ from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
-from ..common_openai import _CommonOpenAI
+from ..common_openai import GPT62_MODELS, _CommonOpenAI
 from . import chat, decisions, responses, stream as response_stream, tokens
 
 CHAT_ONLY_PREFIXES = ("gpt-audio",)
@@ -28,9 +31,43 @@ NON_STREAMING_MODELS = {
     "gpt-audio-mini-2025-12-15",
     "o3-pro",
 }
+GPT62_REGIONAL_HOSTS = {
+    "us.api.openai.com",
+    "eu.api.openai.com",
+    "mtls-us.api.openai.com",
+    "mtls-eu.api.openai.com",
+    "gov.api.openai.com",
+}
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
+    def get_model_schema(
+        self, model: str, credentials: Mapping | None = None
+    ) -> AIModelEntity | None:
+        schema = super().get_model_schema(model, credentials)
+        if schema is None or model not in GPT62_MODELS:
+            return schema
+        credentials = credentials or {}
+        base_url = credentials.get("openai_api_base") or os.getenv(
+            "OPENAI_BASE_URL", ""
+        )
+        regional = urlsplit(base_url).hostname in GPT62_REGIONAL_HOSTS
+        use_chat = not _uses_responses(model, credentials)
+        if not (use_chat or regional):
+            return schema
+
+        schema = schema.model_copy(deep=True)
+        if use_chat:
+            for rule in schema.parameter_rules:
+                if rule.name == "max_tokens":
+                    rule.min = 1
+                    break
+        if regional and schema.pricing:
+            schema.pricing.input *= Decimal("1.10")
+            if schema.pricing.output is not None:
+                schema.pricing.output *= Decimal("1.10")
+        return schema
+
     def _invoke(
         self,
         model: str,
@@ -233,7 +270,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         return tokens.count_messages(model, messages, tools)
 
 
-def _uses_responses(model: str, credentials: dict[str, Any]) -> bool:
+def _uses_responses(model: str, credentials: Mapping[str, Any]) -> bool:
     if model.startswith(CHAT_ONLY_PREFIXES):
         return False
     if model.startswith(RESPONSES_ONLY_PREFIXES):

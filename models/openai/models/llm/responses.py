@@ -31,6 +31,7 @@ from ..common_openai import (
     _user_digest,
     apply_gpt62_pricing,
     field,
+    inline_document,
 )
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
@@ -422,18 +423,10 @@ def _input_content(value: Any) -> Any:
                 }
             )
         elif isinstance(item, DocumentPromptMessageContent):
-            if item.url:
+            if item.url and not item.url.startswith("data:"):
                 result.append({"type": "input_file", "file_url": item.url})
-            elif item.base64_data:
-                result.append(
-                    {
-                        "type": "input_file",
-                        "filename": item.filename or f"document{item.format}",
-                        "file_data": item.data,
-                    }
-                )
             else:
-                raise InvokeBadRequestError("Document input must include data")
+                result.append({"type": "input_file", **inline_document(item)})
         elif item.type in (
             PromptMessageContentType.AUDIO,
             PromptMessageContentType.VIDEO,

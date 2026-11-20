@@ -32,6 +32,7 @@ from ..common_openai import (
     _normalize_gpt6_parameters,
     _user_digest,
     apply_gpt62_pricing,
+    inline_document,
 )
 from . import tokens
 from ._metadata import apply_dify_metadata_if_enabled
@@ -240,7 +241,17 @@ def _user_content(content: Any) -> dict:
             },
         }
     if isinstance(content, DocumentPromptMessageContent):
-        raise InvokeBadRequestError("Document input requires the Responses API")
+        if content.mime_type.lower() != "application/pdf":
+            raise InvokeBadRequestError("Use the Responses API for non-PDF documents")
+        if (
+            content.url
+            and not content.base64_data
+            and not content.url.startswith("data:")
+        ):
+            raise InvokeBadRequestError(
+                "Document URLs require the Responses API. Send an inline PDF for Chat Completions."
+            )
+        return {"type": "file", "file": inline_document(content)}
     raise InvokeBadRequestError(
         f"Unsupported Chat Completions content type: {content.type.value}"
     )

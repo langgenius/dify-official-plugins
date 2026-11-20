@@ -8,6 +8,7 @@ from typing import Any, TypeVar
 
 import openai
 from dify_plugin.entities.model.llm import LLMUsage
+from dify_plugin.entities.model.message import DocumentPromptMessageContent
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
     InvokeBadRequestError,
@@ -18,6 +19,7 @@ from dify_plugin.errors.model import (
 )
 
 T = TypeVar("T")
+GPT62_MODELS = {"gpt-6.2-astra", "gpt-6.2-sol"}
 
 
 def _user_digest(user: str) -> str:
@@ -60,6 +62,19 @@ def field(value: Any, name: str, default: Any = None) -> Any:
     return getattr(value, name, default)
 
 
+def inline_document(document: DocumentPromptMessageContent) -> dict[str, str]:
+    if document.base64_data:
+        data = f"data:{document.mime_type};base64,{document.base64_data}"
+    elif document.url.startswith("data:") and document.url.partition(",")[2]:
+        data = document.url
+    else:
+        raise InvokeBadRequestError("Document input must include data")
+    return {
+        "filename": document.filename or f"document.{document.format.lstrip('.')}",
+        "file_data": data,
+    }
+
+
 def apply_gpt62_pricing(
     usage: LLMUsage,
     model: str,
@@ -67,7 +82,7 @@ def apply_gpt62_pricing(
     service_tier: str | None,
     created: float | None,
 ) -> LLMUsage:
-    if model not in {"gpt-6.2-astra", "gpt-6.2-sol"}:
+    if model not in GPT62_MODELS:
         return usage
 
     tier_rate = 2 if service_tier in {"fast", "priority"} else 1

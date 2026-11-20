@@ -180,6 +180,19 @@ parameters:
     value: svg
   required: false
   type: select
+- name: svg_author_model
+  form: form
+  type: string
+  required: false
+  show_on:
+  - variable: output_format
+    value: svg
+  label:
+    en_US: SVG author model
+    zh_Hans: SVG 编写模型
+  human_description:
+    en_US: Enter the author model ID for SVG output if your OpenAI project has SVG model selection enabled. Otherwise leave this blank.
+    zh_Hans: 如果 OpenAI 项目已启用 SVG 模型选择，请填写编写 SVG 的模型 ID。其他情况留空。
 - default: 100
   form: form
   human_description:

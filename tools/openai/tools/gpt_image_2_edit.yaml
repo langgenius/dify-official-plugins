@@ -71,8 +71,8 @@ parameters:
   type: files
 - form: llm
   human_description:
-    en_US: Optional mask image used for inpainting.
-    zh_Hans: 可选的蒙版图像，用于局部编辑。
+    en_US: Optional mask for localized edits. GIF edits require an unmasked source image.
+    zh_Hans: 可选蒙版，用于局部编辑。编辑 GIF 时请使用无蒙版的原图。
   label:
     en_US: Mask
     zh_Hans: 蒙版

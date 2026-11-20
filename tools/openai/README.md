@@ -66,7 +66,8 @@ For another editing pass, feed a previous image output into the next Edit call.
 | `quality` | `auto` | `auto`, `low`, `medium`, `high`; 2.5 and 2.6 also accept `xhigh` and `max`. |
 | `n` | `1` | Integer from 1 to 10. |
 | `background` | `auto` | `auto`, `opaque`, or `transparent`. |
-| `output_format` | `auto` | `auto`, `png`, `jpeg`, or `webp`; `auto` uses the API's default PNG output. |
+| `output_format` | `auto` | `png`, `jpeg`, `webp`, or `auto` (PNG). GPT Image 2.6 also offers GIF and single-image SVG generation. |
+| `svg_author_model` | Unset | For SVG generation, enter the author model ID if SVG model selection is enabled for your project. |
 | `output_compression` | `100` | Integer from 0 to 100, sent only for explicit JPEG or WebP output. |
 | `moderation` | `auto` | Generate only: `auto` or `low`. |
 | `image` | Required for Edit | One or more Dify image files, up to 16. |
@@ -84,6 +85,7 @@ Transparent backgrounds require PNG or WebP; selecting JPEG with `transparent` r
 Transparent output is supported by both GPT Image 2.5 models and is in preview for GPT Image 2.
 GPT Image 2.6 adds planning complexity (`low`, `medium`, `high`), GIF generation and editing, and single-image SVG generation.
 For GIFs, the tool accepts 2–16 frames at 20–2,000 ms per frame.
+Remove any mask before editing a GIF.
 A transparent PNG markup layer can guide edits on 2.5 and 2.6. [Image API guide](https://developers.openai.com/api/docs/guides/image-generation)
 
 For masked edits, use a mask matching the first input image's dimensions, with transparent areas indicating where to edit.
@@ -126,6 +128,8 @@ When OpenAI supplies usage, each file also carries `token_usage` metadata and th
 ```
 
 These token counts are illustrative.
+For SVG generation, `svg_usage` on each file and in the JSON records the author model and its token counts, including reasoning tokens.
+The image model's rendering usage stays in `token_usage` on each file and in `usage` in the JSON. [Images API](https://developers.openai.com/api/reference/resources/images/methods/generate)
 Usage belongs to the entire request, so do not sum the same usage metadata across its image files.
 The JSON payload is omitted when the API returns no usage information.
 

@@ -1,10 +1,14 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
+import yaml
+from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.errors.model import InvokeBadRequestError
 from models.llm import chat, responses
+from models.llm.llm import OpenAILargeLanguageModel
 from models.common_openai import apply_gpt62_pricing
 
 
@@ -61,3 +65,40 @@ def test_gpt62_service_tiers(model):
         ]
         == "ultrafast"
     )
+
+
+@pytest.mark.parametrize(
+    "host", ["us.api.openai.com", "eu.api.openai.com", "gov.api.openai.com"]
+)
+def test_regional_usage_follows_the_configured_endpoint(host, monkeypatch):
+    model = "gpt-6.2-astra"
+    path = Path(__file__).resolve().parents[1] / "models/llm" / f"{model}.yaml"
+    llm = OpenAILargeLanguageModel(
+        [AIModelEntity.model_validate(yaml.safe_load(path.read_text()))]
+    )
+    response = {"usage": {"input_tokens": 1000, "output_tokens": 100}}
+    monkeypatch.setenv("OPENAI_BASE_URL", f"https://{host}/v1")
+    with llm.timing_context():
+        regional = responses.usage(llm, model, {}, [], None, response, "", [])
+        global_usage = responses.usage(
+            llm,
+            model,
+            {"openai_api_base": "https://api.openai.com/v1"},
+            [],
+            None,
+            response,
+            "",
+            [],
+        )
+        proxy = responses.usage(
+            llm,
+            model,
+            {"openai_api_base": f"https://{host}.example/v1"},
+            [],
+            None,
+            response,
+            "",
+            [],
+        )
+    assert regional.total_price == Decimal("0.0132")
+    assert global_usage.total_price == proxy.total_price == Decimal("0.012")

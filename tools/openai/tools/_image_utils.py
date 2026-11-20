@@ -2,6 +2,8 @@ import base64
 import re
 from typing import Any
 
+from openai.types import ImagesResponse
+
 
 def build_image_args(
     parameters: dict[str, Any], *, edit: bool = False
@@ -110,6 +112,13 @@ def build_image_args(
 
     if args.get("output_format") == "svg" and args["n"] != 1:
         raise ValueError("SVG output requires n=1.")
+    author_model = parameters.get("svg_author_model")
+    if author_model not in (None, ""):
+        if args.get("output_format") != "svg":
+            raise ValueError("svg_author_model requires SVG output.")
+        if not isinstance(author_model, str) or not author_model.strip():
+            raise ValueError("Enter a model ID for svg_author_model.")
+        args["svg"] = {"model": author_model.strip()}
     return args
 
 
@@ -129,47 +138,14 @@ def decode_image(base64_image: str) -> tuple[str, bytes]:
         return ("image/png", base64.b64decode(base64_image.split(",")[-1]))
 
 
-def build_usage_metadata(response: Any) -> dict[str, Any]:
-    metadata: dict[str, Any] = {}
-    usage = getattr(response, "usage", None)
+def build_usage_outputs(
+    response: ImagesResponse, model: str, operation: str, image_count: int
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    usage = response.model_dump(mode="json", include={"usage", "svg_usage"}, exclude_none=True)
     if not usage:
-        return metadata
-
-    usage_metadata: dict[str, Any] = {}
-    if hasattr(usage, "total_tokens"):
-        usage_metadata["total_tokens"] = usage.total_tokens
-    if hasattr(usage, "input_tokens"):
-        usage_metadata["input_tokens"] = usage.input_tokens
-    if hasattr(usage, "output_tokens"):
-        usage_metadata["output_tokens"] = usage.output_tokens
-
-    details = getattr(usage, "input_tokens_details", None)
-    if details:
-        usage_metadata["input_tokens_details"] = {
-            "text_tokens": getattr(details, "text_tokens", None),
-            "image_tokens": getattr(details, "image_tokens", None),
-        }
-
-    if usage_metadata:
-        metadata["token_usage"] = usage_metadata
-    return metadata
-
-
-def build_usage_output(
-    response: Any, model: str, operation: str, image_count: int
-) -> dict[str, Any] | None:
-    metadata = build_usage_metadata(response)
-    token_usage = metadata.get("token_usage")
-    if not token_usage:
-        return None
-
-    return {
-        "data": [
-            {
-                "model": model,
-                "operation": operation,
-                "image_count": image_count,
-                "usage": token_usage,
-            }
-        ]
-    }
+        return {}, None
+    metadata = usage.copy()
+    if "usage" in metadata:
+        metadata["token_usage"] = metadata.pop("usage")
+    result = {"model": model, "operation": operation, "image_count": image_count, **usage}
+    return metadata, {"data": [result]}

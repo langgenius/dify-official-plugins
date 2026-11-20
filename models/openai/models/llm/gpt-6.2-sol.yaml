@@ -9,6 +9,7 @@ features:
   - agent-thought
   - stream-tool-call
   - vision
+  - document
   - structured-output
 model_properties:
   mode: chat
@@ -17,7 +18,7 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     default: 8192
-    min: 1
+    min: 16  # Responses minimum. Chat Completions accepts 1.
     max: 128000
   - name: response_format
     label:
