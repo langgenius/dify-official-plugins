@@ -8,8 +8,7 @@ from urllib.parse import urlparse
 import requests
 import tiktoken
 
-from typing import Literal
-from typing import List, Union, Dict, Any
+from typing import Any, List, Literal
 from openai import OpenAI
 from openai._types import NOT_GIVEN, NotGiven
 from openai.types.chat import ChatCompletionMessageParam
@@ -570,34 +569,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 return ""
 
             # Block private IP ranges
-            try:
-                ip = ipaddress.ip_address(hostname)
-                # Check if it's private, loopback, link-local, or reserved
-                if (
-                    ip.is_private
-                    or ip.is_loopback
-                    or ip.is_link_local
-                    or ip.is_reserved
-                ):
-                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
-                    return ""
-            except ValueError:
-                # Not an IP address, it's a hostname - allow it
-                pass
-
-            return url
-        except Exception as e:
-            logger.warning(f"URL validation failed: {e}")
-            return ""
-
-            # Block localhost
-            if hostname in ("localhost", "127.0.0.1", "::1"):
-                logger.warning(f"Blocked localhost URL: {url[:50]}...")
-                return ""
-
-            # Block private IP ranges
-            import ipaddress
-
             try:
                 ip = ipaddress.ip_address(hostname)
                 # Check if it's private, loopback, link-local, or reserved
