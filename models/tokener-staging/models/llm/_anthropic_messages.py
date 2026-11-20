@@ -302,11 +302,14 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
 
     output = {}
     betas = []
+    if (task_budget := params.pop("task_budget", None)) is not None and (
+        type(task_budget) is not int or task_budget < 0
+    ):
+        raise InvokeBadRequestError("Invalid Anthropic task_budget")
+    if (speed := params.pop("speed", None)) is not None and speed not in ("standard", "fast"):
+        raise InvokeBadRequestError("Invalid Anthropic speed")
     if effort:
         output["effort"] = effort
-    if (task_budget := params.get("task_budget")) and task_budget >= 20000 and adaptive:
-        output["task_budget"] = {"type": "tokens", "total": task_budget}
-        betas.append("task-budgets-2026-03-13")
     if output_format and output_format["type"] == "json_schema":
         output["format"] = {"type": "json_schema", "schema": output_format["json_schema"]["schema"]}
     elif output_format and output_format["type"] == "json_object":
@@ -337,8 +340,6 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
     )
     if stop := stop or params.get("stop_sequences"):
         payload["stop_sequences"] = stop
-    if speed := params.get("speed"):
-        payload["speed"] = speed
     if tools and (choice := params.get("tool_choice")) is not None:
         payload["tool_choice"] = _tool_choice(choice)
     return payload, headers

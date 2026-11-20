@@ -6,14 +6,14 @@ This sibling package targets Tokener staging (`https://api-staging.tokener.dev/v
 
 Tokener.ai provides language, text embedding, rerank, moderation, speech recognition, and text-to-speech models for Dify.
 
-1. Install **Tokener.ai** from the Dify Marketplace.
+1. Install **Tokener.ai (Staging)** from the Dify Marketplace.
 2. Create an API key in the [Tokener.ai Console](https://console-staging.tokener.dev/keys).
-3. Open **Settings → Model Provider → Tokener.ai** and enter the key.
+3. Open **Settings → Model Provider → Tokener.ai (Staging)** and enter the key.
 
 The API endpoint changes from `https://api.tokener.dev/v1` to `https://api-staging.tokener.dev/v1`.
 Existing keys from the same Tokener.ai Console remain valid. The API key must have access to the selected model.
 
-In a Workflow or Chatflow, select Tokener.ai and a model in the corresponding node or model configuration.
+In a Workflow or Chatflow, select Tokener.ai (Staging) and a model in the corresponding node or model configuration.
 Embedding models appear in the provider list after installation. Embeddings retain the selected model ID and default vector dimensions.
 For `text-embedding-v3` and `text-embedding-v4`, the plugin sends up to 10 texts per request.
 Both models accept up to 8192 tokens per text and retain the default 1024 vector dimensions.
@@ -52,7 +52,7 @@ Catalog metadata does not describe deployment parameter overrides. Recheck the p
 
 ## Sync models
 
-Run the generator from `models/tokener` with a complete Tokener catalog snapshot JSON file.
+Run the generator from `models/tokener-staging` with a complete Tokener catalog snapshot JSON file.
 The snapshot must include restricted models available to your users. The public catalog hides restricted models.
 An OpenAI `/v1/models` response lacks the context, capability, and price metadata needed for generation.
 

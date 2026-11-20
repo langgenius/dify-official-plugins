@@ -188,8 +188,16 @@ def test_claude_code_block_mode_skips_prefill_on_4_6_and_sets_stop_sequences(llm
     assert sonnet_45["stop_sequences"] == ["```\n", "\n```"]
 
 
-def test_claude_fable_5_2_forwards_speed_and_task_budget_and_scales_cache_reads(llm, wire):
+def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_cache_reads(
+    llm, wire
+):
+    import pytest
+    from dify_plugin.errors.model import InvokeBadRequestError
+
     _, requests, replies = wire
+    with pytest.raises((ValueError, InvokeBadRequestError)):
+        invoke(llm, "claude-opus-4-7", {"task_budget": -1})
+    assert requests == []
     replies.extend(
         [
             (
@@ -223,9 +231,9 @@ def test_claude_fable_5_2_forwards_speed_and_task_budget_and_scales_cache_reads(
     standard = invoke(llm, "claude-fable-5-2", {"speed": "fast"})[-1].delta.usage
     invoke(llm, "claude-sonnet-4-6", {"speed": "fast"})
     sent = requests[0][2]
-    assert sent["speed"] == "fast"
-    assert sent["output_config"]["task_budget"] == {"type": "tokens", "total": 64000}
-    assert "task-budgets-2026-03-13" in requests[0][1]["anthropic-beta"]
+    assert "speed" not in sent
+    assert "task_budget" not in sent.get("output_config", {})
+    assert "anthropic-beta" not in requests[0][1]
     assert fast.prompt_tokens == 110
     assert (fast.prompt_unit_price, fast.completion_unit_price) == (Decimal("16"), Decimal("80"))
     assert fast.total_price == Decimal("0.00216")
