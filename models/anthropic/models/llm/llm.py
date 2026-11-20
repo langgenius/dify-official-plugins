@@ -3,7 +3,8 @@ import io
 import json
 import re
 import copy
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Iterable, Sequence
+from decimal import Decimal
 from typing import Any, Mapping, Optional, Union, cast
 import logging
 
@@ -36,6 +37,7 @@ from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
+    LLMUsage,
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -178,6 +180,25 @@ class PromptCachingHandler:
         return adjusted
 
 
+def _signed_content(message: Message | None) -> dict | None:
+    if message and any(
+        block.type in {"thinking", "redacted_thinking"} for block in message.content
+    ):
+        return {
+            "anthropic_content": [
+                block.model_dump(mode="json", exclude_none=True)
+                for block in message.content
+            ]
+        }
+    return None
+
+
+def _message_events(response: Stream) -> Generator:
+    # The SDK's terminal event contains every signed block in its original order.
+    with anthropic.MessageStream(response, anthropic.NOT_GIVEN) as events:
+        yield from events
+
+
 class AnthropicLargeLanguageModel(LargeLanguageModel):
     PROMPT_CACHING_TTL_PARAMETER = "prompt_caching_ttl"
     VALID_PROMPT_CACHING_TTLS = {"5m", "1h"}
@@ -237,8 +258,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
-        self.previous_thinking_blocks = []
-        self.previous_redacted_thinking_blocks = []
         # Flag to indicate whether tool definitions should include cache_control
         self._tool_cache_enabled = False
         self._system_cache_enabled = False
@@ -317,11 +336,60 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _cache_read_multiplier(model: str) -> float:
         model_id = (model or "").lower()
-        if model_id == "claude-fable-5-1":
+        if model_id in {
+            "claude-fable-5-1",
+            "claude-mythos-5-1",
+            "claude-fable-5-2",
+            "claude-mythos-5-2",
+        }:
             return 0.025
         if model_id in ("claude-opus-5-5", "claude-sonnet-5-5"):
             return 0.05
         return PromptCachingHandler.CACHE_READ_MULTIPLIER
+
+    def _usage_with_cache(
+        self,
+        model: str,
+        credentials: dict,
+        inputs: int,
+        outputs: int,
+        writes: int,
+        reads: int,
+        writes_5m: int,
+        writes_1h: int,
+        speed: str | None,
+    ) -> LLMUsage:
+        if model not in {"claude-fable-5-2", "claude-mythos-5-2", "claude-mythos-5-1"}:
+            adjusted = PromptCachingHandler.calc_adjusted_prompt_tokens(
+                inputs,
+                writes,
+                reads,
+                writes_5m,
+                writes_1h,
+                self._cache_write_fallback_multiplier(),
+                self._cache_read_multiplier(model),
+            )
+            return super()._calc_response_usage(model, credentials, adjusted, outputs)
+
+        if writes_5m or writes_1h:
+            writes = writes_5m + writes_1h
+            write_cost = writes_5m * Decimal("1.25") + writes_1h * 2
+        else:
+            write_cost = writes * Decimal(str(self._cache_write_fallback_multiplier()))
+        usage = super()._calc_response_usage(
+            model, credentials, inputs + reads + writes, outputs
+        )
+        if speed == "fast" and model.endswith("5-2"):
+            usage.prompt_unit_price *= 2
+            usage.completion_unit_price *= 2
+            usage.completion_price *= 2
+        usage.prompt_price = (
+            (inputs + write_cost + reads * Decimal("0.025"))
+            * usage.prompt_unit_price
+            * usage.prompt_price_unit
+        )
+        usage.total_price = usage.prompt_price + usage.completion_price
+        return usage
 
     @staticmethod
     def _get_cache_creation_input_tokens_by_ttl(usage: Any) -> tuple[int, int]:
@@ -758,10 +826,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         # `pdfs-2024-09-25` beta header
         # (https://platform.claude.com/docs/en/build-with-claude/pdf-support).
 
-        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-            self.previous_thinking_blocks = []
-            self.previous_redacted_thinking_blocks = []
-
         if tools:
             extra_model_kwargs["tools"] = [
                 self._transform_tool_prompt(tool) for tool in tools
@@ -805,7 +869,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         if stream:
             return self._handle_chat_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, _message_events(response), prompt_messages
             )
         
         if _debug_logging_enabled():
@@ -1105,17 +1169,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        self.previous_thinking_blocks = []
-        self.previous_redacted_thinking_blocks = []
-        
-        assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
-        
+
+        assistant_prompt_message = AssistantPromptMessage(
+            content="", tool_calls=[], opaque_body=_signed_content(response)
+        )
+
         for content in response.content:
-            if content.type == "thinking":
-                self.previous_thinking_blocks.append(content)
-            elif content.type == "redacted_thinking":
-                self.previous_redacted_thinking_blocks.append(content)
-            elif content.type == "text" and isinstance(
+            if content.type == "text" and isinstance(
                 assistant_prompt_message.content, str
             ):
                 assistant_prompt_message.content += content.text
@@ -1158,23 +1218,18 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 self._get_cache_creation_input_tokens_by_ttl(response.usage)
             )
 
-        adjusted_prompt_tokens = PromptCachingHandler.calc_adjusted_prompt_tokens(
+        usage = self._usage_with_cache(
+            model,
+            credentials,
             prompt_tokens,
+            completion_tokens,
             cache_creation_input_tokens,
             cache_read_input_tokens,
             cache_creation_5m_input_tokens,
             cache_creation_1h_input_tokens,
-            self._cache_write_fallback_multiplier(),
-            self._cache_read_multiplier(model),
+            getattr(response.usage, "speed", None),
         )
 
-        usage = super()._calc_response_usage(
-            model=model,
-            credentials=credentials,
-            prompt_tokens=adjusted_prompt_tokens,
-            completion_tokens=completion_tokens
-        )
-        
         result = LLMResult(
             model=response.model,
             prompt_messages=list(prompt_messages),
@@ -1189,7 +1244,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self,
         model: str,
         credentials: dict[str, Any],
-        response: Stream[MessageStreamEvent],
+        response: Iterable[MessageStreamEvent],
         prompt_messages: Sequence[PromptMessage],
     ) -> Generator:
         """
@@ -1211,25 +1266,22 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         current_tool_id = None
         tool_params_by_id: dict[str, str] = {}
         
-        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-            self.previous_thinking_blocks = []
-            self.previous_redacted_thinking_blocks = []
             
-        current_thinking_blocks = []
-        current_redacted_thinking_blocks = []
         
         # Cache token tracking
         cache_creation_input_tokens = 0
         cache_read_input_tokens = 0
         cache_creation_5m_input_tokens = 0
         cache_creation_1h_input_tokens = 0
-        
+
+        speed = None
         for chunk in response:
             if _debug_logging_enabled():
                 logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
+                    speed = getattr(chunk.message.usage, "speed", None)
                     input_tokens = chunk.message.usage.input_tokens
                     if hasattr(chunk.message.usage, "cache_creation_input_tokens") and chunk.message.usage.cache_creation_input_tokens:
                         cache_creation_input_tokens = chunk.message.usage.cache_creation_input_tokens
@@ -1257,16 +1309,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             )
                             
                             tool_calls.append(tool_call)
-                    elif getattr(content_block, 'type', None) == "thinking":
-                        current_thinking_blocks.append({
-                            "type": "thinking",
-                            "thinking": "",
-                            "signature": ""
-                        })
-                    elif getattr(content_block, 'type', None) == "redacted_thinking":
-                        current_redacted_thinking_blocks.append({
-                            "type": "redacted_thinking"
-                        })
             elif isinstance(chunk, ContentBlockDeltaEvent):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
                     if hasattr(chunk.delta, "partial_json"):
@@ -1306,10 +1348,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk.delta, "thinking"):
                     thinking_text = chunk.delta.thinking or ""
                     full_assistant_content += thinking_text
-                    
-                    if current_thinking_blocks:
-                        current_thinking_blocks[-1]["thinking"] += thinking_text
-                    
+
                     if thinking_text and not think_open:
                         think_open = True
                         yield LLMResultChunk(
@@ -1329,9 +1368,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             index=chunk.index, message=assistant_prompt_message
                         ),
                     )
-                elif hasattr(chunk.delta, "signature"):
-                    if current_thinking_blocks:
-                        current_thinking_blocks[-1]["signature"] = chunk.delta.signature
                 elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
                     redacted_msg = "[Some of Claude's thinking was automatically encrypted for safety reasons]"
                     full_assistant_content += redacted_msg
@@ -1357,15 +1393,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
             elif isinstance(chunk, MessageDeltaEvent):
+                speed = getattr(chunk.usage, "speed", None) or speed
                 output_tokens = chunk.usage.output_tokens
                 finish_reason = chunk.delta.stop_reason
                 if hasattr(chunk.usage, "cache_creation_input_tokens") and chunk.usage.cache_creation_input_tokens:
                     cache_creation_input_tokens = chunk.usage.cache_creation_input_tokens
                 if hasattr(chunk.usage, "cache_read_input_tokens") and chunk.usage.cache_read_input_tokens:
                     cache_read_input_tokens = chunk.usage.cache_read_input_tokens
-                cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
-                    self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
-                )
+                if getattr(chunk.usage, "cache_creation", None) is not None:
+                    cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                        self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
+                    )
             elif isinstance(chunk, MessageStopEvent):
                 if think_open:
                     think_open = False
@@ -1388,30 +1426,18 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                     tool_calls.append(fallback_tool_call)
-                
-                if tool_calls and current_thinking_blocks:
-                    self.previous_thinking_blocks = current_thinking_blocks
-                if tool_calls and current_redacted_thinking_blocks:
-                    self.previous_redacted_thinking_blocks = current_redacted_thinking_blocks
-                
-                # Adjust prompt tokens for cache operations
-                adjusted_prompt_tokens = PromptCachingHandler.calc_adjusted_prompt_tokens(
+
+                usage = self._usage_with_cache(
+                    model,
+                    credentials,
                     input_tokens,
+                    output_tokens,
                     cache_creation_input_tokens,
                     cache_read_input_tokens,
                     cache_creation_5m_input_tokens,
                     cache_creation_1h_input_tokens,
-                    self._cache_write_fallback_multiplier(),
-                    self._cache_read_multiplier(model),
+                    speed,
                 )
-                
-                usage = super()._calc_response_usage(
-                    model, 
-                    credentials, 
-                    adjusted_prompt_tokens,
-                    output_tokens
-                )
-                
                 for tool_call in tool_calls:
                     if not tool_call.function.arguments:
                         tool_call.function.arguments = "{}"
@@ -1421,7 +1447,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     delta=LLMResultChunkDelta(
                         index=index + 1,
                         message=AssistantPromptMessage(
-                            content="", tool_calls=tool_calls
+                            content="",
+                            tool_calls=tool_calls,
+                            opaque_body=_signed_content(
+                                getattr(chunk, "message", None)
+                            ),
                         ),
                         finish_reason=finish_reason,
                         usage=usage,
@@ -1490,7 +1520,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     isinstance(message, UserPromptMessage) and 
                     i == last_user_msg_index
                 )
-                for message_dict in self._process_message(message, prompt_messages, is_last_user_message):
+                for message_dict in self._process_message(
+                    message, is_last_user_message
+                ):
                     prompt_message_dicts.append(message_dict)
         
         # Merge consecutive assistant messages
@@ -1499,7 +1531,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _process_message(
         self, 
         message: PromptMessage, 
-        all_messages: Sequence[PromptMessage],
         is_last_user_message: bool = False
     ) -> list[dict]:
         """Process a single message and return list of message dicts.
@@ -1510,7 +1541,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if isinstance(message, UserPromptMessage):
             return [self._process_user_message(message, is_last_user_message)]
         elif isinstance(message, AssistantPromptMessage):
-            return [self._process_assistant_message(message, all_messages)]
+            return [self._process_assistant_message(message)]
         elif isinstance(message, ToolPromptMessage):
             return [self._process_tool_message(message)]
         else:
@@ -1698,24 +1729,15 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             result["cache_control"] = self._cache_control()
         
         return result
-    
-    def _process_assistant_message(
-        self, 
-        message: AssistantPromptMessage,
-        all_messages: Sequence[PromptMessage]
-    ) -> dict:
-        """Process assistant message into API format."""
+
+    def _process_assistant_message(self, message: AssistantPromptMessage) -> dict:
+        if isinstance(message.opaque_body, dict):
+            blocks = message.opaque_body.get("anthropic_content")
+            if isinstance(blocks, list) and all(
+                isinstance(block, dict) for block in blocks
+            ):
+                return {"role": "assistant", "content": copy.deepcopy(blocks)}
         content = []
-        
-        # Check if we need to include thinking blocks
-        has_tool_messages = any(
-            isinstance(msg, ToolPromptMessage) for msg in all_messages
-        )
-        
-        if has_tool_messages:
-            content.extend(self.previous_thinking_blocks)
-            content.extend(self.previous_redacted_thinking_blocks)
-        
         # Dify stores assistant text and tool calls separately; Anthropic expects the next
         # user tool_result message to immediately follow the assistant tool_use turn.
         # Keep assistant prose before tool_use so no text lands between tool_use and tool_result.
