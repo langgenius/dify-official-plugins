@@ -91,17 +91,14 @@ class DicomModelInputTool(Tool):
 
         if include_preview:
             img8 = self._to_uint8(x)
-            # If channels_first, map to HWC for preview
-            if channels_first:
-                if len(out_shape) == 4 and out_shape[1] in (1, 3):
-                    if out_shape[1] == 1:
-                        img8 = img8[0]
-                    else:
-                        img8 = np.moveaxis(img8, 0, -1)
+            # Preview always needs HWC (or 2D). `_to_uint8` already drops a
+            # single channel, so only a channel-first RGB frame needs moving.
+            if img8.ndim == 3 and img8.shape[-1] not in (1, 3, 4) and img8.shape[0] in (1, 3, 4):
+                img8 = np.moveaxis(img8, 0, -1)
             blob, pw, ph = make_preview_png_bytes(img8, max_edge)
             preview = {
-                "preview_width": image.width,
-                "preview_height": image.height,
+                "preview_width": pw,
+                "preview_height": ph,
                 "mime_type": "image/png",
                 "filename": (filename.rsplit(".", 1)[0] or "dicom") + "_model_input.png",
             }

@@ -191,15 +191,6 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
 
         return total_num_tokens
 
-    def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
-
-        :param model: model name
-        :param credentials: model credentials
-        :return:
-        """
-
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """

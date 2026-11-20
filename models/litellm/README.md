@@ -51,6 +51,16 @@ Credential validation sends a small request (`ping`) to `/chat/completions` or `
 
 When a model answers with tool calls only, the proxy can leave out `message.content`. The plugin treats it as an empty string.
 
+### Spend logs metadata
+
+**Enable spend logs metadata** is optional and disabled by default. When it is set to **Enabled**, every chat request carries an `x-litellm-spend-logs-metadata` header so [LiteLLM spend logs](https://docs.litellm.ai/docs/proxy/cost_tracking) can be grouped by Dify end user and app:
+
+```json
+{"dify_sys_user_id":"<end user id>","dify_sys_app_id":"<Dify app id>"}
+```
+
+The app ID is only present when the call runs inside a Dify app. **Extra spend logs metadata** accepts a JSON object whose keys are merged into the same header, for example `{"team":"growth","env":"prod"}`. Invalid JSON is rejected when the model is saved. Proxies that ignore unknown headers are unaffected, and leaving the switch disabled sends no extra header.
+
 ## Support
 
 Open an issue in [dify-official-plugins](https://github.com/langgenius/dify-official-plugins/issues) and include the Dify version, the plugin version, and the model alias. Never include API keys or prompt content.
