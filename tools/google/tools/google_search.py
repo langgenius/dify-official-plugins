@@ -5,8 +5,7 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from loguru import logger
-
-from tools.utils import to_refs, VALID_LANGUAGES, VALID_COUNTRIES, InstantSearchResponse
+from tools.utils import VALID_COUNTRIES, VALID_LANGUAGES, InstantSearchResponse, to_refs
 
 
 def _parse_results(results: dict) -> dict:
@@ -49,8 +48,8 @@ class GoogleSearchTool(Tool):
                 and language_code in VALID_LANGUAGES
             ):
                 params["hl"] = language_code
-        except Exception as e:
-            logger.warning(f"Failed to set language code parameter: {e}")
+        except Exception:  # noqa: BLE001 - search can proceed without the optional language
+            logger.warning("Failed to set language code parameter.")
 
     @staticmethod
     def _set_params_country_code(params: dict, tool_parameters: dict):
@@ -64,8 +63,8 @@ class GoogleSearchTool(Tool):
                 and country_code in VALID_COUNTRIES
             ):
                 params["gl"] = country_code
-        except Exception as e:
-            logger.warning(f"Failed to set country code parameter: {e}")
+        except Exception:  # noqa: BLE001 - search can proceed without the optional country
+            logger.warning("Failed to set country code parameter.")
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         as_agent_tool = tool_parameters.get("as_agent_tool", False)
@@ -105,10 +104,5 @@ class GoogleSearchTool(Tool):
             else:
                 yield self.create_text_message(text=isr.to_dify_text_message())
 
-        except requests.exceptions.RequestException as e:
-            yield self.create_text_message(
-                f"An error occurred while invoking the tool: {str(e)}. "
-                "Please refer to https://serpapi.com/locations-api for the list of valid locations."
-            )
-        except Exception as e:
-            yield self.create_text_message(f"An error occurred while invoking the tool: {str(e)}.")
+        except Exception:  # noqa: BLE001 - request errors can include the API key in the URL
+            yield self.create_text_message("Could not complete the Google search with SerpAPI.")

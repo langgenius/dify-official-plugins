@@ -370,7 +370,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.10.2" },
+    { name = "dify-plugin", specifier = ">=0.10.2,<0.11.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "requests", specifier = ">=2.34.2" },
