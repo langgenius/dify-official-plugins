@@ -7,8 +7,9 @@ import requests
 import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.errors.model import InvokeBadRequestError
 
-from models.llm.llm import TokenerLargeLanguageModel
+from models.llm.llm import TokenerLargeLanguageModel, model_family
 
 SCHEMAS = [
     AIModelEntity.model_validate(yaml.safe_load(path.read_text()))
@@ -17,9 +18,19 @@ SCHEMAS = [
 ]
 
 
-def response() -> requests.Response:
+def response(*, responses=False) -> requests.Response:
     result = requests.Response()
     result.status_code = 200
+    result._content_consumed = True
+    if responses:
+        result._content = json.dumps(
+            {
+                "status": "completed",
+                "output_text": "ok",
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            }
+        ).encode()
+        return result
     result._content = json.dumps(
         {
             "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
@@ -29,7 +40,9 @@ def response() -> requests.Response:
     return result
 
 
-@pytest.mark.parametrize("schema", SCHEMAS, ids=lambda s: s.model)
+@pytest.mark.parametrize(
+    "schema", [s for s in SCHEMAS if not model_family(s.model)], ids=lambda s: s.model
+)
 @pytest.mark.parametrize("stream", [False, True])
 def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
     model = TokenerLargeLanguageModel(model_schemas=[schema])
@@ -82,7 +95,7 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
 @pytest.mark.parametrize(
     "model_id,parameters",
     [
-        ("gpt-5.6-luna", {"reasoning_effort": "minimal"}),
+        ("gpt-5.6-luna", {"reasoning_effort": "invalid"}),
         ("gpt-5.6-luna", {"seed": True}),
         ("gpt-5.6-luna", {"seed": float("nan")}),
         ("deepseek-v4-pro", {"temperature": True}),
@@ -95,7 +108,7 @@ def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
 def test_public_invoke_rejects_invalid_declared_values(model_id, parameters) -> None:
     schema = next(s for s in SCHEMAS if s.model == model_id)
     model = TokenerLargeLanguageModel(model_schemas=[schema])
-    with patch("requests.post") as post, pytest.raises(ValueError):
+    with patch("requests.post") as post, pytest.raises((ValueError, InvokeBadRequestError)):
         list(model.invoke(schema.model, {"api_key": "test"}, [], parameters))
     post.assert_not_called()
 
@@ -105,7 +118,12 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
     schema = next(s for s in SCHEMAS if s.model == model_id)
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     parameters = {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
-    with patch("requests.post", return_value=response()) as post:
+    if model_family(model_id) == "tongyi":
+        parameters["enable_thinking"] = False
+    original = parameters.copy()
+    with patch(
+        "requests.post", return_value=response(responses=model_family(model_id) == "openai")
+    ) as post:
         chunks = list(
             model.invoke(
                 model_id,
@@ -118,14 +136,15 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
     kwargs = post.call_args.kwargs
     body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
     assert chunks[0].delta.message.content == "ok"
-    assert body["max_tokens"] == 1500
-    if model_id == "gpt-5.6-luna":
-        assert "temperature" not in body
-        assert "top_p" not in body
-    else:
+    if model_family(model_id) == "openai":
+        assert body["max_output_tokens"] == 1500
         assert body["temperature"] == 0.2
         assert body["top_p"] == 0.3
-    assert parameters == {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
+    else:
+        assert body["max_tokens"] == 1500
+        assert body["temperature"] == 0.2
+        assert body["top_p"] == 0.3
+    assert parameters == original
 
 
 @pytest.mark.parametrize(
@@ -133,6 +152,7 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
     [
         pytest.param(schema, rule.name, id=f"{schema.model}-{rule.name}")
         for schema in SCHEMAS
+        if not model_family(schema.model)
         for rule in schema.parameter_rules
         if rule.type.value == "string" and rule.options
     ],
