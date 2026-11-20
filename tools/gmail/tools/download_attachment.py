@@ -1,4 +1,5 @@
 import base64
+import binascii
 from collections.abc import Generator
 from typing import Any
 
