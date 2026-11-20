@@ -1,10 +1,6 @@
 """In-process tests for tools/google (no pytest required).
 
-These tests cover three reliability fixes shipped in this PR:
-
-- Bug 1: missing `timeout=` on `requests.get` calls.
-- Bug 2: `_invoke()` falling through after invalid `hl` / `gl` yields.
-- Bug 3: `KeyError` when `serpapi_api_key` is missing from credentials.
+These tests cover search results, request failures and credential validation.
 
 They use only Python stdlib (`unittest.mock`) and tiny in-test stubs for
 `requests`, `dify_plugin`, `loguru`, and `pydantic` so they can run in
@@ -13,10 +9,10 @@ environments where the plugin dependencies are not pre-installed.
 
 from __future__ import annotations
 
-import importlib
-import json
 import sys
+import traceback
 import types
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -101,6 +97,12 @@ def _ensure_stub_modules() -> None:
                 return ("json", json)
 
         dify_plugin_stub.Tool = _BaseTool
+        dify_plugin_stub.ToolProvider = object
+        errors_stub = types.ModuleType("dify_plugin.errors.tool")
+        errors_stub.ToolProviderCredentialValidationError = type(
+            "ToolProviderCredentialValidationError", (Exception,), {}
+        )
+        sys.modules["dify_plugin.errors.tool"] = errors_stub
 
         dify_plugin_entities_stub = types.ModuleType("dify_plugin.entities")
         tool_module_stub = types.ModuleType("dify_plugin.entities.tool")
@@ -125,8 +127,11 @@ for _name in list(sys.modules):
     if _name.startswith("tools.google") or _name in {"tools.utils"}:
         sys.modules.pop(_name, None)
 
-from tools import google_search, google_image_search  # noqa: E402
+import requests
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from provider.google import GoogleProvider
 
+from tools import google_image_search, google_search
 
 # ---- Local helpers ----------------------------------------------------------
 
@@ -350,10 +355,83 @@ def test_requests_get_called_with_timeout_10():
     assert kinds == ["image", "search"]
 
 
+_TEST_KEY = "test-private-key"
+_UPSTREAM_DETAIL = "internal request detail"
+
+
+def _assert_private_details_absent(text):
+    assert _TEST_KEY not in text
+    assert _UPSTREAM_DETAIL not in text
+
+
+@contextmanager
+def _expect_safe_error(error_type):
+    try:
+        yield
+    except error_type:
+        # The SDK sends the formatted traceback when a plugin raises.
+        _assert_private_details_absent(traceback.format_exc())
+    else:
+        raise AssertionError(f"Expected {error_type.__name__}")
+
+
+def test_search_request_errors_return_safe_text():
+    credentials = {"serpapi_api_key": _TEST_KEY}
+    response = mock.Mock()
+    response.raise_for_status.side_effect = requests.exceptions.RequestException(
+        f"{_UPSTREAM_DETAIL} {_TEST_KEY}"
+    )
+    with mock.patch.object(requests, "get", return_value=response):
+        for tool in (_search_tool(credentials), _image_tool(credentials)):
+            [(kind, text)] = list(tool._invoke({"query": "example"}))
+            assert kind == "text" and text
+            _assert_private_details_absent(text)
+
+
+def test_search_result_errors_hide_upstream_details():
+    credentials = {"serpapi_api_key": _TEST_KEY}
+    response = mock.Mock()
+    response.json.side_effect = ValueError(f"{_UPSTREAM_DETAIL} {_TEST_KEY}")
+    with mock.patch.object(requests, "get", return_value=response):
+        [(kind, text)] = list(_search_tool(credentials)._invoke({"query": "example"}))
+        assert kind == "text" and text
+        _assert_private_details_absent(text)
+        with _expect_safe_error(RuntimeError):
+            list(_image_tool(credentials)._invoke({"query": "example"}))
+
+
+def test_credentials_use_account_api_without_running_a_search():
+    provider = object.__new__(GoogleProvider)
+    response = _FakeResponse({"account_id": "test-account", "plan_searches_left": 0})
+    with mock.patch.object(requests, "get", return_value=response) as get:
+        provider._validate_credentials({"serpapi_api_key": _TEST_KEY})
+    get.assert_called_once_with("https://serpapi.com/account.json", params={"api_key": _TEST_KEY}, timeout=10)
+
+
+def test_credentials_reject_missing_key_and_invalid_account_responses():
+    provider = object.__new__(GoogleProvider)
+    with mock.patch.object(requests, "get") as get:
+        with _expect_safe_error(ToolProviderCredentialValidationError):
+            provider._validate_credentials({})
+        get.assert_not_called()
+        for status in (200, 401, 403, 429, 503):
+            get.return_value = _FakeResponse({"error": f"{_UPSTREAM_DETAIL} {_TEST_KEY}"}, status_code=status)
+            with _expect_safe_error(ToolProviderCredentialValidationError):
+                provider._validate_credentials({"serpapi_api_key": _TEST_KEY})
+
+
+def test_credential_request_failure_hides_upstream_exception_from_traceback():
+    provider = object.__new__(GoogleProvider)
+    failure = requests.exceptions.RequestException(f"{_UPSTREAM_DETAIL} {_TEST_KEY}")
+    with (
+        mock.patch.object(requests, "get", side_effect=failure),
+        _expect_safe_error(ToolProviderCredentialValidationError),
+    ):
+        provider._validate_credentials({"serpapi_api_key": _TEST_KEY})
+
+
 def _main() -> int:
     """Run all `test_*` functions in this module and return 0 on success."""
-    import traceback
-
     failures: list[tuple[str, str]] = []
     for name in sorted(n for n in dir(sys.modules[__name__]) if n.startswith("test_") and callable(getattr(sys.modules[__name__], n))):
         fn = getattr(sys.modules[__name__], name)
