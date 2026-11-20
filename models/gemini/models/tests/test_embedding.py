@@ -6,13 +6,18 @@ They test the internal logic using mocks.
 """
 
 import base64
+import json
 from decimal import Decimal
+from pathlib import Path
 from unittest.mock import Mock, patch
 
+import httpx
 import numpy as np
 import pytest
+import yaml
+from google import genai
 from google.genai import types
-from dify_plugin.entities.model import EmbeddingInputType
+from dify_plugin.entities.model import AIModelEntity, EmbeddingInputType
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     MultiModalContent,
@@ -324,6 +329,10 @@ class TestDetectImageMimeType:
         with pytest.raises(ValueError, match="Unsupported image format.*image/webp"):
             self.model._detect_image_mime_type(WEBP_BASE64, validate_format=True)
 
+    def test_unknown_image_format_rejected(self):
+        with pytest.raises(ValueError, match="Unsupported image format"):
+            self.model._detect_image_mime_type(UNKNOWN_BASE64, validate_format=True)
+
     def test_validate_false_allows_all_formats(self):
         """All formats should be allowed when validate_format=False (default)"""
         # GIF and WebP should NOT raise
@@ -389,175 +398,57 @@ class TestGetOutputDimension:
             assert result == dimension
 
 
-# ================================================================
-# Test: _invoke_multimodal — image count limit per batch
-# ================================================================
+@pytest.mark.parametrize(
+    ("model_name", "batch_sizes"),
+    [("gemini-embedding-2", [7]), ("gemini-embedding-2-preview", [100, 1])],
+)
+def test_independent_images_use_ordered_batch_requests(model_name, batch_sizes):
+    schema = Path(__file__).parents[1] / "text_embedding" / f"{model_name}.yaml"
+    model = GeminiTextEmbeddingModel(
+        [AIModelEntity(**yaml.safe_load(schema.read_text()))]
+    )
+    count = sum(batch_sizes)
+    documents = [
+        MultiModalContent(
+            content_type=MultiModalContentType.IMAGE,
+            content=base64.b64encode(PNG_BYTES + bytes([i])).decode(),
+        )
+        for i in range(count)
+    ]
+    sent_sizes = []
 
+    def respond(request):
+        assert request.url.path == f"/v1beta/models/{model_name}:batchEmbedContents"
+        items = json.loads(request.content)["requests"]
+        sent_sizes.append(len(items))
+        embeddings = []
+        for item in items:
+            (part,) = item["content"]["parts"]
+            assert part["inline_data"]["mime_type"] == "image/png"
+            image_id = base64.b64decode(part["inline_data"]["data"])[-1]
+            embeddings.append({"values": [float(image_id)]})
+        return httpx.Response(200, json={"embeddings": embeddings})
 
-class TestMultimodalImageCountLimit:
-    """Tests for per-batch image count validation in _invoke_multimodal."""
+    with (
+        genai.Client(
+            api_key="test",
+            http_options=types.HttpOptions(
+                client_args={
+                    "transport": httpx.MockTransport(respond),
+                    "trust_env": False,
+                },
+                async_client_args={"trust_env": False},
+            ),
+        ) as client,
+        patch("models.text_embedding.text_embedding.genai.Client", return_value=client),
+    ):
+        result = model.invoke_multimodal(
+            model_name, {"google_api_key": "test"}, documents
+        )
 
-    def setup_method(self):
-        self.model = GeminiTextEmbeddingModel([])
-        self.credentials = {"google_api_key": "fake-key"}
-
-    @patch("models.text_embedding.text_embedding.genai")
-    def test_6_images_passes(self, mock_genai):
-        """Exactly 6 images in a single batch should pass"""
-        mock_client = Mock()
-        mock_genai.Client.return_value = mock_client
-
-        mock_embedding = Mock()
-        mock_embedding.values = [0.1] * 10
-        mock_embedding.statistics = Mock()
-        mock_embedding.statistics.token_count = 50
-        mock_response = Mock()
-        mock_response.embeddings = [mock_embedding] * 6
-        mock_client.models.embed_content.return_value = mock_response
-
-        usage = _make_usage()
-
-        with (
-            patch.object(self.model, "_get_context_size", return_value=8192),
-            patch.object(self.model, "_get_max_chunks", return_value=100),
-            patch.object(self.model, "_get_output_dimension", return_value=None),
-            patch.object(self.model, "_calc_response_usage", return_value=usage),
-        ):
-            documents = [
-                MultiModalContent(
-                    content_type=MultiModalContentType.IMAGE,
-                    content=JPEG_BASE64,
-                )
-                for _ in range(6)
-            ]
-
-            result = self.model._invoke_multimodal(
-                model="gemini-embedding-2-preview",
-                credentials=self.credentials,
-                documents=documents,
-            )
-            assert len(result.embeddings) == 6
-
-    @patch("models.text_embedding.text_embedding.genai")
-    def test_7_images_in_single_batch_raises(self, mock_genai):
-        """More than 6 images in a single batch should raise ValueError"""
-        mock_client = Mock()
-        mock_genai.Client.return_value = mock_client
-
-        with (
-            patch.object(self.model, "_get_context_size", return_value=8192),
-            patch.object(self.model, "_get_max_chunks", return_value=100),
-            patch.object(self.model, "_get_output_dimension", return_value=None),
-        ):
-            documents = [
-                MultiModalContent(
-                    content_type=MultiModalContentType.IMAGE,
-                    content=JPEG_BASE64,
-                )
-                for _ in range(7)
-            ]
-
-            with pytest.raises(ValueError, match="Too many images in batch"):
-                self.model._invoke_multimodal(
-                    model="gemini-embedding-2-preview",
-                    credentials=self.credentials,
-                    documents=documents,
-                )
-
-    @patch("models.text_embedding.text_embedding.genai")
-    def test_images_spread_across_batches_passes(self, mock_genai):
-        """Images split into batches of <=6 each should all pass"""
-        mock_client = Mock()
-        mock_genai.Client.return_value = mock_client
-
-        mock_embedding = Mock()
-        mock_embedding.values = [0.1] * 10
-        mock_embedding.statistics = Mock()
-        mock_embedding.statistics.token_count = 50
-
-        # Each batch call returns embeddings matching batch size
-        def side_effect_embed(**kwargs):
-            batch_size = len(kwargs.get("contents", []))
-            resp = Mock()
-            resp.embeddings = [mock_embedding] * batch_size
-            return resp
-
-        mock_client.models.embed_content.side_effect = side_effect_embed
-
-        usage = _make_usage()
-
-        with (
-            patch.object(self.model, "_get_context_size", return_value=8192),
-            patch.object(self.model, "_get_max_chunks", return_value=5),
-            patch.object(self.model, "_get_output_dimension", return_value=None),
-            patch.object(self.model, "_calc_response_usage", return_value=usage),
-        ):
-            # 8 images, max_chunks=5 → batch1: 5 images, batch2: 3 images, both <=6
-            documents = [
-                MultiModalContent(
-                    content_type=MultiModalContentType.IMAGE,
-                    content=JPEG_BASE64,
-                )
-                for _ in range(8)
-            ]
-
-            result = self.model._invoke_multimodal(
-                model="gemini-embedding-2-preview",
-                credentials=self.credentials,
-                documents=documents,
-            )
-            assert len(result.embeddings) == 8
-
-    @patch("models.text_embedding.text_embedding.genai")
-    def test_mixed_text_images_within_limit(self, mock_genai):
-        """Mixed text + images should only count images toward the limit"""
-        mock_client = Mock()
-        mock_genai.Client.return_value = mock_client
-
-        mock_embedding = Mock()
-        mock_embedding.values = [0.1] * 10
-        mock_embedding.statistics = Mock()
-        mock_embedding.statistics.token_count = 30
-
-        mock_response = Mock()
-        mock_response.embeddings = [mock_embedding] * 8  # 6 images + 2 texts
-        mock_client.models.embed_content.return_value = mock_response
-
-        usage = _make_usage()
-
-        with (
-            patch.object(self.model, "_get_context_size", return_value=8192),
-            patch.object(self.model, "_get_max_chunks", return_value=100),
-            patch.object(self.model, "_get_output_dimension", return_value=None),
-            patch.object(self.model, "_calc_response_usage", return_value=usage),
-        ):
-            documents = (
-                [
-                    MultiModalContent(
-                        content_type=MultiModalContentType.TEXT, content="text1"
-                    ),
-                ]
-                + [
-                    MultiModalContent(
-                        content_type=MultiModalContentType.IMAGE,
-                        content=JPEG_BASE64,
-                    )
-                    for _ in range(6)
-                ]
-                + [
-                    MultiModalContent(
-                        content_type=MultiModalContentType.TEXT, content="text2"
-                    ),
-                ]
-            )
-
-            result = self.model._invoke_multimodal(
-                model="gemini-embedding-2-preview",
-                credentials=self.credentials,
-                documents=documents,
-            )
-            # 6 images + 2 texts = 8 total, all in one batch
-            assert len(result.embeddings) == 8
+    assert sent_sizes == batch_sizes
+    assert result.embeddings == [[float(i)] for i in range(count)]
+    assert result.usage.total_price == result.usage.tokens * Decimal("0.00000045")
 
 
 # ================================================================
@@ -1400,9 +1291,6 @@ class TestInvokeAveragingWithNoneTokens:
 class TestModelConstants:
     """Tests for modality-specific constants defined on the model class."""
 
-    def test_max_images_per_request(self):
-        assert GeminiTextEmbeddingModel.MAX_IMAGES_PER_REQUEST == 6
-
     def test_supported_image_formats(self):
         assert GeminiTextEmbeddingModel.SUPPORTED_IMAGE_FORMATS == {
             "image/jpeg",
@@ -1419,12 +1307,17 @@ class TestModelConstants:
         assert GeminiTextEmbeddingModel.IMAGE_TOKEN_ESTIMATE == 258
 
 
-def test_stable_embedding_charges_image_tokens_separately(monkeypatch):
-    from pathlib import Path
-    import yaml
-    from dify_plugin.entities.model import AIModelEntity
-
-    path = Path(__file__).parents[1] / "text_embedding/gemini-embedding-2.yaml"
+@pytest.mark.parametrize(
+    ("model_name", "expected_text"),
+    [
+        ("gemini-embedding-2", "title: none | text: Hello"),
+        ("gemini-embedding-2-preview", "Hello"),
+    ],
+)
+def test_embedding_2_charges_image_tokens_separately(
+    monkeypatch, model_name, expected_text
+):
+    path = Path(__file__).parents[1] / "text_embedding" / f"{model_name}.yaml"
     model = GeminiTextEmbeddingModel(
         [AIModelEntity(**yaml.safe_load(path.read_text()))]
     )
@@ -1437,7 +1330,7 @@ def test_stable_embedding_charges_image_tokens_separately(monkeypatch):
         "models.text_embedding.text_embedding.genai.Client", lambda **_: client
     )
     result = model._invoke_multimodal(
-        "gemini-embedding-2",
+        model_name,
         {"google_api_key": "test"},
         [
             MultiModalContent(content="Hello", content_type=MultiModalContentType.TEXT),
@@ -1449,5 +1342,5 @@ def test_stable_embedding_charges_image_tokens_separately(monkeypatch):
     assert result.usage.tokens == 110
     assert result.usage.total_price == Decimal("0.000047")
     parts = client.models.embed_content.call_args.kwargs["contents"]
-    assert parts[0].parts[0].text == "title: none | text: Hello"
+    assert parts[0].parts[0].text == expected_text
     assert parts[1].parts[0].inline_data.data == PNG_BYTES

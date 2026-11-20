@@ -45,8 +45,6 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
 
     # ---- Gemini Embedding 2 modality-specific limits ----
     # https://ai.google.dev/gemini-api/docs/embeddings#modality-limits
-    # Image: max 6 per request, PNG/JPEG only
-    MAX_IMAGES_PER_REQUEST = 6
     SUPPORTED_IMAGE_FORMATS = {"image/jpeg", "image/png"}
     # Audio: max 80 seconds, MP3/WAV (not yet supported)
     # Video: max 128 seconds, MP4/MOV, codecs: H264/H265/AV1/VP9 (not yet supported)
@@ -58,6 +56,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
 
     @staticmethod
     def _as_user_content(part: Union[str, types.Part]) -> types.UserContent:
+        # Each Content becomes a separate request in batchEmbedContents.
         return types.UserContent(parts=[part])
 
     @staticmethod
@@ -367,7 +366,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             elif data.startswith(b"WEBP", 8):
                 mime = "image/webp"
             else:
-                mime = "image/jpeg"
+                mime = "application/octet-stream" if validate_format else "image/jpeg"
 
             # Validate format for Gemini Embedding 2 (only JPEG and PNG are supported)
             if validate_format and mime not in self.SUPPORTED_IMAGE_FORMATS:
@@ -465,15 +464,6 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         for i in range(0, len(contents), max_chunks):
             batch_contents = contents[i : i + max_chunks]
 
-            # Validate per-batch image count limit
-            # Gemini Embedding 2 supports at most 6 images per API request
-            batch_image_count = sum(content_is_image[i : i + max_chunks])
-            if batch_image_count > self.MAX_IMAGES_PER_REQUEST:
-                raise ValueError(
-                    f"Too many images in batch: {batch_image_count}. "
-                    f"Gemini Embedding 2 supports at most {self.MAX_IMAGES_PER_REQUEST} images per request."
-                )
-
             # Prepare config with optional output_dimension (MRL support)
             task_type = (
                 None
@@ -529,7 +519,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             model=model, credentials=credentials, tokens=used_tokens
         )
 
-        if model == "gemini-embedding-2":
+        if model in EMBEDDING_2_MODELS:
             usage.total_price += (
                 image_tokens * (Decimal("0.45") - usage.unit_price) * usage.price_unit
             )

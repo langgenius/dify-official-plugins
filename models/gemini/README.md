@@ -21,6 +21,11 @@ The plugin allows 15 minutes per API request.
 
 Implicit cache reads cost 5% of the input rate. Output includes thinking tokens. [Model pricing](https://aistudio.google.com/docs/pricing) · [Long decode](https://aistudio.google.com/docs/long-decode)
 
+Usage includes the tokens retrieved by tools.
+Google bills URL context and code execution results at the input rate and bills Search queries separately.
+When a response combines Search with a paid tool, Google reports one token count for both.
+The input cost shown in Dify is an upper bound for that response. [Tool pricing](https://aistudio.google.com/docs/pricing#pricing-for-tools)
+
 ## Configure
 After installing the Gemini plugin, configure it with your API key, which you can get from Google. Enter the key in the Model Provider settings and save.
 

@@ -240,7 +240,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # [ Pricing ]
         # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
         # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
-        # Tool charges are separate from token usage.
         if usage_metadata.prompt_tokens_details:
             for _mtc in usage_metadata.prompt_tokens_details:
                 if _mtc.modality in [
@@ -260,7 +259,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # The reasoning content and final answer of the Gemini model are priced using the same standard.
         completion_tokens = thoughts_token_count + candidates_token_count
         # The `prompt_tokens` includes the historical conversation QA plus the current input.
-        prompt_tokens = usage_metadata.prompt_token_count or prompt_tokens_standard
+        prompt_tokens = (
+            usage_metadata.prompt_token_count or prompt_tokens_standard
+        ) + (usage_metadata.tool_use_prompt_token_count or 0)
 
         return prompt_tokens, completion_tokens
 
@@ -563,8 +564,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         2. url_context and grounding can be used together
         3. url_context and code_execution cannot be used together
         4. grounding and code_execution can be used together
-        5. When custom tools (function calling) are provided, automatically disable
-           tool-use features (grounding, url_context, code_execution) to avoid conflicts
+        5. Gemini 4 supports native tools and custom functions in the same request.
+           Older model configurations disable native tools when using custom functions.
 
         :param model_parameters: Model parameters containing feature flags
         :param tools: Custom tools defined by the user
@@ -575,18 +576,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Create a mutable copy of model_parameters
         adjusted_params = dict(model_parameters)
 
-        # Rule 5: When custom tools are provided, disable tool-use features
-        # to prevent "Tool use with function calling is unsupported" error
-        if tools:
-            if adjusted_params.get("grounding"):
-                logging.debug("Disabling grounding due to custom tools presence")
-                adjusted_params["grounding"] = False
-            if adjusted_params.get("url_context"):
-                logging.debug("Disabling url_context due to custom tools presence")
-                adjusted_params["url_context"] = False
-            if adjusted_params.get("code_execution"):
-                logging.debug("Disabling code_execution due to custom tools presence")
-                adjusted_params["code_execution"] = False
+        if tools and model not in GEMINI_4_MODELS:
+            for feature in ("grounding", "url_context", "code_execution"):
+                if adjusted_params.get(feature):
+                    logging.debug("Disabling %s due to custom tools presence", feature)
+                    adjusted_params[feature] = False
 
         # Extract feature flags for validation
         features = {
@@ -645,6 +639,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
 
         if tools:
+            if config.tools:
+                config.tool_config = types.ToolConfig(
+                    include_server_side_tool_invocations=True
+                )
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
     def _build_gemini_contents(
@@ -821,7 +819,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 text_parts.append(_unverified_part)
             return text_parts
 
-        # Helper function to build parts from content
+        file_factory = file_part_factory or GeminiFilePartFactory(
+            genai_client=genai_client,
+            file_server_url_prefix=file_server_url_prefix,
+            cache=file_cache,
+            mode=GeminiFileMode.from_parameters(model_parameters),
+        )
+
         def build_parts(
             content: str | List[PromptMessageContentUnionTypes],
             *,
@@ -830,12 +834,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if isinstance(content, str):
                 return _build_text_parts(content, is_assistant_tree=is_assistant_tree)
 
-            file_factory = file_part_factory or GeminiFilePartFactory(
-                genai_client=genai_client,
-                file_server_url_prefix=file_server_url_prefix,
-                cache=file_cache,
-                mode=GeminiFileMode.from_parameters(model_parameters),
-            )
             parts_ = []
             for obj in content:
                 if obj.type == PromptMessageContentType.TEXT:
@@ -861,7 +859,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if isinstance(message.opaque_body, dict):
                 native = message.opaque_body.get("gemini_content")
                 if isinstance(native, dict) and native.get("role") == "model":
-                    return types.Content.model_validate(native)
+                    content = types.Content.model_validate(native)
+                    visible = (
+                        message.content if isinstance(message.content, list) else []
+                    )
+                    images = (
+                        item
+                        for item in visible
+                        if isinstance(item, ImagePromptMessageContent)
+                    )
+                    for part in content.parts or []:
+                        blob = part.inline_data
+                        if blob is not None and blob.data is None:
+                            image = next(images, None)
+                            if image is None:
+                                raise InvokeBadRequestError(
+                                    "Missing assistant image for Gemini conversation history"
+                                )
+                            blob.data = file_factory.read_payload(image).data
+                    return content
 
             # Handle text content (remove thinking tags)
             if message.content:
@@ -915,13 +931,93 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Unknown message type: {type(message).__name__}")
 
     @staticmethod
-    def _signed_content(parts: Sequence[types.Part]) -> dict | None:
-        if any(part.thought_signature for part in parts):
-            content = types.Content(role="model", parts=list(parts))
-            return {
-                "gemini_content": content.model_dump(mode="json", exclude_none=True)
-            }
-        return None
+    def _replay_body(parts: Sequence[types.Part]) -> dict | None:
+        if not any(
+            part.thought_signature
+            or part.tool_call
+            or part.tool_response
+            or part.function_call
+            or part.executable_code
+            or part.code_execution_result
+            for part in parts
+        ):
+            return None
+        # Dify already carries the final images in order. Keep draft images only here.
+        exclude_image_data = {
+            index: {"inline_data": {"data"}}
+            for index, part in enumerate(parts)
+            if part.inline_data is not None and not part.thought
+        }
+        content = types.Content(role="model", parts=list(parts))
+        return {
+            "gemini_content": content.model_dump(
+                mode="json", exclude_none=True, exclude={"parts": exclude_image_data}
+            )
+        }
+
+    @staticmethod
+    def _tool_input_sources(candidate: types.Candidate) -> set[str]:
+        sources: set[str] = set()
+        grounding = candidate.grounding_metadata
+        if grounding:
+            if grounding.web_search_queries:
+                sources.add(types.ToolType.GOOGLE_SEARCH_WEB)
+            if grounding.image_search_queries:
+                sources.add(types.ToolType.GOOGLE_SEARCH_IMAGE)
+        if (
+            candidate.url_context_metadata
+            and candidate.url_context_metadata.url_metadata
+        ):
+            sources.add(types.ToolType.URL_CONTEXT)
+        parts = candidate.content.parts if candidate.content else None
+        for part in parts or ():
+            invocation = part.tool_call or part.tool_response
+            if invocation and invocation.tool_type:
+                sources.add(invocation.tool_type)
+            if part.executable_code or part.code_execution_result:
+                sources.add("code_execution")
+        return sources
+
+    def _generate_content_usage(
+        self,
+        model: str,
+        credentials: dict,
+        response: types.GenerateContentResponse,
+        prompt_messages: list[PromptMessage],
+        assistant: AssistantPromptMessage,
+        requested_service_tier: types.ServiceTier | str | None,
+        search_grounding_only: bool,
+        tool_input_sources: set[str],
+    ) -> LLMUsage:
+        metadata = response.usage_metadata
+        search_tokens = 0
+        if metadata is None:
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant])
+        else:
+            prompt_tokens, completion_tokens = (
+                self._calculate_tokens_from_usage_metadata(metadata)
+            )
+            if tool_input_sources:
+                search_grounding_only = tool_input_sources <= {
+                    types.ToolType.GOOGLE_SEARCH_WEB,
+                    types.ToolType.GOOGLE_SEARCH_IMAGE,
+                }
+            if search_grounding_only:
+                # Google Search charges per query. Keep retrieved tokens in usage only.
+                search_tokens = metadata.tool_use_prompt_token_count or 0
+
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=dict(credentials),
+            prompt_tokens=prompt_tokens - search_tokens,
+            completion_tokens=completion_tokens,
+        )
+        usage.prompt_tokens += search_tokens
+        usage.total_tokens += search_tokens
+        return self._apply_service_tier_pricing(
+            usage, response, requested_service_tier, model
+        )
 
     def _handle_generate_response(
         self,
@@ -930,6 +1026,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         response: types.GenerateContentResponse,
         prompt_messages: list[PromptMessage],
         requested_service_tier: types.ServiceTier | str | None = None,
+        search_grounding_only: bool = False,
     ) -> LLMResult:
         """
         Handle llm response
@@ -944,37 +1041,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Always use _parse_parts to ensure consistent response format (list of PromptMessageContent)
         # This fixes the "'str' object has no attribute 'get'" error that occurs when
         # downstream code expects structured content but receives a plain string
-        parts = (
-            response.candidates[0].content.parts
-            if response.candidates[0].content
-            else []
-        )
+        candidate = response.candidates[0]
+        parts = candidate.content.parts if candidate.content else []
         assistant_prompt_message = self._parse_parts(parts)
         if model in GEMINI_4_MODELS or model == NANO_BANANA_21:
-            assistant_prompt_message.opaque_body = self._signed_content(parts or [])
+            assistant_prompt_message.opaque_body = self._replay_body(parts or [])
 
-        # calculate num tokens
-        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
-            response.usage_metadata
-        )
-
-        # API usage includes thinking and continuation hops, even with no visible text.
-        if response.usage_metadata is None:
-            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-            completion_tokens = self.get_num_tokens(
-                model, credentials, [assistant_prompt_message]
-            )
-
-        # transform usage
-        # copy credentials to avoid modifying the original dict
-        usage = self._calc_response_usage(
-            model=model,
-            credentials=dict(credentials),
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-        )
-        usage = self._apply_service_tier_pricing(
-            usage, response, requested_service_tier, model
+        usage = self._generate_content_usage(
+            model,
+            credentials,
+            response,
+            prompt_messages,
+            assistant_prompt_message,
+            requested_service_tier,
+            search_grounding_only,
+            self._tool_input_sources(candidate),
         )
 
         # transform response
@@ -993,6 +1074,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         genai_client: genai.Client,
         requested_service_tier: types.ServiceTier | str | None = None,
+        search_grounding_only: bool = False,
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -1026,23 +1108,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         self.is_thinking = False
         response_message = AssistantPromptMessage(content=[])
         native_parts = []
+        tool_input_sources = set()
 
         for chunk in response:
-            if not chunk.candidates or (
-                not chunk.candidates[0].finish_reason
-                and (
-                    not chunk.candidates[0].content
-                    or not chunk.candidates[0].content.parts
-                )
-            ):
+            if not chunk.candidates:
                 continue
             candidate = chunk.candidates[0]
+            tool_input_sources.update(self._tool_input_sources(candidate))
             parts = candidate.content.parts if candidate.content else []
+            if not parts and not candidate.finish_reason:
+                continue
             message = self._parse_parts(parts)
             if model in GEMINI_4_MODELS or model == NANO_BANANA_21:
                 native_parts.extend(parts or [])
                 if candidate.finish_reason:
-                    message.opaque_body = self._signed_content(native_parts)
+                    message.opaque_body = self._replay_body(native_parts)
 
             if candidate.finish_reason and self.is_thinking:
                 message.content.append(TextPromptMessageContent(data="\n\n</think>"))
@@ -1060,29 +1140,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 )
             # if the stream is finished, yield the chunk and the finish reason
             else:
-                prompt_tokens, completion_tokens = (
-                    self._calculate_tokens_from_usage_metadata(chunk.usage_metadata)
-                )
-
-                if chunk.usage_metadata is None:
-                    prompt_tokens = self.get_num_tokens(
-                        model=model,
-                        credentials=credentials,
-                        prompt_messages=prompt_messages,
-                    )
-                    completion_tokens = self.get_num_tokens(
-                        model=model,
-                        credentials=credentials,
-                        prompt_messages=[response_message],
-                    )
-                usage = self._calc_response_usage(
-                    model=model,
-                    credentials=dict(credentials),
-                    prompt_tokens=prompt_tokens,
-                    completion_tokens=completion_tokens,
-                )
-                usage = self._apply_service_tier_pricing(
-                    usage, chunk, requested_service_tier, model
+                usage = self._generate_content_usage(
+                    model,
+                    credentials,
+                    chunk,
+                    prompt_messages,
+                    response_message,
+                    requested_service_tier,
+                    search_grounding_only,
+                    tool_input_sources,
                 )
                 yield LLMResultChunk(
                     model=model,
@@ -1192,9 +1258,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if data is None:
                     raise InvokeError("receive inline_data with no data")
                 if mime_type.startswith("image/"):
+                    if part.thought:
+                        continue
                     mime_subtype = mime_type.split("/", maxsplit=1)[-1]
-                    # Here the data returned by genai-sdk is already a base64-encoded
-                    # byte string, so just decode it to utf-8 string is enough.
                     contents.append(
                         ImagePromptMessageContent(
                             format=mime_subtype,
@@ -1455,6 +1521,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         apply_dify_labels_if_enabled(config, credentials)
 
+        search_grounding_only = bool(model_parameters.get("grounding")) and not (
+            model_parameters.get("url_context")
+            or model_parameters.get("code_execution")
+        )
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model, contents=contents, config=config
@@ -1466,13 +1536,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 prompt_messages,
                 genai_client,
                 config.service_tier,
+                search_grounding_only=search_grounding_only,
             )
 
         response = genai_client.models.generate_content(
             model=model, contents=contents, config=config
         )
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages, config.service_tier
+            model,
+            credentials,
+            response,
+            prompt_messages,
+            config.service_tier,
+            search_grounding_only=search_grounding_only,
         )
 
     # ---- Interactions API (Gemini 3 json_schema + native tools) ---- #

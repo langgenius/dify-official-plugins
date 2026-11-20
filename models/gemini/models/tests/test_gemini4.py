@@ -4,6 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
 import yaml
 from dify_plugin.entities.model import AIModelEntity
@@ -407,9 +408,168 @@ def test_signed_parallel_tools_round_trip(stream):
     ]
 
 
-def test_xhigh_sdk_serializes_native_field():
-    import httpx
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("tool", "wire_name", "tool_type", "input_cost"),
+    [
+        ("url_context", "urlContext", "URL_CONTEXT", "0.031008"),
+        ("code_execution", "codeExecution", None, "0.031008"),
+        ("grounding", "googleSearch", "GOOGLE_SEARCH_WEB", "0.000081"),
+    ],
+)
+def test_mixed_tools_keep_server_context_and_report_tool_usage(
+    stream, tool, wire_name, tool_type, input_cost
+):
+    model = "gemini-4-neon"
+    schema = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel(
+        [AIModelEntity(**yaml.safe_load(schema.read_text()))]
+    )
+    if tool_type:
+        server_parts = [
+            {"toolCall": {"id": "server", "toolType": tool_type, "args": {}}},
+            {
+                "toolResponse": {
+                    "id": "server",
+                    "toolType": tool_type,
+                    "response": {"result": "ok"},
+                }
+            },
+        ]
+    else:
+        server_parts = [
+            {"executableCode": {"language": "PYTHON", "code": "print(1)"}},
+            {"codeExecutionResult": {"outcome": "OUTCOME_OK", "output": "1"}},
+        ]
+    first_parts = [
+        *server_parts,
+        {"functionCall": {"name": "lookup", "id": "local", "args": {}}},
+    ]
+    requests = []
 
+    def transport(request):
+        requests.append(json.loads(request.content))
+        parts = first_parts if len(requests) == 1 else [{"text": "Done"}]
+        body = {
+            "candidates": [
+                {"content": {"role": "model", "parts": parts}, "finishReason": "STOP"}
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 27,
+                "toolUsePromptTokenCount": 10309,
+                "candidatesTokenCount": 45,
+                "thoughtsTokenCount": 31,
+                "totalTokenCount": 10412,
+            },
+        }
+        if stream:
+            return httpx.Response(
+                200,
+                text=f"data: {json.dumps(body)}\n\n",
+                headers={"Content-Type": "text/event-stream"},
+            )
+        return httpx.Response(200, json=body)
+
+    messages = [UserPromptMessage(content="Look this up.")]
+    functions = [PromptMessageTool(name="lookup", description="Lookup", parameters={})]
+
+    def invoke():
+        return list(
+            llm.invoke(
+                model,
+                {"google_api_key": "test"},
+                messages,
+                {tool: True},
+                tools=functions,
+                stream=stream,
+            )
+        )
+
+    with (
+        genai.Client(
+            api_key="test",
+            http_options=types.HttpOptions(
+                client_args={
+                    "transport": httpx.MockTransport(transport),
+                    "trust_env": False,
+                },
+                async_client_args={"trust_env": False},
+            ),
+        ) as client,
+        patch("models.llm.llm.genai.Client", return_value=client),
+    ):
+        first = invoke()[-1].delta
+        assert first.usage.prompt_tokens == 10336
+        assert first.usage.total_tokens == 10412
+        assert first.usage.prompt_price == Decimal(input_cost)
+        messages.extend(
+            [
+                AssistantPromptMessage.model_validate_json(
+                    first.message.model_dump_json()
+                ),
+                ToolPromptMessage(
+                    name="lookup", tool_call_id="local", content="result"
+                ),
+            ]
+        )
+        invoke()
+
+    for request in requests:
+        assert request["toolConfig"]["includeServerSideToolInvocations"] is True
+        assert {next(iter(entry)) for entry in request["tools"]} == {
+            wire_name,
+            "functionDeclarations",
+        }
+    wire_history = requests[1]["contents"]
+    assert types.Content.model_validate(
+        wire_history[1]
+    ) == types.Content.model_validate({"role": "model", "parts": first_parts})
+    assert wire_history[2]["parts"][0]["functionResponse"]["id"] == "local"
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    "url_used, input_cost", [(False, "0.000081"), (True, "0.031008")]
+)
+def test_search_and_url_context_usage_follows_tool_results(
+    stream, url_used, input_cost
+):
+    model = "gemini-4-neon"
+    schema = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel(
+        [AIModelEntity(**yaml.safe_load(schema.read_text()))]
+    )
+    evidence = {"grounding_metadata": {"web_search_queries": ["query"]}}
+    if url_used:
+        evidence["url_context_metadata"] = {
+            "url_metadata": [{"retrieved_url": "https://example.com"}]
+        }
+    result = {
+        "content": {"role": "model", "parts": [{"text": "Done"}]},
+        "finish_reason": "STOP",
+    }
+    metadata = {"prompt_token_count": 27, "tool_use_prompt_token_count": 10309}
+    with llm.timing_context():
+        if stream:
+            chunks = [
+                types.GenerateContentResponse(candidates=[evidence]),
+                types.GenerateContentResponse(
+                    candidates=[result], usage_metadata=metadata
+                ),
+            ]
+            usage = list(
+                llm._handle_generate_stream_response(model, {}, iter(chunks), [], None)
+            )[-1].delta.usage
+        else:
+            response = types.GenerateContentResponse(
+                candidates=[{**result, **evidence}], usage_metadata=metadata
+            )
+            usage = llm._handle_generate_response(model, {}, response, []).usage
+    assert usage.prompt_tokens == 10336
+    assert usage.prompt_price == Decimal(input_cost)
+
+
+def test_xhigh_sdk_serializes_native_field():
     captured = []
 
     def transport(request):
