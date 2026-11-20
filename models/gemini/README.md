@@ -4,19 +4,22 @@
 
 Gemini is a family of multimodal AI models from Google, designed to process and generate various types of data, including text, images, audio, and video. This plugin provides access to Gemini models via a single API key, enabling developers to build versatile multimodal AI applications.
 
-## Gemini 4 Argon
+## Gemini 4
 
-Select `gemini-4-argon` with a paid Gemini API key.
-It accepts text, images, audio, video, and PDFs, with text output, function calling, structured output, Google Search, URL context, and code execution.
-Input, thinking, and output share a 1,048,576-token context window.
-Thinking defaults to Medium, with Low and High also available.
-The output limit defaults to 65,536 tokens; raising it enables the Google GenAI SDK's automatic continuation, up to the remaining context window.
-The plugin allows 15 minutes per request; configure the Dify deployment's timeouts to accommodate long reasoning tasks.
+Carbon, Neon, Hydrogen, and Argon accept text, images, audio, video, and PDFs.
+All four models return text and support function calling, structured output, Google Search, URL context, and code execution.
+Carbon, Neon, and Argon require a paid API key.
+They share a 1,048,576-token window across input, thinking, and output.
+The output limit defaults to 65,536 tokens. Raising it enables automatic continuation within the remaining context.
+The plugin allows 15 minutes per API request.
 
-Standard introductory pricing is $2 per million input tokens and $10 per million output tokens, including thinking, through November 30, 2026.
-Google's published rates become $4 and $20 respectively on December 1, 2026; the plugin's price metadata will need updating then.
-Implicit caching is supported by Google; explicit context caching is unavailable for this model.
-See the [release announcement](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-gemini-4-argon/), [model specifications](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon), [long decode guide](https://ai.google.dev/gemini-api/docs/generate-content/long-decode), and [pricing](https://ai.google.dev/gemini-api/docs/pricing#gemini-4-argon).
+| Model | Default thinking | Other levels | Standard input / output per million tokens (USD) |
+| --- | --- | --- | --- |
+| Carbon, Argon | Medium | Low, High | 2 / 10 through November 30, 2026, then 4 / 20 |
+| Neon | High | Low, Medium, Xhigh | 3 / 15 |
+| Hydrogen | High | Low, Medium, Xhigh | 1.50 / 7.50 |
+
+Implicit cache reads cost 5% of the input rate. Output includes thinking tokens. [Model pricing](https://aistudio.google.com/docs/pricing) · [Long decode](https://aistudio.google.com/docs/long-decode)
 
 ## Configure
 After installing the Gemini plugin, configure it with your API key, which you can get from Google. Enter the key in the Model Provider settings and save.

@@ -3,6 +3,7 @@ import binascii
 import logging
 import re
 import time
+from decimal import Decimal
 import numpy as np
 from typing import Optional, Union
 from collections.abc import Mapping
@@ -28,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 # Embedding and number of tokens used
 EmbeddingTokenPair = tuple[list[float], Optional[int]]
+
+EMBEDDING_2_MODELS = {"gemini-embedding-2", "gemini-embedding-2-preview"}
 
 TASK_TYPE_BY_INPUT_TYPE = {
     EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
@@ -57,6 +60,16 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
     def _as_user_content(part: Union[str, types.Part]) -> types.UserContent:
         return types.UserContent(parts=[part])
 
+    @staticmethod
+    def _retrieval_prefix(model: str, input_type: EmbeddingInputType) -> str:
+        # Keep the preview input text compatible with existing indexes.
+        if model == "gemini-embedding-2":
+            if input_type == EmbeddingInputType.QUERY:
+                return "task: search result | query: "
+            if input_type == EmbeddingInputType.DOCUMENT:
+                return "title: none | text: "
+        return ""
+
     def _invoke(
         self,
         model: str,
@@ -81,8 +94,11 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         max_chunks = self._get_max_chunks(model, credentials)
 
         # splitted texts in case the chunks are bigger than the context size
+        prefix = self._retrieval_prefix(model, input_type)
         splitted_texts = [
-            self._split_texts_to_fit_model_specs(client, model, [text], context_size)
+            self._split_texts_to_fit_model_specs(
+                client, model, [text], context_size, prefix
+            )
             for text in texts
         ]
 
@@ -145,7 +161,12 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         )
 
     def _split_texts_to_fit_model_specs(
-        self, client: genai.Client, model: str, texts: list[str], context_size: int
+        self,
+        client: genai.Client,
+        model: str,
+        texts: list[str],
+        context_size: int,
+        prefix: str = "",
     ) -> list[tuple[str, int]]:
         """
         Split text to fit model specs based on the model context size
@@ -157,7 +178,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         splitted_text = []
         for text in texts:
-            num_tokens = self._count_tokens(client, model, text)
+            num_tokens = self._count_tokens(client, model, prefix + text)
             if num_tokens >= context_size and len(text) > 1:
                 # `context_size` is a token budget, not a character index. Estimate a
                 # character cutoff from the token-to-character ratio so the head is
@@ -179,12 +200,12 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                         break
                 splitted_text.extend(
                     self._split_texts_to_fit_model_specs(
-                        client, model, [text[:cutoff]], context_size
+                        client, model, [text[:cutoff]], context_size, prefix
                     )
                 )
                 splitted_text.extend(
                     self._split_texts_to_fit_model_specs(
-                        client, model, [text[cutoff:]], context_size
+                        client, model, [text[cutoff:]], context_size, prefix
                     )
                 )
             else:
@@ -255,10 +276,15 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
 
         # call embedding model
-        task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+        task_type = (
+            None
+            if model in EMBEDDING_2_MODELS
+            else TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+        )
         config = EmbedContentConfig(task_type=task_type) if task_type else None
         logical_texts = texts if isinstance(texts, list) else [texts]
-        contents = [self._as_user_content(text) for text in logical_texts]
+        prefix = self._retrieval_prefix(model, input_type)
+        contents = [self._as_user_content(prefix + text) for text in logical_texts]
         response = client.models.embed_content(
             model=model, contents=contents, config=config
         )
@@ -404,9 +430,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         original_texts = []  # parallel list: original text string (or None for images)
         for document in documents:
             if document.content_type == MultiModalContentType.TEXT:
-                contents.append(self._as_user_content(document.content))
+                text = self._retrieval_prefix(model, input_type) + document.content
+                contents.append(self._as_user_content(text))
                 content_is_image.append(False)
-                original_texts.append(document.content)
+                original_texts.append(text)
             elif document.content_type == MultiModalContentType.IMAGE:
                 # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
                 mime_type = self._detect_image_mime_type(
@@ -433,6 +460,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         embeddings = []
         used_tokens = 0
 
+        image_tokens = 0
         # Process in batches
         for i in range(0, len(contents), max_chunks):
             batch_contents = contents[i : i + max_chunks]
@@ -447,7 +475,11 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 )
 
             # Prepare config with optional output_dimension (MRL support)
-            task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+            task_type = (
+                None
+                if model in EMBEDDING_2_MODELS
+                else TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+            )
             output_dimension = self._get_output_dimension(model, credentials)
 
             config_kwargs = {}
@@ -479,24 +511,28 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 embedding_values = embedding.values or []
                 embeddings.append(embedding_values)
 
-                # Count tokens: prefer API statistics, then estimate by content type
-                if embedding.statistics and embedding.statistics.token_count:
-                    used_tokens += embedding.statistics.token_count
+                if (
+                    embedding.statistics
+                    and embedding.statistics.token_count is not None
+                ):
+                    count = int(embedding.statistics.token_count)
                 elif batch_is_image[j]:
-                    # Image: use fixed estimate
-                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
-                elif batch_original_texts[j] is not None:
-                    # Text: estimate using GPT-2 tokenizer
-                    used_tokens += self._get_num_tokens_by_gpt2(batch_original_texts[j])
+                    count = self.IMAGE_TOKEN_ESTIMATE
                 else:
-                    # Final fallback
-                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
+                    count = self._get_num_tokens_by_gpt2(batch_original_texts[j])
+                used_tokens += count
+                if batch_is_image[j]:
+                    image_tokens += count
 
         # Calculate usage
         usage = self._calc_response_usage(
             model=model, credentials=credentials, tokens=used_tokens
         )
 
+        if model == "gemini-embedding-2":
+            usage.total_price += (
+                image_tokens * (Decimal("0.45") - usage.unit_price) * usage.price_unit
+            )
         return MultiModalEmbeddingResult(
             model=model,
             embeddings=embeddings,

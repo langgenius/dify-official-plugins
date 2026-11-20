@@ -22,14 +22,14 @@ parameters:
   - name: prompt
     form: llm
     human_description:
-      en_US: Detailed description of the image you want to generate (max 32000 tokens). Check the official Gemini documentation.
-      zh_Hans: 您想要生成的图像的详细描述（最多 32000 tokens）。请查看 Gemini 的官方文档。
-      ja_JP: 生成したい画像の細かな説明(最大 32000 トークン)。Gemini 公式ドキュメントを参照してください。
+      en_US: Detailed description of the image you want to generate. Check the official Gemini documentation.
+      zh_Hans: 您想要生成的图像的详细描述。请查看 Gemini 的官方文档。
+      ja_JP: 生成したい画像の細かな説明。Gemini 公式ドキュメントを参照してください。
     label:
       en_US: Prompt
       zh_Hans: 提示词
       ja_JP: プロンプト
-    llm_description: Detailed image prompt for Gemini Image Generate(max 32000 tokens). Describe the desired image clearly.
+    llm_description: Detailed image prompt for Gemini Image Generate. Describe the desired image clearly.
     required: true
     type: string
   - name: images
@@ -57,6 +57,11 @@ parameters:
       ja_JP: Gemini モデル
     options:
       - label:
+          en_US: Nano Banana 2.1
+          zh_Hans: Nano Banana 2.1
+          ja_JP: Nano Banana 2.1
+        value: "gemini-nano-banana-2.1"
+      - label:
           en_US: Nano Banana
           zh_Hans: Nano Banana
           ja_JP: Nano Banana
@@ -68,3 +73,86 @@ parameters:
         value: "gemini-3-pro-image-preview"
     required: false
     type: select
+  - name: image_size
+    form: form
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: Image size
+      zh_Hans: 图像尺寸
+    human_description:
+      en_US: Output resolution for Nano Banana Pro and 2.1.
+      zh_Hans: Nano Banana Pro 和 2.1 的输出分辨率。
+    options:
+      - value: auto
+        label:
+          en_US: Auto
+          zh_Hans: 自动
+      - value: "1K"
+        label:
+          en_US: "1K"
+      - value: "2K"
+        label:
+          en_US: "2K"
+      - value: "4K"
+        label:
+          en_US: "4K"
+  - name: aspect_ratio
+    form: form
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: Aspect ratio
+      zh_Hans: 宽高比
+    human_description:
+      en_US: Output aspect ratio. 1:4, 4:1, 1:8, and 8:1 require Nano Banana 2.1.
+      zh_Hans: 输出宽高比。1:4、4:1、1:8 和 8:1 适用于 Nano Banana 2.1。
+    options:
+      - value: auto
+        label:
+          en_US: Auto
+          zh_Hans: 自动
+      - value: "1:1"
+        label:
+          en_US: "1:1"
+      - value: "1:4"
+        label:
+          en_US: "1:4"
+      - value: "1:8"
+        label:
+          en_US: "1:8"
+      - value: "2:3"
+        label:
+          en_US: "2:3"
+      - value: "3:2"
+        label:
+          en_US: "3:2"
+      - value: "3:4"
+        label:
+          en_US: "3:4"
+      - value: "4:1"
+        label:
+          en_US: "4:1"
+      - value: "4:3"
+        label:
+          en_US: "4:3"
+      - value: "4:5"
+        label:
+          en_US: "4:5"
+      - value: "5:4"
+        label:
+          en_US: "5:4"
+      - value: "8:1"
+        label:
+          en_US: "8:1"
+      - value: "9:16"
+        label:
+          en_US: "9:16"
+      - value: "16:9"
+        label:
+          en_US: "16:9"
+      - value: "21:9"
+        label:
+          en_US: "21:9"

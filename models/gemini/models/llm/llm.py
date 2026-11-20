@@ -5,6 +5,7 @@ import re
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Union
 
@@ -50,9 +51,19 @@ from .utils import FileCache
 
 file_cache = FileCache()
 
-IMAGE_GENERATION_MODELS = {"gemini-2.5-flash-image", "gemini-3-pro-image-preview"}
-NO_SAMPLING_OR_PREFILL_MODELS = {
+NANO_BANANA_21 = "gemini-nano-banana-2.1"
+IMAGE_MODELS_WITHOUT_THINKING_CONFIG = (
+    "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
+)
+IMAGE_GENERATION_MODELS = {*IMAGE_MODELS_WITHOUT_THINKING_CONFIG, NANO_BANANA_21}
+GEMINI_4_MODELS = {
     "gemini-4-argon",
+    "gemini-4-carbon",
+    "gemini-4-hydrogen",
+    "gemini-4-neon",
+}
+NO_SAMPLING_OR_PREFILL_MODELS = GEMINI_4_MODELS | {
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -72,17 +83,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     is_thinking = None
 
     def predefined_models(self) -> list[AIModelEntity]:
-        return [
+        schemas = [
             with_inline_file_parameter(model) for model in super().predefined_models()
         ]
-
-    def get_model_schema(
-        self, model: str, credentials: Mapping | None = None
-    ) -> AIModelEntity | None:
-        model_schema = super().get_model_schema(model, credentials)
-        if not model_schema:
-            return None
-        return with_inline_file_parameter(model_schema)
+        if datetime.now(UTC).date() >= date(2026, 12, 1):
+            for schema in schemas:
+                if (
+                    schema.model in {"gemini-4-carbon", "gemini-4-argon"}
+                    and schema.pricing
+                ):
+                    schema.pricing.input = Decimal("4.00")
+                    schema.pricing.output = Decimal("20.00")
+        return schemas
 
     def _convert_messages_to_prompt(self, messages: list[PromptMessage]) -> str:
         """
@@ -190,6 +202,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         }
 
     def _transform_invoke_error(self, error: Exception) -> InvokeError:
+        if isinstance(error, InvokeError):
+            return error
         if isinstance(error, InteractionsAPIStatusError):
             error = errors.APIError(error.status_code, error.body)
         if not isinstance(error, errors.APIError):
@@ -226,7 +240,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # [ Pricing ]
         # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
         # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
-        # FIXME: Unable to track caching, Grounding, Live API
+        # Tool charges are separate from token usage.
         if usage_metadata.prompt_tokens_details:
             for _mtc in usage_metadata.prompt_tokens_details:
                 if _mtc.modality in [
@@ -317,7 +331,34 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         usage: LLMUsage,
         response: Any,
         requested_service_tier: types.ServiceTier | str | None = None,
+        model: str | None = None,
     ) -> LLMUsage:
+        if model in GEMINI_4_MODELS:
+            cached = (
+                getattr(response.usage_metadata, "cached_content_token_count", None)
+                or 0
+            )
+            if cached:
+                usage.prompt_price -= (
+                    cached
+                    * usage.prompt_unit_price
+                    * usage.prompt_price_unit
+                    * Decimal("0.95")
+                )
+                usage.total_price = usage.prompt_price + usage.completion_price
+        elif model == NANO_BANANA_21 and response.usage_metadata:
+            image_tokens = sum(
+                part.token_count or 0
+                for part in response.usage_metadata.candidates_tokens_details or []
+                if part.modality == types.MediaModality.IMAGE
+            )
+            # The base output rate covers text and thinking; image tokens cost $30/MTok.
+            usage.completion_price += (
+                image_tokens
+                * (Decimal("30") - usage.completion_unit_price)
+                * usage.completion_price_unit
+            )
+            usage.total_price = usage.prompt_price + usage.completion_price
         actual_service_tier = getattr(response, "service_tier", None)
         if isinstance(actual_service_tier, types.ServiceTier):
             actual_service_tier = actual_service_tier.value
@@ -368,23 +409,22 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             return
 
         aspect_ratio = model_parameters.get("aspect_ratio")
-        if (
-            not aspect_ratio
-            or not isinstance(aspect_ratio, str)
-            or aspect_ratio
-            not in [
-                "1:1",
-                "2:3",
-                "3:2",
-                "3:4",
-                "4:3",
-                "4:5",
-                "5:4",
-                "9:16",
-                "16:9",
-                "21:9",
-            ]
-        ):
+        ratios = {
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9",
+        }
+        if model == NANO_BANANA_21:
+            config.http_options = types.HttpOptions(api_version="v1")
+            ratios.update({"1:4", "4:1", "1:8", "8:1"})
+        if not isinstance(aspect_ratio, str) or aspect_ratio not in ratios:
             aspect_ratio = None
 
         resolution = model_parameters.get("resolution")
@@ -406,22 +446,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         model_parameters: Mapping[str, Any],
         model_name: str,
     ) -> None:
-        # FIXME: 2025-08-21
-        # This blacklist is a temporary workaround. A more robust solution is needed
-        # to handle how `thinking_config` is applied to different models.
-        #
-        # The final solution should:
-        # 1. Clearly define which models are incompatible with dynamic `thinking_config` changes,
-        #    improving on the current prefix-based blacklist.
-        # 2. Prevent errors for upcoming mixed-mode models (e.g., `nano-banana`) when
-        #    `thinking_config` is set.
-        # 3. Gracefully handle models that either don't support thinking mode switching
-        #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
-        #    instead of causing an immediate error.
-        blacklist_thinking_prefix = IMAGE_GENERATION_MODELS
-        for _prefix in blacklist_thinking_prefix:
-            if model_name.startswith(_prefix):
-                return
+        if model_name.startswith(IMAGE_MODELS_WITHOUT_THINKING_CONFIG):
+            return
 
         include_thoughts = model_parameters.get("include_thoughts", None)
         thinking_budget = model_parameters.get("thinking_budget", None)
@@ -447,9 +473,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 "Medium": types.ThinkingLevel.MEDIUM,
                 "High": types.ThinkingLevel.HIGH,
             }
-            thinking_level = level_map.get(
-                thinking_level, types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
-            )
+            if thinking_level == "Xhigh" and model_name in {
+                "gemini-4-hydrogen",
+                "gemini-4-neon",
+            }:
+                # The 2.x SDK predates XHIGH. Set the documented field on the wire.
+                config.http_options = types.HttpOptions(
+                    extra_body={
+                        "generationConfig": {
+                            "thinkingConfig": {"thinkingLevel": "XHIGH"}
+                        }
+                    }
+                )
+                thinking_level = None
+            else:
+                thinking_level = level_map.get(
+                    thinking_level, types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+                )
         if not isinstance(thinking_level, types.ThinkingLevel):
             thinking_level = None
 
@@ -519,7 +559,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         1. Structured output (json_schema) is exclusive on Gemini <= 2.5
            (the legacy ``generate_content`` endpoint rejects the combination
            with HTTP 400). Gemini 3 uses the Interactions API for this
-           combination; Gemini 4 Argon supports it through generateContent.
+           combination; Gemini 4 supports it through generateContent.
         2. url_context and grounding can be used together
         3. url_context and code_execution cannot be used together
         4. grounding and code_execution can be used together
@@ -566,7 +606,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Gemini 4 uses generateContent so SDK continuation also works with tools.
         if features["json_schema"] and len(enabled_features) > 1:
-            if model == "gemini-4-argon" or GoogleLargeLanguageModel._is_gemini3(model):
+            if model in GEMINI_4_MODELS or GoogleLargeLanguageModel._is_gemini3(model):
                 logging.debug("Allowing structured output with tools for %s", model)
             else:
                 other_features = [f for f in enabled_features if f != "json_schema"]
@@ -638,6 +678,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             mode=GeminiFileMode.from_parameters(model_parameters),
         )
 
+        local_call_ids = set()
         for msg in prompt_messages:
             if isinstance(msg, SystemPromptMessage):
                 if isinstance(msg.content, str):
@@ -678,6 +719,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
             if not content:
                 continue
+            if isinstance(msg, AssistantPromptMessage) and msg.tool_calls:
+                native_calls = [
+                    part.function_call
+                    for part in content.parts or []
+                    if part.function_call
+                ]
+                local_call_ids.update(
+                    call.id
+                    for call, native in zip(msg.tool_calls, native_calls)
+                    if not native.id
+                )
+            elif (
+                isinstance(msg, ToolPromptMessage)
+                and msg.tool_call_id in local_call_ids
+            ):
+                # Keep a Dify-generated correlation ID out of Google's replayed turn.
+                content.parts[0].function_response.id = None
             message_contents.append(
                 (content, False, isinstance(msg, UserPromptMessage))
             )
@@ -800,6 +858,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         elif isinstance(message, AssistantPromptMessage):
             parts = []
 
+            if isinstance(message.opaque_body, dict):
+                native = message.opaque_body.get("gemini_content")
+                if isinstance(native, dict) and native.get("role") == "model":
+                    return types.Content.model_validate(native)
+
             # Handle text content (remove thinking tags)
             if message.content:
                 part = build_parts(message.content, is_assistant_tree=True)
@@ -851,6 +914,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Unknown message type: {type(message).__name__}")
 
+    @staticmethod
+    def _signed_content(parts: Sequence[types.Part]) -> dict | None:
+        if any(part.thought_signature for part in parts):
+            content = types.Content(role="model", parts=list(parts))
+            return {
+                "gemini_content": content.model_dump(mode="json", exclude_none=True)
+            }
+        return None
+
     def _handle_generate_response(
         self,
         model: str,
@@ -878,6 +950,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             else []
         )
         assistant_prompt_message = self._parse_parts(parts)
+        if model in GEMINI_4_MODELS or model == NANO_BANANA_21:
+            assistant_prompt_message.opaque_body = self._signed_content(parts or [])
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -900,7 +974,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             completion_tokens=completion_tokens,
         )
         usage = self._apply_service_tier_pricing(
-            usage, response, requested_service_tier
+            usage, response, requested_service_tier, model
         )
 
         # transform response
@@ -951,6 +1025,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         index = -1
         self.is_thinking = False
         response_message = AssistantPromptMessage(content=[])
+        native_parts = []
 
         for chunk in response:
             if not chunk.candidates or (
@@ -964,6 +1039,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             candidate = chunk.candidates[0]
             parts = candidate.content.parts if candidate.content else []
             message = self._parse_parts(parts)
+            if model in GEMINI_4_MODELS or model == NANO_BANANA_21:
+                native_parts.extend(parts or [])
+                if candidate.finish_reason:
+                    message.opaque_body = self._signed_content(native_parts)
 
             if candidate.finish_reason and self.is_thinking:
                 message.content.append(TextPromptMessageContent(data="\n\n</think>"))
@@ -1003,7 +1082,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     completion_tokens=completion_tokens,
                 )
                 usage = self._apply_service_tier_pricing(
-                    usage, chunk, requested_service_tier
+                    usage, chunk, requested_service_tier, model
                 )
                 yield LLMResultChunk(
                     model=model,
@@ -1184,8 +1263,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        _ = user
-        return self._generate(
+        result = self._generate(
             model,
             credentials,
             prompt_messages,
@@ -1195,6 +1273,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             stream,
             user,
         )
+
+        if isinstance(result, Generator):
+            return self._stream_with_error_mapping(result)
+        return result
+
+    def _stream_with_error_mapping(
+        self, chunks: Generator[LLMResultChunk]
+    ) -> Generator[LLMResultChunk]:
+        # SDK 0.10 only maps exceptions raised before iteration starts.
+        try:
+            yield from chunks
+        except InvokeError:
+            raise
+        except Exception as exc:
+            raise self._transform_invoke_error(exc) from exc
 
     def _generate(
         self,
@@ -1260,8 +1353,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             api_key=credentials["google_api_key"],
             http_options=types.HttpOptions(
                 base_url=credentials.get("google_base_url", None),
-                # Argon's reasoning can take several minutes before producing text.
-                timeout=900_000 if model == "gemini-4-argon" else None,
+                # Gemini 4 can take several minutes before producing text.
+                timeout=900_000 if model in GEMINI_4_MODELS else None,
             ),
         )
 

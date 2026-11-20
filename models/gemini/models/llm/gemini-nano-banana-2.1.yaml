@@ -1,0 +1,105 @@
+# https://aistudio.google.com/docs/models/gemini-nano-banana-2.1
+model: gemini-nano-banana-2.1
+label:
+  en_US: Nano Banana 2.1
+model_type: llm
+features:
+  - vision
+  - document
+  - video
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: aspect_ratio
+    type: string
+    required: true
+    default: "Auto"
+    options:
+      - "Auto"
+      - "1:1"
+      - "9:16"
+      - "16:9"
+      - "3:4"
+      - "4:3"
+      - "3:2"
+      - "2:3"
+      - "5:4"
+      - "4:5"
+      - "21:9"
+      - "1:4"
+      - "4:1"
+      - "1:8"
+      - "8:1"
+    label:
+      en_US: Aspect ratio
+      zh_Hans: 宽高比
+    help:
+      en_US: Aspect ratio of the generated images.
+      zh_Hans: 生成图片的宽高比。
+  - name: resolution
+    type: string
+    required: true
+    default: "1K"
+    options:
+      - "1K"
+      - "2K"
+      - "4K"
+    label:
+      en_US: Resolution
+      zh_Hans: 分辨率
+    help:
+      en_US: Resolution of the generated images. Defaults to 1K.
+      zh_Hans: 生成图片的分辨率。默认为 1K。
+  - name: thinking_level
+    type: string
+    required: true
+    default: Medium
+    options:
+      - Minimal
+      - Medium
+      - High
+    label:
+      en_US: Thinking level
+      zh_Hans: 思考等级
+  - name: include_thoughts
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Include thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available. Default is false.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。默认为 false。
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Use Google Search
+      zh_Hans: 使用 Google 搜索
+      ja_JP: 事実チェック
+  - name: max_output_tokens
+    type: int
+    required: true
+    default: 32768
+    min: 1
+    max: 32768
+    label:
+        en_US: Output length
+        zh_Hans: 输出长度
+    help:
+      en_US: Maximum output tokens, including thinking.
+      zh_Hans: 输出上限，包含思考 token。
+# https://aistudio.google.com/docs/pricing#gemini-nano-banana-2-1
+# Image output is charged separately at $30 per million tokens.
+pricing:
+  input: '1.50'
+  output: '7.50'
+  unit: '0.000001'
+  currency: USD

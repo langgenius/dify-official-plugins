@@ -94,7 +94,19 @@ class TestEmbedContentRequestShape:
         self.model = GeminiTextEmbeddingModel([])
         self.credentials = {"google_api_key": "fake-key"}
 
-    def test_text_batch_uses_one_content_per_text(self):
+    @pytest.mark.parametrize(
+        ("model", "input_type", "prefix"),
+        [
+            ("gemini-embedding-2-preview", EmbeddingInputType.DOCUMENT, ""),
+            ("gemini-embedding-2", EmbeddingInputType.DOCUMENT, "title: none | text: "),
+            (
+                "gemini-embedding-2",
+                EmbeddingInputType.QUERY,
+                "task: search result | query: ",
+            ),
+        ],
+    )
+    def test_text_batch_uses_one_content_per_text(self, model, input_type, prefix):
         """Text batches should send each text as a separate Content."""
         mock_client = Mock()
         mock_response = Mock()
@@ -105,10 +117,10 @@ class TestEmbedContentRequestShape:
         mock_client.models.embed_content.return_value = mock_response
 
         result = self.model._embedding_invoke(
-            model="gemini-embedding-2-preview",
+            model=model,
             client=mock_client,
             texts=["Hello", "World"],
-            input_type=EmbeddingInputType.DOCUMENT,
+            input_type=input_type,
         )
 
         assert len(result) == 2
@@ -116,7 +128,11 @@ class TestEmbedContentRequestShape:
         assert len(contents) == 2
         assert all(isinstance(content, types.UserContent) for content in contents)
         assert [len(content.parts) for content in contents] == [1, 1]
-        assert [content.parts[0].text for content in contents] == ["Hello", "World"]
+        assert [content.parts[0].text for content in contents] == [
+            prefix + "Hello",
+            prefix + "World",
+        ]
+        assert mock_client.models.embed_content.call_args.kwargs["config"] is None
 
     @patch("models.text_embedding.text_embedding.genai")
     def test_multimodal_batch_uses_one_content_per_document(self, mock_genai):
@@ -1401,3 +1417,37 @@ class TestModelConstants:
 
     def test_image_token_estimate(self):
         assert GeminiTextEmbeddingModel.IMAGE_TOKEN_ESTIMATE == 258
+
+
+def test_stable_embedding_charges_image_tokens_separately(monkeypatch):
+    from pathlib import Path
+    import yaml
+    from dify_plugin.entities.model import AIModelEntity
+
+    path = Path(__file__).parents[1] / "text_embedding/gemini-embedding-2.yaml"
+    model = GeminiTextEmbeddingModel(
+        [AIModelEntity(**yaml.safe_load(path.read_text()))]
+    )
+    client = Mock()
+    client.models.embed_content.return_value.embeddings = [
+        _mock_embedding(token_count=10),
+        _mock_embedding(token_count=100),
+    ]
+    monkeypatch.setattr(
+        "models.text_embedding.text_embedding.genai.Client", lambda **_: client
+    )
+    result = model._invoke_multimodal(
+        "gemini-embedding-2",
+        {"google_api_key": "test"},
+        [
+            MultiModalContent(content="Hello", content_type=MultiModalContentType.TEXT),
+            MultiModalContent(
+                content=PNG_BASE64, content_type=MultiModalContentType.IMAGE
+            ),
+        ],
+    )
+    assert result.usage.tokens == 110
+    assert result.usage.total_price == Decimal("0.000047")
+    parts = client.models.embed_content.call_args.kwargs["contents"]
+    assert parts[0].parts[0].text == "title: none | text: Hello"
+    assert parts[1].parts[0].inline_data.data == PNG_BYTES
