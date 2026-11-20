@@ -233,31 +233,6 @@ class BedrockRerankModel(RerankModel):
         :return:
         """
         try:
-            # Check if this is an inference profile based custom model
-            inference_profile_id = credentials.get("inference_profile_id")
-            if inference_profile_id:
-                # Validate inference profile directly
-                validate_inference_profile(inference_profile_id, credentials)
-                logger.info(f"Successfully validated inference profile: {inference_profile_id}")
-                return
-            
-            # Traditional model validation - check if we can get bedrock client
-            bedrock_runtime = get_bedrock_client("bedrock-agent-runtime", credentials)
-            # Just getting the client validates the credentials
-            logger.info(f"Successfully validated model: {model}")
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex))
-    
-
-    def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
-
-        :param model: model name
-        :param credentials: model credentials
-        :return:
-        """
-        try:
             self.invoke(
                 model=model,
                 credentials=credentials,
