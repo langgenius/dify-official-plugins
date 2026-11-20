@@ -1,4 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates
+import json
 import logging
 from collections.abc import Generator
 from typing import cast, Optional, Union
