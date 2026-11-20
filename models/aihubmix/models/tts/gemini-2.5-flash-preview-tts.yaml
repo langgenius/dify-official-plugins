@@ -11,6 +11,6 @@ model_properties:
   max_workers: 5
 pricing:
   input: '0.5'
-  output: '0.5'
+  output: '10'
   unit: '0.001'
   currency: USD

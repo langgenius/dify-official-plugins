@@ -3,8 +3,3 @@ model: cohere-rerank-v4.0-fast
 model_type: rerank
 model_properties:
   context_size: 32768
-pricing:
-  input: '0.068'
-  output: '0'
-  unit: '0.000001'
-  currency: USD
