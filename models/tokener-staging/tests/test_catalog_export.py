@@ -6,6 +6,7 @@ import pytest
 import yaml
 from dify_plugin.entities.model import AIModelEntity, ModelType
 
+from models._credentials import ENDPOINT_URL
 from scripts.sync_catalog import CatalogError, main, normalize_catalog, render_catalog
 
 
@@ -29,14 +30,21 @@ def export_row(model_id="embedding-visible", category="embedding"):
     }
 
 
-def test_export_generates_embedding_and_rerank_without_private_metadata():
-    payload = {"items": [export_row(), export_row("rerank-visible", "rerank")]}
+def test_export_generates_non_llm_types_without_private_metadata():
+    payload = {
+        "items": [
+            export_row(),
+            export_row("rerank-visible", "rerank"),
+            export_row("omni-moderation-latest", "moderation"),
+        ]
+    }
     catalog = normalize_catalog(payload)
     assert "private-model-identifier" not in json.dumps(catalog)
     assert catalog == normalize_catalog({"items": list(reversed(payload["items"]))})
     for kind, model_id, expected_type in [
         ("text_embedding", "embedding-visible", ModelType.TEXT_EMBEDDING),
         ("rerank", "rerank-visible", ModelType.RERANK),
+        ("moderation", "omni-moderation-latest", ModelType.MODERATION),
     ]:
         files = render_catalog(catalog, model_type=kind)
         entity = AIModelEntity.model_validate(yaml.safe_load(files[f"{model_id}.yaml"]))
@@ -86,7 +94,7 @@ def test_all_types_validate_before_writing_and_check_detects_drift(tmp_path):
         "claude-opus-5-5",
         "gemini-3.5-pro",
         "grok-4.7",
-        "qwen3.5-plus",
+        "qwen-reasoning-future",
         "deepseek-v5",
         "glm-6",
         "kimi-k4",
@@ -119,6 +127,7 @@ def test_new_audio_models_use_metadata_instead_of_model_id_allowlists():
 
 
 def test_dify_registers_and_invokes_generated_embedding_without_schema_injection():
+    import tiktoken
     from dify_plugin.config.config import DifyPluginEnv
     from dify_plugin.core.plugin_registration import PluginRegistration
     from test_non_llm import response
@@ -128,6 +137,7 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
     )
     assert model.model_schemas
     selected = "text-embedding-3-small"
+    encoding = tiktoken.encoding_for_model(selected)
     texts = [f"sample-{i}" for i in range(33)]
 
     def reply(*args, **kwargs):
@@ -135,7 +145,7 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
         return response(
             {
                 "data": [
-                    {"index": i, "embedding": [float(text.split("-")[-1]), 0.2]}
+                    {"index": i, "embedding": [float(encoding.decode(text).split("-")[-1]), 0.2]}
                     for i, text in reversed(list(enumerate(batch)))
                 ],
                 "usage": {"total_tokens": len(batch)},
@@ -144,16 +154,15 @@ def test_dify_registers_and_invokes_generated_embedding_without_schema_injection
 
     with patch("requests.post", side_effect=reply) as post:
         result = model.invoke(selected, {"api_key": "test"}, texts)
-    assert result.embeddings == [[float(i), 0.2] for i in range(33)]
+    for i, vector in enumerate(result.embeddings):
+        norm = (i * i + 0.04) ** 0.5
+        assert vector == pytest.approx([i / norm, 0.2 / norm])
     assert post.call_count == 2
     assert [call.kwargs["json"]["input"] for call in post.call_args_list] == [
-        texts[:32],
-        texts[32:],
+        [encoding.encode(text) for text in texts[:32]],
+        [encoding.encode(text) for text in texts[32:]],
     ]
-    assert all(
-        call.args == ("https://api-staging.tokener.dev/v1/embeddings",)
-        for call in post.call_args_list
-    )
+    assert all(call.args == (f"{ENDPOINT_URL}/embeddings",) for call in post.call_args_list)
     assert all(call.kwargs["json"]["model"] == selected for call in post.call_args_list)
 
 
@@ -230,6 +239,7 @@ def test_dify_registry_matches_generated_model_positions():
         ("rerank", ModelType.RERANK),
         ("tts", ModelType.TTS),
         ("speech2text", ModelType.SPEECH2TEXT),
+        ("moderation", ModelType.MODERATION),
     ]:
         expected = yaml.safe_load((Path("models") / kind / "_position.yaml").read_text())
         actual = registration.get_model_instance("tokener", model_type).model_schemas
@@ -247,3 +257,14 @@ def test_dashscope_embedding_sync_preserves_provider_batch_limit(model_id):
     from pathlib import Path
 
     assert files[f"{model_id}.yaml"] == Path(f"models/text_embedding/{model_id}.yaml").read_text()
+
+
+@pytest.mark.parametrize("model_id", ["gpt-4o-mini", "gpt-4o-mini-2024-07-18", "gpt-4.1"])
+def test_known_openai_sampling_controls_survive_catalog_reasoning_flag(model_id):
+    row = export_row(model_id, "reasoning")
+    row.update(capabilities=["streaming", "reasoning"], outputPricePer1m="0.04")
+    files = render_catalog(normalize_catalog({"items": [row]}))
+    model = yaml.safe_load(files[f"{model_id}.yaml"])
+    assert {"temperature", "top_p", "presence_penalty", "frequency_penalty"} <= {
+        rule["name"] for rule in model["parameter_rules"]
+    }

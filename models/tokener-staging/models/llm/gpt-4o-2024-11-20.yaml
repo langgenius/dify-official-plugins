@@ -8,6 +8,8 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
+  - document
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -18,22 +20,34 @@ parameter_rules:
     default: 8192
     min: 1
     max: 16384
-  - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
-    type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: enable_stream
+    type: boolean
     required: false
-    default: text
+  - name: response_format
+    type: string
+    required: false
     options:
       - text
       - json_object
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: service_tier
+    type: string
+    required: false
+    default: auto
+    options:
+      - auto
+      - default
+      - priority
 pricing:
   input: "2.500000"
   output: "10.000000"

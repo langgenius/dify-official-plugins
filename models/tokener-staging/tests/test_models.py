@@ -6,7 +6,10 @@ from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity, I18nObject, ModelFeature, ModelType
 
 from models._credentials import ENDPOINT_URL
+from models.llm._wire import TRANSPORT_FIELDS
 from models.llm.llm import TokenerLargeLanguageModel
+from scripts.source_contracts import RULE_FIELDS, load_source_contracts
+from scripts.sync_catalog import SOURCE_ROOT
 
 
 def _schema(model: str, features: list[ModelFeature]) -> AIModelEntity:
@@ -27,21 +30,21 @@ def test_llm_schema_only_exposes_supported_parameters() -> None:
     ]
 
     assert schemas
+    contracts = load_source_contracts(SOURCE_ROOT)
     for schema in schemas:
         rules = {rule["name"]: rule for rule in schema["parameter_rules"]}
 
-        max_tokens = rules["max_tokens"]
-        assert max_tokens["use_template"] == "max_tokens"
-        assert max_tokens["min"] == 1
-        assert 1 <= max_tokens["default"] <= max_tokens["max"]
-
-        expected = {"max_tokens"}
-        if "structured-output" in schema.get("features", []):
-            expected |= {"response_format", "json_schema"}
-            assert rules["response_format"]["options"] == ["text", "json_object", "json_schema"]
-            assert rules["response_format"]["required"] is False
-            assert rules["json_schema"]["use_template"] == "json_schema"
-        assert expected <= set(rules)
+        source = contracts.get(schema["model"])
+        if source:
+            expected = {
+                rule["name"]: {key: value for key, value in rule.items() if key in RULE_FIELDS}
+                for rule in source["model"].get("parameter_rules", [])
+                if rule["name"] not in TRANSPORT_FIELDS
+            }
+            assert {name: rules[name] for name in expected} == expected
+        else:
+            assert rules["max_tokens"]["min"] == 1
+            assert rules["max_tokens"]["max"] >= rules["max_tokens"]["default"] >= 1
 
 
 @patch.object(OAICompatLargeLanguageModel, "_invoke", return_value="llm-result")

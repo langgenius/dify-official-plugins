@@ -3,7 +3,8 @@ label:
   en_US: "qwen-mt-plus"
   zh_Hans: "qwen-mt-plus"
 model_type: llm
-features: []
+features:
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 2048
@@ -13,14 +14,204 @@ parameter_rules:
     default: 2048
     min: 1
     max: 2048
-  - name: temperature
-    use_template: temperature
-    min: 0
-    max: 2
-  - name: top_p
-    use_template: top_p
-    min: 0.01
-    max: 1
+  - name: source_lang
+    type: string
+    required: true
+    default: auto
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
+      - auto
+  - name: target_lang
+    type: string
+    required: true
+    default: Chinese
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
+  - name: domains
+    type: text
+    required: false
 pricing:
   input: "2.460000"
   output: "7.370000"

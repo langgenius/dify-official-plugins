@@ -1,0 +1,13 @@
+{
+  "model": "omni-moderation-latest",
+  "label": {
+    "en_US": "omni-moderation-latest",
+    "zh_Hans": "omni-moderation-latest"
+  },
+  "model_type": "moderation",
+  "model_properties": {
+    "max_chunks": 32,
+    "max_characters_per_chunk": 2000
+  },
+  "deprecated": false
+}
