@@ -467,6 +467,43 @@ model_credential_schema:
           label:
             en_US: Disabled
             zh_Hans: 禁用
+    - variable: prompt_cache
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Prompt Cache
+        zh_Hans: 提示词缓存
+      type: select
+      required: false
+      default: "off"
+      help:
+        en_US: >
+          Send a top-level `cache_control: {type: ephemeral}` (and `session_id`)
+          so gateways such as OpenRouter cache the prompt prefix for models that
+          need an explicit request, such as Anthropic Claude. Automatic (5 min)
+          covers the calls inside one agent run; Automatic (1 hour) also covers
+          the gap between a user's turns, at a higher cache write price. Leave
+          Off for endpoints that reject unknown fields or cache on their own.
+        zh_Hans: >
+          发送顶层 `cache_control: {type: ephemeral}`（以及 `session_id`），让
+          OpenRouter 等网关为需要显式请求缓存的模型（如 Anthropic Claude）缓存
+          提示词前缀。自动（5 分钟）覆盖一次智能体运行内的调用；自动（1 小时）
+          还覆盖用户两轮对话之间的间隔，但缓存写入价格更高。端点拒绝未知字段或
+          自行缓存时请保持关闭。
+      options:
+        - value: "off"
+          label:
+            en_US: "Off"
+            zh_Hans: 关闭
+        - value: auto
+          label:
+            en_US: Automatic (5 min)
+            zh_Hans: 自动（5 分钟）
+        - value: auto_1h
+          label:
+            en_US: Automatic (1 hour)
+            zh_Hans: 自动（1 小时）
     - variable: function_calling_type
       show_on:
         - variable: __model_type

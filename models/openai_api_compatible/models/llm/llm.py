@@ -793,6 +793,20 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if stream and include_usage and "stream_options" not in model_parameters:
             model_parameters["stream_options"] = {"include_usage": True}
 
+        # Prompt caching for gateways such as OpenRouter: Anthropic models cache only when the
+        # request asks for it. A top-level `cache_control` places one automatic breakpoint that
+        # moves forward as the conversation grows, so every agent iteration reads the prefix the
+        # previous one wrote. `session_id` keeps those calls on the provider holding that cache.
+        # Off by default because plain OpenAI-compatible servers may reject unknown fields.
+        prompt_cache = credentials.get("prompt_cache", "off")
+        if prompt_cache in ("auto", "auto_1h") and "cache_control" not in model_parameters:
+            cache_control = {"type": "ephemeral"}
+            if prompt_cache == "auto_1h":
+                cache_control["ttl"] = "1h"
+            model_parameters["cache_control"] = cache_control
+            if user:
+                model_parameters.setdefault("session_id", user)
+
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
