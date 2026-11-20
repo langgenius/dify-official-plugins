@@ -1,6 +1,8 @@
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
@@ -96,3 +98,26 @@ def test_native_mode_preserves_json_schema_transport_without_prompt_injection():
     assert forwarded_parameters["response_format"] == "json_schema"
     assert forwarded_parameters["json_schema"] == json_schema
     assert forwarded_messages[0].content == "You are helpful."
+
+
+def _credential_options(variable: str) -> list[str]:
+    provider = Path(__file__).resolve().parents[1] / "provider" / "openai_api_compatible.yaml"
+    schema = yaml.safe_load(provider.read_text(encoding="utf-8"))
+    form = next(
+        item
+        for item in schema["model_credential_schema"]["credential_form_schemas"]
+        if item["variable"] == variable
+    )
+    return [option["value"] for option in form["options"]]
+
+
+def test_structured_output_credential_offers_every_mode():
+    assert _credential_options("structured_output_support") == [
+        "supported",
+        "native",
+        "not_supported",
+    ]
+
+
+def test_stream_function_calling_credential_offers_only_on_and_off():
+    assert _credential_options("stream_function_calling") == ["supported", "not_supported"]
