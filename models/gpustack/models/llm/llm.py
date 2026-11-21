@@ -468,6 +468,9 @@ class GPUStackLanguageModel(ConfigurableTimeoutLLM):
 
         structured_output_support = credentials.get("structured_output_support", "not_supported")
         if structured_output_support == "supported":
+            if ModelFeature.STRUCTURED_OUTPUT not in features:
+                features.append(ModelFeature.STRUCTURED_OUTPUT)
+            entity.features = features
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
