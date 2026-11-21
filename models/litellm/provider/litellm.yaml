@@ -161,6 +161,50 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: enable_spend_logs_metadata
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Enable spend logs metadata (optional)
+        zh_Hans: 启用消费日志元数据（可选）
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 已启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+      help:
+        en_US: >-
+          Send Dify's end-user and app IDs to LiteLLM in the x-litellm-spend-logs-metadata
+          header so proxy spend logs can be grouped per user and per app.
+        zh_Hans: >-
+          通过 x-litellm-spend-logs-metadata 请求头把 Dify 的终端用户 ID 和应用 ID 传给 LiteLLM，
+          便于按用户和应用维度统计代理消费。
+    - variable: spend_logs_metadata
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Extra spend logs metadata
+        zh_Hans: 额外消费日志元数据
+      type: text-input
+      required: false
+      placeholder:
+        en_US: '{"team":"growth","env":"prod"}'
+        zh_Hans: '{"team":"growth","env":"prod"}'
+      help:
+        en_US: >-
+          Optional JSON object merged into the same header, for grouping spend logs by your
+          own keys. Only sent when spend logs metadata is enabled.
+        zh_Hans: >-
+          可选 JSON 对象，会合并进同一个请求头，便于按自定义维度统计消费。仅在启用消费日志元数据时发送。
     - variable: context_size
       show_on:
         - variable: __model_type

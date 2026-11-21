@@ -8,6 +8,17 @@ Configure the OpenAI-API-compatible model by providing its core details (Type, N
 
 ![](./_assets/openai_api_compatible-01.png)
 
+### Request metadata
+
+`Enable request metadata` is optional and disabled by default. When it is set to `Enabled`, every LLM request carries two extra headers:
+
+| Header | Value |
+| --- | --- |
+| `x-dify-app-id` | The Dify app that triggered the request |
+| `x-dify-user-id` | The Dify end-user ID passed to the model |
+
+A gateway or self-hosted proxy can use them to attribute traffic and spend per app. The app ID is only present when the call runs inside a Dify app, and Dify does not expose a workflow run ID to model plugins, so none is sent. Headers configured through the `Extra Headers` model parameter still win when both use the same name.
+
 ### TokenLab example
 
 TokenLab can be configured through this plugin with the OpenAI-compatible API surface:

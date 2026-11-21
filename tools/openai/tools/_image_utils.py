@@ -2,15 +2,21 @@ import base64
 import re
 from typing import Any
 
+from openai.types import ImagesResponse
 
-def build_image_args(parameters: dict[str, Any]) -> dict[str, Any]:
+
+def build_image_args(
+    parameters: dict[str, Any], *, edit: bool = False
+) -> dict[str, Any]:
     model = parameters.get("model", "gpt-image-2")
     if not isinstance(model, str) or model not in {
         "gpt-image-2",
         "gpt-image-2.5-flare",
         "gpt-image-2.5-sunburst",
+        "gpt-image-2.6-flare",
+        "gpt-image-2.6-sunburst",
     }:
-        raise ValueError("Invalid model. Choose GPT Image 2, GPT Image 2.5 Flare, or Sunburst.")
+        raise ValueError("Invalid model. Select a GPT Image model from the list.")
 
     prompt = parameters.get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
@@ -38,10 +44,27 @@ def build_image_args(parameters: dict[str, Any]) -> dict[str, Any]:
     qualities = {"auto", "low", "medium", "high"}
     if model != "gpt-image-2":
         qualities.update({"xhigh", "max"})
+    formats = {"auto", "png", "jpeg", "webp"}
+    if model.startswith("gpt-image-2.6-"):
+        formats.add("gif")
+        if not edit:
+            formats.add("svg")
+    complexity = parameters.get("complexity", "auto")
+    if complexity != "auto":
+        if not model.startswith("gpt-image-2.6-") or complexity not in (
+            "low",
+            "medium",
+            "high",
+        ):
+            raise ValueError(
+                "Invalid complexity. GPT Image 2.6 supports low, medium, and high."
+            )
+        args["complexity"] = complexity
+
     for name, allowed in (
         ("quality", qualities),
         ("background", {"auto", "opaque", "transparent"}),
-        ("output_format", {"auto", "png", "jpeg", "webp"}),
+        ("output_format", formats),
     ):
         value = parameters.get(name, "auto")
         if not isinstance(value, str) or value not in allowed:
@@ -49,16 +72,27 @@ def build_image_args(parameters: dict[str, Any]) -> dict[str, Any]:
         if value != "auto":
             args[name] = value
 
-    if args.get("background") == "transparent" and args.get("output_format") == "jpeg":
+    if args.get("background") == "transparent" and args.get("output_format") in {
+        "jpeg",
+        "gif",
+        "svg",
+    }:
         raise ValueError("Invalid output_format. Transparent background requires png or webp.")
 
     for name, default, minimum, maximum in (
         ("n", 1, 1, 10),
         ("output_compression", None, 0, 100),
+        ("frame_count", None, 2, 16),
+        ("frame_duration_ms", None, 20, 2000),
     ):
         value = parameters.get(name, default)
-        if name == "output_compression" and value in (None, ""):
+        if default is None and value in (None, ""):
             continue
+        if (
+            name in ("frame_count", "frame_duration_ms")
+            and args.get("output_format") != "gif"
+        ):
+            raise ValueError(f"{name} requires GIF output.")
         error = f"Invalid {name}. Choose an integer between {minimum} and {maximum}."
         try:
             number = int(value)
@@ -70,9 +104,21 @@ def build_image_args(parameters: dict[str, Any]) -> dict[str, Any]:
             or not minimum <= number <= maximum
         ):
             raise ValueError(error)
-        if name == "n" or args.get("output_format") in {"jpeg", "webp"}:
+        if name != "output_compression" or args.get("output_format") in {
+            "jpeg",
+            "webp",
+        }:
             args[name] = number
 
+    if args.get("output_format") == "svg" and args["n"] != 1:
+        raise ValueError("SVG output requires n=1.")
+    author_model = parameters.get("svg_author_model")
+    if author_model not in (None, ""):
+        if args.get("output_format") != "svg":
+            raise ValueError("svg_author_model requires SVG output.")
+        if not isinstance(author_model, str) or not author_model.strip():
+            raise ValueError("Enter a model ID for svg_author_model.")
+        args["svg"] = {"model": author_model.strip()}
     return args
 
 
@@ -92,47 +138,14 @@ def decode_image(base64_image: str) -> tuple[str, bytes]:
         return ("image/png", base64.b64decode(base64_image.split(",")[-1]))
 
 
-def build_usage_metadata(response: Any) -> dict[str, Any]:
-    metadata: dict[str, Any] = {}
-    usage = getattr(response, "usage", None)
+def build_usage_outputs(
+    response: ImagesResponse, model: str, operation: str, image_count: int
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    usage = response.model_dump(mode="json", include={"usage", "svg_usage"}, exclude_none=True)
     if not usage:
-        return metadata
-
-    usage_metadata: dict[str, Any] = {}
-    if hasattr(usage, "total_tokens"):
-        usage_metadata["total_tokens"] = usage.total_tokens
-    if hasattr(usage, "input_tokens"):
-        usage_metadata["input_tokens"] = usage.input_tokens
-    if hasattr(usage, "output_tokens"):
-        usage_metadata["output_tokens"] = usage.output_tokens
-
-    details = getattr(usage, "input_tokens_details", None)
-    if details:
-        usage_metadata["input_tokens_details"] = {
-            "text_tokens": getattr(details, "text_tokens", None),
-            "image_tokens": getattr(details, "image_tokens", None),
-        }
-
-    if usage_metadata:
-        metadata["token_usage"] = usage_metadata
-    return metadata
-
-
-def build_usage_output(
-    response: Any, model: str, operation: str, image_count: int
-) -> dict[str, Any] | None:
-    metadata = build_usage_metadata(response)
-    token_usage = metadata.get("token_usage")
-    if not token_usage:
-        return None
-
-    return {
-        "data": [
-            {
-                "model": model,
-                "operation": operation,
-                "image_count": image_count,
-                "usage": token_usage,
-            }
-        ]
-    }
+        return {}, None
+    metadata = usage.copy()
+    if "usage" in metadata:
+        metadata["token_usage"] = metadata.pop("usage")
+    result = {"model": model, "operation": operation, "image_count": image_count, **usage}
+    return metadata, {"data": [result]}

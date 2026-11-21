@@ -13,6 +13,28 @@ parameter_rules:
     default: 8000
     min: 1
     max: 8000
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+  - name: top_k
+    type: int
+    min: 0
+    max: 100
+  - name: repetition_penalty
+    type: float
+    min: 0
+    max: 2
+  - name: seed
+    type: int
+    required: false
+  - name: enable_search
+    type: boolean
+    required: false
 pricing:
   input: "0.150000"
   output: "1.200000"

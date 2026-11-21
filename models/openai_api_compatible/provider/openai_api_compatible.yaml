@@ -41,6 +41,33 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: enable_request_metadata
+      label:
+        en_US: Enable request metadata (optional)
+        zh_Hans: 启用请求元数据（可选）
+      type: select
+      required: false
+      default: disabled
+      show_on:
+        - variable: __model_type
+          value: llm
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 已启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+      help:
+        en_US: >
+          Send Dify's app ID and end-user ID as x-dify-app-id and x-dify-user-id
+          headers, so a gateway or self-hosted proxy can attribute traffic and
+          spend to a specific app. Disabled by default.
+        zh_Hans: >
+          通过 x-dify-app-id 与 x-dify-user-id 请求头把 Dify 应用 ID 和终端用户 ID 传给接口，
+          便于网关或自建代理按应用归集流量与消费。默认关闭。
     - variable: language
       label:
         en_US: Language

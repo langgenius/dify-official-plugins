@@ -174,7 +174,7 @@ def test_tts_shared_audio_pricing_rejects_non_string_units(model_type):
         render_catalog(payload, model_type=model_type)
 
 
-@pytest.mark.parametrize("audio_format", ["wav", "flac"])
+@pytest.mark.parametrize("audio_format", ["ogg", "flac"])
 def test_tts_catalog_rejects_unsafe_audio_format_without_writing_files(tmp_path, audio_format):
     payload = catalog()
     payload["models"][0]["audio"]["audioFormat"] = audio_format

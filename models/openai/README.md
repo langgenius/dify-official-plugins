@@ -49,6 +49,14 @@ The API only accepts metadata when storage is enabled, so enabling it also sends
 
 ## GPT-6 models
 
+GPT-6.2 Astra and Sol have a 1,050,000-token context, a 922,000-token input limit, and up to 128,000 output tokens.
+Dify reserves history space from the total context, so a smaller output allowance can leave more history than the API accepts.
+Responses accepts text, images, and supported document files, including file URLs.
+Chat Completions accepts text, images, and inline PDFs. [File inputs](https://developers.openai.com/api/docs/guides/file-inputs)
+Use the Responses protocol for tools and Ultrafast processing.
+The reasoning effort defaults to `medium`. [GPT-6.2 API guide](https://developers.openai.com/api/docs/guides/latest-model)
+The plugin includes the 10% surcharge for official US, EU, and FedRAMP processing endpoints in reported usage. [API pricing](https://developers.openai.com/api/docs/pricing#text-tokens)
+
 GPT-6.1 Sol and Terra require Responses for function calling. Sol supports reasoning effort `low` through `max`, while Terra also supports `none`.
 
 GPT-6 Astra, Sol, and Luna support text, vision, structured outputs, and streaming, with reasoning effort set to `medium` by default.

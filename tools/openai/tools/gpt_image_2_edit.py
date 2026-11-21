@@ -9,8 +9,7 @@ from openai import OpenAI
 from openai_client import normalize_openai_base_url
 from tools._image_utils import (
     build_image_args,
-    build_usage_metadata,
-    build_usage_output,
+    build_usage_outputs,
     decode_image,
 )
 
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 class GPTImage2EditTool(Tool):
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         try:
-            edit_args = build_image_args(tool_parameters)
+            edit_args = build_image_args(tool_parameters, edit=True)
         except ValueError as e:
             yield self.create_text_message(str(e))
             return
@@ -35,6 +34,10 @@ class GPTImage2EditTool(Tool):
 
         model = edit_args["model"]
         output_format = edit_args.get("output_format", "auto")
+        mask = tool_parameters.get("mask")
+        if output_format == "gif" and mask:
+            yield self.create_text_message("GIF edits do not support a mask. Remove the mask or use PNG output.")
+            return
         image_files: list[io.BytesIO] = []
         mask_file: io.BytesIO | None = None
 
@@ -59,7 +62,17 @@ class GPTImage2EditTool(Tool):
                 image_files.append(img_file)
                 edit_args["image"] = img_file
 
-            mask = tool_parameters.get("mask")
+            markup = tool_parameters.get("markup")
+            if markup:
+                if mask or model == "gpt-image-2" or not isinstance(markup, File):
+                    yield self.create_text_message(
+                        "Markup requires a PNG file and GPT Image 2.5 or 2.6. Use either markup or a mask."
+                    )
+                    return
+                if markup.mime_type != "image/png":
+                    yield self.create_text_message("Markup must be a transparent PNG.")
+                    return
+                edit_args["markup"] = (markup.filename or "markup.png", markup.blob, "image/png")
             if mask:
                 if not isinstance(mask, File):
                     yield self.create_text_message("Error: Mask image must be a valid file.")
@@ -93,23 +106,17 @@ class GPTImage2EditTool(Tool):
             if mask_file and not mask_file.closed:
                 mask_file.close()
 
-        usage_metadata = build_usage_metadata(response)
         image_count = len(getattr(response, "data", []))
+        usage_metadata, usage_output = build_usage_outputs(response, model, "edit", image_count)
         logger.info("%s edit success: images=%s", model, image_count)
         for image_data in response.data:
             if not image_data.b64_json:
                 continue
             mime_type, blob_image = decode_image(image_data.b64_json)
-            if output_format in {"png", "jpeg", "webp"}:
+            if output_format != "auto":
                 mime_type = f"image/{output_format}"
             metadata = {"mime_type": mime_type, **usage_metadata}
             yield self.create_blob_message(blob=blob_image, meta=metadata)
 
-        usage_output = build_usage_output(
-            response=response,
-            model=model,
-            operation="edit",
-            image_count=image_count,
-        )
         if usage_output:
             yield self.create_json_message(usage_output)

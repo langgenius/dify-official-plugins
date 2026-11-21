@@ -175,8 +175,8 @@ parameter_rules:
     use_template: json_schema
 
 # https://platform.claude.com/docs/en/about-claude/pricing
-# Rates for prompts up to 100K tokens. Prompts over 100K tokens are billed at
-# $0.50 / $2.50 per MTok, which the flat pricing schema can't express.
+# Rates for prompts up to 100K tokens. The plugin applies $0.50 / $2.50 per
+# MTok when the prompt, including cache reads and writes, exceeds 100K tokens.
 pricing:
   input: '0.10'
   output: '0.50'

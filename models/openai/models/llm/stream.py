@@ -157,6 +157,7 @@ def generate(
                 terminal,
                 canonical or formatted,
                 calls,
+                model_parameters.get("service_tier"),
             ),
         ),
     )

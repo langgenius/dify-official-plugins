@@ -1,11 +1,12 @@
 import json
 import os
+from collections.abc import Generator
 from itertools import islice
-from typing import Any, Generator
+from typing import Any
 
 import requests
-from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 def get_file_path(filename: str) -> str:
@@ -94,7 +95,7 @@ class GoogleImageSearchTool(Tool):
                 markdown_result += f"![{res.get('title') or ''}]({res.get('image') or ''})"
                 json_result.append(self.create_json_message(res))
             yield from [self.create_text_message(markdown_result)] + json_result
-        except requests.exceptions.RequestException as e:
-            yield self.create_text_message(
-                f"An error occurred while invoking the tool: {str(e)}. Please refer to https://serpapi.com/locations-api for the list of valid locations."
-            )
+        except requests.exceptions.RequestException:
+            yield self.create_text_message("Could not complete the Google image search with SerpAPI.")
+        except Exception:  # noqa: BLE001 - the SDK sends the traceback to the caller
+            raise RuntimeError("Could not process the SerpAPI image results.") from None

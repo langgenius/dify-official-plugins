@@ -1,3 +1,5 @@
+from datetime import datetime
+from unittest.mock import patch
 from decimal import Decimal
 from pathlib import Path
 
@@ -136,7 +138,10 @@ def test_introductory_flash_models_share_one_rate_card():
 
 def test_latest_models_are_first_in_display_order():
     position = yaml.safe_load((LLM_SCHEMA_DIR / "_position.yaml").read_text())
-    assert position[:6] == [
+    assert position[:9] == [
+        "gemini-4-carbon",
+        "gemini-4-neon",
+        "gemini-4-hydrogen",
         "gemini-4-argon",
         "gemini-3.8-flash",
         "gemini-3.7-flash",
@@ -146,21 +151,44 @@ def test_latest_models_are_first_in_display_order():
     ]
 
 
-def test_gemini4_context_output_limits_and_pricing():
+@pytest.mark.parametrize(
+    ("model", "thinking", "input_price", "output_price"),
+    [
+        ("gemini-4-argon", "Medium", "2.00", "10.00"),
+        ("gemini-4-carbon", "Medium", "2.00", "10.00"),
+        ("gemini-4-hydrogen", "High", "1.50", "7.50"),
+        ("gemini-4-neon", "High", "3.00", "15.00"),
+    ],
+)
+def test_gemini4_context_output_limits_and_pricing(
+    model, thinking, input_price, output_price
+):
     llm = GoogleLargeLanguageModel(_load_llm_model_schemas())
-    schema = llm.get_model_schema("gemini-4-argon")
+    with patch("models.llm.llm.datetime") as clock:
+        clock.now.return_value = datetime(2026, 11, 30)
+        schema = llm.get_model_schema(model)
+        clock.now.return_value = datetime(2026, 12, 1)
+        december = llm.get_model_schema(model)
     assert schema is not None
     assert schema.model_properties[ModelPropertyKey.CONTEXT_SIZE] == 1_048_576
     rules = {rule.name: rule for rule in schema.parameter_rules}
     assert rules["max_output_tokens"].default == 65_536
     assert rules["max_output_tokens"].max == 1_048_576
-    assert rules["thinking_level"].default == "Medium"
-    assert rules["thinking_level"].options == ["Low", "Medium", "High"]
+    assert rules["thinking_level"].default == thinking
+    assert rules["thinking_level"].options == ["Low", "Medium", "High"] + (
+        ["Xhigh"] if thinking == "High" else []
+    )
     assert (
         not {"temperature", "top_p", "top_k", "thinking_budget", "thinking_mode"}
         & rules.keys()
     )
     assert schema.pricing is not None
-    assert schema.pricing.input == Decimal("2.00")
-    assert schema.pricing.output == Decimal("10.00")
+    assert schema.pricing.input == Decimal(input_price)
+    assert schema.pricing.output == Decimal(output_price)
+    assert december.pricing.input == (
+        Decimal("4") if thinking == "Medium" else Decimal(input_price)
+    )
+    assert december.pricing.output == (
+        Decimal("20") if thinking == "Medium" else Decimal(output_price)
+    )
     assert schema.pricing.unit == Decimal("0.000001")

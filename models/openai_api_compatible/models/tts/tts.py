@@ -3,7 +3,6 @@ import json
 import logging
 from collections.abc import Generator
 from typing import Mapping
-from urllib.parse import urljoin
 
 import requests
 

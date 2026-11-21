@@ -1,14 +1,17 @@
 import json
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
 import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessageTool,
+    ToolPromptMessage,
     UserPromptMessage,
 )
 from google import genai
@@ -32,13 +35,24 @@ def llm():
 @pytest.mark.parametrize(
     "tool", ["grounding", "url_context", "code_execution", "function"]
 )
-def test_structured_output_with_tools_uses_generate_content(llm, stream, tool):
+@pytest.mark.parametrize(
+    ("model", "level"),
+    [
+        ("gemini-4-argon", "High"),
+        ("gemini-4-carbon", "High"),
+        ("gemini-4-hydrogen", "Xhigh"),
+        ("gemini-4-neon", "Xhigh"),
+    ],
+)
+def test_structured_output_with_tools_uses_generate_content(
+    llm, stream, tool, model, level
+):
     client = Mock()
     schema = {"type": "object", "properties": {"answer": {"type": "string"}}}
     parameters = {
         "json_schema": json.dumps(schema),
         "max_output_tokens": 131_072,
-        "thinking_level": "High",
+        "thinking_level": level,
         "service_tier": "flex",
         "media_resolution": "High",
         "include_thoughts": True,
@@ -57,7 +71,7 @@ def test_structured_output_with_tools_uses_generate_content(llm, stream, tool):
         patch.object(llm, "_handle_generate_stream_response"),
     ):
         llm._generate(
-            model=MODEL,
+            model=model,
             credentials={
                 "google_api_key": "test-key",
                 "google_base_url": "https://example.com",
@@ -76,11 +90,19 @@ def test_structured_output_with_tools_uses_generate_content(llm, stream, tool):
         else client.models.generate_content
     ).call_args.kwargs
     config = request["config"]
-    assert request["model"] == MODEL
+    assert request["model"] == model
     assert config.response_json_schema == schema
     assert config.response_mime_type == "application/json"
     assert config.max_output_tokens == 131_072
-    assert config.thinking_config.thinking_level == types.ThinkingLevel.HIGH
+    if level == "Xhigh":
+        assert (
+            config.http_options.extra_body["generationConfig"]["thinkingConfig"][
+                "thinkingLevel"
+            ]
+            == "XHIGH"
+        )
+    else:
+        assert config.thinking_config.thinking_level == types.ThinkingLevel.HIGH
     assert config.thinking_config.include_thoughts is True
     assert config.media_resolution == types.MediaResolution.MEDIA_RESOLUTION_HIGH
     assert config.service_tier == types.ServiceTier.FLEX
@@ -96,7 +118,18 @@ def test_structured_output_with_tools_uses_generate_content(llm, stream, tool):
 
 
 @pytest.mark.parametrize("stream", [False, True])
-def test_sdk_continuation_preserves_text_and_billed_usage(llm, stream):
+@pytest.mark.parametrize(
+    ("model", "price"),
+    [
+        ("gemini-4-argon", "0.000212"),
+        ("gemini-4-carbon", "0.000212"),
+        ("gemini-4-hydrogen", "0.000159"),
+        ("gemini-4-neon", "0.000318"),
+    ],
+)
+def test_sdk_continuation_preserves_text_and_billed_usage(stream, model, price):
+    path = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel([AIModelEntity(**yaml.safe_load(path.read_text()))])
     first = types.GenerateContentResponse(
         candidates=[
             types.Candidate(
@@ -144,11 +177,13 @@ def test_sdk_continuation_preserves_text_and_billed_usage(llm, stream):
         ) as client,
         patch("models.llm.llm.genai.Client", return_value=client),
         patch.object(Models, method, side_effect=responses) as transport,
+        patch("models.llm.llm.datetime") as clock,
         patch.object(llm, "get_num_tokens") as estimate_tokens,
     ):
+        clock.now.return_value = datetime(2026, 11, 30)
         chunks = list(
             llm.invoke(
-                model=MODEL,
+                model=model,
                 credentials={"google_api_key": "test-key"},
                 prompt_messages=[UserPromptMessage(content="Solve this.")],
                 model_parameters={"max_output_tokens": 131_072},
@@ -169,7 +204,7 @@ def test_sdk_continuation_preserves_text_and_billed_usage(llm, stream):
     assert len(usages) == 1
     assert usages[0].prompt_tokens == 21
     assert usages[0].completion_tokens == 17
-    assert usages[0].total_price == Decimal("0.000212")
+    assert usages[0].total_price == Decimal(price)
     assert all(
         chunk.delta.finish_reason != types.FinishReason.CONTINUATION for chunk in chunks
     )
@@ -318,3 +353,299 @@ def test_usage_fallback_counts_tool_names_and_arguments(llm, stream):
         "weather-2",
     ]
     assert usage.completion_tokens == llm._get_num_tokens_by_gpt2(tokenized_output)
+
+
+@pytest.mark.parametrize("stream", [False, True])
+def test_signed_parallel_tools_round_trip(stream):
+    model = "gemini-4-neon"
+    llm = GoogleLargeLanguageModel([])
+    parts = [
+        types.Part(
+            function_call=types.FunctionCall(name="first", args={}),
+            thought_signature=b"\xffsignature",
+        ),
+        types.Part(
+            function_call=types.FunctionCall(id="second-id", name="second", args={})
+        ),
+    ]
+    reply = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(role="model", parts=parts), finish_reason="STOP"
+            )
+        ],
+        usage_metadata=types.GenerateContentResponseUsageMetadata(prompt_token_count=1),
+    )
+    with llm.timing_context():
+        if stream:
+            first = types.GenerateContentResponse(
+                candidates=[types.Candidate(content=reply.candidates[0].content)]
+            )
+            reply.candidates[0].content = None
+            chunks = list(
+                llm._handle_generate_stream_response(
+                    model, {}, iter([first, reply]), [], Mock()
+                )
+            )
+            assistant = chunks[0].delta.message
+            assistant.opaque_body = chunks[-1].delta.message.opaque_body
+        else:
+            assistant = llm._handle_generate_response(model, {}, reply, []).message
+    messages = [UserPromptMessage(content="Use both tools"), assistant]
+    for call in assistant.tool_calls:
+        messages.append(
+            ToolPromptMessage(
+                name=call.function.name, tool_call_id=call.id, content="ok"
+            )
+        )
+    history = llm._build_gemini_contents(
+        messages, Mock(), types.GenerateContentConfig()
+    )
+    assert history[1].parts == parts
+    assert [part.function_response.id for part in history[2].parts] == [
+        None,
+        "second-id",
+    ]
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("tool", "wire_name", "tool_type", "input_cost"),
+    [
+        ("url_context", "urlContext", "URL_CONTEXT", "0.031008"),
+        ("code_execution", "codeExecution", None, "0.031008"),
+        ("grounding", "googleSearch", "GOOGLE_SEARCH_WEB", "0.000081"),
+    ],
+)
+def test_mixed_tools_keep_server_context_and_report_tool_usage(
+    stream, tool, wire_name, tool_type, input_cost
+):
+    model = "gemini-4-neon"
+    schema = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel(
+        [AIModelEntity(**yaml.safe_load(schema.read_text()))]
+    )
+    if tool_type:
+        server_parts = [
+            {"toolCall": {"id": "server", "toolType": tool_type, "args": {}}},
+            {
+                "toolResponse": {
+                    "id": "server",
+                    "toolType": tool_type,
+                    "response": {"result": "ok"},
+                }
+            },
+        ]
+    else:
+        server_parts = [
+            {"executableCode": {"language": "PYTHON", "code": "print(1)"}},
+            {"codeExecutionResult": {"outcome": "OUTCOME_OK", "output": "1"}},
+        ]
+    first_parts = [
+        *server_parts,
+        {"functionCall": {"name": "lookup", "id": "local", "args": {}}},
+    ]
+    requests = []
+
+    def transport(request):
+        requests.append(json.loads(request.content))
+        parts = first_parts if len(requests) == 1 else [{"text": "Done"}]
+        body = {
+            "candidates": [
+                {"content": {"role": "model", "parts": parts}, "finishReason": "STOP"}
+            ],
+            "usageMetadata": {
+                "promptTokenCount": 27,
+                "toolUsePromptTokenCount": 10309,
+                "candidatesTokenCount": 45,
+                "thoughtsTokenCount": 31,
+                "totalTokenCount": 10412,
+            },
+        }
+        if stream:
+            return httpx.Response(
+                200,
+                text=f"data: {json.dumps(body)}\n\n",
+                headers={"Content-Type": "text/event-stream"},
+            )
+        return httpx.Response(200, json=body)
+
+    messages = [UserPromptMessage(content="Look this up.")]
+    functions = [PromptMessageTool(name="lookup", description="Lookup", parameters={})]
+
+    def invoke():
+        return list(
+            llm.invoke(
+                model,
+                {"google_api_key": "test"},
+                messages,
+                {tool: True},
+                tools=functions,
+                stream=stream,
+            )
+        )
+
+    with (
+        genai.Client(
+            api_key="test",
+            http_options=types.HttpOptions(
+                client_args={
+                    "transport": httpx.MockTransport(transport),
+                    "trust_env": False,
+                },
+                async_client_args={"trust_env": False},
+            ),
+        ) as client,
+        patch("models.llm.llm.genai.Client", return_value=client),
+    ):
+        first = invoke()[-1].delta
+        assert first.usage.prompt_tokens == 10336
+        assert first.usage.total_tokens == 10412
+        assert first.usage.prompt_price == Decimal(input_cost)
+        messages.extend(
+            [
+                AssistantPromptMessage.model_validate_json(
+                    first.message.model_dump_json()
+                ),
+                ToolPromptMessage(
+                    name="lookup", tool_call_id="local", content="result"
+                ),
+            ]
+        )
+        invoke()
+
+    for request in requests:
+        assert request["toolConfig"]["includeServerSideToolInvocations"] is True
+        assert {next(iter(entry)) for entry in request["tools"]} == {
+            wire_name,
+            "functionDeclarations",
+        }
+    wire_history = requests[1]["contents"]
+    assert types.Content.model_validate(
+        wire_history[1]
+    ) == types.Content.model_validate({"role": "model", "parts": first_parts})
+    assert wire_history[2]["parts"][0]["functionResponse"]["id"] == "local"
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    "url_used, input_cost", [(False, "0.000081"), (True, "0.031008")]
+)
+def test_search_and_url_context_usage_follows_tool_results(
+    stream, url_used, input_cost
+):
+    model = "gemini-4-neon"
+    schema = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel(
+        [AIModelEntity(**yaml.safe_load(schema.read_text()))]
+    )
+    evidence = {"grounding_metadata": {"web_search_queries": ["query"]}}
+    if url_used:
+        evidence["url_context_metadata"] = {
+            "url_metadata": [{"retrieved_url": "https://example.com"}]
+        }
+    result = {
+        "content": {"role": "model", "parts": [{"text": "Done"}]},
+        "finish_reason": "STOP",
+    }
+    metadata = {"prompt_token_count": 27, "tool_use_prompt_token_count": 10309}
+    with llm.timing_context():
+        if stream:
+            chunks = [
+                types.GenerateContentResponse(candidates=[evidence]),
+                types.GenerateContentResponse(
+                    candidates=[result], usage_metadata=metadata
+                ),
+            ]
+            usage = list(
+                llm._handle_generate_stream_response(model, {}, iter(chunks), [], None)
+            )[-1].delta.usage
+        else:
+            response = types.GenerateContentResponse(
+                candidates=[{**result, **evidence}], usage_metadata=metadata
+            )
+            usage = llm._handle_generate_response(model, {}, response, []).usage
+    assert usage.prompt_tokens == 10336
+    assert usage.prompt_price == Decimal(input_cost)
+
+
+def test_xhigh_sdk_serializes_native_field():
+    captured = []
+
+    def transport(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {"content": {"role": "model", "parts": [{"text": "ok"}]}}
+                ]
+            },
+        )
+
+    with genai.Client(
+        api_key="test",
+        http_options=types.HttpOptions(
+            client_args={
+                "transport": httpx.MockTransport(transport),
+                "trust_env": False,
+            },
+            async_client_args={"trust_env": False},
+        ),
+    ) as client:
+        config = types.GenerateContentConfig()
+        GoogleLargeLanguageModel._set_thinking_config(
+            config=config,
+            model_parameters={"thinking_level": "Xhigh", "include_thoughts": True},
+            model_name="gemini-4-neon",
+        )
+        client.models.generate_content(
+            model="gemini-4-neon", contents="Hi", config=config
+        )
+    assert captured[0]["generationConfig"]["thinkingConfig"] == {
+        "thinkingLevel": "XHIGH",
+        "include_thoughts": True,
+    }
+
+
+def test_nano_banana_image_configuration_and_mixed_output_pricing():
+    model = "gemini-nano-banana-2.1"
+    path = Path(__file__).parents[1] / "llm" / f"{model}.yaml"
+    llm = GoogleLargeLanguageModel([AIModelEntity(**yaml.safe_load(path.read_text()))])
+    config = types.GenerateContentConfig()
+    llm._set_image_config(
+        config=config,
+        model_parameters={"aspect_ratio": "8:1", "resolution": "4K"},
+        model=model,
+    )
+    llm._set_thinking_config(
+        config=config, model_parameters={"thinking_level": "Medium"}, model_name=model
+    )
+    llm._set_response_modalities(config=config, model_name=model)
+    assert config.http_options.api_version == "v1"
+    assert (config.image_config.aspect_ratio, config.image_config.image_size) == (
+        "8:1",
+        "4K",
+    )
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.MEDIUM
+    assert config.response_modalities == ["TEXT", "IMAGE"]
+
+    response = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(role="model", parts=[types.Part(text="Done")])
+            )
+        ],
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=10,
+            candidates_token_count=102,
+            thoughts_token_count=3,
+            candidates_tokens_details=[
+                types.ModalityTokenCount(modality="IMAGE", token_count=100)
+            ],
+        ),
+    )
+    with llm.timing_context():
+        usage = llm._handle_generate_response(model, {}, response, []).usage
+    assert usage.completion_tokens == 105
+    assert usage.total_price == Decimal("0.0030525")

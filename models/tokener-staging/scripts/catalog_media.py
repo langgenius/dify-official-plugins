@@ -61,11 +61,31 @@ def _render_embedding(model: dict[str, Any]) -> str:
                 "label": {"en_US": model["id"], "zh_Hans": model["id"]},
                 "model_type": "text-embedding",
                 "model_properties": {
-                    "context_size": model["contextSize"],
+                    "context_size": {
+                        "text-embedding-ada-002": 8097,
+                        "qwen3-vl-embedding": 32000,
+                        "multimodal-embedding-v1": 8192,
+                    }.get(model["id"], model["contextSize"]),
                     "max_chunks": 10
-                    if model["id"] in {"text-embedding-v3", "text-embedding-v4"}
+                    if model["id"]
+                    in {
+                        "text-embedding-v3",
+                        "text-embedding-v4",
+                        "qwen3-vl-embedding",
+                        "multimodal-embedding-v1",
+                    }
                     else 32,
                 },
+                **(
+                    {"features": ["vision"]}
+                    if model["id"]
+                    in {
+                        "gemini-embedding-2-preview",
+                        "qwen3-vl-embedding",
+                        "multimodal-embedding-v1",
+                    }
+                    else {}
+                ),
                 "pricing": {
                     "input": model["pricing"]["inputPerMillion"],
                     "unit": "0.000001",
@@ -87,6 +107,25 @@ def _render_rerank(model: dict[str, Any]) -> str:
                 "label": {"en_US": model["id"], "zh_Hans": model["id"]},
                 "model_type": "rerank",
                 "model_properties": {},
+                "deprecated": model["deprecated"],
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+
+def _render_moderation(model: dict[str, Any]) -> str:
+    return (
+        json.dumps(
+            {
+                "model": model["id"],
+                "label": {"en_US": model["id"], "zh_Hans": model["id"]},
+                "model_type": "moderation",
+                "model_properties": {
+                    "max_chunks": 32 if model["id"] == "omni-moderation-latest" else 1,
+                    "max_characters_per_chunk": 2000,
+                },
                 "deprecated": model["deprecated"],
             },
             indent=2,
@@ -170,13 +209,16 @@ def _validate_tts(model: dict[str, Any]) -> None:
     if default_voice not in voice_ids:
         raise CatalogError(f"{model_id}.audio.defaultVoice must be one of the voices")
     _positive_int(audio.get("wordLimit"), f"{model_id}.audio.wordLimit")
-    if audio.get("audioFormat") not in ("mp3", "aac", "opus", "pcm"):
+    if audio.get("audioFormat") not in ("mp3", "aac", "opus", "pcm", "wav"):
         raise CatalogError(f"{model_id}.audio.audioFormat is unsupported")
     _validate_audio_pricing(model, {"second", "character", "million_tokens"})
 
 
 def _render_tts(model: dict[str, Any]) -> str:
     audio = model["audio"]
+    default_voice = audio["defaultVoice"]
+    if model["provider"] == "openai" and any(voice["id"] == "alloy" for voice in audio["voices"]):
+        default_voice = "alloy"
     lines = [
         f"model: {json.dumps(model['id'])}",
         "label:",
@@ -184,7 +226,7 @@ def _render_tts(model: dict[str, Any]) -> str:
         f"  zh_Hans: {json.dumps(model['id'], ensure_ascii=False)}",
         "model_type: tts",
         "model_properties:",
-        f"  default_voice: {json.dumps(audio['defaultVoice'])}",
+        f"  default_voice: {json.dumps(default_voice)}",
         f"  word_limit: {audio['wordLimit']}",
         f"  audio_type: {json.dumps(audio['audioFormat'])}",
         "  voices:",

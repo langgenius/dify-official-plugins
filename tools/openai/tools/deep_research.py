@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional, List, Dict
 from collections.abc import Generator
+from urllib.parse import urlparse
 
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
@@ -408,7 +409,7 @@ class DeepResearchTool(Tool):
                 else:
                     try:
                         # Use hostname from the URL; if missing, fallback to placeholder
-                        title = URL(url).host or "Unknown Source"
+                        title = urlparse(url).hostname or "Unknown Source"
                     except Exception:
                         title = "Unknown Source"
 

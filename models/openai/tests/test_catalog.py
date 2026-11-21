@@ -4,6 +4,14 @@ from pathlib import Path
 
 import pytest
 import yaml
+from dify_plugin.entities.model import AIModelEntity
+from dify_plugin.entities.model.message import (
+    DocumentPromptMessageContent,
+    UserPromptMessage,
+)
+from dify_plugin.errors.model import InvokeBadRequestError
+from models.llm import chat, responses
+from models.llm.llm import OpenAILargeLanguageModel
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = ROOT / "models"
@@ -125,6 +133,8 @@ def test_llm_parameters_and_prices_are_well_formed() -> None:
 @pytest.mark.parametrize(
     ("model", "supports_none", "input_price", "output_price"),
     [
+        ("gpt-6.2-astra", False, "8.00", "40.00"),
+        ("gpt-6.2-sol", False, "2.00", "10.00"),
         ("gpt-6-astra", False, "10.00", "50.00"),
         ("gpt-6.1-sol", False, "2.00", "10.00"),
         ("gpt-6.1-terra", True, "1.00", "5.00"),
@@ -146,6 +156,14 @@ def test_gpt_6_catalog_matches_the_api_contract(
     )
     assert effort["default"] == "medium"
     assert rules["enable_stream"]["default"] is True
+    if model.startswith("gpt-6.2-"):
+        assert "document" in data["features"]
+        assert rules["service_tier"]["options"] == [
+            "auto",
+            "default",
+            "priority",
+            "ultrafast",
+        ]
     if model == "gpt-6.1-terra":
         assert rules["reasoning_context"]["options"] == ["auto", "current_turn"]
     elif model == "gpt-6.1-sol":
@@ -162,6 +180,50 @@ def test_gpt_6_catalog_matches_the_api_contract(
         "unit": "0.000001",
         "currency": "USD",
     }
+
+
+@pytest.mark.parametrize("model", ["gpt-6.2-astra", "gpt-6.2-sol"])
+def test_gpt62_protocol_output_limits(model):
+    llm = OpenAILargeLanguageModel(
+        [AIModelEntity.model_validate(_load(LLM / f"{model}.yaml"))]
+    )
+    chat_rules = llm._validate_and_filter_model_parameters(
+        model, {"max_tokens": 1}, {"api_protocol": "chat"}
+    )
+    assert chat_rules["max_tokens"] == 1
+    with pytest.raises(ValueError, match="max_tokens.*16"):
+        llm._validate_and_filter_model_parameters(model, {"max_tokens": 15}, {})
+    assert (
+        llm._validate_and_filter_model_parameters(model, {"max_tokens": 16}, {})[
+            "max_tokens"
+        ]
+        == 16
+    )
+
+
+def test_document_formats_for_gpt62_protocols():
+    pdf = DocumentPromptMessageContent(
+        format="pdf", mime_type="application/pdf", base64_data="JVBERi0="
+    )
+    message = UserPromptMessage(content=[pdf])
+    file = {
+        "filename": "document.pdf",
+        "file_data": "data:application/pdf;base64,JVBERi0=",
+    }
+    assert chat.message(message)["content"] == [{"type": "file", "file": file}]
+    assert responses.input_items([message])[0]["content"] == [
+        {"type": "input_file", **file}
+    ]
+
+    text = DocumentPromptMessageContent(
+        format=".txt", mime_type="text/plain", base64_data="YWJj"
+    )
+    message = UserPromptMessage(content=[text])
+    with pytest.raises(InvokeBadRequestError, match="non-PDF"):
+        chat.message(message)
+    assert (
+        responses.input_items([message])[0]["content"][0]["filename"] == "document.txt"
+    )
 
 
 def test_audio_model_limits_match_the_api_contract() -> None:

@@ -2,9 +2,11 @@
 
 ## Overview
 
-The **Gemini Image Tool** is used to access Gemini's image generation and editing models on Vertex AI. Currently, this plugin supports the following models.
+The **Gemini Image Tool** is used to access Google’s image generation and editing models through the Gemini API. Currently, this plugin supports the following models.
 
-- Gemini 2.5 Flash Image (aka Nano Banana)
+- Nano Banana 2.1 (`gemini-nano-banana-2.1`)
+- Nano Banana Pro (`gemini-3-pro-image-preview`)
+- Nano Banana (`gemini-2.5-flash-image`)
 
 ---
 

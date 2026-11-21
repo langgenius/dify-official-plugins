@@ -5,6 +5,7 @@ label:
 model_type: llm
 features:
   - vision
+  - video
 model_properties:
   mode: chat
   context_size: 256000
@@ -22,6 +23,9 @@ parameter_rules:
     use_template: top_p
     min: 0.01
     max: 1
+  - name: enable_search
+    type: boolean
+    required: false
 pricing:
   input: "0.530000"
   output: "2.660000"
