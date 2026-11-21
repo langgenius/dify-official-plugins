@@ -20,6 +20,10 @@ from models.llm._openai_responses import count_text
 TONGYI_MULTIMODAL = {"qwen3-vl-embedding", "multimodal-embedding-v1"}
 
 
+def _openai(model):
+    return model.startswith("text-embedding-3") or model == "text-embedding-ada-002"
+
+
 def _vectors(response, count, dimensions=None):
     data = response.get("data")
     if (
@@ -54,7 +58,7 @@ def _vectors(response, count, dimensions=None):
 
 class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
-        if not model.startswith("text-embedding-3") and model != "text-embedding-ada-002":
+        if not _openai(model):
             return super().get_num_tokens(model, credentials, texts)
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -75,7 +79,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         if model == "gemini-embedding-001":
             return self._gemini_text(model, credentials, texts, input_type)
         chunks = None
-        if model.startswith("text-embedding-3") or model == "text-embedding-ada-002":
+        if _openai(model):
             try:
                 encoding = tiktoken.encoding_for_model(model)
             except KeyError:
@@ -108,18 +112,11 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         for offset in range(0, len(inputs), batch_size):
             batch = inputs[offset : offset + batch_size]
             payload = {"model": model, "input": batch, "encoding_format": "float"}
-            if model == "gemini-embedding-2-preview":
-                prefix = (
-                    "task: search result | query: "
-                    if input_type == EmbeddingInputType.QUERY
-                    else "title: none | text: "
-                )
-                payload["input"] = [prefix + text for text in batch]
-            elif model in {"embed-english-v3", "embed-multilingual-v3", "embed-v4"}:
+            if model in {"embed-english-v3", "embed-multilingual-v3", "embed-v4"}:
                 payload["input_type"] = (
                     "search_query" if input_type == EmbeddingInputType.QUERY else "search_document"
                 )
-            if user:
+            if user and _openai(model):
                 payload["user"] = user
             response = self._post("embeddings", credentials, payload)
             vectors, dimensions = _vectors(response, len(batch), dimensions)
@@ -332,7 +329,15 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         )
 
     def _gemini_embeddings(self, model, credentials, parts, input_type):
-        task = "RETRIEVAL_QUERY" if input_type == EmbeddingInputType.QUERY else "RETRIEVAL_DOCUMENT"
+        task = (
+            {}
+            if model == "gemini-embedding-2-preview"
+            else {
+                "taskType": "RETRIEVAL_QUERY"
+                if input_type == EmbeddingInputType.QUERY
+                else "RETRIEVAL_DOCUMENT"
+            }
+        )
         batch_size = min(self._get_max_chunks(model, credentials), 100)
         batches = [
             parts[offset : offset + batch_size] for offset in range(0, len(parts), batch_size)
@@ -347,7 +352,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                     {
                         "model": f"models/{model}",
                         "content": {"role": "user", "parts": [part]},
-                        "taskType": task,
+                        **task,
                     }
                     for part in batch
                 ]

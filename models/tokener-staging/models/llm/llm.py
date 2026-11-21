@@ -493,7 +493,9 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
             )
             if count is not None:
                 return count
-        if family in ("anthropic", "openai", "gemini"):
+        if family == "gemini":
+            return self._get_num_tokens_by_gpt2(_gemini_native.prompt_text(prompt_messages))
+        if family in ("anthropic", "openai"):
             return _openai_responses.count_messages(model, prompt_messages, tools)
         return super().get_num_tokens(
             model,

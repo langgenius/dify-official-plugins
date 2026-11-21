@@ -145,19 +145,13 @@ def test_embedding_001_public_invoke_preserves_retrieval_purpose(input_type, tas
     assert result.usage.tokens == 777
 
 
-@pytest.mark.parametrize(
-    "input_type,prefix",
-    [
-        (EmbeddingInputType.QUERY, "task: search result | query: "),
-        (EmbeddingInputType.DOCUMENT, "title: none | text: "),
-    ],
-)
-def test_embedding_2_public_invoke_preserves_retrieval_purpose(input_type, prefix, upstream):
+@pytest.mark.parametrize("input_type", [EmbeddingInputType.QUERY, EmbeddingInputType.DOCUMENT])
+def test_embedding_2_preview_sends_official_plugin_input(input_type, upstream):
     model_id = "gemini-embedding-2-preview"
     model = TokenerTextEmbeddingModel(model_schemas=[schema("text_embedding", model_id)])
     model.invoke(model_id, {"api_key": "test"}, ["same text"], input_type=input_type)
     body = upstream.call_args.kwargs["json"]
-    assert body["input"] == [prefix + "same text"]
+    assert body["input"] == ["same text"]
     assert "task_type" not in body
 
 

@@ -185,7 +185,6 @@ def test_public_embedding_preserves_model_texts_dimensions_and_order(input_type)
             "model": "embedding-test",
             "input": texts[index * 2 : index * 2 + 2],
             "encoding_format": "float",
-            "user": "user",
         }
     assert credentials["dimensions"] == 1
 
