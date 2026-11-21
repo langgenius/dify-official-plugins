@@ -1,4 +1,4 @@
-"""Helpers for attaching Dify metadata to DeepSeek requests as request headers.
+"""Helpers for attaching Dify metadata to DeepSeek requests (headers and body fields).
 
 DeepSeek's plugin extends ``dify_plugin.OAICompatLargeLanguageModel``, whose
 ``_generate`` method reads ``credentials['extra_headers']`` and merges the
@@ -17,6 +17,12 @@ shape is unchanged. When enabled, the helper mutates
 ``credentials['extra_headers']`` in place, preserving any caller-supplied
 entries (Dify keys are written alongside, with Dify keys winning on
 collision so the helper always controls its own observability markers).
+
+The module also owns the opt-in ``user_id`` forwarding: DeepSeek documents ``user_id`` as a
+KVCache isolation key, so exposing Dify's per-end-user id changes cache sharing semantics. That
+switch is ``credentials['enable_user_id']`` and it writes to ``model_parameters`` (the JSON body)
+instead of ``credentials['extra_headers']``, because ``user_id`` is a documented top-level request
+field rather than a header.
 
 Caveats:
 - DeepSeek's public API does not document these headers today, so the value
@@ -113,8 +119,37 @@ def apply_dify_headers_if_enabled(credentials: dict) -> None:
         return
 
 
+def apply_user_id_if_enabled(model_parameters: dict, credentials: dict, user: Any) -> None:
+    """Forward the Dify end-user id as DeepSeek ``user_id`` when opted in.
+
+    DeepSeek documents ``user_id`` as a KVCache isolation key: "user_id can be
+    used for KVCache isolation for privacy management". Once a request carries
+    a ``user_id``, DeepSeek stops sharing that request's cached prompt prefix
+    with other ``user_id`` values, so Dify's per-end-user id partitions the
+    prompt cache per end user and the first request of every new end user has
+    to re-process the whole prompt. Dify supplies the end-user id on
+    ``_invoke`` calls that carry one, so forwarding it unconditionally
+    (0.0.20-0.0.27) turned a shared, warm long-instruction cache into a
+    per-user one and dropped the cache hit rate for multi-tenant apps.
+
+    Forwarding is therefore opt-in through ``credentials['enable_user_id']``;
+    when it is not ``"enabled"``, or no user resolves, the request body is left
+    untouched, which matches 0.0.19 behaviour. The function never raises.
+    """
+    try:
+        if credentials.get("enable_user_id") != _ENABLED:
+            return
+        if not user:
+            return
+        model_parameters["user_id"] = user
+    except Exception:  # noqa: BLE001 - telemetry must never break the user request
+        # Never block the user's request on metadata wiring.
+        return
+
+
 __all__ = [
     "_normalize_header_value",
     "apply_dify_headers_if_enabled",
+    "apply_user_id_if_enabled",
     "build_dify_headers",
 ]
