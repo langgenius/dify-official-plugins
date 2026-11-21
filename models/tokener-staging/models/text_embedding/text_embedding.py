@@ -108,14 +108,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         for offset in range(0, len(inputs), batch_size):
             batch = inputs[offset : offset + batch_size]
             payload = {"model": model, "input": batch, "encoding_format": "float"}
-            if model == "gemini-embedding-2-preview":
-                prefix = (
-                    "task: search result | query: "
-                    if input_type == EmbeddingInputType.QUERY
-                    else "title: none | text: "
-                )
-                payload["input"] = [prefix + text for text in batch]
-            elif model in {"embed-english-v3", "embed-multilingual-v3", "embed-v4"}:
+            if model in {"embed-english-v3", "embed-multilingual-v3", "embed-v4"}:
                 payload["input_type"] = (
                     "search_query" if input_type == EmbeddingInputType.QUERY else "search_document"
                 )
@@ -332,7 +325,15 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         )
 
     def _gemini_embeddings(self, model, credentials, parts, input_type):
-        task = "RETRIEVAL_QUERY" if input_type == EmbeddingInputType.QUERY else "RETRIEVAL_DOCUMENT"
+        task = (
+            {}
+            if model == "gemini-embedding-2-preview"
+            else {
+                "taskType": "RETRIEVAL_QUERY"
+                if input_type == EmbeddingInputType.QUERY
+                else "RETRIEVAL_DOCUMENT"
+            }
+        )
         batch_size = min(self._get_max_chunks(model, credentials), 100)
         batches = [
             parts[offset : offset + batch_size] for offset in range(0, len(parts), batch_size)
@@ -347,7 +348,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                     {
                         "model": f"models/{model}",
                         "content": {"role": "user", "parts": [part]},
-                        "taskType": task,
+                        **task,
                     }
                     for part in batch
                 ]

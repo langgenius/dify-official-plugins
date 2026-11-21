@@ -264,8 +264,7 @@ def test_embedding_null_index_and_native_multimodal_keep_distinct_paths(registry
     assert query.usage.tokens == plain.usage.tokens == 7
     assert mixed.embeddings == [[1, 2], [2, 3]] and mixed.usage.tokens == 9
     assert requests[0][0] == requests[1][0] == "/v1/embeddings"
-    assert requests[0][2]["input"] == ["task: search result | query: anchor"]
-    assert requests[1][2]["input"] == ["title: none | text: anchor"]
+    assert requests[0][2]["input"] == requests[1][2]["input"] == ["anchor"]
     assert requests[2][0] == f"/v1beta/models/{name}:batchEmbedContents"
     assert requests[2][2]["requests"][1]["content"]["parts"] == [
         {"inlineData": {"mimeType": "image/png", "data": IMAGE.base64_data}}

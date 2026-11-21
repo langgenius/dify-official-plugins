@@ -91,6 +91,13 @@ def apply_source_contracts(files: dict[str, str], contracts: dict) -> dict[str, 
         ]
         names = {rule["name"] for rule in rules}
         rules.extend(rule for name, rule in source_rules.items() if name not in names)
+        output_cap = next(
+            rule["max"] for rule in generated["parameter_rules"] if rule["name"] == "max_tokens"
+        )
+        for rule in rules:
+            if rule.get("use_template") == "max_tokens":
+                rule["max"] = min(rule.get("max", output_cap), output_cap)
+                rule["default"] = min(rule.get("default", rule["max"]), rule["max"])
         generated["parameter_rules"] = rules
         generated["features"] = list(
             dict.fromkeys([*generated.get("features", []), *source.get("features", [])])
