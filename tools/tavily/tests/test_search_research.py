@@ -228,3 +228,29 @@ def test_research_close_after_creation_does_not_poll(transport):
     generator.close()
     assert len(calls) == 1
     assert calls[0][0].method == "POST"
+
+
+@pytest.mark.parametrize(
+    "credentials, expected_url",
+    [
+        ({"tavily_api_key": "test-key"}, "https://api.tavily.com/search"),
+        ({"tavily_api_key": "test-key", "base_url": ""}, "https://api.tavily.com/search"),
+        ({"tavily_api_key": "test-key", "base_url": "https://gateway.example.test"}, "https://gateway.example.test/search"),
+    ],
+)
+def test_search_uses_base_url_credential(transport, credentials, expected_url):
+    calls, _ = transport
+    invoke(TavilySearchTool, {"query": "q"}, credentials=credentials)
+    assert calls[-1][0].url == expected_url
+
+
+def test_every_tavily_client_takes_base_url():
+    from tools.tavily_crawl import TavilyCrawl
+    from tools.tavily_extract import TavilyExtract
+    from tools.tavily_map import TavilyMap
+    from tools.tavily_research import TavilyResearch
+    from tools.tavily_search import TavilySearch
+
+    for cls in (TavilySearch, TavilyExtract, TavilyCrawl, TavilyMap, TavilyResearch):
+        assert cls("test-key").client.base_url == "https://api.tavily.com"
+        assert cls("test-key", base_url="https://gateway.example.test").client.base_url == "https://gateway.example.test"

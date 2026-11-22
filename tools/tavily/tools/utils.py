@@ -2,6 +2,8 @@ import requests
 from typing import Any, Generator, List, Dict
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+TAVILY_API_BASE_URL = "https://api.tavily.com"
+
 
 def process_images(
     tool: Any, image_urls: List[str]

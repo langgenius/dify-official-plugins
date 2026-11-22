@@ -223,3 +223,29 @@ def test_serper_request_exception_yields_friendly_message():
     assert any(m[0] == "text" and "boom" in m[1] for m in messages), (
         f"expected friendly error message containing 'boom', got {messages!r}"
     )
+
+
+# =============================================================================
+# Optional base_url credential
+# =============================================================================
+
+
+def test_serper_without_base_url_calls_default_endpoint():
+    for credentials in ({"serperapi_api_key": "secret"}, {"serperapi_api_key": "secret", "base_url": ""}):
+        tool = _make_tool(credentials=credentials)
+        fake_get = mock.Mock(return_value=_FakeResponse())
+        with mock.patch.object(serper.requests, "get", fake_get):
+            _flatten(tool._invoke({"query": "hello"}))
+        assert fake_get.call_args.kwargs["url"] == "https://google.serper.dev/search"
+
+
+def test_serper_base_url_credential_overrides_endpoint():
+    tool = _make_tool(
+        credentials={"serperapi_api_key": "secret", "base_url": "https://gateway.example.test/search"}
+    )
+    fake_get = mock.Mock(return_value=_FakeResponse())
+    with mock.patch.object(serper.requests, "get", fake_get):
+        messages = _flatten(tool._invoke({"query": "hello"}))
+    assert fake_get.call_args.kwargs["url"] == "https://gateway.example.test/search"
+    assert fake_get.call_args.kwargs["headers"]["X-API-KEY"] == "secret"
+    assert any(m[0] == "json" for m in messages)

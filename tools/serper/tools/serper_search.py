@@ -31,11 +31,15 @@ class SerperSearchTool(Tool):
             yield self.create_text_message("Serper.dev API key is required.")
             return
 
+        base_url = self.runtime.credentials.get("base_url")
+        if not base_url:
+            base_url = SERPER_API_URL
+
         params = {"q": tool_parameters["query"], "gl": "us", "hl": "en"}
         headers = {"X-API-KEY": serperapi_api_key, "Content-Type": "application/json"}
         try:
             response = requests.get(
-                url=SERPER_API_URL, params=params, headers=headers, timeout=10
+                url=base_url, params=params, headers=headers, timeout=10
             )
             response.raise_for_status()
             valuable_res = self._parse_response(response.json())
