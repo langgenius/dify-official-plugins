@@ -15,9 +15,11 @@ class JSONParseTool(Tool):
         content = tool_parameters.get("content", "")
         if not content:
             yield self.create_text_message("Invalid parameter content")
+            return
         json_filter = tool_parameters.get("json_filter", "")
         if not json_filter:
             yield self.create_text_message("Invalid parameter json_filter")
+            return
         ensure_ascii = tool_parameters.get("ensure_ascii", True)
         try:
             result = self._extract(content, json_filter, ensure_ascii)

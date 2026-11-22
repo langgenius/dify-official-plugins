@@ -15,12 +15,15 @@ class JSONParseTool(Tool):
         content = tool_parameters.get("content", "")
         if not content:
             yield self.create_text_message("Invalid parameter content")
+            return
         query = tool_parameters.get("query", "")
         if not query:
             yield self.create_text_message("Invalid parameter query")
+            return
         new_value = tool_parameters.get("new_value", "")
         if not new_value:
             yield self.create_text_message("Invalid parameter new_value")
+            return
         index = tool_parameters.get("index")
         create_path_value = tool_parameters.get("create_path", False)
         create_path = create_path_value is True or create_path_value == "True"
