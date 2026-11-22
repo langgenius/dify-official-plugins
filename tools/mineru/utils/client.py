@@ -1,10 +1,11 @@
-"""HTTP clients for the three MinerU APIs the plugin can talk to.
+"""HTTP clients for the MinerU APIs the plugin can talk to.
 
 - ``CloudV4Client``: the MinerU official API (https://mineru.net/api/v4/...).
-- ``LocalV1Client``: a self-hosted MinerU 4.x server (``mineru-kit api-server``, ``/v1/...``).
+- ``LocalTasksClient``: a self-hosted MinerU 4.1 Tasks server.
+- ``LocalV1Client``: a self-hosted MinerU 4.0 server (``mineru-kit api-server``, ``/v1/...``).
 - ``LocalLegacyClient``: a self-hosted MinerU 1.x-3.x server (``mineru-api``, ``/file_parse``).
 
-``detect_local_api`` decides between the two self-hosted flavours at call time, so a
+``detect_local_client`` selects the self-hosted protocol at call time, so a
 customer can upgrade the MinerU server without touching the plugin configuration.
 """
 
@@ -15,7 +16,7 @@ import mimetypes
 import re
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 import requests
 
@@ -332,6 +333,8 @@ class CloudV4Client:
 
 class LocalV1Client:
     api = API_LOCAL_V1
+    jobs_path = "/v1/parse/jobs"
+    default_output = "zip"
 
     def __init__(self, http: MineruHttp):
         self.http = http
@@ -350,7 +353,7 @@ class LocalV1Client:
         if code == "unsupported_output_format":
             raise MineruError(
                 f"This MinerU server cannot export the requested extra formats ({message}). "
-                "Self-hosted MinerU 4.x only returns Markdown, JSON and images; leave Extra export formats empty."
+                "Leave Extra export formats empty to request Markdown, JSON and images."
             )
         if code == "feature_requires_api_key":
             raise MineruError("Exporting html, latex or docx requires the MinerU server to be started with --api-key and the key filled in as the API Token.")
@@ -408,18 +411,20 @@ class LocalV1Client:
             raise MineruError(f"Unexpected response from MinerU when completing the upload: {completed}")
         return file_id
 
-    def _create_job(self, source: dict[str, Any], options: ParseOptions) -> JobStatus:
-        entry: dict[str, Any] = {"source": source}
+    def _create(self, entry: dict[str, Any], options: ParseOptions) -> dict[str, Any]:
         if options.page_ranges:
             entry["page_range"] = options.page_ranges
         body: dict[str, Any] = {
             "files": [entry],
             "ocr_mode": options.parse_method if options.parse_method in ("auto", "txt", "ocr") else "auto",
-            "output_formats": ["zip", *[f for f in options.extra_formats if f in V1_EXTRA_FORMATS]],
+            "output_formats": [self.default_output, *[f for f in options.extra_formats if f in V1_EXTRA_FORMATS]],
         }
         if options.tier and options.tier != "auto":
             body["tier"] = options.tier
-        job = self._json(self.http.request("POST", "/v1/parse/jobs", json=body), "Creating the parse job")
+        return self._json(self.http.request("POST", self.jobs_path, json=body), "Creating the parse job")
+
+    def _create_job(self, source: dict[str, Any], options: ParseOptions) -> JobStatus:
+        job = self._create({"source": source}, options)
         job_id = job.get("job_id")
         if not job_id:
             raise MineruError(f"Unexpected response from MinerU when creating the parse job: {job}")
@@ -432,7 +437,7 @@ class LocalV1Client:
         return self._create_job({"type": "url", "url": url}, options)
 
     def get_job(self, job_id: str) -> JobStatus:
-        response = self.http.request("GET", f"/v1/parse/jobs/{job_id}")
+        response = self.http.request("GET", f"{self.jobs_path}/{quote(job_id, safe='')}")
         if response.status_code == 404:
             raise MineruError(f"Parse job {job_id} was not found on this MinerU server (job ids do not survive a server restart).")
         job = self._json(response, "Querying the parse job")
@@ -445,7 +450,7 @@ class LocalV1Client:
         job_state = job.get("status")
         if job_state in ("failed", "canceled") or (job_state == "partial" and not any(f.get("status") == "completed" for f in files)):
             errors = "; ".join(
-                f"{f.get('name')}: {(f.get('error') or {}).get('message') or f.get('status')}" for f in files
+                f"{f.get('file_name') or f.get('name')}: {(f.get('error') or {}).get('message') or f.get('status')}" for f in files
             )
             raise MineruError(f"MinerU parse job {job_id} {job_state}: {errors or 'no details'}")
         if job_state == "running":
@@ -454,15 +459,70 @@ class LocalV1Client:
             return status
 
         done = next((f for f in files if f.get("status") == "completed"), None)
-        outputs = (done or {}).get("output_files") or {}
+        self._download_result(status, done or {})
+        status.state = STATE_DONE
+        return status
+
+    def _download_result(self, status: JobStatus, item: dict[str, Any]) -> None:
+        outputs = item.get("output_files") or {}
         if not outputs.get("zip"):
-            raise MineruError(f"MinerU parse job {job_id} finished without a zip result.")
+            raise MineruError(f"MinerU parse job {status.task_id} finished without a zip result.")
         status.zip_bytes = self.http.download(f"/v1/files/{outputs['zip']['file_id']}/content", timeout=max(self.http.timeout, 300))
         for fmt in V1_EXTRA_FORMATS:
             if outputs.get(fmt):
                 status.extra_files[fmt] = self.http.download(f"/v1/files/{outputs[fmt]['file_id']}/content")
-        status.state = STATE_DONE
-        return status
+
+    def validate_api_key(self) -> None:
+        self._json(self.http.request("GET", "/v1/files", params={"limit": 1}), "Validating the API key")
+
+
+class LocalTasksClient(LocalV1Client):
+    jobs_path = "/v1/tasks"
+    default_output = "default"
+
+    def validate_api_key(self) -> None:
+        self._json(self.http.request("GET", "/v1/usage"), "Validating the API key")
+
+    def _create_task(self, entry: dict[str, Any], options: ParseOptions, data: bytes | None = None) -> JobStatus:
+        task = self._create(entry, options)
+        task_id = task.get("task_id")
+        files = task.get("files") or []
+        if not task_id or not isinstance(files, list) or len(files) != 1 or not isinstance(files[0], dict):
+            raise MineruError("MinerU returned an incomplete task receipt.")
+        # URL sources and cached uploads have no upload action.
+        upload = files[0].get("upload")
+        if data is not None and upload is not None:
+            self._upload_task_file(task_id, upload, data)
+        return JobStatus(api=self.api, state=STATE_PENDING, task_id=task_id)
+
+    def _upload_task_file(self, task_id: str, upload: dict[str, Any], data: bytes) -> None:
+        if not upload.get("url"):
+            raise MineruError(f"MinerU returned no upload URL for task {task_id}.")
+        url = urljoin(self.http.url("/"), upload["url"])
+        headers = self.http.auth_headers() if self.http.is_same_origin(url) else {}
+        headers.update(upload.get("headers") or {})
+        try:
+            response = requests.put(
+                url, headers=headers, data=data, timeout=max(self.http.timeout, 300), allow_redirects=False
+            )
+        except requests.RequestException as e:
+            raise MineruNetworkError(f"Uploading the file for MinerU task {task_id} failed.") from e
+        if not 200 <= response.status_code < 300:
+            raise MineruError(f"Uploading the file for MinerU task {task_id} failed (HTTP {response.status_code}).")
+
+    def submit_file(self, filename: str, data: bytes, options: ParseOptions) -> JobStatus:
+        entry = {"file_name": filename, "bytes": len(data), "sha256sum": hashlib.sha256(data).hexdigest()}
+        return self._create_task(entry, options, data)
+
+    def submit_url(self, url: str, options: ParseOptions) -> JobStatus:
+        filename = unquote(urlsplit(url).path).rsplit("/", 1)[-1] or "document"
+        return self._create_task({"file_name": filename, "url": url}, options)
+
+    def _download_result(self, status: JobStatus, item: dict[str, Any]) -> None:
+        if not item.get("result_url"):
+            raise MineruError(f"MinerU task {status.task_id} finished without a result URL.")
+        url = urljoin(self.http.url("/"), item["result_url"])
+        status.zip_bytes = self.http.download(url, timeout=max(self.http.timeout, 300))
 
 
 # ── Self-hosted MinerU 1.x-3.x (/file_parse) ──────────────────────────
@@ -558,19 +618,22 @@ class LocalLegacyClient:
 # ── detection and credential validation ───────────────────────────────
 
 
-def detect_local_api(http: MineruHttp) -> str:
+def detect_local_client(http: MineruHttp) -> LocalV1Client | LocalLegacyClient:
     """Use legacy parsing only when the server has no V1 health endpoint."""
     response = http.request("GET", "/v1/health", timeout=15)
     body = _json_or_none(response)
     if response.status_code == 200 and isinstance(body, dict) and "version" in body and "features" in body:
-        return API_LOCAL_V1
+        features = body["features"]
+        if isinstance(features, dict) and "task_output_formats" in features:
+            return LocalTasksClient(http)
+        return LocalV1Client(http)
     if response.status_code == 503 and isinstance(body, dict) and isinstance(body.get("error"), dict):
-        return API_LOCAL_V1  # 4.x server that is still loading models
+        raise MineruNetworkError(f"MinerU is not ready: {body['error'].get('message') or 'try again later'}")
     if response.status_code in (401, 403):
         # /v1/health is public on MinerU itself, so this came from a gateway.
         raise MineruAuthError(_gateway_hint(http.credentials))
     if response.status_code in (404, 405):
-        return API_LOCAL_LEGACY
+        return LocalLegacyClient(http)
     if response.status_code >= 500:
         raise MineruNetworkError(
             f"MinerU health check failed (HTTP {response.status_code}). "
@@ -587,9 +650,7 @@ def make_client(credentials: Credentials, timeout: float = 60) -> CloudV4Client 
     http = MineruHttp(credentials, timeout=timeout)
     if credentials.server_type == SERVER_TYPE_REMOTE:
         return CloudV4Client(http)
-    if detect_local_api(http) == API_LOCAL_V1:
-        return LocalV1Client(http)
-    return LocalLegacyClient(http)
+    return detect_local_client(http)
 
 
 def validate_credentials(credentials: Credentials) -> None:
@@ -608,9 +669,9 @@ def validate_credentials(credentials: Credentials) -> None:
             )
         return
 
-    if detect_local_api(http) == API_LOCAL_V1:
-        # /v1/health is public; /v1/files is protected when the server runs with --api-key.
-        LocalV1Client(http)._json(http.request("GET", "/v1/files", params={"limit": 1}), "Validating the API key")
+    client = detect_local_client(http)
+    if isinstance(client, LocalV1Client):
+        client.validate_api_key()
         return
 
     rejected = False

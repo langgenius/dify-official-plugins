@@ -213,11 +213,11 @@ parameters:
       ja_JP: 追加のエクスポート形式
       pt_BR: Formatos extras de exportação
     human_description:
-      zh_Hans: '（官方API和本地部署 MinerU 4.x）示例：["docx","html"]。markdown 和 json 默认导出，无须设置；仅支持 docx、html、latex。MinerU 4.x 需以 --api-key 启动。'
-      en_US: '(Official API and local MinerU 4.x) Example: ["docx","html"]. Markdown and JSON are always exported; only docx, html and latex are accepted. MinerU 4.x must be started with --api-key.'
-      ja_JP: '（公式API とローカルの MinerU 4.x）例：["docx","html"]。markdown と json は常に出力されます。docx、html、latex のみ指定できます。MinerU 4.x は --api-key 付きで起動する必要があります。'
-      pt_BR: '(API oficial e MinerU 4.x local) Exemplo: ["docx","html"]. Markdown e JSON são sempre exportados; apenas docx, html e latex são aceitos. O MinerU 4.x deve ser iniciado com --api-key.'
-    llm_description: '(Official API and local MinerU 4.x) Extra export formats as a JSON list, e.g. ["docx","html"]; only docx, html, latex.'
+      zh_Hans: '（官方API和本地部署 MinerU 4.1.x）示例：["docx","html"]。markdown 和 json 默认导出，无须设置；仅支持 docx、html、latex。'
+      en_US: '(Official API and local MinerU 4.1.x) Example: ["docx","html"]. Markdown and JSON are always exported; only docx, html and latex are accepted.'
+      ja_JP: '（公式API とローカルの MinerU 4.1.x）例：["docx","html"]。markdown と json は常に出力されます。docx、html、latex のみ指定できます。'
+      pt_BR: '(API oficial e MinerU 4.1.x local) Exemplo: ["docx","html"]. Markdown e JSON são sempre exportados; apenas docx, html e latex são aceitos.'
+    llm_description: '(Official API and local MinerU 4.1.x) Extra export formats as a JSON list, e.g. ["docx","html"]; only docx, html, latex.'
     form: form
 
   - name: model_version

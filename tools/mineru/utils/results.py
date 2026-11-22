@@ -81,6 +81,9 @@ def from_v1_zip(data: bytes, extra_files: dict[str, bytes], source_name: str) ->
     """MinerU 4.x zip: markdown.md, structured_content.json, middle_json.json, images/."""
     doc = ParsedDocument()
     structured_content: Any = None
+    exports = dict(extra_files)
+    # Tasks bundles exports alongside Markdown and images in the same archive.
+    bundled_formats = {f"document{ext}": fmt for fmt, (_, ext) in EXTRA_FORMAT_FILES.items()}
     with _open_zip(data) as archive:
         for info in archive.infolist():
             if info.is_dir():
@@ -93,13 +96,15 @@ def from_v1_zip(data: bytes, extra_files: dict[str, bytes], source_name: str) ->
                     doc.images.append(ResultFile(base_name, archive.read(info), image_mime_type(base_name)))
                 elif lower.endswith(".md") and not doc.markdown:
                     doc.markdown = archive.read(info).decode("utf-8")
+                elif name in bundled_formats:
+                    exports[bundled_formats[name]] = archive.read(info)
                 elif lower == "structured_content.json":
                     structured_content = json.loads(archive.read(info).decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError) as e:
                 logger.error(f"Failed to read {name} from the MinerU result zip: {e}")
     doc.json_messages.append({"structured_content": structured_content})
     stem = os.path.splitext(source_name)[0] or "result"
-    for fmt, payload in extra_files.items():
+    for fmt, payload in exports.items():
         mime_type, extension = EXTRA_FORMAT_FILES[fmt]
         doc.extra_files.append(ResultFile(f"{stem}{extension}", payload, mime_type))
     return doc
