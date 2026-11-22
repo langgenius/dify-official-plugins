@@ -217,7 +217,9 @@ def _validate_tts(model: dict[str, Any]) -> None:
 def _render_tts(model: dict[str, Any]) -> str:
     audio = model["audio"]
     default_voice = audio["defaultVoice"]
-    if model["provider"] == "openai" and any(voice["id"] == "alloy" for voice in audio["voices"]):
+    if model["provider"].lower() == "openai" and any(
+        voice["id"] == "alloy" for voice in audio["voices"]
+    ):
         default_voice = "alloy"
     lines = [
         f"model: {json.dumps(model['id'])}",

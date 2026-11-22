@@ -181,7 +181,8 @@ def test_openai_long_embedding_is_split_weighted_and_normalized(registry, wire):
         )
     )
     embedding = registry.get_model_instance("tokener", ModelType.TEXT_EMBEDDING)
-    result = embedding.invoke("text-embedding-3-small", CREDENTIALS, ["hello " * 9000])
+    result = embedding.invoke("text-embedding-3-small", CREDENTIALS, ["hello " * 9000], user="user")
+    assert requests[0][2]["user"] == "user"
     batch = requests[0][2]["input"]
     assert all(isinstance(chunk, list) and len(chunk) <= 8191 for chunk in batch)
     assert sum(map(len, batch)) == 9001

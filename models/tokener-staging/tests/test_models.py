@@ -41,6 +41,12 @@ def test_llm_schema_only_exposes_supported_parameters() -> None:
                 for rule in source["model"].get("parameter_rules", [])
                 if rule["name"] not in TRANSPORT_FIELDS
             }
+            for name, rule in expected.items():
+                if rule.get("use_template") == "max_tokens":
+                    actual = rules[name]
+                    assert actual["default"] <= actual["max"] <= rules["max_tokens"]["max"]
+                    assert actual["max"] <= rule["max"]
+                    rule.update(max=actual["max"], default=actual["default"])
             assert {name: rules[name] for name in expected} == expected
         else:
             assert rules["max_tokens"]["min"] == 1

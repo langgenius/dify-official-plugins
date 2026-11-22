@@ -4,6 +4,7 @@ from collections.abc import Generator
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    PromptMessageContentType,
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
@@ -50,6 +51,24 @@ NO_SAMPLING_MODELS = {
     "gemini-3.6-flash",
     "gemini-3.5-flash-lite",
 }
+
+
+def prompt_text(messages) -> str:
+    parts = []
+    for message in messages:
+        content = message.content
+        if isinstance(content, list):
+            content = "".join(
+                item.data for item in content if item.type != PromptMessageContentType.IMAGE
+            )
+        speaker = "model" if isinstance(message, AssistantPromptMessage) else "user"
+        text = f"\n\n{speaker}: {content}"
+        if isinstance(message, AssistantPromptMessage) and message.tool_calls:
+            text += "\n" + "\n".join(
+                f"{call.function.name} {call.function.arguments}" for call in message.tool_calls
+            )
+        parts.append(text)
+    return "".join(parts).rstrip()
 
 
 def model_path(model: str, operation: str) -> str:
