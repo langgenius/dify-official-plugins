@@ -1,0 +1,52 @@
+provider: bf16
+label:
+  en_US: bf16.ai
+  zh_Hans: bf16.ai
+description:
+  en_US: Uncensored 1M-context open-weight LLM inference API with zero data retention.
+  zh_Hans: bf16.ai 免审查 1M 上下文开源权重模型推理 API，默认严格零数据留存。
+icon_small:
+  en_US: bf16.svg
+icon_large:
+  en_US: bf16.svg
+background: "#FFFAEF"
+help:
+  title:
+    en_US: Get your API key from bf16.ai
+    zh_Hans: 从 bf16.ai 获取 API Key
+  url:
+    en_US: https://bf16.ai/dashboard/keys
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your bf16.ai API key (sk-bf16-v1-...)
+        zh_Hans: 输入你的 bf16.ai API Key (sk-bf16-v1-...)
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Optional, defaults to https://api.bf16.ai/v1
+        zh_Hans: 可选，默认 https://api.bf16.ai/v1
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+extra:
+  python:
+    provider_source: provider/bf16.py
+    model_sources:
+      - models/llm/llm.py

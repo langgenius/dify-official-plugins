@@ -1,0 +1,27 @@
+[project]
+name = "dify-plugin-bf16"
+version = "0.0.1"
+description = "bf16.ai model provider for Dify"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dify_plugin>=0.9.0,<0.11.0",
+    "requests>=2.32.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "ruff>=0.9.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
