@@ -9,8 +9,8 @@ features:
   - stream-tool-call
   - vision
   - document
-  - agent-thought
   - structured-output
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 128000

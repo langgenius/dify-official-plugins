@@ -1,12 +1,14 @@
 import json
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from threading import Thread
 
 import pytest
+import yaml
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.plugin_registration import PluginRegistration
-from dify_plugin.entities.model import ModelType
+from dify_plugin.entities.model import AIModelEntity, ModelType
 from dify_plugin.entities.model.message import (
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
@@ -76,6 +78,16 @@ def wire(monkeypatch):
 @pytest.fixture(scope="module")
 def registry():
     return PluginRegistration(DifyPluginEnv())
+
+
+def fixture_schema(name):
+    path = Path(f"tests/fixtures/schemas/{name}.yaml")
+    return AIModelEntity.model_validate(yaml.safe_load(path.read_text()))
+
+
+def with_fixture_schema(model, monkeypatch, name):
+    monkeypatch.setattr(model, "model_schemas", [*model.model_schemas, fixture_schema(name)])
+    return model
 
 
 @pytest.fixture

@@ -8,8 +8,8 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
-  - structured-output
   - agent-thought
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1000000
@@ -19,7 +19,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 393216
+    max: 65536
   - name: temperature
     use_template: temperature
     default: 1.0

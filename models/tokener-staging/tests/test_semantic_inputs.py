@@ -17,6 +17,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import InvokeBadRequestError
+from protocol_http import fixture_schema
 
 from models.llm.llm import TokenerLargeLanguageModel
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
@@ -166,7 +167,7 @@ def test_embedding_2_preview_sends_official_plugin_input(input_type, upstream):
 def test_cohere_public_invoke_preserves_retrieval_purpose(
     model_id, input_type, upstream_type, upstream
 ):
-    model = TokenerTextEmbeddingModel(model_schemas=[schema("text_embedding", model_id)])
+    model = TokenerTextEmbeddingModel(model_schemas=[fixture_schema(model_id)])
     model.invoke(model_id, {"api_key": "test"}, ["same text"], input_type=input_type)
     body = upstream.call_args.kwargs["json"]
     assert body["input"] == ["same text"]

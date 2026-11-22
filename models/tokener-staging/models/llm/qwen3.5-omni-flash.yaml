@@ -1,18 +1,20 @@
-model: "qwen3-next-80b-a3b"
+model: "qwen3.5-omni-flash"
 label:
-  en_US: "qwen3-next-80b-a3b"
-  zh_Hans: "qwen3-next-80b-a3b"
+  en_US: "qwen3.5-omni-flash"
+  zh_Hans: "qwen3.5-omni-flash"
 model_type: llm
-features: []
+features:
+  - vision
+  - video
 model_properties:
   mode: chat
-  context_size: 256000
+  context_size: 262144
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8000
+    default: 8192
     min: 1
-    max: 8000
+    max: 65536
   - name: temperature
     use_template: temperature
     min: 0
@@ -36,8 +38,8 @@ parameter_rules:
     type: boolean
     required: false
 pricing:
-  input: "0.150000"
-  output: "1.200000"
+  input: "0.400000"
+  output: "2.200000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false

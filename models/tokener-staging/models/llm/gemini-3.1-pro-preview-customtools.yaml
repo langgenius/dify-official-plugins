@@ -48,6 +48,14 @@ parameter_rules:
       - Low
       - Medium
       - High
+  - name: service_tier
+    type: string
+    required: false
+    options:
+      - flex
+      - standard
+      - priority
+    default: standard
   - name: grounding
     type: boolean
     required: true

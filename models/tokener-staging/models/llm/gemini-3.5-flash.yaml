@@ -46,6 +46,14 @@ parameter_rules:
       - Low
       - Medium
       - High
+  - name: service_tier
+    type: string
+    required: true
+    default: standard
+    options:
+      - flex
+      - standard
+      - priority
   - name: grounding
     type: boolean
     required: true
@@ -94,14 +102,6 @@ parameter_rules:
     default: 65536
     min: 1
     max: 65536
-  - name: service_tier
-    type: string
-    required: true
-    default: standard
-    options:
-      - flex
-      - standard
-      - priority
 pricing:
   input: "1.500000"
   output: "9.000000"

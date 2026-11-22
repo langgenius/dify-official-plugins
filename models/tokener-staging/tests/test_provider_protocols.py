@@ -16,7 +16,17 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from protocol_http import CREDENTIALS, IMAGE, SCHEMA, USER, chat_result, contents, invoke, sse
+from protocol_http import (
+    CREDENTIALS,
+    IMAGE,
+    SCHEMA,
+    USER,
+    chat_result,
+    contents,
+    invoke,
+    sse,
+    with_fixture_schema,
+)
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
@@ -201,11 +211,13 @@ def wav(frames, *, rate=24000):
 
 
 @pytest.mark.parametrize("valid", [True, False])
-def test_speech_qwen_merges_pcm_and_rejects_mismatched_segments(registry, wire, valid):
+def test_speech_qwen_merges_pcm_and_rejects_mismatched_segments(registry, wire, monkeypatch, valid):
     _, requests, replies = wire
     first, second = b"\x01\x00", b"\x02\x00"
     replies.extend([(200, {}, wav(first)), (200, {}, wav(second, rate=24000 if valid else 22050))])
-    model = registry.get_model_instance("tokener", ModelType.TTS)
+    model = with_fixture_schema(
+        registry.get_model_instance("tokener", ModelType.TTS), monkeypatch, "qwen3-tts-flash"
+    )
     chunks = model.invoke("qwen3-tts-flash", "", CREDENTIALS, "x" * 513, "")
     if valid:
         with wave.open(io.BytesIO(b"".join(chunks)), "rb") as audio:

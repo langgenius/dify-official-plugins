@@ -1,0 +1,26 @@
+model: "gpt-oss-20b"
+label:
+  en_US: "gpt-oss-20b"
+  zh_Hans: "gpt-oss-20b"
+model_type: llm
+features:
+  - tool-call
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 65536
+  - name: enable_stream
+    type: boolean
+    required: false
+pricing:
+  input: "0.070000"
+  output: "0.300000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false

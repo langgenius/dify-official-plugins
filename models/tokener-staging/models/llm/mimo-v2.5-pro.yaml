@@ -1,21 +1,24 @@
-model: "kimi-k3.1"
+model: "mimo-v2.5-pro"
 label:
-  en_US: "kimi-k3.1"
-  zh_Hans: "kimi-k3.1"
+  en_US: "mimo-v2.5-pro"
+  zh_Hans: "mimo-v2.5-pro"
 model_type: llm
 features:
   - tool-call
+  - multi-tool-call
+  - stream-tool-call
   - vision
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 1048576
+    max: 65536
   - name: response_format
     label:
       en_US: Response Format
@@ -33,8 +36,8 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "4.000000"
-  output: "20.000000"
+  input: "0.140000"
+  output: "0.280000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false

@@ -10,7 +10,15 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import InvokeBadRequestError
-from protocol_http import CREDENTIALS, SCHEMA, TOOL, chat_result, contents, invoke
+from protocol_http import (
+    CREDENTIALS,
+    SCHEMA,
+    TOOL,
+    chat_result,
+    contents,
+    invoke,
+    with_fixture_schema,
+)
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
@@ -215,8 +223,13 @@ def test_source_required_defaults_reach_each_protocol(llm, wire):
     }
 
 
-def test_tongyi_hosted_models_preserve_controls_and_force_stream(llm, wire):
+def test_tongyi_hosted_models_preserve_controls_and_force_stream(llm, wire, monkeypatch):
     _, requests, replies = wire
+    for model in ("kimi-k2.5", "glm-5"):
+        llm = with_fixture_schema(llm, monkeypatch, model)
+        monkeypatch.setitem(
+            type(llm)._invoke.__globals__["SOURCE_MODEL_PROVIDERS"], model, "tongyi"
+        )
     for model in ("kimi-k2.5", "glm-5", "deepseek-v4-pro"):
         replies.append((200, {}, b"data: " + json.dumps(chat_result()).encode() + b"\n\n"))
         invoke(llm, model, {"enable_thinking": True}, stream=False)

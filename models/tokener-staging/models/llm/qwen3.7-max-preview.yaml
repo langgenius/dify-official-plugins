@@ -1,20 +1,33 @@
-model: "deepseek-v3.2"
+model: "qwen3.7-max-preview"
 label:
-  en_US: "deepseek-v3.2"
-  zh_Hans: "deepseek-v3.2"
+  en_US: "qwen3.7-max-preview"
+  zh_Hans: "qwen3.7-max-preview"
 model_type: llm
 features:
   - tool-call
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
-  context_size: 163840
+  context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8000
+    default: 8192
     min: 1
-    max: 8000
+    max: 131072
+  - name: seed
+    type: int
+    required: false
+  - name: enable_search
+    type: boolean
+    required: false
+  - name: enable_thinking
+    type: boolean
+    required: false
+  - name: thinking_budget
+    type: int
+    required: false
   - name: response_format
     label:
       en_US: Response Format
@@ -32,8 +45,8 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "0.620000"
-  output: "1.850000"
+  input: "2.500000"
+  output: "7.500000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false
