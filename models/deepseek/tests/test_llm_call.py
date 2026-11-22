@@ -258,7 +258,10 @@ def test_non_stream_reasoning_and_tool_history_round_trip(model: str) -> None:
 
 
 @pytest.mark.parametrize("model", MODELS)
-def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
+@pytest.mark.parametrize("enable_user_id", [None, "disabled", "enabled"])
+def test_invoke_forwards_user_id_only_when_opted_in(
+    model: str, enable_user_id: str | None
+) -> None:
     captured = {}
 
     def invoke(
@@ -282,6 +285,8 @@ def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
         return "ok"
 
     credentials = {"api_key": "test", "endpoint_url": ""}
+    if enable_user_id is not None:
+        credentials["enable_user_id"] = enable_user_id
     with patch.object(OAICompatLargeLanguageModel, "_invoke", invoke):
         result = _llm()._invoke(
             model,
@@ -301,7 +306,12 @@ def test_invoke_uses_official_user_id_and_default_endpoint(model: str) -> None:
 
     assert result == "ok"
     assert captured["model"] == model
-    assert captured["parameters"]["user_id"] == "user-1"
+    # DeepSeek scopes its prompt cache by `user_id`, so forwarding Dify's
+    # per-end-user id must stay opt-in (issue #3765).
+    if enable_user_id == "enabled":
+        assert captured["parameters"]["user_id"] == "user-1"
+    else:
+        assert "user_id" not in captured["parameters"]
     assert captured["parameters"]["tools"] == [
         {
             "type": "function",

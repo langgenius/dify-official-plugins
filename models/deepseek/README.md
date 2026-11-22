@@ -100,3 +100,22 @@ Get an API key from [DeepSeek](https://platform.deepseek.com/api_keys), then
 configure it under Settings → Model Provider.
 
 ![DeepSeek configuration](_assets/deepseek.PNG)
+
+Two provider credentials are opt-in and default to `disabled`, so the outbound
+request shape is unchanged unless you enable them:
+
+- **Attach Dify app_id as request headers** (`enable_request_metadata`): adds
+  `X-Dify-App-Id` / `X-Dify-Source` headers for observability and proxy-side
+  propagation.
+- **Send end-user id as user_id** (`enable_user_id`): forwards Dify's end-user
+  id as DeepSeek's `user_id`. DeepSeek treats `user_id` as a KV cache isolation
+  key, so enabling it gives every end user a private prompt cache and the first
+  request of each new end user re-processes the whole prompt. That is the right
+  trade-off only when end users must not share cache; keep it disabled (the
+  default) so that all end users share one warm cache for long system
+  instructions. This switch partitions the prompt cache; it is not an
+  access-control or privacy boundary. DeepSeek also uses `user_id` for
+  content-safety review and scheduling isolation. If you enable it, send an
+  opaque id that contains no personal data: DeepSeek recommends ASCII letters,
+  digits, underscores and hyphens, and limits the value to 512 UTF-8 bytes. For
+  tenant-level isolation use separate provider credentials per tenant.
