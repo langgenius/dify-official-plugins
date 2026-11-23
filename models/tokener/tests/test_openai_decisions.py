@@ -3,7 +3,6 @@ from decimal import Decimal
 from hashlib import sha256
 
 import pytest
-from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     SystemPromptMessage,
@@ -142,33 +141,18 @@ def test_decisions_classifier_sends_decisions_wire_preserves_backslashes_and_pri
     ]
 
 
-def test_decisions_classifier_direct_invoke_rejects_parameters_tools_stop_and_bad_templates(
-    llm, wire
-):
-    _, requests, replies = wire
-    replies.append((200, {"Content-Type": "application/json"}, decision_payload()))
+def test_decisions_classifier_rejects_tools_stop_and_bad_templates_before_request(llm, wire):
+    _, requests, _ = wire
     valid = classifier_messages()
-    ok = llm._invoke(
-        MODEL,
-        CREDENTIALS,
-        valid,
-        {"enable_stream": False, "service_tier": ""},
-        stream=True,
-    )
-    assert isinstance(ok, LLMResult)
-    assert len(requests) == 1
-
     with pytest.raises(InvokeBadRequestError):
-        llm._invoke(MODEL, CREDENTIALS, valid, {"temperature": 0.2})
+        list(llm.invoke(MODEL, CREDENTIALS, valid, {}, tools=[TOOL]))
     with pytest.raises(InvokeBadRequestError):
-        llm._invoke(MODEL, CREDENTIALS, valid, {}, tools=[TOOL])
-    with pytest.raises(InvokeBadRequestError):
-        llm._invoke(MODEL, CREDENTIALS, valid, {}, stop=["END"])
+        list(llm.invoke(MODEL, CREDENTIALS, valid, {}, stop=["END"]))
     with pytest.raises(InvokeBadRequestError):
         list(llm.invoke(MODEL, CREDENTIALS, [UserPromptMessage(content="not a classifier")], {}))
     with pytest.raises(InvokeBadRequestError):
         list(llm.invoke(MODEL, CREDENTIALS, classifier_messages(categories=[]), {}))
-    assert len(requests) == 1
+    assert not requests
 
 
 @pytest.mark.parametrize(

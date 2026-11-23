@@ -138,17 +138,12 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
         family = model_family(model)
         model_parameters = _wire.reject_top_parameters(family, model_parameters)
         if model == _openai_decisions.MODEL:
-            parameters = model_parameters.copy()
-            if parameters.get("enable_stream") is False:
-                parameters.pop("enable_stream", None)
-            if parameters.get("service_tier") in (None, ""):
-                parameters.pop("service_tier", None)
             return _openai_decisions.generate(
                 self,
                 model,
                 credentials,
                 prompt_messages,
-                parameters,
+                model_parameters,
                 tools,
                 stop,
                 user,
