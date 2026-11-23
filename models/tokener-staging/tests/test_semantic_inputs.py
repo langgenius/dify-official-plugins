@@ -77,30 +77,37 @@ def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment,
         {"temperature": 1, "top_p": 1, "presence_penalty": 0.2, "frequency_penalty": 0.4},
     ],
 )
-def test_gpt_4o_mini_public_invoke_follows_source_responses_contract(
+def test_gpt_4o_mini_public_invoke_routes_chat_penalties_and_responses_default(
     model_id, parameters, upstream
 ):
     model = TokenerLargeLanguageModel(model_schemas=[schema("llm", model_id)])
-    if any(parameters.get(name, 0) != 0 for name in ("presence_penalty", "frequency_penalty")):
-        with pytest.raises(InvokeBadRequestError):
-            list(
-                model.invoke(
-                    model_id,
-                    {"api_key": "test"},
-                    [UserPromptMessage(content="Hi")],
-                    parameters,
-                    stream=False,
-                )
-            )
-        upstream.assert_not_called()
-        return
-    upstream.return_value._content = json.dumps(
-        {
-            "status": "completed",
-            "output_text": "ok",
-            "usage": {"input_tokens": 1, "output_tokens": 1},
-        }
-    ).encode()
+    uses_chat = any(
+        parameters.get(name, 0) != 0 for name in ("presence_penalty", "frequency_penalty")
+    )
+    if uses_chat:
+        upstream.return_value._content = json.dumps(
+            {
+                "id": "cmpl-1",
+                "object": "chat.completion",
+                "model": model_id,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "ok"},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            }
+        ).encode()
+    else:
+        upstream.return_value._content = json.dumps(
+            {
+                "status": "completed",
+                "output_text": "ok",
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            }
+        ).encode()
     list(
         model.invoke(
             model_id,
@@ -110,10 +117,12 @@ def test_gpt_4o_mini_public_invoke_follows_source_responses_contract(
             stream=False,
         )
     )
+    url = upstream.call_args.args[0]
+    assert url.endswith("/v1/chat/completions" if uses_chat else "/v1/responses")
     kwargs = upstream.call_args.kwargs
     body = kwargs.get("json") or json.loads(kwargs["data"])
     expected = {
-        ("max_output_tokens" if key == "max_tokens" else key): value
+        ("max_output_tokens" if key == "max_tokens" and not uses_chat else key): value
         for key, value in parameters.items()
     }
     assert {key: body.get(key) for key in expected} == expected

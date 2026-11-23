@@ -22,6 +22,7 @@ DIFY_UI_LOCALES = {
     "nl-NL",
     "pl-PL",
     "pt-BR",
+    "pt-PT",
     "ro-RO",
     "ru-RU",
     "sl-SI",

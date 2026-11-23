@@ -58,6 +58,18 @@ AUDIO_FIELDS = COMMON_FIELDS | {
     "audio",
     "parallel_tool_calls",
 }
+OPENAI_CHAT_FIELDS = COMMON_FIELDS | {
+    "max_completion_tokens",
+    "service_tier",
+    "logprobs",
+    "top_logprobs",
+    "parallel_tool_calls",
+    "reasoning_effort",
+    "reasoning_summary",
+    "reasoning_mode",
+    "reasoning_context",
+    "verbosity",
+}
 THINKING_DEFAULTS = (
     "qwen-plus-latest",
     "qwen-plus-2025-04-28",
@@ -194,6 +206,7 @@ def _tongyi(model, messages, params, output_format, tools, stream):
                 "glm-4.5-air",
                 "kimi-k2.5",
                 "kimi-k2-thinking",
+                "deepseek-v4-flash",
                 *DEEPSEEK_EFFORTS,
             }
             and params.get("enable_thinking")
@@ -248,7 +261,12 @@ def _chat_message(llm, model, message):
 def invoke(
     llm, family, model, credentials, messages, parameters, tools, stop, stream, user
 ) -> Generator:
-    allowed = {"tongyi": TONGYI_FIELDS, "xai": XAI_FIELDS, "audio": AUDIO_FIELDS}[family]
+    allowed = {
+        "tongyi": TONGYI_FIELDS,
+        "xai": XAI_FIELDS,
+        "audio": AUDIO_FIELDS,
+        "openai": OPENAI_CHAT_FIELDS,
+    }[family]
     params = {key: value for key, value in parameters.items() if key in allowed}
     stream = stream and params.pop("enable_stream", True) is not False
     stop = stop or params.pop("stop_sequences", None) or params.pop("stopSequences", None)
@@ -258,6 +276,47 @@ def invoke(
         if isinstance(params.get(name), dict):
             _wire.reject_controls(params[name])
     output_format = _wire.structured_format(params)
+    requested_tier = params.get("service_tier")
+    wire_model = model
+    if family == "openai":
+        from models.llm import _openai_responses
+
+        base = _openai_responses.base_model(model)
+        is_gpt6 = base.startswith(("gpt-6-", "gpt-6.1-", "gpt-6.2-"))
+        unsupported = [
+            name
+            for name, default in (
+                ("reasoning_summary", None),
+                ("reasoning_mode", "standard"),
+                ("reasoning_context", "auto"),
+            )
+            if params.pop(name, None) not in (None, "", default if is_gpt6 else None)
+        ]
+        if unsupported:
+            raise InvokeBadRequestError(f"{', '.join(unsupported)} requires the Responses API")
+        effort = params.get("reasoning_effort")
+        if base.startswith("gpt-6.2-"):
+            if params.get("service_tier") == "ultrafast":
+                raise InvokeBadRequestError("Ultrafast requires the Responses API")
+            if params.get("service_tier") == "flex":
+                raise InvokeBadRequestError(f"{base} does not support the Flex service tier")
+            if effort in ("none", "minimal"):
+                raise InvokeBadRequestError(f"{base} does not support reasoning effort {effort}")
+        elif base in ("gpt-6-astra", "gpt-6.1-sol") and effort == "none":
+            raise InvokeBadRequestError("The selected OpenAI model requires reasoning")
+        if base.startswith(("gpt-6-", "gpt-6.1-", "gpt-6.2-")):
+            if effort != "none":
+                for name in ("temperature", "top_p", "top_logprobs", "logprobs"):
+                    params.pop(name, None)
+            if tools and (base == "gpt-6-astra" or base.startswith("gpt-6.1-") or effort != "none"):
+                raise InvokeBadRequestError(
+                    f"{model} function tools require the Responses API with this reasoning effort"
+                )
+        if params.get("service_tier") == "priority":
+            params["service_tier"] = "auto"
+        requested_tier = params.get("service_tier")
+        if base.startswith(("o", "gpt-5", "gpt-6")) and "max_tokens" in params:
+            params["max_completion_tokens"] = params.pop("max_tokens")
     if family == "xai":
         if (search := params.pop("search_parameters", None)) is not None and (
             not isinstance(search, str) or search.strip()
@@ -284,12 +343,17 @@ def invoke(
         messages, output_format, stream = _tongyi(
             model, messages, params, output_format, tools, stream
         )
+        wire_model = {
+            "qwen-turbo-chat": "qwen-turbo",
+            "qwen-plus-chat": "qwen-plus",
+            "farui-plus": "qwen-farui-plus",
+        }.get(model, model)
     elif model == "gpt-audio-mini-2025-12-15":
         stream = False
 
     payload = {
         **params,
-        "model": model,
+        "model": wire_model,
         "stream": stream,
         "messages": _qwen_long.convert(messages, tools)
         if model == "qwen-long"
@@ -304,7 +368,7 @@ def invoke(
         payload.setdefault("tool_choice", "auto")
     else:
         payload.pop("tool_choice", None)
-    if user and family == "audio":
+    if user and family in {"audio", "openai"}:
         digest = sha256(user.encode()).hexdigest()
         payload.update(safety_identifier=digest, prompt_cache_key=digest)
     if stream:
@@ -319,12 +383,24 @@ def invoke(
     ) as response:
         if stream:
             resolved = {**credentials, "mode": "chat", "function_calling_type": "tool_call"}
-            yield from llm._handle_generate_stream_response(
+            stream_resp = _sse.ChatCompletionSSEStreamResponse(response)
+            for chunk in llm._handle_generate_stream_response(
                 model,
                 resolved,
-                _sse.ChatCompletionSSEStreamResponse(response),
+                stream_resp,
                 messages,
-            )
+            ):
+                if family == "openai" and getattr(chunk.delta, "usage", None) is not None:
+                    from models.llm import _openai_responses
+
+                    chunk.delta.usage = _openai_responses.apply_gpt62_pricing(
+                        chunk.delta.usage,
+                        model,
+                        stream_resp.last_usage_details,
+                        stream_resp.last_service_tier or requested_tier,
+                        stream_resp.last_created,
+                    )
+                yield chunk
             return
         result = response.json()
         if not isinstance(result, dict) or not result.get("choices"):
@@ -351,10 +427,23 @@ def invoke(
                 prompt_tokens = _openai_responses.count_messages(model, messages, tools)
             if completion_tokens is None:
                 completion_tokens = _openai_responses.count_text(model, content)
+        computed_usage = llm._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens
+        )
+        if family == "openai":
+            from models.llm import _openai_responses
+
+            computed_usage = _openai_responses.apply_gpt62_pricing(
+                computed_usage,
+                model,
+                usage.get("prompt_tokens_details"),
+                result.get("service_tier") or requested_tier,
+                result.get("created"),
+            )
         yield _wire.chunk(
             result.get("model", model),
             content,
             calls=calls,
             finish=choice.get("finish_reason"),
-            usage=llm._calc_response_usage(model, credentials, prompt_tokens, completion_tokens),
+            usage=computed_usage,
         )

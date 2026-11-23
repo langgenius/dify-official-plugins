@@ -42,10 +42,11 @@ Model settings expose controls for the selected model family.
 Unknown families expose the output limit and catalog-declared structured output controls.
 
 GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
-The Responses API rejects nonzero penalties and seed, as in the OpenAI source plugin.
+The Responses API rejects seed, as in the OpenAI source plugin.
 For `glm-4.7`, `glm-4.7-flash`, `qwen3-coder-30b-a3b`, `qwen3-coder-next`, and `qwen3-vl-235b-a22b`, temperature ranges from 0 to 1.
 
-OpenAI language models use the Responses API. The `gpt-audio-*` models use Chat Completions.
+OpenAI language models use the Responses API by default. Requests with a nonzero presence or frequency penalty and the `gpt-audio-*` models use Chat Completions.
+For redirected models without static YAML, the plugin loads fallback schemas from `models/_redirect_schemas/`.
 Claude uses the Messages API. Gemini uses GenerateContent, or Interactions when a supported model combines built-in tools with structured output.
 Tongyi and xAI use Chat Completions with provider-specific options.
 Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.

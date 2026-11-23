@@ -18,6 +18,23 @@ from models._api import TokenerAPIModel
 from models.llm._openai_responses import count_text
 
 TONGYI_MULTIMODAL = {"qwen3-vl-embedding", "multimodal-embedding-v1"}
+GEMINI_TEXT_MODELS = {
+    "gemini-embedding-001",
+    "embedding-001",
+    "text-embedding-004",
+    "gemini-embedding-2",
+}
+GEMINI_2_MODELS = {"gemini-embedding-2", "gemini-embedding-2-preview"}
+
+
+def _gemini_retrieval_prefix(model: str, input_type: EmbeddingInputType) -> str:
+    if model != "gemini-embedding-2":
+        return ""
+    if input_type == EmbeddingInputType.QUERY:
+        return "task: search result | query: "
+    if input_type == EmbeddingInputType.DOCUMENT:
+        return "title: none | text: "
+    return ""
 
 
 def _openai(model):
@@ -76,7 +93,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
     ) -> TextEmbeddingResult:
         if not texts or any(not text for text in texts):
             raise InvokeBadRequestError("Embedding input must not be empty")
-        if model == "gemini-embedding-001":
+        if model in GEMINI_TEXT_MODELS:
             return self._gemini_text(model, credentials, texts, input_type)
         chunks = None
         if _openai(model):
@@ -177,9 +194,10 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
 
     def _gemini_text(self, model, credentials, texts, input_type):
         context = self._get_context_size(model, credentials)
+        prefix = _gemini_retrieval_prefix(model, input_type)
         chunks = []
-        for index, text in enumerate(texts):
-            pending = [text]
+        for index, raw_text in enumerate(texts):
+            pending = [prefix + raw_text]
             while pending:
                 text = pending.pop()
                 payload = {"contents": [{"role": "user", "parts": [{"text": text}]}]}
@@ -274,7 +292,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                 inputs.append({"image": f"data:image/{mime};base64,{data}"})
             vectors, usage = self._tongyi_embeddings(model, credentials, inputs)
             return MultiModalEmbeddingResult(model=model, embeddings=vectors, usage=usage)
-        if model != "gemini-embedding-2-preview":
+        if model not in GEMINI_2_MODELS:
             raise InvokeBadRequestError("This model does not support multimodal embeddings")
         if all(document.content_type == MultiModalContentType.TEXT for document in documents):
             result = self._invoke(
@@ -289,10 +307,11 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                 embeddings=result.embeddings,
                 usage=result.usage,
             )
+        prefix = _gemini_retrieval_prefix(model, input_type)
         parts = []
         for document in documents:
             if document.content_type == MultiModalContentType.TEXT:
-                parts.append({"text": document.content})
+                parts.append({"text": prefix + document.content})
                 continue
             if document.content_type != MultiModalContentType.IMAGE:
                 raise InvokeBadRequestError("Gemini embeddings support text, PNG, and JPEG")
@@ -331,7 +350,7 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
     def _gemini_embeddings(self, model, credentials, parts, input_type):
         task = (
             {}
-            if model == "gemini-embedding-2-preview"
+            if model in GEMINI_2_MODELS
             else {
                 "taskType": "RETRIEVAL_QUERY"
                 if input_type == EmbeddingInputType.QUERY

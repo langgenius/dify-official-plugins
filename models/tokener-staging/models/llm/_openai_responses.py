@@ -1,7 +1,11 @@
 import json
+import time
 from collections.abc import Generator
+from datetime import UTC, datetime
+from decimal import Decimal
 from hashlib import sha256
 
+from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     DocumentPromptMessageContent,
@@ -21,6 +25,8 @@ OUTPUT_KEY = "responses_output"
 THINK_START = "<think>\n"
 THINK_END = "\n</think>\n"
 NON_STREAMING = {"gpt-5.5-pro", "gpt-5.5-pro-2026-04-23", "o3-pro"}
+RESPONSES_ONLY_PREFIXES = ("gpt-5.2-pro", "gpt-5.4-pro", "gpt-5.5-pro", "o3-pro")
+GPT62_MODELS = {"gpt-6.2-astra", "gpt-6.2-sol"}
 FIELDS = {
     "max_tokens",
     "max_output_tokens",
@@ -137,9 +143,16 @@ def _payload(model, messages, parameters, tools, user, stream) -> dict:
     }
     if reasoning:
         parameters["reasoning"] = reasoning
-    if base in {"gpt-6-astra", "gpt-6.1-sol"} and reasoning.get("effort") == "none":
+    if base.startswith("gpt-6.2-"):
+        if parameters.get("service_tier") == "flex":
+            raise InvokeBadRequestError(f"{base} does not support the Flex service tier")
+        if reasoning.get("effort") in ("none", "minimal"):
+            raise InvokeBadRequestError(
+                f"{base} does not support reasoning effort {reasoning.get('effort')}"
+            )
+    elif base in {"gpt-6-astra", "gpt-6.1-sol"} and reasoning.get("effort") == "none":
         raise InvokeBadRequestError("The selected OpenAI model requires reasoning")
-    if base.startswith(("gpt-6-", "gpt-6.1-")) and reasoning.get("effort") != "none":
+    if base.startswith(("gpt-6-", "gpt-6.1-", "gpt-6.2-")) and reasoning.get("effort") != "none":
         for name in SAMPLING:
             parameters.pop(name, None)
     for name in ("frequency_penalty", "presence_penalty"):
@@ -256,7 +269,52 @@ def _terminal(payload, fallbacks: dict[int, dict] | None = None):
     )
 
 
-def _usage(llm, model, credentials, messages, tools, payload, output, calls):
+def apply_gpt62_pricing(
+    usage: LLMUsage,
+    model: str,
+    details: dict | None,
+    service_tier: str | None,
+    created: float | None,
+) -> LLMUsage:
+    if base_model(model) not in GPT62_MODELS:
+        return usage
+    tier_rate = 2 if service_tier in {"fast", "priority"} else 1
+    if service_tier == "ultrafast":
+        cutoff = datetime(2027, 3, 1, 8, tzinfo=UTC).timestamp()
+        tier_rate = 3 if (created or time.time()) < cutoff else 6
+    long_context = usage.prompt_tokens > 272_000
+    usage.prompt_unit_price *= tier_rate * (2 if long_context else 1)
+    usage.completion_unit_price *= tier_rate * (Decimal("1.5") if long_context else 1)
+    detail_map = details if isinstance(details, dict) else {}
+    reads = detail_map.get("cached_tokens") or 0
+    writes = detail_map.get("cache_write_tokens") or 0
+    writes_12h = ((detail_map.get("cache_write_tokens_details") or {}).get("ttl_12h_tokens")) or 0
+    ordinary = usage.prompt_tokens - reads - writes
+    billable = (
+        ordinary
+        + reads * Decimal("0.05")
+        + (writes - writes_12h) * Decimal("1.25")
+        + writes_12h * Decimal("2.5")
+    )
+    usage.prompt_price = billable * usage.prompt_unit_price * usage.prompt_price_unit
+    usage.completion_price = (
+        usage.completion_tokens * usage.completion_unit_price * usage.completion_price_unit
+    )
+    usage.total_price = usage.prompt_price + usage.completion_price
+    return usage
+
+
+def _usage(
+    llm,
+    model,
+    credentials,
+    messages,
+    tools,
+    payload,
+    output,
+    calls,
+    requested_tier: str | None = None,
+):
     values = payload.get("usage") or {}
     proposed = [values.get("input_tokens"), values.get("output_tokens")]
     if any(type(value) is not int or value < 0 for value in proposed):
@@ -268,7 +326,14 @@ def _usage(llm, model, credentials, messages, tools, payload, output, calls):
             if type(proposed[1]) is int and proposed[1] >= 0
             else count_text(model, output + "".join(call.function.arguments for call in calls)),
         ]
-    return llm._calc_response_usage(model, credentials, *proposed)
+    usage = llm._calc_response_usage(model, credentials, *proposed)
+    return apply_gpt62_pricing(
+        usage,
+        model,
+        values.get("input_tokens_details"),
+        payload.get("service_tier") or requested_tier,
+        payload.get("created_at"),
+    )
 
 
 def count_text(model: str, value: str) -> int:
@@ -400,7 +465,17 @@ def invoke(llm, model, credentials, messages, parameters, tools, stop, stream, u
             calls=calls,
             finish=finish,
             opaque={OUTPUT_KEY: output} if not buffer.stopped else None,
-            usage=_usage(llm, model, credentials, messages, tools, result, raw, calls),
+            usage=_usage(
+                llm,
+                model,
+                credentials,
+                messages,
+                tools,
+                result,
+                raw,
+                calls,
+                payload.get("service_tier"),
+            ),
         )
 
 

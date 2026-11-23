@@ -11,12 +11,20 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import (
     InvokeBadRequestError,
-    InvokeConnectionError,
     InvokeError,
     InvokeServerUnavailableError,
 )
 
-from models.llm import _anthropic_format, _sse, _wire
+from models.llm import _anthropic_format, _wire
+from models.llm._anthropic_stream import (
+    OPAQUE_KEY as OPAQUE_KEY,
+)
+from models.llm._anthropic_stream import (
+    _result as _result,
+)
+from models.llm._anthropic_stream import (
+    _stream as _stream,
+)
 
 CACHE_FLAGS = {
     "prompt_caching_tool_definitions",
@@ -63,7 +71,6 @@ NO_PREFILL = (
 )
 ALWAYS_ADAPTIVE = ("claude-opus-5-5", "claude-fable-5", "claude-mythos-5")
 DEFAULT_ADAPTIVE = ("claude-sonnet-5", "claude-opus-5", "claude-haiku-5")
-OPAQUE_KEY = "anthropic_thinking"
 
 
 class CacheBlocks:
@@ -158,39 +165,83 @@ def _history(messages, cache: CacheBlocks) -> tuple[list, list]:
         role = "user"
         if isinstance(message, AssistantPromptMessage):
             role = "assistant"
-            stored = (
-                (message.opaque_body or {}).get(OPAQUE_KEY, [])
-                if isinstance(message.opaque_body, dict)
-                else []
-            )
-            blocks = [
-                item
-                for item in stored
-                if isinstance(item, dict)
-                and item.get("type")
-                in {
-                    "thinking",
-                    "redacted_thinking",
-                }
-            ]
-            for block in blocks:
-                _wire.reject_controls(block, nested=False)
-            text = (
-                _wire.without_thinking(message.content)
-                if isinstance(message.content, str)
-                else message.content
-            )
-            blocks.extend(cache.content(text))
-            for call in message.tool_calls:
-                block = {
-                    "type": "tool_use",
-                    "id": call.id,
-                    "name": call.function.name,
-                    "input": _wire.json_object(call.function.arguments, "Tool arguments"),
-                }
-                if cache.settings.get("prompt_caching_tool_results"):
-                    cache.mark(block, 4)
-                blocks.append(block)
+            opaque = message.opaque_body if isinstance(message.opaque_body, dict) else {}
+            if OPAQUE_KEY not in opaque and isinstance(opaque.get("anthropic_content"), list):
+                blocks = []
+                tool_ids = set()
+                for item in opaque["anthropic_content"]:
+                    if not isinstance(item, dict):
+                        continue
+                    kind = item.get("type")
+                    _wire.reject_controls(
+                        {
+                            k: v
+                            for k, v in item.items()
+                            if not (kind == "tool_use" and k == "input")
+                        },
+                        nested=False,
+                    )
+                    if kind == "thinking" and item.get("signature"):
+                        blocks.append(deepcopy(item))
+                    elif kind == "redacted_thinking" and item.get("data"):
+                        blocks.append({"type": "redacted_thinking", "data": item["data"]})
+                    elif kind == "text" and item.get("text"):
+                        blocks.append(deepcopy(item))
+                    elif kind == "tool_use" and item.get("id") and item.get("name"):
+                        block = {
+                            "type": "tool_use",
+                            "id": item["id"],
+                            "name": item["name"],
+                            "input": item.get("input")
+                            if isinstance(item.get("input"), dict)
+                            else {},
+                        }
+                        if cache.settings.get("prompt_caching_tool_results"):
+                            cache.mark(block, 4)
+                        blocks.append(block)
+                        tool_ids.add(block["id"])
+                for call in message.tool_calls:
+                    if call.id in tool_ids:
+                        continue
+                    block = {
+                        "type": "tool_use",
+                        "id": call.id,
+                        "name": call.function.name,
+                        "input": _wire.json_object(call.function.arguments, "Tool arguments"),
+                    }
+                    if cache.settings.get("prompt_caching_tool_results"):
+                        cache.mark(block, 4)
+                    blocks.append(block)
+            else:
+                stored = opaque.get(OPAQUE_KEY, [])
+                blocks = [
+                    item
+                    for item in stored
+                    if isinstance(item, dict)
+                    and item.get("type")
+                    in {
+                        "thinking",
+                        "redacted_thinking",
+                    }
+                ]
+                for block in blocks:
+                    _wire.reject_controls(block, nested=False)
+                text = (
+                    _wire.without_thinking(message.content)
+                    if isinstance(message.content, str)
+                    else message.content
+                )
+                blocks.extend(cache.content(text))
+                for call in message.tool_calls:
+                    block = {
+                        "type": "tool_use",
+                        "id": call.id,
+                        "name": call.function.name,
+                        "input": _wire.json_object(call.function.arguments, "Tool arguments"),
+                    }
+                    if cache.settings.get("prompt_caching_tool_results"):
+                        cache.mark(block, 4)
+                    blocks.append(block)
         elif isinstance(message, ToolPromptMessage):
             block = {
                 "type": "tool_result",
@@ -325,6 +376,9 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         betas.append("context-1m-2025-08-07")
     if params.get("extended_output"):
         betas.append("output-128k-2025-02-19")
+    max_tokens = params.get("max_tokens_to_sample", params.get("max_tokens", 4096))
+    if model == "claude-3-5-sonnet-20240620" and max_tokens > 4096:
+        betas.append("max-tokens-3-5-sonnet-2024-07-15")
     sampling = (
         {name: params[name] for name in ("temperature", "top_p", "top_k") if name in params}
         if not (adaptive or thinking or output)
@@ -335,7 +389,7 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         headers["anthropic-beta"] = ",".join(betas)
     payload.update(
         sampling,
-        max_tokens=params.get("max_tokens_to_sample", params.get("max_tokens", 4096)),
+        max_tokens=max_tokens,
         stream=stream,
     )
     if stop := stop or params.get("stop_sequences"):
@@ -345,99 +399,24 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
     return payload, headers
 
 
-def _stream(response, model):
-    usage, blocks, arguments = {}, {}, {}
-    reason, started, stopped = None, False, False
-    thinking = False
-    for event_type, event in _sse.events(response):
-        if event_type == "error" or "error" in event:
-            _wire.response_error(event.get("error"))
-        match event_type:
-            case "message_start":
-                started = True
-                usage.update(event["message"].get("usage") or {})
-            case "content_block_start":
-                block = blocks[event["index"]] = event["content_block"].copy()
-                if block["type"] == "thinking" and block.get("thinking"):
-                    thinking = True
-                    yield _wire.chunk(model, "<think>\n" + block.get("thinking", ""))
-                elif block["type"] == "text" and block.get("text"):
-                    yield _wire.chunk(model, block["text"])
-            case "content_block_delta":
-                index = event["index"]
-                delta = event["delta"]
-                block = blocks[index]
-                if delta["type"] == "input_json_delta":
-                    arguments[index] = arguments.get(index, "") + delta["partial_json"]
-                else:
-                    field = {
-                        "thinking_delta": "thinking",
-                        "signature_delta": "signature",
-                        "text_delta": "text",
-                    }.get(delta["type"])
-                    if field:
-                        block[field] = block.get(field, "") + delta[field]
-                        if field != "signature" and delta[field]:
-                            if field == "thinking" and not thinking:
-                                thinking = True
-                                yield _wire.chunk(model, "<think>\n")
-                            yield _wire.chunk(model, delta[field])
-            case "content_block_stop":
-                index = event["index"]
-                if thinking and blocks[index]["type"] == "thinking":
-                    thinking = False
-                    yield _wire.chunk(model, "\n</think>\n\n")
-                if index in arguments:
-                    raw = arguments.pop(index)
-                    blocks[index]["input"] = (
-                        _wire.json_object(raw, "Tool arguments") if _wire.is_object(raw) else None
-                    )
-            case "message_delta":
-                reason = event["delta"].get("stop_reason") or reason
-                usage.update(event.get("usage") or {})
-            case "message_stop":
-                stopped = True
-                break
-    if not started or not stopped:
-        raise InvokeConnectionError("Tokener.ai Messages stream ended without a terminal event")
-    return [block for _, block in sorted(blocks.items())], usage, reason
-
-
-def _result(blocks, *, discard_calls: bool = False):
-    content, calls, thinking = [], [], []
-    for block in blocks:
-        match block.get("type"):
-            case "thinking":
-                if block.get("signature"):
-                    thinking.append({key: block[key] for key in ("type", "thinking", "signature")})
-            case "redacted_thinking":
-                if block.get("data"):
-                    thinking.append({"type": "redacted_thinking", "data": block["data"]})
-            case "text":
-                content.append(block.get("text", ""))
-            case "tool_use":
-                if not discard_calls and isinstance(block.get("input"), dict):
-                    calls.append(_wire.tool_call(block["id"], block["name"], block["input"]))
-    return "".join(content), calls, {OPAQUE_KEY: thinking} if thinking else None
-
-
 def invoke(llm, model, credentials, messages, parameters, tools, stop, stream) -> Generator:
     payload, headers = _payload(model, messages, parameters, tools, stop, stream=stream)
     with llm._request(
         "messages", credentials, json=payload, headers=headers, stream=stream
     ) as response:
         if stream:
-            blocks, usage, reason = yield from _stream(response, model)
+            blocks, usage, reason, stop_details = yield from _stream(response, model)
         else:
             result = response.json()
             if not isinstance(result, dict) or not isinstance(result.get("content"), list):
                 raise InvokeServerUnavailableError(
                     "Tokener.ai returned an invalid Messages response"
                 )
-            blocks, usage, reason = (
+            blocks, usage, reason, stop_details = (
                 result["content"],
                 result.get("usage") or {},
                 result.get("stop_reason"),
+                result.get("stop_details"),
             )
         content, calls, opaque = _result(blocks, discard_calls=reason == "max_tokens")
         finish = {
@@ -452,7 +431,18 @@ def invoke(llm, model, credentials, messages, parameters, tools, stop, stream) -
             calls=calls,
             opaque=opaque,
             finish=finish,
-            usage=_anthropic_format.priced_usage(llm, model, credentials, usage, parameters),
+            usage=_anthropic_format.priced_usage(
+                llm,
+                model,
+                credentials,
+                usage,
+                parameters,
+                reason=reason,
+                stop_details=stop_details,
+                has_content=any(
+                    b.get("type") not in {"thinking", "redacted_thinking"} for b in blocks
+                ),
+            ),
         )
 
 
