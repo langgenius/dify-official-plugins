@@ -7,15 +7,52 @@ features:
   - tool-call
   - multi-tool-call
   - stream-tool-call
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 202752
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    type: int
+    default: 16384
     min: 1
-    max: 131072
+    max: 16384
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 0.95
+    min: 0.01
+    max: 0.99
+  - name: top_k
+    type: int
+    default: 20
+    min: 0
+    max: 99
+  - name: seed
+    required: false
+    type: int
+    default: 1234
+  - name: repetition_penalty
+    required: false
+    type: float
+    default: 1.0
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+  - name: response_format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
 pricing:
   input: "1.000000"
   output: "3.200000"

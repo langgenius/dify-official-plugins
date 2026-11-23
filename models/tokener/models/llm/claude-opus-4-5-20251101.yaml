@@ -8,6 +8,8 @@ features:
   - multi-tool-call
   - stream-tool-call
   - vision
+  - document
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -15,25 +17,61 @@ model_properties:
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    required: true
+    default: 64000
     min: 1
     max: 64000
-  - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
-    type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
+  - name: prompt_caching_tool_definitions
+    type: boolean
+    default: true
     required: false
-    default: text
+  - name: prompt_caching_system_message
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_images
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_documents
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_tool_results
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_message_flow
+    type: int
+    default: 0
+    required: false
+  - name: thinking
+    type: boolean
+    default: false
+    required: false
+  - name: thinking_display
+    type: string
+    required: false
     options:
-      - text
-      - json_object
-      - json_schema
+      - summarized
+      - omitted
+  - name: thinking_budget
+    type: int
+    default: 1024
+    min: 1024
+    max: 64000
+    required: false
+  - name: response_format
+    use_template: response_format
   - name: json_schema
     use_template: json_schema
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    type: int
+    required: false
 pricing:
   input: "5.000000"
   output: "25.000000"

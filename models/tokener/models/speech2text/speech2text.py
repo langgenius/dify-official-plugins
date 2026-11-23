@@ -9,6 +9,12 @@ from dify_plugin.errors.model import (
 
 from models._api import TokenerAPIModel
 
+READ_TIMEOUTS = {
+    "fun-asr": 18000,
+    "fun-asr-flash-2026-06-15": 600,
+    "paraformer-realtime-v2": None,
+}
+
 
 class TokenerSpeech2TextModel(TokenerAPIModel, Speech2TextModel):
     def _invoke(
@@ -28,7 +34,7 @@ class TokenerSpeech2TextModel(TokenerAPIModel, Speech2TextModel):
                 credentials,
                 data=payload,
                 files=[("file", file)],
-                timeout=(10, 300),
+                timeout=(10, READ_TIMEOUTS.get(model, 300)),
             ) as response,
         ):
             result = response.json()

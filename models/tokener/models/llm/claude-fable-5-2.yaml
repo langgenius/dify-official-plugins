@@ -9,31 +9,82 @@ features:
   - stream-tool-call
   - vision
   - structured-output
+  - agent-thought
+  - document
 model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    required: true
+    default: 128000
     min: 1
     max: 128000
   - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
-    type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
-    required: false
-    default: text
-    options:
-      - text
-      - json_object
-      - json_schema
+    use_template: response_format
   - name: json_schema
     use_template: json_schema
+  - name: thinking_display
+    type: string
+    default: summarized
+    required: false
+    options:
+      - omitted
+      - summarized
+  - name: effort
+    type: string
+    default: high
+    required: false
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+  - name: task_budget
+    type: int
+    default: 0
+    min: 0
+    max: 1000000
+    required: false
+  - name: speed
+    type: string
+    required: false
+    options:
+      - standard
+      - fast
+  - name: prompt_caching_message_flow
+    type: int
+    default: 0
+    required: false
+  - name: prompt_caching_ttl
+    type: string
+    default: 5m
+    required: true
+    options:
+      - 5m
+      - 1h
+  - name: prompt_caching_system_message
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_images
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_documents
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_tool_definitions
+    type: boolean
+    default: true
+    required: false
+  - name: prompt_caching_tool_results
+    type: boolean
+    default: true
+    required: false
 pricing:
   input: "8.000000"
   output: "40.000000"

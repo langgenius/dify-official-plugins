@@ -1,6 +1,3 @@
-- "embed-english-v3"
-- "embed-multilingual-v3"
-- "embed-v4"
 - "gemini-embedding-001"
 - "gemini-embedding-2-preview"
 - "text-embedding-3-large"
@@ -8,3 +5,6 @@
 - "text-embedding-ada-002"
 - "text-embedding-v3"
 - "text-embedding-v4"
+- "embed-english-v3"
+- "embed-multilingual-v3"
+- "embed-v4"

@@ -266,4 +266,5 @@ def test_tts_yields_audio_before_the_response_is_fully_read():
         stream = tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, "hello", "echo")
         first = next(stream)
         assert 0 < len(first) < len(audio)
+        assert reply.raw.tell() < len(audio)
         assert first + b"".join(stream) == audio
