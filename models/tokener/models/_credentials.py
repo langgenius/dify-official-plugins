@@ -41,7 +41,8 @@ def validate_model_access(credentials: dict, model: str | None = None) -> None:
     items = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(items, list):
         raise CredentialsValidateFailedError("Tokener.ai returned an invalid model list")
-    if model is not None and model not in {
+    lookup_model = "gpt-6-luna" if model == "gpt-6-luna-only-for-question-classifier" else model
+    if lookup_model is not None and lookup_model not in {
         item.get("id") for item in items if isinstance(item, dict)
     }:
         raise CredentialsValidateFailedError(
