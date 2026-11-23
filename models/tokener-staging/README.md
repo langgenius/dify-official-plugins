@@ -68,6 +68,13 @@ Use `--source-root /path/to/models` for a separate checkout. Missing source prov
 stop generation before any files are written. Source parameter rules and required
 defaults take precedence over catalog parameter profiles.
 
+Generation also rebuilds `models/_redirect_schemas/` from the source providers, and `--check` reports drift there.
+If only a source provider changed, rebuild the fallback schemas without a catalog snapshot:
+
+```bash
+uv run --frozen python -m scripts.source_contracts
+```
+
 The snapshot must contain the complete `items` array. Each item supplies `publicModelId`, `category`, `enabled`, `managedAvailable`, and model metadata.
 The generator includes models with both `enabled: true` and `managedAvailable: true`, regardless of access scope.
 Both display labels use the public model ID. Internal identifiers and display names are excluded.

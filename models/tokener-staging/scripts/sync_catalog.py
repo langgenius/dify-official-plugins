@@ -15,13 +15,18 @@ if not __package__:
 from scripts import catalog_media
 from scripts.catalog_provider import provider_features, provider_rules
 from scripts.catalog_schema import CatalogError, _decimal, _positive_int, _string
-from scripts.source_contracts import apply_source_contracts, load_source_contracts
+from scripts.source_contracts import (
+    apply_source_contracts,
+    load_source_contracts,
+    sync_redirect_schemas,
+)
 
 MAX_INPUT_BYTES = 5 * 1024 * 1024
 FALLBACK_MAX_OUTPUT_TOKENS = 65536
 DEFAULT_MAX_TOKENS = 8192
 ROOT = Path(__file__).resolve().parents[1]
 LLM_DIR = ROOT / "models" / "llm"
+REDIRECT_DIR = ROOT / "models" / "_redirect_schemas"
 SOURCE_ROOT = ROOT.parent if ROOT.parent.name == "models" else ROOT.parent / "models"
 MODEL_TYPES = ("llm", "text_embedding", "rerank", "tts", "speech2text", "moderation")
 CATEGORY_TYPES = {
@@ -417,6 +422,9 @@ def main() -> int:
             sync_files(files, check=args.check, output_dir=ROOT / "models" / kind)
             for kind, files in outputs.items()
         ]
+        if not sync_redirect_schemas(args.source_root, REDIRECT_DIR, check=args.check):
+            print(f"catalog drift: models/{REDIRECT_DIR.name}", file=sys.stderr)
+            results.append(False)
         return 0 if all(results) else 1
     except (CatalogError, OSError) as ex:
         print(f"catalog sync failed: {ex}", file=sys.stderr)

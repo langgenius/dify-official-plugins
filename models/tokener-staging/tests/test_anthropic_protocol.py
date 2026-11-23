@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+import pytest
 from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
@@ -245,3 +246,84 @@ def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_
     )
     assert standard.total_price == Decimal("0.00108")
     assert "speed" not in requests[2][2]
+
+
+def _claude_reply(stream, usage, *, text="ok", reason="end_turn", category=None):
+    details = {"type": "refusal", "category": category} if reason == "refusal" else None
+    content = [{"type": "text", "text": text}] if text else []
+    if not stream:
+        return {"content": content, "usage": usage, "stop_reason": reason, "stop_details": details}
+    frames = [sse("message_start", message={"usage": usage})]
+    if text:
+        frames += [
+            sse("content_block_start", index=0, content_block={"type": "text", "text": ""}),
+            sse("content_block_delta", index=0, delta={"type": "text_delta", "text": text}),
+            sse("content_block_stop", index=0),
+        ]
+    frames += [
+        sse(
+            "message_delta",
+            delta={"stop_reason": reason, "stop_details": details},
+            usage={"output_tokens": usage["output_tokens"]},
+        ),
+        sse("message_stop"),
+    ]
+    return b"".join(frames)
+
+
+def _claude_usage(llm, wire, stream, model, usage, **reply):
+    _, _, replies = wire
+    replies.append((200, {}, _claude_reply(stream, usage, **reply)))
+    return invoke(llm, model, stream=stream)[-1].delta.usage
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("category", "text", "billed"),
+    [
+        (None, "", False),
+        ("cyber", "", False),
+        ("bio", "", True),
+        ("frontier_llm", "", True),
+        ("reasoning_extraction", "", True),
+        ("cyber", "Partial reply", True),
+    ],
+)
+def test_claude_refusal_charges_follow_stop_details(llm, wire, stream, category, text, billed):
+    tokens = {"input_tokens": 1250, "output_tokens": int(bool(text))}
+    usage = _claude_usage(
+        llm, wire, stream, "claude-opus-4-6", tokens, text=text, reason="refusal", category=category
+    )
+    baseline = _claude_usage(llm, wire, stream, "claude-opus-4-6", tokens, text=text)
+    assert (usage.prompt_tokens, usage.completion_tokens) == (1250, int(bool(text)))
+    assert baseline.total_price > 0
+    assert usage.total_price == (baseline.total_price if billed else 0)
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(
+    ("model", "multiplier"), [("claude-opus-4-6", "1.1"), ("claude-sonnet-4-5", "1")]
+)
+def test_claude_us_inference_geo_surcharge_starts_at_4_6(llm, wire, stream, model, multiplier):
+    tokens = {"input_tokens": 1000, "output_tokens": 2}
+    us = _claude_usage(llm, wire, stream, model, {**tokens, "inference_geo": "us"})
+    baseline = _claude_usage(llm, wire, stream, model, tokens)
+    assert us.prompt_unit_price == baseline.prompt_unit_price * Decimal(multiplier)
+    assert us.completion_unit_price == baseline.completion_unit_price * Decimal(multiplier)
+    assert us.total_price == baseline.total_price * Decimal(multiplier)
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize(("reads", "multiplier"), [(100, 1), (101, 5)])
+def test_claude_haiku_5_5_long_input_rate_counts_cached_input(llm, wire, stream, reads, multiplier):
+    model = "claude-haiku-5-5"
+    usage = _claude_usage(
+        llm,
+        wire,
+        stream,
+        model,
+        {"input_tokens": 99_900, "cache_read_input_tokens": reads, "output_tokens": 1},
+    )
+    pricing = llm.get_model_schema(model, CREDENTIALS).pricing
+    assert usage.prompt_unit_price == pricing.input * multiplier
+    assert usage.completion_unit_price == pricing.output * multiplier

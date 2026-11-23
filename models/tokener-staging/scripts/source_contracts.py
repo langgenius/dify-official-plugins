@@ -180,9 +180,9 @@ def _slim_model_entry(raw: dict, *, add_inline_file: bool) -> dict:
     return slim
 
 
-def export_redirect_schemas(root: Path, target_models_dir: Path | None = None) -> dict:
+def export_redirect_schemas(root: Path, target_models_dir: Path) -> dict:
     static_by_kind: dict[str, set[str]] = {}
-    if target_models_dir is not None and target_models_dir.is_dir():
+    if target_models_dir.is_dir():
         for kind in REDIRECT_MODEL_TYPES:
             kd = target_models_dir / kind
             if kd.is_dir():
@@ -262,10 +262,9 @@ def sync_redirect_schemas(
     output_dir: Path,
     *,
     check: bool = False,
-    max_shard_bytes: int = 18000,
 ) -> bool:
     bundle = export_redirect_schemas(root, target_models_dir=output_dir.parent)
-    packed = _pack_redirect_shards(bundle["schemas"], max_shard_bytes)
+    packed = _pack_redirect_shards(bundle["schemas"], max_shard_bytes=18000)
     shard_files = {f"shard_{idx:02d}.json": text for idx, text in enumerate(packed)}
     index_rendered = (
         json.dumps(

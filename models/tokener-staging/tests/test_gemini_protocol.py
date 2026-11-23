@@ -1,5 +1,6 @@
 import base64
 import socket
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock
 
@@ -15,7 +16,7 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from gevent import sleep
-from protocol_http import IMAGE, PDF, SCHEMA, TOOL, USER, contents, invoke, sse
+from protocol_http import CREDENTIALS, IMAGE, PDF, SCHEMA, TOOL, USER, contents, invoke, sse
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
@@ -356,3 +357,27 @@ def test_attachment_connection_closes_tls_socket_when_handshake_is_interrupted(m
         raw_socket, server_hostname="example.invalid", do_handshake_on_connect=False
     )
     tls_socket.close.assert_called_once()
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("image_tokens", [0, 100])
+def test_nano_banana_prices_image_output_tokens_at_the_image_rate(llm, wire, stream, image_tokens):
+    _, _, replies = wire
+    model = "gemini-nano-banana-2.1"
+    result = gemini_result([{"text": "Done"}])
+    result["usageMetadata"] = {
+        "promptTokenCount": 10,
+        "candidatesTokenCount": 102,
+        "thoughtsTokenCount": 3,
+        "candidatesTokensDetails": [{"modality": "IMAGE", "tokenCount": image_tokens}],
+    }
+    replies.append((200, {}, sse("message", **result) if stream else result))
+    usage = invoke(llm, model, stream=stream)[-1].delta.usage
+    pricing = llm.get_model_schema(model, CREDENTIALS).pricing
+    text_tokens = 105 - image_tokens
+    assert usage.completion_tokens == 105
+    assert (
+        usage.completion_price
+        == (text_tokens * pricing.output + image_tokens * Decimal("30")) * pricing.unit
+    )
+    assert usage.total_price == usage.prompt_price + usage.completion_price

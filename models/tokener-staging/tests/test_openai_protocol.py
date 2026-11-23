@@ -1,3 +1,7 @@
+import json
+from datetime import UTC, datetime
+from decimal import Decimal
+
 import pytest
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
@@ -7,7 +11,7 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import (
     InvokeConnectionError,
 )
-from protocol_http import PDF, TOOL, USER, chat_result, contents, invoke, sse
+from protocol_http import CREDENTIALS, PDF, TOOL, USER, chat_result, contents, invoke, sse
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
@@ -203,3 +207,80 @@ def test_responses_stop_closes_reasoning_completed_by_terminal_event(llm, wire):
     chunks = invoke(llm, "gpt-6-luna", stream=True, stop=["END"])
     assert contents(chunks) == "<think>\nprefix then more reasoning \n</think>\n"
     assert chunks[-1].delta.finish_reason == "stop"
+
+
+GPT62_CACHE_DETAILS = {
+    "cached_tokens": 4_000,
+    "cache_write_tokens": 7_000,
+    "cache_write_tokens_details": {"ttl_30m_tokens": 3_000, "ttl_12h_tokens": 4_000},
+}
+
+
+def _timestamp(value):
+    return datetime.fromisoformat(value).replace(tzinfo=UTC).timestamp() if value else None
+
+
+def _gpt62_reply(route, stream, prompt, tier, created):
+    if route == "responses":
+        terminal = {
+            "status": "completed",
+            "output": responses_output(),
+            "usage": {
+                "input_tokens": prompt,
+                "output_tokens": 7,
+                "input_tokens_details": GPT62_CACHE_DETAILS,
+            },
+            "service_tier": tier,
+            "created_at": created,
+        }
+        return sse("response.completed", response=terminal) if stream else terminal
+    usage = {
+        "prompt_tokens": prompt,
+        "completion_tokens": 7,
+        "prompt_tokens_details": GPT62_CACHE_DETAILS,
+    }
+    if not stream:
+        return {
+            "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+            "usage": usage,
+            "service_tier": tier,
+            "created": created,
+        }
+    frames = [
+        {"choices": [{"index": 0, "delta": {"content": "ok"}}], "created": created},
+        {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+        {"choices": [], "usage": usage, "service_tier": tier},
+    ]
+    return b"".join(f"data: {json.dumps(frame)}\n\n".encode() for frame in frames) + (
+        b"data: [DONE]\n\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("route", "prompt", "tier", "created", "input_rate", "output_rate"),
+    [
+        ("responses", 272_000, "default", None, 1, 1),
+        ("responses", 272_001, "priority", None, 4, 3),
+        ("responses", 272_001, "ultrafast", "2027-03-01T07:59:59", 6, Decimal("4.5")),
+        ("responses", 272_001, "ultrafast", "2027-03-01T08:00:00", 12, 9),
+        ("chat", 272_000, "priority", None, 2, 2),
+        ("chat", 272_001, "default", None, 2, Decimal("1.5")),
+    ],
+)
+@pytest.mark.parametrize("stream", [False, True])
+def test_gpt62_usage_charges_tier_long_context_and_cache_classes(
+    llm, wire, route, stream, prompt, tier, created, input_rate, output_rate
+):
+    _, requests, replies = wire
+    model = "gpt-6.2-astra"
+    replies.append((200, {}, _gpt62_reply(route, stream, prompt, tier, _timestamp(created))))
+    parameters = {"frequency_penalty": 0.5} if route == "chat" else {}
+    usage = invoke(llm, model, parameters, stream=stream)[-1].delta.usage
+    assert requests[0][0] == f"/v1/{'chat/completions' if route == 'chat' else 'responses'}"
+    pricing = llm.get_model_schema(model, CREDENTIALS).pricing
+    billable_prompt = prompt - 11_000 + 4_000 * Decimal("0.05") + 3_000 * Decimal("1.25")
+    billable_prompt += 4_000 * Decimal("2.5")
+    assert usage.prompt_tokens == prompt
+    assert usage.prompt_price == pricing.input * input_rate * billable_prompt * pricing.unit
+    assert usage.completion_price == pricing.output * output_rate * 7 * pricing.unit
+    assert usage.total_price == usage.prompt_price + usage.completion_price
