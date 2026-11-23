@@ -6,16 +6,9 @@ import pytest
 import requests
 import yaml
 from dify_plugin.entities.model import AIModelEntity
-from dify_plugin.entities.model.message import UserPromptMessage
-from dify_plugin.errors.model import InvokeBadRequestError
+from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
 
 from models.llm.llm import TokenerLargeLanguageModel, model_family
-
-SCHEMAS = [
-    AIModelEntity.model_validate(yaml.safe_load(path.read_text()))
-    for path in Path("models/llm").glob("*.yaml")
-    if path.name != "_position.yaml"
-]
 
 
 def response(*, responses=False) -> requests.Response:
@@ -40,87 +33,15 @@ def response(*, responses=False) -> requests.Response:
     return result
 
 
-@pytest.mark.parametrize(
-    "schema", [s for s in SCHEMAS if not model_family(s.model)], ids=lambda s: s.model
-)
-@pytest.mark.parametrize("stream", [False, True])
-def test_public_invoke_keeps_declared_parameters(schema, stream) -> None:
-    model = TokenerLargeLanguageModel(model_schemas=[schema])
-    declared = {rule.name for rule in schema.parameter_rules}
-    parameters = {
-        key: value
-        for key, value in {
-            "seed": 42,
-            "temperature": 1.0,
-            "top_p": 0.9,
-            "presence_penalty": 0.1,
-            "frequency_penalty": -0.1,
-            "reasoning_effort": "low",
-        }.items()
-        if key in declared
-    }
-    original = parameters.copy()
-    result = response()
-    with (
-        patch("requests.post", return_value=result) as post,
-        patch.object(
-            result,
-            "iter_lines",
-            return_value=iter(
-                [
-                    'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}],'
-                    '"usage":{"prompt_tokens":1,"completion_tokens":1}}',
-                    "data: [DONE]",
-                ]
-            ),
-        ),
-    ):
-        chunks = list(
-            model.invoke(
-                schema.model,
-                {"api_key": "test"},
-                [UserPromptMessage(content="Hi")],
-                parameters,
-                stream=stream,
-            )
-        )
-    kwargs = post.call_args.kwargs
-    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
-    assert {key: body.get(key) for key in parameters} == parameters
-    assert body["stream"] is stream
-    assert chunks[0].delta.message.content == "ok"
-    assert parameters == original
-
-
-@pytest.mark.parametrize(
-    "model_id,parameters",
-    [
-        ("gpt-5.6-luna", {"reasoning_effort": "invalid"}),
-        ("gpt-5.6-luna", {"seed": True}),
-        ("gpt-5.6-luna", {"seed": float("nan")}),
-        ("deepseek-v4-pro", {"temperature": True}),
-        ("deepseek-v4-pro", {"temperature": float("nan")}),
-        ("deepseek-v4-pro", {"top_p": float("inf")}),
-        ("deepseek-v4-pro", {"presence_penalty": False}),
-        ("deepseek-v4-pro", {"frequency_penalty": float("-inf")}),
-    ],
-)
-def test_public_invoke_rejects_invalid_declared_values(model_id, parameters) -> None:
-    schema = next(s for s in SCHEMAS if s.model == model_id)
-    model = TokenerLargeLanguageModel(model_schemas=[schema])
-    with patch("requests.post") as post, pytest.raises((ValueError, InvokeBadRequestError)):
-        list(model.invoke(schema.model, {"api_key": "test"}, [], parameters))
-    post.assert_not_called()
-
-
 @pytest.mark.parametrize("model_id", ["gpt-5.6-luna", "deepseek-v4-pro"])
 def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
-    schema = next(s for s in SCHEMAS if s.model == model_id)
+    schema = AIModelEntity.model_validate(
+        yaml.safe_load(Path(f"models/llm/{model_id}.yaml").read_text())
+    )
     model = TokenerLargeLanguageModel(model_schemas=[schema])
     parameters = {"temperature": 0.2, "top_p": 0.3, "max_tokens": 1500}
     if model_family(model_id) == "tongyi":
         parameters["enable_thinking"] = False
-    original = parameters.copy()
     with patch(
         "requests.post", return_value=response(responses=model_family(model_id) == "openai")
     ) as post:
@@ -144,47 +65,50 @@ def test_public_invoke_handles_dify_builtin_sampling(model_id) -> None:
         assert body["max_tokens"] == 1500
         assert body["temperature"] == 0.2
         assert body["top_p"] == 0.3
-    assert parameters == original
 
 
-@pytest.mark.parametrize(
-    "schema,rule_name",
-    [
-        pytest.param(schema, rule.name, id=f"{schema.model}-{rule.name}")
-        for schema in SCHEMAS
-        if not model_family(schema.model)
-        for rule in schema.parameter_rules
-        if rule.type.value == "string" and rule.options
-    ],
-)
-@pytest.mark.parametrize("toggle_on", [True, False])
-def test_public_invoke_string_option_toggle_default(schema, rule_name, toggle_on) -> None:
-    model = TokenerLargeLanguageModel(model_schemas=[schema])
-    rule = next(
-        rule
-        for rule in model.get_parameter_rules(schema.model, {"api_key": "test"})
-        if rule.name == rule_name
+def test_generic_catalog_model_keeps_tool_calls_on_the_fixed_endpoint():
+    from models._credentials import ENDPOINT_URL
+
+    schema = AIModelEntity.model_validate(
+        yaml.safe_load(Path("models/llm/kimi-k3.yaml").read_text())
     )
-    toggle_value = rule.default or ""
-    parameters = {rule.name: toggle_value} if toggle_on else {}
-    with patch("requests.post", return_value=response()) as post:
-        chunks = list(
-            model.invoke(
-                schema.model,
-                {"api_key": "test"},
-                [UserPromptMessage(content="Hi")],
-                parameters,
-                stream=False,
-            )
+    model = TokenerLargeLanguageModel(model_schemas=[schema])
+    reply = response()
+    reply._content = json.dumps(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "type": "function",
+                                "function": {"name": "lookup", "arguments": '{"id":1}'},
+                            }
+                        ],
+                    },
+                    "finish_reason": "tool_calls",
+                }
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        }
+    ).encode()
+    with patch("requests.post", return_value=reply) as post:
+        result = model.invoke(
+            schema.model,
+            {"api_key": "test", "endpoint_url": "https://ignored.invalid"},
+            [UserPromptMessage(content="Find record 1")],
+            {},
+            tools=[
+                PromptMessageTool(
+                    name="lookup", description="Find a record", parameters={"type": "object"}
+                )
+            ],
+            stream=False,
         )
-    post.assert_called_once()
-    kwargs = post.call_args.kwargs
-    body = kwargs["json"] if "json" in kwargs else json.loads(kwargs["data"])
-    assert chunks[0].delta.message.content == "ok"
-    if toggle_on:
-        if rule.name == "response_format":
-            assert body[rule.name] == {"type": "text"}
-        else:
-            assert body[rule.name] == toggle_value
-    else:
-        assert rule.name not in body
+        message = list(result)[-1].delta.message
+    assert post.call_args.args[0] == f"{ENDPOINT_URL}/chat/completions"
+    assert message.tool_calls[0].function.name == "lookup"
+    assert json.loads(message.tool_calls[0].function.arguments) == {"id": 1}

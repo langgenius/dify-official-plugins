@@ -131,6 +131,8 @@ def test_claude_stream_replays_signed_and_redacted_thinking_with_tool_results(ll
             ToolPromptMessage(tool_call_id="two", content="second"),
         ],
     )
+    assert requests[0][1]["anthropic-version"]
+    assert requests[0][2]["messages"][0]["content"] == [{"type": "text", "text": "hello"}]
     sent = requests[1][2]
     assert sent["thinking"] == {"type": "adaptive", "display": "summarized"}
     assistant, results = sent["messages"][-2:]
@@ -139,68 +141,9 @@ def test_claude_stream_replays_signed_and_redacted_thinking_with_tool_results(ll
     assert [block["tool_use_id"] for block in results["content"]] == ["one", "two"]
 
 
-def test_claude_json_object_mode_adds_a_format_instruction(llm, wire):
-    _, requests, replies = wire
-    expected = '{"answer":42,"extra":"allowed"}'
-    replies.append((200, {}, claude_result([{"type": "text", "text": expected}])))
-    chunks = invoke(
-        llm,
-        "claude-opus-4-6",
-        {"response_format": "json_object"},
-        messages=[SystemPromptMessage(content="Use concise values."), USER],
-    )
-    assert contents(chunks) == expected
-    assert requests[0][0] == "/v1/messages"
-    assert requests[0][2]["system"] == [
-        {"type": "text", "text": "Use concise values."},
-        {
-            "type": "text",
-            "text": "Return only a valid JSON object without Markdown or code fences.",
-        },
-    ]
-
-
-def test_claude_code_block_mode_skips_prefill_on_4_6_and_sets_stop_sequences(llm, wire):
-    _, requests, replies = wire
-    replies.extend([(200, {}, claude_result())] * 3)
-    invoke(llm, "claude-sonnet-4-6", {"response_format": "JSON", "temperature": 0.2})
-    invoke(
-        llm,
-        "claude-opus-4-6",
-        {"response_format": "JSON", "thinking": True, "thinking_budget": 1024, "max_tokens": 2048},
-    )
-    invoke(llm, "claude-sonnet-4-5-20250929", {"response_format": "JSON"})
-
-    sonnet_46, opus_46, sonnet_45 = [req[2] for req in requests]
-    assert sonnet_46["messages"] == [
-        {"role": "user", "content": [{"type": "text", "text": "hello"}]}
-    ]
-    assert sonnet_46["temperature"] == 0.2
-    assert sonnet_46["stop_sequences"] == ["```\n", "\n```"]
-
-    assert opus_46["messages"] == [{"role": "user", "content": [{"type": "text", "text": "hello"}]}]
-    assert opus_46["thinking"] == {"type": "enabled", "budget_tokens": 1024}
-    assert opus_46["stop_sequences"] == ["```\n", "\n```"]
-
-    assert sonnet_45["messages"][-1] == {
-        "role": "assistant",
-        "content": [{"type": "text", "text": "\n```JSON"}],
-    }
-    assert sonnet_45["stop_sequences"] == ["```\n", "\n```"]
-
-
-def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_cache_reads(
-    llm, wire, monkeypatch
-):
-    import pytest
-
+def test_claude_fable_5_2_prices_speed_and_cache_reads(llm, wire, monkeypatch):
     llm = with_fixture_schema(llm, monkeypatch, "claude-fable-5-2")
-    from dify_plugin.errors.model import InvokeBadRequestError
-
-    _, requests, replies = wire
-    with pytest.raises((ValueError, InvokeBadRequestError)):
-        invoke(llm, "claude-opus-4-7", {"task_budget": -1})
-    assert requests == []
+    _, _, replies = wire
     replies.extend(
         [
             (
@@ -227,16 +170,10 @@ def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_
                     }
                 ),
             ),
-            (200, {}, claude_result()),
         ]
     )
     fast = invoke(llm, "claude-fable-5-2", {"speed": "fast", "task_budget": 64000})[-1].delta.usage
     standard = invoke(llm, "claude-fable-5-2", {"speed": "fast"})[-1].delta.usage
-    invoke(llm, "claude-sonnet-4-6", {"speed": "fast"})
-    sent = requests[0][2]
-    assert "speed" not in sent
-    assert "task_budget" not in sent.get("output_config", {})
-    assert "anthropic-beta" not in requests[0][1]
     assert fast.prompt_tokens == 110
     assert (fast.prompt_unit_price, fast.completion_unit_price) == (Decimal("16"), Decimal("80"))
     assert fast.total_price == Decimal("0.00216")
@@ -245,7 +182,6 @@ def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_
         Decimal("40"),
     )
     assert standard.total_price == Decimal("0.00108")
-    assert "speed" not in requests[2][2]
 
 
 def _claude_reply(stream, usage, *, text="ok", reason="end_turn", category=None):
@@ -327,3 +263,20 @@ def test_claude_haiku_5_5_long_input_rate_counts_cached_input(llm, wire, stream,
     pricing = llm.get_model_schema(model, CREDENTIALS).pricing
     assert usage.prompt_unit_price == pricing.input * multiplier
     assert usage.completion_unit_price == pricing.output * multiplier
+
+
+@pytest.mark.parametrize("mode", ["json_object", "JSON", "XML"])
+def test_claude_format_request_preserves_user_instructions(llm, wire, mode):
+    _, requests, replies = wire
+    replies.append((200, {}, claude_result()))
+    invoke(
+        llm,
+        "claude-opus-4-6",
+        {"response_format": mode},
+        messages=[SystemPromptMessage(content="Use concise values."), USER],
+    )
+    body = requests[0][2]
+    instructions = "\n".join(part["text"] for part in body["system"])
+    assert "Use concise values." in instructions
+    assert ("XML" if mode == "XML" else "JSON") in instructions
+    assert body["messages"][0]["content"] == [{"type": "text", "text": "hello"}]

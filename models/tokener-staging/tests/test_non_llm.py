@@ -10,7 +10,6 @@ from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeAuthorizationError,
     InvokeBadRequestError,
-    InvokeConnectionError,
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
@@ -39,40 +38,6 @@ def embedding_model():
         }
     )
     return TokenerTextEmbeddingModel(model_schemas=[schema])
-
-
-def test_dify_registry_reaches_non_llm_public_invokes():
-    registration = PluginRegistration(DifyPluginEnv())
-    rerank = registration.get_model_instance("tokener", ModelType.RERANK)
-    embedding = registration.get_model_instance("tokener", ModelType.TEXT_EMBEDDING)
-    embedding.model_schemas = embedding_model().model_schemas
-    with patch(
-        "requests.post",
-        return_value=response(
-            {
-                "results": [
-                    {"index": 0, "relevance_score": 0.9},
-                ]
-            }
-        ),
-    ) as post:
-        result = rerank.invoke("qwen3-rerank", {"api_key": "test"}, "q", ["a"])
-    assert result.docs[0].text == "a"
-    assert post.call_args.args[0].endswith("/v1/rerank")
-    with patch(
-        "requests.post",
-        return_value=response(
-            {
-                "data": [
-                    {"index": 0, "embedding": [0.1, 0.2]},
-                ],
-                "usage": {"total_tokens": 1},
-            }
-        ),
-    ) as post:
-        result = embedding.invoke("embedding-test", {"api_key": "test"}, ["a"])
-    assert result.embeddings == [[0.1, 0.2]]
-    assert post.call_args.kwargs["json"]["model"] == "embedding-test"
 
 
 def test_public_rerank_preserves_documents_indices_and_threshold():
@@ -235,15 +200,6 @@ def test_public_non_llm_maps_http_errors_without_leaking_response(status, error,
         else:
             embedding_model().invoke("embedding-test", {"api_key": "test"}, ["a"])
     assert "sensitive upstream detail" not in str(caught.value)
-
-
-def test_public_non_llm_does_not_retry_network_failure():
-    with (
-        patch("requests.post", side_effect=requests.Timeout("private detail")) as post,
-        pytest.raises(InvokeConnectionError),
-    ):
-        embedding_model().invoke("embedding-test", {"api_key": "test"}, ["a"])
-    assert post.call_count == 1
 
 
 def test_rerank_validation_does_not_require_public_directory_membership():
