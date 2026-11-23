@@ -392,6 +392,7 @@ class ReActAgentStrategy(AgentStrategy):
                             tool_invoke_response,
                             tool_invoke_parameters,
                             additional_messages,
+                            tool_error,
                         ) = self._handle_invoke_action(
                             action=scratchpad.action,
                             tool_instances=tool_instances,
@@ -404,6 +405,10 @@ class ReActAgentStrategy(AgentStrategy):
                         yield from additional_messages
                         yield self.finish_log_message(
                             log=tool_call_log,
+                            status=ToolInvokeMessage.LogMessage.LogStatus.ERROR
+                            if tool_error
+                            else ToolInvokeMessage.LogMessage.LogStatus.SUCCESS,
+                            error=tool_error,
                             data={
                                 "tool_name": tool_name,
                                 "tool_call_args": tool_invoke_parameters,
@@ -569,14 +574,15 @@ class ReActAgentStrategy(AgentStrategy):
         action: AgentScratchpadUnit.Action,
         tool_instances: Mapping[str, ToolEntity],
         message_file_ids: list[str],
-    ) -> tuple[str, dict[str, Any] | str, list[ToolInvokeMessage]]:
+    ) -> tuple[str, dict[str, Any] | str, list[ToolInvokeMessage], str | None]:
         """
         handle invoke action
         :param action: action
         :param tool_instances: tool instances
         :param message_file_ids: message file ids
         :param trace_manager: trace manager
-        :return: observation, meta
+        :return: observation, tool invoke parameters, additional messages,
+            and an error message if the tool call failed (otherwise None)
         """
         # action is tool call, invoke tool
         tool_call_name = action.action_name
@@ -585,7 +591,7 @@ class ReActAgentStrategy(AgentStrategy):
 
         if not tool_instance:
             answer = f"there is not a tool named {tool_call_name}"
-            return answer, tool_call_args, []
+            return answer, tool_call_args, [], answer
 
         if isinstance(tool_call_args, str):
             try:
@@ -663,8 +669,9 @@ class ReActAgentStrategy(AgentStrategy):
         except Exception as e:
             result = f"tool invoke error: {e!s}"
             additional_messages = []
+            return result, tool_invoke_parameters, additional_messages, result
 
-        return result, tool_invoke_parameters, additional_messages
+        return result, tool_invoke_parameters, additional_messages, None
 
     def _convert_dict_to_action(self, action: dict) -> AgentScratchpadUnit.Action:
         """
