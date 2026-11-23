@@ -339,6 +339,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-max-2026-01-23", "qwen3-max-preview",
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
+            # Qwen4 series
+            "qwen4-max",
             # Qwen3.5/3.6/3.7/3.8 series
             "qwen3.8-max",
             "qwen3.8-flash",
@@ -354,12 +356,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # DeepSeek V3 series (default: thinking disabled)
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
+        # Models that think by default and preserve thinking unless told not to.
+        preserved_thinking_models = ("qwen3.8-max", "qwen4-max")
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
-            model_parameters["enable_thinking"] = model == "qwen3.8-max"
-        if model == "qwen3.8-max":
+            model_parameters["enable_thinking"] = model in preserved_thinking_models
+        if model in preserved_thinking_models:
             if not model_parameters["enable_thinking"]:
                 model_parameters.pop("reasoning_effort", None)
-            elif (temperature := model_parameters.get("temperature")) is not None and temperature < 0.6:
+            elif (
+                model == "qwen3.8-max"
+                and (temperature := model_parameters.get("temperature")) is not None
+                and temperature < 0.6
+            ):
                 # DashScope resets values below 0.6 to 0.6 in thinking mode.
                 model_parameters["temperature"] = 0.6
             # Dify stores reasoning in content, which preserved thinking rejects.
@@ -377,7 +385,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
         # 使用归一化后的有效参数；本轮关闭思考时，旧历史仍可能包含思考块。
         strip_history_thinking = (
-            model == "qwen3.8-max" and params.get("preserve_thinking") is False
+            model in preserved_thinking_models and params.get("preserve_thinking") is False
         )
         model_schema = self.get_model_schema(model, credentials)
 
@@ -392,6 +400,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-max-2026-01-23", "qwen3-max-preview",
             "qwen3-vl-plus", "qwen3-vl-plus-2025-09-23", "qwen3-vl-flash",
             "qwen3-omni-flash-2025-12-01",
+            "qwen4-max",
             "qwen3.8-max",
             "qwen3.8-flash",
             "qwen3.7-max",
