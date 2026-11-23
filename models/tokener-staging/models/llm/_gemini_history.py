@@ -44,24 +44,36 @@ _UNSUPPORTED_EXTENSIONS = {
 }
 
 
-def _normalize_opaque_part(part: dict) -> dict:
-    key_map = {
-        "inline_data": "inlineData",
-        "file_data": "fileData",
-        "function_call": "functionCall",
-        "function_response": "functionResponse",
-        "thought_signature": "thoughtSignature",
-        "executable_code": "executableCode",
-        "code_execution_result": "codeExecutionResult",
-    }
-    nested_map = {"mime_type": "mimeType", "file_uri": "fileUri"}
+_FREE_FORM_KEYS = {"args", "response", "partMetadata"}
+
+
+def _camel(key: str) -> str:
+    head, *rest = key.split("_")
+    return head + "".join(word[:1].upper() + word[1:] for word in rest)
+
+
+def _camel_keys(value, parent: str = ""):
+    if isinstance(value, list):
+        return [_camel_keys(item, parent) for item in value]
+    if not isinstance(value, dict):
+        return value
     out = {}
-    for key, value in part.items():
-        mapped = key_map.get(key, key)
-        if isinstance(value, dict) and mapped in {"inlineData", "fileData"}:
-            value = {nested_map.get(k, k): v for k, v in value.items()}
-        out[mapped] = value
+    for key, item in value.items():
+        key = _camel(key)
+        if key in _FREE_FORM_KEYS:
+            out[key] = item
+        elif isinstance(item, str) and (
+            key == "thoughtSignature" or (key == "data" and parent == "inlineData")
+        ):
+            out[key] = item.replace("-", "+").replace("_", "/")
+        else:
+            out[key] = _camel_keys(item, key)
     return out
+
+
+def _normalize_opaque_part(part: dict) -> dict:
+    _wire.reject_controls(part, nested=False)
+    return _camel_keys(part)
 
 
 def prompt_text(messages) -> str:

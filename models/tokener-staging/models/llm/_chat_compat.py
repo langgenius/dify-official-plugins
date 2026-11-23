@@ -7,6 +7,7 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
     DeveloperPromptMessage,
+    DocumentPromptMessageContent,
     PromptMessageFunction,
     SystemPromptMessage,
 )
@@ -225,30 +226,44 @@ def _tongyi(model, messages, params, output_format, tools, stream):
     return messages, output_format, stream
 
 
-def _chat_message(llm, model, message):
+def _openai_pdf(item):
+    if item.mime_type.lower() != "application/pdf":
+        raise InvokeBadRequestError("Chat Completions accepts only PDF documents")
+    if item.base64_data:
+        data = f"data:{item.mime_type};base64,{item.base64_data}"
+    elif item.url.startswith("data:") and item.url.partition(",")[2]:
+        data = item.url
+    else:
+        raise InvokeBadRequestError("Chat Completions requires inline PDF data")
+    filename = item.filename or f"document.{item.format.lstrip('.') or 'pdf'}"
+    return {"type": "file", "file": {"filename": filename, "file_data": data}}
+
+
+def _chat_message(llm, family, model, message):
     if isinstance(message, DeveloperPromptMessage):
         return {"role": "developer", "content": message.get_text_content()}
     credentials = {"function_calling_type": "tool_call"}
     converted = llm._convert_prompt_message_to_dict(message, credentials)
     if message.role.value != "user" or not isinstance(message.content, list):
         return converted
-    if not model.startswith(("gpt-audio", "qwen", "qwq", "qvq")):
+    openai = family in {"openai", "audio"}
+    if not openai and not model.startswith(("qwen", "qwq", "qvq")):
         return converted
     parts = []
     for item in message.content:
         if isinstance(item, AudioPromptMessageContent):
-            if model.startswith("gpt-audio"):
+            if openai:
                 kind = item.format.lower().lstrip(".")
-                if not item.base64_data or kind not in {"wav", "mp3"}:
-                    raise InvokeBadRequestError("OpenAI audio input requires base64 WAV or MP3")
-                parts.append(
-                    {
-                        "type": "input_audio",
-                        "input_audio": {"data": item.base64_data, "format": kind},
-                    }
+                data = item.base64_data or (
+                    item.url.partition(",")[2] if item.url.startswith("data:") else ""
                 )
+                if not data or kind not in {"wav", "mp3"}:
+                    raise InvokeBadRequestError("OpenAI audio input requires base64 WAV or MP3")
+                parts.append({"type": "input_audio", "input_audio": {"data": data, "format": kind}})
             else:
                 parts.append({"type": "audio_url", "audio_url": {"url": item.data}})
+        elif openai and isinstance(item, DocumentPromptMessageContent):
+            parts.append(_openai_pdf(item))
         else:
             single = message.model_copy(update={"content": [item]})
             value = llm._convert_prompt_message_to_dict(single, credentials)["content"]
@@ -357,7 +372,7 @@ def invoke(
         "stream": stream,
         "messages": _qwen_long.convert(messages, tools)
         if model == "qwen-long"
-        else [_chat_message(llm, model, message) for message in messages],
+        else [_chat_message(llm, family, model, message) for message in messages],
     }
     if output_format and output_format["type"] != "text":
         payload["response_format"] = output_format
