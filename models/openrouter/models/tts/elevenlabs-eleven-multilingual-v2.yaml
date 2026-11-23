@@ -1,0 +1,77 @@
+model: elevenlabs/eleven-multilingual-v2
+label:
+  en_US: ElevenLabs Eleven Multilingual v2
+model_type: tts
+model_properties:
+  default_voice: 'george'
+  voices:
+    - mode: 'george'
+      name: 'george'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'sarah'
+      name: 'sarah'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'adam'
+      name: 'adam'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'alice'
+      name: 'alice'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'bella'
+      name: 'bella'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'bill'
+      name: 'bill'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'brian'
+      name: 'brian'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'callum'
+      name: 'callum'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'charlie'
+      name: 'charlie'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'chris'
+      name: 'chris'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'daniel'
+      name: 'daniel'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'eric'
+      name: 'eric'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'harry'
+      name: 'harry'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'jessica'
+      name: 'jessica'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'laura'
+      name: 'laura'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'liam'
+      name: 'liam'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'lily'
+      name: 'lily'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'matilda'
+      name: 'matilda'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'river'
+      name: 'river'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'roger'
+      name: 'roger'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'will'
+      name: 'will'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+  word_limit: 2000
+  audio_type: 'mp3'
+pricing:
+  input: '0.08'
+  output: '0'
+  unit: '0.001'
+  currency: USD

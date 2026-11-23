@@ -1,0 +1,7 @@
+model: elevenlabs/scribe-v2
+label:
+  en_US: ElevenLabs Scribe v2
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: aac,flac,m4a,mp3,mp4,mpeg,mpga,ogg,wav,webm

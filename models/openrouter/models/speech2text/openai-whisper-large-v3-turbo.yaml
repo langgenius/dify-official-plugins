@@ -1,0 +1,7 @@
+model: openai/whisper-large-v3-turbo
+label:
+  en_US: Whisper Large v3 Turbo
+model_type: speech2text
+model_properties:
+  file_upload_limit: 25
+  supported_file_extensions: aac,flac,m4a,mp3,mp4,mpeg,mpga,ogg,wav,webm

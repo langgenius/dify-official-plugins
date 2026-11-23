@@ -1,0 +1,7 @@
+- openai/whisper-large-v3-turbo
+- openai/whisper-large-v3
+- openai/gpt-4o-mini-transcribe
+- openai/gpt-4o-transcribe
+- elevenlabs/scribe-v2
+- mistralai/voxtral-mini-transcribe
+- deepgram/nova-3

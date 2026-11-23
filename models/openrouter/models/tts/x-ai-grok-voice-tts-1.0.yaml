@@ -1,0 +1,29 @@
+model: x-ai/grok-voice-tts-1.0
+label:
+  en_US: xAI Grok Voice TTS 1.0
+model_type: tts
+model_properties:
+  default_voice: 'eve'
+  voices:
+    - mode: 'eve'
+      name: 'eve'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'ara'
+      name: 'ara'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'rex'
+      name: 'rex'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'sal'
+      name: 'sal'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+    - mode: 'leo'
+      name: 'leo'
+      language: ['en-US', 'zh-Hans', 'zh-Hant', 'pt-BR', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'ru-RU', 'it-IT', 'th-TH', 'uk-UA', 'vi-VN', 'ro-RO', 'pl-PL', 'hi-IN', 'tr-TR', 'id-ID', 'nl-NL']
+  word_limit: 2000
+  audio_type: 'mp3'
+pricing:
+  input: '0.015'
+  output: '0'
+  unit: '0.001'
+  currency: USD

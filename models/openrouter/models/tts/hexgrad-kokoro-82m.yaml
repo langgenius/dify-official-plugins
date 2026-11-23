@@ -1,0 +1,176 @@
+model: hexgrad/kokoro-82m
+label:
+  en_US: Kokoro 82M
+model_type: tts
+model_properties:
+  default_voice: 'af_heart'
+  voices:
+    - mode: 'af_alloy'
+      name: 'af_alloy'
+      language: ['en-US']
+    - mode: 'af_aoede'
+      name: 'af_aoede'
+      language: ['en-US']
+    - mode: 'af_bella'
+      name: 'af_bella'
+      language: ['en-US']
+    - mode: 'af_heart'
+      name: 'af_heart'
+      language: ['en-US']
+    - mode: 'af_jessica'
+      name: 'af_jessica'
+      language: ['en-US']
+    - mode: 'af_kore'
+      name: 'af_kore'
+      language: ['en-US']
+    - mode: 'af_nicole'
+      name: 'af_nicole'
+      language: ['en-US']
+    - mode: 'af_nova'
+      name: 'af_nova'
+      language: ['en-US']
+    - mode: 'af_river'
+      name: 'af_river'
+      language: ['en-US']
+    - mode: 'af_sarah'
+      name: 'af_sarah'
+      language: ['en-US']
+    - mode: 'af_sky'
+      name: 'af_sky'
+      language: ['en-US']
+    - mode: 'am_adam'
+      name: 'am_adam'
+      language: ['en-US']
+    - mode: 'am_echo'
+      name: 'am_echo'
+      language: ['en-US']
+    - mode: 'am_eric'
+      name: 'am_eric'
+      language: ['en-US']
+    - mode: 'am_fenrir'
+      name: 'am_fenrir'
+      language: ['en-US']
+    - mode: 'am_liam'
+      name: 'am_liam'
+      language: ['en-US']
+    - mode: 'am_michael'
+      name: 'am_michael'
+      language: ['en-US']
+    - mode: 'am_onyx'
+      name: 'am_onyx'
+      language: ['en-US']
+    - mode: 'am_puck'
+      name: 'am_puck'
+      language: ['en-US']
+    - mode: 'am_santa'
+      name: 'am_santa'
+      language: ['en-US']
+    - mode: 'bf_alice'
+      name: 'bf_alice'
+      language: ['en-US']
+    - mode: 'bf_emma'
+      name: 'bf_emma'
+      language: ['en-US']
+    - mode: 'bf_isabella'
+      name: 'bf_isabella'
+      language: ['en-US']
+    - mode: 'bf_lily'
+      name: 'bf_lily'
+      language: ['en-US']
+    - mode: 'bm_daniel'
+      name: 'bm_daniel'
+      language: ['en-US']
+    - mode: 'bm_fable'
+      name: 'bm_fable'
+      language: ['en-US']
+    - mode: 'bm_george'
+      name: 'bm_george'
+      language: ['en-US']
+    - mode: 'bm_lewis'
+      name: 'bm_lewis'
+      language: ['en-US']
+    - mode: 'ef_dora'
+      name: 'ef_dora'
+      language: ['es-ES']
+    - mode: 'em_alex'
+      name: 'em_alex'
+      language: ['es-ES']
+    - mode: 'em_santa'
+      name: 'em_santa'
+      language: ['es-ES']
+    - mode: 'ff_siwis'
+      name: 'ff_siwis'
+      language: ['fr-FR']
+    - mode: 'hf_alpha'
+      name: 'hf_alpha'
+      language: ['hi-IN']
+    - mode: 'hf_beta'
+      name: 'hf_beta'
+      language: ['hi-IN']
+    - mode: 'hm_omega'
+      name: 'hm_omega'
+      language: ['hi-IN']
+    - mode: 'hm_psi'
+      name: 'hm_psi'
+      language: ['hi-IN']
+    - mode: 'if_sara'
+      name: 'if_sara'
+      language: ['it-IT']
+    - mode: 'im_nicola'
+      name: 'im_nicola'
+      language: ['it-IT']
+    - mode: 'jf_alpha'
+      name: 'jf_alpha'
+      language: ['ja-JP']
+    - mode: 'jf_gongitsune'
+      name: 'jf_gongitsune'
+      language: ['ja-JP']
+    - mode: 'jf_nezumi'
+      name: 'jf_nezumi'
+      language: ['ja-JP']
+    - mode: 'jf_tebukuro'
+      name: 'jf_tebukuro'
+      language: ['ja-JP']
+    - mode: 'jm_kumo'
+      name: 'jm_kumo'
+      language: ['ja-JP']
+    - mode: 'pf_dora'
+      name: 'pf_dora'
+      language: ['pt-BR']
+    - mode: 'pm_alex'
+      name: 'pm_alex'
+      language: ['pt-BR']
+    - mode: 'pm_santa'
+      name: 'pm_santa'
+      language: ['pt-BR']
+    - mode: 'zf_xiaobei'
+      name: 'zf_xiaobei'
+      language: ['zh-Hans']
+    - mode: 'zf_xiaoni'
+      name: 'zf_xiaoni'
+      language: ['zh-Hans']
+    - mode: 'zf_xiaoxiao'
+      name: 'zf_xiaoxiao'
+      language: ['zh-Hans']
+    - mode: 'zf_xiaoyi'
+      name: 'zf_xiaoyi'
+      language: ['zh-Hans']
+    - mode: 'zm_yunjian'
+      name: 'zm_yunjian'
+      language: ['zh-Hans']
+    - mode: 'zm_yunxi'
+      name: 'zm_yunxi'
+      language: ['zh-Hans']
+    - mode: 'zm_yunxia'
+      name: 'zm_yunxia'
+      language: ['zh-Hans']
+    - mode: 'zm_yunyang'
+      name: 'zm_yunyang'
+      language: ['zh-Hans']
+  word_limit: 2000
+  audio_type: 'mp3'
+pricing:
+  input: '0.00099'
+  output: '0'
+  unit: '0.001'
+  currency: USD
