@@ -416,8 +416,9 @@ def main() -> int:
             raise CatalogError("models entries must be objects")
         kinds = MODEL_TYPES if args.model_type == "all" else (args.model_type,)
         outputs = {kind: render_catalog(payload, model_type=kind) for kind in kinds}
+        source_contracts = load_source_contracts(args.source_root)
         if "llm" in outputs:
-            apply_source_contracts(outputs["llm"], load_source_contracts(args.source_root))
+            apply_source_contracts(outputs["llm"], source_contracts)
         results = [
             sync_files(files, check=args.check, output_dir=ROOT / "models" / kind)
             for kind, files in outputs.items()
