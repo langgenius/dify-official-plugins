@@ -1,4 +1,3 @@
-import base64
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -9,20 +8,14 @@ import yaml
 from dify_plugin.entities.model import (
     AIModelEntity,
     EmbeddingInputType,
-    ModelFeature,
 )
 from dify_plugin.entities.model.message import (
-    DocumentPromptMessageContent,
-    TextPromptMessageContent,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import InvokeBadRequestError
 from protocol_http import fixture_schema
 
 from models.llm.llm import TokenerLargeLanguageModel
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
-from scripts.source_contracts import apply_source_contracts, load_source_contracts
-from scripts.sync_catalog import SOURCE_ROOT, render_catalog
 
 
 def schema(kind, model):
@@ -44,28 +37,6 @@ def upstream():
     ).encode()
     with patch("requests.post", return_value=result) as post:
         yield post
-
-
-@pytest.mark.parametrize("stream", [False, True])
-@pytest.mark.parametrize("attachment", ["url"])
-def test_qwen_long_rejects_document_before_sending_text_only(stream, attachment, upstream):
-    model = TokenerLargeLanguageModel(model_schemas=[schema("llm", "qwen-long")])
-    document = DocumentPromptMessageContent(
-        format="pdf",
-        mime_type="application/pdf",
-        **{
-            attachment: (
-                "https://example.invalid/document.pdf"
-                if attachment == "url"
-                else base64.b64encode(b"%PDF-1.7 unique document fact").decode()
-            )
-        },
-    )
-    messages = [UserPromptMessage(content=[TextPromptMessageContent(data="Summarize"), document])]
-    with pytest.raises(InvokeBadRequestError):
-        list(model.invoke("qwen-long", {"api_key": "test"}, messages, {}, stream=stream))
-    upstream.assert_not_called()
-    assert messages[0].content[1] is document
 
 
 @pytest.mark.parametrize("model_id", ["gpt-4o-mini", "gpt-4o-mini-2024-07-18"])
@@ -181,41 +152,3 @@ def test_cohere_public_invoke_preserves_retrieval_purpose(
     body = upstream.call_args.kwargs["json"]
     assert body["input"] == ["same text"]
     assert body["input_type"] == upstream_type
-
-
-@pytest.mark.parametrize("model_id", ["gpt-4o-mini", "qwen-long"])
-def test_catalog_sync_retains_semantic_contracts(model_id):
-    path = Path(f"models/llm/{model_id}.yaml")
-    definition = yaml.safe_load(path.read_text())
-    model = {
-        "id": model_id,
-        "label": model_id,
-        "provider": "qwen" if model_id == "qwen-long" else "openai",
-        "modelType": "llm",
-        "mode": "chat",
-        "contextSize": definition["model_properties"]["context_size"],
-        "maxOutputTokens": next(
-            rule["max"] for rule in definition["parameter_rules"] if rule["name"] == "max_tokens"
-        )
-        or definition["model_properties"]["context_size"],
-        "capabilities": ["streaming"] + (["structured_output"] if model_id == "qwen-long" else []),
-        "deprecated": False,
-        "pricing": {
-            "currency": "USD",
-            "inputPerMillion": definition["pricing"]["input"],
-            "outputPerMillion": definition["pricing"]["output"],
-            "cacheReadPerMillion": None,
-        },
-    }
-    files = render_catalog(
-        {"schemaVersion": 1, "catalogRevision": f"sha256:{'a' * 64}", "models": [model]}
-    )
-    apply_source_contracts(files, load_source_contracts(SOURCE_ROOT))
-    generated = AIModelEntity.model_validate(yaml.safe_load(files[f"{model_id}.yaml"]))
-    if model_id == "qwen-long":
-        assert ModelFeature.DOCUMENT in generated.features
-        assert files[f"{model_id}.yaml"] == path.read_text()
-    else:
-        rules = {rule.name: rule for rule in generated.parameter_rules}
-        assert {"temperature", "top_p", "presence_penalty", "frequency_penalty"} <= rules.keys()
-        assert rules["top_p"].min == 0

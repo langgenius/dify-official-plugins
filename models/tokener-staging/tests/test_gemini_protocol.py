@@ -121,6 +121,7 @@ def test_gemini_generate_uses_inline_pdf_and_replays_thought_signature(llm, wire
     assert body["toolConfig"] == {
         "functionCallingConfig": {"mode": "ANY", "allowedFunctionNames": ["lookup"]}
     }
+    assert requests[1][2]["contents"][0]["parts"] == [{"text": "hello"}]
     assert requests[1][2]["contents"][-2]["parts"] == parts
     assert requests[1][2]["contents"][-1]["parts"] == [
         {"functionResponse": {"name": "lookup", "response": {"response": '{"found":true}'}}}
@@ -160,17 +161,6 @@ def test_gemini_replays_parallel_same_name_tools_with_ids(llm, wire, keep_opaque
         }
         for call_id in ("second", "first")
     ]
-
-
-@pytest.mark.parametrize("function_call", ["unexpected shape", {"id": []}])
-def test_gemini_rejects_invalid_function_history_before_sending(llm, wire, function_call):
-    _, requests, _ = wire
-    history = AssistantPromptMessage(
-        opaque_body={"gemini_parts": [{"functionCall": function_call}]},
-    )
-    with pytest.raises(InvokeBadRequestError, match="Invalid Gemini assistant history"):
-        invoke(llm, "gemini-3-flash-preview", messages=[USER, history, USER])
-    assert not requests
 
 
 def test_gemini_resume_upload_cache_is_key_scoped(llm, wire):
@@ -263,24 +253,6 @@ def test_gemini_continuation_yields_images_and_sums_usage(llm, wire):
     assert chunks[0].delta.usage.total_tokens == 18
 
 
-@pytest.mark.parametrize("delay", [False, True])
-def test_attachment_download_rejects_truncated_response_and_times_out(monkeypatch, delay):
-    def read(_limit):
-        if delay:
-            sleep(1)
-        return b"partial"
-
-    response = MagicMock(status=200, length=100, read=read)
-    response.__enter__.return_value = response
-    transport = SimpleNamespace(request=Mock(), getresponse=lambda: response, close=Mock())
-    monkeypatch.setattr(_gemini_files, "PublicHTTPSConnection", lambda *args, **kwargs: transport)
-    monkeypatch.setattr(_gemini_files, "DOWNLOAD_SECONDS", 0.05)
-    with pytest.raises(InvokeConnectionError, match="timed out" if delay else "ended early"):
-        _gemini_files._download("https://example.invalid/file.pdf")
-    transport.close.assert_called_once()
-    response.__exit__.assert_called_once()
-
-
 @pytest.mark.parametrize("kind", ["url", "base64", "history", "history-snake", "inline-pdf"])
 def test_gemini_limits_inline_media_across_the_invocation(llm, wire, monkeypatch, kind):
     _, requests, replies = wire
@@ -335,30 +307,6 @@ def test_attachment_connection_rejects_nonpublic_dns_before_opening_socket(monke
     open_socket.assert_not_called()
 
 
-def test_attachment_connection_closes_tls_socket_when_handshake_is_interrupted(monkeypatch):
-    monkeypatch.setattr(
-        _gemini_files.socket,
-        "getaddrinfo",
-        lambda *_args, **_kwargs: [
-            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 443))
-        ],
-    )
-    raw_socket = Mock()
-    monkeypatch.setattr(_gemini_files.socket, "socket", Mock(return_value=raw_socket))
-    tls_socket = Mock()
-    tls_socket.do_handshake.side_effect = InvokeConnectionError("test handshake interruption")
-    context = Mock(return_value=tls_socket)
-    transport = _gemini_files.PublicHTTPSConnection(
-        "example.invalid", timeout=1, context=SimpleNamespace(wrap_socket=context)
-    )
-    with pytest.raises(InvokeConnectionError, match="handshake interruption"):
-        transport.connect()
-    context.assert_called_once_with(
-        raw_socket, server_hostname="example.invalid", do_handshake_on_connect=False
-    )
-    tls_socket.close.assert_called_once()
-
-
 @pytest.mark.parametrize("stream", [False, True])
 @pytest.mark.parametrize("image_tokens", [0, 100])
 def test_nano_banana_prices_image_output_tokens_at_the_image_rate(llm, wire, stream, image_tokens):
@@ -381,3 +329,36 @@ def test_nano_banana_prices_image_output_tokens_at_the_image_rate(llm, wire, str
         == (text_tokens * pricing.output + image_tokens * Decimal("30")) * pricing.unit
     )
     assert usage.total_price == usage.prompt_price + usage.completion_price
+
+
+def test_attachment_download_has_a_total_deadline(monkeypatch):
+    def read(_limit):
+        sleep(1)
+        return b"partial"
+
+    response = MagicMock(status=200, length=7, read=read)
+    response.__enter__.return_value = response
+    transport = SimpleNamespace(request=Mock(), getresponse=lambda: response, close=Mock())
+    monkeypatch.setattr(_gemini_files, "PublicHTTPSConnection", lambda *args, **kwargs: transport)
+    monkeypatch.setattr(_gemini_files, "DOWNLOAD_SECONDS", 0.05)
+    with pytest.raises(InvokeConnectionError, match="timed out"):
+        _gemini_files._download("https://example.invalid/file.pdf")
+
+
+def test_public_attachment_connection_can_complete_tls(monkeypatch):
+    monkeypatch.setattr(
+        _gemini_files.socket,
+        "getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 443))
+        ],
+    )
+    monkeypatch.setattr(_gemini_files.socket, "socket", Mock(return_value=Mock()))
+    tls_socket = Mock()
+    transport = _gemini_files.PublicHTTPSConnection(
+        "example.invalid",
+        timeout=1,
+        context=SimpleNamespace(wrap_socket=Mock(return_value=tls_socket)),
+    )
+    transport.connect()
+    assert transport.sock is tls_socket

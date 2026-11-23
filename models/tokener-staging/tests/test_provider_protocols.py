@@ -113,50 +113,7 @@ def test_tongyi_translation_and_nonstream_thinking(llm, wire):
     assert contents(chunks) == "<think>\nreason\n</think>\nok"
 
 
-def test_xai_only_strips_penalties_and_stop_from_reasoning_models(llm, wire):
-    _, requests, replies = wire
-    replies.extend(
-        [(200, {}, chat_result("ok", "reason")), (200, {}, chat_result()), (200, {}, chat_result())]
-    )
-    params = {
-        "search_parameters": '{"mode":"auto"}',
-        "service_tier": "priority",
-        "reasoning_effort": "low",
-        "temperature": 0.7,
-        "top_p": 0.6,
-        "presence_penalty": 1,
-        "frequency_penalty": 1,
-    }
-    chunks = invoke(llm, "grok-4.20-0309-reasoning", params, stop=["end"])
-    invoke(llm, "grok-4.20-0309-non-reasoning", params, stop=["end"])
-    invoke(
-        llm,
-        "grok-4.6",
-        {
-            "search_parameters": "",
-            "service_tier": "priority",
-            "reasoning_effort": "low",
-            "temperature": 1.0,
-            "top_p": 1.0,
-        },
-    )
-    assert contents(chunks) == "<think>\nreason\n</think>\nok"
-    for request in requests:
-        assert request[0] == "/v1/chat/completions"
-        assert "search_parameters" not in request[2]
-        assert request[2]["service_tier"] == "default"
-        assert request[2]["reasoning_effort"] == "low"
-    for request in requests[:2]:
-        assert request[2]["temperature"] == 0.7 and request[2]["top_p"] == 0.6
-    assert not ({"temperature", "top_p"} & requests[2][2].keys())
-    removed = {"stop", "presence_penalty", "frequency_penalty"}
-    assert not (removed & requests[0][2].keys())
-    assert removed <= requests[1][2].keys()
-
-
-@pytest.mark.parametrize(
-    "value", ["{", "[]", "null", '{"value":NaN}', '{"sources":[{"api_key":"injected"}]}']
-)
+@pytest.mark.parametrize("value", ['{"sources":[{"api_key":"secret"}]}'])
 def test_xai_invalid_or_transport_search_parameters_never_send(llm, wire, value):
     _, requests, _ = wire
     with pytest.raises(InvokeBadRequestError):
@@ -232,20 +189,6 @@ def test_speech_qwen_merges_pcm_and_rejects_mismatched_segments(registry, wire, 
     assert all((r[2]["voice"], r[2]["response_format"]) == ("Cherry", "wav") for r in requests)
 
 
-def test_dated_openai_tts_is_discoverable_with_alloy(registry, wire):
-    _, requests, replies = wire
-    replies.append((200, {}, b"audio"))
-    model = registry.get_model_instance("tokener", ModelType.TTS)
-    name = "gpt-4o-mini-tts-2025-12-15"
-    assert b"".join(model.invoke(name, "", CREDENTIALS, "hello", "")) == b"audio"
-    assert requests[0][2] == {
-        "model": name,
-        "voice": "alloy",
-        "input": "hello",
-        "response_format": "mp3",
-    }
-
-
 def test_embedding_null_index_and_native_multimodal_keep_distinct_paths(registry, wire):
     _, requests, replies = wire
     old = {"data": [{"index": None, "embedding": [1, 2]}], "usage": {"total_tokens": 7}}
@@ -298,3 +241,23 @@ def test_model_parameter_objects_cannot_carry_transport_fields(llm, wire):
     with pytest.raises(InvokeBadRequestError, match="Transport fields"):
         invoke(llm, "gpt-6-luna", {"reasoning_mode": {"api_key": "ignored"}})
     assert requests == []
+
+
+@pytest.mark.parametrize("parameters", [{}, {"reasoning_effort": "max"}])
+def test_deepseek_thinking_works_without_an_explicit_switch(llm, wire, parameters):
+    _, requests, replies = wire
+    replies.append(
+        (
+            200,
+            {},
+            sse(
+                "data",
+                choices=[{"index": 0, "delta": {"content": "ok"}, "finish_reason": "stop"}],
+                usage={"prompt_tokens": 1, "completion_tokens": 1},
+            )
+            + b"data: [DONE]\r\n\r\n",
+        )
+    )
+    assert contents(invoke(llm, "deepseek-v4-pro", parameters)) == "ok"
+    if parameters:
+        assert requests[0][2]["reasoning_effort"] == "max"

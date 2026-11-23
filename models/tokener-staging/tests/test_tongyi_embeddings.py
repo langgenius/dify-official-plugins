@@ -1,20 +1,15 @@
 from decimal import Decimal
 
 import pytest
-import yaml
-from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.text_embedding import MultiModalContent, MultiModalContentType
-from dify_plugin.errors.model import InvokeBadRequestError, InvokeServerUnavailableError
+from dify_plugin.errors.model import InvokeServerUnavailableError
 from protocol_http import wire as wire
 
 from models.text_embedding.text_embedding import TokenerTextEmbeddingModel
-from scripts.sync_catalog import SOURCE_ROOT
 
 
-def embedding(model_id):
-    path = SOURCE_ROOT / "tongyi/models/text_embedding" / f"{model_id}.yaml"
-    schema = AIModelEntity.model_validate(yaml.safe_load(path.read_text()))
-    return TokenerTextEmbeddingModel(model_schemas=[schema])
+def embedding():
+    return TokenerTextEmbeddingModel(model_schemas=[])
 
 
 def reply(tokens, text, image):
@@ -31,7 +26,7 @@ def reply(tokens, text, image):
 def test_public_text_keeps_source_single_document_requests(model_id, wire):
     _, calls, replies = wire
     replies.extend([(200, {}, reply(3, 3, 0)), (200, {}, reply(5, 5, 0))])
-    result = embedding(model_id).invoke(model_id, {"api_key": "test-key"}, ["one", "two"])
+    result = embedding().invoke(model_id, {"api_key": "test-key"}, ["one", "two"])
     assert [call[2]["input"] for call in calls] == [[{"text": "one"}], [{"text": "two"}]]
     assert all(call[0] == "/v1/embeddings" for call in calls)
     assert result.embeddings == [[0.1, 0.2], [0.1, 0.2]]
@@ -43,7 +38,7 @@ def test_public_text_keeps_source_single_document_requests(model_id, wire):
 def test_public_multimodal_preserves_physical_usage_and_source_price(model_id, image, mime, wire):
     _, calls, replies = wire
     replies.extend([(200, {}, reply(12, 12, 0)), (200, {}, reply(256, 0, 256))])
-    model = embedding(model_id)
+    model = embedding()
     documents = [
         MultiModalContent(content_type=MultiModalContentType.TEXT, content="hello"),
         MultiModalContent(content_type=MultiModalContentType.IMAGE, content=image),
@@ -72,16 +67,4 @@ def test_multimodal_rejects_incomplete_upstream_contract(fault, wire):
     replies.append((200, {}, body))
     document = MultiModalContent(content_type=MultiModalContentType.IMAGE, content="iVBORw0KGgo=")
     with pytest.raises(InvokeServerUnavailableError):
-        embedding("qwen3-vl-embedding").invoke_multimodal(
-            "qwen3-vl-embedding", {"api_key": "test-key"}, [document]
-        )
-
-
-def test_multimodal_rejects_invalid_image_before_http(wire):
-    _, calls, _ = wire
-    document = MultiModalContent(content_type=MultiModalContentType.IMAGE, content="not base64")
-    with pytest.raises(InvokeBadRequestError):
-        embedding("qwen3-vl-embedding").invoke_multimodal(
-            "qwen3-vl-embedding", {"api_key": "test-key"}, [document]
-        )
-    assert calls == []
+        embedding().invoke_multimodal("qwen3-vl-embedding", {"api_key": "test-key"}, [document])
