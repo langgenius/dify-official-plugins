@@ -339,12 +339,14 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     return str(args)  # Fallback to string conversion
             return str(args)
         
-        tool_calls_stream = chunk_json.get("message", {}).get("tool_calls")
+        tool_calls_stream = (chunk_json.get("message") or {}).get("tool_calls")
         if not tool_calls_stream:
             return
         
         for tool_call_stream in tool_calls_stream:
-            function_data = tool_call_stream.get("function", {})
+            function_data = tool_call_stream.get("function") or {}
+            if not function_data:
+                continue
             func_name = function_data.get("name")
             args_chunk = _normalize_arguments(function_data.get("arguments"))
             idx = tool_call_stream.get("index", function_data.get("index"))
