@@ -12,16 +12,24 @@ FAST_MODELS = {
 }
 
 
-def prompt_tokens(model, usage, parameters):
+def _cache_writes(usage):
     creation = usage.get("cache_creation") or {}
     short = creation.get("ephemeral_5m_input_tokens") or 0
     long = creation.get("ephemeral_1h_input_tokens") or 0
+    total = usage.get("cache_creation_input_tokens")
+    if total is None:
+        return short, long, short + long
+    if total != short + long:
+        return 0, 0, total
+    return short, long, total
+
+
+def prompt_tokens(model, usage, parameters):
+    short, long, total = _cache_writes(usage)
     writes = (
         short * 5 // 4 + long * 2
         if short or long
-        else (usage.get("cache_creation_input_tokens") or 0)
-        * (8 if parameters.get("prompt_caching_ttl") == "1h" else 5)
-        // 4
+        else total * (8 if parameters.get("prompt_caching_ttl") == "1h" else 5) // 4
     )
     divisor = (
         40
@@ -42,11 +50,11 @@ def prompt_tokens(model, usage, parameters):
 
 
 def _raw_input_tokens(usage):
-    creation = usage.get("cache_creation") or {}
-    short = creation.get("ephemeral_5m_input_tokens") or 0
-    long = creation.get("ephemeral_1h_input_tokens") or 0
-    writes = short + long if short or long else (usage.get("cache_creation_input_tokens") or 0)
-    return (usage.get("input_tokens") or 0) + (usage.get("cache_read_input_tokens") or 0) + writes
+    return (
+        (usage.get("input_tokens") or 0)
+        + (usage.get("cache_read_input_tokens") or 0)
+        + _cache_writes(usage)[2]
+    )
 
 
 def priced_usage(

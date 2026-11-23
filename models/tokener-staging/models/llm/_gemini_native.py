@@ -196,7 +196,8 @@ def _request(llm, model, credentials, messages, params, tools, stop, stream):
         config["mediaResolution"] = "MEDIA_RESOLUTION_" + (
             "UNSPECIFIED" if resolution == "default" else resolution.upper()
         )
-    if model == NANO_BANANA_21 or re.search(r"(?:^|-)image(?:-|$)", model):
+    image_only = bool(re.search(r"(?:^|-)image(?:-|$)", model))
+    if model == NANO_BANANA_21 or image_only:
         config["responseModalities"] = ["TEXT", "IMAGE"]
         ratios = {"1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"}
         if model == NANO_BANANA_21:
@@ -211,7 +212,7 @@ def _request(llm, model, credentials, messages, params, tools, stop, stream):
         }
         if image:
             config["imageConfig"] = image
-    else:
+    if not image_only:
         thinking = {}
         budget = params.get("thinking_budget") if model not in NO_SAMPLING_MODELS else None
         mode = params.get("thinking_mode") if model not in NO_SAMPLING_MODELS else None

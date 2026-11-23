@@ -81,6 +81,12 @@ class CacheBlocks:
     def mark(self, block: dict, priority: int, length: int = 0) -> None:
         self.blocks.append((priority, -length, block))
 
+    def text(self, block: dict) -> dict:
+        threshold = self.settings.get("prompt_caching_message_flow", 0)
+        if threshold and len(block["text"].split()) >= threshold:
+            self.mark(block, 3, len(block["text"]))
+        return block
+
     def apply(self) -> None:
         control = {"type": "ephemeral"}
         if (ttl := self.settings.get("prompt_caching_ttl")) is not None:
@@ -116,11 +122,7 @@ class CacheBlocks:
             if isinstance(item, TextPromptMessageContent):
                 if not item.data:
                     continue
-                block = {"type": "text", "text": item.data}
-                if (threshold := self.settings.get("prompt_caching_message_flow", 0)) and (
-                    len(item.data.split()) >= threshold
-                ):
-                    self.mark(block, 3, len(item.data))
+                block = self.text({"type": "text", "text": item.data})
             elif isinstance(item, ImagePromptMessageContent | DocumentPromptMessageContent):
                 kind = item.type.value
                 if kind == "document" and item.mime_type != "application/pdf":
@@ -185,8 +187,8 @@ def _history(messages, cache: CacheBlocks) -> tuple[list, list]:
                         blocks.append(deepcopy(item))
                     elif kind == "redacted_thinking" and item.get("data"):
                         blocks.append({"type": "redacted_thinking", "data": item["data"]})
-                    elif kind == "text" and item.get("text"):
-                        blocks.append(deepcopy(item))
+                    elif kind == "text" and isinstance(item.get("text"), str) and item["text"]:
+                        blocks.append(cache.text(deepcopy(item)))
                     elif kind == "tool_use" and item.get("id") and item.get("name"):
                         block = {
                             "type": "tool_use",
@@ -439,9 +441,7 @@ def invoke(llm, model, credentials, messages, parameters, tools, stop, stream) -
                 parameters,
                 reason=reason,
                 stop_details=stop_details,
-                has_content=any(
-                    b.get("type") not in {"thinking", "redacted_thinking"} for b in blocks
-                ),
+                has_content=bool(blocks),
             ),
         )
 

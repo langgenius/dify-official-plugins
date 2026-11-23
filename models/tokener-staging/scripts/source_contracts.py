@@ -263,6 +263,7 @@ def sync_redirect_schemas(
     *,
     check: bool = False,
 ) -> bool:
+    load_source_contracts(root)
     bundle = export_redirect_schemas(root, target_models_dir=output_dir.parent)
     packed = _pack_redirect_shards(bundle["schemas"], max_shard_bytes=18000)
     shard_files = {f"shard_{idx:02d}.json": text for idx, text in enumerate(packed)}

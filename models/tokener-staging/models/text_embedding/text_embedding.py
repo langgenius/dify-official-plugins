@@ -197,10 +197,10 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
         prefix = _gemini_retrieval_prefix(model, input_type)
         chunks = []
         for index, raw_text in enumerate(texts):
-            pending = [prefix + raw_text]
+            pending = [raw_text]
             while pending:
                 text = pending.pop()
-                payload = {"contents": [{"role": "user", "parts": [{"text": text}]}]}
+                payload = {"contents": [{"role": "user", "parts": [{"text": prefix + text}]}]}
                 with self._request_at(
                     f"/v1beta/models/{model}:countTokens", credentials, json=payload
                 ) as response:
@@ -208,9 +208,9 @@ class TokenerTextEmbeddingModel(TokenerAPIModel, OAICompatEmbeddingModel):
                 count = result.get("totalTokens") if isinstance(result, dict) else None
                 if count is None or type(count) is not int or count < 0:
                     raise InvokeServerUnavailableError("Invalid Gemini token count")
-                count = count or self._get_num_tokens_by_gpt2(text)
+                count = count or self._get_num_tokens_by_gpt2(prefix + text)
                 if count < context or len(text) <= 1:
-                    chunks.append((index, text, count))
+                    chunks.append((index, prefix + text, count))
                     continue
                 cutoff = min(max(1, len(text) * context // count), len(text) - 1)
                 for pattern in (r"[.!?]", r",", r"\s"):
