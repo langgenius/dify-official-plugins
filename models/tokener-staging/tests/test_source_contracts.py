@@ -4,8 +4,12 @@ import pytest
 import yaml
 
 from models.llm._wire import TRANSPORT_FIELDS
-from scripts.source_contracts import apply_source_contracts, load_source_contracts
-from scripts.sync_catalog import LLM_DIR, SOURCE_ROOT, CatalogError, sync_files
+from scripts.source_contracts import (
+    apply_source_contracts,
+    load_source_contracts,
+    sync_redirect_schemas,
+)
+from scripts.sync_catalog import LLM_DIR, REDIRECT_DIR, SOURCE_ROOT, CatalogError, sync_files
 
 
 def test_source_rules_and_provider_mapping_are_reproducible_and_drift_is_detected(tmp_path):
@@ -26,6 +30,13 @@ def test_source_rules_and_provider_mapping_are_reproducible_and_drift_is_detecte
     target.write_text(generated[target.name])
     (tmp_path / "_provider_models.json").write_text(json.dumps({"glm-5": "openai"}))
     assert not sync_files(generated, check=True, output_dir=tmp_path)
+
+
+def test_redirect_schemas_match_source_providers():
+    assert sync_redirect_schemas(SOURCE_ROOT, REDIRECT_DIR, check=True), (
+        "models/_redirect_schemas is stale; run "
+        "`uv run --frozen python -m scripts.source_contracts` from models/tokener-staging"
+    )
 
 
 def test_missing_source_provider_is_rejected(tmp_path):

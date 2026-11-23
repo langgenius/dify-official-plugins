@@ -84,7 +84,7 @@ class TokenerText2SpeechModel(TokenerAPIModel, TTSModel):
     ) -> Generator[bytes, None, None]:
         if not content_text.strip():
             raise InvokeBadRequestError("Text-to-speech input must not be empty")
-        if model not in {schema.model for schema in self.model_schemas}:
+        if self.get_model_schema(model, credentials) is None:
             raise InvokeBadRequestError("Text-to-speech model is not configured")
         voices = self.get_tts_model_voices(model, credentials) or []
         if voice not in {item["value"] for item in voices}:

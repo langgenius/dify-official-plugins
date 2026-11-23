@@ -42,10 +42,11 @@ Model settings expose controls for the selected model family.
 Unknown families expose the output limit and catalog-declared structured output controls.
 
 GPT-4o-mini and its 2024-07-18 version expose temperature, top-p, presence penalty, and frequency penalty controls.
-The Responses API rejects nonzero penalties and seed, as in the OpenAI source plugin.
+Requests that set `seed` use Chat Completions, because the Responses API rejects `seed`.
 For `glm-4.7`, `glm-4.7-flash`, `qwen3-coder-30b-a3b`, `qwen3-coder-next`, and `qwen3-vl-235b-a22b`, temperature ranges from 0 to 1.
 
-OpenAI language models use the Responses API. The `gpt-audio-*` models use Chat Completions.
+OpenAI language models use the Responses API by default. Requests with a nonzero presence or frequency penalty, a `seed`, or audio input use Chat Completions, as do the `gpt-audio-*` models. Models that support only the Responses API always use it. On Chat Completions, audio must be base64 WAV or MP3 and documents must be inline PDFs. The plugin rejects other attachments on that path.
+For redirected models without static YAML, the plugin loads fallback schemas from `models/_redirect_schemas/`.
 Claude uses the Messages API. Gemini uses GenerateContent, or Interactions when a supported model combines built-in tools with structured output.
 Tongyi and xAI use Chat Completions with provider-specific options.
 Catalog metadata does not describe deployment parameter overrides. Recheck the profiles when the upstream contract or deployment policy changes.
@@ -66,6 +67,13 @@ LLM generation also reads the five source providers in the sibling `models` dire
 Use `--source-root /path/to/models` for a separate checkout. Missing source providers
 stop generation before any files are written. Source parameter rules and required
 defaults take precedence over catalog parameter profiles.
+
+Generation also rebuilds `models/_redirect_schemas/` from the source providers, and `--check` reports drift there.
+If only a source provider changed, rebuild the fallback schemas without a catalog snapshot:
+
+```bash
+uv run --frozen python -m scripts.source_contracts
+```
 
 The snapshot must contain the complete `items` array. Each item supplies `publicModelId`, `category`, `enabled`, `managedAvailable`, and model metadata.
 The generator includes models with both `enabled: true` and `managedAvailable: true`, regardless of access scope.

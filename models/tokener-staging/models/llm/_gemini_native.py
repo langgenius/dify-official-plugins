@@ -1,21 +1,29 @@
-import base64
 import re
 from collections.abc import Generator
 
-from dify_plugin.entities.model.message import (
-    AssistantPromptMessage,
-    PromptMessageContentType,
-    TextPromptMessageContent,
-    ToolPromptMessage,
-    UserPromptMessage,
-)
+from dify_plugin.entities.model.message import TextPromptMessageContent
 from dify_plugin.errors.model import InvokeBadRequestError
 
-from models.llm import _gemini_files, _gemini_output, _wire
-from models.llm._gemini_output import OPAQUE_KEY
+from models.llm import _gemini_output, _wire
+from models.llm._gemini_history import (
+    DEFAULT_THOUGHT_SIGNATURE as DEFAULT_THOUGHT_SIGNATURE,
+)
+from models.llm._gemini_history import (
+    _history as _history,
+)
+from models.llm._gemini_history import (
+    _normalize_opaque_part as _normalize_opaque_part,
+)
+from models.llm._gemini_history import (
+    _parts as _parts,
+)
+from models.llm._gemini_history import (
+    prompt_text as prompt_text,
+)
 
 FIELDS = {
     "max_tokens",
+    "max_tokens_to_sample",
     "max_output_tokens",
     "temperature",
     "top_p",
@@ -43,9 +51,14 @@ NATIVE_TOOLS = {
     "url_context": ("urlContext", "url_context"),
     "code_execution": ("codeExecution", "code_execution"),
 }
-DEFAULT_THOUGHT_SIGNATURE = base64.b64encode(b"skip_thought_signature_validator").decode()
-NO_SAMPLING_MODELS = {
+GEMINI_4_MODELS = {
     "gemini-4-argon",
+    "gemini-4-carbon",
+    "gemini-4-hydrogen",
+    "gemini-4-neon",
+}
+NANO_BANANA_21 = "gemini-nano-banana-2.1"
+NO_SAMPLING_MODELS = GEMINI_4_MODELS | {
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -53,183 +66,10 @@ NO_SAMPLING_MODELS = {
 }
 
 
-def prompt_text(messages) -> str:
-    parts = []
-    for message in messages:
-        content = message.content
-        if isinstance(content, list):
-            content = "".join(
-                item.data for item in content if item.type != PromptMessageContentType.IMAGE
-            )
-        speaker = "model" if isinstance(message, AssistantPromptMessage) else "user"
-        text = f"\n\n{speaker}: {content}"
-        if isinstance(message, AssistantPromptMessage) and message.tool_calls:
-            text += "\n" + "\n".join(
-                f"{call.function.name} {call.function.arguments}" for call in message.tool_calls
-            )
-        parts.append(text)
-    return "".join(parts).rstrip()
-
-
 def model_path(model: str, operation: str) -> str:
     if not re.fullmatch(r"[A-Za-z0-9_.-]{1,200}", model):
         raise InvokeBadRequestError("Invalid Gemini model ID")
     return f"/v1beta/models/{model}:{operation}"
-
-
-def _parts(llm, credentials, value, *, inline: bool, remaining: list[int]) -> list[dict]:
-    if isinstance(value, str):
-        return [{"text": value}] if value else []
-    parts = []
-    for item in value or []:
-        if isinstance(item, TextPromptMessageContent):
-            if item.data:
-                parts.append({"text": item.data})
-            continue
-        mime = item.mime_type
-        if item.type.value == "document" and mime != "application/pdf":
-            raise InvokeBadRequestError("Gemini requires PDF documents")
-        if not mime.startswith(("image/", "audio/", "video/")) and mime != "application/pdf":
-            raise InvokeBadRequestError("Unsupported Gemini attachment type")
-        use_inline = inline or mime.startswith("image/")
-        data = _gemini_files.media_bytes(
-            item, max_bytes=remaining[0] if use_inline else _gemini_files.MAX_BYTES
-        )
-        if use_inline:
-            remaining[0] -= len(data)
-            parts.append(
-                {"inlineData": {"mimeType": mime, "data": base64.b64encode(data).decode()}}
-            )
-        else:
-            uri = _gemini_files.upload(llm, credentials, mime, data)
-            parts.append({"fileData": {"mimeType": mime, "fileUri": uri}})
-    return parts
-
-
-def _history(llm, credentials, messages, *, inline, promote=True) -> tuple[list, list]:
-    system, scalar_indexes, turns = [], [], []
-    remaining = [_gemini_files.MAX_BYTES]
-    last_scalar = None
-    structured_system = False
-    fallback_system = False
-    tool_calls = {}
-    for message in messages:
-        if message.role.value in {"system", "developer"}:
-            if isinstance(message.content, str):
-                last_scalar = message.content
-                if message.content:
-                    scalar_indexes.append(len(system))
-                    system.append({"text": message.content})
-                continue
-            if message.content and all(
-                isinstance(part, TextPromptMessageContent) and part.data for part in message.content
-            ):
-                parts = [{"text": part.data} for part in message.content]
-                system.extend(parts)
-                structured_system = True
-                turns.append(("user", parts, True, False))
-                continue
-            fallback_system = True
-        role = "model" if isinstance(message, AssistantPromptMessage) else "user"
-        if isinstance(message, ToolPromptMessage):
-            call_id = message.tool_call_id
-            name, native_id = tool_calls.get(call_id, (message.name or call_id, call_id))
-            response = {"name": name, "response": {"response": message.content}}
-            if native_id:
-                response["id"] = native_id
-            parts = [{"functionResponse": response}]
-        elif isinstance(message, AssistantPromptMessage):
-            stored = (
-                message.opaque_body.get(OPAQUE_KEY, [])
-                if isinstance(message.opaque_body, dict)
-                else []
-            )
-            if stored:
-                if not isinstance(stored, list) or not all(
-                    isinstance(part, dict) for part in stored
-                ):
-                    raise InvokeBadRequestError("Invalid Gemini assistant history")
-                native_ids = set()
-                for part in stored:
-                    _wire.reject_controls(part, nested=False)
-                    for field in ("inlineData", "inline_data"):
-                        if media := part.get(field):
-                            data = media.get("data") if isinstance(media, dict) else None
-                            if not isinstance(data, str):
-                                raise InvokeBadRequestError("Invalid Gemini assistant history")
-                            remaining[0] -= len(_gemini_files.decode_media(data, remaining[0]))
-                    if "functionCall" not in part:
-                        continue
-                    function = part["functionCall"]
-                    if not isinstance(function, dict):
-                        raise InvokeBadRequestError("Invalid Gemini assistant history")
-                    native_id = function.get("id")
-                    if native_id is not None and not isinstance(native_id, str):
-                        raise InvokeBadRequestError("Invalid Gemini assistant history")
-                    if native_id:
-                        native_ids.add(native_id)
-                parts = [
-                    {**part, "thoughtSignature": DEFAULT_THOUGHT_SIGNATURE}
-                    if "functionCall" in part and not part.get("thoughtSignature")
-                    else part.copy()
-                    for part in stored
-                ]
-                for call in message.tool_calls:
-                    tool_calls[call.id] = (
-                        call.function.name,
-                        call.id if call.id in native_ids else None,
-                    )
-            else:
-                text = (
-                    re.sub(r"^<think>.*?</think>\s*", "", message.content, count=1, flags=re.DOTALL)
-                    if isinstance(message.content, str)
-                    else message.content
-                )
-                parts = [
-                    {**part, "thoughtSignature": DEFAULT_THOUGHT_SIGNATURE}
-                    for part in _parts(llm, credentials, text, inline=inline, remaining=remaining)
-                ]
-                for call in message.tool_calls:
-                    tool_calls[call.id] = (call.function.name, call.id)
-                    parts.append(
-                        {
-                            "functionCall": {
-                                "id": call.id,
-                                "name": call.function.name,
-                                "args": _wire.json_object(
-                                    call.function.arguments, "Tool arguments"
-                                ),
-                            },
-                            "thoughtSignature": DEFAULT_THOUGHT_SIGNATURE,
-                        }
-                    )
-        else:
-            parts = _parts(llm, credentials, message.content, inline=inline, remaining=remaining)
-        turns.append((role, parts, False, isinstance(message, UserPromptMessage)))
-    ordinary = [turn for turn in turns if not turn[2]]
-    if (
-        promote
-        and structured_system
-        and not fallback_system
-        and last_scalar != ""
-        and ordinary
-        and ordinary[0][3]
-        and all(turn[1] for turn in ordinary)
-    ):
-        superseded = set(scalar_indexes[:-1])
-        system = [part for index, part in enumerate(system) if index not in superseded]
-        turns = ordinary
-    else:
-        system = [{"text": last_scalar}] if last_scalar else []
-    contents = []
-    for role, parts, _, _ in turns:
-        if not parts and role == "model":
-            continue
-        if contents and contents[-1]["role"] == role:
-            contents[-1]["parts"].extend(parts)
-        else:
-            contents.append({"role": role, "parts": list(parts)})
-    return system, contents
 
 
 def _tool_config(choice) -> dict:
@@ -301,7 +141,9 @@ def _request(llm, model, credentials, messages, params, tools, stop, stream):
         contents = [{"role": "user", "parts": list(system)}]
     if model in NO_SAMPLING_MODELS and contents[-1]["role"] == "model":
         raise InvokeBadRequestError("The selected Gemini model does not support assistant prefill")
-    max_tokens = params.get("max_output_tokens", params.get("max_tokens"))
+    max_tokens = params.get(
+        "max_output_tokens", params.get("max_tokens_to_sample", params.get("max_tokens"))
+    )
     tier = "flex" if params.get("flex_inference") else params.get("service_tier")
     level = params.get("thinking_level", params.get("reasoning_effort"))
     include_thoughts = params.get("include_thoughts")
@@ -354,23 +196,23 @@ def _request(llm, model, credentials, messages, params, tools, stop, stream):
         config["mediaResolution"] = "MEDIA_RESOLUTION_" + (
             "UNSPECIFIED" if resolution == "default" else resolution.upper()
         )
-    if re.search(r"(?:^|-)image(?:-|$)", model):
+    image_only = bool(re.search(r"(?:^|-)image(?:-|$)", model))
+    if model == NANO_BANANA_21 or image_only:
         config["responseModalities"] = ["TEXT", "IMAGE"]
+        ratios = {"1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"}
+        if model == NANO_BANANA_21:
+            ratios = ratios | {"1:4", "4:1", "1:8", "8:1"}
         image = {
             wire: params[name]
             for name, wire, allowed in (
-                (
-                    "aspect_ratio",
-                    "aspectRatio",
-                    {"1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
-                ),
+                ("aspect_ratio", "aspectRatio", ratios),
                 ("resolution", "imageSize", {"1K", "2K", "4K"}),
             )
             if params.get(name) in allowed
         }
         if image:
             config["imageConfig"] = image
-    else:
+    if not image_only:
         thinking = {}
         budget = params.get("thinking_budget") if model not in NO_SAMPLING_MODELS else None
         mode = params.get("thinking_mode") if model not in NO_SAMPLING_MODELS else None

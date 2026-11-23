@@ -70,6 +70,9 @@ class ChatCompletionSSEStreamResponse(requests.Response):
         self.status_code = response.status_code
         self.encoding = "utf-8"
         self.headers = response.headers.copy()
+        self.last_usage_details: dict | None = None
+        self.last_service_tier: str | None = None
+        self.last_created: float | None = None
 
     def close(self) -> None:
         self.response.close()
@@ -116,6 +119,16 @@ class ChatCompletionSSEStreamResponse(requests.Response):
                             )
                         if choice.get("index", 0) == 0 and choice.get("finish_reason") is not None:
                             terminal = True
+                if isinstance(usage := payload.get("usage"), dict) and isinstance(
+                    usage.get("prompt_tokens_details"), dict
+                ):
+                    self.last_usage_details = usage["prompt_tokens_details"]
+                if isinstance(tier := payload.get("service_tier"), str) and tier:
+                    self.last_service_tier = tier
+                if isinstance(created := payload.get("created"), int | float) and not isinstance(
+                    created, bool
+                ):
+                    self.last_created = created
                 normalized = f"data: {json.dumps(payload, ensure_ascii=False, allow_nan=False)}"
                 yield normalized if decode_unicode else normalized.encode("utf-8")
             if not saw_choice or not terminal:

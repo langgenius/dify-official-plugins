@@ -13,8 +13,15 @@ from models.llm import _sse, _wire
 OPAQUE_KEY = "gemini_parts"
 
 
-def _priced_usage(llm, model, credentials, prompt, completion, tier):
+def _priced_usage(llm, model, credentials, prompt, completion, tier, image_tokens=0):
     usage = llm._calc_response_usage(model, credentials, prompt, completion)
+    if model == "gemini-nano-banana-2.1" and image_tokens:
+        usage.completion_price += (
+            image_tokens
+            * (Decimal("30") - usage.completion_unit_price)
+            * usage.completion_price_unit
+        )
+        usage.total_price = usage.prompt_price + usage.completion_price
     multiplier = {"flex": Decimal("0.5"), "priority": Decimal("1.8")}.get(str(tier).lower())
     if multiplier is not None:
         for name in (
@@ -105,7 +112,12 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
         continuation = None
         usage = {}
         actual_tier = None
-        timeout = (10, 900 if model == "gemini-4-argon" else 120)
+        timeout = (
+            10,
+            900
+            if model in {"gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen", "gemini-4-neon"}
+            else 120,
+        )
         with llm._request_at(
             path, credentials, json=payload, stream=stream, timeout=timeout
         ) as response:
@@ -136,6 +148,11 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
                         visible.extend(parts)
                 finish = candidate.get("finishReason") or finish
                 continuation = candidate.get("continuationToken") or continuation
+        image_tokens = sum(
+            part.get("tokenCount") or 0
+            for part in usage.get("candidatesTokensDetails") or []
+            if isinstance(part, dict) and part.get("modality") == "IMAGE"
+        )
         current = _priced_usage(
             llm,
             model,
@@ -143,6 +160,7 @@ def generate(llm, model, credentials, path, payload, stream) -> Generator:
             usage.get("promptTokenCount") or 0,
             (usage.get("candidatesTokenCount") or 0) + (usage.get("thoughtsTokenCount") or 0),
             actual_tier or payload.get("serviceTier", "standard"),
+            image_tokens=image_tokens,
         )
         if total_usage is None:
             total_usage = current
