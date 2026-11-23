@@ -521,7 +521,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
                     )
                     yield tool_call_log
+                    tool_error: str | None = None
                     if not tool_instance:
+                        tool_error = f"there is not a tool named {tool_call_name}"
                         tool_response = {
                             "tool_call_id": tool_call_id,
                             "tool_call_name": tool_call_name,
@@ -643,6 +645,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     )
                         except Exception as e:
                             tool_result = f"tool invoke error: {e!s}"
+                            tool_error = tool_result
                         tool_response = {
                             "tool_call_id": tool_call_id,
                             "tool_call_name": tool_call_name,
@@ -655,6 +658,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
                     yield self.finish_log_message(
                         log=tool_call_log,
+                        status=ToolInvokeMessage.LogMessage.LogStatus.ERROR
+                        if tool_error
+                        else ToolInvokeMessage.LogMessage.LogStatus.SUCCESS,
+                        error=tool_error,
                         data={
                             "output": tool_response,
                         },
