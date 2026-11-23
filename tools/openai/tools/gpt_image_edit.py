@@ -12,7 +12,7 @@ from openai_client import normalize_openai_base_url
 
 class GPTImageEditTool(Tool):
     """
-    Tool to edit images using OpenAI's gpt-image-1 model.
+    Tool to edit images using OpenAI's GPT Image models.
     It takes an input image and a prompt, and optionally a mask,
     to generate an edited version of the image.
     """
@@ -40,8 +40,13 @@ class GPTImageEditTool(Tool):
             yield self.create_text_message("Error: Prompt is required.")
             return
 
-        model = tool_parameters.get("model", "gpt-image-1")
-        if model not in (allowed_models := {"gpt-image-1", "gpt-image-1-mini"}):
+        model = tool_parameters.get("model", "gpt-image-2.5-sunburst")
+        if model not in (allowed_models := {
+            "gpt-image-2.5-sunburst",
+            "gpt-image-2.5-flare",
+            "gpt-image-2.6-sunburst",
+            "gpt-image-2.6-flare",
+        }):
             yield self.create_text_message(f"Invalid model. Choose from: {', '.join(sorted(allowed_models))}.")
             return
 

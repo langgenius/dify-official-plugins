@@ -1,8 +1,8 @@
 description:
   human:
-    en_US: GPT Image Generate (gpt-image-1) is a text to image generation tool
-    zh_Hans: GPT Image Generate (gpt-image-1) 是一个文本到图像的生成工具
-  llm: GPT Image Generate is a tool used to generate images from text using OpenAI's gpt-image-1 model
+    en_US: GPT Image Generate is a text to image generation tool
+    zh_Hans: GPT Image Generate 是一个文本到图像的生成工具
+  llm: GPT Image Generate is a tool used to generate images from text using OpenAI's GPT Image models
 extra:
   python:
     source: tools/gpt_image_generate.py
@@ -27,24 +27,32 @@ parameters:
   name: prompt
   required: true
   type: string
-- default: gpt-image-1
+- default: gpt-image-2.5-sunburst
   form: form
   human_description:
-    en_US: Select the GPT Image model. GPT Image 1 Mini is more cost-effective.
-    zh_Hans: 选择 GPT Image 模型。GPT Image 1 Mini 更具成本效益。
+    en_US: Select the GPT Image model. The 2.6 models default to high complexity.
+    zh_Hans: 选择 GPT Image 模型。2.6 模型默认使用高复杂度。
   label:
     en_US: Model
     zh_Hans: 模型
   name: model
   options:
   - label:
-      en_US: GPT Image 1
-      zh_Hans: GPT Image 1
-    value: gpt-image-1
+      en_US: GPT Image 2.5 Sunburst
+      zh_Hans: GPT Image 2.5 Sunburst
+    value: gpt-image-2.5-sunburst
   - label:
-      en_US: GPT Image 1 Mini
-      zh_Hans: GPT Image 1 Mini
-    value: gpt-image-1-mini
+      en_US: GPT Image 2.5 Flare
+      zh_Hans: GPT Image 2.5 Flare
+    value: gpt-image-2.5-flare
+  - label:
+      en_US: GPT Image 2.6 Sunburst
+      zh_Hans: GPT Image 2.6 Sunburst
+    value: gpt-image-2.6-sunburst
+  - label:
+      en_US: GPT Image 2.6 Flare
+      zh_Hans: GPT Image 2.6 Flare
+    value: gpt-image-2.6-flare
   required: false
   type: select
 - default: auto
