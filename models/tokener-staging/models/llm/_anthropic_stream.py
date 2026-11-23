@@ -56,7 +56,7 @@ def _stream(response, model):
                 reason = event["delta"].get("stop_reason") or reason
                 if event["delta"].get("stop_details") is not None:
                     stop_details = event["delta"].get("stop_details")
-                usage.update(event.get("usage") or {})
+                usage.update({k: v for k, v in (event.get("usage") or {}).items() if v is not None})
             case "message_stop":
                 stopped = True
                 break
