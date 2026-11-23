@@ -23,6 +23,10 @@ MinerU is a document parser that can parse complex document data for any downstr
 - Supports running in a pure CPU environment, and also supports GPU(CUDA)/NPU(CANN)/MPS acceleration
 - Compatible with Windows, Linux, and Mac platforms.
 
+## What's New in 0.7.0
+
+Parse File, Parse URL and Get Parse Result now support self-hosted MinerU 4.1.x. The plugin checks the server's advertised capabilities and uses the [Tasks API](https://github.com/opendatalab/MinerU/blob/mineru-4.1.0-released/docs/next/api/tasks.md) on 4.1.x or the parse jobs API on 4.0.x. Existing workflows and credentials work with both.
+
 ## What's New in 0.6.1
 
 - Accept self-hosted V1 API addresses ending in `/v1`, including reverse-proxy prefixes such as `https://example.com/mineru/v1`. The plugin adds the API version exactly once, avoiding `/v1/v1/health` and an incorrect fallback to `/file_parse`.
@@ -30,7 +34,7 @@ MinerU is a document parser that can parse complex document data for any downstr
 
 MinerU 4.x support was introduced in **0.6.0**. If an older plugin calls `/file_parse` and receives 404 after upgrading MinerU, update the plugin, select **Local Deployment**, and point Base URL at the document parsing service (`mineru-kit api-server`). The WebUI and OpenAI-compatible VLM service are different endpoints.
 
-The V1 integration follows the official [HTTP API guide](https://opendatalab.github.io/MinerU/usage/http_api/) and [4.0 migration guide](https://opendatalab.github.io/MinerU/reference/migration_4/): upload → parse job → poll → download output files. Existing workflows keep the same tool parameters; `parse_method` maps to V1 `ocr_mode`, `page_ranges` to per-file `page_range`, and `tier` selects parsing quality.
+The MinerU 4.0 integration follows the official [HTTP API guide](https://opendatalab.github.io/MinerU/usage/http_api/) and [4.0 migration guide](https://opendatalab.github.io/MinerU/reference/migration_4/): upload → parse job → poll → download output files. Existing workflows keep the same tool parameters; `parse_method` maps to V1 `ocr_mode`, `page_ranges` to per-file `page_range`, and `tier` selects parsing quality.
 
 ## What's New in 0.6.0
 
@@ -95,7 +99,7 @@ Saving the credentials checks them with a read-only request.
 | enable_formula / enable_table | official API, self-hosted 2.x/3.x | Formula and table recognition. MinerU 4.x decides this from the tier. |
 | language | official API, self-hosted 2.x/3.x | Document language, e.g. `ch`, `en`, `japan`. The official API accepts `auto`. |
 | enable_ocr | official API | Force OCR. |
-| extra_formats | official API | Extra exports, any of `["docx","html","latex"]`. Self-hosted MinerU 4.x only returns Markdown, JSON and images. |
+| extra_formats | official API, self-hosted 4.1.x | Additional exports to return alongside Markdown, JSON and images. Choose any of `["docx","html","latex"]`. |
 | model_version | official API | `pipeline`, `vlm`, or `MinerU-HTML` for html files. |
 | backend / server_url | self-hosted 2.x/3.x | Parsing backend; `server_url` is required for the `*-client` backends. |
 | wait_for_result | official API, self-hosted 4.x | Wait until parsing finishes (default). If off, the tool returns a `task_id` / `batch_id` immediately. |
@@ -169,7 +173,7 @@ Please follow the instructions above to configure the settings accordingly, and 
 
 https://github.com/langgenius/dify/issues/16327
 
-2. **"This MinerU server cannot export the requested extra formats"** – self-hosted MinerU 4.x only returns Markdown, JSON and images. Leave Extra export formats empty.
+2. **"This MinerU server cannot export the requested extra formats"** – Leave Extra export formats empty on a 4.0.x server that does not support them, or upgrade to 4.1.x.
 
 3. **"The MinerU API token has expired"** – generate a new token at https://mineru.net/apiManage/token and update the plugin credentials.
 

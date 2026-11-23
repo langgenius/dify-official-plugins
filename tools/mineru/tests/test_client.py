@@ -25,7 +25,6 @@ from utils.client import (
     CloudV4Client,
     Credentials,
     LocalLegacyClient,
-    LocalV1Client,
     MineruAuthError,
     MineruError,
     MineruNetworkError,
@@ -41,6 +40,14 @@ HEALTH = {
     "features": {
         "sources": ["file_id", "url", "inline"],
         "output_formats": ["markdown", "middle_json", "structured_content", "zip"],
+    },
+}
+TASKS_HEALTH = {
+    "status": "ok",
+    "version": "4.1.0",
+    "features": {
+        "sources": ["upload", "url"],
+        "task_output_formats": ["default", "docx", "html", "latex"],
     },
 }
 
@@ -77,15 +84,18 @@ def credentials(base_url="https://mineru.example"):
         ("https://mineru.example/proxy/mineru", "https://mineru.example/proxy/mineru"),
     ],
 )
-def test_v1_base_url_and_credential_validation(base_url, root):
+@pytest.mark.parametrize(
+    "health,probe", [(HEALTH, "/v1/files"), (TASKS_HEALTH, "/v1/usage")]
+)
+def test_v1_base_url_and_credential_validation(base_url, root, health, probe):
     with patch(
         "requests.request",
-        side_effect=[response(body=HEALTH), response(body={"data": []})],
+        side_effect=[response(body=health), response(body={"data": []})],
     ) as request:
         validate_credentials(credentials(base_url))
     assert [call.args[:2] for call in request.call_args_list] == [
         ("GET", root + "/v1/health"),
-        ("GET", root + "/v1/files"),
+        ("GET", root + probe),
     ]
     for call in request.call_args_list:
         assert call.kwargs["headers"]["Authorization"] == "Bearer test-key"
@@ -138,38 +148,47 @@ def test_legacy_fallback_keeps_v2_form_parameters(status):
     ],
 )
 def test_health_errors_never_select_legacy_api(status, body, error):
-    with patch("requests.request", return_value=response(status, body)) as request:
-        with pytest.raises(error):
-            make_client(credentials())
+    with (
+        patch("requests.request", return_value=response(status, body)) as request,
+        pytest.raises(error),
+    ):
+        make_client(credentials())
     assert request.call_count == 1
     assert request.call_args.args == ("GET", "https://mineru.example/v1/health")
 
 
-def test_loading_v1_server_still_uses_v1():
-    with patch(
-        "requests.request",
-        return_value=response(
-            503, {"error": {"code": "model_not_ready", "message": "Loading models"}}
+def test_loading_v1_server_reports_readiness_before_selecting_protocol():
+    with (
+        patch(
+            "requests.request",
+            return_value=response(
+                503, {"error": {"code": "model_not_ready", "message": "Loading models"}}
+            ),
         ),
+        pytest.raises(MineruNetworkError, match="Loading models"),
     ):
-        assert isinstance(make_client(credentials()), LocalV1Client)
+        make_client(credentials())
 
 
 @pytest.mark.parametrize("token", ["", "wrong-key"])
-def test_v1_rejects_missing_or_wrong_api_key(token):
+@pytest.mark.parametrize("health", [HEALTH, TASKS_HEALTH])
+def test_v1_rejects_missing_or_wrong_api_key(token, health):
     settings = credentials()
     settings.token = token
-    with patch(
-        "requests.request",
-        side_effect=[
-            response(body=HEALTH),
-            response(
-                401, {"error": {"code": "invalid_api_key", "message": "Invalid key"}}
-            ),
-        ],
+    with (
+        patch(
+            "requests.request",
+            side_effect=[
+                response(body=health),
+                response(
+                    401,
+                    {"error": {"code": "invalid_api_key", "message": "Invalid key"}},
+                ),
+            ],
+        ),
+        pytest.raises(MineruAuthError, match="API key"),
     ):
-        with pytest.raises(MineruAuthError, match="API key"):
-            validate_credentials(settings)
+        validate_credentials(settings)
 
 
 @pytest.mark.parametrize("source", ["upload", "cached_upload", "url"])
@@ -309,3 +328,161 @@ def test_cloud_keeps_existing_v4_api():
         )
     assert request.call_count == 1
     assert request.call_args.args == ("POST", "https://mineru.net/api/v4/extract/task")
+
+
+@pytest.mark.parametrize(
+    "source", ["local_upload", "signed_upload", "cached_upload", "url"]
+)
+def test_tasks_submission(source):
+    root = "https://mineru.example/proxy"
+    document_url = "https://files.example/a%20report.pdf?sig=123"
+    data = b"document"
+    item = {"file_id": "file-1", "file_name": "a report.pdf", "status": "pending"}
+    auth = {"Authorization": "Bearer test-key", "X-Gateway-Key": "test-gateway-key"}
+    if source in ("local_upload", "signed_upload"):
+        upload_url = (
+            root + "/v1/tasks/task-1/uploads/file-1"
+            if source == "local_upload"
+            else "https://storage.example/upload?sig=123"
+        )
+        item.update(
+            status="waiting-file",
+            upload={"url": upload_url, "headers": {"X-Upload": "1"}},
+        )
+    receipt = {"task_id": "task-1", "status": item["status"], "files": [item]}
+    with (
+        patch(
+            "requests.request",
+            side_effect=[response(body=TASKS_HEALTH), response(202, receipt)],
+        ) as request,
+        patch("requests.put", return_value=response(200, b"")) as put,
+    ):
+        client = make_client(credentials(root + "/v1"))
+        options = ParseOptions(
+            parse_method="ocr", tier="basic", page_ranges="2-4", extra_formats=["html"]
+        )
+        if source == "url":
+            status = client.submit_url(document_url, options)
+            entry = {"url": document_url}
+        else:
+            status = client.submit_file("a report.pdf", data, options)
+            entry = {"bytes": len(data), "sha256sum": hashlib.sha256(data).hexdigest()}
+    assert request.call_args.args == ("POST", root + "/v1/tasks")
+    assert request.call_args.kwargs["json"] == {
+        "files": [{"file_name": "a report.pdf", "page_range": "2-4", **entry}],
+        "ocr_mode": "ocr",
+        "tier": "basic",
+        "output_formats": ["default", "html"],
+    }
+    assert status.task_id == "task-1" and status.state == STATE_PENDING
+    if "upload" in item:
+        assert put.call_args.args == (upload_url,)
+        assert put.call_args.kwargs["headers"] == {
+            **(auth if source == "local_upload" else {}),
+            "X-Upload": "1",
+        }
+        assert put.call_args.kwargs["data"] == data
+        assert put.call_args.kwargs["allow_redirects"] is False
+    else:
+        put.assert_not_called()
+
+
+def test_tasks_resume_and_download_bundled_exports():
+    root = "https://mineru.example/proxy"
+    result_url = "https://storage.example/result?sig=456"
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as output:
+        for name, content in {
+            "markdown.md": "# Parsed",
+            "structured_content.json": "[1]",
+            "images/example.jpg": b"image",
+            "document.docx": b"docx",
+            "document.html": b"html",
+            "document.tex": b"tex",
+        }.items():
+            output.writestr(name, content)
+    task = {
+        "task_id": "task-1",
+        "status": "completed",
+        "files": [{"status": "completed", "result_url": result_url}],
+    }
+    with (
+        patch(
+            "requests.request",
+            side_effect=[
+                response(body=TASKS_HEALTH),
+                response(body={"status": "waiting-file"}),
+                response(
+                    body={"status": "running", "progress": {"total": 1, "completed": 0}}
+                ),
+                response(body=task),
+            ],
+        ) as request,
+        patch(
+            "requests.get", return_value=response(body=archive.getvalue())
+        ) as download,
+    ):
+        client = make_client(credentials(root))
+        assert client.get_job("task-1").state == STATE_PENDING
+        running = client.get_job("task-1")
+        assert running.state == STATE_RUNNING and running.progress == "0/1 files"
+        done = client.get_job("task-1")
+    assert request.call_args.args == ("GET", root + "/v1/tasks/task-1")
+    assert done.api == API_LOCAL_V1 and done.state == STATE_DONE
+    assert download.call_args.args == (result_url,)
+    assert download.call_args.kwargs["headers"] == {}
+    document = from_v1_zip(done.zip_bytes, done.extra_files, "example.pdf")
+    assert document.markdown == "# Parsed" and document.json_messages == [
+        {"structured_content": [1]}
+    ]
+    assert document.images[0].data == b"image"
+    assert {f.name: f.data for f in document.extra_files} == {
+        "example.docx": b"docx",
+        "example.html": b"html",
+        "example.tex": b"tex",
+    }
+
+
+@pytest.mark.parametrize(
+    "state,detail", [("failed", "source unavailable"), ("canceled", "canceled")]
+)
+def test_tasks_surfaces_terminal_errors(state, detail):
+    item = {"file_name": "report.pdf", "status": state, "error": {"message": detail}}
+    with patch(
+        "requests.request",
+        side_effect=[
+            response(body=TASKS_HEALTH),
+            response(body={"status": state, "files": [item]}),
+        ],
+    ):
+        client = make_client(credentials())
+        with pytest.raises(MineruError, match=f"report.pdf: {detail}"):
+            client.get_job("task-1")
+
+
+def test_tasks_rejected_upload_reports_task_id():
+    receipt = {
+        "task_id": "task-1",
+        "files": [{"upload": {"url": "https://objects.example/upload"}}],
+    }
+    with (
+        patch(
+            "requests.request",
+            side_effect=[response(body=TASKS_HEALTH), response(202, receipt)],
+        ),
+        patch("requests.put", return_value=response(403)),
+        pytest.raises(MineruError, match=r"task-1 failed \(HTTP 403\)"),
+    ):
+        make_client(credentials()).submit_file("example.pdf", b"pdf", ParseOptions())
+
+
+def test_completed_task_requires_result_url():
+    task = {"status": "completed", "files": [{"status": "completed"}]}
+    with (
+        patch(
+            "requests.request",
+            side_effect=[response(body=TASKS_HEALTH), response(body=task)],
+        ),
+        pytest.raises(MineruError, match="without a result URL"),
+    ):
+        make_client(credentials()).get_job("task-1")
