@@ -60,6 +60,7 @@ AUDIO_FIELDS = COMMON_FIELDS | {
     "parallel_tool_calls",
 }
 OPENAI_CHAT_FIELDS = COMMON_FIELDS | {
+    "enable_stream",
     "max_completion_tokens",
     "service_tier",
     "logprobs",
