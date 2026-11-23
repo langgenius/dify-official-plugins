@@ -458,5 +458,103 @@ class TestFunctionCallingAllowedTools(unittest.TestCase):
         invoke.assert_not_called()
 
 
+class TestFunctionCallingToolErrorLogStatus(unittest.TestCase):
+    """Issue #4321: failed tool calls must not be logged as success."""
+
+    @staticmethod
+    def _tool() -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": "slow_api",
+                    "label": {"en_US": "slow_api"},
+                    "provider": "test",
+                },
+                "provider_type": "api",
+                "runtime_parameters": {},
+            }
+        )
+
+    def _run(self, tool_name: str, tool_invoke_side_effect=None) -> list:
+        call = _make_tool_call("call-1", tool_name, '{"q":"x"}')
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=[call]),
+                usage=LLMUsage.empty_usage(),
+            ),
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="done", tool_calls=[]),
+                usage=LLMUsage.empty_usage(),
+            ),
+        ]
+        if tool_invoke_side_effect is not None:
+            session.tool.invoke.side_effect = tool_invoke_side_effect
+        else:
+            session.tool.invoke.return_value = iter(
+                [
+                    ToolInvokeMessage(
+                        type=ToolInvokeMessage.MessageType.TEXT,
+                        message=ToolInvokeMessage.TextMessage(text="ok"),
+                    )
+                ]
+            )
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+        return list(
+            strategy._invoke(
+                {
+                    "query": "call the tool",
+                    "instruction": "Use the tool",
+                    "model": AgentModelConfig(provider="test", model="test-model", mode="chat"),
+                    "tools": [self._tool()],
+                    "maximum_iterations": 3,
+                }
+            )
+        )
+
+    @staticmethod
+    def _finished_call_log(messages: list, tool_name: str):
+        logs = [
+            m.message
+            for m in messages
+            if m.type == ToolInvokeMessage.MessageType.LOG
+            and m.message.label == f"CALL {tool_name}"
+            and m.message.status != ToolInvokeMessage.LogMessage.LogStatus.START
+        ]
+        assert len(logs) == 1, logs
+        return logs[0]
+
+    def test_timed_out_tool_call_is_logged_as_error(self):
+        messages = self._run(
+            "slow_api",
+            tool_invoke_side_effect=TimeoutError(
+                "read tool response failed: request failed: timed out"
+            ),
+        )
+
+        log = self._finished_call_log(messages, "slow_api")
+        self.assertEqual(log.status, ToolInvokeMessage.LogMessage.LogStatus.ERROR)
+        self.assertIn("timed out", log.error)
+        # the model still receives the error text as the tool result
+        self.assertIn("tool invoke error", log.data["output"]["tool_response"])
+
+    def test_successful_tool_call_is_logged_as_success(self):
+        messages = self._run("slow_api")
+
+        log = self._finished_call_log(messages, "slow_api")
+        self.assertEqual(log.status, ToolInvokeMessage.LogMessage.LogStatus.SUCCESS)
+        self.assertIsNone(log.error)
+
+    def test_unknown_tool_call_is_logged_as_error(self):
+        messages = self._run("missing_tool")
+
+        log = self._finished_call_log(messages, "missing_tool")
+        self.assertEqual(log.status, ToolInvokeMessage.LogMessage.LogStatus.ERROR)
+        self.assertIn("there is not a tool named missing_tool", log.error)
+
+
 if __name__ == "__main__":
     unittest.main()
