@@ -42,6 +42,23 @@ def test_model_validation_requires_model_access(get) -> None:
 
 
 @patch("models._credentials.requests.get")
+def test_decisions_classifier_validation_checks_upstream_luna_model(get) -> None:
+    get.return_value = response(
+        200,
+        {"object": "list", "data": [{"id": "gpt-6-luna"}]},
+    )
+
+    validate_model_access({"api_key": "test-key"}, "gpt-6-luna-only-for-question-classifier")
+
+    get.return_value = response(200, {"object": "list", "data": []})
+    with pytest.raises(
+        CredentialsValidateFailedError,
+        match="Model 'gpt-6-luna-only-for-question-classifier' is not available",
+    ):
+        validate_model_access({"api_key": "test-key"}, "gpt-6-luna-only-for-question-classifier")
+
+
+@patch("models._credentials.requests.get")
 def test_upstream_failure_does_not_expose_response_body(get) -> None:
     get.return_value = response(503, {"error": {"message": "internal detail"}})
 
