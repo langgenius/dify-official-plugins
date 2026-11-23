@@ -6,6 +6,7 @@ model_type: llm
 features:
   - vision
   - document
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
@@ -16,19 +17,6 @@ parameter_rules:
     default: 8192
     min: 1
     max: 32768
-  - name: temperature
-    type: float
-    required: true
-    default: 1
-    min: 0
-    max: 1
-  - name: top_p
-    use_template: top_p
-    default: 0.95
-  - name: top_k
-    type: int
-    min: 0
-    max: 100
   - name: use_inline_file
     type: boolean
     required: false
@@ -64,6 +52,15 @@ parameter_rules:
       - 1K
       - 2K
       - 4K
+  - name: temperature
+    type: float
+    required: true
+    default: 1
+    min: 0
+    max: 1
+  - name: top_p
+    use_template: top_p
+    default: 0.95
   - name: include_thoughts
     type: boolean
     required: true

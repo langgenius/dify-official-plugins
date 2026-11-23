@@ -1,18 +1,20 @@
-model: "qwen3-coder-480b-a35b"
+model: "qwen3.5-omni-plus"
 label:
-  en_US: "qwen3-coder-480b-a35b"
-  zh_Hans: "qwen3-coder-480b-a35b"
+  en_US: "qwen3.5-omni-plus"
+  zh_Hans: "qwen3.5-omni-plus"
 model_type: llm
-features: []
+features:
+  - vision
+  - video
 model_properties:
   mode: chat
-  context_size: 256000
+  context_size: 262144
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 16000
+    max: 65536
   - name: temperature
     use_template: temperature
     min: 0
@@ -36,8 +38,8 @@ parameter_rules:
     type: boolean
     required: false
 pricing:
-  input: "0.450000"
-  output: "1.800000"
+  input: "1.400000"
+  output: "8.300000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false

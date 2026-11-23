@@ -5,7 +5,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from protocol_http import CREDENTIALS, PDF, TOOL, USER, contents, invoke, sse
+from protocol_http import CREDENTIALS, PDF, TOOL, USER, contents, invoke, sse, with_fixture_schema
 from protocol_http import llm as llm
 from protocol_http import registry as registry
 from protocol_http import wire as wire
@@ -189,9 +189,11 @@ def test_claude_code_block_mode_skips_prefill_on_4_6_and_sets_stop_sequences(llm
 
 
 def test_claude_fable_5_2_validates_and_strips_speed_and_task_budget_and_scales_cache_reads(
-    llm, wire
+    llm, wire, monkeypatch
 ):
     import pytest
+
+    llm = with_fixture_schema(llm, monkeypatch, "claude-fable-5-2")
     from dify_plugin.errors.model import InvokeBadRequestError
 
     _, requests, replies = wire

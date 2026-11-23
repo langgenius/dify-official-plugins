@@ -1,23 +1,24 @@
-model: "kimi-k3.1-pro"
+model: "MiniMax-M3"
 label:
-  en_US: "kimi-k3.1-pro"
-  zh_Hans: "kimi-k3.1-pro"
+  en_US: "MiniMax-M3"
+  zh_Hans: "MiniMax-M3"
 model_type: llm
 features:
   - tool-call
   - multi-tool-call
   - stream-tool-call
   - vision
+  - agent-thought
   - structured-output
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 1048576
+    max: 65536
   - name: response_format
     label:
       en_US: Response Format
@@ -35,8 +36,8 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "2.000000"
-  output: "10.000000"
+  input: "0.300000"
+  output: "1.200000"
   unit: "0.000001"
   currency: "USD"
 deprecated: false
