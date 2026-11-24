@@ -437,6 +437,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             # Check if max iterations reached (but allow tool calls when max_iteration_steps == 1)
             if tool_calls and iteration_step == max_iteration_steps and max_iteration_steps > 1:
                 # Max iterations reached, return message instead of calling tools
+                iteration_limit_messages = []
                 for tool_call_id, tool_call_name, tool_call_args in tool_calls:
                     # Create log entry for the skipped tool call
                     tool_call_started_at = time.perf_counter()
@@ -455,16 +456,18 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     yield tool_call_log
 
                     # Return error message instead of calling tool
+                    iteration_limit_message = (
+                        f"Maximum iteration limit ({max_iteration_steps}) reached. "
+                        f"Cannot call tool '{tool_call_name}'. "
+                        f"Please consider increasing the iteration limit."
+                    )
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
-                        "tool_response": (
-                            f"Maximum iteration limit ({max_iteration_steps}) reached. "
-                            f"Cannot call tool '{tool_call_name}'. "
-                            f"Please consider increasing the iteration limit."
-                        ),
+                        "tool_response": iteration_limit_message,
                     }
                     tool_responses.append(tool_response)
+                    iteration_limit_messages.append(iteration_limit_message)
 
                     yield self.finish_log_message(
                         log=tool_call_log,
@@ -504,6 +507,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             name=tool_call_name,
                         )
                     )
+                # Surface the limit in the node text output so the run does not
+                # end as a silent success with an empty answer.
+                yield self.create_text_message("\n".join(iteration_limit_messages))
             else:
                 for tool_call_id, tool_call_name, tool_call_args in tool_calls:
                     tool_instance = tool_instances.get(tool_call_name)

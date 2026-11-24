@@ -386,6 +386,120 @@ class TestFunctionCallingFileForwarding(unittest.TestCase):
         self.assertTrue(should_forward_file_message(response))
 
 
+class TestFunctionCallingIterationLimit(unittest.TestCase):
+    @staticmethod
+    def _tool(name: str) -> ToolEntity:
+        return ToolEntity.model_validate(
+            {
+                "identity": {
+                    "author": "test",
+                    "name": name,
+                    "label": {"en_US": name},
+                    "provider": "test",
+                },
+                "provider_type": "mcp",
+                "runtime_parameters": {},
+            }
+        )
+
+    def _run_until_limit(self, maximum_iterations: int):
+        lookup = self._tool("lookup")
+        call = _make_tool_call("call-1", "lookup", '{"q":"x"}')
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=[call]),
+                usage=LLMUsage.empty_usage(),
+            )
+            for _ in range(maximum_iterations)
+        ]
+        session.tool.invoke.side_effect = lambda **kwargs: iter(
+            [
+                ToolInvokeMessage(
+                    type=ToolInvokeMessage.MessageType.TEXT,
+                    message=ToolInvokeMessage.TextMessage(text="result"),
+                )
+            ]
+        )
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+        messages = list(
+            strategy._invoke(
+                {
+                    "query": "keep looking",
+                    "instruction": "Use the tools",
+                    "model": AgentModelConfig(
+                        provider="test", model="test-model", mode="chat"
+                    ),
+                    "tools": [lookup],
+                    "maximum_iterations": maximum_iterations,
+                }
+            )
+        )
+        return session, messages
+
+    def test_limit_message_is_visible_in_text_output(self):
+        session, messages = self._run_until_limit(3)
+        # rounds 1-2 execute the tool; the round-3 call is skipped
+        self.assertEqual(session.tool.invoke.call_count, 2)
+        text_output = "".join(
+            m.message.text
+            for m in messages
+            if m.type == ToolInvokeMessage.MessageType.TEXT
+        )
+        # the limit must surface in the node output, not only in the log
+        self.assertIn("Maximum iteration limit (3) reached", text_output)
+        self.assertIn("lookup", text_output)
+
+    def test_limit_message_lists_every_skipped_tool_call(self):
+        lookup = self._tool("lookup")
+        create_ticket = self._tool("create_ticket")
+        calls = [
+            _make_tool_call("call-1", "lookup", '{"q":"x"}'),
+            _make_tool_call("call-2", "create_ticket", '{"id":"000"}'),
+        ]
+        session = Mock()
+        session.model.llm.invoke.side_effect = [
+            LLMResult(
+                model="test-model",
+                message=AssistantPromptMessage(content="", tool_calls=calls),
+                usage=LLMUsage.empty_usage(),
+            )
+            for _ in range(2)
+        ]
+        session.tool.invoke.side_effect = lambda **kwargs: iter(
+            [
+                ToolInvokeMessage(
+                    type=ToolInvokeMessage.MessageType.TEXT,
+                    message=ToolInvokeMessage.TextMessage(text="result"),
+                )
+            ]
+        )
+        strategy = FunctionCallingAgentStrategy(runtime=Mock(), session=session)
+        messages = list(
+            strategy._invoke(
+                {
+                    "query": "do both",
+                    "instruction": "Use the tools",
+                    "model": AgentModelConfig(
+                        provider="test", model="test-model", mode="chat"
+                    ),
+                    "tools": [lookup, create_ticket],
+                    "maximum_iterations": 2,
+                }
+            )
+        )
+        self.assertEqual(session.tool.invoke.call_count, 2)
+        text_output = "".join(
+            m.message.text
+            for m in messages
+            if m.type == ToolInvokeMessage.MessageType.TEXT
+        )
+        self.assertIn("Maximum iteration limit (2) reached", text_output)
+        self.assertIn("lookup", text_output)
+        self.assertIn("create_ticket", text_output)
+
+
 class TestFunctionCallingAllowedTools(unittest.TestCase):
     @staticmethod
     def _tool(name: str) -> ToolEntity:
