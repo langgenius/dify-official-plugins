@@ -263,11 +263,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             client = self._create_client(credentials, use_cache=False)
             if self._uses_responses_api(base_model_name):
                 self._ensure_responses_api_supported(credentials, base_model_name)
+                # Do not retain the credential-check ping. Azure defaults
+                # store to true and keeps the response for 30 days.
                 client.responses.create(
                     input="ping",
                     model=model,
                     max_output_tokens=16,
                     stream=False,
+                    store=False,
                 )
             elif _is_reasoning_family(base_model_name):
                 # Reasoning models reject temperature/top_p and max_tokens;
@@ -592,11 +595,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         # Convert prompt messages to the Responses API format
         input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
 
-        # Build parameters for the Responses API
+        # Build parameters for the Responses API.
+        # Azure defaults store to true and retains each response for 30 days.
+        # Set false before apply_dify_metadata_if_enabled: if store is already
+        # false, that helper returns and does not set store=true or metadata.
         responses_params = {
             "model": model,
             "input": input_messages,
         }
+        responses_params["store"] = False
 
         # Map model parameters to the Responses API.
         if supports_sampling:
@@ -707,9 +714,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             responses_params["reasoning"] = reasoning
 
         # Optional: attach Dify app_id as Azure OpenAI request metadata. Default
-        # disabled; opt-in via the enable_request_metadata credential. When
-        # enabled, store=true is set alongside the metadata — see _metadata.py
-        # for why the API requires it.
+        # disabled; opt-in via the enable_request_metadata credential. Metadata
+        # requires store=true (see _metadata.py). store is already false above,
+        # so the helper returns and leaves this request unstored. Keep Enable
+        # request metadata Disabled on the credential.
         apply_dify_metadata_if_enabled(responses_params, credentials)
 
         # Log only non-sensitive routing information: the full payload can
