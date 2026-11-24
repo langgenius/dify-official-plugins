@@ -1,0 +1,48 @@
+description:
+  human:
+    en_US: Get the current block number of a chain, served over Pocket
+      Network's free public RPC. No API key, no payment.
+    zh_Hans: 获取指定链的当前区块号，通过 Pocket Network 的免费公共 RPC 提供。无需 API 密钥，无需付款。
+  llm: Get the current block number of a chain, served over Pocket Network's
+    free public RPC. No API key, no payment.
+extra:
+  python:
+    source: tools/pocket_block_number.py
+identity:
+  author: langgenius
+  label:
+    en_US: Pocket Block Number
+    zh_Hans: Pocket 区块号
+  name: pocket_block_number
+parameters:
+  - name: chain
+    default: ethereum
+    form: llm
+    human_description:
+      en_US: The chain to query.
+      zh_Hans: 要查询的链。
+    label:
+      en_US: Chain
+      zh_Hans: 链
+    llm_description: The chain to query.
+    options:
+      - label:
+          en_US: Ethereum
+        value: ethereum
+      - label:
+          en_US: Base
+        value: base
+      - label:
+          en_US: Polygon
+        value: polygon
+      - label:
+          en_US: Arbitrum One
+        value: arbitrum-one
+      - label:
+          en_US: Optimism
+        value: optimism
+      - label:
+          en_US: Celo
+        value: celo
+    required: true
+    type: select

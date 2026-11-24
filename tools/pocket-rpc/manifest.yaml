@@ -1,0 +1,36 @@
+author: langgenius
+created_at: '2026-11-24T07:00:00.000000000Z'
+description:
+  en_US: Live on-chain data through Pocket Network's free public RPC endpoints.
+    No API key, no payment, no account.
+  zh_Hans: 通过 Pocket Network 的免费公共 RPC 端点获取实时链上数据。无需 API 密钥，无需付款，无需账户。
+icon: icon.svg
+icon_dark: icon-dark.svg
+label:
+  en_US: Pocket RPC
+  zh_Hans: Pocket RPC
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: pocket-rpc
+plugins:
+  tools:
+  - provider/pocket_rpc.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.0.1

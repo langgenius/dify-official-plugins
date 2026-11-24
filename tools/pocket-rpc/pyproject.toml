@@ -1,0 +1,14 @@
+[project]
+name = "pocket-rpc"
+version = "0.0.1"
+description = "Live on-chain data for Dify agents through Pocket Network's free public RPC endpoints"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.10.2",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
