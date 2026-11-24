@@ -90,3 +90,31 @@ class TestOllamaLargeLanguageModel(TestCase):
             self.model._split_thinking_from_content(merged),
             ("reasoning", "answer"),
         )
+
+    def test_tool_call_stream_tolerates_null_message_and_function(self):
+        # Ollama-compatible gateways can emit explicit nulls in stream
+        # chunks; a null "message" or a null "function" must be skipped, not
+        # crash the stream handler.
+        acc = {}
+        self.model._handle_tool_call_stream({"message": None}, acc)
+        self.assertEqual(acc, {})
+
+        acc = {}
+        self.model._handle_tool_call_stream(
+            {"message": {"tool_calls": [{"function": None, "index": 0}]}}, acc
+        )
+        self.assertEqual(acc, {})
+
+        # A valid chunk after the malformed ones still aggregates normally.
+        acc = {}
+        self.model._handle_tool_call_stream(
+            {
+                "message": {
+                    "tool_calls": [
+                        {"function": {"name": "get_weather", "arguments": {"city": "Paris"}}, "index": 0}
+                    ]
+                }
+            },
+            acc,
+        )
+        self.assertIn(0, acc)
