@@ -28,4 +28,4 @@ The plugin enforces this by prioritising blocks in the following order:
 3. Large text messages (message-flow threshold)  
 4. Tool definitions & tool results
 
-If more than four candidates exist, lower-priority blocks have their `cache_control` removed automatically before the request is sent.
+If more than four candidates exist, lower-priority blocks have their `cache_control` removed automatically before the request is sent. Within the same priority, blocks later in the prompt keep their marker, so in a tool loop the newest tool results stay cached.
