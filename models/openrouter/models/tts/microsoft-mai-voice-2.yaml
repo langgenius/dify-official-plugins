@@ -1,0 +1,26 @@
+model: microsoft/mai-voice-2
+label:
+  en_US: Microsoft MAI-Voice-2
+model_type: tts
+model_properties:
+  default_voice: 'en-US-Harper:MAI-Voice-2'
+  voices:
+    - mode: 'en-US-Harper:MAI-Voice-2'
+      name: 'en-US-Harper'
+      language: ['en-US']
+    - mode: 'es-MX-Valeria:MAI-Voice-2'
+      name: 'es-MX-Valeria'
+      language: ['es-ES']
+    - mode: 'fr-FR-Soleil:MAI-Voice-2'
+      name: 'fr-FR-Soleil'
+      language: ['fr-FR']
+    - mode: 'de-DE-Klaus:MAI-Voice-2'
+      name: 'de-DE-Klaus'
+      language: ['de-DE']
+  word_limit: 2000
+  audio_type: 'mp3'
+pricing:
+  input: '0.022'
+  output: '0'
+  unit: '0.001'
+  currency: USD

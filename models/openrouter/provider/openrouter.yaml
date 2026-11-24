@@ -7,7 +7,9 @@ extra:
     model_sources:
     - models/llm/llm.py
     - models/rerank/rerank.py
+    - models/speech2text/speech2text.py
     - models/text_embedding/text_embedding.py
+    - models/tts/tts.py
     provider_source: provider/openrouter.py
 help:
   title:
@@ -175,10 +177,18 @@ models:
     position: models/rerank/_position.yaml
     predefined:
     - models/rerank/*.yaml
+  speech2text:
+    position: models/speech2text/_position.yaml
+    predefined:
+    - models/speech2text/*.yaml
   text_embedding:
     position: models/text_embedding/_position.yaml
     predefined:
     - models/text_embedding/*.yaml
+  tts:
+    position: models/tts/_position.yaml
+    predefined:
+    - models/tts/*.yaml
 provider: openrouter
 provider_credential_schema:
   credential_form_schemas:
@@ -202,4 +212,6 @@ provider_credential_schema:
 supported_model_types:
 - llm
 - rerank
+- speech2text
 - text-embedding
+- tts
