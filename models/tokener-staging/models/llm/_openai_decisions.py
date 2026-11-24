@@ -63,7 +63,7 @@ def generate(
     choice = answer.get("choice")
     if (
         answer.get("type") != "choice"
-        or answer.get("name") != "route"
+        or answer.get("name") not in (None, "route")
         or not isinstance(choice, str)
         or choice not in parsed.categories
     ):

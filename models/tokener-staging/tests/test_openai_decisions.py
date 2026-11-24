@@ -70,7 +70,10 @@ def decision_payload(
                 "name": "route",
                 "choice": choice,
                 "confidence": 0.98,
-                "probabilities": {"weather": 0.98, "billing": 0.02},
+                "probabilities": [
+                    {"value": "weather", "probability": 0.98},
+                    {"value": "billing", "probability": 0.02},
+                ],
             }
         ],
         "usage": {
@@ -83,11 +86,17 @@ def decision_payload(
     }
 
 
+@pytest.mark.parametrize("answer_name", ["route", None, "absent"])
 def test_decisions_classifier_sends_decisions_wire_preserves_backslashes_and_prices_zero_output(
-    llm, wire
+    llm, wire, answer_name
 ):
     _, requests, replies = wire
-    replies.append((200, {"Content-Type": "application/json"}, decision_payload()))
+    payload = decision_payload()
+    if answer_name == "absent":
+        payload["answers"][0].pop("name")
+    else:
+        payload["answers"][0]["name"] = answer_name
+    replies.append((200, {"Content-Type": "application/json"}, payload))
     messages = classifier_messages(
         query=r"C:\Users\alice\report\nfinal",
         instruction=r"Keep literal \t and \u0041 intact",
@@ -158,6 +167,10 @@ def test_decisions_classifier_rejects_tools_stop_and_bad_templates_before_reques
 @pytest.mark.parametrize(
     "bad_payload",
     [
+        {
+            "answers": [{"type": "choice", "name": "other", "choice": "weather"}],
+            "usage": {"input_tokens": 1, "output_tokens": 0},
+        },
         {
             "answers": [{"type": "refusal", "name": "route", "refusal": "denied"}],
             "usage": {"input_tokens": 1, "output_tokens": 0},
