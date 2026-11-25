@@ -1,0 +1,45 @@
+model: "qwen3.5-omni-flash"
+label:
+  en_US: "qwen3.5-omni-flash"
+  zh_Hans: "qwen3.5-omni-flash"
+model_type: llm
+features:
+  - vision
+  - video
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 65536
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+    min: 0.01
+    max: 1
+  - name: top_k
+    type: int
+    min: 0
+    max: 100
+  - name: repetition_penalty
+    type: float
+    min: 0
+    max: 2
+  - name: seed
+    type: int
+    required: false
+  - name: enable_search
+    type: boolean
+    required: false
+pricing:
+  input: "0.400000"
+  output: "2.200000"
+  unit: "0.000001"
+  currency: "USD"
+deprecated: false

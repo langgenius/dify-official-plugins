@@ -24,6 +24,7 @@ from models.llm import (
     _anthropic_messages,
     _chat_compat,
     _gemini_native,
+    _openai_decisions,
     _openai_responses,
     _wire,
 )
@@ -136,6 +137,17 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
     ) -> LLMResult | Generator:
         family = model_family(model)
         model_parameters = _wire.reject_top_parameters(family, model_parameters)
+        if model == _openai_decisions.MODEL:
+            return _openai_decisions.generate(
+                self,
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                user,
+            )
         if family:
             parameters = model_parameters.copy()
             if "_native_response_format" in parameters:
@@ -257,6 +269,8 @@ class TokenerLargeLanguageModel(OAICompatLargeLanguageModel, TokenerAPIModel):
     ) -> dict:
         family = model_family(model)
         model_parameters = _wire.reject_top_parameters(family, model_parameters)
+        if model == _openai_decisions.MODEL:
+            return {}
         if family:
             model_parameters = model_parameters.copy()
             for name, value in model_parameters.items():

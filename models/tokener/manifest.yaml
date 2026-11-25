@@ -1,4 +1,4 @@
-version: 0.4.4
+version: 0.5.0
 type: plugin
 author: langgenius
 name: tokener
@@ -10,7 +10,7 @@ description:
   zh_Hans: Tokener.ai 的 Dify 模型插件。
 icon: tokener.svg
 resource:
-  memory: 268435456
+  memory: 2147483648
   permission:
     model:
       enabled: true
@@ -19,7 +19,7 @@ resource:
       rerank: true
       tts: true
       speech2text: true
-      moderation: false
+      moderation: true
 plugins:
   models:
     - provider/tokener.yaml

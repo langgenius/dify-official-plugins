@@ -7,15 +7,33 @@ features:
   - tool-call
   - multi-tool-call
   - stream-tool-call
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 196608
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
+    type: int
     default: 8192
     min: 1
-    max: 131072
+    max: 32768
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 0.95
+    min: 0.0
+    max: 1.0
+  - name: presence_penalty
+    required: false
+    type: float
+    default: 0.0
 pricing:
   input: "0.300000"
   output: "1.200000"

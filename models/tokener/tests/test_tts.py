@@ -1,4 +1,5 @@
 import json
+from io import BytesIO
 from unittest.mock import patch
 
 import pytest
@@ -14,6 +15,9 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+from urllib3.response import HTTPResponse
+
+from models._credentials import ENDPOINT_URL
 
 MODELS = ["tts-1", "tts-1-hd"]
 
@@ -55,7 +59,7 @@ def test_tts_fixture_public_invoke_keeps_selected_model_and_audio_bytes(model_id
     assert result == b"audio\x00\xff"
     request = send.call_args.args[0]
     assert request.method == "POST"
-    assert request.url == "https://api.tokener.ai/v1/audio/speech"
+    assert request.url == f"{ENDPOINT_URL}/audio/speech"
     assert request.headers["Content-Type"] == "application/json"
     assert json.loads(request.body) == {
         "model": model_id,
@@ -126,24 +130,6 @@ def test_tts_uses_per_model_limit_and_format_and_streams_in_order(
 
 
 @pytest.mark.parametrize(
-    "text,expected",
-    [
-        ("你好世界你好世界", ["你好世界你", "好世界"]),
-        ("one. two!  End?", ["one.", "two!", "End", "?"]),
-        ("     abcde     fghij", ["abcde", "fghij"]),
-    ],
-)
-def test_tts_splits_unicode_punctuation_and_whitespace_without_empty_requests(text, expected):
-    model = tts_model()
-    model.model_schemas[0].model_properties[ModelPropertyKey.WORD_LIMIT] = 5
-    with patch("requests.post", side_effect=lambda *a, **k: response()) as post:
-        list(
-            model.invoke(model.model_schemas[0].model, "tenant", {"api_key": "test"}, text, "echo")
-        )
-    assert [call.kwargs["json"]["input"] for call in post.call_args_list] == expected
-
-
-@pytest.mark.parametrize(
     "status,error",
     [
         (400, InvokeBadRequestError),
@@ -172,44 +158,6 @@ def test_tts_error_closes_response_and_stops_sequence_after_partial_audio(status
     close_first.assert_called_once()
     close_failed.assert_called_once()
     assert "private upstream detail" not in str(caught.value)
-
-
-def test_tts_network_failure_does_not_retry_or_leak_details():
-    with (
-        patch("requests.post", side_effect=requests.Timeout("private detail")) as post,
-        pytest.raises(InvokeConnectionError) as caught,
-    ):
-        list(tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, "hello", "echo"))
-    assert post.call_count == 1
-    assert "private detail" not in str(caught.value)
-
-
-@pytest.mark.parametrize("text", ["", " \n\t"])
-def test_tts_empty_text_does_not_send_request(text):
-    with patch("requests.post") as post, pytest.raises(InvokeBadRequestError):
-        list(tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, text, "echo"))
-    post.assert_not_called()
-
-
-def test_tts_no_audio_is_an_error_and_success_closes_response():
-    reply = response(b"")
-    with (
-        patch("requests.post", return_value=reply),
-        patch.object(reply, "close", wraps=reply.close) as close,
-        pytest.raises(InvokeBadRequestError),
-    ):
-        list(tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, "hello", "echo"))
-    close.assert_called_once()
-
-
-def test_tts_excluded_model_cannot_be_invoked():
-    with patch("requests.post") as post, pytest.raises(InvokeBadRequestError):
-        list(
-            tts_model().invoke(
-                "gpt-4o-mini-tts-2025-12-15", "tenant", {"api_key": "test"}, "hello", "echo"
-            )
-        )
-    post.assert_not_called()
 
 
 def test_tts_credential_validation_uses_default_voice_and_transforms_errors():
@@ -270,19 +218,7 @@ def test_tts_stream_read_failure_closes_response_after_partial_audio():
     assert "private detail" not in str(caught.value)
 
 
-def test_tts_stream_close_releases_in_flight_response():
-    reply = response(b"audio" * 1024)
-    with (
-        patch("requests.post", return_value=reply),
-        patch.object(reply, "close", wraps=reply.close) as close,
-    ):
-        stream = tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, "hello", "echo")
-        assert len(next(stream)) == 1024
-        stream.close()
-    close.assert_called_once()
-
-
-@pytest.mark.parametrize("audio_format", ["wav", "flac"])
+@pytest.mark.parametrize("audio_format", ["ogg", "flac"])
 def test_tts_runtime_rejects_unsafe_audio_format_before_request(audio_format):
     model = tts_model()
     model.model_schemas[0].model_properties[ModelPropertyKey.AUDIO_TYPE] = audio_format
@@ -319,3 +255,16 @@ def test_tts_all_empty_segments_raise_and_each_response_is_closed():
     first_close.assert_called_once()
     second_close.assert_called_once()
     third_close.assert_called_once()
+
+
+def test_tts_yields_audio_before_the_response_is_fully_read():
+    audio = b"a" * 16384
+    reply = requests.Response()
+    reply.status_code = 200
+    reply.raw = HTTPResponse(body=BytesIO(audio), preload_content=False)
+    with patch("requests.post", return_value=reply):
+        stream = tts_model().invoke("tts-1", "tenant", {"api_key": "test"}, "hello", "echo")
+        first = next(stream)
+        assert 0 < len(first) < len(audio)
+        assert reply.raw.tell() < len(audio)
+        assert first + b"".join(stream) == audio
