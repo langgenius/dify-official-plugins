@@ -1,0 +1,17 @@
+[project]
+name = "oruk"
+version = "0.1.0"
+description = "Oruk Fourier-2B speech recognition plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.9.0",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.9.0",
+]

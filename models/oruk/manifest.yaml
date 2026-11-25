@@ -1,0 +1,38 @@
+author: langgenius
+created_at: '2026-11-25T00:00:00.000000000Z'
+description:
+  en_US: English speech-to-text powered by Oruk Fourier-2B via the hosted Oruk Speech API or a self-hosted OpenAI-compatible endpoint.
+  zh_Hans: 基于 Oruk Fourier-2B 的英文语音转文本插件，支持 Oruk 托管语音 API 或自托管 OpenAI 兼容端点。
+icon: icon_s_en.svg
+icon_dark: icon_s_en_dark.svg
+label:
+  en_US: Oruk
+  zh_Hans: Oruk
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: oruk
+plugins:
+  models:
+    - provider/oruk.yaml
+privacy: PRIVACY.md
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: false
+      moderation: false
+      rerank: false
+      speech2text: true
+      text_embedding: false
+      tts: false
+type: plugin
+verified: false
+version: 0.1.0

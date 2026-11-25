@@ -1,0 +1,8 @@
+model: oruk-fourier-2b
+label:
+  en_US: Oruk Fourier-2B
+  zh_Hans: Oruk Fourier-2B
+model_type: speech2text
+model_properties:
+  file_upload_limit: 30
+  supported_file_extensions: flac,mp3,m4a,ogg,wav,webm

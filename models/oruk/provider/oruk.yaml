@@ -1,0 +1,97 @@
+configurate_methods:
+  - predefined-model
+  - customizable-model
+description:
+  en_US: English speech-to-text with Oruk Fourier-2B via the hosted Oruk Speech API or a self-hosted OpenAI-compatible server.
+  zh_Hans: 基于 Oruk Fourier-2B 的英文语音转文本，支持 Oruk 托管语音 API 或自托管 OpenAI 兼容服务。
+extra:
+  python:
+    model_sources:
+      - models/speech2text/speech2text.py
+    provider_source: provider/oruk.py
+help:
+  title:
+    en_US: Get your API key from Oruk
+    zh_Hans: 从 Oruk 获取 API Key
+  url:
+    en_US: https://oruk.ai/auth/signup
+icon_large:
+  en_US: icon_l_en.svg
+icon_large_dark:
+  en_US: icon_l_en_dark.svg
+icon_small:
+  en_US: icon_s_en.svg
+icon_small_dark:
+  en_US: icon_s_en_dark.svg
+label:
+  en_US: Oruk
+  zh_Hans: Oruk
+model_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: API Key
+        zh_Hans: API Key
+      placeholder:
+        en_US: Enter your Oruk API key (optional for self-hosted endpoints)
+        zh_Hans: 输入 Oruk API Key（自托管端点可留空）
+      required: false
+      type: secret-input
+      variable: api_key
+      help:
+        en_US: Required for the hosted Oruk Speech API (https://speech-api.oruk.ai/v1). Leave empty only for unauthenticated self-hosted endpoints.
+        zh_Hans: 使用 Oruk 托管 API（https://speech-api.oruk.ai/v1）时必填；仅在无鉴权的自托管端点可留空。
+    - default: https://speech-api.oruk.ai/v1
+      label:
+        en_US: Endpoint URL
+        zh_Hans: 端点地址
+      placeholder:
+        en_US: https://speech-api.oruk.ai/v1
+        zh_Hans: https://speech-api.oruk.ai/v1
+      required: false
+      type: text-input
+      variable: endpoint_url
+      help:
+        en_US: Defaults to https://speech-api.oruk.ai/v1. Override to point at a self-hosted OpenAI-compatible server (e.g. http://localhost:8000/v1).
+        zh_Hans: 默认为 https://speech-api.oruk.ai/v1。可覆盖为自托管 OpenAI 兼容服务地址（例如 http://localhost:8000/v1）。
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: e.g. oruk-fourier-2b
+      zh_Hans: 例如 oruk-fourier-2b
+models:
+  speech2text:
+    position: models/speech2text/_position.yaml
+    predefined:
+      - models/speech2text/*.yaml
+provider: oruk
+provider_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: API Key
+        zh_Hans: API Key
+      placeholder:
+        en_US: Enter your Oruk API key (optional for self-hosted endpoints)
+        zh_Hans: 输入 Oruk API Key（自托管端点可留空）
+      required: false
+      type: secret-input
+      variable: api_key
+      help:
+        en_US: Required for the hosted Oruk Speech API (https://speech-api.oruk.ai/v1). Leave empty only for unauthenticated self-hosted endpoints.
+        zh_Hans: 使用 Oruk 托管 API（https://speech-api.oruk.ai/v1）时必填；仅在无鉴权的自托管端点可留空。
+    - default: https://speech-api.oruk.ai/v1
+      label:
+        en_US: Endpoint URL
+        zh_Hans: 端点地址
+      placeholder:
+        en_US: https://speech-api.oruk.ai/v1
+        zh_Hans: https://speech-api.oruk.ai/v1
+      required: false
+      type: text-input
+      variable: endpoint_url
+      help:
+        en_US: Defaults to https://speech-api.oruk.ai/v1. Override to point at a self-hosted OpenAI-compatible server (e.g. http://localhost:8000/v1).
+        zh_Hans: 默认为 https://speech-api.oruk.ai/v1。可覆盖为自托管 OpenAI 兼容服务地址（例如 http://localhost:8000/v1）。
+supported_model_types:
+  - speech2text
