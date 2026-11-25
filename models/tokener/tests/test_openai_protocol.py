@@ -137,6 +137,34 @@ def test_openai_audio_keeps_chat_with_audio_part(llm, wire, model_id):
     ]
 
 
+@pytest.mark.parametrize(
+    ("stream", "parameters", "expected_stream"),
+    [
+        (False, {"seed": 42}, False),
+        (True, {"seed": 42, "enable_stream": False}, False),
+        (True, {"seed": 42}, True),
+    ],
+)
+def test_openai_chat_fallback_honors_and_strips_enable_stream(
+    llm, wire, stream, parameters, expected_stream
+):
+    _, requests, replies = wire
+    streamed = (
+        b'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\n'
+        b'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\n'
+        b'data: {"choices":[],"usage":{"prompt_tokens":4,"completion_tokens":2}}\n\n'
+        b"data: [DONE]\n\n"
+    )
+    replies.append((200, {}, streamed if expected_stream else chat_result()))
+    chunks = invoke(llm, "gpt-5.4-mini", parameters, stream=stream)
+    assert contents(chunks) == "ok"
+    assert requests[0][0] == "/v1/chat/completions"
+    sent = requests[0][2]
+    assert "enable_stream" not in sent
+    assert sent["seed"] == 42
+    assert sent["stream"] is expected_stream
+
+
 def test_openai_rejects_a_stream_without_terminal_event(llm, wire):
     _, _, replies = wire
     replies.append((200, {}, sse("response.output_text.delta", delta="partial")))

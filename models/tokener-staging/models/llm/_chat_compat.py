@@ -284,7 +284,8 @@ def invoke(
         "openai": OPENAI_CHAT_FIELDS,
     }[family]
     params = {key: value for key, value in parameters.items() if key in allowed}
-    stream = stream and params.pop("enable_stream", True) is not False
+    enable_stream = params.pop("enable_stream", True)
+    stream = stream and enable_stream is not False
     stop = stop or params.pop("stop_sequences", None) or params.pop("stopSequences", None)
     params.pop("stop_sequences", None)
     params.pop("stopSequences", None)
