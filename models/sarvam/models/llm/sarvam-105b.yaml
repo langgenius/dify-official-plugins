@@ -1,0 +1,72 @@
+model: sarvam-105b
+label:
+  en_US: sarvam-105b
+  zh_Hans: sarvam-105b
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1.0
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+    default: 1.0
+    min: 0.0
+    max: 1.0
+  - name: presence_penalty
+    use_template: presence_penalty
+    default: 0.0
+    min: -2.0
+    max: 2.0
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    default: 0.0
+    min: -2.0
+    max: 2.0
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 128000
+  - name: reasoning_effort
+    label:
+      en_US: Reasoning Effort
+      zh_Hans: 推理强度
+    type: string
+    default: low
+    required: false
+    options:
+      - none
+      - low
+      - medium
+      - high
+    help:
+      en_US: Controls reasoning depth. `none` disables reasoning. Output is plan-capped at 4,096 tokens on Starter, 16,384 on Pro, and 128,000 on Business.
+      zh_Hans: 控制推理强度。`none` 关闭推理。输出上限取决于套餐，Starter 为 4,096，Pro 为 16,384，Business 为 128,000。
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: "0.1595744681"
+  output: "0.6382978723"
+  unit: "0.000001"
+  currency: USD

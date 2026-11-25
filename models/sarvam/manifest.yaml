@@ -1,0 +1,41 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: sarvam
+label:
+  en_US: Sarvam
+  zh_Hans: Sarvam
+description:
+  en_US: Official Sarvam AI Token Factory models with reasoning, tool calling, vision, and structured output.
+  zh_Hans: Sarvam AI Token Factory 官方模型，支持推理、工具调用、视觉理解和结构化输出。
+icon: icon.svg
+icon_dark: icon-dark.svg
+created_at: '2026-11-25T00:00:00.000000000+05:30'
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+network:
+  domains:
+    - api.sarvam.ai
+plugins:
+  models:
+    - provider/sarvam.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: '3.12'
+    entrypoint: main
+  minimum_dify_version: '1.0.0'
+privacy: PRIVACY.md

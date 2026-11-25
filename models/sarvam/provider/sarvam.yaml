@@ -1,0 +1,57 @@
+provider: sarvam
+label:
+  en_US: Sarvam
+  zh_Hans: Sarvam
+description:
+  en_US: Official Sarvam AI Token Factory models with reasoning, tool calling, vision, and structured output.
+  zh_Hans: Sarvam AI Token Factory 官方模型，支持推理、工具调用、视觉理解和结构化输出。
+icon_small:
+  en_US: icon.svg
+icon_small_dark:
+  en_US: icon-dark.svg
+icon_large:
+  en_US: icon.svg
+icon_large_dark:
+  en_US: icon-dark.svg
+background: '#0B1F3A'
+help:
+  title:
+    en_US: Get your API key from Sarvam
+    zh_Hans: 从 Sarvam 获取 API Key
+  url:
+    en_US: https://indus.sarvam.ai/key-management
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Sarvam API key
+        zh_Hans: 在此输入您的 Sarvam API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Base URL
+        zh_Hans: API Base URL
+      type: text-input
+      required: false
+      default: https://api.sarvam.ai/v2
+      placeholder:
+        en_US: https://api.sarvam.ai/v2
+        zh_Hans: https://api.sarvam.ai/v2
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+extra:
+  python:
+    provider_source: provider/sarvam.py
+    model_sources:
+      - models/llm/llm.py
