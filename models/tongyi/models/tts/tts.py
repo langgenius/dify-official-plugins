@@ -14,6 +14,17 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from models._common import _CommonTongyi, get_http_base_address
 
+# DashScope writes int32 placeholder sizes into the RIFF and data chunk headers of
+# its streaming WAVE output because the real length is unknown while the stream is
+# still being written. Any declared size at or above this threshold is such a
+# placeholder and must not be read as a truncation signal.
+_STREAMING_WAV_PLACEHOLDER_BYTES = 0x7F000000
+
+
+def _is_streaming_wav_placeholder(declared_bytes: int) -> bool:
+    """Whether a WAVE size field belongs to DashScope's streaming placeholder family."""
+    return declared_bytes >= _STREAMING_WAV_PLACEHOLDER_BYTES
+
 
 def merge_wav_segments(segments: list[bytes]) -> bytes:
     """Join compatible PCM WAVE files into one valid WAVE container.
@@ -22,6 +33,10 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
     split at the provider word limit. Concatenating those containers produces a
     corrupt file; rebuilding one header around the combined PCM frames keeps
     long TTS output playable by browsers and API consumers.
+
+    DashScope streams those WAVE containers with int32 placeholder sizes in the
+    RIFF and data headers, so the declared frame count is meaningless; frames are
+    taken from the bytes actually present in each segment.
     """
     if not segments:
         raise InvokeBadRequestError("No audio data returned by DashScope")
@@ -57,7 +72,14 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
                     frames = reader.readframes(frame_count)
                     expected_frame_bytes = frame_count * reader.getnchannels() * reader.getsampwidth()
                     if len(frames) != expected_frame_bytes:
-                        raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+                        if not _is_streaming_wav_placeholder(expected_frame_bytes):
+                            raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+                        # The declared length is a streaming placeholder, so the payload
+                        # length is the truth; drop a trailing partial frame if any.
+                        block_align = reader.getnchannels() * reader.getsampwidth()
+                        frames = frames[: len(frames) - len(frames) % block_align]
+                        if not frames:
+                            raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
                     writer.writeframes(frames)
     except (EOFError, wave.Error) as ex:
         raise InvokeBadRequestError(f"DashScope returned an invalid WAVE segment: {ex}") from ex
