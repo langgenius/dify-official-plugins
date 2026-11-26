@@ -15,6 +15,13 @@ import requests
 from dashscope.audio.asr import Recognition, Transcription
 from dashscope.utils.oss_utils import OssUtils
 from dify_plugin import OAICompatSpeech2TextModel
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelPropertyKey,
+    ModelType,
+)
 from models._common import get_http_base_address, get_ws_base_address
 from pydub import AudioSegment
 
@@ -339,6 +346,21 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
     Model class for Tongyi Speech to text model.
     """
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+        """Schema for user-added speech-to-text models so they show up in model lists."""
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.SPEECH2TEXT,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 100,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: (
+                    "aac,amr,avi,flac,flv,m4a,mkv,mov,mp3,mp4,mpeg,ogg,opus,wav,webm,wma,wmv"
+                ),
+            },
+        )
 
     def _invoke(
         self, model: str, credentials: dict, file: IO[bytes], user: str | None = None

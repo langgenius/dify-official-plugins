@@ -6,6 +6,13 @@ from typing import Any
 from urllib.request import urlopen
 
 from dashscope import MultiModalConversation
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelPropertyKey,
+    ModelType,
+)
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
@@ -87,10 +94,43 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
     return output.getvalue()
 
 
+_CUSTOM_MODEL_VOICES = (
+    "Cherry",
+    "Serena",
+    "Ethan",
+    "Chelsie",
+    "Momo",
+    "Vivian",
+    "Moon",
+    "Maia",
+    "Kai",
+    "Nofish",
+)
+
+
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
     """
     Model class for Tongyi Speech to text model.
     """
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+        """Schema for user-added TTS models so they show up in model lists."""
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.TTS,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.DEFAULT_VOICE: _CUSTOM_MODEL_VOICES[0],
+                ModelPropertyKey.VOICES: [
+                    {"mode": voice, "name": voice, "language": ["zh-Hans", "en-US"]}
+                    for voice in _CUSTOM_MODEL_VOICES
+                ],
+                ModelPropertyKey.WORD_LIMIT: 512,
+                ModelPropertyKey.AUDIO_TYPE: "wav",
+                ModelPropertyKey.MAX_WORKERS: 5,
+            },
+        )
 
     def _invoke(
         self,

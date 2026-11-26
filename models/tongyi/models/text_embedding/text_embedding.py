@@ -8,7 +8,15 @@ from typing import Optional
 import dashscope
 import numpy as np
 import requests
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    EmbeddingInputType,
+    FetchFrom,
+    I18nObject,
+    ModelPropertyKey,
+    ModelType,
+    PriceType,
+)
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModalContent, MultiModalContentType, MultiModalEmbeddingResult, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
@@ -65,6 +73,19 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
     Model class for Tongyi text embedding model.
     """
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+        """Schema for user-added embedding models so they show up in model lists."""
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.TEXT_EMBEDDING,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size") or 8192),
+                ModelPropertyKey.MAX_CHUNKS: 10,
+            },
+        )
 
     def _invoke(
         self,

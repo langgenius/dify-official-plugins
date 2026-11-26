@@ -8,6 +8,7 @@ from dashscope.common.error import (
     UnsupportedHTTPMethod,
     UnsupportedModel,
 )
+from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelPropertyKey, ModelType
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -26,6 +27,16 @@ class GTERerankModel(RerankModel):
     """
     Model class for GTE rerank model.
     """
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+        """Schema for user-added rerank models so they show up in model lists."""
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.RERANK,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size") or 4000)},
+        )
 
     def _invoke(
         self,
