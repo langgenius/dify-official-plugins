@@ -27,8 +27,8 @@ GPT Image access may require [OpenAI organization verification](https://develope
 | --- | --- | --- |
 | GPT Image 2 / 2.5 / 2.6 Generate | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Generate images from a prompt. |
 | GPT Image 2 / 2.5 / 2.6 Edit | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Edit or combine reference images, optionally using a mask. |
-| GPT Image Generate | `gpt-image-1`, `gpt-image-1-mini` | Generate images with the GPT Image 1 family. |
-| GPT Image Edit | `gpt-image-1`, `gpt-image-1-mini` | Edit reference images with the GPT Image 1 family. |
+| GPT Image Generate | `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2.6-sunburst`, `gpt-image-2.6-flare` | Generate images with GPT Image models. |
+| GPT Image Edit | `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2.6-sunburst`, `gpt-image-2.6-flare` | Edit reference images with GPT Image models. |
 | Deep Research | `o3-deep-research`, `o4-mini-deep-research` | Start, retrieve, or cancel a research task. |
 | DALL-E 2 | `dall-e-2` | Legacy image generation. |
 | DALL-E 3 | `dall-e-3` | Legacy image generation. |
@@ -144,9 +144,10 @@ The plugin reports tokens rather than calculating a monetary charge.
 GPT Image 2 per-image estimates do not apply to GPT Image 2.5 because token consumption can differ.
 Check [OpenAI pricing](https://developers.openai.com/api/docs/pricing) for current rates.
 
-## GPT Image 1 tools
+## GPT Image Generate and Edit
 
-**GPT Image Generate** and **GPT Image Edit** default to `gpt-image-1` and also offer `gpt-image-1-mini`.
+**GPT Image Generate** and **GPT Image Edit** default to `gpt-image-2.5-sunburst` and also offer `gpt-image-2.5-flare`, `gpt-image-2.6-sunburst`, and `gpt-image-2.6-flare`.
+The 2.6 models default to high complexity.
 Both accept `auto`, `1024x1024`, `1536x1024`, or `1024x1536` sizes; `auto`, `low`, `medium`, or `high` quality; and 1–10 output images.
 Generate additionally exposes background, output format, JPEG/WebP compression, and moderation controls.
 Edit accepts reference image files and an optional mask, with output settings determined by the API beyond size and quality.
