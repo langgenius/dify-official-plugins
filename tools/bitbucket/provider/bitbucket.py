@@ -13,21 +13,15 @@ class BitbucketProvider(ToolProvider):
         """
         try:
 
-            # Log-in with E-Mail / Username and regular password
-            # or with Username and App password.
-            # Get App password from https://bitbucket.org/account/settings/app-passwords/.
-            # Log-in with E-Mail and App password not possible.
-            # Username can be found here: https://bitbucket.org/account/settings/
-
             bitbucket = Cloud(
                 url=credentials.get("bitbucket_url", "https://api.bitbucket.org"),
                 username=credentials.get("username"),
                 password=credentials.get("password"),
             )
 
-            next(bitbucket.workspaces.each())
+            next(bitbucket.workspaces.each(), None)
 
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to validate Bitbucket credentials. Error: {e}"
-            )
+                f"Failed to validate Bitbucket credentials. Use your Atlassian account email and scoped API token. Error: {e}"
+            ) from e

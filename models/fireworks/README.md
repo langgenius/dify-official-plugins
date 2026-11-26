@@ -10,7 +10,7 @@ Fireworks AI provides hosted generative and embedding models that can be used di
 
 ## Setup
 1. Install this plugin from the Dify Marketplace.
-2. Get the required credentials from [Fireworks AI](https://fireworks.ai/account/api-keys).
+2. Get the required credentials from [Fireworks AI](https://app.fireworks.ai/settings/users/api-keys).
 3. Add the credentials in the plugin settings.
 4. Save the configuration.
 

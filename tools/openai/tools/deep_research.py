@@ -54,7 +54,7 @@ class ResponseData:
 
 class DeepResearchTool(Tool):
     """
-    Tool to perform deep research using OpenAI's specialized models.
+    Tool to run background research with the Responses API.
     """
 
     def _get_openai_client(self, tool_parameters: dict) -> OpenAI:
@@ -140,12 +140,13 @@ class DeepResearchTool(Tool):
         return resp_data.to_dict()
 
     def _build_tools(
-        self, use_web_search: bool, use_code_interpreter: bool
+        self, use_web_search: bool, use_code_interpreter: bool, legacy_model: bool
     ) -> list[dict[str, Any]]:
         """Returns the tools list expected by the OpenAI SDK based on flags."""
         tools: list[dict[str, Any]] = []
         if use_web_search:
-            tools.append({"type": "web_search_preview"})
+            search_type = "web_search_preview" if legacy_model else "web_search"
+            tools.append({"type": search_type})
         if use_code_interpreter:
             tools.append({"type": "code_interpreter", "container": {"type": "auto"}})
         return tools
@@ -183,7 +184,16 @@ class DeepResearchTool(Tool):
             )
             return
 
-        model = tool_parameters.get("model", "o3-deep-research")
+        model = tool_parameters.get("model") or "gpt-5.6-sol"
+        legacy_model = model in {
+            "o3-deep-research",
+            "o3-deep-research-2025-06-26",
+            "o4-mini-deep-research",
+            "o4-mini-deep-research-2025-06-26",
+        }
+        if legacy_model and client.base_url.host == "api.openai.com":
+            model = "gpt-5.6-sol"
+            legacy_model = False
         use_web_search = tool_parameters.get("use_web_search", True)
         use_code_interpreter = tool_parameters.get("use_code_interpreter", True)
         max_tool_calls = tool_parameters.get("max_tool_calls")
@@ -197,7 +207,7 @@ class DeepResearchTool(Tool):
             )
             return
 
-        tools = self._build_tools(use_web_search, use_code_interpreter)
+        tools = self._build_tools(use_web_search, use_code_interpreter, legacy_model)
 
         create_args: dict[str, Any] = {
             "model": model,
@@ -215,8 +225,8 @@ class DeepResearchTool(Tool):
         if reasoning_cfg:
             create_args["reasoning"] = reasoning_cfg
 
-        # Include temperature if provided (allow explicit 0 value); default will be handled by API
-        if temperature is not None:
+        # GPT-5.6 Sol uses reasoning controls instead of a sampling temperature.
+        if legacy_model and temperature is not None:
             try:
                 create_args["temperature"] = float(temperature)
             except (ValueError, TypeError):

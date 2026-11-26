@@ -61,19 +61,19 @@ credentials_for_provider:
       pt_BR: Introduza a URL Base do Azure OpenAI, e.g. https://********.openai.azure.com/
   azure_openai_api_version:
     type: text-input
-    required: true
+    required: false
     label:
       en_US: API Version
       zh_Hans: API 版本
       pt_BR: API Version
     help:
-      en_US: Please input your Azure OpenAI API version. Use 2025-04-01-preview or later for current GPT-image edit support.
-      zh_Hans: 请输入你的 Azure OpenAI API 版本。若要使用当前的 GPT-image 编辑能力，请使用 2025-04-01-preview 或更高版本。
-      pt_BR: Insira a versão da API do Azure OpenAI. Use 2025-04-01-preview ou superior para o suporte atual de edição com GPT-image.
+      en_US: Use v1 or leave empty for the current Azure OpenAI image endpoint. Enter a dated version to use an existing deployment endpoint.
+      zh_Hans: 使用 v1 或留空以连接当前 Azure OpenAI 图像接口。已有部署端点可继续填写原有日期版本。
+      pt_BR: Use v1 ou deixe em branco para o endpoint atual de imagens. Informe uma versão com data para usar o endpoint de uma implantação existente.
     placeholder:
-      en_US: 2025-04-01-preview
-      zh_Hans: 2025-04-01-preview
-      pt_BR: 2025-04-01-preview
+      en_US: v1
+      zh_Hans: v1
+      pt_BR: v1
 extra:
   python:
     source: provider/azure_openai_tool.py

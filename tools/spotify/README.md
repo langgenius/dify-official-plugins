@@ -99,3 +99,7 @@ List all available Spotify devices for the current user.
 - None
 
 Last updated: January 2025
+
+## Spotify Development Mode
+
+Spotify requires the app owner to have Premium for Development Mode. Search is paginated in batches of 10. Some popularity, follower, playlist, and supplementary track fields depend on the app's quota mode. See the [Spotify migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).

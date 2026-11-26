@@ -13,7 +13,7 @@ help:
     en_US: Get your API Key from Fireworks AI
     zh_Hans: 从 Fireworks AI 获取 API Key
   url:
-    en_US: https://fireworks.ai/account/api-keys
+    en_US: https://app.fireworks.ai/settings/users/api-keys
 icon_large:
   en_US: icon.svg
 icon_small:
