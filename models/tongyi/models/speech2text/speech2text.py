@@ -1,13 +1,16 @@
 import base64
+import io
 import json
 import logging
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import time
 import uuid
+import wave
 from pathlib import Path
 from typing import IO, Any
 
@@ -22,6 +25,7 @@ from dify_plugin.entities.model import (
     ModelPropertyKey,
     ModelType,
 )
+from dify_plugin.errors.model import CredentialsValidateFailedError
 from models._common import get_http_base_address, get_ws_base_address
 from pydub import AudioSegment
 
@@ -61,7 +65,11 @@ _DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
 _FUN_ASR_MODEL = "fun-asr"
 _FUN_ASR_FLASH_MODEL = "fun-asr-flash-2026-06-15"
 _FUN_ASR_FLASH_MAX_FILE_SIZE = 7 * 1024 * 1024
+# Qwen-Audio-ASR short-audio models use the synchronous multimodal-generation API;
+# the "-filetrans" variants are asynchronous and are not matched here.
+_QWEN_AUDIO_ASR_FLASH_PATTERN = re.compile(r"qwen-audio-[\d.]+-asr-flash")
 _FUN_ASR_TASK_TIMEOUT = 3 * 60 * 60
+_NO_WORDS_ERROR = "ASR_RESPONSE_HAVE_NO_WORDS"
 
 
 def _is_subprocess_enabled() -> bool:
@@ -342,6 +350,16 @@ def _run_recognition_in_subprocess(
     return (result.get("status", "err"), result.get("data"))
 
 
+def _mono_silence_wav(seconds: int = 1, sample_rate: int = 16000) -> bytes:
+    output = io.BytesIO()
+    with wave.open(output, "wb") as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(sample_rate)
+        writer.writeframes(b"\x00\x00" * sample_rate * seconds)
+    return output.getvalue()
+
+
 class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
     Model class for Tongyi Speech to text model.
@@ -388,8 +406,8 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 return self._invoke_fun_asr(
                     model, file_path, api_key, get_http_base_address(credentials)
                 )
-            if model == _FUN_ASR_FLASH_MODEL:
-                return self._invoke_fun_asr_flash(
+            if model == _FUN_ASR_FLASH_MODEL or _QWEN_AUDIO_ASR_FLASH_PATTERN.fullmatch(model):
+                return self._invoke_multimodal_asr(
                     model, file_path, audio_format, api_key, get_http_base_address(credentials)
                 )
 
@@ -445,10 +463,13 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 except OSError:
                     pass
 
-    def _invoke_fun_asr_flash(
+    def _invoke_multimodal_asr(
         self, model: str, file_path: str, audio_format: str, api_key: str, base_address: str
     ) -> str:
-        if os.path.getsize(file_path) > _FUN_ASR_FLASH_MAX_FILE_SIZE:
+        if (
+            model == _FUN_ASR_FLASH_MODEL
+            and os.path.getsize(file_path) > _FUN_ASR_FLASH_MAX_FILE_SIZE
+        ):
             raise ValueError("Fun-ASR-Flash audio must not exceed 7 MB before Base64 encoding")
         mime_type = (
             {"mp3": "audio/mpeg", "wav": "audio/wav"}.get(audio_format)
@@ -485,12 +506,16 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
             },
             timeout=_HTTP_TIMEOUT,
         )
-        data = _parse_json_response(response)
+        try:
+            data = _parse_json_response(response)
+        except ValueError as ex:
+            # Silent or speechless audio is a valid recording with an empty transcript.
+            if _NO_WORDS_ERROR in str(ex):
+                return ""
+            raise
         text = (data.get("output") or {}).get("text")
         if not isinstance(text, str):
-            raise TypeError(
-                "DashScope returned an invalid Fun-ASR-Flash response: missing output.text"
-            )
+            raise TypeError(f"DashScope returned an invalid {model} response: missing output.text")
         return text
 
     def _invoke_fun_asr(self, model: str, file_path: str, api_key: str, base_address: str) -> str:
@@ -646,4 +671,14 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
             file_obj.seek(current_position)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        return super().validate_credentials(model, credentials)
+        # The SDK validates with a stereo demo clip, which DashScope ASR models
+        # reject ("only single channel stream is allowed"), so probe with mono audio.
+        try:
+            with io.BytesIO(_mono_silence_wav()) as probe:
+                self._invoke(model, credentials, probe)
+        except Exception as ex:
+            # The probe is silence; a "no words" result means the request was
+            # authorized and the model accepted the audio.
+            if _NO_WORDS_ERROR in str(ex):
+                return
+            raise CredentialsValidateFailedError(str(ex)) from ex

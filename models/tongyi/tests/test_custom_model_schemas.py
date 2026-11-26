@@ -1,11 +1,15 @@
 """User-added (Add Model) models must resolve to a schema, otherwise Dify drops
 them from the model lists and the default model selectors."""
 
+import io
 import os
 import sys
+import wave
+from unittest.mock import patch
 
 import pytest
 from dify_plugin.entities.model import FetchFrom, ModelPropertyKey, ModelType
+from dify_plugin.errors.model import CredentialsValidateFailedError
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -43,10 +47,58 @@ def test_tts_custom_model_exposes_default_voice() -> None:
     assert default_voice in [voice["mode"] for voice in voices]
 
 
+def test_qwen_audio_tts_custom_model_uses_its_own_voices() -> None:
+    schema = TongyiText2SpeechModel(model_schemas=[]).get_customizable_model_schema(
+        "qwen-audio-3.1-tts-plus", {}
+    )
+
+    voices = [voice["mode"] for voice in schema.model_properties[ModelPropertyKey.VOICES]]
+    assert voices == [
+        "longanlingxin_v3.1",
+        "xunanchuan_v3.1",
+        "longanhuan_v3.1",
+        "longanfengyue_v3.1",
+    ]
+    assert schema.model_properties[ModelPropertyKey.DEFAULT_VOICE] in voices
+
+
+def test_speech2text_validation_probes_with_mono_audio() -> None:
+    model = TongyiSpeech2TextModel(model_schemas=[])
+    seen = {}
+
+    def fake_invoke(_model, _credentials, file, user=None):
+        with wave.open(io.BytesIO(file.read()), "rb") as reader:
+            seen["channels"] = reader.getnchannels()
+        return ""
+
+    with patch.object(TongyiSpeech2TextModel, "_invoke", side_effect=fake_invoke):
+        model.validate_credentials("qwen-audio-3.1-asr-flash", {"dashscope_api_key": "k"})
+
+    assert seen["channels"] == 1
+
+
+def test_speech2text_validation_accepts_no_words_for_silent_probe() -> None:
+    model = TongyiSpeech2TextModel(model_schemas=[])
+    no_words = ValueError(
+        "DashScope error: ASR_RESPONSE_HAVE_NO_WORDS (status: 400, code: CLIENT_ERROR)"
+    )
+    with patch.object(TongyiSpeech2TextModel, "_invoke", side_effect=no_words):
+        model.validate_credentials("qwen-audio-3.1-asr-flash", {"dashscope_api_key": "k"})
+
+    unauthorized = ValueError("DashScope error: Invalid API-key (status: 401)")
+    with (
+        patch.object(TongyiSpeech2TextModel, "_invoke", side_effect=unauthorized),
+        pytest.raises(CredentialsValidateFailedError, match="401"),
+    ):
+        model.validate_credentials("qwen-audio-3.1-asr-flash", {"dashscope_api_key": "k"})
+
+
 def test_embedding_and_rerank_use_configured_context_size() -> None:
     credentials = {"context_size": "2048"}
 
-    embedding = TongyiTextEmbeddingModel(model_schemas=[]).get_customizable_model_schema("m", credentials)
+    embedding = TongyiTextEmbeddingModel(model_schemas=[]).get_customizable_model_schema(
+        "m", credentials
+    )
     rerank = GTERerankModel(model_schemas=[]).get_customizable_model_schema("m", credentials)
 
     assert embedding.model_properties[ModelPropertyKey.CONTEXT_SIZE] == 2048
