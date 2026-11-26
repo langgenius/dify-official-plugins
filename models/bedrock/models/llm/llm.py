@@ -932,7 +932,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         try:
             full_assistant_content = ""
-            return_model = None
+            return_model = model
             input_tokens = 0
             output_tokens = 0
             finish_reason = None
