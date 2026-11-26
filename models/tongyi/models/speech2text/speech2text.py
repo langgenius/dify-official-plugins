@@ -64,7 +64,8 @@ _RETRY_BACKOFFS = (1, 3)
 _DASHSCOPE_ASYNC_BRIDGE_PATCHED = False
 _FUN_ASR_MODEL = "fun-asr"
 _FUN_ASR_FLASH_MODEL = "fun-asr-flash-2026-06-15"
-_FUN_ASR_FLASH_MAX_FILE_SIZE = 7 * 1024 * 1024
+# Base64 data URIs for the synchronous ASR API must stay under 10 MB after encoding.
+_BASE64_ASR_MAX_FILE_SIZE = 7 * 1024 * 1024
 # Qwen-Audio-ASR short-audio models use the synchronous multimodal-generation API;
 # the "-filetrans" variants are asynchronous and are not matched here.
 _QWEN_AUDIO_ASR_FLASH_PATTERN = re.compile(r"qwen-audio-[\d.]+-asr-flash")
@@ -367,13 +368,15 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         """Schema for user-added speech-to-text models so they show up in model lists."""
+        # Base64 requests are capped at 10 MB after encoding, roughly 7 MB of raw audio.
+        upload_limit = 7 if _QWEN_AUDIO_ASR_FLASH_PATTERN.fullmatch(model) else 100
         return AIModelEntity(
             model=model,
             label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.SPEECH2TEXT,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
-                ModelPropertyKey.FILE_UPLOAD_LIMIT: 100,
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: upload_limit,
                 ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: (
                     "aac,amr,avi,flac,flv,m4a,mkv,mov,mp3,mp4,mpeg,ogg,opus,wav,webm,wma,wmv"
                 ),
@@ -466,11 +469,8 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     def _invoke_multimodal_asr(
         self, model: str, file_path: str, audio_format: str, api_key: str, base_address: str
     ) -> str:
-        if (
-            model == _FUN_ASR_FLASH_MODEL
-            and os.path.getsize(file_path) > _FUN_ASR_FLASH_MAX_FILE_SIZE
-        ):
-            raise ValueError("Fun-ASR-Flash audio must not exceed 7 MB before Base64 encoding")
+        if os.path.getsize(file_path) > _BASE64_ASR_MAX_FILE_SIZE:
+            raise ValueError(f"{model} audio must not exceed 7 MB before Base64 encoding")
         mime_type = (
             {"mp3": "audio/mpeg", "wav": "audio/wav"}.get(audio_format)
             or mimetypes.guess_type(file_path)[0]

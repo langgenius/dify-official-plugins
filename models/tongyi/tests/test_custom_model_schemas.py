@@ -71,6 +71,16 @@ def test_qwen_audio_tts_custom_model_uses_its_own_voices(
     assert schema.model_properties[ModelPropertyKey.DEFAULT_VOICE] == expected_voices[0]
 
 
+@pytest.mark.parametrize(
+    ("model", "limit"),
+    [("qwen-audio-3.1-asr-flash", 7), ("qwen-audio-3.1-asr-flash-filetrans", 100)],
+)
+def test_speech2text_custom_model_upload_limit(model: str, limit: int) -> None:
+    schema = TongyiSpeech2TextModel(model_schemas=[]).get_customizable_model_schema(model, {})
+
+    assert schema.model_properties[ModelPropertyKey.FILE_UPLOAD_LIMIT] == limit
+
+
 def test_speech2text_validation_probes_with_mono_audio() -> None:
     model = TongyiSpeech2TextModel(model_schemas=[])
     seen = {}

@@ -230,9 +230,7 @@ def test_invoke_fun_asr_flash_uses_http_base64() -> None:
 
 @pytest.mark.parametrize("model", ["qwen-audio-3.1-asr-flash", "qwen-audio-3.0-asr-flash"])
 def test_invoke_qwen_audio_asr_uses_multimodal_http_api(model: str) -> None:
-    header = b"RIFF\x24\x00\x00\x00WAVE"
-    # Larger than the Fun-ASR-Flash-only 7 MiB cap.
-    audio_file = _named_bytes(header + b"\0" * (7 * 1024 * 1024), "audio.wav")
+    audio_file = _wav_file()
     response = _http_response({"output": {"text": "hello qwen"}})
 
     with (
@@ -335,7 +333,8 @@ def test_invoke_fun_asr_flash_rejects_malformed_responses(
         )
 
 
-def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None:
+@pytest.mark.parametrize("model", ["fun-asr-flash-2026-06-15", "qwen-audio-3.1-asr-flash"])
+def test_invoke_base64_asr_validates_7_mib_boundary_before_encoding(model: str) -> None:
     header = b"RIFF\x24\x00\x00\x00WAVE"
     limit = 7 * 1024 * 1024
     oversized = _named_bytes(header + b"\0" * (limit + 1 - len(header)), "large.wav")
@@ -352,11 +351,7 @@ def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None
         patch("models.speech2text.speech2text.requests.post") as post,
         pytest.raises(ValueError, match="must not exceed 7 MB"),
     ):
-        _model()._invoke(
-            model="fun-asr-flash-2026-06-15",
-            credentials={"dashscope_api_key": "test-key"},
-            file=oversized,
-        )
+        _model()._invoke(model=model, credentials={"dashscope_api_key": "test-key"}, file=oversized)
 
     read_bytes.assert_not_called()
     encode.assert_not_called()
@@ -372,9 +367,7 @@ def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None
     ):
         assert (
             _model()._invoke(
-                model="fun-asr-flash-2026-06-15",
-                credentials={"dashscope_api_key": "test-key"},
-                file=allowed,
+                model=model, credentials={"dashscope_api_key": "test-key"}, file=allowed
             )
             == "accepted"
         )
