@@ -77,12 +77,14 @@ This plugin supports two authentication methods:
 
 ### Request Metadata (Optional)
 
-This plugin supports an optional "Enable request metadata" credential that attaches Dify app information to Azure OpenAI requests as metadata, enabling filtering in the Azure OpenAI Usage Dashboard.
+This plugin supports an optional "Enable request metadata" credential that attaches Dify app information to Azure OpenAI Chat Completions requests as metadata, enabling filtering in the Azure OpenAI Usage Dashboard.
 
-When enabled:
-- Attaches `dify_app_id` and `dify_source` as metadata on both Chat Completions and Responses API routes
+When enabled on the Chat Completions route:
+- Attaches `dify_app_id` and `dify_source` as metadata
 - Automatically sets `store=true` (required by Azure OpenAI API: metadata is only accepted when store is enabled)
 - Requests and responses are persisted to Stored Completions on your Azure OpenAI resource
+
+Responses API requests, including credential-validation requests, use `store=false` to opt out of response storage. Request metadata is skipped on this route even when the credential is enabled; keep "Enable request metadata" Disabled for this route.
 
 **Requirements:**
 - API Version of `2024-10-01-preview` or newer, OR a versionless `/openai/v1` endpoint
@@ -90,7 +92,7 @@ When enabled:
 
 **Default:** Disabled
 
-**Data Storage:** Requests and responses are persisted on your Azure OpenAI resource with the same data-storage context as Azure OpenAI's standard logging. Data does not leave Azure and is not used to train foundation models.
+**Data Storage:** When request metadata is attached on the Chat Completions route, requests and responses are persisted on your Azure OpenAI resource with the same data-storage context as Azure OpenAI's standard logging. Data does not leave Azure and is not used to train foundation models.
 
 **Reference:** [Azure OpenAI Data Privacy](https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/openai/data-privacy)
 
