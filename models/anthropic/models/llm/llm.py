@@ -784,14 +784,21 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         # Helper to prune cache_control blocks to max 4 by priority
         def _prune_cache_blocks(payload: dict):
-            blocks: list[tuple[int, int, dict]] = []  # (priority, neg_length, block_dict)
+            # (priority, neg_length, neg_position, block_dict); blocks are recorded in the
+            # order Anthropic renders them (tools, system, messages)
+            blocks: list[tuple[int, int, int, dict]] = []
 
             # Helper to record
             def _record_block(d: dict, priority: int, length: int = 0):
                 if "cache_control" in d:
-                    blocks.append((priority, -length, d))
+                    blocks.append((priority, -length, -len(blocks), d))
 
-            # 1. system blocks
+            # 1. tools definitions
+            for tool_def in payload.get("tools", []):
+                if isinstance(tool_def, dict):
+                    _record_block(tool_def, 4, 0)
+
+            # 2. system blocks
             if isinstance(payload.get("system"), list):
                 for block in payload["system"]:
                     if isinstance(block, dict):
@@ -800,7 +807,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             text_len = len(block.get("text", ""))
                         _record_block(block, 2, text_len)  # system priority 2
 
-            # 2. message content blocks
+            # 3. message content blocks
             for msg in payload.get("messages", []):
                 content = msg.get("content")
                 if isinstance(content, list):
@@ -821,19 +828,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 text_len = len(block.get("text", ""))
                         _record_block(block, pr, text_len)
 
-            # 3. tools definitions
-            for tool_def in payload.get("tools", []):
-                if isinstance(tool_def, dict):
-                    _record_block(tool_def, 4, 0)
-
-            # Sort by priority (lower number = higher priority), then by length descending
-            blocks.sort(key=lambda x: (x[0], x[1]))
+            # Sort by priority (lower number = higher priority), then by length descending,
+            # then latest in the prompt first: caching is a prefix match, so a breakpoint
+            # late in the request also covers everything before it
+            blocks.sort(key=lambda x: (x[0], x[1], x[2]))
 
             if _debug_logging_enabled():
                 logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
-            for idx, (_, _, block_dict) in enumerate(blocks):
+            for idx, (_, _, _, block_dict) in enumerate(blocks):
                 if idx >= 4:
                     block_dict.pop("cache_control", None)
 
