@@ -126,11 +126,23 @@ _QWEN_AUDIO_31_TTS_VOICES = (
     ("longanhuan_v3.1", "龙安欢"),
     ("longanfengyue_v3.1", "龙安风悦"),
 )
+_QWEN_AUDIO_TTS_VOICES = {
+    "qwen-audio-3.0-tts-plus": (("longanlingxin", "龙安灵心"), ("longanlufeng", "龙安鲁风")),
+    "qwen-audio-3.0-tts-flash": (
+        ("longanfengyue", "龙安风悦"),
+        ("longanyuanfei", "龙安元妃"),
+        ("longanlingxi", "龙安灵希"),
+        ("longanxiaoxin", "龙安小昕"),
+        ("longanhuan_v3.6", "龙安欢"),
+    ),
+}
 _HTTP_TIMEOUT = (10, 120)
 
 
 def _custom_model_voices(model: str) -> list[tuple[str, str]]:
-    if model.startswith("qwen-audio-3.1-tts-"):
+    if model in _QWEN_AUDIO_TTS_VOICES:
+        return list(_QWEN_AUDIO_TTS_VOICES[model])
+    if _QWEN_AUDIO_TTS_PATTERN.fullmatch(model):
         return list(_QWEN_AUDIO_31_TTS_VOICES)
     return [(voice, voice) for voice in _CUSTOM_MODEL_VOICES]
 

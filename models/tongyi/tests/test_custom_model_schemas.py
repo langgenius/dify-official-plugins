@@ -47,19 +47,28 @@ def test_tts_custom_model_exposes_default_voice() -> None:
     assert default_voice in [voice["mode"] for voice in voices]
 
 
-def test_qwen_audio_tts_custom_model_uses_its_own_voices() -> None:
-    schema = TongyiText2SpeechModel(model_schemas=[]).get_customizable_model_schema(
-        "qwen-audio-3.1-tts-plus", {}
-    )
+@pytest.mark.parametrize(
+    ("model", "expected_voices"),
+    [
+        (
+            "qwen-audio-3.1-tts-plus",
+            ["longanlingxin_v3.1", "xunanchuan_v3.1", "longanhuan_v3.1", "longanfengyue_v3.1"],
+        ),
+        ("qwen-audio-3.0-tts-plus", ["longanlingxin", "longanlufeng"]),
+        (
+            "qwen-audio-3.0-tts-flash",
+            ["longanfengyue", "longanyuanfei", "longanlingxi", "longanxiaoxin", "longanhuan_v3.6"],
+        ),
+    ],
+)
+def test_qwen_audio_tts_custom_model_uses_its_own_voices(
+    model: str, expected_voices: list[str]
+) -> None:
+    schema = TongyiText2SpeechModel(model_schemas=[]).get_customizable_model_schema(model, {})
 
     voices = [voice["mode"] for voice in schema.model_properties[ModelPropertyKey.VOICES]]
-    assert voices == [
-        "longanlingxin_v3.1",
-        "xunanchuan_v3.1",
-        "longanhuan_v3.1",
-        "longanfengyue_v3.1",
-    ]
-    assert schema.model_properties[ModelPropertyKey.DEFAULT_VOICE] in voices
+    assert voices == expected_voices
+    assert schema.model_properties[ModelPropertyKey.DEFAULT_VOICE] == expected_voices[0]
 
 
 def test_speech2text_validation_probes_with_mono_audio() -> None:
