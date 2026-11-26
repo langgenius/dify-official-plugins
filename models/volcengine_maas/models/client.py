@@ -3,7 +3,7 @@ import hashlib
 import re
 from typing import Optional, cast
 
-from volcenginesdkarkruntime import Ark  # type: ignore
+from models.ark_connection import DiagnosticArk as Ark
 from volcenginesdkarkruntime.types.chat import (  # type: ignore
     ChatCompletion,
     ChatCompletionAssistantMessageParam,

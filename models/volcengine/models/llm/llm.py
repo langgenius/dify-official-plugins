@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
-from volcenginesdkarkruntime import Ark
+from models.ark_connection import DiagnosticArk as Ark
 from volcenginesdkarkruntime._streaming import Stream
 from volcenginesdkarkruntime.types.chat import ChatCompletion, ChatCompletionChunk
 
