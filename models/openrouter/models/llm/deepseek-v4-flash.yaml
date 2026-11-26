@@ -24,7 +24,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 32768
+    max: 393216
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
@@ -65,7 +65,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.14"
-  output: "0.28"
+  input: "0.09"
+  output: "0.18"
   unit: "0.000001"
   currency: USD

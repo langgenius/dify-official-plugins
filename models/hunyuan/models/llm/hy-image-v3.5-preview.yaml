@@ -1,0 +1,32 @@
+model: hy-image-v3.5-preview
+label:
+  en_US: Hy-Image 3.5 Preview
+model_type: llm
+features:
+- vision
+model_properties:
+  mode: chat
+  context_size: 100000
+parameter_rules:
+- name: size
+  label:
+    en_US: Image Size
+    zh_Hans: 图片尺寸
+  type: string
+  required: false
+  help:
+    en_US: Set a width and height such as 2048x2048. Leave empty to let the model choose.
+    zh_Hans: 指定宽高，例如 2048x2048。留空时由模型决定。
+- name: seed
+  label:
+    en_US: Seed
+    zh_Hans: 随机种子
+  type: int
+  required: false
+  min: 0
+  max: 9223372036854775807
+pricing:
+  input: '0'
+  output: '10'
+  unit: '0.000001'
+  currency: CNY

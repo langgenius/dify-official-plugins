@@ -21,7 +21,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 384000
+    max: 943718
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -61,7 +61,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "1.32"
-  output: "3.96"
+  input: "0.111"
+  output: "4.44"
   unit: "0.000001"
   currency: USD

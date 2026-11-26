@@ -1,0 +1,6 @@
+model: mongodb/rerank-3
+label:
+  en_US: VoyageAI Rerank 3
+model_type: rerank
+model_properties:
+  context_size: 32000

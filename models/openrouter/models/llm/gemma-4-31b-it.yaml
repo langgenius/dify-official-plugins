@@ -9,7 +9,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 256000
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -32,7 +32,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 8192
+    max: 16384
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -59,7 +59,7 @@ parameter_rules:
       - auto
       - flex
 pricing:
-  input: "0.14"
-  output: "0.40"
+  input: "0.2"
+  output: "0.4"
   unit: "0.000001"
   currency: USD

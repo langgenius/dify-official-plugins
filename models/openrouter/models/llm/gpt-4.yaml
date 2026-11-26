@@ -8,7 +8,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 8192
+  context_size: 8191
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -31,7 +31,7 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 8192
+    max: 4096
   - name: seed
     label:
       zh_Hans: 种子

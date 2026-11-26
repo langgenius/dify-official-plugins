@@ -1,0 +1,46 @@
+# https://openrouter.ai/tencent/hy3
+model: tencent/hy3
+label:
+  en_US: hy3
+model_type: llm
+features:
+  - structured-output
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    required: false
+    options:
+    - text
+    - json_object
+    - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: exclude_reasoning_tokens
+    label:
+      en_US: Hide the thought process
+      zh_Hans: 隐藏思考过程
+    type: boolean
+    required: false
+    default: true
+pricing:
+  input: '0.132'
+  output: '0.528'
+  unit: '0.000001'
+  currency: USD

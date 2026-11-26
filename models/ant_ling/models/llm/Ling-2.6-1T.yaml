@@ -57,3 +57,4 @@ parameter_rules:
     help:
       zh_Hans: 仅在开启联网搜索时生效。设为 true 时强制每次请求都发起搜索。
       en_US: Force web search on every request.
+deprecated: true

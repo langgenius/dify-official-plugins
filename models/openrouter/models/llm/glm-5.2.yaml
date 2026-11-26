@@ -21,7 +21,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 262144
+    max: 943718
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -73,7 +73,7 @@ parameter_rules:
       - auto
       - flex
 pricing:
-  input: "1.19"
-  output: "3.74"
+  input: "0.62"
+  output: "2.42"
   unit: "0.000001"
   currency: USD

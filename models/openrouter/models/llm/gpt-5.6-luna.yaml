@@ -75,7 +75,7 @@ parameter_rules:
       - auto
       - flex
 pricing:
-  input: "0.10"
-  output: "0.60"
+  input: "0.2"
+  output: "1.2"
   unit: "0.000001"
   currency: USD
