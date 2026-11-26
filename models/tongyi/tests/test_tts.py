@@ -129,3 +129,35 @@ def test_tts_requires_the_final_audio_url() -> None:
                 voice="Cherry",
             )
         )
+
+
+def _placeholder_wav(frames: bytes, *, sample_rate: int = 24_000, declared_size: int = 0x7FFFFFEB) -> bytes:
+    """Build a WAVE whose data chunk declares DashScope's streaming placeholder size."""
+    block_align = 2
+    return (
+        b"RIFF"
+        + struct.pack("<I", declared_size + 36)
+        + b"WAVE"
+        + b"fmt "
+        + struct.pack("<IHHIIHH", 16, 1, 1, sample_rate, sample_rate * block_align, block_align, 16)
+        + b"data"
+        + struct.pack("<I", declared_size)
+        + frames
+    )
+
+
+def test_merge_wav_segments_accepts_streaming_placeholder_sizes() -> None:
+    frames = b"\x01\x00\x02\x00\x03\x00"
+
+    merged = merge_wav_segments([_placeholder_wav(frames)])
+
+    assert merged.startswith(b"RIFF")
+    assert _wav_frames(merged) == (24_000, frames)
+
+
+def test_merge_wav_segments_drops_unaligned_placeholder_tail() -> None:
+    frames = b"\x01\x00\x02\x00\x03"  # a trailing byte cannot form a frame
+
+    merged = merge_wav_segments([_placeholder_wav(frames)])
+
+    assert _wav_frames(merged) == (24_000, frames[:-1])
