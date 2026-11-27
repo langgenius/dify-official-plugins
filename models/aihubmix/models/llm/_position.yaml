@@ -1,8 +1,10 @@
 - coding-glm-5.4
 - gemini-4-neon
+- qwen3.8-27b
 - gpt-6.2-astra
 - gpt-6.2-sol
 - gemini-4-hydrogen
+- hy4-flash
 - qwen4-max
 - ernie-5.5-flash-preview
 - coding-qwen4-max-preview
@@ -11,12 +13,12 @@
 - kimi-k3.1-pro
 - kimi-k3.1-pro-highspeed
 - claude-fable-5-2
-- deepseek-v4.1-flash-1017
-- glm-5.3-prime
 - gpt-6.1-sol
 - minimax-m3.1-flash
-- muse-wonder
+- deepseek-v4.1-flash-1017
+- glm-5.3-prime
 - gemini-4-argon
+- muse-wonder
 - claude-haiku-5-5
 - claude-opus-5-5
 - claude-sonnet-5-5
@@ -147,6 +149,7 @@
 - claude-opus-4-6-think
 - claude-opus-4-5
 - claude-opus-4-5-think
+- solar-pro4
 - cohere-command-a
 - coding-minimax-m3
 - coding-glm-5
@@ -186,9 +189,9 @@
 - qwen3-max-2026-01-23
 - kimi-k2.5
 - qwen3-vl-plus
+- mm-minimax-m2.7-highspeed
 - minimax-m2.5
 - minimax-m2.5-highspeed
-- mm-minimax-m2.7-highspeed
 - cc-minimax-m2.7
 - cc-minimax-m2.7-highspeed
 - coding-minimax-m2.7
@@ -259,7 +262,5 @@
 - grok-4.20-beta-0309-reasoning
 - grok-4.20-multi-agent-beta-0309
 - aihubmix-Llama-3-1-405B-Instruct
-- qwen3.8-27b
-- solar-pro4
 - llama2-70b-4096
 - llama2-70b-40960
