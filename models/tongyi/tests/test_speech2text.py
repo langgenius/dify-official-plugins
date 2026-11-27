@@ -228,6 +228,63 @@ def test_invoke_fun_asr_flash_uses_http_base64() -> None:
     assert post.call_args.kwargs["timeout"] == (10, 600)
 
 
+@pytest.mark.parametrize("model", ["qwen-audio-3.1-asr-flash", "qwen-audio-3.0-asr-flash"])
+def test_invoke_qwen_audio_asr_uses_multimodal_http_api(model: str) -> None:
+    audio_file = _wav_file()
+    response = _http_response({"output": {"text": "hello qwen"}})
+
+    with (
+        patch("models.speech2text.speech2text.Path.read_bytes", return_value=b"audio"),
+        patch("models.speech2text.speech2text.requests.post", return_value=response) as post,
+        patch("models.speech2text.speech2text.Recognition") as recognition,
+    ):
+        text = _model()._invoke(
+            model=model, credentials={"dashscope_api_key": "test-key"}, file=audio_file
+        )
+
+    assert text == "hello qwen"
+    recognition.assert_not_called()
+    assert post.call_args.args[0].endswith("/services/aigc/multimodal-generation/generation")
+    assert post.call_args.kwargs["json"]["model"] == model
+
+
+def test_invoke_qwen_audio_asr_filetrans_is_not_sent_to_sync_api() -> None:
+    with (
+        patch("models.speech2text.speech2text.requests.post") as post,
+        patch("models.speech2text.speech2text.AudioSegment.from_file") as from_file,
+        patch("models.speech2text.speech2text._is_subprocess_enabled", return_value=False),
+        patch("models.speech2text.speech2text._patch_dashscope_async_bridge_for_gevent"),
+        patch("models.speech2text.speech2text.Recognition") as recognition,
+    ):
+        from_file.return_value.frame_rate = 16000
+        recognition.return_value.call.return_value.status_code = 200
+        recognition.return_value.call.return_value.get_sentence.return_value = []
+        _model()._invoke(
+            model="qwen-audio-3.1-asr-flash-filetrans",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+    post.assert_not_called()
+    recognition.assert_called_once()
+
+
+def test_invoke_qwen_audio_asr_returns_empty_text_for_speechless_audio() -> None:
+    response = _http_response(
+        {"code": "CLIENT_ERROR", "message": "ASR_RESPONSE_HAVE_NO_WORDS", "request_id": "r"},
+        status_code=400,
+    )
+
+    with patch("models.speech2text.speech2text.requests.post", return_value=response):
+        text = _model()._invoke(
+            model="qwen-audio-3.1-asr-flash",
+            credentials={"dashscope_api_key": "test-key"},
+            file=_wav_file(),
+        )
+
+    assert text == ""
+
+
 def test_invoke_fun_asr_flash_preserves_http_error() -> None:
     response = _http_response(
         {
@@ -276,7 +333,8 @@ def test_invoke_fun_asr_flash_rejects_malformed_responses(
         )
 
 
-def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None:
+@pytest.mark.parametrize("model", ["fun-asr-flash-2026-06-15", "qwen-audio-3.1-asr-flash"])
+def test_invoke_base64_asr_validates_7_mib_boundary_before_encoding(model: str) -> None:
     header = b"RIFF\x24\x00\x00\x00WAVE"
     limit = 7 * 1024 * 1024
     oversized = _named_bytes(header + b"\0" * (limit + 1 - len(header)), "large.wav")
@@ -293,11 +351,7 @@ def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None
         patch("models.speech2text.speech2text.requests.post") as post,
         pytest.raises(ValueError, match="must not exceed 7 MB"),
     ):
-        _model()._invoke(
-            model="fun-asr-flash-2026-06-15",
-            credentials={"dashscope_api_key": "test-key"},
-            file=oversized,
-        )
+        _model()._invoke(model=model, credentials={"dashscope_api_key": "test-key"}, file=oversized)
 
     read_bytes.assert_not_called()
     encode.assert_not_called()
@@ -313,9 +367,7 @@ def test_invoke_fun_asr_flash_validates_7_mib_boundary_before_encoding() -> None
     ):
         assert (
             _model()._invoke(
-                model="fun-asr-flash-2026-06-15",
-                credentials={"dashscope_api_key": "test-key"},
-                file=allowed,
+                model=model, credentials={"dashscope_api_key": "test-key"}, file=allowed
             )
             == "accepted"
         )

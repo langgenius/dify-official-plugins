@@ -1,11 +1,20 @@
 import io
+import re
 import threading
 import wave
 from queue import Queue
 from typing import Any
 from urllib.request import urlopen
 
+import requests
 from dashscope import MultiModalConversation
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelPropertyKey,
+    ModelType,
+)
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
@@ -13,6 +22,8 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from models._common import _CommonTongyi, get_http_base_address
+
+from ..constant import BURY_POINT_HEADER
 
 # DashScope writes int32 placeholder sizes into the RIFF and data chunk headers of
 # its streaming WAVE output because the real length is unknown while the stream is
@@ -70,16 +81,22 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
 
                     frame_count = reader.getnframes()
                     frames = reader.readframes(frame_count)
-                    expected_frame_bytes = frame_count * reader.getnchannels() * reader.getsampwidth()
+                    expected_frame_bytes = (
+                        frame_count * reader.getnchannels() * reader.getsampwidth()
+                    )
                     if len(frames) != expected_frame_bytes:
                         if not _is_streaming_wav_placeholder(expected_frame_bytes):
-                            raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+                            raise InvokeBadRequestError(
+                                f"DashScope returned truncated WAVE segment {index}"
+                            )
                         # The declared length is a streaming placeholder, so the payload
                         # length is the truth; drop a trailing partial frame if any.
                         block_align = reader.getnchannels() * reader.getsampwidth()
                         frames = frames[: len(frames) - len(frames) % block_align]
                         if not frames:
-                            raise InvokeBadRequestError(f"DashScope returned truncated WAVE segment {index}")
+                            raise InvokeBadRequestError(
+                                f"DashScope returned truncated WAVE segment {index}"
+                            )
                     writer.writeframes(frames)
     except (EOFError, wave.Error) as ex:
         raise InvokeBadRequestError(f"DashScope returned an invalid WAVE segment: {ex}") from ex
@@ -87,10 +104,104 @@ def merge_wav_segments(segments: list[bytes]) -> bytes:
     return output.getvalue()
 
 
+_CUSTOM_MODEL_VOICES = (
+    "Cherry",
+    "Serena",
+    "Ethan",
+    "Chelsie",
+    "Momo",
+    "Vivian",
+    "Moon",
+    "Maia",
+    "Kai",
+    "Nofish",
+)
+
+# Qwen-Audio-TTS models use the SpeechSynthesizer HTTP API and their own voice IDs;
+# voices cannot be shared with qwen3-tts models.
+_QWEN_AUDIO_TTS_PATTERN = re.compile(r"qwen-audio-[\d.]+-tts-[a-z]+")
+_QWEN_AUDIO_31_TTS_VOICES = (
+    ("longanlingxin_v3.1", "龙安灵心"),
+    ("xunanchuan_v3.1", "许南川"),
+    ("longanhuan_v3.1", "龙安欢"),
+    ("longanfengyue_v3.1", "龙安风悦"),
+)
+_QWEN_AUDIO_TTS_VOICES = {
+    "qwen-audio-3.0-tts-plus": (("longanlingxin", "龙安灵心"), ("longanlufeng", "龙安鲁风")),
+    "qwen-audio-3.0-tts-flash": (
+        ("longanfengyue", "龙安风悦"),
+        ("longanyuanfei", "龙安元妃"),
+        ("longanlingxi", "龙安灵希"),
+        ("longanxiaoxin", "龙安小昕"),
+        ("longanhuan_v3.6", "龙安欢"),
+    ),
+}
+_HTTP_TIMEOUT = (10, 120)
+
+
+def _custom_model_voices(model: str) -> list[tuple[str, str]]:
+    if model in _QWEN_AUDIO_TTS_VOICES:
+        return list(_QWEN_AUDIO_TTS_VOICES[model])
+    if _QWEN_AUDIO_TTS_PATTERN.fullmatch(model):
+        return list(_QWEN_AUDIO_31_TTS_VOICES)
+    return [(voice, voice) for voice in _CUSTOM_MODEL_VOICES]
+
+
+def _synthesize_qwen_audio(
+    text: str, model: str, voice: str, api_key: str, base_address: str
+) -> bytes:
+    response = requests.post(
+        f"{base_address}/services/audio/tts/SpeechSynthesizer",
+        headers={
+            **BURY_POINT_HEADER,
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={"model": model, "input": {"text": text, "voice": voice, "format": "wav"}},
+        timeout=_HTTP_TIMEOUT,
+    )
+    try:
+        data = response.json()
+    except ValueError:
+        data = {}
+    if response.status_code != 200:
+        raise InvokeBadRequestError(
+            f"DashScope error: {data.get('message') or response.text[:500]} "
+            f"(status: {response.status_code}, code: {data.get('code')}, "
+            f"request_id: {data.get('request_id')})"
+        )
+    audio_url = ((data.get("output") or {}).get("audio") or {}).get("url")
+    if not audio_url:
+        raise InvokeBadRequestError("No audio URL in response")
+    audio_response = requests.get(audio_url, timeout=_HTTP_TIMEOUT)
+    audio_response.raise_for_status()
+    return audio_response.content
+
+
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
     """
     Model class for Tongyi Speech to text model.
     """
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+        """Schema for user-added TTS models so they show up in model lists."""
+        voices = _custom_model_voices(model)
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_us=model, zh_hans=model),
+            model_type=ModelType.TTS,
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.DEFAULT_VOICE: voices[0][0],
+                ModelPropertyKey.VOICES: [
+                    {"mode": voice, "name": name, "language": ["zh-Hans", "en-US"]}
+                    for voice, name in voices
+                ],
+                ModelPropertyKey.WORD_LIMIT: 512,
+                ModelPropertyKey.AUDIO_TYPE: "wav",
+                ModelPropertyKey.MAX_WORKERS: 5,
+            },
+        )
 
     def _invoke(
         self,
@@ -120,9 +231,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
             model=model, credentials=credentials, content_text=content_text, voice=voice
         )
 
-    def validate_credentials(
-        self, model: str, credentials: dict, user: str | None = None
-    ) -> None:
+    def validate_credentials(self, model: str, credentials: dict, user: str | None = None) -> None:
         """
         validate credentials text2speech model
 
@@ -132,12 +241,14 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         :return: text translated to audio file
         """
         try:
-            self._tts_invoke_streaming(
+            # _tts_invoke_streaming is a generator; consume it so the API is actually called.
+            for _ in self._tts_invoke_streaming(
                 model=model,
                 credentials=credentials,
                 content_text="Hello Dify!",
                 voice=self._get_model_default_voice(model, credentials),
-            )
+            ):
+                pass
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
@@ -169,6 +280,13 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                             self._split_text_into_sentences(org_text=content, max_length=wl)
                         )
                     for sentence in sentences:
+                        if _QWEN_AUDIO_TTS_PATTERN.fullmatch(m):
+                            audio_segments.append(
+                                _synthesize_qwen_audio(
+                                    sentence.strip(), m, voice, api_key, base_address
+                                )
+                            )
+                            continue
                         response_stream = MultiModalConversation.call(
                             model=m,
                             api_key=api_key,
@@ -196,7 +314,9 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                                 audio_data = response.read()
                             audio_segments.append(audio_data)
                         except Exception as e:
-                            error_queue.put(InvokeBadRequestError(f"Failed to download audio: {e!s}"))
+                            error_queue.put(
+                                InvokeBadRequestError(f"Failed to download audio: {e!s}")
+                            )
                             audio_queue.put(None)
                             return
                     audio_queue.put(merge_wav_segments(audio_segments))
