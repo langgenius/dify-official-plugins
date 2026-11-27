@@ -81,6 +81,7 @@ def _render_embedding(model: dict[str, Any]) -> str:
                     {"features": ["vision"]}
                     if model["id"]
                     in {
+                        "gemini-embedding-2",
                         "gemini-embedding-2-preview",
                         "qwen3-vl-embedding",
                         "multimodal-embedding-v1",
