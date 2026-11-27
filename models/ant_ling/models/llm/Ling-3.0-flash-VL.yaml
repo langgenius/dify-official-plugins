@@ -1,0 +1,42 @@
+model: Ling-3.0-flash-VL
+label:
+  en_US: Ling-3.0-flash-VL
+  zh_Hans: Ling-3.0-flash-VL
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+  - video
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 1
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 32768
+  - name: thinking
+    label:
+      en_US: Thinking
+      zh_Hans: 思考
+    type: string
+    required: false
+    default: enabled
+    options:
+    - enabled
+    - disabled
+pricing:
+  input: '0.50'
+  output: '1.50'
+  unit: '0.000001'
+  currency: CNY

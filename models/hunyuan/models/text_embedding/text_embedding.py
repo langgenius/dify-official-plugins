@@ -62,22 +62,17 @@ class HunyuanTextEmbeddingModel(TextEmbeddingModel):
         """
         try:
             client = self._setup_hunyuan_client(credentials)
-            req = models.ChatCompletionsRequest()
-            params = {
-                "Model": model,
-                "Messages": [{"Role": "user", "Content": "hello"}],
-                "TopP": 1,
-                "Temperature": 0,
-                "Stream": False,
-            }
-            req.from_json_string(json.dumps(params))
-            client.ChatCompletions(req)
+            req = models.GetEmbeddingRequest()
+            req.from_json_string(json.dumps({"Model": model, "Inputs": ["hello"]}))
+            client.GetEmbedding(req)
         except Exception as e:
             raise CredentialsValidateFailedError(f"Credentials validation failed: {e}")
 
     def _setup_hunyuan_client(self, credentials):
-        secret_id = credentials["secret_id"]
-        secret_key = credentials["secret_key"]
+        secret_id = credentials.get("secret_id")
+        secret_key = credentials.get("secret_key")
+        if not (secret_id and secret_key):
+            raise ValueError("This model requires a Tencent Cloud Secret ID and Secret Key.")
         cred = credential.Credential(secret_id, secret_key)
         httpProfile = HttpProfile()
         httpProfile.endpoint = "lkeap.tencentcloudapi.com"

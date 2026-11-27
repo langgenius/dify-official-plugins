@@ -22,7 +22,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 65536
+    max: 235929
   - name: top_k
     label:
       zh_Hans: 取样数量
@@ -72,7 +72,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.15"
-  output: "1"
+  input: "0.1"
+  output: "0.89"
   unit: "0.000001"
   currency: USD

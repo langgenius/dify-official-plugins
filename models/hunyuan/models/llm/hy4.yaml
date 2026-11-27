@@ -1,0 +1,46 @@
+model: hy4
+label:
+  en_US: Hy4
+model_type: llm
+features:
+- agent-thought
+- tool-call
+- stream-tool-call
+- structured-output
+- vision
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+- name: temperature
+  use_template: temperature
+- name: top_p
+  use_template: top_p
+- name: max_tokens
+  use_template: max_tokens
+  default: 4096
+  min: 1
+  max: 65536
+- name: enable_thinking
+  label:
+    en_US: Enable Thinking
+    zh_Hans: 开启深度思考
+  type: boolean
+  required: false
+- name: response_format
+  label:
+    en_US: Response Format
+    zh_Hans: 回复格式
+  type: string
+  required: false
+  options:
+  - text
+  - json_object
+  - json_schema
+- name: json_schema
+  use_template: json_schema
+pricing:
+  input: '6'
+  output: '18'
+  unit: '0.000001'
+  currency: CNY

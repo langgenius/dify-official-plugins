@@ -1,0 +1,29 @@
+model: microsoft/mai-voice-2.1-flash
+label:
+  en_US: Microsoft MAI-Voice-2.1-Flash
+model_type: tts
+model_properties:
+  default_voice: 'en-US-Harper:MAI-Voice-2.1-Flash'
+  voices:
+    - mode: 'en-US-Harper:MAI-Voice-2.1-Flash'
+      name: 'en-US-Harper'
+      language: ['en-US']
+    - mode: 'es-MX-Valeria:MAI-Voice-2.1-Flash'
+      name: 'es-MX-Valeria'
+      language: ['es-MX']
+    - mode: 'fr-FR-Soleil:MAI-Voice-2.1-Flash'
+      name: 'fr-FR-Soleil'
+      language: ['fr-FR']
+    - mode: 'de-DE-Klaus:MAI-Voice-2.1-Flash'
+      name: 'de-DE-Klaus'
+      language: ['de-DE']
+    - mode: 'zh-CN-Lan:MAI-Voice-2.1-Flash'
+      name: 'zh-CN-Lan'
+      language: ['zh-CN']
+  word_limit: 2000
+  audio_type: 'mp3'
+pricing:
+  input: '0.015000'
+  output: '0'
+  unit: '0.001'
+  currency: USD

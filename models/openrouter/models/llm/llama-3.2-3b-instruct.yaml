@@ -39,7 +39,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.03'
-  output: '0.05'
-  unit: '0.000001'
+  input: "0.05"
+  output: "0.33"
+  unit: "0.000001"
   currency: USD
