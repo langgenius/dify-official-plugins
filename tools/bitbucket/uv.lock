@@ -68,7 +68,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "atlassian-python-api", specifier = ">=5.0.4" },
+    { name = "atlassian-python-api", specifier = ">=5.0.5" },
     { name = "dify-plugin", specifier = "==0.10.2" },
     { name = "pydub", specifier = ">=0.25.1" },
     { name = "setuptools", specifier = ">=84.0.0" },

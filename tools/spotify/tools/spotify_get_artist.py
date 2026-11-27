@@ -100,9 +100,9 @@ class SpotifyGetArtistTool(Tool):
             artist_info = {
                 "id": artist_data["id"],
                 "name": artist_data["name"],
-                "genres": artist_data["genres"],
-                "popularity": artist_data["popularity"],
-                "followers": {"total": artist_data["followers"]["total"]},
+                "genres": artist_data.get("genres", []),
+                "popularity": artist_data.get("popularity"),
+                "followers": {"total": (artist_data.get("followers") or {}).get("total")},
                 "external_urls": artist_data["external_urls"],
                 "images": artist_data["images"],
             }
@@ -122,7 +122,7 @@ class SpotifyGetArtistTool(Tool):
                             {
                                 "id": track["id"],
                                 "name": track["name"],
-                                "popularity": track["popularity"],
+                                "popularity": track.get("popularity"),
                                 "duration_ms": track["duration_ms"],
                                 "explicit": track["explicit"],
                                 "preview_url": track.get("preview_url"),
@@ -186,8 +186,8 @@ class SpotifyGetArtistTool(Tool):
                         {
                             "id": artist["id"],
                             "name": artist["name"],
-                            "popularity": artist["popularity"],
-                            "genres": artist["genres"],
+                            "popularity": artist.get("popularity"),
+                            "genres": artist.get("genres", []),
                         }
                         for artist in related_data["artists"][:10]  # Limit to top 10
                     ]
@@ -200,8 +200,10 @@ class SpotifyGetArtistTool(Tool):
 
             # Create summary text
             summary = f"Artist: '{artist_info['name']}'"
-            summary += f"\nFollowers: {artist_info['followers']['total']:,}"
-            summary += f"\nPopularity: {artist_info['popularity']}/100"
+            if artist_info["followers"]["total"] is not None:
+                summary += f"\nFollowers: {artist_info['followers']['total']:,}"
+            if artist_info["popularity"] is not None:
+                summary += f"\nPopularity: {artist_info['popularity']}/100"
 
             if artist_info["genres"]:
                 summary += f"\nGenres: {', '.join(artist_info['genres'])}"

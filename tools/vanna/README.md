@@ -1,15 +1,9 @@
-# Overview
-Vanna.ai is an innovative AI-driven platform designed to simplify the interaction between users and complex SQL databases. 
+# Vanna
 
-# Configure
-## Get API Key
-1. Create an account and login to Vanna.ai.
-2. Copy API key from API Keys.
+Use this plugin with a legacy Vanna RPC server you operate. Vanna has shut down its hosted service. The plugin requires a server that implements the legacy Vanna RPC protocol, including model listing, and an API key with access to at least one model.
 
-## Configure Vanna.AI tool
-1. Install Vanna.AI from Marketplace. 
-![](./_assets/vanna_install.png)
-2. Add Vanna.AI node to your workflow.
-3. Fill in the Vanna.AI API key.
-4. Fill in the database configurations.
-![](./_assets/vanna_configure.png)
+1. Install the Vanna plugin from Dify Marketplace.
+2. In the provider settings, enter your server's full RPC URL and API key.
+3. In your workflow, select a model available to that key and provide the database configuration.
+
+For information about the current open-source framework, see the [Vanna migration guide](https://vanna.ai/docs/migration).

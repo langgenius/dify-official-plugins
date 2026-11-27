@@ -35,7 +35,7 @@ For access to additional models beyond those listed, please visit: [www.cometapi
 ## Configuration
 
 ### Step 1: Get Your API Key(If you don't have a CometAPI key yet)
-1. Visit [CometAPI Console](https://api.cometapi.com/console/token)
+1. Visit [CometAPI Console](https://www.cometapi.com/console/token)
 2. Sign up for a free account (1M free tokens available for new users!)
 3. Generate your API key from the dashboard
 
@@ -65,12 +65,12 @@ CometAPI offers flexible pricing options:
 - **Enterprise Plans**: Custom solutions for large-scale deployments
 
 
-Visit our [Pricing Page](https://api.cometapi.com/pricing) for detailed information.
+Visit our [Pricing Page](https://www.cometapi.com/pricing/) for detailed information.
 
 ## Documentation & Support
 
-- **📚 API Documentation**: [api.cometapi.com/doc](https://api.cometapi.com/doc)
-- **🚀 Quick Start Guide**: [api.cometapi.com/panel](https://api.cometapi.com/panel)
+- **📚 API Documentation**: [API reference](https://apidoc.cometapi.com/)
+- **🚀 Quick Start Guide**: [Quickstart](https://www.cometapi.com/quickstart/)
 - **💬 Discord Community**: [Join our Discord](https://discord.com/invite/HMpuV6FCrG)
 - **📧 Email Support**: [support@cometapi.com](mailto:support@cometapi.com)
 
@@ -91,7 +91,7 @@ Visit our [Pricing Page](https://api.cometapi.com/pricing) for detailed informat
 
 ---
 
-**Ready to get started?** [Sign up now](https://api.cometapi.com/login) and claim your free 1M tokens!
+**Ready to get started?** [Open the CometAPI console](https://www.cometapi.com/console/).
 
 For more information, visit our official website: [www.cometapi.com](https://www.cometapi.com/)
 

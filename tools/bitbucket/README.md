@@ -23,23 +23,10 @@ This plugin provides the following functionalities:
 
 ### Setup
 
-1. Get your Bitbucket API credentials at [Bitbucket App Password](https://bitbucket.org/account/settings/app-passwords/)
+1. [Create an API token with scopes for Bitbucket Cloud](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/).
+2. Add `read:workspace:bitbucket`, `read:repository:bitbucket`, and `read:pullrequest:bitbucket` for the read tools. Add `write:pullrequest:bitbucket` if the workflow posts pull request comments.
+3. Enter `https://api.bitbucket.org` as the API URL in Dify. Authenticate with your Atlassian account email and the scoped token. Update any saved App Password credentials.
 
-![](_assets/create-app-password.png)
-
-2. Create a new app password with the required permissions as follows:
-
-![](_assets/permissions.png)
-
-3. Authenticate the plugin with your Bitbucket username using the app password you created.
-
-    > Note that there are two authentication methods available: Bitbucket username + App Password or Email + Password. Choose the one that suits you best. You can get your Bitbucket username at [Account settings](https://bitbucket.org/account/settings/). We recommend using the App Password method for better security.
-
-<div style="display: flex; justify-content: center; align-items: center;">
-    <img src="_assets/auth.png" alt="Authentication Example" width="300px"/>
-</div>
-
-4. Enjoy the plugin!
 <div style="display: flex; justify-content: space-around; align-items: center;">
     <img src="_assets/result.png" alt="Usage Example" width="250px"/>
     <img src="_assets/example.png" alt="Example" width="600px"/>

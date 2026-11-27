@@ -12,7 +12,7 @@ help:
     en_US: Get your API Key from BAICHUAN AI
     zh_Hans: 从百川智能获取您的 API Key
   url:
-    en_US: https://www.baichuan-ai.com
+    en_US: https://platform.baichuan-ai.com/docs/api
 icon_large:
   en_US: icon.svg
 icon_large_dark:

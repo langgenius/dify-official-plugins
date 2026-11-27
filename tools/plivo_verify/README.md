@@ -225,6 +225,6 @@ Plivo Verify API charges per verification attempt. See [Plivo Pricing](https://w
 
 ## Support
 
-- [Plivo Verify Documentation](https://www.plivo.com/docs/verify/)
+- [Plivo Verify Documentation](https://docs.plivo.com/docs/programmable-api/verify/overview)
 - [Plivo Support](https://support.plivo.com/)
 - [Dify Documentation](https://docs.dify.ai/)

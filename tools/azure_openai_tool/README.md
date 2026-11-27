@@ -32,7 +32,7 @@ The following fields are available for configuration:
 | **API Key** | Your Azure OpenAI API key. | `********************************` |
 | **Deployment Name** | The deployment name of your Azure OpenAI GPT-image series model. | `gpt-image-2` |
 | **API Base URL** | The base URL of your Azure OpenAI resource. Use the endpoint up to the domain (do **not** include the model path or query parameters). | `https://********.openai.azure.com/` |
-| **API Version** | The Azure OpenAI API version to use. For current GPT-image edit support, use `2025-04-01-preview` or later. | `2025-04-01-preview` |
+| **API Version** | Leave empty or use `v1` for the current Azure OpenAI image API. Existing credentials with a dated version continue to use the deployment endpoint. | `v1` |
 
 ### 4. Use the tools
 

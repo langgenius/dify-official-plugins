@@ -33,7 +33,7 @@ class BaichuanTextEmbeddingModel(TextEmbeddingModel):
     Model class for BaiChuan text embedding model.
     """
 
-    api_base: str = "http://api.baichuan-ai.com/v1/embeddings"
+    api_base: str = "https://api.baichuan-ai.com/v1/embeddings"
 
     def _invoke(
         self,

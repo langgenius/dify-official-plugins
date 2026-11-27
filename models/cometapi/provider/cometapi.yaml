@@ -32,10 +32,10 @@ help:
     ja_JP: CometAPI コンソールから API キーを取得
     pt_BR: Obtenha sua chave de API do Console CometAPI
   url:
-    en_US: https://api.cometapi.com/console/token
-    zh_Hans: https://api.cometapi.com/console/token
-    ja_JP: https://api.cometapi.com/console/token
-    pt_BR: https://api.cometapi.com/console/token
+    en_US: https://www.cometapi.com/console/token
+    zh_Hans: https://www.cometapi.com/console/token
+    ja_JP: https://www.cometapi.com/console/token
+    pt_BR: https://www.cometapi.com/console/token
 supported_model_types:
   - llm
   - text-embedding

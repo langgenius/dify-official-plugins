@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Refresh the lockfile after dependency changes with: uv lock
 dependencies = [
-    "atlassian-python-api>=5.0.4",
+    "atlassian-python-api>=5.0.5",
     "dify_plugin==0.10.2",
     "pydub>=0.25.1",
     "setuptools>=84.0.0",

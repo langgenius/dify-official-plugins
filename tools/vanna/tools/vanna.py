@@ -1,8 +1,10 @@
 from typing import Any, Generator
-from vanna.legacy.remote import VannaDefault
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin import Tool
+from tools._endpoint import get_rpc_endpoint
+from vanna.legacy.remote import VannaDefault
 
 
 class VannaTool(Tool):
@@ -28,11 +30,7 @@ class VannaTool(Tool):
         username = tool_parameters.get("username", "")
         password = tool_parameters.get("password", "")
         port = tool_parameters.get("port", 0)
-        base_url = self.runtime.credentials.get("base_url", None)
-        if not base_url:
-            base_url = "https://ask.vanna.ai/rpc"
-        else:
-            base_url = base_url.removesuffix("/")
+        base_url = get_rpc_endpoint(self.runtime.credentials)
         vn = VannaDefault(model=model, api_key=api_key, config={"endpoint": base_url})
         db_type = tool_parameters.get("db_type", "")
         if db_type in {"Postgres", "MySQL", "Hive", "ClickHouse"}:

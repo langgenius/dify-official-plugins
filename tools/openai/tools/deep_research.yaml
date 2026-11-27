@@ -2,7 +2,7 @@ description:
   human:
     en_US: Use deep research models for complex analysis and research tasks.
     zh_Hans: 使用深度研究模型执行复杂的分析和研究任务。
-  llm: A tool for running complex analysis and research tasks using OpenAI's deep research models (o3-deep-research, o4-mini-deep-research). It can find, analyze, and synthesize hundreds of sources to create a comprehensive report.
+  llm: A tool for running complex analysis and research tasks using GPT-5.6 Sol on the OpenAI Responses API. It can find, analyze, and synthesize hundreds of sources to create a comprehensive report.
 extra:
   python:
     source: tools/deep_research.py
@@ -41,31 +41,26 @@ parameters:
   required: true
   type: select
 - name: model
-  default: o3-deep-research
+  default: gpt-5.6-sol
   form: form
   human_description:
-    en_US: The model to use for the research task. o3-deep-research is more powerful, while o4-mini-deep-research is faster. Required only for 'start' action.
-    zh_Hans: 用于研究任务的模型。o3-deep-research 功能更强大，而 o4-mini-deep-research 速度更快。仅在操作为“开始”时需要。
+    en_US: Model used to start a new research task.
+    zh_Hans: 用于启动新研究任务的模型。
   label:
     en_US: Model
     zh_Hans: 模型
   options:
   - label:
-      en_US: o3-deep-research
-      zh_Hans: o3-deep-research
-    value: o3-deep-research
-  - label:
-      en_US: o4-mini-deep-research
-      zh_Hans: o4-mini-deep-research
-    value: o4-mini-deep-research
+      en_US: GPT-5.6 Sol
+      zh_Hans: GPT-5.6 Sol
+    value: gpt-5.6-sol
   required: false
   type: select
 - name: temperature
-  default: 1
   form: form
   human_description:
-    en_US: "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Generally alter this or top_p but not both."
-    zh_Hans: "要使用的采样温度，介于 0 到 2 之间。较高值 (如 0.8) 使输出更随机，而较低值 (如 0.2) 使其更集中、更确定。通常建议修改此参数或 top_p，但不要两者同时修改。"
+    en_US: Sampling temperature for legacy Deep Research models on compatible endpoints.
+    zh_Hans: 兼容端点上旧版深度研究模型的采样温度。
   label:
     en_US: Temperature
     zh_Hans: 温度
@@ -75,8 +70,8 @@ parameters:
   default: medium
   form: form
   human_description:
-    en_US: "Constrains reasoning effort for o-series models. Supported values: low, medium, high. Reducing effort can speed up responses and reduce tokens."
-    zh_Hans: "约束 o 系列模型的推理努力。支持的值：low、medium、high。降低推理努力可以加快响应速度并减少 token 使用量。"
+    en_US: "Controls the amount of reasoning the model performs. Supported values: low, medium, high. Reducing effort can speed up responses and reduce tokens."
+    zh_Hans: "控制模型的推理力度。支持的值：low、medium、high。降低推理努力可以加快响应速度并减少 token 使用量。"
   label:
     en_US: Reasoning Effort
     zh_Hans: 推理努力

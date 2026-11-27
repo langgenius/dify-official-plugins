@@ -1,15 +1,5 @@
-# 概要
-Vanna.aiは、ユーザーと複雑なSQLデータベース間のやり取りを簡素化するために設計された、革新的なAI駆動プラットフォームです。
+# Vanna
 
-# 設定
-## APIキーの取得
-1. Vanna.aiでアカウントを作成してログインします。
-2. API KeysからAPIキーをコピーします。
+Vanna のホスト型サービスは終了しました。このプラグインを利用するには、旧 Vanna RPC プロトコルと互換性のあるサーバーが必要です。プラグイン設定で RPC の URL と、モデルへのアクセス権を持つ API キーを入力してください。
 
-## Vanna.AIツールの設定
-1. MarketplaceからVanna.AIをインストールします。
-![](../_assets/vanna_install.png)
-2. ワークフローにVanna.AIノードを追加します。
-3. Vanna.AI APIキーを入力します。
-4. データベース設定を入力します。
-![](../_assets/vanna_configure.png)
+[Vanna migration guide](https://vanna.ai/docs/migration)

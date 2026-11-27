@@ -4,6 +4,6 @@ Baichun is an open-source, large-scale pre-trained language model which supports
 
 ## Configure
 
-After installing the plugin, configure the API key and API base within the Model Provider settings. Obtain your API key from [here](https://www.baichuan-ai.com/home). Once saved, you can begin using Baichuan to build your AI agents and agentic workflows.
+After installing the plugin, configure the API key and API base within the Model Provider settings. Obtain your API key from [here](https://platform.baichuan-ai.com/docs/api). Once saved, you can begin using Baichuan to build your AI agents and agentic workflows.
 
 ![](./_assets/baichuan_config.PNG)

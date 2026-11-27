@@ -26,6 +26,9 @@ class DallE3Tool(Tool):
             base_url=normalize_openai_base_url(self.runtime.credentials.get("openai_base_url")),
             organization=openai_organization,
         )
+        if client.base_url.host == "api.openai.com":
+            raise ValueError("OpenAI retired DALL-E 3. Use GPT Image Generate for OpenAI requests.")
+
         SIZE_MAPPING = {
             "square": "1024x1024",
             "vertical": "1024x1792",

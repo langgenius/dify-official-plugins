@@ -10,7 +10,7 @@ help:
   title:
     en_US: How to deploy VESSL AI LLM Model Endpoint
   url:
-    en_US: https://docs.vessl.ai/guides/get-started/llama3-deployment
+    en_US: https://docs.vessl.ai/guides/get-started/overview
 icon_large:
   en_US: icon.svg
 icon_small:
