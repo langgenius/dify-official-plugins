@@ -1,0 +1,187 @@
+identity:
+  name: search_companies
+  author: langgenius
+  label:
+    en_US: Search Companies
+    pt_BR: Buscar Empresas
+    zh_Hans: 搜索美国私营企业
+description:
+  human:
+    en_US: Search 28M+ US private companies across cited public filings ($0.01 per new Record, $0.00 repeat within 30 days).
+    pt_BR: Busque mais de 28M de empresas privadas dos EUA com citacoes de registros publicos ($0.01 por novo Record, $0.00 repeticao em 30 dias).
+    zh_Hans: 在 2800 万以上美国私营企业中按行业、地区与规模搜索备案企业记录（新 Record $0.01，30 天内重复读取 $0.00）。
+  llm: Search 28M+ US private companies via GET /api/v1/companies ($0.01 per new Record, $0.00 repeat within 30 days). Run preview_companies ($0.00) first to size a new market.
+parameters:
+  - name: q
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Company Name Prefix
+      pt_BR: Prefixo do Nome da Empresa
+      zh_Hans: 企业名称前缀
+    human_description:
+      en_US: Company name prefix filter.
+      pt_BR: Filtro de prefixo do nome da empresa.
+      zh_Hans: 企业名称前缀过滤。
+    llm_description: Optional company name prefix filter.
+  - name: state
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: US State Code
+      pt_BR: Codigo do Estado (EUA)
+      zh_Hans: 美国州代码
+    human_description:
+      en_US: Two-letter US state code (for example OH, TX, FL).
+      pt_BR: Codigo de dois caracteres do estado dos EUA.
+      zh_Hans: 两位美国州代码（例如 OH、TX、FL）。
+    llm_description: Two-letter US state code (for example OH, TX, FL).
+  - name: cities
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Cities
+      pt_BR: Cidades
+      zh_Hans: 城市列表
+    human_description:
+      en_US: Comma-separated city names within state.
+      pt_BR: Nomes de cidades separados por virgula.
+      zh_Hans: 以逗号分隔的城市名称。
+    llm_description: Comma-separated city names within state.
+  - name: counties
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Counties
+      pt_BR: Condados
+      zh_Hans: 县列表
+    human_description:
+      en_US: Comma-separated county names within state.
+      pt_BR: Nomes de condados separados por virgula.
+      zh_Hans: 以逗号分隔的县名称。
+    llm_description: Comma-separated county names within state.
+  - name: naics
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: NAICS Codes
+      pt_BR: Codigos NAICS
+      zh_Hans: NAICS 行业代码
+    human_description:
+      en_US: Comma-separated 2-to-6 digit NAICS codes (for example 238220,332710).
+      pt_BR: Codigos NAICS separados por virgula.
+      zh_Hans: 以逗号分隔的 2 至 6 位 NAICS 行业代码。
+    llm_description: Comma-separated 2-to-6 digit NAICS codes.
+  - name: domain
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Domain
+      pt_BR: Dominio
+      zh_Hans: 网站域名
+    human_description:
+      en_US: Company website host or registrable domain.
+      pt_BR: Dominio do site da empresa.
+      zh_Hans: 企业网站域名。
+    llm_description: Company website host or registrable domain.
+  - name: min_employees
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Minimum Employees
+      pt_BR: Minimo de Funcionarios
+      zh_Hans: 最少员工数
+    human_description:
+      en_US: Minimum headcount.
+      pt_BR: Numero minimo de funcionarios.
+      zh_Hans: 最少员工人数。
+    llm_description: Minimum employee headcount integer.
+  - name: max_employees
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Maximum Employees
+      pt_BR: Maximo de Funcionarios
+      zh_Hans: 最多员工数
+    human_description:
+      en_US: Maximum headcount.
+      pt_BR: Numero maximo de funcionarios.
+      zh_Hans: 最多员工人数。
+    llm_description: Maximum employee headcount integer.
+  - name: min_revenue
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Minimum Revenue (USD)
+      pt_BR: Receita Minima (USD)
+      zh_Hans: 最低年营收 (USD)
+    human_description:
+      en_US: Minimum annual revenue in USD.
+      pt_BR: Receita anual minima em USD.
+      zh_Hans: 最低年营业收入（美元）。
+    llm_description: Minimum annual revenue in USD.
+  - name: max_revenue
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Maximum Revenue (USD)
+      pt_BR: Receita Maxima (USD)
+      zh_Hans: 最高年营收 (USD)
+    human_description:
+      en_US: Maximum annual revenue in USD.
+      pt_BR: Receita anual maxima em USD.
+      zh_Hans: 最高年营业收入（美元）。
+    llm_description: Maximum annual revenue in USD.
+  - name: independent
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Independent Only
+      pt_BR: Apenas Independentes
+      zh_Hans: 仅独立私营企业
+    human_description:
+      en_US: Exclude SEC filers, nonprofits, government bodies, membership groups, and HOAs.
+      pt_BR: Excluir empresas listadas na SEC, ONGs e orgaos governamentais.
+      zh_Hans: 排除上市公司、非营利组织与政府机构。
+    llm_description: Set true to exclude SEC filers, nonprofits, government bodies, membership groups, and HOAs.
+  - name: limit
+    type: number
+    required: false
+    default: 25
+    form: llm
+    label:
+      en_US: Page Size
+      pt_BR: Tamanho da Pagina
+      zh_Hans: 返回条数
+    human_description:
+      en_US: Number of Records to return (1 to 50, default 25).
+      pt_BR: Numero de Records a retornar (1 a 50, padrao 25).
+      zh_Hans: 每页返回的 Record 数量（1 至 50，默认 25）。
+    llm_description: Page size between 1 and 50 (default 25).
+  - name: cursor
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Pagination Cursor
+      pt_BR: Cursor de Paginacao
+      zh_Hans: 分页游标
+    human_description:
+      en_US: Optional next_cursor from a previous search page.
+      pt_BR: Cursor opcional next_cursor da pagina anterior.
+      zh_Hans: 上一页返回的 next_cursor 分页游标。
+    llm_description: Optional pagination cursor from the previous page response.
+extra:
+  python:
+    source: tools/search_companies.py

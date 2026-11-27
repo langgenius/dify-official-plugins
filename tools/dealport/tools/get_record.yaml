@@ -1,0 +1,30 @@
+identity:
+  name: get_record
+  author: langgenius
+  label:
+    en_US: Get Cited Record
+    pt_BR: Obter Record Citado
+    zh_Hans: 获取带来源引用的 Record
+description:
+  human:
+    en_US: Open a cited Dealport company Record (UUID) or NYC building Record (10-digit BBL) with primary public-filing sources ($0.01 per new Record).
+    pt_BR: Abra um Record citado de empresa (UUID) ou edificio de NYC (BBL de 10 digitos) no Dealport ($0.01 por novo Record).
+    zh_Hans: 打开带原始公开备案引用的 Dealport 企业 Record（UUID）或纽约商业楼宇 Record（10 位 BBL，每个新 Record $0.01）。
+  llm: Open a full cited Dealport company or property Record via GET /api/v1/records/{id} ($0.01 per new Record, $0.00 repeat within 30 days). Pass a Dealport company UUID or 10-digit NYC BBL.
+parameters:
+  - name: record_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Record ID (UUID or BBL)
+      pt_BR: ID do Record (UUID ou BBL)
+      zh_Hans: Record ID（企业 UUID 或 10 位 BBL）
+    human_description:
+      en_US: Dealport company UUID or 10-digit NYC property BBL.
+      pt_BR: UUID da empresa no Dealport ou BBL de 10 digitos de NYC.
+      zh_Hans: Dealport 企业 UUID 或 10 位纽约物业 BBL 编号。
+    llm_description: Dealport company UUID or 10-digit NYC property BBL.
+extra:
+  python:
+    source: tools/get_record.py

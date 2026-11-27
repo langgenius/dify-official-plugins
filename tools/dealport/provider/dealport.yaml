@@ -1,0 +1,59 @@
+credentials_for_provider:
+  api_key:
+    help:
+      en_US: Create a scoped Dealport workspace API key (starts with dp_live_) at Dealport Connect. New pay-as-you-go API accounts start with a $5.00 free balance.
+      pt_BR: Crie uma chave de API do workspace Dealport em Dealport Connect. Novas contas comecam com saldo gratuito de $5.00.
+      zh_Hans: 在 Dealport Connect 创建工作区 API 密钥（以 dp_live_ 开头）。新账户默认包含 $5.00 免费余额。
+    label:
+      en_US: Dealport API Key
+      pt_BR: Chave de API Dealport
+      zh_Hans: Dealport API 密钥
+    placeholder:
+      en_US: dp_live_...
+      pt_BR: dp_live_...
+      zh_Hans: dp_live_...
+    required: true
+    type: secret-input
+    url: https://app.dealport.com/connect?tab=keys
+  base_url:
+    default: https://app.dealport.com/api/v1
+    help:
+      en_US: Optional custom HTTPS API base URL. Leave as https://app.dealport.com/api/v1 for Dealport production.
+      pt_BR: URL base HTTPS opcional da API Dealport.
+      zh_Hans: 可选的自定义 HTTPS API 基础地址，默认使用 https://app.dealport.com/api/v1。
+    label:
+      en_US: API Base URL
+      pt_BR: URL Base da API
+      zh_Hans: API 基础 URL
+    placeholder:
+      en_US: https://app.dealport.com/api/v1
+      pt_BR: https://app.dealport.com/api/v1
+      zh_Hans: https://app.dealport.com/api/v1
+    required: false
+    type: text-input
+extra:
+  python:
+    source: provider/dealport.py
+identity:
+  author: langgenius
+  description:
+    en_US: Dealport is the SMB knowledge layer for agents and humans, covering 28M+ US private companies, commercial buildings, cited public filings, and verified human owner contacts.
+    pt_BR: Dealport e a camada de conhecimento de empresas privadas dos EUA, edificios comerciais, registros publicos citados e proprietarios verificados.
+    zh_Hans: Dealport 提供 2800 万以上美国私营企业、商业楼宇、公开备案来源与经验证企业主联系方式。
+  icon: icon.svg
+  icon_dark: icon-dark.svg
+  label:
+    en_US: Dealport
+    pt_BR: Dealport
+    zh_Hans: Dealport
+  name: dealport
+  tags:
+    - search
+    - business
+tools:
+  - tools/preview_companies.yaml
+  - tools/search_companies.yaml
+  - tools/search_buildings.yaml
+  - tools/get_record.yaml
+  - tools/find_owner.yaml
+  - tools/match_company_list.yaml
