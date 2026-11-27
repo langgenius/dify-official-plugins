@@ -39,14 +39,14 @@ TokenLab also provides native endpoint families such as Responses, Anthropic Mes
 
 ### Hubris example
 
-[Hubris](https://hubris.pw) is a ruble-billed OpenAI-compatible LLM gateway (400+ models) that can be configured through this plugin:
+[Hubris](https://hubris.pro) is a ruble-billed OpenAI-compatible LLM gateway (400+ models) that can be configured through this plugin:
 
 | Field | Value |
 | --- | --- |
 | Type | `LLM` |
 | Model Name | `claude-sonnet-5` |
-| API Key | Your Hubris API key (create at [hubris.pw/keys](https://hubris.pw/keys)) |
-| API Base URL | `https://api.hubris.pw/v1` |
+| API Key | Your Hubris API key (create at [hubris.pro/keys](https://hubris.pro/keys)) |
+| API Base URL | `https://api.hubris.pro/v1` |
 | Completion mode | `Chat` |
 
-Other Hubris models can be added the same way — see the full catalog at [hubris.pw/models](https://hubris.pw/models).
+Other Hubris models can be added the same way — see the full catalog at [hubris.pro/models](https://hubris.pro/models).
