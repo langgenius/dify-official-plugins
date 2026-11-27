@@ -110,7 +110,7 @@ class SpotifyGetTrackTool(Tool):
                 "name": track_data["name"],
                 "duration_ms": track_data["duration_ms"],
                 "explicit": track_data["explicit"],
-                "popularity": track_data["popularity"],
+                "popularity": track_data.get("popularity"),
                 "preview_url": track_data.get("preview_url"),
                 "track_number": track_data.get("track_number"),
                 "disc_number": track_data.get("disc_number", 1),
@@ -165,7 +165,8 @@ class SpotifyGetTrackTool(Tool):
             summary = f"Track: '{track_info['name']}' by {', '.join(artist_names)}"
             summary += f"\nAlbum: {track_info['album']['name']}"
             summary += f"\nDuration: {duration_min}:{duration_sec:02d}"
-            summary += f"\nPopularity: {track_info['popularity']}/100"
+            if track_info["popularity"] is not None:
+                summary += f"\nPopularity: {track_info['popularity']}/100"
             summary += f"\nReleased: {track_info['album']['release_date']}"
 
             if track_info.get("audio_features"):

@@ -1,0 +1,51 @@
+# https://openrouter.ai/google/gemini-4-carbon
+model: google/gemini-4-carbon
+label:
+  en_US: gemini-4-carbon
+model_type: llm
+features:
+  - structured-output
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - document
+  - video
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 943718
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    required: false
+    options:
+    - text
+    - json_object
+    - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: exclude_reasoning_tokens
+    label:
+      en_US: Hide the thought process
+      zh_Hans: 隐藏思考过程
+    type: boolean
+    required: false
+    default: true
+pricing:
+  input: '2'
+  output: '10'
+  unit: '0.000001'
+  currency: USD

@@ -1,3 +1,7 @@
+- cohere/rerank-5-pro
+- cohere/rerank-5-fast
+- mongodb/rerank-3
+- mongodb/rerank-3-lite
 - cohere/rerank-4-pro
 - cohere/rerank-4-fast
 - cohere/rerank-v3.5

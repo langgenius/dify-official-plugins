@@ -4,7 +4,7 @@ label:
   zh_Hans: "tts-1-hd"
 model_type: tts
 model_properties:
-  default_voice: "nova"
+  default_voice: "alloy"
   word_limit: 4096
   audio_type: "mp3"
   voices:

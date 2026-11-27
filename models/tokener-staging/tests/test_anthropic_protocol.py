@@ -143,7 +143,7 @@ def test_claude_stream_replays_signed_and_redacted_thinking_with_tool_results(ll
 
 def test_claude_fable_5_2_prices_speed_and_cache_reads(llm, wire, monkeypatch):
     llm = with_fixture_schema(llm, monkeypatch, "claude-fable-5-2")
-    _, _, replies = wire
+    _, calls, replies = wire
     replies.extend(
         [
             (
@@ -174,6 +174,9 @@ def test_claude_fable_5_2_prices_speed_and_cache_reads(llm, wire, monkeypatch):
     )
     fast = invoke(llm, "claude-fable-5-2", {"speed": "fast", "task_budget": 64000})[-1].delta.usage
     standard = invoke(llm, "claude-fable-5-2", {"speed": "fast"})[-1].delta.usage
+    assert calls[0][2]["speed"] == "fast"
+    assert calls[0][2]["output_config"]["task_budget"] == {"type": "tokens", "total": 64000}
+    assert "task-budgets-2026-03-13" in calls[0][1]["anthropic-beta"]
     assert fast.prompt_tokens == 110
     assert (fast.prompt_unit_price, fast.completion_unit_price) == (Decimal("16"), Decimal("80"))
     assert fast.total_price == Decimal("0.00216")

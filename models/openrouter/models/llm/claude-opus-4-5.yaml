@@ -64,7 +64,7 @@ parameter_rules:
     required: true
     default: 32000
     min: 1
-    max: 32000
+    max: 64000
   - name: response_format
     use_template: response_format
 pricing:

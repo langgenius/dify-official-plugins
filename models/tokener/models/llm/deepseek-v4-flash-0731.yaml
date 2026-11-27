@@ -8,31 +8,51 @@ features:
   - multi-tool-call
   - stream-tool-call
   - structured-output
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    type: int
+    default: 4096
     min: 1
     max: 393216
   - name: response_format
-    label:
-      en_US: Response Format
-      zh_Hans: 回复格式
     type: string
-    help:
-      en_US: Specify the format that the model must output.
-      zh_Hans: 指定模型必须输出的格式。
     required: false
-    default: text
     options:
       - text
       - json_object
-      - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: temperature
+    use_template: temperature
+    default: 1.0
+  - name: top_p
+    use_template: top_p
+    default: 1.0
+  - name: top_k
+    type: int
+    required: false
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: enable_search
+    type: boolean
+    default: false
+  - name: reasoning_effort
+    type: string
+    required: false
+    default: high
+    options:
+      - low
+      - high
+      - max
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: true
 pricing:
   input: "0.440000"
   output: "1.320000"

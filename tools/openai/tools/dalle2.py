@@ -26,6 +26,9 @@ class DallE2Tool(Tool):
             base_url=normalize_openai_base_url(self.runtime.credentials.get("openai_base_url")),
             organization=openai_organization,
         )
+        if client.base_url.host == "api.openai.com":
+            raise ValueError("OpenAI retired DALL-E 2. Use GPT Image Generate for OpenAI requests.")
+
         SIZE_MAPPING = {"small": "256x256", "medium": "512x512", "large": "1024x1024"}
         prompt = tool_parameters.get("prompt", "")
         if not prompt:

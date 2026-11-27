@@ -12,7 +12,7 @@ from models._api import TokenerAPIModel
 READ_TIMEOUTS = {
     "fun-asr": 18000,
     "fun-asr-flash-2026-06-15": 600,
-    "paraformer-realtime-v2": None,
+    "paraformer-realtime-v2": 18000,
 }
 
 

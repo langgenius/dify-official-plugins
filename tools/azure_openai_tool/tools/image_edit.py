@@ -7,12 +7,12 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
-from openai import AzureOpenAI
+from tools._client import create_image_client
 
 
 class ImageEditTool(Tool):
     """
-    Tool to edit images using OpenAI's gpt-image-1 model.
+    Tool to edit images using an Azure OpenAI GPT Image deployment.
     It takes an input image and a prompt, and optionally a mask,
     to generate an edited version of the image.
     """
@@ -23,12 +23,7 @@ class ImageEditTool(Tool):
         """
         Invoke the image editing tool.
         """
-        client = AzureOpenAI(
-            api_key=self.runtime.credentials["azure_openai_api_key"],
-            azure_endpoint=self.runtime.credentials["azure_openai_base_url"],
-            api_version=self.runtime.credentials["azure_openai_api_version"],
-            azure_deployment=self.runtime.credentials["azure_openai_api_model_name"]
-        )
+        client, request_options = create_image_client(self.runtime.credentials)
 
         # --- Parameter Extraction and Validation ---
         prompt = tool_parameters.get("prompt")
@@ -42,6 +37,7 @@ class ImageEditTool(Tool):
             return
         edit_args: dict[str, Any] = {
             "prompt": prompt,
+            "model": self.runtime.credentials["azure_openai_api_model_name"],
         }
 
         # Handle single image or array of images
@@ -127,7 +123,7 @@ class ImageEditTool(Tool):
 
         # --- API Call ---
         try:
-            response = client.images.edit(**edit_args)
+            response = client.images.edit(**edit_args, **request_options)
         except Exception as e:
             # Attempt to close file handles if they exist
             if isinstance(edit_args.get("image"), list):

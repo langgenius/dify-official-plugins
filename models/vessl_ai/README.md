@@ -4,6 +4,6 @@
 
 ## Configure
 
-Install the Vessl AI plugin, then configure it in Model Provider settings with the Model Name, Endpoint Url, API Key, and choose the Completion Mode. Get your API key from [Vessl AI](https://dashboard.cohere.com/api-keys) and save your settings.
+Install the Vessl AI plugin, then configure it in Model Provider settings with the Model Name, Endpoint Url, API Key, and choose the Completion Mode. Use the URL and credentials for your model endpoint in [VESSL MLOps](https://app.vessl.ai/). See the [VESSL deployment overview](https://docs.vessl.ai/guides/get-started/overview).
 
 ![](./_assets/vessl_config.PNG)

@@ -2,6 +2,9 @@ import json
 import logging
 from collections.abc import Generator
 from typing import cast
+
+import requests
+from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -15,7 +18,6 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
-from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from tencentcloud.common import credential
 from tencentcloud.common.exception import TencentCloudSDKException
 from tencentcloud.common.profile.client_profile import ClientProfile
@@ -24,8 +26,12 @@ from tencentcloud.hunyuan.v20230901 import hunyuan_client, models
 
 logger = logging.getLogger(__name__)
 
+TOKENHUB_ENDPOINT = "https://tokenhub.tencentmaas.com/v1"
+TOKENHUB_CHAT_MODELS = frozenset({"hy4", "hy4-flash", "hy3"})
+TOKENHUB_IMAGE_MODEL = "hy-image-v3.5-preview"
 
-class HunyuanLargeLanguageModel(LargeLanguageModel):
+
+class HunyuanLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
         self,
         model: str,
@@ -37,6 +43,28 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        if model == TOKENHUB_IMAGE_MODEL:
+            return self._generate_image(model, credentials, prompt_messages, model_parameters)
+        if model in TOKENHUB_CHAT_MODELS:
+            tokenhub_credentials = {
+                "api_key": self._tokenhub_api_key(credentials),
+                "endpoint_url": TOKENHUB_ENDPOINT,
+                "mode": "chat",
+                "function_calling_type": "tool_call",
+            }
+            parameters = model_parameters.copy()
+            if (thinking := parameters.pop("enable_thinking", None)) is not None:
+                parameters["thinking"] = {"type": "enabled" if thinking else "disabled"}
+            if parameters.get("response_format") == "json_schema" and (schema := parameters.get("json_schema")):
+                schema = json.loads(schema)
+                if "schema" not in schema:
+                    parameters["json_schema"] = json.dumps({"name": "output", "schema": schema})
+            if stream:
+                parameters["stream_options"] = {"include_usage": True}
+            return super()._invoke(
+                model, tokenhub_credentials, prompt_messages, parameters, tools, stop, stream, user
+            )
+
         client = self._setup_hunyuan_client(credentials)
         request = models.ChatCompletionsRequest()
         messages_dict = self._convert_prompt_messages_to_dicts(prompt_messages)
@@ -65,11 +93,86 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
             return self._handle_stream_chat_response(model, credentials, prompt_messages, response)
         return self._handle_chat_response(credentials, model, prompt_messages, response)
 
+    @staticmethod
+    def _tokenhub_api_key(credentials: dict) -> str:
+        api_key = (credentials.get("tokenhub_api_key") or "").strip()
+        if not api_key:
+            raise ValueError("This model requires a Tencent Cloud TokenHub API key.")
+        return api_key
+
+    def _generate_image(
+        self, model: str, credentials: dict, prompt_messages: list[PromptMessage], model_parameters: dict
+    ) -> LLMResult:
+        instructions = [
+            {"type": "text", "text": message.get_text_content()}
+            for message in prompt_messages
+            if isinstance(message, SystemPromptMessage) and message.get_text_content()
+        ]
+        user_message = next((m for m in reversed(prompt_messages) if isinstance(m, UserPromptMessage)), None)
+        content = []
+        if user_message:
+            content = self._convert_prompt_message_to_dict(user_message)["content"]
+            if isinstance(content, str):
+                content = [{"type": "text", "text": content}]
+            content = [
+                {"type": "image_url", "image_url": {"url": part["image_url"]["url"]}}
+                if part["type"] == "image_url"
+                else part
+                for part in content
+                if part["type"] in {"text", "image_url"}
+            ]
+        if not (instructions or content):
+            raise ValueError("Hy-Image requires a prompt or reference image.")
+
+        payload = {
+            **model_parameters,
+            "model": model,
+            "messages": [{"role": "user", "content": instructions + content}],
+        }
+        with requests.post(
+            f"{TOKENHUB_ENDPOINT}/wand/hunyuan-image/v35-generation",
+            headers={"Authorization": f"Bearer {self._tokenhub_api_key(credentials)}"},
+            json=payload,
+            timeout=(10, 300),
+        ) as response:
+            response.raise_for_status()
+            data = response.json()
+
+        if error := data.get("error"):
+            raise InvokeError(f"TokenHub image generation failed: {error.get('message') or error.get('code')}")
+        choices = data.get("choices") or [{}]
+        image = ((choices[0].get("delta") or {}).get("image") or {})
+        if not (url := image.get("url")):
+            raise InvokeError("TokenHub did not return a generated image.")
+
+        # TokenHub bills for the combined total and does not report an input/output split.
+        billed_tokens = (data.get("tokenhub_usage") or data.get("usage") or {}).get("total_tokens", 0)
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=AssistantPromptMessage(
+                content=[
+                    ImagePromptMessageContent(
+                        format="png", mime_type="image/png", url=url, filename="hunyuan-image.png"
+                    )
+                ]
+            ),
+            usage=self._calc_response_usage(model, credentials, 0, billed_tokens),
+        )
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate credentials
         """
         try:
+            if model in TOKENHUB_CHAT_MODELS or model == TOKENHUB_IMAGE_MODEL:
+                with requests.get(
+                    f"{TOKENHUB_ENDPOINT}/models",
+                    headers={"Authorization": f"Bearer {self._tokenhub_api_key(credentials)}"},
+                    timeout=(10, 30),
+                ) as response:
+                    response.raise_for_status()
+                return
             client = self._setup_hunyuan_client(credentials)
             req = models.ChatCompletionsRequest()
             params = {
@@ -85,8 +188,10 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(f"Credentials validation failed: {e}")
 
     def _setup_hunyuan_client(self, credentials):
-        secret_id = credentials["secret_id"]
-        secret_key = credentials["secret_key"]
+        secret_id = credentials.get("secret_id")
+        secret_key = credentials.get("secret_key")
+        if not (secret_id and secret_key):
+            raise ValueError("This model requires a Tencent Cloud Secret ID and Secret Key.")
         cred = credential.Credential(secret_id, secret_key)
         httpProfile = HttpProfile()
         httpProfile.endpoint = "hunyuan.tencentcloudapi.com"
@@ -217,6 +322,9 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
+        if model in TOKENHUB_CHAT_MODELS or model == TOKENHUB_IMAGE_MODEL:
+            tokenhub_credentials = {**credentials, "mode": "chat", "function_calling_type": "tool_call"}
+            return super().get_num_tokens(model, tokenhub_credentials, prompt_messages, tools)
         if len(prompt_messages) == 0:
             return 0
         prompt = self._convert_messages_to_prompt(prompt_messages)
@@ -266,7 +374,7 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
 
         :return: Invoke error mapping
         """
-        return {InvokeError: [TencentCloudSDKException]}
+        return {**super()._invoke_error_mapping, InvokeError: [TencentCloudSDKException]}
 
     def _extract_response_tool_calls(self, response_tool_calls: list[dict]) -> list[AssistantPromptMessage.ToolCall]:
         """

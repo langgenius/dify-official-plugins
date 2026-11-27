@@ -2,9 +2,8 @@ background: '#F6F7F7'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by Tencent Hunyuan, such as hunyuan-standard, hunyuan-standard-256k,
-    hunyuan-pro and hunyuan-lite.
-  zh_Hans: 腾讯混元提供的模型，例如 hunyuan-standard、 hunyuan-standard-256k, hunyuan-pro 和 hunyuan-lite。
+  en_US: Tencent Hunyuan chat, image generation, and text embedding models.
+  zh_Hans: 腾讯混元提供的对话、生图和文本嵌入模型。
 extra:
   python:
     model_sources:
@@ -13,10 +12,10 @@ extra:
     provider_source: provider/hunyuan.py
 help:
   title:
-    en_US: Get your API Key from Tencent Hunyuan
-    zh_Hans: 从腾讯混元获取 API Key
+    en_US: Get your Tencent Cloud TokenHub API key
+    zh_Hans: 获取腾讯云 TokenHub API Key
   url:
-    en_US: https://console.cloud.tencent.com/cam/capi
+    en_US: https://console.cloud.tencent.com/tokenhub/apikey
 icon_large:
   en_US: icon.svg
 icon_large_dark:
@@ -40,11 +39,20 @@ provider: hunyuan
 provider_credential_schema:
   credential_form_schemas:
   - label:
+      en_US: TokenHub API Key
+      zh_Hans: TokenHub API Key
+    placeholder:
+      en_US: Required for Hy4, Hy4 Flash, Hy3, and Hy-Image
+      zh_Hans: Hy4、Hy4 Flash、Hy3 和 Hy-Image 模型需要此密钥
+    required: false
+    type: secret-input
+    variable: tokenhub_api_key
+  - label:
       en_US: Secret ID
     placeholder:
       en_US: Enter your Secret ID
       zh_Hans: 在此输入您的 Secret ID
-    required: true
+    required: false
     type: secret-input
     variable: secret_id
   - label:
@@ -52,7 +60,7 @@ provider_credential_schema:
     placeholder:
       en_US: Enter your Secret Key
       zh_Hans: 在此输入您的 Secret Key
-    required: true
+    required: false
     type: secret-input
     variable: secret_key
 supported_model_types:

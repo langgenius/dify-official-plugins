@@ -5,9 +5,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from provider.vanna import VannaProvider
-from tools.vanna import VannaTool
 from vanna.legacy.remote import VannaDefault
+
+from tools.vanna import VannaTool
 
 
 class VannaCompatibilityTest(unittest.TestCase):
@@ -49,7 +51,7 @@ class VannaCompatibilityTest(unittest.TestCase):
             database = str(Path(directory) / "example.sqlite")
             with sqlite3.connect(database) as connection:
                 connection.executescript(
-                    "CREATE TABLE customers(name TEXT);" "INSERT INTO customers VALUES ('Ada');"
+                    "CREATE TABLE customers(name TEXT);INSERT INTO customers VALUES ('Ada');"
                 )
             tool = VannaTool.from_credentials(
                 {"api_key": "test-key", "base_url": "https://vanna.example/rpc/"}
@@ -77,12 +79,29 @@ class VannaCompatibilityTest(unittest.TestCase):
         self.assertEqual(calls[-1]["params"][0]["question"], "List customers")
         self.assertEqual(calls[-1]["params"][0]["sql"], "SELECT name FROM customers")
 
-    def test_credential_validation_supplies_prompt(self):
-        with patch.object(VannaTool, "from_credentials") as create_tool:
-            create_tool.return_value.invoke.return_value = iter(())
-            VannaProvider()._validate_credentials({"api_key": "test-key"})
-            parameters = create_tool.return_value.invoke.call_args.kwargs["tool_parameters"]
-        self.assertIn("customers", parameters["prompt"])
+    def test_credential_validation_lists_models_on_custom_endpoint(self):
+        with patch("provider.vanna.VannaDefault") as client:
+            client.return_value.get_models.return_value = ["example"]
+            VannaProvider()._validate_credentials(
+                {
+                    "api_key": "test-key",
+                    "base_url": "https://vanna.example/rpc/",
+                }
+            )
+        client.assert_called_once_with(
+            model="",
+            api_key="test-key",
+            config={"endpoint": "https://vanna.example/rpc"},
+        )
+        client.return_value.get_models.assert_called_once_with()
+
+    def test_rejects_retired_hosted_endpoint(self):
+        for endpoint in ("", "https://ask.vanna.ai/rpc"):
+            with (
+                self.subTest(endpoint=endpoint),
+                self.assertRaisesRegex(ToolProviderCredentialValidationError, "hosted service has shut down"),
+            ):
+                VannaProvider()._validate_credentials({"api_key": "test-key", "base_url": endpoint})
 
 
 if __name__ == "__main__":

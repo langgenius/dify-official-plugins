@@ -361,6 +361,16 @@ def _payload(model, messages, parameters, tools, stop, *, stream=False, count=Fa
         raise InvokeBadRequestError("Invalid Anthropic task_budget")
     if (speed := params.pop("speed", None)) is not None and speed not in ("standard", "fast"):
         raise InvokeBadRequestError("Invalid Anthropic speed")
+    if (
+        task_budget is not None
+        and task_budget >= 20000
+        and model.startswith(ADAPTIVE)
+        and not model.startswith("claude-sonnet-5")
+    ):
+        output["task_budget"] = {"type": "tokens", "total": task_budget}
+        betas.append("task-budgets-2026-03-13")
+    if speed is not None:
+        payload["speed"] = speed
     if effort:
         output["effort"] = effort
     if output_format and output_format["type"] == "json_schema":

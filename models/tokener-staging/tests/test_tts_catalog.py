@@ -66,13 +66,16 @@ def test_tts_catalog_cli_only_writes_selected_type(tmp_path, source_models):
         assert (tmp_path / "models" / kind / "keep.yaml").read_bytes() == b"keep bytes\n"
 
 
-def test_tts_catalog_rejects_non_dify_locale(tmp_path):
+def test_tts_catalog_rejects_non_dify_locale(tmp_path, source_models):
     payload = catalog()
     payload["models"][0]["audio"]["voices"][0]["languages"] = ["en-US", "zh-CN"]
     with (
         patch("scripts.sync_catalog.ROOT", tmp_path),
         patch("scripts.sync_catalog.REDIRECT_DIR", tmp_path / "models/_redirect_schemas"),
         patch("scripts.sync_catalog.load_catalog", return_value=payload),
-        patch("sys.argv", ["sync_catalog.py", "--input", "snapshot.json"]),
+        patch(
+            "sys.argv",
+            ["sync_catalog.py", "--input", "snapshot.json", "--source-root", str(source_models)],
+        ),
     ):
         assert main() == 1

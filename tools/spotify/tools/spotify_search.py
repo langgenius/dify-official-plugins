@@ -29,6 +29,10 @@ class SpotifySearchTool(Tool):
         query = tool_parameters.get("query", "").strip()
         search_type = tool_parameters.get("type", "track,album,artist")
         limit = tool_parameters.get("limit", 20)
+        if not isinstance(limit, (int, float)) or not 1 <= limit <= 50 or limit != int(limit):
+            yield self.create_text_message("The maximum result count must be an integer from 1 through 50.")
+            return
+        limit = int(limit)
         market = tool_parameters.get("market", "US")
 
         # Validate required parameters
@@ -63,36 +67,40 @@ class SpotifySearchTool(Tool):
                 "Content-Type": "application/json",
             }
 
-            params = {"q": query, "type": search_type, "limit": limit, "market": market}
-
-            # Make API request
-            response = requests.get(
-                "https://api.spotify.com/v1/search",
-                headers=headers,
-                params=params,
-                timeout=30,
-            )
-
-            if response.status_code == 401:
-                yield self.create_text_message(
-                    "Authentication failed. Please re-authenticate with Spotify."
+            params = {"q": query, "type": search_type, "market": market}
+            search_results = {}
+            # Spotify limits Development Mode searches to 10 results per type per request.
+            for offset in range(0, limit, 10):
+                response = requests.get(
+                    "https://api.spotify.com/v1/search",
+                    headers=headers,
+                    params={**params, "limit": min(10, limit - offset), "offset": offset},
+                    timeout=30,
                 )
-                return
-            elif response.status_code != 200:
-                error_data = (
-                    response.json()
-                    if response.headers.get("content-type", "").startswith(
-                        "application/json"
+                if response.status_code == 401:
+                    yield self.create_text_message(
+                        "Authentication failed. Please re-authenticate with Spotify."
                     )
-                    else {}
-                )
-                error_message = error_data.get("error", {}).get(
-                    "message", f"API request failed with status {response.status_code}"
-                )
-                yield self.create_text_message(f"Spotify API error: {error_message}")
-                return
+                    return
+                if response.status_code != 200:
+                    error_data = (
+                        response.json()
+                        if response.headers.get("content-type", "").startswith("application/json")
+                        else {}
+                    )
+                    error_message = error_data.get("error", {}).get(
+                        "message", f"API request failed with status {response.status_code}"
+                    )
+                    yield self.create_text_message(f"Spotify API error: {error_message}")
+                    return
 
-            search_results = response.json()
+                page = response.json()
+                for category in ("tracks", "albums", "artists", "playlists"):
+                    if result := page.get(category):
+                        bucket = search_results.setdefault(category, {"items": [], "total": result["total"]})
+                        bucket["items"].extend(item for item in result["items"] if item is not None)
+                if not any(result and result.get("next") for result in page.values()):
+                    break
 
             # Process and format results
             formatted_results = {"query": query, "total_results": 0, "results": {}}
@@ -107,7 +115,7 @@ class SpotifySearchTool(Tool):
                         "artists": [artist["name"] for artist in track["artists"]],
                         "album": track["album"]["name"],
                         "duration_ms": track["duration_ms"],
-                        "popularity": track["popularity"],
+                        "popularity": track.get("popularity"),
                         "external_urls": track["external_urls"],
                         "preview_url": track.get("preview_url"),
                         "explicit": track["explicit"],
@@ -132,7 +140,7 @@ class SpotifySearchTool(Tool):
                         "total_tracks": album["total_tracks"],
                         "release_date": album["release_date"],
                         "external_urls": album["external_urls"],
-                        "images": album["images"],
+                        "images": album.get("images", []),
                     }
                     albums.append(album_info)
 
@@ -149,11 +157,11 @@ class SpotifySearchTool(Tool):
                     artist_info = {
                         "id": artist["id"],
                         "name": artist["name"],
-                        "genres": artist["genres"],
-                        "popularity": artist["popularity"],
-                        "followers": artist["followers"]["total"],
+                        "genres": artist.get("genres", []),
+                        "popularity": artist.get("popularity"),
+                        "followers": (artist.get("followers") or {}).get("total"),
                         "external_urls": artist["external_urls"],
-                        "images": artist["images"],
+                        "images": artist.get("images", []),
                     }
                     artists.append(artist_info)
 
@@ -171,11 +179,11 @@ class SpotifySearchTool(Tool):
                         "id": playlist["id"],
                         "name": playlist["name"],
                         "description": playlist.get("description", ""),
-                        "owner": playlist["owner"]["display_name"],
-                        "public": playlist["public"],
-                        "tracks_total": playlist["tracks"]["total"],
+                        "owner": (playlist.get("owner") or {}).get("display_name"),
+                        "public": playlist.get("public"),
+                        "tracks_total": (playlist.get("items") or playlist.get("tracks") or {}).get("total"),
                         "external_urls": playlist["external_urls"],
-                        "images": playlist["images"],
+                        "images": playlist.get("images", []),
                     }
                     playlists.append(playlist_info)
 

@@ -24,9 +24,9 @@ parameter_rules:
     required: true
     default: 512
     min: 1
-    max: 131072
+    max: 117964
 pricing:
-  input: "0.06"
-  output: "0.06"
+  input: "0.05"
+  output: "0.08"
   unit: "0.000001"
   currency: USD

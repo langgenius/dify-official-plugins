@@ -14,31 +14,30 @@ credentials_for_provider:
       en_US: The base URL of your Bitbucket instance 
       zh_Hans: 您的 Bitbucket 实例的基础 URL
       pt_BR: A URL base da sua instância do Bitbucket
-    url: todo
+    url: https://developer.atlassian.com/cloud/bitbucket/rest/
   username:
     type: text-input
     label:
-      en_US: Username/Email
-      zh_Hans: 用户名/邮箱
-      pt_BR: Nome de usuário/Email
+      en_US: Atlassian Account Email
+      zh_Hans: Atlassian 帐户邮箱
+      pt_BR: Email da conta Atlassian
     required: true
     help:
-      en_US: Your Bitbucket username or email address.
-      zh_Hans: 您的 Bitbucket 用户名或邮箱地址。
-      pt_BR: Seu nome de usuário ou endereço de email do Bitbucket.
-    url: todo
+      en_US: Enter the email associated with your Atlassian account.
+      zh_Hans: 请输入 Atlassian 帐户绑定的邮箱。
+      pt_BR: Insira o email associado à sua conta Atlassian.
   password:
     type: secret-input
     label:
-      en_US: App Password/Account Password
-      zh_Hans: 应用密码/账户密码
-      pt_BR: Senha de App/Conta
+      en_US: Bitbucket API Token
+      zh_Hans: Bitbucket API 令牌
+      pt_BR: Token de API do Bitbucket
     required: true
     help:
-      en_US: Your Bitbucket App Password or Account Password. Create one in your Bitbucket account settings.
-      zh_Hans: 您的 Bitbucket 应用密码或账户密码。请在您的 Bitbucket 账户设置中创建一个。
-      pt_BR: Sua Senha de App do Bitbucket ou Senha de Conta. Crie um nas configurações da sua conta Bitbucket.
-    url: todo
+      en_US: Create a scoped API token for Bitbucket Cloud.
+      zh_Hans: 请创建带有所需权限的 Bitbucket Cloud API 令牌。
+      pt_BR: Crie um token de API com escopos para o Bitbucket Cloud.
+    url: https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/
 identity:
   author: langgenius
   name: bitbucket

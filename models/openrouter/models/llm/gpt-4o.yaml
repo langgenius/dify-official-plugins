@@ -32,7 +32,7 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 4096
+    max: 16384
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -46,7 +46,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "5.00"
-  output: "15.00"
+  input: "2.5"
+  output: "10"
   unit: "0.000001"
   currency: USD

@@ -232,7 +232,7 @@ We welcome contributions! Here's how to get started:
 
 ### ArXiv Resources
 - [ArXiv.org](https://arxiv.org/) - Official ArXiv website
-- [ArXiv API Documentation](https://arxiv.org/help/api/index)
+- [ArXiv API Documentation](https://info.arxiv.org/help/api/index.html)
 - [ArXiv Python Library](https://lukasschwab.me/arxiv.py/) - Official Python wrapper
 
 ### Dify Resources

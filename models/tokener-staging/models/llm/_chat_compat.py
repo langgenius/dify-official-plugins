@@ -129,7 +129,9 @@ def _tongyi(model, messages, params, output_format, tools, stream):
             raise InvokeBadRequestError("Qwen translation requires a final user message")
         return messages[-1:], output_format, False
     if model.startswith(THINKING_DEFAULTS):
-        params.setdefault("enable_thinking", model == "qwen3.8-max")
+        params.setdefault("enable_thinking", model in {"qwen3.8-max", "qwen3.7-max-preview"})
+    if model == "qwen3.7-max-preview" and params["enable_thinking"] is not True:
+        raise InvokeBadRequestError("qwen3.7-max-preview only supports enable_thinking=true")
     if model in {
         "glm-5.1",
         "glm-5",
@@ -284,7 +286,8 @@ def invoke(
         "openai": OPENAI_CHAT_FIELDS,
     }[family]
     params = {key: value for key, value in parameters.items() if key in allowed}
-    stream = stream and params.pop("enable_stream", True) is not False
+    enable_stream = params.pop("enable_stream", True)
+    stream = stream and enable_stream is not False
     stop = stop or params.pop("stop_sequences", None) or params.pop("stopSequences", None)
     params.pop("stop_sequences", None)
     params.pop("stopSequences", None)

@@ -1,0 +1,72 @@
+# https://openrouter.ai/openai/gpt-6.2-sol
+model: openai/gpt-6.2-sol
+label:
+  en_US: gpt-6.2-sol
+model_type: llm
+features:
+  - structured-output
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - document
+model_properties:
+  mode: chat
+  context_size: 1050000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    required: false
+    options:
+    - text
+    - json_object
+    - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 指定模型推理的难度
+      en_US: specifying the difficulty of the model's reasoning
+    required: false
+    options:
+    - max
+    - xhigh
+    - high
+    - medium
+    - low
+    - none
+  - name: exclude_reasoning_tokens
+    label:
+      en_US: Hide the thought process
+      zh_Hans: 隐藏思考过程
+    type: boolean
+    required: false
+    default: true
+  - name: verbosity
+    label:
+      en_US: Verbosity
+      zh_Hans: 详细程度
+    type: string
+    required: false
+    options:
+    - low
+    - medium
+    - high
+pricing:
+  input: '2'
+  output: '10'
+  unit: '0.000001'
+  currency: USD

@@ -32,7 +32,7 @@ Azure OpenAI 提供了 GPT-image 系列模型，可根据文本和图像输入�
 | **API Key** | 你的 Azure OpenAI API Key。 | `********************************` |
 | **Deployment Name** | Azure OpenAI GPT-image 系列模型的部署名称。 | `gpt-image-2` |
 | **API Base URL** | Azure OpenAI 资源的基础地址。请仅填写域名级别的 endpoint，**不要**带模型路径或查询参数。 | `https://********.openai.azure.com/` |
-| **API Version** | 要使用的 Azure OpenAI API 版本。若要支持当前 GPT-image 编辑能力，请使用 `2025-04-01-preview` 或更高版本。 | `2025-04-01-preview` |
+| **API Version** | 留空或填写 `v1` 以使用当前 Azure OpenAI 图像 API。使用日期版本的现有凭证继续通过部署端点调用。 | `v1` |
 
 ### 4. 使用工具
 

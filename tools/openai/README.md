@@ -27,21 +27,19 @@ GPT Image access may require [OpenAI organization verification](https://develope
 | --- | --- | --- |
 | GPT Image 2 / 2.5 / 2.6 Generate | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Generate images from a prompt. |
 | GPT Image 2 / 2.5 / 2.6 Edit | GPT Image 2 and both Flare and Sunburst variants of 2.5 and 2.6 | Edit or combine reference images, optionally using a mask. |
-| GPT Image Generate | `gpt-image-1`, `gpt-image-1-mini` | Generate images with the GPT Image 1 family. |
-| GPT Image Edit | `gpt-image-1`, `gpt-image-1-mini` | Edit reference images with the GPT Image 1 family. |
-| Deep Research | `o3-deep-research`, `o4-mini-deep-research` | Start, retrieve, or cancel a research task. |
-| DALL-E 2 | `dall-e-2` | Legacy image generation. |
-| DALL-E 3 | `dall-e-3` | Legacy image generation. |
+| GPT Image Generate | GPT Image 2.5 and 2.6 Flare and Sunburst | Generate images from a prompt. |
+| GPT Image Edit | GPT Image 2.5 and 2.6 Flare and Sunburst | Edit reference images. |
+| Deep Research | `gpt-5.6-sol` | Start, retrieve, or cancel a research task. |
+| DALL-E 2 | `dall-e-2` | Legacy image generation on compatible endpoints. |
+| DALL-E 3 | `dall-e-3` | Legacy image generation on compatible endpoints. |
 
-DALL-E 2 and DALL-E 3 remain registered in the plugin, but OpenAI removed both models from its API on May 12, 2026.
-Use the GPT Image tools for OpenAI image requests.
-See the [official deprecation notice](https://developers.openai.com/api/docs/deprecations#2025-11-14-dalle-model-snapshots).
+OpenAI shut down DALL-E 2 and 3 on May 12, 2026. Existing DALL-E actions require a compatible endpoint that still serves the selected model. Use GPT Image Generate with OpenAI. [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)
 
 ## GPT Image 2, 2.5 and 2.6
 
 ### Model selection
 
-Both tools default to `gpt-image-2`.
+Both tools default to `gpt-image-2`. OpenAI schedules it to shut down on February 10, 2027, and recommends GPT Image 2.6 Flare or Sunburst. [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)
 Choose a GPT Image 2.5 model explicitly in the **Model** field to use the new models introduced with [ChatGPT Images 2.5](https://openai.com/index/introducing-chatgpt-images-2-5/) on September 8, 2026.
 
 | API model ID | Use case | Published snapshot |
@@ -144,9 +142,9 @@ The plugin reports tokens rather than calculating a monetary charge.
 GPT Image 2 per-image estimates do not apply to GPT Image 2.5 because token consumption can differ.
 Check [OpenAI pricing](https://developers.openai.com/api/docs/pricing) for current rates.
 
-## GPT Image 1 tools
+## GPT Image Generate and Edit
 
-**GPT Image Generate** and **GPT Image Edit** default to `gpt-image-1` and also offer `gpt-image-1-mini`.
+Both tools default to `gpt-image-2.5-sunburst` and offer GPT Image 2.5 and 2.6 Flare and Sunburst.
 Both accept `auto`, `1024x1024`, `1536x1024`, or `1024x1536` sizes; `auto`, `low`, `medium`, or `high` quality; and 1–10 output images.
 Generate additionally exposes background, output format, JPEG/WebP compression, and moderation controls.
 Edit accepts reference image files and an optional mask, with output settings determined by the API beyond size and quality.
@@ -155,7 +153,7 @@ Both return image files; the separate usage JSON described above is specific to 
 ## Deep Research
 
 Deep Research uses the Responses API and always starts tasks in background mode.
-Select `o3-deep-research` (the default) or `o4-mini-deep-research`.
+New tasks use `gpt-5.6-sol`. For OpenAI requests, saved `o3-deep-research` and `o4-mini-deep-research` selections and their snapshots use `gpt-5.6-sol` automatically. [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations)
 The plugin exposes web search and code interpreter, both enabled by default.
 Keep web search enabled for OpenAI research requests: it supplies the research source, while code interpreter adds data analysis.
 See the [official Deep Research guide](https://developers.openai.com/api/docs/guides/deep-research).
@@ -180,7 +178,7 @@ Use `cancel` with the same ID to request that a running task stop.
 
 `max_tool_calls` optionally limits tool calls during research.
 `timeout` controls each API request in seconds and defaults to 3600 when unset; it is not a research-task duration limit.
-The form also exposes `temperature` (default `1`), `reasoning_effort` (default `medium`), and `summary` (default `auto`), which are forwarded when supplied and subject to the selected model's API support.
+The form exposes `reasoning_effort` (default `medium`) and `summary` (default `auto`). The tool forwards `temperature` only for saved selections using a legacy Deep Research model on a compatible endpoint.
 
 Completed reports are returned as text, with numbered links and a reference list when URL citations are present.
 The accompanying JSON contains response metadata rather than the report body: `response_id`, `status`, `model`, and, when available, `background`, `tools`, `max_tool_calls`, `reasoning_effort`, `summary`, `research_process`, `usage`, and `error`.

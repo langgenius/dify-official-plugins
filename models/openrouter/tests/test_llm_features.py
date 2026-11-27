@@ -197,7 +197,7 @@ def test_custom_model_media_routing(
 
 
 def test_catalog_vision_model_keeps_existing_media_routing() -> None:
-    catalog = next(item for item in _llm_schemas() if item["model"] == "openai/chatgpt-4o-latest")
+    catalog = next(item for item in _llm_schemas() if item["model"] == "openai/gpt-4o")
     schema = AIModelEntity.model_validate(catalog)
     assert (
         ModelFeature.VISION in (schema.features or []) and ModelFeature.VIDEO not in schema.features

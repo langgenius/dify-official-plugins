@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from openai import AzureOpenAI
+from tools._client import create_image_client
 
 
 class ImageGenerateTool(Tool):
@@ -16,12 +16,7 @@ class ImageGenerateTool(Tool):
         """
         invoke tools
         """
-        client = AzureOpenAI(
-            api_key=self.runtime.credentials["azure_openai_api_key"],
-            azure_endpoint=self.runtime.credentials["azure_openai_base_url"],
-            api_version=self.runtime.credentials["azure_openai_api_version"],
-            azure_deployment=self.runtime.credentials["azure_openai_api_model_name"]
-        )
+        client, request_options = create_image_client(self.runtime.credentials)
 
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
@@ -30,6 +25,7 @@ class ImageGenerateTool(Tool):
         # --- Parameter Extraction and Validation ---
         generation_args: Dict[str, Any] = {
             "prompt": prompt,
+            "model": self.runtime.credentials["azure_openai_api_model_name"],
         }
 
         # Size (optional, defaults to 1024x1024)
@@ -61,9 +57,9 @@ class ImageGenerateTool(Tool):
             yield self.create_text_message("Invalid output_format. Choose png or jpeg.")
             return
 
-        # Output Compression (optional, defaults to 100)
-        output_compression = tool_parameters.get("output_compression", 100)
-        generation_args["output_compression"] = output_compression
+        generation_args["output_format"] = output_format
+        if output_format == "jpeg":
+            generation_args["output_compression"] = tool_parameters.get("output_compression", 100)
 
         # N (optional, defaults to 1)
         n_str = tool_parameters.get("n")
@@ -80,7 +76,7 @@ class ImageGenerateTool(Tool):
 
         # --- API Call --- 
         try:
-            response = client.images.generate(**generation_args)
+            response = client.images.generate(**generation_args, **request_options)
         except Exception as e:
             yield self.create_text_message(f"Failed to generate image: {str(e)}")
             return
@@ -88,8 +84,7 @@ class ImageGenerateTool(Tool):
         # --- Process Response --- 
         # Prepare metadata with token usage if available
         metadata = {"mime_type": None}  # Will be set per image
-        if hasattr(response, 'usage'):
-            usage = response.usage
+        if usage := response.usage:
             metadata.update({
                 "token_usage": {
                     "total_tokens": usage.total_tokens,
@@ -97,24 +92,17 @@ class ImageGenerateTool(Tool):
                     "output_tokens": usage.output_tokens
                 }
             })
-            if hasattr(usage, 'input_tokens_details'):
-                details = usage.input_tokens_details
+            if details := usage.input_tokens_details:
                 metadata["token_usage"]["input_tokens_details"] = {
                     "text_tokens": details.text_tokens,
                     "image_tokens": details.image_tokens
                 }
 
-        for image in response.data:
+        for image in response.data or []:
             if not image.b64_json:
                 continue
-            (mime_type, blob_image) = ImageGenerateTool._decode_image(image.b64_json)
-            # Determine actual mime_type based on requested format if possible
-            final_mime_type = mime_type
-            if output_format in {'png', 'jpeg', 'webp'}:
-                final_mime_type = f"image/{output_format}"
-
-            metadata["mime_type"] = final_mime_type
-            yield self.create_blob_message(blob=blob_image, meta=metadata)
+            _, blob_image = self._decode_image(image.b64_json)
+            yield self.create_blob_message(blob=blob_image, meta={**metadata, "mime_type": f"image/{output_format}"})
 
     @staticmethod
     def _decode_image(base64_image: str) -> tuple[str, bytes]:

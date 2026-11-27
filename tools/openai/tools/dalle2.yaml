@@ -1,21 +1,19 @@
 description:
   human:
-    en_US: DALL-E is a text to image tool
-    zh_Hans: DALL-E 是一个文本到图像的工具
-  llm: DALL-E is a tool used to generate images from text
+    en_US: DALL-E 2 is available only when the configured compatible endpoint supports it. Use GPT Image Generate with OpenAI.
+    zh_Hans: 仅在配置的兼容端点支持 DALL-E 2 时可用。使用 OpenAI 时，请选择 GPT Image Generate。
+  llm: DALL-E 2 is available only when the configured compatible endpoint supports it. Use GPT Image Generate with OpenAI.
 extra:
   python:
     source: tools/dalle2.py
 identity:
   author: langgenius
   description:
-    en_US: DALL-E 2 is a powerful drawing tool that can draw the image you want based
-      on your prompt
-      on your prompt
-    zh_Hans: DALL-E 2 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像
+    en_US: DALL-E 2 is available only when the configured compatible endpoint supports it. Use GPT Image Generate with OpenAI.
+    zh_Hans: 仅在配置的兼容端点支持 DALL-E 2 时可用。使用 OpenAI 时，请选择 GPT Image Generate。
   label:
-    en_US: DALL-E 2
-    zh_Hans: DALL-E 2 绘画
+    en_US: DALL-E 2 (Legacy)
+    zh_Hans: DALL-E 2（旧版）
   name: dalle2
 parameters:
 - form: llm
