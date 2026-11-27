@@ -238,7 +238,7 @@ def render_catalog(payload: Any, *, model_type: str = "llm") -> dict[str, str]:
     return files
 
 
-def _render_rules(rules: dict[str, str | tuple[str, ...]]) -> list[str]:
+def _render_rules(rules: dict[str, str | tuple[str, ...]], model_id: str) -> list[str]:
     lines = []
     for name, spec in rules.items():
         kind = "string" if isinstance(spec, tuple) else spec
@@ -247,6 +247,8 @@ def _render_rules(rules: dict[str, str | tuple[str, ...]]) -> list[str]:
             lines += ["    options:", *(f"      - {option}" for option in spec)]
         if name == "service_tier" and spec == ("flex", "standard", "priority"):
             lines.append("    default: standard")
+        if name == "enable_thinking" and model_id == "qwen3.7-max-preview":
+            lines.append("    default: true")
     return lines
 
 
@@ -331,7 +333,7 @@ def _render_model(model: dict[str, Any]) -> str:
                 *(f"      - {effort}" for effort in efforts),
             ]
         )
-    lines.extend(_render_rules(provider_rules(model["id"], features)))
+    lines.extend(_render_rules(provider_rules(model["id"], features), model["id"]))
     if "structured_output" in capabilities:
         lines.extend(
             [

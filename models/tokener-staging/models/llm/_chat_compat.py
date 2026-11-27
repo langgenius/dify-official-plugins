@@ -129,7 +129,9 @@ def _tongyi(model, messages, params, output_format, tools, stream):
             raise InvokeBadRequestError("Qwen translation requires a final user message")
         return messages[-1:], output_format, False
     if model.startswith(THINKING_DEFAULTS):
-        params.setdefault("enable_thinking", model == "qwen3.8-max")
+        params.setdefault("enable_thinking", model in {"qwen3.8-max", "qwen3.7-max-preview"})
+    if model == "qwen3.7-max-preview" and params["enable_thinking"] is not True:
+        raise InvokeBadRequestError("qwen3.7-max-preview only supports enable_thinking=true")
     if model in {
         "glm-5.1",
         "glm-5",

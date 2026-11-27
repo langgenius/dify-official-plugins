@@ -25,6 +25,7 @@ parameter_rules:
   - name: enable_thinking
     type: boolean
     required: false
+    default: true
   - name: thinking_budget
     type: int
     required: false
