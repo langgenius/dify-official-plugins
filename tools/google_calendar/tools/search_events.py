@@ -108,7 +108,7 @@ class SearchEventsTool(Tool):
                     event_info = self._format_event(event)
                     formatted_events.append(event_info)
 
-                # Filter events that match the query in case API search isn't precise
+                # Rank server matches without discarding fields or search semantics known only to Google
                 relevant_events = self._filter_relevant_events(formatted_events, query)
 
                 # Return structured data
@@ -349,7 +349,7 @@ class SearchEventsTool(Tool):
 
     def _filter_relevant_events(self, events: list, query: str) -> list:
         """
-        Filter events to find the most relevant matches.
+        Rank API matches by visible fields without discarding server matches.
         """
         if not query:
             return events
@@ -387,9 +387,10 @@ class SearchEventsTool(Tool):
                 if query_lower in attendee_email or query_lower in attendee_name:
                     relevance_score += 3
 
-            if relevance_score > 0:
-                event["relevance_score"] = relevance_score
-                relevant_events.append(event)
+            # Google also searches organizers, working locations, and translated
+            # event-type keywords. A zero local score is still a valid API match.
+            event["relevance_score"] = relevance_score
+            relevant_events.append(event)
 
         # Sort by relevance score (descending)
         relevant_events.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)

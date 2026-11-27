@@ -436,7 +436,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cryptography", specifier = ">=42.0.0" },
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", specifier = ">=0.9.0,<0.11.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "werkzeug", specifier = ">=3.1.8" },
