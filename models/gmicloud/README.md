@@ -25,8 +25,8 @@ After installing the plugin, you will need the following to configure GMI Cloud:
 
 The plugin ships with the following preset models you can use immediately:
 
-- **DeepSeek**: `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`
+- **DeepSeek**: `deepseek-ai/DeepSeek-V4-Flash`, `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`
 - **OpenAI OSS**: `openai/gpt-oss-120b`
 - **Meta Llama**: `meta-llama/Llama-4-Scout-17B-16E-Instruct`
-- **Qwen**: `Qwen/Qwen3-32B-FP8`, `Qwen/Qwen3-Next-80B-A3B-Instruct`, `Qwen/Qwen3-235B-A22B-Thinking-2507-FP8`, `Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8`
+- **Qwen**: `Qwen/Qwen3.8-Flash`, `Qwen/Qwen3-32B-FP8`, `Qwen/Qwen3-Next-80B-A3B-Instruct`, `Qwen/Qwen3-235B-A22B-Thinking-2507-FP8`, `Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8`
 - **Zhipu (ZAI)**: `zai-org/GLM-4.6`
