@@ -1,0 +1,149 @@
+identity:
+  name: search_buildings
+  author: langgenius
+  label:
+    en_US: Search Commercial Buildings
+    pt_BR: Buscar Edificios Comerciais
+    zh_Hans: 搜索商业与多户住宅楼宇
+description:
+  human:
+    en_US: Search NYC multifamily and mixed-use commercial buildings across property, mortgage, and regulatory filings ($0.01 per new Record).
+    pt_BR: Busque edificios comerciais e multifamiliares de NYC com dados de hipoteca e registros publicos ($0.01 por novo Record).
+    zh_Hans: 按行政区、单元数、贷款到期年份与监管信号搜索纽约商业及多户住宅楼宇（每个新 Record $0.01）。
+  llm: Search NYC multifamily and mixed-use buildings via GET /api/v1/buildings ($0.01 per new Record, $0.00 repeat within 30 days) by borough, unit count, loan maturity, mortgage holder type, or property signal.
+parameters:
+  - name: borough
+    type: select
+    required: true
+    form: llm
+    options:
+      - value: MN
+        label:
+          en_US: Manhattan (MN)
+          pt_BR: Manhattan (MN)
+          zh_Hans: 曼哈顿 (MN)
+      - value: BK
+        label:
+          en_US: Brooklyn (BK)
+          pt_BR: Brooklyn (BK)
+          zh_Hans: 布鲁克林 (BK)
+      - value: QN
+        label:
+          en_US: Queens (QN)
+          pt_BR: Queens (QN)
+          zh_Hans: 皇后区 (QN)
+      - value: BX
+        label:
+          en_US: Bronx (BX)
+          pt_BR: Bronx (BX)
+          zh_Hans: 布朗克斯 (BX)
+      - value: SI
+        label:
+          en_US: Staten Island (SI)
+          pt_BR: Staten Island (SI)
+          zh_Hans: 斯塔滕岛 (SI)
+    label:
+      en_US: NYC Borough
+      pt_BR: Distrito de NYC
+      zh_Hans: 纽约行政区
+    human_description:
+      en_US: NYC borough code (MN, BK, QN, BX, or SI).
+      pt_BR: Codigo do distrito de NYC (MN, BK, QN, BX ou SI).
+      zh_Hans: 纽约行政区代码（MN、BK、QN、BX 或 SI）。
+    llm_description: Required NYC borough code, one of MN, BK, QN, BX, or SI.
+  - name: min_units
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Minimum Units
+      pt_BR: Minimo de Unidades
+      zh_Hans: 最少住宅单元数
+    human_description:
+      en_US: Minimum residential unit count (default 10).
+      pt_BR: Numero minimo de unidades residenciais (padrao 10).
+      zh_Hans: 最少住宅单元数（默认 10）。
+    llm_description: Minimum residential units integer (default 10).
+  - name: q
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Address or Owner Query
+      pt_BR: Endereco ou Proprietario
+      zh_Hans: 地址或登记业主关键词
+    human_description:
+      en_US: Optional street address or owner-of-record substring filter.
+      pt_BR: Filtro opcional de endereco ou proprietario registrado.
+      zh_Hans: 可选的街道地址或登记业主名称匹配。
+    llm_description: Optional street address or owner-of-record substring match.
+  - name: loan_due_by
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Loan Maturity Year Ceiling
+      pt_BR: Ano Limite de Vencimento do Emprestimo
+      zh_Hans: 贷款到期年份上限
+    human_description:
+      en_US: Estimated mortgage maturity year ceiling (for example 2027).
+      pt_BR: Ano maximo estimado de vencimento da hipoteca (ex. 2027).
+      zh_Hans: 预计抵押贷款到期年份上限（例如 2027）。
+    llm_description: Optional mortgage maturity year ceiling between 1990 and 2100 (for example 2027).
+  - name: loan_holder
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Loan Holder Type
+      pt_BR: Tipo de Credor
+      zh_Hans: 贷款持有机构类型
+    human_description:
+      en_US: Optional mortgage holder filter (agency, cmbs, or bank).
+      pt_BR: Filtro opcional do tipo de credor (agency, cmbs ou bank).
+      zh_Hans: 可选抵押贷款机构类型（agency、cmbs 或 bank）。
+    llm_description: Optional mortgage holder type, one of agency, cmbs, or bank.
+  - name: signal
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Building Signal
+      pt_BR: Sinal Regulatorio
+      zh_Hans: 监管或物业信号
+    human_description:
+      en_US: Optional filter (rent_stabilized, dob_penalties, housing_court, tax_lien, ll97, section8_expiring, tax_credit_ending, failing_inspection).
+      pt_BR: Sinal regulatorio ou operacional opcional do edificio.
+      zh_Hans: 可选监管或物业信号（如 rent_stabilized、dob_penalties、tax_lien、ll97 等）。
+    llm_description: Optional signal filter, one of rent_stabilized, dob_penalties, housing_court, tax_lien, ll97, section8_expiring, tax_credit_ending, or failing_inspection.
+  - name: limit
+    type: number
+    required: false
+    default: 25
+    form: llm
+    label:
+      en_US: Page Size
+      pt_BR: Tamanho da Pagina
+      zh_Hans: 返回条数
+    human_description:
+      en_US: Number of building Records to return (1 to 50, default 25).
+      pt_BR: Numero de Records de edificios (1 a 50, padrao 25).
+      zh_Hans: 每页返回的楼宇 Record 数量（1 至 50，默认 25）。
+    llm_description: Page size between 1 and 50 (default 25).
+  - name: cursor
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Pagination Cursor
+      pt_BR: Cursor de Paginacao
+      zh_Hans: 分页游标
+    human_description:
+      en_US: Optional pagination cursor from the previous page.
+      pt_BR: Cursor opcional da pagina anterior.
+      zh_Hans: 上一页返回的分页游标。
+    llm_description: Optional pagination cursor from the previous page.
+extra:
+  python:
+    source: tools/search_buildings.py

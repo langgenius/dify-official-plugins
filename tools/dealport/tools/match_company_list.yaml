@@ -1,0 +1,43 @@
+identity:
+  name: match_company_list
+  author: langgenius
+  label:
+    en_US: Match Company List ($0.00)
+    pt_BR: Corresponder Lista de Empresas ($0.00)
+    zh_Hans: 批量匹配企业名单 ($0.00)
+description:
+  human:
+    en_US: Match a CSV or JSON list of company names and domains against 28M+ Dealport US company Records for free ($0.00).
+    pt_BR: Corresponda uma lista CSV ou JSON de empresas e dominios contra mais de 28M de Records do Dealport gratuitamente ($0.00).
+    zh_Hans: 免费 ($0.00) 将 CSV 或 JSON 企业名称与域名列表匹配至 2800 万以上 Dealport 美国企业 Record。
+  llm: Match an external CSV text or JSON array of companies (up to 250 items with name, domain, city, state, external_id) against 28M+ US SMB Records via POST /api/v1/companies/match ($0.00 when watch is false).
+parameters:
+  - name: csv
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: CSV Text
+      pt_BR: Texto CSV
+      zh_Hans: CSV 文本
+    human_description:
+      en_US: Raw CSV text with a header row (for example name,domain,city,state). Provide either csv or items_json.
+      pt_BR: Texto CSV com linha de cabecalho (ex. name,domain,city,state).
+      zh_Hans: 带表头的原始 CSV 文本（例如 name,domain,city,state）。请提供 csv 或 items_json 之一。
+    llm_description: Raw CSV text with header row (name/company, website/domain, city, state, id).
+  - name: items_json
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Items JSON Array
+      pt_BR: Array JSON de Empresas
+      zh_Hans: 企业列表 JSON 数组
+    human_description:
+      en_US: JSON array of up to 250 objects with optional name, domain, city, state, and external_id fields.
+      pt_BR: Array JSON de ate 250 objetos com campos opcionais name, domain, city, state e external_id.
+      zh_Hans: 最多 250 条对象的 JSON 数组，支持 name、domain、city、state、external_id 字段。
+    llm_description: JSON array string of up to 250 company objects ({name, domain, city, state, external_id}).
+extra:
+  python:
+    source: tools/match_company_list.py

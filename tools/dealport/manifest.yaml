@@ -1,0 +1,36 @@
+author: langgenius
+created_at: "2026-11-27T00:00:00Z"
+description:
+  en_US: Dealport is the SMB knowledge layer for agents and humans, indexing 28M+ US private companies, commercial buildings, cited public filings, and verified human owner contacts.
+  pt_BR: Dealport e a camada de conhecimento de pequenas e medias empresas dos EUA para agentes e humanos, com mais de 28M de empresas privadas, edificios comerciais e proprietarios verificados.
+  zh_Hans: Dealport 是面向智能体与团队的美国中小企业与商业地产知识层，涵盖 2800 万以上美国私营企业、商业楼宇、公开备案引用及经验证的企业主联系方式。
+icon: icon.svg
+icon_dark: icon-dark.svg
+label:
+  en_US: Dealport
+  pt_BR: Dealport
+  zh_Hans: Dealport
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: dealport
+plugins:
+  tools:
+    - provider/dealport.yaml
+privacy: PRIVACY.md
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+tags:
+  - search
+  - business
+type: plugin
+version: 0.0.1

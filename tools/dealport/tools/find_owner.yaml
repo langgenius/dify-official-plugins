@@ -1,0 +1,43 @@
+identity:
+  name: find_owner
+  author: langgenius
+  label:
+    en_US: Find Verified Owner
+    pt_BR: Encontrar Proprietario Verificado
+    zh_Hans: 查找经验证的企业主联系方式
+description:
+  human:
+    en_US: Resolve the verified human owner, direct mobile and phone numbers, emails, and professional profile for a Dealport company Record ($0.09 per verified hit, $0.00 miss).
+    pt_BR: Resolva o proprietario humano verificado, telefones diretos, e-mails e perfil profissional de uma empresa ($0.09 por acerto verificado, $0.00 sem resultado).
+    zh_Hans: 解析 Dealport 企业 Record 背后的真实人类企业主、直拨电话、邮箱及职业履历（命中 $0.09，未命中 $0.00）。
+  llm: Resolve the verified human owner, direct phones, work and personal emails, and professional profile for a Dealport company UUID via POST /api/v1/owners ($0.09 per verified hit, $0.00 miss or 30-day repeat).
+parameters:
+  - name: company_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Company UUID
+      pt_BR: UUID da Empresa
+      zh_Hans: 企业 UUID
+    human_description:
+      en_US: Dealport company UUID returned by search_companies, preview_companies, or match_company_list.
+      pt_BR: UUID da empresa retornado pelas buscas do Dealport.
+      zh_Hans: 由 search_companies、preview_companies 或 match_company_list 返回的 Dealport 企业 UUID。
+    llm_description: Dealport company UUID.
+  - name: person
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Principal Name (Optional)
+      pt_BR: Nome do Socio ou Executivo (Opcional)
+      zh_Hans: 指定负责人姓名（可选）
+    human_description:
+      en_US: Optional full name of a specific principal listed on the company Record.
+      pt_BR: Nome completo opcional de um socio ou executivo especifico no Record.
+      zh_Hans: 企业 Record 上列出的特定负责人全名（可选）。
+    llm_description: Optional full name of a specific principal on the company Record.
+extra:
+  python:
+    source: tools/find_owner.py
